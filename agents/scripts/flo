@@ -1,0 +1,1256 @@
+#!/usr/bin/env python3
+"""flo — XLR8 FLO delivery orchestrator.
+
+Every rule in AGENTS.md that can be machine-checked lives here instead of in prose.
+Stdlib only, except PyYAML for the two config files.
+
+  flo next                  next story whose dependencies are satisfied
+  flo start   <STORY_ID>    branch + worktree + task packet
+  flo assign  <STORY_ID>    compute author and two reviewers from agents.yaml
+  flo submit  <STORY_ID>    mark ready for review, print reviewer commands
+  flo review  <STORY_ID>    print the reviewer packet (diff + design + requirements)
+  flo gate    <STORY_ID>    Definition of Done, machine-checked
+  flo final   <STORY_ID>    Opus final-review packet (gated stories)
+  flo escalate<STORY_ID>    hand the story to Opus for arbitration
+  flo done    <STORY_ID>    squash-merge into the milestone branch, update roadmap
+  flo design  <MILESTONE>   print the Opus batch-design brief for a milestone
+  flo status                roadmap state and in-flight stories
+  flo score   [--check]     agent performance scorecard (author + reviewer)
+  flo session <AGENT> [ID]  record an agent's session id for the current story
+  flo budget                per-agent spend and remaining capacity
+  flo roadmap [--check]     regenerate docs/claude-plan.md §5 (or verify it)
+  flo board                 regenerate board.html - drilldown status view (gitignored)\n  flo ack     [KEY|all]     confirm a 'waiting on you' item (list keys with no argument)\n  flo unack   <KEY|all>     reopen a confirmed item
+  flo check                 run everything CI runs, locally
+  flo up                    local stack: Postgres + MinIO + Mailpit
+"""
+import json
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+ROADMAP = ROOT / "agents" / "roadmap.yaml"
+FLEET = ROOT / "agents" / "agents.yaml"
+PLAN = ROOT / "docs" / "claude-plan.md"
+MEMORY = ROOT / "agents" / "project-memory.md"
+STATE = ROOT / "agents" / ".state.json"
+SCORECARD = ROOT / "agents" / "scorecard.json"
+SCORE_MD = ROOT / "agents" / "SCORECARD.md"
+BOARD = ROOT / "board.html"
+TERMINAL = {"done"}
+ACTIVE = {"design", "in_progress", "review", "blocked"}
+
+
+def die(msg, code=1):
+    print(f"error: {msg}", file=sys.stderr)
+    sys.exit(code)
+
+
+def load_yaml(path):
+    try:
+        import yaml
+    except ImportError:
+        die("PyYAML required: pip install pyyaml")
+    with open(path) as fh:
+        return yaml.safe_load(fh)
+
+
+def roadmap():
+    return load_yaml(ROADMAP)
+
+
+def stories(rm):
+    for epic in rm["epics"]:
+        for st in epic["stories"]:
+            yield epic, st
+
+
+def find(rm, sid):
+    for epic, st in stories(rm):
+        if st["id"] == sid:
+            return epic, st
+    die(f"unknown story {sid}")
+
+
+def state():
+    return json.loads(STATE.read_text()) if STATE.exists() else {"stories": {}, "spend": {}}
+
+
+def save_state(s):
+    STATE.write_text(json.dumps(s, indent=2, sort_keys=True) + "\n")
+
+
+def git(*args, cwd=None, check=True):
+    r = subprocess.run(["git", *args], cwd=cwd or ROOT, capture_output=True, text=True)
+    if check and r.returncode:
+        die(f"git {' '.join(args)}: {r.stderr.strip()}")
+    return r.stdout.strip()
+
+
+def slug(text):
+    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:48]
+
+
+def worktree_path(sid):
+    return ROOT.parent / f"{ROOT.name}-{sid}"
+
+
+def milestone_of(rm, epic):
+    for m in rm["milestones"]:
+        if m["id"] == epic["milestone"]:
+            return m
+    die(f"unknown milestone {epic['milestone']}")
+
+
+# ── planning ─────────────────────────────────────────────────────────────────
+
+def deps_satisfied(rm, st):
+    done = {s["id"] for _, s in stories(rm) if s["st"] == "done"}
+    return all(d in done for d in st.get("dep", []))
+
+
+def cmd_next(argv):
+    rm, fleet = roadmap(), load_yaml(FLEET)
+    cap = fleet["policy"]["max_stories_in_flight"]
+    in_flight = [s for _, s in stories(rm) if s["st"] in ACTIVE]
+    if len(in_flight) >= cap:
+        print(f"{len(in_flight)}/{cap} stories in flight — finish one before starting another:")
+        for s in in_flight:
+            print(f"  {s['id']}  [{s['st']}]  {s['t']}")
+        return
+    ready = [(e, s) for e, s in stories(rm) if s["st"] == "todo" and deps_satisfied(rm, s)]
+    if not ready:
+        blocked = [s for _, s in stories(rm) if s["st"] == "todo"]
+        die("no story is ready" + (f" ({len(blocked)} todo, all dependency-blocked)" if blocked else " — roadmap complete"))
+    epic, st = ready[0]
+    print(f"{st['id']}  {st['t']}")
+    print(f"  epic {epic['id']} {epic['name']} · milestone {epic['milestone']} · {st['k']}/{st['s']}")
+    print(f"  requirements: {', '.join(st['reqs'])}")
+    print(f"\n  flo start {st['id']}")
+
+
+def cmd_assign(argv):
+    """Implements the algorithm documented at the foot of agents/agents.yaml."""
+    if not argv:
+        die("usage: flo assign <STORY_ID>")
+    rm, fleet = roadmap(), load_yaml(FLEET)
+    _, st = find(rm, argv[0])
+    pol, agents, sp = fleet["policy"], fleet["agents"], state().get("spend", {})
+    size_rank = {"S": 1, "M": 2, "L": 3}
+    scarcity = {"none": 0, "spend": 1, "rate": 2}
+
+    def can_author(name, cfg):
+        if "author" not in cfg.get("roles", []):
+            return False
+        if st["k"] not in cfg.get("allowed_kinds", []):
+            return False
+        cap = cfg.get("max_author_size")
+        if cap and size_rank[st["s"]] > size_rank[cap]:
+            return False
+        if cfg.get("monthly_budget_usd"):
+            spent = sp.get(name, 0.0)
+            usable = cfg["monthly_budget_usd"] - cfg.get("reserve_for_review_usd", 0)
+            if spent >= usable:
+                return False
+        return True
+
+    cands = [n for n, c in agents.items() if can_author(n, c)]
+    if not cands:
+        die(f"no agent may author kind={st['k']} size={st['s']} — check allowed_kinds in agents.yaml")
+    tags = set(st.get("tags", []))
+
+    def rank(n):
+        c = agents[n]
+        prefers = bool(tags & set(c.get("prefer_tags", [])))
+        return (0 if prefers else 1, scarcity[c.get("metered", "none")])
+
+    author = sorted(cands, key=rank)[0]
+    # At least one reviewer must be unmetered, so a rationed agent is never the
+    # reason a story cannot merge. Cheapest reviewers first for the second slot.
+    pool = [n for n in pol["free_reviewer_pool"] if n != author and "review" in agents[n]["roles"]]
+    if not pool:
+        die(f"no free reviewer available for author {author} — widen policy.free_reviewer_pool")
+    reviewers = [pool[0]]
+    rest = sorted((n for n, c in agents.items()
+                   if n != author and n not in reviewers and "review" in c.get("roles", [])),
+                  key=lambda n: scarcity[agents[n].get("metered", "none")])
+    reviewers += rest[: pol["min_reviewers"] - len(reviewers)]
+    if len(reviewers) < pol["min_reviewers"]:
+        die(f"only {len(reviewers)} reviewer(s) available; minimum is {pol['min_reviewers']} — story waits")
+    opus_final = bool(tags & set(pol["opus_final_required_tags"]))
+    out = {"author": author, "reviewers": reviewers, "opus_final": opus_final}
+    print(json.dumps(out, indent=2))
+    return out
+
+
+# ── story lifecycle ──────────────────────────────────────────────────────────
+
+def cmd_start(argv):
+    if not argv:
+        die("usage: flo start <STORY_ID>")
+    sid = argv[0]
+    rm = roadmap()
+    epic, st = find(rm, sid)
+    if st["st"] != "todo":
+        die(f"{sid} is {st['st']}, not todo")
+    if not deps_satisfied(rm, st):
+        pending = [d for d in st.get("dep", []) if find(rm, d)[1]["st"] != "done"]
+        die(f"{sid} depends on unfinished: {', '.join(pending)}")
+    design = ROOT / "design" / f"{sid}.md"
+    if not design.exists():
+        die(f"no design packet at design/{sid}.md — run: flo design {epic['milestone']}")
+
+    ms = milestone_of(rm, epic)
+    branches = git("branch", "--list", ms["branch"])
+    if not branches:
+        git("branch", ms["branch"])
+    branch = f"story/{sid}-{slug(st['t'])}"
+    wt = worktree_path(sid)
+    if wt.exists():
+        die(f"worktree already exists: {wt}")
+    git("worktree", "add", "-b", branch, str(wt), ms["branch"])
+
+    assignment = cmd_assign([sid])
+    packet = {
+        "story": sid, "title": st["t"], "epic": epic["id"], "milestone": epic["milestone"],
+        "kind": st["k"], "size": st["s"], "tags": st.get("tags", []),
+        "requirements": st["reqs"], "depends_on": st.get("dep", []),
+        "branch": branch, "milestone_branch": ms["branch"], "worktree": str(wt),
+        "design": f"design/{sid}.md", **assignment,
+        "rounds": 0, "substitutions": [], "notes": {"blocked": None, "followup": [], "recap": None},
+        "traceability": {},
+    }
+    packet["sessions"] = {assignment["author"]: detect_session(assignment["author"], wt)}
+    (wt / "task.json").write_text(json.dumps(packet, indent=2) + "\n")
+    set_status(sid, "in_progress")
+    print(f"\nworktree  {wt}\nbranch    {branch}\ndesign    design/{sid}.md")
+    print(f"author    {assignment['author']}\nreviewers {', '.join(assignment['reviewers'])}"
+          f"\nopus final{'  required' if assignment['opus_final'] else '  not required'}")
+    print(f"\n  cd {wt} && cat design/{sid}.md")
+
+
+def packet_of(sid):
+    p = worktree_path(sid) / "task.json"
+    if not p.exists():
+        die(f"no task packet for {sid} — run: flo start {sid}")
+    return json.loads(p.read_text())
+
+
+def cmd_submit(argv):
+    if not argv:
+        die("usage: flo submit <STORY_ID>")
+    sid = argv[0]
+    pkt = packet_of(sid)
+    if not run_check(worktree_path(sid)):
+        die("flo check is red — fix before submitting; two of four agents are rate-limited")
+    rec = detect_session(pkt["author"], worktree_path(sid))
+    if rec["id"]:
+        pkt.setdefault("sessions", {})[pkt["author"]] = rec
+        (worktree_path(sid) / "task.json").write_text(json.dumps(pkt, indent=2) + "\n")
+    set_status(sid, "review")
+    print(f"{sid} ready for review. Reviewers must run:\n")
+    for r in pkt["reviewers"]:
+        print(f"  {r}:  flo review {sid}   → reviews/{sid}.{r}.json")
+
+
+def cmd_review(argv):
+    if not argv:
+        die("usage: flo review <STORY_ID>")
+    sid = argv[0]
+    pkt, wt = packet_of(sid), worktree_path(sid)
+    print(f"=== REVIEW PACKET {sid} — {pkt['title']} ===")
+    print(f"kind {pkt['kind']} · size {pkt['size']} · tags {', '.join(pkt['tags']) or 'none'}")
+    print(f"requirements: {', '.join(pkt['requirements'])}\n")
+    print("--- design packet ---")
+    print((ROOT / pkt["design"]).read_text())
+    print("--- diff vs milestone branch ---")
+    print(git("diff", f"{pkt['milestone_branch']}...{pkt['branch']}", cwd=wt, check=False))
+    print("\n--- rules ---")
+    print("Run the tests: a verdict with ran_tests=false does not count toward the two-reviewer floor.")
+    print("Review only — do not rewrite the code. One finding per problem.")
+    print("You were deliberately not given the author's rationale.")
+    print(f"\nWrite: reviews/{sid}.<your-agent-id>.json   (schema in AGENTS.md §2.2)")
+
+
+def reviews_for(sid):
+    d = worktree_path(sid) / "reviews"
+    if not d.exists():
+        return []
+    out = []
+    for f in sorted(d.glob(f"{sid}.*.json")):
+        try:
+            out.append(json.loads(f.read_text()))
+        except json.JSONDecodeError:
+            die(f"malformed review: {f}")
+    return out
+
+
+def cmd_gate(argv):
+    if not argv:
+        die("usage: flo gate <STORY_ID>")
+    sid = argv[0]
+    pkt, wt = packet_of(sid), worktree_path(sid)
+    fails = []
+
+    if not run_check(wt):
+        fails.append("flo check is red (ruff/mypy/import-linter/eslint/tsc/pytest/vitest/playwright/axe/gitleaks)")
+
+    revs = reviews_for(sid)
+    counted = [r for r in revs if r.get("ran_tests") is True]
+    fleet = load_yaml(FLEET)
+    need = fleet["policy"]["min_reviewers"]
+    if len(counted) < need:
+        fails.append(f"{len(counted)}/{need} reviews with ran_tests=true")
+    allowed = set(pkt["reviewers"]) | {s.get("to") for s in pkt.get("substitutions", [])}
+    unexpected = {r["reviewer"] for r in counted} - allowed
+    if unexpected:
+        fails.append(f"unassigned reviewer(s) {sorted(unexpected)} — record a substitution in task.json")
+    if pkt["author"] in {r["reviewer"] for r in counted}:
+        fails.append("the author reviewed their own story")
+    blockers = [f for r in revs for f in r.get("findings", []) if f.get("severity") == "blocker"]
+    if blockers:
+        fails.append(f"{len(blockers)} open blocker finding(s)")
+    if any(r.get("verdict") != "approve" for r in counted):
+        fails.append("not every counted reviewer approved")
+
+    if pkt["opus_final"]:
+        opus = worktree_path(sid) / "reviews" / f"{sid}.opus.json"
+        if not opus.exists():
+            fails.append(f"story is tagged {pkt['tags']} — Opus final review required (flo final {sid})")
+        elif json.loads(opus.read_text()).get("verdict") != "approve":
+            fails.append("Opus final review did not approve")
+
+    if not pkt.get("traceability"):
+        fails.append("task.json traceability is empty — map each requirement id to the test that covers it")
+    recap = (pkt.get("notes") or {}).get("recap")
+    if not recap or len(recap.split()) < 6:
+        fails.append("task.json notes.recap is missing — write one or two plain sentences "
+                     "saying what this story actually delivered, for the board")
+    if pkt["notes"].get("blocked"):
+        fails.append(f"story is blocked: {pkt['notes']['blocked']}")
+
+    if fails:
+        print(f"GATE FAILED — {sid}")
+        for f in fails:
+            print(f"  ✗ {f}")
+        sys.exit(1)
+    print(f"GATE PASSED — {sid}")
+
+
+def cmd_final(argv):
+    if not argv:
+        die("usage: flo final <STORY_ID>")
+    sid = argv[0]
+    pkt = packet_of(sid)
+    if not pkt["opus_final"]:
+        print(f"{sid} is not gated (tags: {pkt['tags'] or 'none'}) — no Opus final review required")
+        return
+    cmd_review([sid])
+    print("\n--- prior reviews ---")
+    for r in reviews_for(sid):
+        print(json.dumps(r, indent=2))
+    print("\n--- Opus: emphasis is SECURITY and UI/UX (agents/claude.md §2) ---")
+    print(f"Write: reviews/{sid}.opus.json")
+
+
+def cmd_escalate(argv):
+    if not argv:
+        die("usage: flo escalate <STORY_ID>")
+    sid = argv[0]
+    pkt = packet_of(sid)
+    pkt["rounds"] = pkt.get("rounds", 0) + 1
+    (worktree_path(sid) / "task.json").write_text(json.dumps(pkt, indent=2) + "\n")
+    print(f"escalating {sid} to Opus (round {pkt['rounds']})")
+    cmd_final([sid])
+    print("\nOpus: rule on each disputed finding — upheld or dismissed, with reason.")
+    print("If the author is wrong three times on the same point, write the fix yourself.")
+
+
+def cmd_done(argv):
+    if not argv:
+        die("usage: flo done <STORY_ID>")
+    sid = argv[0]
+    cmd_gate([sid])
+    pkt = packet_of(sid)
+    rm = roadmap()
+    _, st = find(rm, sid)
+    git("checkout", pkt["milestone_branch"])
+    git("merge", "--squash", pkt["branch"])
+    revs = ", ".join(sorted(r["reviewer"] for r in reviews_for(sid) if r.get("ran_tests")))
+    prov = json.loads(SCORECARD.read_text())["stories"][-1].get("sessions", {})
+    trailers = "".join(
+        f"Session-{a}: {s['id']}\n" for a, s in sorted(prov.items()) if s.get("id"))
+    msg = (f"{sid}: {st['t']}\n\n"
+           f"Requirements: {', '.join(st['reqs'])}\n"
+           f"Author: {pkt['author']} | Reviewers: {revs}"
+           f"{' | Opus final: approved' if pkt['opus_final'] else ''}\n"
+           f"{trailers}")
+    set_status(sid, "done")
+    record_score(sid, pkt, st)
+    cmd_roadmap([])
+    cmd_score([])
+    cmd_board([])
+    git("add", "agents/roadmap.yaml", "docs/claude-plan.md", "agents/project-memory.md",
+        "agents/scorecard.json", "agents/SCORECARD.md")
+    git("commit", "-m", msg)
+    git("worktree", "remove", str(worktree_path(sid)), "--force")
+    print(f"{sid} merged into {pkt['milestone_branch']}; roadmap and memory updated in the same commit")
+
+
+def set_status(sid, status):
+    """Rewrite one story's status in place, whatever YAML style the file uses.
+
+    Anchors on `id: <sid>` then rewrites the first `st:` after it, so this works
+    for both flow mappings ({id: X, ..., st: todo}) and block mappings.
+    """
+    text = ROADMAP.read_text()
+    m = re.search(rf"\bid:\s*{re.escape(sid)}\b", text)
+    if not m:
+        die(f"cannot locate story {sid} in roadmap.yaml")
+    tail = re.compile(r"(\bst:\s*)(\w+)").search(text, m.end())
+    if not tail:
+        die(f"cannot locate status field for {sid} in roadmap.yaml")
+    ROADMAP.write_text(text[:tail.start()] + tail.group(1) + status + text[tail.end():])
+
+
+# ── session provenance ───────────────────────────────────────────────────────
+#
+# Every story records which concrete CLI session produced and reviewed it, so a
+# defect found months later can be traced to the exact transcript. Detection is
+# keyed on the story's WORKTREE PATH, so a session is attributed to the story it
+# actually worked on rather than to whatever ran most recently.
+#
+# Nothing here is ever fabricated: if an id cannot be established, it is recorded
+# as null with the reason in `source`.
+
+def _claude_session():
+    for var in ("CLAUDE_CODE_SESSION_ID", "CLAUDE_SESSION_ID"):
+        if os.environ.get(var):
+            return os.environ[var], f"env:{var}"
+    return None, "unavailable: not running inside Claude Code"
+
+
+def _codex_session(cwd):
+    root = Path.home() / ".codex" / "sessions"
+    if not root.exists():
+        return None, "unavailable: ~/.codex/sessions missing"
+    best = None
+    for f in root.rglob("rollout-*.jsonl"):
+        try:
+            with f.open() as fh:
+                meta = json.loads(fh.readline()).get("payload", {})
+        except (OSError, json.JSONDecodeError):
+            continue
+        if meta.get("cwd") == str(cwd) and meta.get("id"):
+            ts = f.stat().st_mtime
+            if not best or ts > best[0]:
+                best = (ts, meta["id"])
+    return (best[1], "codex rollout matched on cwd") if best else \
+           (None, f"unavailable: no codex rollout with cwd={cwd}")
+
+
+def _opencode_session(cwd, model=None):
+    """Match on directory AND model - the two OpenCode agents share one store."""
+    db = Path.home() / ".local" / "share" / "opencode" / "opencode.db"
+    if not db.exists():
+        return None, "unavailable: opencode.db missing", {}
+    try:
+        import sqlite3
+        con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+        sql = ("SELECT id, model, cost, tokens_input, tokens_output FROM session "
+               "WHERE directory = ?")
+        args = [str(cwd)]
+        if model:
+            sql += " AND model LIKE ?"
+            args.append(f"%{model}%")
+        row = con.execute(sql + " ORDER BY time_created DESC LIMIT 1", args).fetchone()
+    except Exception as e:                                   # noqa: BLE001 - best effort only
+        return None, f"unavailable: {type(e).__name__}", {}
+    if not row:
+        return None, (f"unavailable: no opencode session with directory={cwd}"
+                      + (f" and model~{model}" if model else "")), {}
+    return row[0], f"opencode.db matched on directory{'+model' if model else ''}", {
+        "model": row[1], "cost_usd": row[2],
+        "tokens_in": row[3], "tokens_out": row[4],
+    }
+
+
+def detect_session(agent, cwd):
+    """Best-effort session provenance. Never invents an id."""
+    if os.environ.get("FLO_SESSION_ID"):
+        return {"agent": agent, "id": os.environ["FLO_SESSION_ID"], "source": "env:FLO_SESSION_ID"}
+    extra = {}
+    if agent == "opus":
+        sid, src = _claude_session()
+    elif agent == "codex":
+        sid, src = _codex_session(cwd)
+    elif agent.startswith("opencode"):
+        cfg = load_yaml(FLEET)["agents"].get(agent, {})
+        sid, src, extra = _opencode_session(cwd, cfg.get("model"))
+    elif agent == "qwen":
+        sid = os.environ.get("FLO_QWEN_GENERATION_ID")
+        src = "env:FLO_QWEN_GENERATION_ID" if sid else (
+            "unavailable: OpenRouter has no session concept - pass the generation id "
+            "to `flo session qwen <id>`")
+    else:
+        sid, src = None, f"unavailable: no detector for {agent}"
+    return {"agent": agent, "id": sid, "source": src, **extra}
+
+
+def cmd_session(argv):
+    if not argv:
+        die("usage: flo session <AGENT> [SESSION_ID]   (run from inside the story worktree)")
+    agent = argv[0]
+    wt = Path.cwd()
+    pkt_path = wt / "task.json"
+    if not pkt_path.exists():
+        die(f"no task.json in {wt} - run this from inside the story worktree")
+    pkt = json.loads(pkt_path.read_text())
+    rec = ({"agent": agent, "id": argv[1], "source": "supplied"} if len(argv) > 1
+           else detect_session(agent, wt))
+    pkt.setdefault("sessions", {})[agent] = rec
+    pkt_path.write_text(json.dumps(pkt, indent=2) + "\n")
+    if rec["id"]:
+        print(f"{agent}: {rec['id']}  ({rec['source']})")
+    else:
+        print(f"{agent}: NOT RECORDED - {rec['source']}", file=sys.stderr)
+
+
+# ── agent scorecard ──────────────────────────────────────────────────────────
+
+def load_scores():
+    return json.loads(SCORECARD.read_text())
+
+
+def record_score(sid, pkt, story):
+    """Append one immutable record per merged story. Called by `flo done`."""
+    revs = reviews_for(sid)
+    opus = next((r for r in revs if r["reviewer"] == "opus"), None)
+    # A blocker raised by Opus at final review is an escape: two reviewers passed it.
+    escapes = [f for f in (opus or {}).get("findings", []) if f.get("severity") == "blocker"]
+
+    sessions = dict(pkt.get("sessions") or {})
+    for r in revs:
+        who = r["reviewer"]
+        if r.get("session_id"):
+            sessions[who] = {"agent": who, "id": r["session_id"], "source": "review file"}
+        elif who not in sessions:
+            sessions[who] = detect_session(who, worktree_path(sid))
+
+    per_reviewer = {}
+    for r in revs:
+        if r["reviewer"] == "opus":
+            continue
+        findings = r.get("findings", [])
+        per_reviewer[r["reviewer"]] = {
+            "ran_tests": bool(r.get("ran_tests")),
+            "findings": len(findings),
+            "blockers": sum(1 for f in findings if f.get("severity") == "blocker"),
+            # An escalation records which blockers Opus dismissed as invalid.
+            "blockers_dismissed": sum(1 for f in findings
+                                      if f.get("severity") == "blocker" and f.get("arbitration") == "dismissed"),
+        }
+
+    sc = load_scores()
+    sc["stories"] = [s for s in sc["stories"] if s["story"] != sid] + [{
+        "story": sid, "kind": story["k"], "size": story["s"], "tags": story.get("tags", []),
+        "author": pkt["author"], "reviewers": sorted(per_reviewer),
+        "rounds": pkt.get("rounds", 0) + 1,
+        "gate_failures": pkt.get("gate_failures", 0),
+        "opus_final": bool(pkt["opus_final"]),
+        "escapes": len(escapes),
+        "review": per_reviewer,
+        "substitutions": pkt.get("substitutions", []),
+        "sessions": sessions,
+        "recap": (pkt.get("notes") or {}).get("recap", ""),
+        "title": story["t"],
+    }]
+    SCORECARD.write_text(json.dumps(sc, indent=2) + "\n")
+
+
+def compute_scores():
+    """Author and reviewer scores, 0-100. Returns {agent: metrics}."""
+    sc = load_scores()
+    rows, floor = sc["stories"], sc.get("min_sample", 3)
+    agents = sorted({s["author"] for s in rows} | {r for s in rows for r in s["reviewers"]})
+    out = {}
+    for a in agents:
+        authored = [s for s in rows if s["author"] == a]
+        reviewed = [s for s in rows if a in s["reviewers"]]
+
+        m = {"authored": len(authored), "reviewed": len(reviewed)}
+
+        if authored:
+            clean = sum(1 for s in authored if s["rounds"] == 1 and s["gate_failures"] == 0)
+            rounds = sum(s["rounds"] for s in authored) / len(authored)
+            esc = sum(s["escapes"] for s in authored) / len(authored)
+            m["clean_merge_rate"] = clean / len(authored)
+            m["mean_rounds"] = rounds
+            m["escapes_per_story"] = esc
+            m["author_score"] = round(
+                50 * m["clean_merge_rate"]
+                + 30 * max(0.0, min(1.0, (3 - rounds) / 2))
+                + 20 * (1 - min(1.0, esc)), 1) if len(authored) >= floor else None
+
+        if reviewed:
+            r = [s["review"][a] for s in reviewed]
+            raised = sum(x["blockers"] for x in r)
+            dismissed = sum(x["blockers_dismissed"] for x in r)
+            missed = sum(s["escapes"] for s in reviewed if s["opus_final"])
+            gated = sum(1 for s in reviewed if s["opus_final"]) or 1
+            m["test_compliance"] = sum(1 for x in r if x["ran_tests"]) / len(r)
+            m["findings_per_review"] = sum(x["findings"] for x in r) / len(r)
+            m["blocker_precision"] = (raised - dismissed) / raised if raised else None
+            m["escapes_missed"] = missed
+            prec = m["blocker_precision"] if m["blocker_precision"] is not None else 0.5
+            m["reviewer_score"] = round(
+                25 * m["test_compliance"]
+                + 30 * prec
+                + 30 * (1 - min(1.0, missed / gated))
+                + 15 * min(1.0, m["findings_per_review"] / 2), 1) if len(reviewed) >= floor else None
+
+        out[a] = m
+    return out, floor
+
+
+def render_scores():
+    scores, floor = compute_scores()
+    sc = load_scores()
+    n = len(sc["stories"])
+    L = ["<!-- generated by agents/scripts/flo score — do not edit by hand -->", "",
+         f"# Agent scorecard", "",
+         f"**{n} merged stories.** Scores appear once an agent has {floor}+ samples in that role —",
+         "before that the number would be noise, so it reads `—`.", ""]
+    if not n:
+        L += ["_No stories merged yet._", ""]
+        return "\n".join(L)
+
+    L += ["## As author", "",
+          "| Agent | Stories | Clean merge | Mean rounds | Escapes/story | Score |",
+          "|---|---:|---:|---:|---:|---:|"]
+    for a, m in sorted(scores.items(), key=lambda kv: -(kv[1].get("author_score") or -1)):
+        if not m["authored"]:
+            continue
+        s = m.get("author_score")
+        L.append(f"| `{a}` | {m['authored']} | {m['clean_merge_rate']:.0%} | {m['mean_rounds']:.2f} "
+                 f"| {m['escapes_per_story']:.2f} | {f'**{s}**' if s is not None else '—'} |")
+
+    L += ["", "## As reviewer", "",
+          "| Agent | Reviews | Ran tests | Findings/review | Blocker precision | Escapes missed | Score |",
+          "|---|---:|---:|---:|---:|---:|---:|"]
+    for a, m in sorted(scores.items(), key=lambda kv: -(kv[1].get("reviewer_score") or -1)):
+        if not m["reviewed"]:
+            continue
+        s = m.get("reviewer_score")
+        prec = m["blocker_precision"]
+        L.append(f"| `{a}` | {m['reviewed']} | {m['test_compliance']:.0%} | {m['findings_per_review']:.1f} "
+                 f"| {f'{prec:.0%}' if prec is not None else '—'} | {m['escapes_missed']} "
+                 f"| {f'**{s}**' if s is not None else '—'} |")
+
+    L += ["", "## How these are computed", "",
+          "**Author score** = 50 × clean-merge rate + 30 × round efficiency + 20 × (1 − escape rate).",
+          "A *clean merge* is one review round with no gate failure. *Round efficiency* is full at one",
+          "round and zero at three. An *escape* is a blocker Opus found at final review — meaning two",
+          "reviewers approved code that was wrong.", "",
+          "**Reviewer score** = 25 × test compliance + 30 × blocker precision + 30 × catch rate",
+          "+ 15 × thoroughness. *Precision* is blockers upheld ÷ blockers raised, so crying wolf costs.",
+          "*Catch rate* penalises escapes on stories this agent approved. *Thoroughness* saturates at two",
+          "findings per review — more than that is not better.", "",
+          "> Use these to route work, not to rank agents. A low author score on `money` stories and a high",
+          "> one on `crud` is a routing signal, not a verdict. Adjust `allowed_kinds` in `agents/agents.yaml`.", ""]
+    return "\n".join(L)
+
+
+def cmd_score(argv):
+    body = render_scores()
+    if "--check" in argv:
+        if SCORE_MD.exists() and SCORE_MD.read_text() == body + "\n":
+            print("scorecard in sync")
+            return
+        die("agents/SCORECARD.md is stale — run: agents/scripts/flo score")
+    SCORE_MD.write_text(body + "\n")
+    scores, _ = compute_scores()
+    n = len(load_scores()["stories"])
+    print(f"scorecard regenerated ({n} merged stories, {len(scores)} agents)")
+    if n:
+        print(render_scores().split("## How these")[0].split("## As author")[1].rstrip())
+
+
+# ── reporting ────────────────────────────────────────────────────────────────
+
+def render_roadmap(rm):
+    done = {s["id"] for _, s in stories(rm) if s["st"] == "done"}
+    icon = {"done": "✅", "in_progress": "🔨", "review": "👀", "design": "📐",
+            "blocked": "⛔", "todo": "⬜"}
+    lines = ["<!-- generated by agents/scripts/flo roadmap — do not edit by hand -->", ""]
+    for m in rm["milestones"]:
+        eps = [e for e in rm["epics"] if e["milestone"] == m["id"]]
+        total = sum(len(e["stories"]) for e in eps)
+        closed = sum(1 for e in eps for s in e["stories"] if s["st"] == "done")
+        lines += [f"#### {m['id']} — {m['name']} · {closed}/{total} done", "",
+                  f"> {m['goal']}", "",
+                  "| | Story | Epic | Kind | Size | Requirements | Depends on |",
+                  "|---|---|---|---|---|---|---|"]
+        for e in eps:
+            for s in e["stories"]:
+                dep = ", ".join(f"~~{d}~~" if d in done else d for d in s.get("dep", [])) or "—"
+                lines.append(f"| {icon.get(s['st'], '⬜')} | **{s['id']}** {s['t']} | {e['id']} "
+                             f"| {s['k']} | {s['s']} | {', '.join(s['reqs'])} | {dep} |")
+        lines.append("")
+    return "\n".join(lines)
+
+
+def cmd_roadmap(argv):
+    rm = roadmap()
+    body = render_roadmap(rm)
+    text = PLAN.read_text()
+    begin, end = "<!-- ROADMAP:BEGIN -->", "<!-- ROADMAP:END -->"
+    if begin not in text or end not in text:
+        die("ROADMAP markers missing from docs/claude-plan.md")
+    new = re.sub(re.escape(begin) + r".*?" + re.escape(end),
+                 f"{begin}\n{body}\n{end}", text, flags=re.S)
+    if "--check" in argv:
+        if new != text:
+            die("docs/claude-plan.md §5 is stale — run: agents/scripts/flo roadmap")
+        print("roadmap in sync")
+        return
+    PLAN.write_text(new)
+    update_memory(rm)
+    print(f"regenerated docs/claude-plan.md §5 ({sum(1 for _, s in stories(rm) if s['st'] == 'done')}"
+          f"/{sum(1 for _ in stories(rm))} done)")
+
+
+def update_memory(rm):
+    all_s = [s for _, s in stories(rm)]
+    done = [s for s in all_s if s["st"] == "done"]
+    flight = [s for s in all_s if s["st"] in ACTIVE and s["st"] != "blocked"]
+    blocked = [s for s in all_s if s["st"] == "blocked"]
+    cur = next((m for m in rm["milestones"]
+                if any(s["st"] != "done" for e in rm["epics"] if e["milestone"] == m["id"]
+                       for s in e["stories"])), rm["milestones"][-1])
+    block = "\n".join([
+        "## Current state", "",
+        "| | |", "|---|---|",
+        f"| Milestone | **{cur['id']} — {cur['name']}** |",
+        f"| Stories | {len(done)} / {len(all_s)} done |",
+        f"| Branch | {cur['branch']} |",
+        f"| In flight | {', '.join(s['id'] for s in flight) or '—'} |",
+        f"| Blocked | {', '.join(s['id'] for s in blocked) or '—'} |",
+    ])
+    text = MEMORY.read_text()
+    MEMORY.write_text(re.sub(r"<!-- STATE:BEGIN -->.*?<!-- STATE:END -->",
+                             f"<!-- STATE:BEGIN -->\n{block}\n<!-- STATE:END -->",
+                             text, flags=re.S))
+
+
+def cmd_status(argv):
+    rm = roadmap()
+    all_s = [s for _, s in stories(rm)]
+    print(f"XLR8 FLO — {sum(1 for s in all_s if s['st'] == 'done')}/{len(all_s)} stories done\n")
+    for m in rm["milestones"]:
+        eps = [e for e in rm["epics"] if e["milestone"] == m["id"]]
+        ss = [s for e in eps for s in e["stories"]]
+        d = sum(1 for s in ss if s["st"] == "done")
+        bar = "█" * round(20 * d / len(ss)) + "·" * (20 - round(20 * d / len(ss)))
+        print(f"  {m['id']}  {bar}  {d:>3}/{len(ss)}  {m['name']}")
+    live = [s for s in all_s if s["st"] in ACTIVE]
+    if live:
+        print("\nin flight:")
+        for s in live:
+            print(f"  {s['id']}  [{s['st']:<12}] {s['t']}")
+
+
+def cmd_budget(argv):
+    fleet, sp = load_yaml(FLEET), state().get("spend", {})
+    print(f"{'agent':<20}{'plan':<20}{'metered':<9}remaining")
+    for n, c in fleet["agents"].items():
+        if c.get("monthly_budget_usd"):
+            rem = f"${c['monthly_budget_usd'] - sp.get(n, 0.0):.2f} / ${c['monthly_budget_usd']}"
+        elif c.get("weekly_story_budget"):
+            rem = f"{c['weekly_story_budget'] - sp.get(n, 0)} stories this week"
+        elif c.get("metered") == "rate":
+            rem = "rate-limited — batch design, gate final review"
+        else:
+            rem = "unmetered"
+        print(f"{n:<20}{c['plan']:<20}{c.get('metered', 'none'):<9}{rem}")
+
+
+# ── board ────────────────────────────────────────────────────────────────────
+
+BOARD_CSS = """
+:root{--canvas:#F9FBFE;--sunken:#F1F4F8;--surface:#fff;--fg:#1A1F2A;--fg2:#565E6C;--fg3:#6D737F;
+--border:#E4E8EF;--bs:#CDD3DD;--ring:#4759D1;--pl:#4759D1;--dm:#8A3DB8;--cm:#0D7879;--fo:#596A83;
+--ok:#0A7E3A;--okT:#E2F7E5;--info:#0072AE;--infoT:#DFF3FF;--warn:#8F6200;--warnT:#FFEFD4;
+--dgr:#C72D31;--dgrT:#FFE9E6;--neu:#565E6C;--neuT:#F1F4F8;
+--sh:0 2px 4px rgb(26 31 42/.05),0 8px 16px rgb(26 31 42/.07);--lit:inset 0 1px 0 0 rgb(255 255 255/.9)}
+@media(prefers-color-scheme:dark){:root{--canvas:#090C13;--sunken:#04060C;--surface:#11151D;
+--fg:#F1F3F8;--fg2:#B7BCC7;--fg3:#8B93A0;--border:#242B37;--bs:#39424F;--ring:#879EF9;
+--pl:#879EF9;--dm:#C484F1;--cm:#3BCFD0;--fo:#92A6C4;--ok:#6AD987;--okT:#152E1B;--info:#66BFFF;
+--infoT:#0E2A3B;--warn:#FCBA43;--warnT:#302512;--dgr:#F98078;--dgrT:#361D1C;--neu:#B7BCC7;--neuT:#1A1F28;
+--sh:0 2px 4px rgb(2 4 9/.5),0 8px 16px rgb(2 4 9/.45);--lit:inset 0 1px 0 0 rgb(255 255 255/.06)}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--canvas);color:var(--fg);font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;
+font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+.w{max-width:1080px;margin:0 auto;padding:36px 24px 80px}
+h1{font-size:26px;font-weight:640;letter-spacing:-.025em;margin:0}
+h2{font-size:17px;font-weight:620;letter-spacing:-.018em;margin:0 0 14px}
+.mono{font-family:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;font-variant-numeric:tabular-nums}
+.eb{font-size:10px;font-weight:560;letter-spacing:.09em;text-transform:uppercase;color:var(--fg3)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh),var(--lit)}
+header{display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap;padding-bottom:22px;border-bottom:1px solid var(--border)}
+header .sp{flex:1}
+.stat{display:flex;flex-direction:column;gap:3px}
+.stat b{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:19px;font-weight:620;letter-spacing:-.02em}
+section{margin-top:34px}
+.chart{padding:18px 20px 10px}
+svg{display:block;width:100%;height:auto}
+.ms{margin-bottom:10px;overflow:hidden}
+details>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:13px 16px}
+details>summary::-webkit-details-marker{display:none}
+summary .caret{color:var(--fg3);transition:transform .15s cubic-bezier(.22,1,.36,1);flex:none}
+details[open]>summary .caret{transform:rotate(90deg)}
+summary .nm{font-weight:600;letter-spacing:-.01em}
+summary .sp{flex:1}
+.track{height:6px;border-radius:3px;background:var(--sunken);overflow:hidden;width:150px;flex:none}
+.fill{height:100%;border-radius:3px;background:var(--pl)}
+.cnt{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:var(--fg3);min-width:52px;text-align:right}
+.epic{border-top:1px solid var(--border);padding:2px 0}
+.epic>summary{padding:10px 16px 10px 34px;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td{padding:8px 16px;border-top:1px solid var(--border);vertical-align:top}
+tr:hover{background:var(--sunken)}
+td.id{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;color:var(--fg3);white-space:nowrap;width:82px}
+td.st{width:120px}
+td.meta{width:118px;text-align:right;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:var(--fg3);white-space:nowrap}
+.recap{display:block;color:var(--fg2);font-size:12.5px;margin-top:4px;line-height:1.55;max-width:62ch}
+.pill{display:inline-flex;align-items:center;gap:5px;height:21px;padding:0 8px;border-radius:6px;
+font-size:11px;font-weight:560;line-height:1;white-space:nowrap}
+.pill i{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.todo{color:var(--neu);background:var(--neuT)}.prog{color:var(--info);background:var(--infoT)}
+.rev{color:var(--info);background:var(--infoT)}.done{color:var(--ok);background:var(--okT)}
+.blk{color:var(--dgr);background:var(--dgrT)}.dsg{color:var(--warn);background:var(--warnT)}
+.you{border-left:3px solid var(--warn)}
+.you .row{display:flex;gap:12px;padding:13px 16px;border-top:1px solid var(--border);align-items:flex-start}
+.you .row:first-of-type{border-top:none}
+.you .q{flex:1}.you .q b{display:block;font-size:13px;margin-bottom:2px}
+.you .q span{font-size:12.5px;color:var(--fg2);line-height:1.55}
+.empty{padding:16px;color:var(--fg3);font-size:13px}
+.next .row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid var(--border)}
+.next .row:first-of-type{border-top:none}
+.next .cmd{margin-left:auto;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:var(--fg3);
+border:1px solid var(--bs);border-radius:6px;padding:3px 8px;white-space:nowrap}
+.tag{display:inline-block;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;
+color:var(--fg3);border:1px solid var(--border);border-radius:999px;padding:1px 7px;margin-left:5px}
+.sc{width:100%;border-collapse:collapse;font-size:12.5px}
+.sc th{text-align:left;font-size:10px;font-weight:560;letter-spacing:.085em;text-transform:uppercase;
+color:var(--fg3);padding:11px 16px 9px;border-bottom:1px solid var(--border)}
+.sc th.r,.sc td.r{text-align:right}
+.sc td{padding:9px 16px;border-top:1px solid var(--border)}
+.sc tr:first-child td{border-top:none}
+.sc .ag{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px}
+.scv{font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:620;font-size:13px}
+.g80{color:var(--ok)}.g60{color:var(--info)}.g0{color:var(--warn)}.gn{color:var(--fg3);font-weight:400}
+.spark{display:inline-block;width:60px;height:5px;border-radius:3px;background:var(--sunken);
+overflow:hidden;vertical-align:middle;margin-right:8px}
+.spark i{display:block;height:100%;border-radius:3px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:860px){.two{grid-template-columns:1fr}}
+.ok{border-left:3px solid var(--ok)}
+.ok .row{display:flex;gap:12px;padding:11px 16px;border-top:1px solid var(--border);align-items:baseline}
+.ok .row:first-of-type{border-top:none}
+.ok .row b{font-size:12.5px;font-weight:500}
+.ok .row span{font-size:11.5px;color:var(--fg3)}
+.ok .when{margin-left:auto;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;color:var(--fg3)}
+.hint{font-size:12px;color:var(--fg3);padding:10px 16px 0;line-height:1.55}
+footer{margin-top:44px;padding-top:20px;border-top:1px solid var(--border);color:var(--fg3);font-size:12px}
+"""
+
+def _pill(stt):
+    cls, label = {"todo": ("todo", "Todo"), "design": ("dsg", "Awaiting design"),
+                  "in_progress": ("prog", "In progress"), "review": ("rev", "In review"),
+                  "blocked": ("blk", "Blocked"), "done": ("done", "Done")}.get(stt, ("todo", stt))
+    return f'<span class="pill {cls}"><i></i>{label}</span>'
+
+
+def _esc(s):
+    return (str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            .replace('"', "&quot;"))
+
+
+def _burnup(rm, recaps):
+    """Cumulative completion per milestone — where we are, at a glance."""
+    ms = rm["milestones"]
+    W, H, pad = 720, 150, 26
+    totals, dones, x = [], [], []
+    run_t = run_d = 0
+    for m in ms:
+        eps = [e for e in rm["epics"] if e["milestone"] == m["id"]]
+        ss = [s for e in eps for s in e["stories"]]
+        run_t += len(ss); run_d += sum(1 for s in ss if s["st"] == "done")
+        totals.append(run_t); dones.append(run_d)
+    top = totals[-1] or 1
+    step = (W - pad * 2) / max(1, len(ms) - 1)
+    def pt(i, v): return (pad + i * step, H - pad - (v / top) * (H - pad * 2))
+    plan = " ".join(f"{a:.0f},{b:.0f}" for a, b in (pt(i, v) for i, v in enumerate(totals)))
+    act = " ".join(f"{a:.0f},{b:.0f}" for a, b in (pt(i, v) for i, v in enumerate(dones)))
+    labels = "".join(
+        f'<text x="{pt(i,0)[0]:.0f}" y="{H-8}" font-size="10" fill="var(--fg3)" '
+        f'text-anchor="middle">{m["id"]}</text>' for i, m in enumerate(ms))
+    dots = "".join(f'<circle cx="{a:.0f}" cy="{b:.0f}" r="3" fill="var(--ok)"/>'
+                   for a, b in (pt(i, v) for i, v in enumerate(dones)))
+    return f'''<svg viewBox="0 0 {W} {H}" role="img" aria-label="Cumulative stories planned versus delivered by milestone">
+  <polyline points="{plan}" fill="none" stroke="var(--bs)" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <polyline points="{act}" fill="none" stroke="var(--ok)" stroke-width="2"/>
+  {dots}{labels}
+  <text x="{pad}" y="16" font-size="10" fill="var(--fg3)">0 → {top} stories · dashed = scope, solid = delivered</text>
+</svg>'''
+
+
+def pending_on_human(rm, fleet):
+    """Only the things a person must resolve. Not agent work.
+
+    Each item carries a stable `key` and a `sig`. Acknowledging an item stores its
+    signature; if the underlying fact changes the ack goes stale and the item
+    returns. Acknowledging is not resolving, and the board says so.
+    """
+    items = []
+    for epic, s in stories(rm):
+        if s["st"] == "blocked":
+            q = None
+            wt = worktree_path(s["id"]) / "task.json"
+            if wt.exists():
+                q = (json.loads(wt.read_text()).get("notes") or {}).get("blocked")
+            items.append(dict(key=f"blocked:{s['id']}", sig=s["st"],
+                              kind="Decision needed", ref=s["id"], name=s["t"],
+                              why=q or "Story is blocked; the question is in its task packet."))
+    # a milestone fully done but not yet merged to main
+    for m in rm["milestones"]:
+        eps = [e for e in rm["epics"] if e["milestone"] == m["id"]]
+        ss = [s for e in eps for s in e["stories"]]
+        if ss and all(s["st"] == "done" for s in ss):
+            merged = git("branch", "--merged", "main", check=False)
+            if m["branch"] not in merged:
+                items.append(dict(key=f"pr:{m['id']}", sig=str(len(ss)),
+                                  kind="Open the milestone PR", ref=m["id"], name=m["name"],
+                                  why=f"Every story in {m['id']} is merged into {m['branch']}. "
+                                      f"It needs a pull request to main."))
+    # design packets missing for the milestone in progress
+    cur = next((m for m in rm["milestones"]
+                if any(s["st"] != "done" for e in rm["epics"] if e["milestone"] == m["id"]
+                       for s in e["stories"])), None)
+    if cur:
+        eps = [e for e in rm["epics"] if e["milestone"] == cur["id"]]
+        missing = [s["id"] for e in eps for s in e["stories"]
+                   if s["st"] == "todo" and not (ROOT / "design" / f"{s['id']}.md").exists()]
+        if missing:
+            items.append(dict(key=f"design:{cur['id']}", sig=str(len(missing)),
+                              kind="Run the design pass", ref=cur["id"], name=cur["name"],
+                              why=f"{len(missing)} stories have no design packet. "
+                                  f"Opus must run `flo design {cur['id']}` before any can start."))
+    # spend
+    sp = state().get("spend", {})
+    for name, cfg in fleet["agents"].items():
+        cap = cfg.get("monthly_budget_usd")
+        if cap and sp.get(name, 0) >= cap * 0.8:
+            items.append(dict(key=f"budget:{name}", sig=f"{sp.get(name,0):.0f}",
+                              kind="Budget nearly spent", ref=name, name=cfg["plan"],
+                              why=f"${sp.get(name,0):.2f} of ${cap} used. Raise the cap in "
+                                  f"agents.yaml or {name} drops out of the review rotation."))
+    return items
+
+
+def split_acked(items):
+    """Partition into (open, confirmed). An ack whose signature moved is dropped."""
+    acks = state().get("acks", {})
+    open_, done = [], []
+    for it in items:
+        a = acks.get(it["key"])
+        (done if a and a.get("sig") == it["sig"] else open_).append({**it, "ack": a})
+    return open_, done
+
+
+def cmd_ack(argv):
+    """flo ack <KEY|all> — acknowledge a pending item. Acknowledging is not resolving."""
+    if not argv:
+        items = pending_on_human(roadmap(), load_yaml(FLEET))
+        if not items:
+            print("nothing pending")
+            return
+        print("usage: flo ack <KEY>   (or `flo ack all`)\n")
+        for it in items:
+            print(f"  {it['key']:22} {it['kind']} · {it['ref']}")
+        return
+    rm, fleet = roadmap(), load_yaml(FLEET)
+    items = {i["key"]: i for i in pending_on_human(rm, fleet)}
+    keys = list(items) if argv[0] == "all" else [argv[0]]
+    unknown = [k for k in keys if k not in items]
+    if unknown:
+        die(f"unknown pending key(s): {', '.join(unknown)} — run `flo ack` to list them")
+    s = state()
+    acks = s.setdefault("acks", {})
+    stamp = git("log", "-1", "--format=%cI", check=False) or "unknown"
+    for k in keys:
+        acks[k] = {"sig": items[k]["sig"], "at": stamp}
+        print(f"confirmed  {k}  ({items[k]['kind']} · {items[k]['ref']})")
+    save_state(s)
+    print("\nAcknowledged, not resolved — these return if the underlying fact changes.")
+    cmd_board([])
+
+
+def cmd_unack(argv):
+    if not argv:
+        die("usage: flo unack <KEY|all>")
+    s = state()
+    acks = s.setdefault("acks", {})
+    for k in (list(acks) if argv[0] == "all" else [argv[0]]):
+        acks.pop(k, None)
+        print(f"reopened  {k}")
+    save_state(s)
+    cmd_board([])
+
+
+def cmd_board(argv):
+    rm, fleet = roadmap(), load_yaml(FLEET)
+    sc = {s["story"]: s for s in load_scores()["stories"]}
+    all_s = [s for _, s in stories(rm)]
+    done = [s for s in all_s if s["st"] == "done"]
+    active = [s for s in all_s if s["st"] in ACTIVE]
+    ready = [(e, s) for e, s in stories(rm) if s["st"] == "todo" and deps_satisfied(rm, s)]
+    pending, confirmed = split_acked(pending_on_human(rm, fleet))
+    pct = len(done) / len(all_s) * 100 if all_s else 0
+
+    parts = [f"<title>XLR8 FLO Board</title>", f"<style>{BOARD_CSS}</style>",
+             '<link rel="preconnect" href="https://fonts.googleapis.com">',
+             '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?'
+             'family=Inter:wght@400;500;560;600;620;640&family=JetBrains+Mono:wght@400;460;620&display=swap">',
+             '<div class="w">', "<header>",
+             f'<div><p class="eb">Delivery board</p><h1>XLR8 FLO</h1></div><div class="sp"></div>',
+             f'<div class="stat"><span class="eb">Delivered</span><b>{len(done)}/{len(all_s)}</b></div>',
+             f'<div class="stat"><span class="eb">Complete</span><b>{pct:.0f}%</b></div>',
+             f'<div class="stat"><span class="eb">In flight</span><b>{len(active)}</b></div>',
+             f'<div class="stat"><span class="eb">Ready to start</span><b>{len(ready)}</b></div>',
+             f'<div class="stat"><span class="eb">On you</span><b>{len(pending)}</b></div>',
+             "</header>"]
+
+    parts += ['<section><h2>Progress</h2><div class="card chart">', _burnup(rm, sc), "</div></section>"]
+
+    # ── pending on the human ──
+    parts.append('<section><h2>Waiting on you</h2><div class="card you">')
+    if pending:
+        for it in pending:
+            parts.append(f'<div class="row"><div class="q"><b>{_esc(it["kind"])} · '
+                         f'<span class="mono">{_esc(it["ref"])}</span> {_esc(it["name"])}</b>'
+                         f'<span>{_esc(it["why"])}</span>'
+                         f'<span class="mono" style="font-size:10.5px;opacity:.7">'
+                         f'flo ack {_esc(it["key"])}</span></div></div>')
+    else:
+        parts.append('<div class="empty">Nothing open. The fleet is unblocked.</div>')
+    parts.append("</div>")
+    if confirmed:
+        parts.append('<div class="card ok" style="margin-top:12px">')
+        for it in confirmed:
+            when = (it.get("ack") or {}).get("at", "")[:10]
+            parts.append(f'<div class="row"><b>✓ {_esc(it["kind"])} · '
+                         f'<span class="mono">{_esc(it["ref"])}</span></b>'
+                         f'<span>{_esc(it["why"])}</span>'
+                         f'<span class="when">confirmed {_esc(when)}</span></div>')
+        parts.append('<p class="hint">Confirmed, not resolved — each returns automatically if its '
+                     'underlying fact changes. Reopen with <span class="mono">flo unack &lt;key&gt;</span>.</p>')
+        parts.append("</div>")
+    parts.append("</section>")
+
+    # ── next up ──
+    parts.append('<section><h2>Next up</h2><div class="card next">')
+    if ready:
+        for e, s in ready[:6]:
+            parts.append(f'<div class="row">{_pill(s["st"])}<span class="mono" style="font-size:11.5px;'
+                         f'color:var(--fg3)">{s["id"]}</span><span>{_esc(s["t"])}</span>'
+                         f'<span class="cmd">flo start {s["id"]}</span></div>')
+    else:
+        parts.append('<div class="empty">No story has its dependencies satisfied.</div>')
+    parts.append("</div></section>")
+
+    # ── agent scores ──
+    scores, floor = compute_scores()
+    parts.append('<section><h2>Agent performance</h2><div class="two">')
+
+    def _grade(v):
+        return "gn" if v is None else ("g80" if v >= 75 else "g60" if v >= 55 else "g0")
+
+    def _cell(v):
+        cls = _grade(v)
+        if v is None:
+            return '<span class="scv gn">—</span>'
+        hue = "var(--ok)" if v >= 75 else "var(--info)" if v >= 55 else "var(--warn)"
+        return (f'<span class="spark"><i style="width:{v:.0f}%;background:{hue}"></i></span>'
+                f'<span class="scv {cls}">{v:.0f}</span>')
+
+    auth = [(a, m) for a, m in scores.items() if m.get("authored")]
+    rev = [(a, m) for a, m in scores.items() if m.get("reviewed")]
+
+    parts.append('<div class="card"><table class="sc"><tr><th>As author</th>'
+                 '<th class="r">Stories</th><th class="r">Clean</th><th class="r">Rounds</th>'
+                 '<th class="r">Score</th></tr>')
+    if auth:
+        for a, m in sorted(auth, key=lambda kv: -(kv[1].get("author_score") or -1)):
+            parts.append(f'<tr><td class="ag">{_esc(a)}</td><td class="r">{m["authored"]}</td>'
+                         f'<td class="r">{m["clean_merge_rate"]:.0%}</td>'
+                         f'<td class="r">{m["mean_rounds"]:.2f}</td>'
+                         f'<td class="r">{_cell(m.get("author_score"))}</td></tr>')
+    else:
+        parts.append('<tr><td colspan="5" class="empty">No stories merged yet.</td></tr>')
+    parts.append(f'</table><p class="hint">Score = 50 × clean-merge + 30 × round efficiency '
+                 f'+ 20 × (1 − escape rate). Shown once an agent has {floor}+ stories.</p></div>')
+
+    parts.append('<div class="card"><table class="sc"><tr><th>As reviewer</th>'
+                 '<th class="r">Reviews</th><th class="r">Tests</th><th class="r">Missed</th>'
+                 '<th class="r">Score</th></tr>')
+    if rev:
+        for a, m in sorted(rev, key=lambda kv: -(kv[1].get("reviewer_score") or -1)):
+            parts.append(f'<tr><td class="ag">{_esc(a)}</td><td class="r">{m["reviewed"]}</td>'
+                         f'<td class="r">{m["test_compliance"]:.0%}</td>'
+                         f'<td class="r">{m["escapes_missed"]}</td>'
+                         f'<td class="r">{_cell(m.get("reviewer_score"))}</td></tr>')
+    else:
+        parts.append('<tr><td colspan="5" class="empty">No reviews recorded yet.</td></tr>')
+    parts.append(f'</table><p class="hint">Score = 25 × test compliance + 30 × blocker precision '
+                 f'+ 30 × catch rate + 15 × thoroughness. <em>Missed</em> counts escapes on gated '
+                 f'stories this agent approved.</p></div>')
+    parts.append('</div><p class="hint" style="padding-left:0">These route work; they do not rank '
+                 'agents. A low author score on one <span class="mono">kind</span> and a high one on '
+                 'another is a signal to change <span class="mono">allowed_kinds</span> in '
+                 '<span class="mono">agents/agents.yaml</span>.</p></section>')
+
+    # ── drilldown ──
+    parts.append("<section><h2>Milestones</h2>")
+    for m in rm["milestones"]:
+        eps = [e for e in rm["epics"] if e["milestone"] == m["id"]]
+        ms_s = [s for e in eps for s in e["stories"]]
+        d = sum(1 for s in ms_s if s["st"] == "done")
+        w = (d / len(ms_s) * 100) if ms_s else 0
+        opn = "open" if any(s["st"] != "done" for s in ms_s) and d < len(ms_s) else ""
+        parts.append(
+            f'<details class="card ms" {opn}><summary>'
+            f'<span class="caret">▸</span><span class="nm">{m["id"]} · {_esc(m["name"])}</span>'
+            f'<span class="sp"></span><span class="track"><span class="fill" style="width:{w:.0f}%"></span></span>'
+            f'<span class="cnt">{d}/{len(ms_s)}</span></summary>')
+        for e in eps:
+            ed = sum(1 for s in e["stories"] if s["st"] == "done")
+            ew = ed / len(e["stories"]) * 100
+            parts.append(
+                f'<details class="epic"><summary><span class="caret">▸</span>'
+                f'<span class="mono" style="font-size:11.5px;color:var(--fg3)">{e["id"]}</span>'
+                f'<span>{_esc(e["name"])}</span><span class="sp"></span>'
+                f'<span class="track" style="width:88px"><span class="fill" style="width:{ew:.0f}%"></span></span>'
+                f'<span class="cnt">{ed}/{len(e["stories"])}</span></summary><table>')
+            for s in e["stories"]:
+                rec = sc.get(s["id"], {})
+                recap = rec.get("recap")
+                sess = rec.get("sessions") or {}
+                who = rec.get("author", "")
+                meta = (f'{_esc(who)}<br>{rec["rounds"]} round'
+                        f'{"s" if rec.get("rounds",1) != 1 else ""}') if rec else \
+                       "".join(f'<span class="tag">{t}</span>' for t in s.get("tags", []))
+                body = _esc(s["t"])
+                if recap:
+                    body += f'<span class="recap">{_esc(recap)}</span>'
+                if sess:
+                    ids = " · ".join(f'{a}:{v["id"][:8]}' for a, v in sorted(sess.items()) if v.get("id"))
+                    if ids:
+                        body += f'<span class="recap mono" style="font-size:10.5px;opacity:.75">{_esc(ids)}</span>'
+                parts.append(f'<tr><td class="id">{s["id"]}</td><td class="st">{_pill(s["st"])}</td>'
+                             f'<td>{body}</td><td class="meta">{meta}</td></tr>')
+            parts.append("</table></details>")
+        parts.append("</details>")
+    parts.append("</section>")
+
+    parts.append(f'<footer>Generated by <span class="mono">flo board</span> from '
+                 f'<span class="mono">agents/roadmap.yaml</span> and '
+                 f'<span class="mono">agents/scorecard.json</span>. '
+                 f'Gitignored — regenerate any time, never commit.</footer></div>')
+    BOARD.write_text("\n".join(parts) + "\n")
+    print(f"board.html regenerated — {len(done)}/{len(all_s)} delivered, {len(ready)} ready, "
+          f"{len(pending)} waiting on you"
+          + (f", {len(confirmed)} confirmed" if confirmed else ""))
+
+
+# ── shells ───────────────────────────────────────────────────────────────────
+
+CHECKS = [
+    ("ruff", ["ruff", "check", "apps/api"]),
+    ("mypy", ["mypy", "--strict", "apps/api/src/flo"]),
+    ("boundaries", ["lint-imports"]),
+    ("pytest", ["pytest", "-q", "apps/api"]),
+    ("eslint", ["npm", "--prefix", "apps/web", "run", "lint"]),
+    ("tsc", ["npm", "--prefix", "apps/web", "run", "typecheck"]),
+    ("vitest", ["npm", "--prefix", "apps/web", "run", "test"]),
+    ("e2e+axe", ["npm", "--prefix", "apps/web", "run", "test:e2e"]),
+    ("secrets", ["gitleaks", "detect", "--no-banner"]),
+]
+
+
+def run_check(cwd=None):
+    cwd = cwd or ROOT
+    ok = True
+    for name, cmd in CHECKS:
+        r = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+        if r.returncode == 127:
+            print(f"  ?  {name:<12} not installed (M0 not complete)")
+            continue
+        print(f"  {'✓' if not r.returncode else '✗'}  {name}")
+        if r.returncode:
+            print((r.stdout + r.stderr).strip()[-2000:])
+            ok = False
+    return ok
+
+
+def cmd_check(argv):
+    sys.exit(0 if run_check(Path.cwd()) else 1)
+
+
+def cmd_up(argv):
+    compose = ROOT / "compose.yaml"
+    if not compose.exists():
+        die("compose.yaml missing — story E01-S02 delivers it")
+    os.execvp("podman", ["podman", "compose", "-f", str(compose), "up", "-d"])
+
+
+def cmd_design(argv):
+    if not argv:
+        die("usage: flo design <MILESTONE_ID>")
+    mid = argv[0]
+    rm = roadmap()
+    eps = [e for e in rm["epics"] if e["milestone"] == mid]
+    if not eps:
+        die(f"unknown milestone {mid}")
+    ss = [(e, s) for e in eps for s in e["stories"]]
+    print(f"OPUS BATCH DESIGN — {mid} ({len(ss)} stories)\n")
+    print("Write design/<STORY_ID>.md for each story below, in this order, in ONE pass.")
+    print("Format: agents/plan.md §3. Inline the requirement text — coding agents must not")
+    print("need to open docs/requirements.md. If a packet needs an undecided business rule,")
+    print("mark the story blocked and surface the question. Never guess at money, state")
+    print("transitions, or authorization.\n")
+    for e, s in ss:
+        print(f"  {s['id']}  [{s['k']}/{s['s']}] {s['t']}")
+        print(f"           requirements: {', '.join(s['reqs'])}")
+        if s.get("dep"):
+            print(f"           after: {', '.join(s['dep'])}")
+
+
+COMMANDS = {
+    "next": cmd_next, "start": cmd_start, "assign": cmd_assign, "submit": cmd_submit,
+    "review": cmd_review, "gate": cmd_gate, "final": cmd_final, "escalate": cmd_escalate,
+    "done": cmd_done, "design": cmd_design, "status": cmd_status, "budget": cmd_budget,
+    "roadmap": cmd_roadmap, "score": cmd_score, "session": cmd_session, "board": cmd_board, "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "up": cmd_up,
+}
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help", "help"):
+        print(__doc__)
+        sys.exit(0)
+    cmd = sys.argv[1]
+    if cmd not in COMMANDS:
+        die(f"unknown command {cmd!r}\n{__doc__}")
+    COMMANDS[cmd](sys.argv[2:])

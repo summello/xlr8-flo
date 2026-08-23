@@ -1,0 +1,262 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'milestone/**']
+  pull_request:
+
+# Free tier is 2000 minutes/month (OPS-001). Superseded runs are cancelled.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: '3.12'
+  NODE_VERSION: '22'
+
+jobs:
+  # hashFiles() cannot be used in a job-level `if:` — it resolves against the
+  # runner workspace, which is empty before any checkout, so it always returns ''.
+  # Detect after checkout and publish outputs instead.
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.paths.outputs.api }}
+      web: ${{ steps.paths.outputs.web }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: paths
+        run: |
+          echo "api=$([ -f apps/api/pyproject.toml ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "web=$([ -f apps/web/package.json ]  && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+  governance:
+    # Cheapest job: enforces the AGENTS.md rules that need no build.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # story-id check needs the base ref, not a shallow clone
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: pip install pyyaml
+
+      - name: Roadmap is the source of truth and is current
+        run: agents/scripts/flo roadmap --check
+
+      - name: Agent scorecard is current
+        run: agents/scripts/flo score --check
+
+      - name: Roadmap is internally consistent
+        run: |
+          python3 - <<'PY'
+          import sys, yaml
+          rm = yaml.safe_load(open('agents/roadmap.yaml'))
+          stories = {s['id']: s for e in rm['epics'] for s in e['stories']}
+          miles = {m['id'] for m in rm['milestones']}
+          bad = []
+          if len(stories) != sum(len(e['stories']) for e in rm['epics']):
+              bad.append('duplicate story ids')
+          for e in rm['epics']:
+              if e['milestone'] not in miles:
+                  bad.append(f"{e['id']}: unknown milestone {e['milestone']}")
+              for s in e['stories']:
+                  for d in s.get('dep') or []:
+                      if d not in stories:
+                          bad.append(f"{s['id']}: unknown dependency {d}")
+                  if not s.get('reqs'):
+                      bad.append(f"{s['id']}: cites no requirement")
+          # dependency cycles
+          seen, stack = set(), set()
+          def walk(i):
+              if i in stack: bad.append(f'dependency cycle at {i}'); return
+              if i in seen: return
+              stack.add(i)
+              for d in stories[i].get('dep') or []:
+                  if d in stories: walk(d)
+              stack.discard(i); seen.add(i)
+          for i in stories: walk(i)
+          for b in dict.fromkeys(bad): print(f'::error::{b}')
+          sys.exit(1 if bad else 0)
+          PY
+
+      - name: Every commit references a story id
+        if: github.event_name == 'pull_request'
+        run: |
+          # Milestone PRs preserve one squashed commit per story (AGENTS.md §5).
+          git fetch --no-tags --depth=0 origin "${{ github.base_ref }}"
+          bad=0
+          while read -r sha subject; do
+            case "$subject" in
+              E[0-9][0-9]-S[0-9][0-9]:*|Merge*) ;;
+              *) echo "::error::commit $sha has no story id: $subject"; bad=1 ;;
+            esac
+          done < <(git log --format='%h %s' "origin/${{ github.base_ref }}..HEAD")
+          exit $bad
+
+      - name: No story marked done without its commit
+        run: |
+          python3 - <<'PY'
+          import re, subprocess, sys, yaml
+          rm = yaml.safe_load(open('agents/roadmap.yaml'))
+          done = {s['id'] for e in rm['epics'] for s in e['stories'] if s['st'] == 'done'}
+          log = subprocess.run(['git','log','--format=%s'], capture_output=True, text=True).stdout
+          missing = sorted(done - set(re.findall(r'^(E\d\d-S\d\d):', log, re.M)))
+          if missing:
+              print(f"::error::marked done with no commit: {', '.join(missing)}")
+              sys.exit(1)
+          print(f'{len(done)} done stories all have commits')
+          PY
+
+  backend:
+    runs-on: ubuntu-latest
+    needs: [detect, governance]
+    if: needs.detect.outputs.api == 'true'
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: flo_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flo_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: pip install -e 'apps/api[dev]'
+      - run: ruff check apps/api
+      - run: mypy --strict apps/api/src/flo
+
+      - name: Module boundaries (AGENTS.md 3.3)
+        run: lint-imports
+
+      - name: No float in money modules (AGENTS.md 3.1)
+        run: |
+          set -euo pipefail
+          missing=0
+          for d in budget purchasing sourcing requisitions; do
+            [ -d "apps/api/src/flo/modules/$d" ] || { echo "::notice::module $d not built yet"; missing=1; }
+          done
+          [ "$missing" = 1 ] && exit 0
+          if grep -rnE '\bfloat\(|:[[:space:]]*float\b' \
+               apps/api/src/flo/modules/budget \
+               apps/api/src/flo/modules/purchasing \
+               apps/api/src/flo/modules/sourcing \
+               apps/api/src/flo/modules/requisitions; then
+            echo "::error::float is banned in money modules - use Decimal"; exit 1
+          fi
+
+      - run: pytest -q apps/api --cov=flo --cov-report=term-missing
+
+      - name: Cross-tenant isolation suite (TEN-010)
+        run: pytest -q apps/api/tests/isolation
+
+  frontend:
+    runs-on: ubuntu-latest
+    needs: [detect, governance]
+    if: needs.detect.outputs.web == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: npm --prefix apps/web ci
+      - run: npm --prefix apps/web run lint
+      - run: npm --prefix apps/web run typecheck
+
+      - name: Generated API client is current (AGENTS.md 3.4)
+        run: |
+          npm --prefix apps/web run generate:api
+          git diff --exit-code apps/web/src/api/generated \
+            || { echo "::error::generated client is stale - run npm run generate:api"; exit 1; }
+
+      - name: No hardcoded colour outside the token file (design-system MASTER 2.7)
+        run: |
+          set -euo pipefail
+          if grep -rnE '#[0-9a-fA-F]{6}\b|oklch\(' apps/web/src \
+               --include='*.tsx' --include='*.ts' --include='*.css' \
+               --exclude='tokens.css'; then
+            echo "::error::raw colour outside tokens.css - use a design token"; exit 1
+          fi
+
+      - run: npm --prefix apps/web run test
+
+      - name: E2E and accessibility (A11Y-001)
+        run: npm --prefix apps/web run test:e2e
+
+  security:
+    runs-on: ubuntu-latest
+    needs: governance
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: aquasecurity/trivy-action@0.28.0     # pinned, not @master (SEC-013)
+        with:
+          scan-type: fs
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+          ignore-unfixed: true
+
+  deploy:
+    # Only main deploys. Milestone branches build but never release.
+    # `always() && !failure() && !cancelled()` so a legitimately skipped
+    # backend/frontend job does not also skip the deploy.
+    runs-on: ubuntu-latest
+    needs: [detect, backend, frontend, security]
+    if: |
+      always() && !failure() && !cancelled()
+      && github.ref == 'refs/heads/main'
+      && github.event_name == 'push'
+      && needs.detect.outputs.api == 'true'
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SA }}
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Migrate then deploy API
+        run: |
+          gcloud run jobs execute flo-migrate --region us-central1 --wait
+          gcloud run deploy flo-api --region us-central1 \
+            --source apps/api --min-instances 0 --concurrency 80 \
+            --set-secrets DATABASE_URL=flo-database-url:latest
+
+      - name: Prune registry to 3 images (Artifact Registry free tier is 0.5 GB)
+        run: |
+          gcloud artifacts docker images list \
+            "us-central1-docker.pkg.dev/${GCP_PROJECT}/flo/flo-api" \
+            --sort-by=~CREATE_TIME --format='value(version)' | tail -n +4 \
+            | xargs -r -I{} gcloud artifacts docker images delete \
+                "us-central1-docker.pkg.dev/${GCP_PROJECT}/flo/flo-api@{}" --quiet
+
+      - name: Deploy SPA
+        if: needs.detect.outputs.web == 'true'
+        run: |
+          npm --prefix apps/web ci && npm --prefix apps/web run build
+          npx wrangler pages deploy apps/web/dist --project-name flo-web
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

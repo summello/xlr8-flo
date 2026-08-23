@@ -1,0 +1,2291 @@
+# XLR8 FLO product roadmap — SINGLE SOURCE OF TRUTH.
+# Rendered into docs/claude-plan.md §5 by: agents/scripts/flo roadmap
+# CI fails if the rendered table drifts:   agents/scripts/flo roadmap --check
+# Status is set by flo done; do not hand-edit status.
+#
+# story: id | t=title | k=kind | s=size | tags | reqs | dep | st=status
+#   kind:   crud ui api engine ledger concurrency migration security test docs chore
+#   size:   S M L
+#   status: todo | design | in_progress | review | blocked | done
+#   tags drive Opus final review: money auth security migration ui concurrency
+
+version: 1
+generated_note: 154 stories across 6 milestones. Order is dependency order.
+
+milestones:
+  - id: M0
+    name: Rails
+    branch: milestone/M0-rails
+    goal: A deployed, empty, production-shaped application. No business value,
+      everything the business logic stands on.
+  - id: M1
+    name: Budget spine
+    branch: milestone/M1-budget-spine
+    goal: The trustworthy system of record. Projects, hierarchy and the complete
+      budget ledger.
+  - id: M2
+    name: Governed demand
+    branch: milestone/M2-governed-demand
+    goal: Requisitions that reserve real money, and the approval engine that
+      authorizes them.
+  - id: M3
+    name: First sellable release
+    branch: milestone/M3-sellable
+    goal: Vendors, RFQs, awards and purchase orders by email. Closes the money loop
+      end to end.
+  - id: M4
+    name: Full Phase-1 scope
+    branch: milestone/M4-phase1-complete
+    goal: Assets, reporting, custom fields, search and notifications. Completes
+      requirements.md Phase 1.
+  - id: M5
+    name: Customer-ready
+    branch: milestone/M5-customer-ready
+    goal: Self-serve tenancy, verification, backup evidence, legal surface,
+      graduation instrumentation.
+
+epics:
+
+  # ─────────────────────────────── M0 — Rails ───────────────────────────────
+
+  - id: E01
+    name: Platform & delivery
+    milestone: M0
+    stories:
+      - id: E01-S01
+        t: Monorepo skeleton, tooling, ruff/mypy/eslint/tsc config
+        k: chore
+        s: M
+        tags: []
+        reqs:
+          - COMP-004
+        dep: []
+        st: todo
+      - id: E01-S02
+        t: 'Local stack: Postgres 17 + MinIO + Mailpit via one command'
+        k: chore
+        s: M
+        tags: []
+        reqs:
+          - OPS-007
+        dep:
+          - E01-S01
+        st: todo
+      - id: E01-S03
+        t: API container image, slim multi-stage, non-root, health endpoints
+        k: chore
+        s: M
+        tags:
+          - security
+        reqs:
+          - REL-003
+        dep:
+          - E01-S01
+        st: todo
+      - id: E01-S04
+        t: 'CI: lint, types, tests, gitleaks, import-linter, roadmap drift check'
+        k: chore
+        s: L
+        tags:
+          - security
+        reqs:
+          - SEC-012
+        dep:
+          - E01-S03
+        st: todo
+      - id: E01-S05
+        t: Deploy API to Cloud Run and SPA to Cloudflare Pages from CI
+        k: chore
+        s: L
+        tags:
+          - security
+        reqs:
+          - SEC-003
+          - SEC-005
+          - COMP-004
+        dep:
+          - E01-S04
+        st: todo
+      - id: E01-S06
+        t: Neon + R2 + Secret Manager wiring, infra/SETUP.md, registry pruning
+        k: chore
+        s: M
+        tags:
+          - security
+        reqs:
+          - SEC-005
+          - OPS-001
+        dep:
+          - E01-S05
+        st: todo
+
+  - id: E02
+    name: Identity & access
+    milestone: M0
+    stories:
+      - id: E02-S01
+        t: IdentityProvider port + LocalIdentityProvider, argon2id, NIST password policy
+        k: security
+        s: L
+        tags:
+          - auth
+          - security
+        reqs:
+          - AUTH-003
+          - AUTH-004
+          - AUTH-005
+          - AUTH-007
+          - D-05
+        dep:
+          - E01-S02
+        st: todo
+      - id: E02-S02
+        t: Server sessions, httpOnly cookies, CSRF, idle and absolute timeout,
+          revocation
+        k: security
+        s: L
+        tags:
+          - auth
+          - security
+        reqs:
+          - AUTH-009
+          - AUTH-010
+          - SEC-007
+        dep:
+          - E02-S01
+        st: todo
+      - id: E02-S03
+        t: 'Password reset: single-use short-lived tokens, no account enumeration'
+        k: security
+        s: M
+        tags:
+          - auth
+          - security
+        reqs:
+          - AUTH-007
+          - AUTH-008
+        dep:
+          - E02-S02
+        st: todo
+      - id: E02-S04
+        t: TOTP MFA, mandatory for privileged roles, step-up re-auth for high-risk
+          actions
+        k: security
+        s: L
+        tags:
+          - auth
+          - security
+        reqs:
+          - AUTH-006
+          - SEC-009
+        dep:
+          - E02-S02
+        st: todo
+      - id: E02-S05
+        t: 'RBAC: roles, permissions, org/BU/project/record/action scope, default-deny'
+        k: security
+        s: L
+        tags:
+          - auth
+          - security
+        reqs:
+          - USR-001
+          - USR-002
+          - USR-003
+          - USR-004
+          - USR-005
+          - USR-006
+        dep:
+          - E02-S02
+          - E03-S02
+        st: todo
+      - id: E02-S06
+        t: Effective-access explorer endpoint and screen
+        k: api
+        s: M
+        tags:
+          - auth
+        reqs:
+          - USR-010
+          - USR-008
+          - USR-009
+        dep:
+          - E02-S05
+        st: todo
+
+  - id: E03
+    name: Application kernel
+    milestone: M0
+    stories:
+      - id: E03-S01
+        t: 'Money primitives: Decimal, NUMERIC(18,4), central rounding, float lint ban'
+        k: ledger
+        s: M
+        tags:
+          - money
+        reqs:
+          - FIN-001
+          - FIN-002
+          - FIN-009
+        dep:
+          - E01-S01
+        st: todo
+      - id: E03-S02
+        t: 'Tenancy kernel: session org_id, RLS SET LOCAL, scoped repository base'
+        k: security
+        s: L
+        tags:
+          - security
+          - auth
+        reqs:
+          - SEC-008
+          - ACC-004
+          - D-06
+        dep:
+          - E01-S02
+        st: todo
+      - id: E03-S03
+        t: RFC 9457 problem details, error taxonomy, no internal disclosure
+        k: api
+        s: M
+        tags:
+          - security
+        reqs:
+          - ARCH-007
+          - SEC-011
+          - UX-005
+        dep:
+          - E01-S01
+        st: todo
+      - id: E03-S04
+        t: 'Audit trail: append-only table, triggers, before/after, correlation id'
+        k: security
+        s: L
+        tags:
+          - security
+          - migration
+        reqs:
+          - AUD-001
+          - AUD-002
+          - AUD-003
+          - AUD-004
+          - AUD-006
+          - AUD-010
+        dep:
+          - E03-S02
+        st: todo
+      - id: E03-S05
+        t: Idempotency middleware keyed on (org, key, body hash)
+        k: concurrency
+        s: M
+        tags:
+          - money
+          - concurrency
+        reqs:
+          - DATA-003
+          - FIN-012
+          - WF-004
+        dep:
+          - E03-S03
+        st: todo
+      - id: E03-S06
+        t: Job queue (SKIP LOCKED), outbox, cron tick endpoint, Storage and Email ports
+        k: engine
+        s: L
+        tags:
+          - security
+        reqs:
+          - ARCH-006
+          - REL-007
+          - PERF-004
+          - COL-006
+          - D-07
+          - D-08
+          - D-10
+        dep:
+          - E03-S04
+        st: todo
+
+  - id: E04
+    name: Design system & shell
+    milestone: M0
+    stories:
+      - id: E04-S01
+        t: Design tokens, Tailwind v4 setup, light/dark, neutral chrome palette
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - UX-006
+          - A11Y-005
+        dep:
+          - E01-S01
+        st: todo
+      - id: E04-S02
+        t: 'App shell: nav, breadcrumbs, command palette, focus management, skip links'
+        k: ui
+        s: L
+        tags:
+          - ui
+        reqs:
+          - UX-001
+          - XFN-010
+          - A11Y-002
+        dep:
+          - E04-S01
+        st: todo
+      - id: E04-S03
+        t: 'Data grid: TanStack Table, virtualization, server filter/sort, saved views,
+          grid semantics'
+        k: ui
+        s: L
+        tags:
+          - ui
+        reqs:
+          - XFN-002
+          - XFN-003
+          - PERF-005
+          - A11Y-008
+        dep:
+          - E04-S02
+        st: todo
+      - id: E04-S04
+        t: OpenAPI to TS client generation, forms kit, a11y harness (axe + keyboard) in
+          CI
+        k: ui
+        s: L
+        tags:
+          - ui
+        reqs:
+          - A11Y-001
+          - A11Y-006
+          - A11Y-010
+          - XFN-008
+        dep:
+          - E04-S03
+          - E03-S03
+        st: todo
+
+      - id: E04-S05
+        t: "StatusPill primitive: closed per-document-type tone map, icon always, never author-coloured"
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - TAG-001
+          - TAG-002
+          - TAG-003
+          - A11Y-004
+        dep:
+          - E04-S01
+        st: todo
+      - id: E04-S06
+        t: "Material layer: tinted shadows, lit edge, grain, honest glass, glow focus ring"
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - UX-006
+          - A11Y-005
+        dep:
+          - E04-S01
+        st: todo
+
+  # ────────────────────────── M1 — Budget spine ──────────────────────────
+
+  - id: E05
+    name: Organization & master data
+    milestone: M1
+    stories:
+      - id: E05-S01
+        t: Organization and BU/OU with unique codes, settings precedence
+        k: crud
+        s: M
+        tags: []
+        reqs:
+          - ORG-001
+          - ORG-002
+          - ORG-012
+        dep:
+          - E02-S05
+        st: todo
+      - id: E05-S02
+        t: Bill To / Ship To addresses with effective dates
+        k: crud
+        s: S
+        tags: []
+        reqs:
+          - ORG-005
+        dep:
+          - E05-S01
+        st: todo
+      - id: E05-S03
+        t: 'Master data: departments, ledger accounts, UoM, tax codes, payment terms,
+          categories'
+        k: crud
+        s: L
+        tags: []
+        reqs:
+          - ORG-010
+          - ORG-011
+          - ORG-009
+          - XFN-009
+        dep:
+          - E05-S01
+        st: todo
+      - id: E05-S04
+        t: Fiscal calendar and period open/close with authorization and audit
+        k: engine
+        s: M
+        tags:
+          - money
+        reqs:
+          - BUD-010
+          - FIN-010
+        dep:
+          - E05-S01
+        st: todo
+      - id: E05-S05
+        t: 'FX: ECB daily rate ingest, rate table, effective dating, missing-rate block'
+        k: engine
+        s: M
+        tags:
+          - money
+        reqs:
+          - FX-001
+          - FX-002
+          - FX-003
+          - FX-004
+          - FIN-003
+        dep:
+          - E03-S06
+        st: todo
+
+  - id: E06
+    name: Projects
+    milestone: M1
+    stories:
+      - id: E06-S01
+        t: Project entity, scoped numbering sequence, department and ledger account
+        k: crud
+        s: M
+        tags: []
+        reqs:
+          - PROJ-001
+          - PROJ-014
+          - PROJ-019
+          - SEQ-001
+          - SEQ-002
+          - SEQ-003
+          - SEQ-004
+        dep:
+          - E05-S03
+        st: todo
+      - id: E06-S02
+        t: Five-level hierarchy with recursive CTE traversal and depth guard
+        k: engine
+        s: L
+        tags: []
+        reqs:
+          - PROJ-004
+          - PROJ-005
+        dep:
+          - E06-S01
+        st: todo
+      - id: E06-S03
+        t: Project lifecycle state machine with permission and budget-effect enforcement
+        k: engine
+        s: L
+        tags: []
+        reqs:
+          - PROJ-012
+          - PROJ-013
+          - PROJ-018
+          - WF-002
+          - WF-006
+        dep:
+          - E06-S01
+        st: todo
+      - id: E06-S04
+        t: Roll-down and roll-up funding modes, set per BU/OU and inherited
+        k: ledger
+        s: L
+        tags:
+          - money
+        reqs:
+          - PROJ-006
+          - PROJ-007
+          - PROJ-008
+        dep:
+          - E06-S02
+          - E07-S02
+        st: todo
+      - id: E06-S05
+        t: Phases, milestones, planned vs actual dates, owner, sponsor, health, percent
+          complete
+        k: crud
+        s: M
+        tags: []
+        reqs:
+          - PROJ-011
+          - PROJ-015
+        dep:
+          - E06-S01
+        st: todo
+      - id: E06-S06
+        t: Project risks with likelihood, impact, owner, mitigation, due date, status
+        k: crud
+        s: M
+        tags: []
+        reqs:
+          - PROJ-016
+        dep:
+          - E06-S01
+        st: todo
+      - id: E06-S07
+        t: Project list and detail screens, filter/sort/group/search, saved views
+        k: ui
+        s: L
+        tags:
+          - ui
+        reqs:
+          - PROJ-020
+          - XFN-002
+        dep:
+          - E06-S03
+          - E04-S03
+        st: todo
+      - id: E06-S08
+        t: Project dashboard with hierarchy visual and drill-down to ledger entries
+        k: ui
+        s: L
+        tags:
+          - ui
+        reqs:
+          - PROJ-009
+          - PROJ-021
+          - RPT-002
+          - RPT-003
+          - A11Y-009
+        dep:
+          - E06-S07
+          - E07-S06
+        st: todo
+
+  - id: E07
+    name: Budget ledger
+    milestone: M1
+    stories:
+      - id: E07-S01
+        t: Ledger schema, append-only triggers, entry types, partitioning, source
+          linkage
+        k: migration
+        s: L
+        tags:
+          - money
+          - migration
+        reqs:
+          - FIN-004
+          - FIN-007
+          - BUD-005
+          - BUD-006
+          - ARCH-003
+        dep:
+          - E03-S01
+          - E03-S04
+        st: todo
+      - id: E07-S02
+        t: project_balance rollup maintained in-transaction with the ledger write
+        k: ledger
+        s: L
+        tags:
+          - money
+          - concurrency
+        reqs:
+          - FIN-005
+          - FIN-006
+          - BUD-011
+          - D-11
+        dep:
+          - E07-S01
+        st: todo
+      - id: E07-S03
+        t: Allocation command with authorization, reason, effective date and audit
+        k: ledger
+        s: M
+        tags:
+          - money
+        reqs:
+          - BUD-001
+          - BUD-006
+          - BUD-007
+        dep:
+          - E07-S02
+        st: todo
+      - id: E07-S04
+        t: Reservation and release primitives, exactly-once release guarantee
+        k: ledger
+        s: L
+        tags:
+          - money
+          - concurrency
+        reqs:
+          - FIN-011
+          - FIN-012
+          - BUD-008
+          - ACC-001
+          - ACC-006
+        dep:
+          - E07-S02
+        st: todo
+      - id: E07-S05
+        t: Commitment, actual and reversal primitives with source-document lineage
+        k: ledger
+        s: L
+        tags:
+          - money
+        reqs:
+          - FIN-004
+          - FIN-011
+          - AUD-007
+        dep:
+          - E07-S04
+        st: todo
+      - id: E07-S06
+        t: 'Balance query API: MTD/QTD/YTD/fiscal/life-to-date/range, reconcile to
+          entries'
+        k: api
+        s: M
+        tags:
+          - money
+        reqs:
+          - BUD-009
+          - BUD-011
+          - ACC-003
+        dep:
+          - E07-S05
+        st: todo
+      - id: E07-S07
+        t: Same-level transfer, atomic, one transfer_group_id
+        k: ledger
+        s: M
+        tags:
+          - money
+        reqs:
+          - BUD-002
+          - BUD-004
+        dep:
+          - E07-S05
+        st: todo
+      - id: E07-S08
+        t: Cross-hierarchy transfer up-then-down through both ancestries, one
+          transaction
+        k: ledger
+        s: L
+        tags:
+          - money
+          - concurrency
+        reqs:
+          - BUD-003
+          - BUD-004
+          - WF-003
+        dep:
+          - E07-S07
+          - E06-S02
+        st: todo
+      - id: E07-S09
+        t: 'Nightly reconciliation job: recompute from ledger, report drift, never
+          correct'
+        k: engine
+        s: M
+        tags:
+          - money
+        reqs:
+          - BUD-013
+          - OBS-004
+        dep:
+          - E07-S06
+          - E03-S06
+        st: todo
+
+  - id: E08
+    name: Import & export framework
+    milestone: M1
+    stories:
+      - id: E08-S01
+        t: 'Import framework: template versioning, column mapping, type and reference
+          validation'
+        k: engine
+        s: L
+        tags:
+          - security
+        reqs:
+          - IMP-001
+          - IMP-002
+          - IMP-003
+          - IMP-004
+        dep:
+          - E03-S06
+        st: todo
+      - id: E08-S02
+        t: Dry-run preview, row/column error report, atomic or explicitly partial commit
+        k: engine
+        s: L
+        tags: []
+        reqs:
+          - IMP-005
+          - IMP-006
+          - IMP-007
+        dep:
+          - E08-S01
+        st: todo
+      - id: E08-S03
+        t: Import batch record, idempotent re-import by external key, async with
+          progress
+        k: engine
+        s: M
+        tags: []
+        reqs:
+          - IMP-008
+          - IMP-009
+          - IMP-012
+          - PERF-004
+        dep:
+          - E08-S02
+        st: todo
+      - id: E08-S04
+        t: Project and budget import templates end to end
+        k: crud
+        s: M
+        tags:
+          - money
+        reqs:
+          - PROJ-001
+          - IMP-001
+        dep:
+          - E08-S03
+          - E07-S03
+        st: todo
+
+  # ─────────────────────── M2 — Governed demand ───────────────────────
+
+  - id: E09
+    name: Requisitions
+    milestone: M2
+    stories:
+      - id: E09-S01
+        t: Requisition header, scoped numbering, project-linked and standalone
+        k: crud
+        s: M
+        tags: []
+        reqs:
+          - REQ-001
+          - REQ-010
+          - SEQ-001
+        dep:
+          - E06-S03
+        st: todo
+      - id: E09-S02
+        t: Item and service lines with explicit type tagging and quantity/amount
+          tracking
+        k: crud
+        s: M
+        tags:
+          - money
+        reqs:
+          - REQ-006
+          - REQ-015
+        dep:
+          - E09-S01
+        st: todo
+      - id: E09-S03
+        t: 'Catalogue: BU/OU-scoped suggestions from prior requested, sourced and
+          purchased items'
+        k: engine
+        s: M
+        tags: []
+        reqs:
+          - REQ-007
+          - REQ-008
+          - XFN-009
+        dep:
+          - E09-S02
+        st: todo
+      - id: E09-S04
+        t: 'Submission validation: fields, active master data, eligibility, funds,
+          routing'
+        k: engine
+        s: L
+        tags:
+          - money
+        reqs:
+          - REQ-011
+          - WF-002
+          - WF-006
+        dep:
+          - E09-S02
+          - E07-S06
+        st: todo
+      - id: E09-S05
+        t: Requisition lifecycle state machine
+        k: engine
+        s: L
+        tags: []
+        reqs:
+          - REQ-005
+          - REQ-016
+          - WF-002
+        dep:
+          - E09-S04
+        st: todo
+      - id: E09-S06
+        t: Approval reserves budget and generates the sub-project, one transaction
+        k: ledger
+        s: L
+        tags:
+          - money
+          - concurrency
+        reqs:
+          - REQ-002
+          - REQ-003
+          - REQ-004
+          - PROJ-003
+          - ACC-001
+          - WF-003
+        dep:
+          - E09-S05
+          - E07-S04
+          - E10-S05
+        st: todo
+      - id: E09-S07
+        t: Release on reject, withdraw, cancel, expire or reduce — exactly once
+        k: ledger
+        s: M
+        tags:
+          - money
+        reqs:
+          - REQ-013
+          - FIN-011
+          - ACC-006
+        dep:
+          - E09-S06
+        st: todo
+      - id: E09-S08
+        t: Controlled return, amendment and resubmission preserving prior values
+        k: engine
+        s: M
+        tags: []
+        reqs:
+          - REQ-012
+          - APR-015
+          - DATA-002
+        dep:
+          - E09-S05
+        st: todo
+      - id: E09-S09
+        t: 'Linked-record graph: RFQs, bids, awards, POs, approvals, notes, ledger
+          entries'
+        k: api
+        s: M
+        tags: []
+        reqs:
+          - REQ-009
+          - WF-001
+        dep:
+          - E09-S06
+        st: todo
+      - id: E09-S10
+        t: Notes and attachments on all business documents, upload validation,
+          quarantine
+        k: security
+        s: L
+        tags:
+          - security
+        reqs:
+          - COL-001
+          - COL-002
+          - COL-003
+          - COL-004
+          - COL-005
+          - COL-006
+          - COL-007
+          - COL-008
+          - D-14
+        dep:
+          - E03-S06
+        st: todo
+      - id: E09-S11
+        t: 'Requisition screens: create, lines, submit, track, quantity rollup'
+        k: ui
+        s: L
+        tags:
+          - ui
+        reqs:
+          - REQ-015
+          - UX-003
+          - UX-004
+        dep:
+          - E09-S09
+          - E04-S03
+        st: todo
+
+  - id: E10
+    name: Approvals
+    milestone: M2
+    stories:
+      - id: E10-S01
+        t: Workflow definition schema, versioning, active-document version pinning
+        k: migration
+        s: L
+        tags:
+          - migration
+        reqs:
+          - APR-011
+          - ACC-007
+        dep:
+          - E03-S04
+        st: todo
+      - id: E10-S02
+        t: Condition evaluator over any document attribute including amount and custom
+          fields
+        k: engine
+        s: L
+        tags:
+          - money
+        reqs:
+          - APR-005
+          - APR-010
+        dep:
+          - E10-S01
+        st: todo
+      - id: E10-S03
+        t: 'Graph validation: cycle detection, unreachable steps, duplicate approvals,
+          depth limit'
+        k: engine
+        s: M
+        tags: []
+        reqs:
+          - APR-006
+          - APR-007
+          - APR-008
+          - APR-012
+        dep:
+          - E10-S01
+        st: todo
+      - id: E10-S04
+        t: Approver eligibility resolution scoped to organization and BU/OU
+        k: engine
+        s: M
+        tags:
+          - auth
+        reqs:
+          - APR-004
+          - APR-019
+          - USR-007
+        dep:
+          - E10-S02
+          - E02-S05
+        st: todo
+      - id: E10-S05
+        t: 'Execution engine: instances, tasks, any-one/all/quorum groups, membership
+          snapshot'
+        k: engine
+        s: L
+        tags:
+          - concurrency
+        reqs:
+          - APR-009
+          - APR-018
+          - WF-002
+        dep:
+          - E10-S04
+        st: todo
+      - id: E10-S06
+        t: 'Decisions: approve, reject, return, comment, withdraw; full attribution
+          recorded'
+        k: engine
+        s: M
+        tags:
+          - security
+        reqs:
+          - APR-013
+          - APR-014
+          - AUD-001
+        dep:
+          - E10-S05
+        st: todo
+      - id: E10-S07
+        t: Stale-version guard and material-change resubmission policy
+        k: concurrency
+        s: M
+        tags:
+          - concurrency
+        reqs:
+          - APR-015
+          - APR-016
+          - DATA-002
+          - WF-001
+        dep:
+          - E10-S06
+        st: todo
+      - id: E10-S08
+        t: Delegation, out-of-office, due dates, reminders and escalation
+        k: engine
+        s: L
+        tags: []
+        reqs:
+          - APR-017
+        dep:
+          - E10-S06
+        st: todo
+      - id: E10-S09
+        t: 'Routing explainability: which rule matched and why this approver'
+        k: api
+        s: M
+        tags: []
+        reqs:
+          - APR-021
+        dep:
+          - E10-S05
+        st: todo
+      - id: E10-S10
+        t: 'Approval inbox: pending, overdue, completed, delegated views'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - APR-020
+        dep:
+          - E10-S06
+          - E04-S03
+        st: todo
+      - id: E10-S11
+        t: Visual workflow builder, drag-and-drop canvas
+        k: ui
+        s: L
+        tags:
+          - ui
+        reqs:
+          - APR-001
+        dep:
+          - E10-S03
+          - E04-S02
+        st: todo
+      - id: E10-S12
+        t: Keyboard/list workflow editor with identical capability to the canvas
+        k: ui
+        s: L
+        tags:
+          - ui
+        reqs:
+          - APR-002
+          - A11Y-003
+        dep:
+          - E10-S11
+        st: todo
+      - id: E10-S13
+        t: Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget
+          changes
+        k: engine
+        s: M
+        tags: []
+        reqs:
+          - APR-003
+          - PROJ-002
+          - VEN-005
+          - BUD-007
+        dep:
+          - E10-S07
+        st: todo
+
+  # ──────────────────── M3 — First sellable release ────────────────────
+
+  - id: E11
+    name: Vendors
+    milestone: M3
+    stories:
+      - id: E11-S01
+        t: Vendor profile, searchable list, global and BU/OU scope, local disable
+        k: crud
+        s: M
+        tags: []
+        reqs:
+          - VEN-001
+          - VEN-008
+          - VEN-009
+          - ORG-003
+        dep:
+          - E05-S01
+        st: todo
+      - id: E11-S02
+        t: 'Typed contacts: billing, service/delivery, additional types'
+        k: crud
+        s: S
+        tags: []
+        reqs:
+          - VEN-002
+        dep:
+          - E11-S01
+        st: todo
+      - id: E11-S03
+        t: Vendor documents with issue/expiry, verification status, expiry notification
+        k: crud
+        s: M
+        tags:
+          - security
+        reqs:
+          - VEN-003
+          - VEN-011
+          - OBS-004
+        dep:
+          - E11-S01
+          - E09-S10
+        st: todo
+      - id: E11-S04
+        t: Field-level access control and masking for tax and banking data
+        k: security
+        s: M
+        tags:
+          - security
+          - auth
+        reqs:
+          - VEN-014
+          - CUS-008
+          - PRIV-001
+        dep:
+          - E11-S01
+          - E02-S05
+        st: todo
+      - id: E11-S05
+        t: Onboarding request, configurable questionnaire, weights and scoring
+        k: engine
+        s: L
+        tags: []
+        reqs:
+          - VEN-004
+          - VEN-006
+        dep:
+          - E11-S01
+        st: todo
+      - id: E11-S06
+        t: Duplicate identifier detection, approval on
+          create/activate/suspend/reactivate
+        k: engine
+        s: M
+        tags: []
+        reqs:
+          - VEN-005
+          - VEN-010
+          - VEN-012
+        dep:
+          - E11-S05
+          - E10-S13
+        st: todo
+      - id: E11-S07
+        t: Performance scoring across quality, price, delivery, service, with dispute
+          history
+        k: crud
+        s: M
+        tags: []
+        reqs:
+          - VEN-007
+          - VEN-015
+        dep:
+          - E11-S01
+        st: todo
+
+  - id: E12
+    name: Sourcing
+    milestone: M3
+    stories:
+      - id: E12-S01
+        t: RFQ from approved requisition lines, open-quantity guard
+        k: engine
+        s: L
+        tags:
+          - money
+        reqs:
+          - SRC-001
+          - SRC-003
+          - SRC-018
+        dep:
+          - E09-S06
+          - E11-S01
+        st: todo
+      - id: E12-S02
+        t: RFQ content, invitations, deadline, terms, attachments, vendor eligibility
+          check
+        k: crud
+        s: M
+        tags: []
+        reqs:
+          - SRC-002
+          - VEN-012
+        dep:
+          - E12-S01
+        st: todo
+      - id: E12-S03
+        t: RFQ lifecycle and post-publication versioning communicated to invitees
+        k: engine
+        s: M
+        tags: []
+        reqs:
+          - SRC-004
+          - SRC-005
+        dep:
+          - E12-S02
+        st: todo
+      - id: E12-S04
+        t: 'Bid capture: line prices, currency, tax, freight, lead time, validity,
+          exceptions'
+        k: crud
+        s: M
+        tags:
+          - money
+        reqs:
+          - SRC-006
+        dep:
+          - E12-S03
+        st: todo
+      - id: E12-S05
+        t: Bid confidentiality and late-bid block with audited override
+        k: security
+        s: M
+        tags:
+          - security
+          - auth
+        reqs:
+          - SRC-007
+          - SRC-008
+        dep:
+          - E12-S04
+        st: todo
+      - id: E12-S06
+        t: 'Comparison engine: normalized total and unit cost, tax, freight, lead time,
+          vendor score'
+        k: engine
+        s: L
+        tags:
+          - money
+        reqs:
+          - SRC-009
+          - SRC-010
+        dep:
+          - E12-S04
+          - E05-S05
+        st: todo
+      - id: E12-S07
+        t: Evaluation scoring with comments and conflict-of-interest declarations
+        k: crud
+        s: M
+        tags: []
+        reqs:
+          - SRC-011
+        dep:
+          - E12-S06
+        st: todo
+      - id: E12-S08
+        t: 'Award: split by line/quantity, scope and reserved-funds guard, non-lowest
+          justification'
+        k: ledger
+        s: L
+        tags:
+          - money
+        reqs:
+          - SRC-012
+          - SRC-013
+          - SRC-014
+          - SRC-016
+          - REQ-014
+        dep:
+          - E12-S07
+          - E07-S04
+        st: todo
+      - id: E12-S09
+        t: Cancel or supersede RFQ/award, preserve history, reconcile budget effect
+        k: ledger
+        s: M
+        tags:
+          - money
+        reqs:
+          - SRC-017
+          - SRC-015
+          - WF-005
+        dep:
+          - E12-S08
+        st: todo
+      - id: E12-S10
+        t: Comparison dashboard screen with accessible table equivalent
+        k: ui
+        s: L
+        tags:
+          - ui
+        reqs:
+          - SRC-009
+          - A11Y-009
+          - RPT-013
+        dep:
+          - E12-S06
+          - E04-S03
+        st: todo
+
+  - id: E13
+    name: Purchase orders
+    milestone: M3
+    stories:
+      - id: E13-S01
+        t: PO from awarded requisition lines or authorized project items, scoped
+          numbering
+        k: crud
+        s: L
+        tags:
+          - money
+        reqs:
+          - PO-001
+          - PO-002
+          - PO-006
+          - SEQ-001
+        dep:
+          - E12-S08
+        st: todo
+      - id: E13-S02
+        t: Tax and freight per BU/OU policy, separately visible on line and document
+        k: ledger
+        s: M
+        tags:
+          - money
+        reqs:
+          - FIN-008
+          - FIN-009
+          - PO-016
+        dep:
+          - E13-S01
+        st: todo
+      - id: E13-S03
+        t: PO lifecycle state machine
+        k: engine
+        s: M
+        tags: []
+        reqs:
+          - PO-007
+          - WF-002
+        dep:
+          - E13-S01
+        st: todo
+      - id: E13-S04
+        t: PO approval workflow before issue
+        k: engine
+        s: M
+        tags: []
+        reqs:
+          - PO-003
+          - APR-003
+        dep:
+          - E13-S03
+          - E10-S13
+        st: todo
+      - id: E13-S05
+        t: Issue converts reservation to commitment atomically; partial POs reduce open
+          quantity only
+        k: ledger
+        s: L
+        tags:
+          - money
+          - concurrency
+        reqs:
+          - PO-008
+          - PO-009
+          - WF-003
+          - ACC-002
+        dep:
+          - E13-S04
+          - E07-S05
+        st: todo
+      - id: E13-S06
+        t: Immutable issued PO; numbered, approved change orders with field-level diff
+        k: engine
+        s: L
+        tags:
+          - money
+        reqs:
+          - PO-010
+          - PO-011
+          - DATA-005
+          - ACC-005
+        dep:
+          - E13-S05
+        st: todo
+      - id: E13-S07
+        t: Cancel or reduce releases unused commitment exactly once, history preserved
+        k: ledger
+        s: M
+        tags:
+          - money
+        reqs:
+          - PO-013
+          - FIN-011
+          - ACC-006
+          - WF-005
+        dep:
+          - E13-S06
+        st: todo
+      - id: E13-S08
+        t: PO PDF reproducible from stored snapshot and template version
+        k: engine
+        s: L
+        tags: []
+        reqs:
+          - PO-014
+          - DATA-005
+        dep:
+          - E13-S06
+        st: todo
+      - id: E13-S09
+        t: Email transmission via outbox, recipient/time/result/version recorded, retry
+          without duplication
+        k: engine
+        s: L
+        tags:
+          - money
+          - security
+        reqs:
+          - PO-004
+          - PO-012
+          - PO-015
+          - ARCH-006
+          - ACC-002
+        dep:
+          - E13-S08
+          - E03-S06
+        st: todo
+      - id: E13-S10
+        t: 'Deliverability: SPF/DKIM/DMARC verification, bounce and complaint handling,
+          suppression list'
+        k: engine
+        s: M
+        tags:
+          - security
+        reqs:
+          - EML-001
+          - EML-002
+          - EML-003
+          - EML-006
+        dep:
+          - E13-S09
+        st: todo
+      - id: E13-S11
+        t: Internal vs vendor-facing notes and attachments, enforced by test
+        k: security
+        s: M
+        tags:
+          - security
+        reqs:
+          - PO-017
+          - EML-005
+          - COL-002
+        dep:
+          - E13-S09
+          - E09-S10
+        st: todo
+
+  # ─────────────────── M4 — Full Phase-1 scope ───────────────────
+
+  - id: E14
+    name: Assets & warehouses
+    milestone: M4
+    stories:
+      - id: E14-S01
+        t: 'Warehouses: locations, custodians, status, supported categories'
+        k: crud
+        s: M
+        tags: []
+        reqs:
+          - AST-001
+          - AST-002
+          - ORG-007
+        dep:
+          - E05-S01
+        st: todo
+      - id: E14-S02
+        t: 'Append-only stock movements: receipt, transfer, assignment, return,
+          adjustment, disposal'
+        k: migration
+        s: L
+        tags:
+          - migration
+        reqs:
+          - AST-003
+          - AST-006
+          - ARCH-003
+        dep:
+          - E14-S01
+        st: todo
+      - id: E14-S03
+        t: FIFO physical assignment with audited exception override
+        k: engine
+        s: M
+        tags: []
+        reqs:
+          - AST-004
+        dep:
+          - E14-S02
+        st: todo
+      - id: E14-S04
+        t: Weighted-average valuation, negative-stock prevention
+        k: ledger
+        s: M
+        tags:
+          - money
+        reqs:
+          - AST-005
+          - AST-007
+        dep:
+          - E14-S02
+        st: todo
+      - id: E14-S05
+        t: Fixed-asset register with full attribute set and BU/OU linkage
+        k: crud
+        s: M
+        tags: []
+        reqs:
+          - AST-008
+          - ORG-006
+        dep:
+          - E14-S01
+        st: todo
+      - id: E14-S06
+        t: Asset creation from PO with lineage to the originating purchase
+        k: engine
+        s: M
+        tags: []
+        reqs:
+          - AST-009
+          - AUD-007
+        dep:
+          - E14-S05
+          - E13-S05
+        st: todo
+      - id: E14-S07
+        t: Stock-count adjustment with reason and configurable approval; manual actual
+          posting
+        k: ledger
+        s: M
+        tags:
+          - money
+        reqs:
+          - AST-010
+          - BUD-007
+        dep:
+          - E14-S04
+          - E07-S05
+        st: todo
+
+  - id: E15
+    name: Reporting
+    milestone: M4
+    stories:
+      - id: E15-S01
+        t: 'Governed KPI registry: definition, source, calculation, time basis,
+          currency, refresh'
+        k: engine
+        s: M
+        tags:
+          - money
+        reqs:
+          - RPT-001
+          - RPT-006
+        dep:
+          - E07-S06
+        st: todo
+      - id: E15-S02
+        t: Read models and materialized summaries with as-of time and refresh status
+        k: engine
+        s: L
+        tags:
+          - money
+        reqs:
+          - ARCH-004
+          - RPT-014
+          - PERF-003
+        dep:
+          - E15-S01
+        st: todo
+      - id: E15-S03
+        t: Row- and field-level authorization enforced at query time
+        k: security
+        s: M
+        tags:
+          - security
+          - auth
+        reqs:
+          - RPT-012
+          - SEC-008
+        dep:
+          - E15-S02
+          - E02-S05
+        st: todo
+      - id: E15-S04
+        t: 'Drill-down: organization to BU/OU to project to document to transaction'
+        k: api
+        s: M
+        tags: []
+        reqs:
+          - RPT-002
+          - PROJ-010
+        dep:
+          - E15-S03
+        st: todo
+      - id: E15-S05
+        t: Time analysis across year, fiscal period, quarter, month, week and range
+        k: api
+        s: M
+        tags:
+          - money
+        reqs:
+          - RPT-004
+          - BUD-009
+        dep:
+          - E15-S04
+          - E05-S04
+        st: todo
+      - id: E15-S06
+        t: Executive dashboard, operational dashboards, configurable home dashboard
+        k: ui
+        s: L
+        tags:
+          - ui
+        reqs:
+          - PROJ-010
+          - RPT-005
+          - XFN-004
+          - RPT-013
+        dep:
+          - E15-S05
+          - E04-S03
+        st: todo
+      - id: E15-S07
+        t: Saved personal views and governed shared views
+        k: crud
+        s: M
+        tags: []
+        reqs:
+          - RPT-008
+          - XFN-003
+        dep:
+          - E15-S06
+        st: todo
+      - id: E15-S08
+        t: Export to HTML, PDF and Excel with context header, reconciling to the
+          dashboard
+        k: engine
+        s: L
+        tags: []
+        reqs:
+          - RPT-009
+          - RPT-010
+          - RPT-007
+          - IMP-010
+          - IMP-011
+        dep:
+          - E15-S06
+        st: todo
+      - id: E15-S09
+        t: Async long reports and bulk exports with progress and notification
+        k: engine
+        s: M
+        tags: []
+        reqs:
+          - RPT-011
+          - IMP-012
+          - PERF-004
+        dep:
+          - E15-S08
+          - E03-S06
+        st: todo
+
+  - id: E16
+    name: Custom fields & rules
+    milestone: M4
+    stories:
+      - id: E16-S01
+        t: 'Field definitions: types, scope, effective dates, order, permissions,
+          retirement'
+        k: engine
+        s: L
+        tags: []
+        reqs:
+          - CUS-001
+          - CUS-002
+          - CUS-003
+          - CUS-010
+        dep:
+          - E05-S03
+        st: todo
+      - id: E16-S02
+        t: JSONB values with GIN index; generated column plus btree for searchable
+          fields
+        k: migration
+        s: L
+        tags:
+          - migration
+        reqs:
+          - CUS-009
+          - D-12
+        dep:
+          - E16-S01
+        st: todo
+      - id: E16-S03
+        t: Field-level authorization, export and log exclusion for sensitive fields
+        k: security
+        s: M
+        tags:
+          - security
+          - auth
+        reqs:
+          - CUS-008
+          - AUD-006
+          - IMP-010
+        dep:
+          - E16-S02
+          - E02-S05
+        st: todo
+      - id: E16-S04
+        t: Propagation of project custom fields into downstream transactions
+        k: engine
+        s: M
+        tags: []
+        reqs:
+          - CUS-004
+        dep:
+          - E16-S02
+        st: todo
+      - id: E16-S05
+        t: 'Rule engine: deterministic, versioned, auditable, cycle-protected'
+        k: engine
+        s: L
+        tags:
+          - security
+        reqs:
+          - CUS-005
+          - CUS-006
+          - CUS-007
+        dep:
+          - E16-S04
+        st: todo
+      - id: E16-S06
+        t: Custom fields in forms, grids, filters, imports and exports
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - CUS-002
+          - IMP-003
+          - XFN-002
+        dep:
+          - E16-S05
+          - E04-S04
+        st: todo
+
+      - id: E16-S07
+        t: "Label groups and tags: scoped definitions, single/multi, required, retire-not-delete"
+        k: engine
+        s: L
+        tags: []
+        reqs:
+          - TAG-004
+          - TAG-005
+          - TAG-006
+          - TAG-011
+          - TAG-012
+          - TAG-013
+          - TAG-014
+        dep:
+          - E16-S01
+        st: todo
+      - id: E16-S08
+        t: "Tag swatch palette: 14 pre-verified colours, deterministic assignment, no free-form hex"
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - TAG-008
+          - TAG-009
+          - TAG-010
+          - A11Y-005
+        dep:
+          - E16-S07
+          - E04-S05
+        st: todo
+      - id: E16-S09
+        t: "Tag component and grid density: pill outline plus dot, max 3 inline plus overflow, keyboard reachable"
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - TAG-010
+          - TAG-015
+          - A11Y-002
+        dep:
+          - E16-S08
+        st: todo
+      - id: E16-S10
+        t: "Reportable groups become group-by axis, filter facet and export column automatically"
+        k: engine
+        s: L
+        tags: []
+        reqs:
+          - TAG-007
+          - TAG-016
+          - RPT-008
+          - IMP-010
+        dep:
+          - E16-S07
+          - E15-S07
+        st: todo
+
+  - id: E17
+    name: Search, notifications & preferences
+    milestone: M4
+    stories:
+      - id: E17-S01
+        t: 'Global search over authorized records: identifiers, names, vendor, project,
+          documents'
+        k: api
+        s: L
+        tags:
+          - security
+          - auth
+        reqs:
+          - XFN-001
+          - SEC-008
+          - SEC-010
+        dep:
+          - E15-S03
+        st: todo
+      - id: E17-S02
+        t: 'Notification engine: in-app and email channels, per-event preferences'
+        k: engine
+        s: L
+        tags: []
+        reqs:
+          - XFN-005
+          - XFN-006
+          - AUTH-001
+        dep:
+          - E03-S06
+        st: todo
+      - id: E17-S03
+        t: Digest batching so notifications never starve transactional email
+        k: engine
+        s: M
+        tags: []
+        reqs:
+          - EML-004
+          - OPS-004
+        dep:
+          - E17-S02
+        st: todo
+      - id: E17-S04
+        t: 'Safe notification content: authorized deep links, no sensitive data in
+          subjects or previews'
+        k: security
+        s: M
+        tags:
+          - security
+        reqs:
+          - XFN-007
+          - COL-009
+          - AUD-006
+        dep:
+          - E17-S02
+        st: todo
+      - id: E17-S05
+        t: Mentions and subscriptions without exposing unauthorized records
+        k: engine
+        s: M
+        tags:
+          - auth
+        reqs:
+          - COL-009
+        dep:
+          - E17-S04
+        st: todo
+      - id: E17-S06
+        t: 'User preferences: locale, timezone, theme, notification settings, grid
+          defaults'
+        k: crud
+        s: M
+        tags: []
+        reqs:
+          - AUTH-001
+          - UX-007
+          - XFN-003
+        dep:
+          - E04-S04
+        st: todo
+      - id: E17-S07
+        t: Contextual field help and tooltips across every screen
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - XFN-008
+          - UX-010
+        dep:
+          - E04-S04
+        st: todo
+      - id: E17-S08
+        t: Role-based onboarding tour, skippable, plus quick-start documentation
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - UX-009
+          - UX-010
+          - SUP-005
+        dep:
+          - E17-S07
+        st: todo
+
+  # ──────────────────── M5 — Customer-ready ────────────────────
+
+  - id: E18
+    name: Tenancy & commercial
+    milestone: M5
+    stories:
+      - id: E18-S01
+        t: 'Operator tenant provisioning: idempotent, reversible, seeds admin and master
+          data'
+        k: engine
+        s: M
+        tags:
+          - security
+        reqs:
+          - TEN-001
+          - TEN-002
+        dep:
+          - E05-S03
+        st: todo
+      - id: E18-S02
+        t: Self-serve signup with email verification and anti-abuse controls
+        k: security
+        s: L
+        tags:
+          - auth
+          - security
+        reqs:
+          - TEN-012
+          - SEC-010
+          - TEN-001
+        dep:
+          - E18-S01
+          - E02-S03
+        st: todo
+      - id: E18-S03
+        t: 'MAU metering: distinct authenticated users per rolling 30 days, per tenant
+          and total'
+        k: engine
+        s: M
+        tags: []
+        reqs:
+          - TEN-003
+          - OPS-002
+        dep:
+          - E18-S01
+        st: todo
+      - id: E18-S04
+        t: Plan limits, server-side quota enforcement, actionable limit errors
+        k: engine
+        s: L
+        tags: []
+        reqs:
+          - TEN-004
+          - TEN-005
+          - OPS-004
+        dep:
+          - E18-S03
+        st: todo
+      - id: E18-S05
+        t: Billing hookpoint on the tenant record; no processor integrated
+        k: crud
+        s: S
+        tags: []
+        reqs:
+          - TEN-006
+        dep:
+          - E18-S04
+        st: todo
+      - id: E18-S06
+        t: 'Tenant suspension: block sign-in and writes, preserve read and export in
+          grace period'
+        k: security
+        s: M
+        tags:
+          - auth
+          - security
+        reqs:
+          - TEN-007
+        dep:
+          - E18-S05
+        st: todo
+      - id: E18-S07
+        t: Unattended full tenant data and attachment export
+        k: engine
+        s: L
+        tags:
+          - security
+        reqs:
+          - TEN-008
+          - COMP-005
+          - PRIV-005
+        dep:
+          - E18-S06
+          - E15-S09
+        st: todo
+      - id: E18-S08
+        t: Tenant deletion honouring retention and legal hold, de-identification,
+          deletion certificate
+        k: security
+        s: L
+        tags:
+          - security
+        reqs:
+          - TEN-009
+          - PRIV-002
+          - PRIV-003
+          - PRIV-006
+          - AUD-008
+        dep:
+          - E18-S07
+        st: todo
+      - id: E18-S09
+        t: Demo tenant with representative seed data, visibly marked non-production
+        k: chore
+        s: M
+        tags: []
+        reqs:
+          - TEN-011
+          - PRIV-004
+        dep:
+          - E18-S01
+        st: todo
+
+  - id: E19
+    name: Hardening
+    milestone: M5
+    stories:
+      - id: E19-S01
+        t: Cross-tenant isolation suite covering read, write, search, export and
+          enumeration
+        k: test
+        s: L
+        tags:
+          - security
+          - auth
+        reqs:
+          - TEN-010
+          - ACC-004
+          - SEC-008
+        dep:
+          - E18-S02
+        st: todo
+      - id: E19-S02
+        t: ASVS 5.0 L2 self-assessment with evidence and threat models
+        k: security
+        s: L
+        tags:
+          - security
+        reqs:
+          - SEC-001
+          - SEC-002
+        dep:
+          - E19-S01
+        st: todo
+      - id: E19-S03
+        t: 'Browser protections: CSP, secure cookies, CSRF, clickjacking, HSTS; abuse
+          throttling'
+        k: security
+        s: M
+        tags:
+          - security
+        reqs:
+          - SEC-007
+          - SEC-010
+          - SEC-003
+        dep:
+          - E19-S02
+        st: todo
+      - id: E19-S04
+        t: 'Attachment scanning gate: hash reputation lookup, quarantine, upgrade path
+          to full AV'
+        k: security
+        s: M
+        tags:
+          - security
+        reqs:
+          - COL-005
+          - COL-007
+          - ACC-009
+          - D-14
+        dep:
+          - E19-S03
+        st: todo
+      - id: E19-S05
+        t: Nightly pg_dump to R2, retention policy, monthly restore drill with committed
+          evidence
+        k: engine
+        s: L
+        tags:
+          - security
+        reqs:
+          - REL-004
+          - REL-005
+          - REL-006
+          - OPS-003
+          - ACC-010
+        dep:
+          - E03-S06
+        st: todo
+      - id: E19-S06
+        t: Free-tier headroom monitors with 60/80/90 percent alerts and degradation
+          behaviour
+        k: engine
+        s: M
+        tags: []
+        reqs:
+          - OPS-001
+          - OPS-004
+          - OPS-005
+          - OBS-002
+        dep:
+          - E19-S05
+        st: todo
+      - id: E19-S07
+        t: 'Business monitors: stuck approvals, balance drift, expiring documents,
+          failed transmissions'
+        k: engine
+        s: M
+        tags: []
+        reqs:
+          - OBS-003
+          - OBS-004
+          - OBS-005
+        dep:
+          - E19-S06
+        st: todo
+      - id: E19-S08
+        t: Performance baseline at reference load; cold start measured separately
+        k: test
+        s: L
+        tags: []
+        reqs:
+          - PERF-001
+          - PERF-002
+          - PERF-003
+          - PERF-006
+          - OPS-006
+        dep:
+          - E19-S07
+        st: todo
+      - id: E19-S09
+        t: WCAG 2.2 AA audit of critical paths, keyboard and screen-reader review,
+          remediation
+        k: test
+        s: L
+        tags:
+          - ui
+        reqs:
+          - A11Y-001
+          - A11Y-007
+          - A11Y-011
+          - A11Y-012
+          - ACC-008
+        dep:
+          - E17-S08
+        st: todo
+
+  - id: E20
+    name: Launch
+    milestone: M5
+    stories:
+      - id: E20-S01
+        t: Terms of Service, Privacy Policy, subprocessor list, DPA template
+        k: docs
+        s: M
+        tags: []
+        reqs:
+          - LEG-001
+          - LEG-002
+          - LEG-003
+        dep:
+          - E19-S02
+        st: todo
+      - id: E20-S02
+        t: Public status page and incident notification commitment
+        k: chore
+        s: M
+        tags: []
+        reqs:
+          - SUP-003
+          - LEG-004
+        dep:
+          - E19-S07
+        st: todo
+      - id: E20-S03
+        t: Correlation id surfaced in user errors; in-app feedback capture
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - SUP-001
+          - SUP-002
+          - OBS-006
+        dep:
+          - E03-S03
+        st: todo
+      - id: E20-S04
+        t: Per-tenant feature flags so incomplete modules are hidden, never half-exposed
+        k: engine
+        s: M
+        tags: []
+        reqs:
+          - SUP-004
+        dep:
+          - E18-S04
+        st: todo
+      - id: E20-S05
+        t: Administrator and operator documentation, runbooks linked from every alert
+        k: docs
+        s: M
+        tags: []
+        reqs:
+          - UX-010
+          - SUP-005
+          - OBS-003
+        dep:
+          - E19-S07
+        st: todo
+      - id: E20-S06
+        t: 'Graduation dashboard: MAU, customers, storage, email, requests against §7
+          triggers'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - OPS-002
+          - TEN-003
+        dep:
+          - E19-S06
+          - E18-S03
+        st: todo

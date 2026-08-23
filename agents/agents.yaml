@@ -1,0 +1,86 @@
+# Fleet configuration. Read by agents/scripts/flo.
+# Sized to real plan limits as of 2026-08-24. Update caps here, never in prose.
+
+version: 1
+
+policy:
+  max_stories_in_flight: 3      # two reviewers per story saturates the fleet at 3
+  min_reviewers: 2              # a story never merges on one review
+  max_review_rounds: 3          # then flo escalate → opus arbitration
+  free_reviewer_pool: [opencode-nemotron, opencode-ox]  # at least one reviewer must come from here,
+                                                        # so a rationed agent is never the merge blocker
+  opus_final_required_tags: [money, auth, security, migration, ui, concurrency]
+
+agents:
+
+  opus:
+    model: claude-opus-5
+    cli: claude
+    plan: pro
+    metered: rate                # scarcest capacity in the fleet
+    cost_per_story: high
+    roles: [design, final_review, arbitration, milestone_review]
+    allowed_kinds: []            # authors nothing routine — see agents/claude.md
+    fallback: []                 # no substitute; if unavailable, gated stories wait
+    notes: >
+      Claude Pro. Batch design per milestone. Final review only on gated stories.
+      Never spend tokens reconstructing context flo already wrote into task.json.
+
+  codex:
+    model: gpt-5-codex
+    cli: "codex exec"
+    plan: chatgpt-plus
+    metered: rate
+    weekly_story_budget: 6       # tight cap; keep for work only it should do
+    roles: [author, review]
+    allowed_kinds: [ledger, concurrency, migration, security, engine]
+    prefer_tags: [money, concurrency, migration, security]
+    fallback: [opencode]
+    notes: >
+      ChatGPT Plus weekly cap is tight. Never assign CRUD, docs or styling.
+
+  opencode-nemotron:
+    model: nemotron-ultra
+    cli: "opencode run --model nemotron-ultra"
+    plan: free
+    metered: none                # unmetered — carries the volume
+    roles: [author, review]
+    allowed_kinds: [crud, ui, api, chore, docs, engine, migration, test]
+    fallback: [opencode-ox, qwen, codex]
+    notes: >
+      Default author. Free preview endpoint — on 429 or 5xx, fall back per the chain
+      and record the substitution in task.json.
+
+  opencode-ox:
+    model: ox-alpha
+    cli: "opencode run --model ox-alpha"
+    plan: free
+    metered: none                # second free model — the reason Codex is not spent on reviews
+    roles: [author, review]
+    allowed_kinds: [crud, ui, api, chore, docs, engine, test]
+    fallback: [opencode-nemotron, qwen]
+    notes: >
+      Distinct model from nemotron-ultra, so a free author still gets a free,
+      independent reviewer. Keep them assigned to different sides of a story.
+
+  qwen:
+    model: qwen/qwen3-coder
+    cli: "openrouter"
+    plan: openrouter-credits
+    metered: spend
+    monthly_budget_usd: 20       # hard cap; flo budget refuses assignment past it
+    reserve_for_review_usd: 12   # review capacity is protected from authoring spend
+    roles: [author, review]
+    allowed_kinds: [crud, ui, docs, chore, test]
+    max_author_size: S           # authors small stories only
+    fallback: [opencode]
+
+# Assignment algorithm (implemented in flo assign — this is the spec, not a suggestion):
+#   1. candidates = agents where story.kind in allowed_kinds
+#                   and (size <= max_author_size or unset)
+#                   and has remaining capacity
+#   2. author  = candidate with the lowest scarcity, preferring prefer_tags matches
+#   3. reviewers = 2 agents != author, at least one from policy.free_reviewer_pool
+#   4. if fewer than min_reviewers are reachable → story waits, never merges short
+#   5. opus_final required if story.tags ∩ policy.opus_final_required_tags
+#   6. every substitution is recorded in the task packet
