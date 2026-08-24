@@ -14,6 +14,7 @@ PASSWORD_ONLY_MINIMUM = 15
 MFA_MINIMUM = 8
 PASSWORD_MAXIMUM = 256
 _HASH_PREFIX_LENGTH = 5
+_HASH_SUFFIX_LENGTH = hashlib.sha256(usedforsecurity=False).digest_size * 2 - _HASH_PREFIX_LENGTH
 
 
 def normalize_password(password: str) -> str:
@@ -23,7 +24,7 @@ def normalize_password(password: str) -> str:
 
 
 class BreachBlocklist:
-    """Local k-anonymity-style SHA-1 prefix index of compromised passwords."""
+    """Local k-anonymity-style SHA-256 prefix index of compromised passwords."""
 
     def __init__(self, entries: dict[str, frozenset[str]]) -> None:
         self._entries = entries
@@ -38,15 +39,21 @@ class BreachBlocklist:
             if not line or line.startswith("#"):
                 continue
             prefix, separator, suffix = line.partition(":")
-            if separator != ":" or len(prefix) != _HASH_PREFIX_LENGTH or len(suffix) != 35:
+            if (
+                separator != ":"
+                or len(prefix) != _HASH_PREFIX_LENGTH
+                or len(suffix) != _HASH_SUFFIX_LENGTH
+            ):
                 raise RuntimeError("invalid bundled password blocklist")
             grouped[prefix].add(suffix)
         return cls({prefix: frozenset(suffixes) for prefix, suffixes in grouped.items()})
 
     def contains(self, password: str) -> bool:
-        """Check a password by matching its SHA-1 suffix only within its prefix bucket."""
+        """Check a password by matching its SHA-256 suffix within its prefix bucket."""
 
-        digest = hashlib.sha1(password.encode("utf-8"), usedforsecurity=False).hexdigest().upper()
+        digest = hashlib.sha256(
+            password.encode("utf-8"), usedforsecurity=False
+        ).hexdigest().upper()
         return digest[_HASH_PREFIX_LENGTH:] in self._entries.get(
             digest[:_HASH_PREFIX_LENGTH], ()
         )

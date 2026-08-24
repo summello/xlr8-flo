@@ -12,9 +12,15 @@ def test_fifteen_lowercase_characters_pass_and_fourteen_fail() -> None:
 
 
 def test_compromised_password_is_rejected_regardless_of_length() -> None:
-    result = PasswordPolicy().verify("passwordpassword")
+    policy = PasswordPolicy()
 
-    assert result.violations == (PolicyViolation.COMPROMISED,)
+    assert policy.verify("password").violations == (
+        PolicyViolation.TOO_SHORT,
+        PolicyViolation.COMPROMISED,
+    )
+    assert policy.verify("passwordpassword").violations == (
+        PolicyViolation.COMPROMISED,
+    )
 
 
 def test_policy_has_no_composition_rule() -> None:
@@ -52,4 +58,4 @@ def test_bundled_blocklist_contains_exactly_one_hundred_thousand_hashes() -> Non
 
     assert len(entries) == 100_000
     assert len(set(entries)) == 100_000
-    assert all(len(entry) == 41 and entry[5] == ":" for entry in entries)
+    assert all(len(entry) == 65 and entry[5] == ":" for entry in entries)
