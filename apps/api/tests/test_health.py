@@ -76,6 +76,33 @@ def test_readyz_reports_each_healthy_dependency() -> None:
     }
 
 
+def test_api_emits_no_cors_headers_or_middleware() -> None:
+    async def request_every_response_shape() -> list[httpx.Response]:
+        _override_probes(database=_ok, storage=_ok)
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            return [
+                await client.get("/healthz"),
+                await client.get("/readyz"),
+                await client.options(
+                    "/healthz",
+                    headers={
+                        "Origin": "https://cross-origin.example",
+                        "Access-Control-Request-Method": "GET",
+                    },
+                ),
+            ]
+
+    responses = asyncio.run(request_every_response_shape())
+
+    assert all(
+        "cors" not in middleware.cls.__module__.casefold()
+        for middleware in app.user_middleware
+    )
+    for response in responses:
+        assert "access-control-allow-origin" not in response.headers
+
+
 def test_concurrent_readyz_requests_share_one_database_connection_attempt(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -300,6 +300,7 @@ jobs:
     env:
       GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
       IMAGE_TAG: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/flo/flo-api:${{ github.sha }}
+      CLOUD_RUN_ORIGIN: ${{ vars.CLOUD_RUN_ORIGIN }}
     steps:
       - uses: actions/checkout@v5
       - uses: google-github-actions/auth@v2
@@ -379,6 +380,7 @@ jobs:
           gcloud run deploy flo-api --region us-central1 \
             --image "${{ steps.push.outputs.digest }}" \
             --min-instances 0 --concurrency 80 --memory 1Gi --cpu 2 \
+            --ingress all \
             --set-secrets DATABASE_URL=flo-database-url:latest
 
       - name: Prune registry to 3 images (Artifact Registry free tier is 0.5 GB)
@@ -389,12 +391,18 @@ jobs:
             | xargs -r -I{} gcloud artifacts docker images delete \
                 "us-central1-docker.pkg.dev/${GCP_PROJECT}/flo/flo-api@{}" --quiet
 
-      - name: Deploy SPA
+      - name: Deploy single-origin Worker route and SPA
         if: needs.detect.outputs.web == 'true'
         run: |
           set -euo pipefail
           : "${GCP_PROJECT:?GCP_PROJECT is required for the bundle guard}"
-          : "${VITE_API_BASE_URL:?VITE_API_BASE_URL repository variable is required}"
+          : "${CLOUD_RUN_ORIGIN:?CLOUD_RUN_ORIGIN repository variable is required}"
+          case "$CLOUD_RUN_ORIGIN" in
+            https://*.run.app) ;;
+            *) echo "::error::CLOUD_RUN_ORIGIN must be an HTTPS run.app origin"; exit 1 ;;
+          esac
+          test "$(sed -n 's/^VITE_API_BASE_URL=//p' apps/web/.env.production)" = "/api" \
+            || { echo "::error::VITE_API_BASE_URL must be the relative path /api"; exit 1; }
           npm --prefix apps/web ci
           npm --prefix apps/web run build
           if grep -RIlE -- 'sk-|-----BEGIN' apps/web/dist; then
@@ -405,8 +413,18 @@ jobs:
             echo "::error::SPA bundle contains the GCP project id"
             exit 1
           fi
+          cloud_run_host="${CLOUD_RUN_ORIGIN#https://}"
+          if grep -RIlF -- "$cloud_run_host" apps/web/dist; then
+            echo "::error::SPA bundle contains the Cloud Run hostname"
+            exit 1
+          fi
+          if grep -RIlE -- 'https?://xlr8flo\.summello\.com/api' apps/web/dist; then
+            echo "::error::SPA bundle contains an absolute API URL"
+            exit 1
+          fi
+          npx wrangler deploy --config infra/cloudflare/wrangler.toml \
+            --var "CLOUD_RUN_ORIGIN:${CLOUD_RUN_ORIGIN}"
           npx wrangler pages deploy apps/web/dist --project-name flo-web
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}

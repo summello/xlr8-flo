@@ -1,0 +1,8 @@
+name = "flo-api-proxy"
+main = "../../apps/web/worker/api-proxy.ts"
+compatibility_date = "2026-08-25"
+workers_dev = false
+
+[[routes]]
+pattern = "xlr8flo.summello.com/api/*"
+zone_name = "summello.com"

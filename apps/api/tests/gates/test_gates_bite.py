@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tomllib
 from collections.abc import Sequence
 from importlib.machinery import SourceFileLoader
 from pathlib import Path
@@ -92,6 +93,32 @@ def assert_release_workflow_policy(source: str) -> None:
     assert "workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}" in source
     assert "grep -RIlE -- 'sk-|-----BEGIN' apps/web/dist" in source
     assert 'grep -RIlF -- "$GCP_PROJECT" apps/web/dist' in source
+
+
+def assert_single_origin_release_policy(
+    workflow: str,
+    production_environment: str,
+    worker_configuration: str,
+) -> None:
+    environment = dict(
+        line.partition("=")[::2]
+        for line in production_environment.splitlines()
+        if line and not line.startswith("#")
+    )
+    worker = tomllib.loads(worker_configuration)
+    assert environment == {"VITE_API_BASE_URL": "/api"}
+    assert "CLOUD_RUN_ORIGIN: ${{ vars.CLOUD_RUN_ORIGIN }}" in workflow
+    assert "--ingress all" in workflow
+    assert 'grep -RIlF -- "$cloud_run_host" apps/web/dist' in workflow
+    assert "https?://xlr8flo\\.summello\\.com/api" in workflow
+    assert workflow.index("npx wrangler deploy") < workflow.index("npx wrangler pages deploy")
+    assert worker["workers_dev"] is False
+    assert worker["routes"] == [
+        {
+            "pattern": "xlr8flo.summello.com/api/*",
+            "zone_name": "summello.com",
+        }
+    ]
 
 
 def make_package(path: Path) -> None:
@@ -337,6 +364,65 @@ def test_release_workflow_policy_rejects_a_nonblocking_image_scan_and_then_passe
     assert_release_workflow_policy(source)
 
 
+@pytest.mark.parametrize(
+    "violation",
+    (
+        "absolute-api",
+        "missing-host-guard",
+        "missing-absolute-guard",
+        "missing-ingress",
+        "wrong-route",
+    ),
+)
+def test_single_origin_release_policy_rejects_d17_violations_and_then_passes(
+    violation: str,
+) -> None:
+    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    production_environment = (ROOT / "apps" / "web" / ".env.production").read_text(
+        encoding="utf-8"
+    )
+    worker_configuration = (ROOT / "infra" / "cloudflare" / "wrangler.toml").read_text(
+        encoding="utf-8"
+    )
+    planted_workflow = workflow
+    planted_environment = production_environment
+    planted_worker = worker_configuration
+    if violation == "absolute-api":
+        planted_environment = production_environment.replace(
+            "VITE_API_BASE_URL=/api",
+            "VITE_API_BASE_URL=https://api.example.test",
+        )
+    elif violation == "missing-host-guard":
+        planted_workflow = workflow.replace(
+            'grep -RIlF -- "$cloud_run_host" apps/web/dist',
+            "true",
+        )
+    elif violation == "missing-absolute-guard":
+        planted_workflow = workflow.replace(
+            "https?://xlr8flo\\.summello\\.com/api",
+            "removed-absolute-api-guard",
+        )
+    elif violation == "missing-ingress":
+        planted_workflow = workflow.replace("--ingress all", "--ingress unspecified")
+    else:
+        planted_worker = worker_configuration.replace(
+            "xlr8flo.summello.com/api/*",
+            "api.xlr8flo.summello.com/*",
+        )
+
+    with pytest.raises(AssertionError):
+        assert_single_origin_release_policy(
+            planted_workflow,
+            planted_environment,
+            planted_worker,
+        )
+    assert_single_origin_release_policy(
+        workflow,
+        production_environment,
+        worker_configuration,
+    )
+
+
 def test_production_runbook_and_spa_environment_keep_release_configuration_external() -> None:
     production_env = (ROOT / "apps" / "web" / ".env.production").read_text(encoding="utf-8")
     configured_names = {
@@ -347,6 +433,7 @@ def test_production_runbook_and_spa_environment_keep_release_configuration_exter
     setup = (ROOT / "infra" / "SETUP.md").read_text(encoding="utf-8")
 
     assert configured_names == {"VITE_API_BASE_URL"}
+    assert "VITE_API_BASE_URL=/api" in production_env
     assert "Full (strict)" in setup
     assert "Strict-Transport-Security" in setup
     assert "gcloud run services update-traffic flo-api" in setup
