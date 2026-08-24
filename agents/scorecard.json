@@ -276,6 +276,61 @@
       },
       "recap": "Delivered session-derived request scope, transaction-local Postgres RLS, and a repository base that requires tenant scope. Added reversible RLS migration coverage plus CI and TEN-010 guards for foreign-record access, OpenAPI inputs, future tenant tables, and pooled-connection bleed.",
       "title": "Tenancy kernel: session org_id, RLS SET LOCAL, scoped repository base"
+    },
+    {
+      "story": "E01-S04",
+      "kind": "chore",
+      "size": "L",
+      "tags": [
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [
+        "deepseek"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "deepseek": {
+          "ran_tests": true,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [
+        {
+          "from": "opencode-nemotron",
+          "to": "qwen",
+          "reason": "nemotron returned 0.0 findings per review across its first three; qwen/qwen3.8-27b added as primary reviewer (agents.yaml M0 override, 24 Aug 2026)"
+        },
+        {
+          "from": "opencode-ox",
+          "to": "deepseek",
+          "reason": "ox-alpha endpoint withdrawn; deepseek-v4-pro-0813 restores an independent second reviewer"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a03232-e8b2-7c81-8a35-fb55794057f5",
+          "source": "codex rollout matched on cwd"
+        },
+        "deepseek": {
+          "agent": "deepseek",
+          "id": null,
+          "source": "unavailable: no detector for deepseek"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "a8c2a1bf-3633-4a96-8941-8f5a43f2a7ce",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Activated every backend, frontend, governance, and security CI gate against the application code. Added Python and Node CycloneDX SBOM artifacts, retained and published Trivy SARIF, and strengthened main branch protection.",
+      "title": "CI: lint, types, tests, gitleaks, import-linter, roadmap drift check"
     }
   ]
 }

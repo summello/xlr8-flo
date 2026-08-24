@@ -45,3 +45,10 @@ strict = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["--strict-config", "--strict-markers"]
+
+[tool.coverage.run]
+source = ["flo"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true

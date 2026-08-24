@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Bundled k-anonymity password blocklist contains SHA-1 suffixes, not secrets"
+paths = ['''^apps/api/src/flo/kernel/identity/data/blocklist\.txt$''']

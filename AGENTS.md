@@ -95,6 +95,7 @@ Rules while reviewing:
 - Severity: `blocker` (wrong, unsafe, or violates a cited requirement) · `major` (will break under a foreseeable condition) · `minor` (clarity, naming, dead code). Only `blocker` prevents merge.
 - **Do not rewrite the code.** Review only. The author fixes.
 - Check the requirement IDs the design cites are actually satisfied. A green test suite that tests the wrong thing is the most common agent failure mode.
+- **For every gate, contract or guard in the diff, plant a violation and watch it fail.** A regex, an `.importlinter` contract or a CI step that reports green may enforce nothing — three M0 gates did. A gate you have not seen fail is not reviewed.
 - Silence is not approval. Every review produces a file.
 
 ### 2.3 Rounds and arbitration
