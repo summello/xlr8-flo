@@ -16,6 +16,17 @@ from flo.api.health import (
 from flo.kernel.config import Settings
 
 
+class FakeMonotonicClock:
+    def __init__(self) -> None:
+        self.current_time = 0.0
+
+    def monotonic(self) -> float:
+        return self.current_time
+
+    def advance(self, seconds: float) -> None:
+        self.current_time += seconds
+
+
 @pytest.fixture(autouse=True)
 def clear_dependency_overrides() -> Iterator[None]:
     cache = ReadinessCache()
@@ -71,6 +82,7 @@ def test_concurrent_readyz_requests_share_one_database_connection_attempt(
     connection_attempts = 0
     connection_started = asyncio.Event()
     release_connection = asyncio.Event()
+    clock = FakeMonotonicClock()
 
     class FakeConnection:
         async def execute(self, _: str) -> None:
@@ -89,10 +101,11 @@ def test_concurrent_readyz_requests_share_one_database_connection_attempt(
     async def request_burst() -> None:
         settings = Settings(
             database_url="postgresql://unused",
-            readiness_cache_ttl_seconds=0.01,
+            readiness_cache_ttl_seconds=5,
         )
         app.dependency_overrides[get_settings] = lambda: settings
         _override_probes(database=health.check_database, storage=_ok)
+        monkeypatch.setattr(health, "time", clock)
         monkeypatch.setattr(health.psycopg.AsyncConnection, "connect", connect)
 
         transport = httpx.ASGITransport(app=app)
@@ -106,11 +119,35 @@ def test_concurrent_readyz_requests_share_one_database_connection_attempt(
             assert {response.status_code for response in responses} == {200}
             assert connection_attempts == 1
 
-            await asyncio.sleep(settings.readiness_cache_ttl_seconds * 2)
-            assert (await client.get("/readyz")).status_code == 200
-            assert connection_attempts == 2
-
     asyncio.run(request_burst())
+
+
+def test_readyz_cache_expires_after_ttl(monkeypatch: pytest.MonkeyPatch) -> None:
+    probe_attempts = 0
+    clock = FakeMonotonicClock()
+    settings = Settings(readiness_cache_ttl_seconds=1)
+
+    async def database_probe(_: Settings) -> None:
+        nonlocal probe_attempts
+        probe_attempts += 1
+
+    async def request_before_and_after_expiry() -> None:
+        app.dependency_overrides[get_settings] = lambda: settings
+        _override_probes(database=database_probe, storage=_ok)
+        monkeypatch.setattr(health, "time", clock)
+
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            assert (await client.get("/readyz")).status_code == 200
+            assert (await client.get("/readyz")).status_code == 200
+            assert probe_attempts == 1
+
+            clock.advance(settings.readiness_cache_ttl_seconds + 1)
+
+            assert (await client.get("/readyz")).status_code == 200
+            assert probe_attempts == 2
+
+    asyncio.run(request_before_and_after_expiry())
 
 
 def test_database_failure_degrades_readiness_but_not_liveness() -> None:
