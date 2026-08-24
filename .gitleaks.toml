@@ -1,6 +1,11 @@
 [extend]
 useDefault = true
 
-[[allowlists]]
-description = "Bundled k-anonymity password blocklist contains SHA-1 suffixes, not secrets"
+# Singular [allowlist], not [[allowlists]]: the plural form is gitleaks >= 8.19 syntax
+# and the pinned gitleaks-action bundles an older binary that parses the file and
+# silently ignores the rule. The singular form is understood by both, so CI and local
+# runs enforce the same policy - the divergence is what let PR #10 fail on a false
+# positive that passed locally.
+[allowlist]
+description = "Bundled k-anonymity password blocklist holds SHA-256 hash suffixes, not secrets"
 paths = ['''^apps/api/src/flo/kernel/identity/data/blocklist\.txt$''']
