@@ -157,20 +157,7 @@ jobs:
         run: lint-imports
 
       - name: No float in money modules (AGENTS.md 3.1)
-        run: |
-          set -euo pipefail
-          money_modules=()
-          for d in budget purchasing sourcing requisitions; do
-            if [ -d "apps/api/src/flo/modules/$d" ]; then
-              money_modules+=("apps/api/src/flo/modules/$d")
-            else
-              echo "::notice::module $d not built yet"
-            fi
-          done
-          [ "${#money_modules[@]}" -eq 0 ] && exit 0
-          if grep -rnE '\bfloat\(|:[[:space:]]*float\b' "${money_modules[@]}"; then
-            echo "::error::float is banned in money modules - use Decimal"; exit 1
-          fi
+        run: python apps/api/scripts/check_money_floats.py
 
       - run: pytest -q apps/api --cov=flo --cov-report=term-missing
 
