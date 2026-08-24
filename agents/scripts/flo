@@ -21,13 +21,15 @@ Stdlib only, except PyYAML for the two config files.
   flo roadmap [--check]     regenerate docs/claude-plan.md §5 (or verify it)
   flo board                 regenerate board.html - drilldown status view (gitignored)\n  flo ack     [KEY|all]     confirm a 'waiting on you' item (list keys with no argument)\n  flo unack   <KEY|all>     reopen a confirmed item
   flo check                 run everything CI runs, locally
-  flo up                    local stack: Postgres + MinIO + Mailpit
+  flo up [--reset]          start local Postgres + MinIO + Mailpit; optionally reset data
+  flo down                  stop the local stack
 """
 import json
 import os
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -1235,11 +1237,85 @@ def cmd_check(argv):
     sys.exit(0 if run_check(Path.cwd()) else 1)
 
 
-def cmd_up(argv):
-    compose = ROOT / "compose.yaml"
-    if not compose.exists():
+COMPOSE = ROOT / "compose.yaml"
+STACK_SERVICES = ("postgres", "minio", "mailpit")
+
+
+def _run_compose(*args, capture_output=False):
+    if not COMPOSE.exists():
         die("compose.yaml missing — story E01-S02 delivers it")
-    os.execvp("podman", ["podman", "compose", "-f", str(compose), "up", "-d"])
+    cmd = ["podman", "compose", "-f", str(COMPOSE), *args]
+    try:
+        return subprocess.run(cmd, check=True, capture_output=capture_output, text=True)
+    except FileNotFoundError:
+        die("podman is required for the local stack but was not found on PATH")
+    except subprocess.CalledProcessError as exc:
+        detail = (exc.stderr or exc.stdout or "no error output").strip()
+        die(f"{' '.join(cmd)} failed: {detail}")
+
+
+def _container_status(service, include_stopped=False):
+    ps_args = ["ps"]
+    if include_stopped:
+        ps_args.append("--all")
+    ps_args.extend(["--quiet", service])
+    result = _run_compose(*ps_args, capture_output=True)
+    container_ids = result.stdout.splitlines()
+    if not container_ids:
+        return None, None, None
+    inspect = subprocess.run(
+        [
+            "podman",
+            "inspect",
+            "--format",
+            "{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{end}}|{{.State.ExitCode}}",
+            container_ids[0],
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if inspect.returncode:
+        return None, None, None
+    status, health, exit_code = inspect.stdout.strip().split("|", maxsplit=2)
+    return status, health or None, int(exit_code)
+
+
+def _wait_for_stack(timeout_seconds=120):
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        services = {service: _container_status(service) for service in STACK_SERVICES}
+        for service, (status, health, _) in services.items():
+            if health == "unhealthy" or status in {"dead", "exited"}:
+                die(f"{service} failed while the local stack was starting ({health or status})")
+
+        init_status, _, init_exit_code = _container_status("minio-init", include_stopped=True)
+        init_ready = init_status == "exited" and init_exit_code == 0
+        if init_status == "exited" and init_exit_code != 0:
+            die(f"minio-init failed with exit code {init_exit_code}")
+        if all(health == "healthy" for _, health, _ in services.values()) and init_ready:
+            return
+        time.sleep(1)
+    die(f"local stack did not become healthy within {timeout_seconds} seconds")
+
+
+def cmd_up(argv):
+    if argv not in ([], ["--reset"]):
+        die("usage: flo up [--reset]")
+    if argv == ["--reset"]:
+        _run_compose("down", "--volumes", "--remove-orphans")
+    _run_compose("up", "-d")
+    _wait_for_stack()
+    print("Postgres:     postgresql://localhost:5432/flo_dev")
+    print("MinIO API:   http://localhost:9000")
+    print("MinIO console: http://localhost:9001")
+    print("Mailpit UI:  http://localhost:8025")
+
+
+def cmd_down(argv):
+    if argv:
+        die("usage: flo down")
+    _run_compose("down")
 
 
 def cmd_design(argv):
@@ -1268,7 +1344,8 @@ COMMANDS = {
     "next": cmd_next, "start": cmd_start, "assign": cmd_assign, "submit": cmd_submit,
     "review": cmd_review, "gate": cmd_gate, "final": cmd_final, "escalate": cmd_escalate,
     "done": cmd_done, "design": cmd_design, "status": cmd_status, "budget": cmd_budget,
-    "roadmap": cmd_roadmap, "score": cmd_score, "session": cmd_session, "board": cmd_board, "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "up": cmd_up,
+    "roadmap": cmd_roadmap, "score": cmd_score, "session": cmd_session, "board": cmd_board,
+    "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "up": cmd_up, "down": cmd_down,
 }
 
 if __name__ == "__main__":
