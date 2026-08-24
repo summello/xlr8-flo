@@ -103,6 +103,7 @@ epics:
           - SEC-003
           - SEC-005
           - COMP-004
+          - SEC-012
         dep:
           - E01-S04
         st: todo
