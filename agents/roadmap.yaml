@@ -118,6 +118,17 @@ epics:
         dep:
           - E01-S05
         st: todo
+      - id: E01-S07
+        t: Gate self-tests - every CI gate proves it fails on a planted violation
+        k: chore
+        s: M
+        tags:
+          - security
+        reqs:
+          - SEC-012
+        dep:
+          - E01-S04
+        st: todo
 
   - id: E02
     name: Identity & access
@@ -138,7 +149,7 @@ epics:
           - D-05
         dep:
           - E01-S02
-        st: todo
+        st: review
       - id: E02-S02
         t: Server sessions, httpOnly cookies, CSRF, idle and absolute timeout,
           revocation
