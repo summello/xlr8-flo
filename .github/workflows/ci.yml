@@ -248,6 +248,11 @@ jobs:
       - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7  # v2.3.9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The action does NOT pick up .gitleaks.toml on its own - without this it
+          # scans with stock rules and re-flags the password blocklist's SHA-1
+          # suffixes as Square tokens. The config keeps useDefault = true, so every
+          # rule stays active and only that one path is exempt.
+          GITLEAKS_CONFIG: ${{ github.workspace }}/.gitleaks.toml
       # Pinned by digest, not tag — a tag can be repointed, a digest cannot (SEC-013).
       - uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8  # v0.36.0
         with:
