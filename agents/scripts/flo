@@ -356,6 +356,26 @@ severity  blocker = wrong, unsafe, or violates a cited requirement (only this bl
 You were deliberately not given the author's rationale.""")
 
 
+# Reviewers are four different models writing JSON by hand, and the schema lives in
+# prose in AGENTS.md §2.2 with nothing validating it at write time. "approved" for
+# "approve" once read as a rejection and would have blocked a story on a typo. Accept
+# the obvious spellings; anything else fails loudly AS MALFORMED rather than quietly
+# counting as a rejection.
+APPROVE = {"approve", "approved", "lgtm"}
+CHANGES_REQUESTED = {"changes_requested", "changes-requested", "request_changes",
+                     "changes requested", "reject", "rejected"}
+
+
+def verdict_of(review):
+    """True = approved, False = changes requested, None = unreadable."""
+    v = str(review.get("verdict") or "").strip().lower()
+    if v in APPROVE:
+        return True
+    if v in CHANGES_REQUESTED:
+        return False
+    return None
+
+
 def reviews_for(sid):
     d = worktree_path(sid) / "reviews"
     if not d.exists():
@@ -394,7 +414,11 @@ def cmd_gate(argv):
     blockers = [f for r in revs for f in r.get("findings", []) if f.get("severity") == "blocker"]
     if blockers:
         fails.append(f"{len(blockers)} open blocker finding(s)")
-    if any(r.get("verdict") != "approve" for r in counted):
+    unreadable = [r for r in counted if verdict_of(r) is None]
+    for r in unreadable:
+        fails.append(f"{r.get('reviewer', '?')}: unreadable verdict {r.get('verdict')!r} — "
+                     f"expected one of {sorted(APPROVE | CHANGES_REQUESTED)}")
+    if any(verdict_of(r) is False for r in counted):
         fails.append("not every counted reviewer approved")
 
     if pkt["opus_final"]:

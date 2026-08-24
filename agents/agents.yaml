@@ -90,21 +90,25 @@ agents:
       CRUD, docs or styling - that capacity belongs on the ledger and the engines.
 
   opencode-nemotron:
-    model: nemotron-ultra
-    cli: "opencode run --model nemotron-ultra"
-    plan: free
-    metered: none                # unmetered — carries the volume
+    model: nvidia/nemotron-3-ultra-550b-a55b:free      # via OpenRouter, not OpenCode Zen
+    cli: "opencode run --model openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"
+    plan: openrouter-credits
+    metered: none                # :free variant — no credit drawdown
     roles: [author, review]
     allowed_kinds: [crud, ui, api, chore, docs, engine, migration, test]
     fallback: [opencode-ox, kimi, codex]
     notes: >
-      Default author. Free preview endpoint — on 429 or 5xx, fall back per the chain
-      and record the substitution in task.json.
+      Default author. 25 Aug 2026: moved off OpenCode Zen's `nemotron-ultra`, which
+      began failing every request with "Unexpected server error" — a bare one-word
+      prompt failed identically, so the endpoint, not the model, was gone. That was
+      the second Zen endpoint withdrawn after ox-alpha. Everything now runs through
+      OpenRouter, where the operator holds actual credits and a `:free` variant can
+      degrade to the paid one instead of vanishing.
 
   opencode-ox:
-    model: ox-alpha
-    cli: "opencode run --model ox-alpha"
-    plan: free
+    model: stealth/ox-alpha                            # via OpenRouter, not OpenCode Zen
+    cli: "opencode run --model openrouter/stealth/ox-alpha"
+    plan: openrouter-credits
     metered: none                # second free model — the reason Codex is not spent on reviews
     roles: [author, review]
     allowed_kinds: [crud, ui, api, chore, docs, engine, test]

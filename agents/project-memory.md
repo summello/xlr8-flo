@@ -73,7 +73,8 @@ Multi-tenant SaaS. Free-tier infrastructure until 10 paying customers or 200 MAU
 | Resend | **100/day** is a real ceiling. Notifications batch into digests; transactional PO sends always go immediately. |
 | Artifact Registry | 0.5 GB free. Prune to the last 3 images or it fills quietly. |
 | Secrets | Keychain only: `security find-generic-password -a "$USER" -s OPENROUTER_API_KEY -w`. Never in the environment — an env dump leaks it verbatim. |
-| Free agent endpoints | nemotron-ultra and ox-alpha are free previews and can be withdrawn without notice. They are configured as **two separate agents** so a free author still gets a free reviewer; `agents.yaml` has the fallback chain. |
+| Free agent endpoints | Both OpenCode Zen previews died — `ox-alpha` withdrawn, then `nemotron-ultra` failing every request. **Route every agent through OpenRouter instead.** Test a suspect endpoint with a one-word prompt (`Reply with exactly: PONG`) before blaming the model or the prompt. |
+| Review verdicts | Reviewers hand-write JSON against a schema that lives in prose, and nothing validates it at write time. `"approved"` for `"approve"` once read as a *rejection* and would have blocked a story on a typo. `flo gate` now normalises the obvious spellings via `verdict_of()` and fails unreadable ones loudly as malformed. |
 | opencode sandbox | A reviewer run **dies outright** on a rejected permission — it does not degrade. Reading a dotfile (`apps/web/.env.production`) and writing a backup to `/tmp` each killed a qwen review mid-experiment. Reviewer prompts must say: scratch files inside the worktree only, `git checkout -- <file>` to restore after planting a violation, never open dotfiles. Inline any dotfile the reviewer needs into the packet. |
 | Parallel reviewers | Two reviewers in one worktree corrupt each other — both are told to plant violations and revert them. Run them sequentially, or give the second its own `git worktree add --detach` at the same commit (remember `npm ci` there, and copy the verdict back into the story worktree, since `flo gate` only reads that one). |
 
@@ -108,6 +109,26 @@ the two-reviewer floor, and four runs of OpenRouter spend bought nothing.
 milestone override reviewers are now `[opus, kimi, deepseek]`; every fallback chain naming
 qwen now names kimi. qwen's scorecard history is left untouched — those records are immutable
 and its earlier findings were real. Revisit if kimi shows the same completion problem.
+
+**25 Aug 2026 — everything runs through OpenRouter now.** OpenCode Zen's
+`nemotron-ultra` began failing every request with `UnknownError: Unexpected server error`;
+a bare one-word prompt failed identically, so the endpoint was gone, not the model. That is
+the **second** Zen endpoint withdrawn after `ox-alpha`, and it briefly left the free
+reviewer pool empty — breaking AGENTS.md §1's promise that every story gets a free
+reviewer. Both now point at OpenRouter, where the operator holds real credits:
+`nvidia/nemotron-3-ultra-550b-a55b:free` and `stealth/ox-alpha`. Smoke-tested: nemotron
+answers. Prefer OpenRouter for every agent — a `:free` variant there can degrade to the
+paid model instead of disappearing.
+
+**Open: qwen vs kimi, decide on the next story.** Run **both** as reviewers on the next
+gated story and compare findings that survive the Opus final. If comparable, keep **kimi**
+— qwen is materially more expensive. If qwen clearly outperforms, revert to qwen. Context:
+qwen was replaced after four failed runs on E01-S05, but every one of those failures was
+later traced to the *review packet* — dotfile reads, `/tmp` writes, and a 1,108-line
+lockfile — all since fixed in `flo review`. qwen was probably never the problem. kimi's
+first outing was weak on its own merits: given a clean room it produced **zero**
+independent findings, and its earlier three were two copied from deepseek's verdict file
+plus one fabricated regex defect. Neither agent has a fair sample yet.
 
 **Merge authority:** the operator has delegated GitHub merges for M0 to Opus, with the
 instruction to space them out so the repository does not read as bot-driven. Outside M0 the
