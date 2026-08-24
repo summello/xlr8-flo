@@ -305,9 +305,19 @@ jobs:
 
       - name: Migrate then deploy API
         run: |
-          gcloud run jobs execute flo-migrate --region us-central1 --wait
+          # No migrations exist yet, and flo-migrate is not created until they do.
+          # Gating on the directory keeps this honest: the moment the first
+          # migration lands, this line runs and fails loudly on the missing job
+          # rather than deploying against an unmigrated database.
+          if [ -d apps/api/migrations ]; then
+            gcloud run jobs execute flo-migrate --region us-central1 --wait
+          fi
+          # --service-account is not optional: without it Cloud Run runs as the
+          # default compute SA, which has no secretmanager.secretAccessor, and the
+          # DATABASE_URL mount below fails.
           gcloud run deploy flo-api --region us-central1 \
             --source apps/api --min-instances 0 --concurrency 80 \
+            --service-account "flo-runtime@${GCP_PROJECT}.iam.gserviceaccount.com" \
             --set-secrets DATABASE_URL=flo-database-url:latest
 
       - name: Prune registry to 3 images (Artifact Registry free tier is 0.5 GB)
@@ -325,3 +335,5 @@ jobs:
           npx wrangler pages deploy apps/web/dist --project-name flo-web
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # wrangler cannot infer the account when the token can see more than one.
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
