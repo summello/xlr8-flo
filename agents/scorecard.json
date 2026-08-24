@@ -426,6 +426,50 @@
       },
       "recap": "Delivered a closed error taxonomy, one RFC 9457 response handler, request-wide correlation logging, safe generic 500s, form-addressable validation errors, and problem-schema OpenAPI documentation. Integrated the handler into health readiness failures and covered disclosure, recovery, tenancy-safe 404, and correlation behavior.",
       "title": "RFC 9457 problem details, error taxonomy, no internal disclosure"
+    },
+    {
+      "story": "E01-S07",
+      "kind": "chore",
+      "size": "M",
+      "tags": [
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [
+        "qwen"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "qwen": {
+          "ran_tests": true,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a03517-c393-76a3-9462-aaa0f265d778",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "1b3a04b1-1fb7-44a6-8f20-533a25a52129",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "unavailable: OpenRouter has no session concept - pass the generation id to `flo session qwen <id>`"
+        }
+      },
+      "recap": "Added isolated reject-and-clean self-tests for every existing release gate, including regressions for the three historical silent failures. Missing tools now fail unless explicitly exempted, and flo check points pytest at the local Postgres test database.",
+      "title": "Gate self-tests - every CI gate proves it fails on a planted violation"
     }
   ]
 }

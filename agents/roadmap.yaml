@@ -128,7 +128,7 @@ epics:
           - SEC-012
         dep:
           - E01-S04
-        st: todo
+        st: done
 
   - id: E02
     name: Identity & access

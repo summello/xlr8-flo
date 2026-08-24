@@ -219,6 +219,8 @@ Deliberate shortcuts get a `ponytail:` comment naming the ceiling and the upgrad
 7. No open `blocker` finding, and no unaccepted critical/high security finding.
 8. Requirement→test traceability is recorded in the task packet.
 9. `agents/roadmap.yaml` status is updated and §5 of `docs/claude-plan.md` is regenerated (`flo roadmap`).
+10. Any gate, contract or guard the story adds or edits ships a test that plants a real
+    violation and proves the gate fails on it. A gate nobody has seen fail is not a gate.
 
 ---
 
