@@ -950,6 +950,13 @@ def pending_on_human(rm, fleet):
             items.append(dict(key=f"blocked:{s['id']}", sig=s["st"],
                               kind="Decision needed", ref=s["id"], name=s["t"],
                               why=q or "Story is blocked; the question is in its task packet."))
+        # operator prerequisites: things only a person with an account can provide
+        pre = s.get("prereq") or []
+        if pre and s["st"] != "done":
+            items.append(dict(key=f"prereq:{s['id']}", sig=str(len(pre)),
+                              kind="Operator prerequisite", ref=s["id"], name=s["t"],
+                              why="Cannot be verified end to end until you provide: "
+                                  + "; ".join(pre)))
     # a milestone fully done but not yet merged to main
     for m in rm["milestones"]:
         eps = [e for e in rm["epics"] if e["milestone"] == m["id"]]

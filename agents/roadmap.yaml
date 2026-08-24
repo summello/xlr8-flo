@@ -106,6 +106,13 @@ epics:
           - SEC-012
         dep:
           - E01-S04
+        prereq:
+          - A GCP project with Workload Identity Federation configured for this
+            repository, plus the GCP_WIF_PROVIDER, GCP_DEPLOY_SA and GCP_PROJECT
+            repository secrets
+          - A Cloudflare account with an API token scoped to Pages, plus the
+            CLOUDFLARE_API_TOKEN repository secret
+          - DNS for the chosen hostname, delegated to Cloudflare
         st: todo
       - id: E01-S06
         t: Neon + R2 + Secret Manager wiring, infra/SETUP.md, registry pruning
