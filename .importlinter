@@ -1,0 +1,16 @@
+[importlinter]
+root_package = flo
+
+[importlinter:contract:layers]
+name = Layered architecture
+type = layers
+layers =
+    flo.api
+    flo.modules
+    flo.kernel
+
+[importlinter:contract:module-independence]
+name = Business modules are independent
+type = independence
+modules =
+    flo.modules.*
