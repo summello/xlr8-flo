@@ -37,9 +37,18 @@ milestone_overrides:
     # the same stories where qwen raised three majors and a blocker and deepseek
     # raised two findings, including a non-ISO currency code accepted as money and
     # a float ban that missed '-> float'. It is not malfunctioning; it is a cheap
-    # model doing a shallow pass. Gated M0 stories therefore carry opus + qwen +
-    # deepseek, and nemotron keeps ungated work where a shallow pass is adequate.
-    reviewers: [opus, qwen, deepseek]
+    # model doing a shallow pass. Gated M0 stories therefore carry three independent
+    # reviewers plus the Opus final, and nemotron keeps ungated work where a shallow
+    # pass is adequate.
+    # 25 Aug 2026, third routing change. qwen is replaced by kimi. On E01-S05 qwen
+    # failed four consecutive review runs without ever producing a verdict: two died
+    # on sandbox permission rejections mid-experiment, one on a repeat of the same,
+    # and the fourth ran fourteen minutes emitting zero output. Its partial passes
+    # were sound - it withdrew a failure() hypothesis after research and dismissed a
+    # preview-only ruff rule - so this is an operational reliability change, not a
+    # judgement on review quality. A reviewer that cannot finish cannot count toward
+    # the two-reviewer floor.
+    reviewers: [opus, kimi, deepseek]
     opus_final_all: true
     cost: >
       The operator holds Codex usage resets, so the weekly cap is not the binding
@@ -87,7 +96,7 @@ agents:
     metered: none                # unmetered — carries the volume
     roles: [author, review]
     allowed_kinds: [crud, ui, api, chore, docs, engine, migration, test]
-    fallback: [opencode-ox, qwen, codex]
+    fallback: [opencode-ox, kimi, codex]
     notes: >
       Default author. Free preview endpoint — on 429 or 5xx, fall back per the chain
       and record the substitution in task.json.
@@ -99,14 +108,14 @@ agents:
     metered: none                # second free model — the reason Codex is not spent on reviews
     roles: [author, review]
     allowed_kinds: [crud, ui, api, chore, docs, engine, test]
-    fallback: [opencode-nemotron, qwen]
+    fallback: [opencode-nemotron, kimi]
     notes: >
       Distinct model from nemotron-ultra, so a free author still gets a free,
       independent reviewer. Keep them assigned to different sides of a story.
 
-  qwen:
-    model: qwen/qwen3.8-27b                      # OpenRouter; replaced nemotron as the
-    cli: "opencode run --model openrouter/qwen/qwen3.8-27b"   # primary reviewer
+  kimi:
+    model: moonshotai/kimi-k2.6                  # OpenRouter; replaced qwen as the
+    cli: "opencode run --model openrouter/moonshotai/kimi-k2.6"   # primary reviewer
     # Gotcha: opencode's SAVED OpenRouter credential is stale and shadows the environment
     # key, so plain `opencode run -m openrouter/...` fails with `Error: User not found`
     # even though the keychain key is valid. Run it with an isolated auth store instead:
@@ -124,13 +133,13 @@ agents:
     fallback: [deepseek]
 
   deepseek:
-    model: deepseek/deepseek-v4-pro-0813         # OpenRouter; qwen's review fallback
+    model: deepseek/deepseek-v4-pro-0813         # OpenRouter; kimi's review fallback
     cli: "opencode run --model openrouter/deepseek/deepseek-v4-pro-0813"
     plan: openrouter-credits
     metered: spend
     roles: [review]              # review only - authoring stays with codex for M0
     allowed_kinds: []
-    fallback: [qwen]
+    fallback: [kimi]
     notes: >
       Second independent reviewer. Exists because opencode-ox's ox-alpha endpoint was
       withdrawn, leaving the free pool at one model and no independent check on it.

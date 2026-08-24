@@ -74,6 +74,8 @@ Multi-tenant SaaS. Free-tier infrastructure until 10 paying customers or 200 MAU
 | Artifact Registry | 0.5 GB free. Prune to the last 3 images or it fills quietly. |
 | Secrets | Keychain only: `security find-generic-password -a "$USER" -s OPENROUTER_API_KEY -w`. Never in the environment — an env dump leaks it verbatim. |
 | Free agent endpoints | nemotron-ultra and ox-alpha are free previews and can be withdrawn without notice. They are configured as **two separate agents** so a free author still gets a free reviewer; `agents.yaml` has the fallback chain. |
+| opencode sandbox | A reviewer run **dies outright** on a rejected permission — it does not degrade. Reading a dotfile (`apps/web/.env.production`) and writing a backup to `/tmp` each killed a qwen review mid-experiment. Reviewer prompts must say: scratch files inside the worktree only, `git checkout -- <file>` to restore after planting a violation, never open dotfiles. Inline any dotfile the reviewer needs into the packet. |
+| Parallel reviewers | Two reviewers in one worktree corrupt each other — both are told to plant violations and revert them. Run them sequentially, or give the second its own `git worktree add --detach` at the same commit (remember `npm ci` there, and copy the verdict back into the story worktree, since `flo gate` only reads that one). |
 
 ## Fleet routing changes — evidence, not impressions
 
@@ -92,6 +94,20 @@ Change: M0 override reviewers are now `[opus, qwen, deepseek, opencode-nemotron]
 `qwen` = `openrouter/qwen/qwen3.8-27b`, `deepseek` = `openrouter/deepseek/deepseek-v4-pro-0813`,
 both metered on OpenRouter credits. Authoring is unchanged — codex remains M0 sole author.
 Revisit at the M0 retro with a real blocker-precision number for each.
+
+**25 Aug 2026 — qwen replaced by kimi on reliability, not quality.** On E01-S05 `qwen`
+failed **four consecutive review runs** without ever writing a verdict. Two died on sandbox
+permission rejections mid-experiment (reading `apps/web/.env.production`, then writing a
+backup to `/tmp`), a third repeated the second, and the fourth ran fourteen minutes emitting
+zero output. Its partial work was *good* — it withdrew its own `failure()`-escape hypothesis
+after researching the semantics, and correctly dismissed an `E302` as preview-only in ruff —
+so this is not a review-quality judgement. A reviewer that cannot finish cannot count toward
+the two-reviewer floor, and four runs of OpenRouter spend bought nothing.
+
+`kimi` = `openrouter/moonshotai/kimi-k2.6`, same budget and roles qwen held. `agents.yaml`
+milestone override reviewers are now `[opus, kimi, deepseek]`; every fallback chain naming
+qwen now names kimi. qwen's scorecard history is left untouched — those records are immutable
+and its earlier findings were real. Revisit if kimi shows the same completion problem.
 
 **Merge authority:** the operator has delegated GitHub merges for M0 to Opus, with the
 instruction to space them out so the repository does not read as bot-driven. Outside M0 the
