@@ -145,7 +145,11 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
-      - run: pip install -e 'apps/api[dev]'
+      - name: Install API dependencies
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install -e 'apps/api[dev]'
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
       - run: ruff check apps/api
       - run: mypy --strict apps/api/src/flo
 
@@ -153,20 +157,7 @@ jobs:
         run: lint-imports
 
       - name: No float in money modules (AGENTS.md 3.1)
-        run: |
-          set -euo pipefail
-          targets=()
-          for d in budget purchasing sourcing requisitions; do
-            if [ -d "apps/api/src/flo/modules/$d" ]; then
-              targets+=("apps/api/src/flo/modules/$d")
-            else
-              echo "::notice::module $d not built yet"
-            fi
-          done
-          if [ "${#targets[@]}" -gt 0 ] && \
-             grep -rnE '\bfloat\(|:[[:space:]]*float\b' "${targets[@]}"; then
-            echo "::error::float is banned in money modules - use Decimal"; exit 1
-          fi
+        run: python apps/api/scripts/check_money_floats.py
 
       - run: pytest -q apps/api --cov=flo --cov-report=term-missing
 
@@ -181,6 +172,16 @@ jobs:
 
       - name: Tenancy OpenAPI and migration guards
         run: python apps/api/scripts/check_tenancy.py
+
+      - name: Python dependency SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610  # v0.24.0
+        with:
+          path: .venv
+          format: cyclonedx-json
+          artifact-name: sbom-python.cyclonedx.json
+          output-file: sbom-python.cyclonedx.json
+          upload-artifact-retention: 14
+          upload-release-assets: false
 
   frontend:
     runs-on: ubuntu-latest
@@ -222,9 +223,24 @@ jobs:
       - name: E2E and accessibility (A11Y-001)
         run: npm --prefix apps/web run test:e2e
 
+      - name: Node dependency SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610  # v0.24.0
+        env:
+          SYFT_JAVASCRIPT_INCLUDE_DEV_DEPENDENCIES: 'true'
+        with:
+          path: apps/web
+          format: cyclonedx-json
+          artifact-name: sbom-node.cyclonedx.json
+          output-file: sbom-node.cyclonedx.json
+          upload-artifact-retention: 14
+          upload-release-assets: false
+
   security:
     runs-on: ubuntu-latest
     needs: governance
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@v5
         with:
@@ -239,8 +255,24 @@ jobs:
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
           ignore-unfixed: true
-          # Trivy scans the checkout; nothing to scan yet, but the gate must be live
-          # from the first commit rather than switched on once dependencies exist.
+          format: sarif
+          output: trivy-results.sarif
+
+      - name: Attach dependency scan results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: trivy-dependency-scan
+          path: trivy-results.sarif
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Publish Trivy findings to code scanning
+        if: always() && hashFiles('trivy-results.sarif') != ''
+        uses: github/codeql-action/upload-sarif@42947a340483f03ba47bb1a039b2c519aab3df85  # v3
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy-dependency-scan
 
   deploy:
     # Only main deploys. Milestone branches build but never release.
