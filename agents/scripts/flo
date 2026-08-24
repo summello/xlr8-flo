@@ -1048,8 +1048,12 @@ def cmd_board(argv):
 
     parts = [f"<title>XLR8 FLO Board</title>", f"<style>{BOARD_CSS}</style>",
              '<link rel="preconnect" href="https://fonts.googleapis.com">',
-             '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?'
-             'family=Inter:wght@400;500;560;600;620;640&family=JetBrains+Mono:wght@400;460;620&display=swap">',
+             # Explicit +, not implicit adjacency: CodeQL reads adjacent string
+             # literals inside a list as a possible missing comma, and that warning
+             # fails the code-scanning gate on every pull request.
+             ('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?'
+              + 'family=Inter:wght@400;500;560;600;620;640'
+              + '&family=JetBrains+Mono:wght@400;460;620&display=swap">'),
              '<div class="w">', "<header>",
              f'<div><p class="eb">Delivery board</p><h1>XLR8 FLO</h1></div><div class="sp"></div>',
              f'<div class="stat"><span class="eb">Delivered</span><b>{len(done)}/{len(all_s)}</b></div>',
