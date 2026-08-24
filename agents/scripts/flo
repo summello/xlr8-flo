@@ -1205,7 +1205,9 @@ CHECKS = [
     ("ruff", ["ruff", "check", "apps/api"]),
     ("mypy", ["mypy", "--strict", "apps/api/src/flo"]),
     ("boundaries", ["lint-imports"]),
-    ("pytest", ["pytest", "-q", "apps/api"]),
+    # Same flags CI runs. Without them a green `flo check` can still fail CI on a
+    # missing pytest-cov, which is exactly how E01-S01 reached a red pull request.
+    ("pytest", ["pytest", "-q", "apps/api", "--cov=flo", "--cov-report=term-missing"]),
     ("eslint", ["npm", "--prefix", "apps/web", "run", "lint"]),
     ("tsc", ["npm", "--prefix", "apps/web", "run", "typecheck"]),
     ("vitest", ["npm", "--prefix", "apps/web", "run", "test"]),
