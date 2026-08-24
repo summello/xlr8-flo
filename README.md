@@ -221,7 +221,7 @@ flo done    E07-S03     # ➜ squash-merge, update roadmap + scorecard + board
 
 **One author, two independent reviewers**, at least one unmetered so a rate-limited agent is never the reason a story cannot merge. Reviewers get the diff and the requirement IDs but **not the author's rationale** — agreeing with reasoning you were shown is not review. Money, auth, security, migration, UI and concurrency stories additionally require an Opus final review.
 
-One branch and one git worktree per story. Stories squash-merge into a milestone branch; **a pull request to `main` opens only when a milestone is complete**, preserving one commit per story.
+One branch and one git worktree per story. Stories squash-merge into a milestone branch; **`main` takes no direct push** and advances only by merging a milestone pull request, preserving one commit per story. Opus proposes that PR when the exit criteria are met and the full-diff review is clean — never on a schedule.
 
 ### 📈 Agent scorecard
 

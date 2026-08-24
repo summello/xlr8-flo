@@ -136,8 +136,27 @@ def cmd_assign(argv):
     if not argv:
         die("usage: flo assign <STORY_ID>")
     rm, fleet = roadmap(), load_yaml(FLEET)
-    _, st = find(rm, argv[0])
+    epic, st = find(rm, argv[0])
     pol, agents, sp = fleet["policy"], fleet["agents"], state().get("spend", {})
+    tags = set(st.get("tags", []))
+
+    # Step 0 — a milestone override wins outright over the capacity heuristic.
+    ov = (fleet.get("milestone_overrides") or {}).get(epic["milestone"])
+    if ov:
+        author = ov["sole_author"]
+        if st["k"] not in agents[author].get("allowed_kinds", []):
+            die(f"{argv[0]}: milestone override makes {author} sole author but kind="
+                f"{st['k']} is not in its allowed_kinds — widen it in agents.yaml")
+        reviewers = [r for r in ov["reviewers"] if r != author]
+        if len(reviewers) < pol["min_reviewers"]:
+            die(f"override for {epic['milestone']} leaves {len(reviewers)} reviewer(s); "
+                f"minimum is {pol['min_reviewers']}")
+        out = {"author": author, "reviewers": reviewers,
+               "opus_final": bool(ov.get("opus_final_all")) or bool(tags & set(pol["opus_final_required_tags"])),
+               "override": epic["milestone"]}
+        print(json.dumps(out, indent=2))
+        return out
+
     size_rank = {"S": 1, "M": 2, "L": 3}
     scarcity = {"none": 0, "spend": 1, "rate": 2}
 
@@ -159,7 +178,6 @@ def cmd_assign(argv):
     cands = [n for n, c in agents.items() if can_author(n, c)]
     if not cands:
         die(f"no agent may author kind={st['k']} size={st['s']} — check allowed_kinds in agents.yaml")
-    tags = set(st.get("tags", []))
 
     def rank(n):
         c = agents[n]
@@ -228,6 +246,9 @@ def cmd_start(argv):
     print(f"\nworktree  {wt}\nbranch    {branch}\ndesign    design/{sid}.md")
     print(f"author    {assignment['author']}\nreviewers {', '.join(assignment['reviewers'])}"
           f"\nopus final{'  required' if assignment['opus_final'] else '  not required'}")
+    if assignment.get("override"):
+        print(f"override  {assignment['override']} — sole author by milestone policy "
+              f"(agents/agents.yaml milestone_overrides)")
     print(f"\n  cd {wt} && cat design/{sid}.md")
 
 

@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Blocks direct pushes to main. Work reaches main only through a milestone pull
+# request, so history stays one squashed commit per story.
+#
+# Enable:  git config core.hooksPath .githooks
+# Bypass:  git push --no-verify   (only for a deliberate, explained exception)
+#
+# This hook is local and bypassable. The real control is GitHub branch protection
+# on main — see infra/SETUP.md. Both should be on.
+
+set -euo pipefail
+protected="refs/heads/main"
+
+while read -r _local_ref local_sha remote_ref _remote_sha; do
+  [ "$remote_ref" = "$protected" ] || continue
+  # allow deletion and the no-op case to fall through to git's own handling
+  [ "$local_sha" = "0000000000000000000000000000000000000000" ] && continue
+
+  cat >&2 <<'MSG'
+
+  Direct push to main is blocked.
+
+  main advances only by merging a milestone pull request:
+
+      git checkout -b milestone/Mx-<name>
+      # stories squash-merge into the milestone branch via `flo done`
+      gh pr create --base main --head milestone/Mx-<name>
+
+  Rationale: main keeps one commit per story, and every milestone gets a
+  full-diff review before it lands (AGENTS.md §2.4).
+
+MSG
+  exit 1
+done
+exit 0

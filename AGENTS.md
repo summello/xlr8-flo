@@ -120,6 +120,12 @@ These numbers route work; they do not rank agents. A low author score on `money`
 
 ### 2.4 Gate and merge
 
+**`main` accepts no direct push.** Stories squash-merge into their milestone branch; `main` advances
+only by merging a milestone pull request, and that PR is proposed by Opus when the work is
+sufficient — exit criteria met, full-diff review clean — never on a calendar. A `pre-push` hook in
+`.githooks/` blocks the mistake; GitHub branch protection is the control that actually holds.
+
+
 ```bash
 flo gate E07-S03             # Definition of Done, machine-checked
 flo done E07-S03             # squash-merge into the milestone branch, update roadmap, drop the worktree

@@ -11,6 +11,27 @@ policy:
                                                         # so a rationed agent is never the merge blocker
   opus_final_required_tags: [money, auth, security, migration, ui, concurrency]
 
+# Per-milestone overrides. A milestone may concentrate authorship on one agent when
+# the cost of getting it wrong is a rewrite rather than a patch. Reviewers are NOT
+# reduced by an override: review is cheap insurance and the free pool is unmetered.
+milestone_overrides:
+
+  M0:
+    reason: >
+      Foundations. 22 of 24 M0 stories are already tagged money/auth/security/
+      migration/ui/concurrency. Tenancy, RLS, money primitives, audit, idempotency
+      and sessions are not defects you patch later - getting them wrong is a rewrite
+      or a breach. Authorship is concentrated on the strongest coding agent and every
+      story takes an Opus final review, including the two that are not otherwise gated.
+    sole_author: codex
+    reviewers: [opus, opencode-nemotron]
+    opus_final_all: true
+    cost: >
+      The operator holds Codex usage resets, so the weekly cap is not the binding
+      constraint on M0 and all 24 stories stay with Codex. Reviewers are unchanged:
+      Opus plus one unmetered OpenCode agent on every story. Review is the cheapest
+      insurance in the fleet and concentrating authorship is not a reason to thin it.
+
 agents:
 
   opus:
@@ -27,17 +48,22 @@ agents:
       Never spend tokens reconstructing context flo already wrote into task.json.
 
   codex:
-    model: gpt-5-codex
+    model: gpt-5.6-sol            # operator-supplied; verify the exact --model string
+    reasoning: high               # the CLI flag, not a hint
     cli: "codex exec"
     plan: chatgpt-plus
     metered: rate
-    weekly_story_budget: 6       # tight cap; keep for work only it should do
+    weekly_story_budget: 18      # operator holds usage resets; the cap is not the
+                                 # constraint it was. Still bounded so a runaway
+                                 # loop cannot burn every reset in one night.
     roles: [author, review]
-    allowed_kinds: [ledger, concurrency, migration, security, engine]
+    # M0 needs api/chore/ui too, because the M0 override makes codex sole author.
+    allowed_kinds: [ledger, concurrency, migration, security, engine, api, chore, ui]
     prefer_tags: [money, concurrency, migration, security]
-    fallback: [opencode]
+    fallback: [opencode-nemotron]
     notes: >
-      ChatGPT Plus weekly cap is tight. Never assign CRUD, docs or styling.
+      ChatGPT Plus weekly cap is tight. Outside a milestone override, never assign
+      CRUD, docs or styling - that capacity belongs on the ledger and the engines.
 
   opencode-nemotron:
     model: nemotron-ultra
@@ -76,6 +102,8 @@ agents:
     fallback: [opencode]
 
 # Assignment algorithm (implemented in flo assign — this is the spec, not a suggestion):
+#   0. if a milestone_override applies to the story's milestone, its sole_author and
+#      reviewers win outright; opus_final_all forces a final review on every story.
 #   1. candidates = agents where story.kind in allowed_kinds
 #                   and (size <= max_author_size or unset)
 #                   and has remaining capacity

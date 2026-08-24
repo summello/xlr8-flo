@@ -726,7 +726,8 @@ main
 - **One branch and one git worktree per story.** `flo start` creates both; `flo done` removes the worktree. Parallel agents never share a working tree.
 - A story branch is squash-merged into its milestone branch — **one commit per story**, message `E07-S03: reserve budget on requisition approval`.
 - **A pull request is opened only when a milestone is complete**, from `milestone/Mx` to `main`, as a merge commit preserving one commit per story. Squashing the whole milestone would erase story traceability, which the roadmap depends on.
-- `main` is protected: no direct pushes, CI green required, milestone PR requires an Opus review of the full milestone diff.
+- `main` is protected: **no direct pushes**, CI green required, milestone PR requires an Opus review of the full milestone diff. Enforced by `.githooks/pre-push` (`git config core.hooksPath .githooks`) — local and bypassable with `--no-verify`, so GitHub branch protection on `main` is the real control and both should be on.
+- **No milestone PR opens on a schedule.** Opus proposes one when the milestone's exit criteria in §4 are met and the full-diff review is clean. A partial milestone stays on its branch.
 
 ### 6.5 The roadmap stays current by construction
 

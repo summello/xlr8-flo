@@ -33,6 +33,8 @@ Multi-tenant SaaS. Free-tier infrastructure until 10 paying customers or 200 MAU
 8a. **UI uses tokens from `design-system/MASTER.md`.** No hardcoded colour, spacing, radius or duration. Colour never carries meaning alone. Money uses tabular figures and parenthesised negatives.
 9. **Balances are maintained in-transaction; the nightly job reports drift, it never corrects it.**
 10. **No PO without a completed RFQ** (SRC-018). Not negotiable without a decision-log entry.
+11. **No direct pushes to `main`.** Stories squash into a milestone branch; `main` advances only by milestone PR, proposed when the work is sufficient — never on a schedule. Enforced by `.githooks/pre-push`.
+12. **M0 is authored solely by Codex** (`gpt-5.6-sol`, high), reviewed by Opus + one OpenCode agent, with an Opus final review on every story. Foundations are a rewrite if wrong, not a patch. See `milestone_overrides` in `agents/agents.yaml`.
 
 ## Decisions already made — do not reopen without a `docs/claude-plan.md` §1 entry
 

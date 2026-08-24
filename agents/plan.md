@@ -31,7 +31,9 @@ Two of four agents are rationed, so the pipeline is built to spend their tokens 
      flo done <ID>            squash-merge into the milestone branch
 4. milestone exit criteria met (docs/claude-plan.md §4)
 5. Opus reviews the whole milestone diff
-6. open PR milestone/M1 → main, merge commit (one commit per story preserved)
+6. Opus judges the milestone sufficient — exit criteria met, review clean — and only
+   then proposes the PR. There is no calendar trigger, and no direct push to main.
+7. open PR milestone/M1 → main, merge commit (one commit per story preserved)
 ```
 
 **Three stories in flight is the ceiling.** Not because of git — because two reviewers per story means three in flight already saturates the fleet.
