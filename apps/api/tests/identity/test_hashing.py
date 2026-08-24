@@ -14,6 +14,7 @@ from psycopg import sql
 
 from flo.kernel.config import Settings
 from flo.kernel.identity import (
+    IdentityAlreadyExistsError,
     IdentityConnection,
     IdentityId,
     IdentityNotFoundError,
@@ -62,6 +63,22 @@ def test_each_identity_receives_a_distinct_salt(
     assert identity_connection.identities["one@example.test"][1] != identity_connection.identities[
         "two@example.test"
     ][1]
+
+
+def test_duplicate_identity_is_translated_to_the_port_error(
+    identity_connection: FakeIdentityConnection,
+) -> None:
+    provider = build_local_identity_provider(identity_connection, fast_settings())
+    provider.create_identity("duplicate@example.test", "the original safe passphrase")
+    original = identity_connection.identities["duplicate@example.test"]
+
+    with pytest.raises(IdentityAlreadyExistsError):
+        provider.create_identity(
+            "duplicate@example.test",
+            "a replacement that must not be stored",
+        )
+
+    assert identity_connection.identities["duplicate@example.test"] == original
 
 
 def test_higher_configured_cost_rehashes_on_successful_authentication(

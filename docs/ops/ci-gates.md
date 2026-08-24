@@ -16,6 +16,14 @@ story so failures are fixed before reviewer capacity is used.
 | End-to-end and accessibility | `npm --prefix apps/web run test:e2e` |
 | Secret scanning | `gitleaks detect --no-banner` |
 
+## Identity hashing configuration
+
+`FLO_IDENTITY_ARGON2_MEMORY_COST_KIB` is expressed in KiB. The deployed Cloud
+Run service has a 512 MiB per-instance memory ceiling; this knob accepts 8 MiB
+through 256 MiB (8,192 through 262,144 KiB), leaving memory for the application
+process. The deployment must also bound concurrent password hashing against that
+same instance ceiling before login is exposed publicly.
+
 ## Secret scanning
 
 Gitleaks scans the repository with its built-in rules. The root

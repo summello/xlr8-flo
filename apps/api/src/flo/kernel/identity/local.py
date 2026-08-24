@@ -134,7 +134,7 @@ class LocalIdentityProvider:
         self._dummy_hash = self._hasher.hash(_DUMMY_PASSWORD)
 
     def authenticate(self, email: str, password: str) -> AuthResult:
-        """Verify exactly one costly hash for both known and unknown emails."""
+        """Equalize current-cost verification for known and unknown emails."""
 
         stored = self._store.find_by_email(email)
         if stored is None:
@@ -145,12 +145,15 @@ class LocalIdentityProvider:
         try:
             self._hasher.verify(stored.password_hash, normalized)
         except VerifyMismatchError:
+            if self._hasher.check_needs_rehash(stored.password_hash):
+                self._verify_dummy(normalized)
             return AuthResult.invalid_credentials()
         except (InvalidHashError, VerificationError):
             self._verify_dummy(normalized)
             return AuthResult.invalid_credentials()
 
         if self._hasher.check_needs_rehash(stored.password_hash):
+            self._verify_dummy(normalized)
             replacement = self._hasher.hash(normalized)
             self._store.rehash_password(
                 stored.identity_id,

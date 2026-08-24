@@ -5,13 +5,15 @@ import logging
 import statistics
 import time
 from dataclasses import asdict
+from unittest.mock import patch
 
 import pytest
+from argon2 import PasswordHasher, extract_parameters
 
-from flo.kernel.identity import PasswordPolicyError
+from flo.kernel.identity import PasswordPolicyError, build_local_identity_provider
 from flo.kernel.identity.port import IdentityProvider
 
-from .conftest import FakeIdentityConnection
+from .conftest import FakeIdentityConnection, fast_settings
 
 
 def _failure_wire_bytes(result: object) -> bytes:
@@ -66,6 +68,38 @@ def test_unknown_email_and_wrong_password_medians_differ_by_less_than_ten_percen
     )
 
     assert relative_difference < 0.10
+
+
+def test_stale_known_hash_and_unknown_email_do_equal_current_cost_work(
+    identity_connection: FakeIdentityConnection,
+) -> None:
+    password = "the known safe passphrase"
+    old_provider = build_local_identity_provider(identity_connection, fast_settings(time_cost=1))
+    old_provider.create_identity("known@example.test", password)
+    provider = build_local_identity_provider(identity_connection, fast_settings(time_cost=2))
+    original_verify = PasswordHasher.verify
+
+    with patch.object(
+        PasswordHasher,
+        "verify",
+        autospec=True,
+        side_effect=original_verify,
+    ) as verify:
+        provider.authenticate("unknown@example.test", "an incorrect safe passphrase")
+        unknown_work = [extract_parameters(call.args[1]) for call in verify.call_args_list]
+        assert len(unknown_work) == 1
+        current_parameters = unknown_work[0]
+        verify.reset_mock()
+
+        provider.authenticate("known@example.test", "an incorrect safe passphrase")
+        known_work = [extract_parameters(call.args[1]) for call in verify.call_args_list]
+
+    assert unknown_work == [current_parameters]
+    assert current_parameters.time_cost == 2
+    assert current_parameters.memory_cost == 8 * 1024
+    assert current_parameters.parallelism == 1
+    assert known_work.count(current_parameters) == len(unknown_work)
+    assert [parameters.time_cost for parameters in known_work] == [1, 2]
 
 
 def test_passwords_do_not_appear_in_results_errors_logs_or_stored_rows(

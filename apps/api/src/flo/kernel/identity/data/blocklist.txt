@@ -1,4 +1,5 @@
 # SHA-1 prefix:suffix index derived from SecLists xato-net top 100000 (retrieved 2026-08-24)
+# SecLists Copyright (c) 2018 Daniel Miessler; redistributed under the MIT License
 # Source SHA-256: 1472aafa2561df5e3293aee252aee3ca660c12b399a283cf808bb01b39be388b
 0000B:11E02756618824B5F63DF7EDD72478A0E9A
 00013:0D3608D9F6CD7A951EB15BCA73838A3A263

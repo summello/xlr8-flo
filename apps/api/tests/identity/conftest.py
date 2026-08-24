@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import cast
 
 import pytest
+from psycopg.errors import UniqueViolation
 
 from flo.kernel.config import Settings
 from flo.kernel.identity import IdentityConnection, IdentityId, build_local_identity_provider
@@ -37,6 +38,8 @@ class FakeIdentityConnection:
             return FakeResult(None if stored is None else (stored[0], stored[1]))
         if query.startswith("INSERT"):
             identity_id, email, password_hash = cast(tuple[IdentityId, str, str], params)
+            if email in self.identities:
+                raise UniqueViolation
             self.identities[email] = (identity_id, password_hash)
             return FakeResult(rowcount=1)
         if "AND password_hash" in query:

@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 
 from flo.kernel.config import Settings
 
@@ -24,3 +25,12 @@ def test_argon2_cost_defaults_and_environment_override(
     monkeypatch.setenv("FLO_IDENTITY_ARGON2_TIME_COST", "4")
 
     assert Settings().identity_argon2_time_cost == 4
+
+
+def test_argon2_memory_cost_cannot_consume_the_whole_instance() -> None:
+    assert Settings(identity_argon2_memory_cost_kib=256 * 1024).identity_argon2_memory_cost_kib == (
+        256 * 1024
+    )
+
+    with pytest.raises(ValidationError):
+        Settings(identity_argon2_memory_cost_kib=256 * 1024 + 1)
