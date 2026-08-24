@@ -81,7 +81,7 @@ epics:
           - REL-003
         dep:
           - E01-S01
-        st: todo
+        st: done
       - id: E01-S04
         t: 'CI: lint, types, tests, gitleaks, import-linter, roadmap drift check'
         k: chore

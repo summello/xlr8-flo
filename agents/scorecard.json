@@ -85,6 +85,50 @@
       },
       "recap": "Delivered a digest-pinned local Postgres 17, MinIO and Mailpit stack with dev/test database initialization and an idempotent attachment bucket. flo up, flo up --reset and flo down now health-gate startup, reset volumes and stop the stack.",
       "title": "Local stack: Postgres 17 + MinIO + Mailpit via one command"
+    },
+    {
+      "story": "E01-S03",
+      "kind": "chore",
+      "size": "M",
+      "tags": [
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [
+        "opencode-nemotron"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "opencode-nemotron": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a031ae-7d64-7300-b3a8-946a3c31ccfa",
+          "source": "codex rollout matched on cwd"
+        },
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E01-S03 and model~nemotron-ultra"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "a8c2a1bf-3633-4a96-8941-8f5a43f2a7ce",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Delivered a slim multi-stage API container that runs read-only as uid 1001 and drains gracefully on SIGTERM. Separate unauthenticated liveness and bounded database/storage readiness endpoints return non-disclosing per-dependency status.",
+      "title": "API container image, slim multi-stage, non-root, health endpoints"
     }
   ]
 }
