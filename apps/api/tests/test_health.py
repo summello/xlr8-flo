@@ -4,12 +4,22 @@ from collections.abc import Iterator
 import httpx
 import pytest
 
-from flo.api.health import HealthProbe, app, get_readiness_probes
+from flo.api import health
+from flo.api.health import (
+    HealthProbe,
+    ReadinessCache,
+    app,
+    get_readiness_cache,
+    get_readiness_probes,
+    get_settings,
+)
 from flo.kernel.config import Settings
 
 
 @pytest.fixture(autouse=True)
 def clear_dependency_overrides() -> Iterator[None]:
+    cache = ReadinessCache()
+    app.dependency_overrides[get_readiness_cache] = lambda: cache
     yield
     app.dependency_overrides.clear()
 
@@ -53,6 +63,54 @@ def test_readyz_reports_each_healthy_dependency() -> None:
         "status": "ok",
         "checks": {"database": "ok", "storage": "ok"},
     }
+
+
+def test_concurrent_readyz_requests_share_one_database_connection_attempt(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    connection_attempts = 0
+    connection_started = asyncio.Event()
+    release_connection = asyncio.Event()
+
+    class FakeConnection:
+        async def execute(self, _: str) -> None:
+            return None
+
+        async def close(self) -> None:
+            return None
+
+    async def connect(_: str) -> FakeConnection:
+        nonlocal connection_attempts
+        connection_attempts += 1
+        connection_started.set()
+        await release_connection.wait()
+        return FakeConnection()
+
+    async def request_burst() -> None:
+        settings = Settings(
+            database_url="postgresql://unused",
+            readiness_cache_ttl_seconds=0.01,
+        )
+        app.dependency_overrides[get_settings] = lambda: settings
+        _override_probes(database=health.check_database, storage=_ok)
+        monkeypatch.setattr(health.psycopg.AsyncConnection, "connect", connect)
+
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            requests = [asyncio.create_task(client.get("/readyz")) for _ in range(20)]
+            await connection_started.wait()
+            await asyncio.sleep(0)
+            release_connection.set()
+            responses = await asyncio.gather(*requests)
+
+            assert {response.status_code for response in responses} == {200}
+            assert connection_attempts == 1
+
+            await asyncio.sleep(settings.readiness_cache_ttl_seconds * 2)
+            assert (await client.get("/readyz")).status_code == 200
+            assert connection_attempts == 2
+
+    asyncio.run(request_burst())
 
 
 def test_database_failure_degrades_readiness_but_not_liveness() -> None:

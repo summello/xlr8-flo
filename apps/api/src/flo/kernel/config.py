@@ -16,4 +16,5 @@ class Settings(BaseSettings):
         validation_alias="STORAGE_ENDPOINT_URL",
     )
     readiness_timeout_seconds: float = Field(default=1.0, gt=0, le=5)
+    readiness_cache_ttl_seconds: float = Field(default=2.0, gt=0, le=5)
     graceful_shutdown_timeout_seconds: int = Field(default=30, ge=1, le=300)
