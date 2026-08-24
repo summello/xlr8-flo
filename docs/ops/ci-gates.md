@@ -24,6 +24,12 @@ through 256 MiB (8,192 through 262,144 KiB), leaving memory for the application
 process. The deployment must also bound concurrent password hashing against that
 same instance ceiling before login is exposed publicly.
 
+Raising any Argon2 parameter opens a rehash window: until an identity next signs
+in successfully, its stored hash still carries the previous cost and the timing
+difference between known and unknown emails can be observed. Keep this window
+short operationally when deploying a parameter increase; adding compensating
+verification work merely moves the timing asymmetry and is prohibited.
+
 ## Secret scanning
 
 Gitleaks scans the repository with its built-in rules. The root

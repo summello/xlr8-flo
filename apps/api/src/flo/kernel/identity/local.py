@@ -27,6 +27,13 @@ from flo.kernel.identity.port import (
 _DUMMY_PASSWORD = "dummy credential used only to equalize authentication work"
 
 
+def _normalize_email(email: str) -> str:
+    # RFC 5321 makes the domain case-insensitive and leaves the local part to the
+    # provider. Every provider this product will meet treats both case-insensitively,
+    # and allowing two accounts for one human is the worse failure.
+    return email.casefold()
+
+
 @dataclass(frozen=True, slots=True)
 class _StoredIdentity:
     identity_id: IdentityId
@@ -134,9 +141,9 @@ class LocalIdentityProvider:
         self._dummy_hash = self._hasher.hash(_DUMMY_PASSWORD)
 
     def authenticate(self, email: str, password: str) -> AuthResult:
-        """Equalize current-cost verification for known and unknown emails."""
+        """Verify one credential hash without exposing the failure reason."""
 
-        stored = self._store.find_by_email(email)
+        stored = self._store.find_by_email(_normalize_email(email))
         if stored is None:
             self._verify_dummy(password)
             return AuthResult.invalid_credentials()
@@ -145,15 +152,14 @@ class LocalIdentityProvider:
         try:
             self._hasher.verify(stored.password_hash, normalized)
         except VerifyMismatchError:
-            if self._hasher.check_needs_rehash(stored.password_hash):
-                self._verify_dummy(normalized)
             return AuthResult.invalid_credentials()
         except (InvalidHashError, VerificationError):
-            self._verify_dummy(normalized)
             return AuthResult.invalid_credentials()
 
+        # ponytail: after Argon2 parameters change, timing distinguishes known from
+        # unknown emails only for identities with a pre-change hash, and only until
+        # their next successful sign-in; operations must keep that rehash window short.
         if self._hasher.check_needs_rehash(stored.password_hash):
-            self._verify_dummy(normalized)
             replacement = self._hasher.hash(normalized)
             self._store.rehash_password(
                 stored.identity_id,
@@ -168,7 +174,7 @@ class LocalIdentityProvider:
         self._require_policy(password)
         identity_id = IdentityId(uuid4())
         password_hash = self._hasher.hash(normalize_password(password))
-        self._store.insert(identity_id, email, password_hash)
+        self._store.insert(identity_id, _normalize_email(email), password_hash)
         return identity_id
 
     def change_password(self, identity_id: IdentityId, new: str) -> None:

@@ -8,7 +8,7 @@ from dataclasses import asdict
 from unittest.mock import patch
 
 import pytest
-from argon2 import PasswordHasher, extract_parameters
+from argon2 import PasswordHasher
 
 from flo.kernel.identity import PasswordPolicyError, build_local_identity_provider
 from flo.kernel.identity.port import IdentityProvider
@@ -70,13 +70,41 @@ def test_unknown_email_and_wrong_password_medians_differ_by_less_than_ten_percen
     assert relative_difference < 0.10
 
 
-def test_stale_known_hash_and_unknown_email_do_equal_current_cost_work(
+@pytest.mark.parametrize(
+    ("path", "expected_authenticated"),
+    [
+        ("unknown", False),
+        ("current_mismatch", False),
+        ("stale_mismatch", False),
+        ("malformed", False),
+        ("current_success", True),
+        ("stale_success", True),
+    ],
+)
+def test_each_authentication_path_performs_exactly_one_verification(
     identity_connection: FakeIdentityConnection,
+    path: str,
+    expected_authenticated: bool,
 ) -> None:
     password = "the known safe passphrase"
-    old_provider = build_local_identity_provider(identity_connection, fast_settings(time_cost=1))
-    old_provider.create_identity("known@example.test", password)
+    if path.startswith("stale"):
+        old_provider = build_local_identity_provider(
+            identity_connection, fast_settings(time_cost=1)
+        )
+        old_provider.create_identity("known@example.test", password)
+    elif path != "unknown":
+        current_provider = build_local_identity_provider(
+            identity_connection, fast_settings(time_cost=2)
+        )
+        current_provider.create_identity("known@example.test", password)
+
     provider = build_local_identity_provider(identity_connection, fast_settings(time_cost=2))
+    if path == "malformed":
+        identity_id, _ = identity_connection.identities["known@example.test"]
+        identity_connection.identities["known@example.test"] = (identity_id, "invalid hash")
+
+    email = "unknown@example.test" if path == "unknown" else "known@example.test"
+    attempted_password = password if path.endswith("success") else "an incorrect safe passphrase"
     original_verify = PasswordHasher.verify
 
     with patch.object(
@@ -85,21 +113,10 @@ def test_stale_known_hash_and_unknown_email_do_equal_current_cost_work(
         autospec=True,
         side_effect=original_verify,
     ) as verify:
-        provider.authenticate("unknown@example.test", "an incorrect safe passphrase")
-        unknown_work = [extract_parameters(call.args[1]) for call in verify.call_args_list]
-        assert len(unknown_work) == 1
-        current_parameters = unknown_work[0]
-        verify.reset_mock()
+        result = provider.authenticate(email, attempted_password)
 
-        provider.authenticate("known@example.test", "an incorrect safe passphrase")
-        known_work = [extract_parameters(call.args[1]) for call in verify.call_args_list]
-
-    assert unknown_work == [current_parameters]
-    assert current_parameters.time_cost == 2
-    assert current_parameters.memory_cost == 8 * 1024
-    assert current_parameters.parallelism == 1
-    assert known_work.count(current_parameters) == len(unknown_work)
-    assert [parameters.time_cost for parameters in known_work] == [1, 2]
+    assert result.authenticated is expected_authenticated
+    assert verify.call_count == 1
 
 
 def test_passwords_do_not_appear_in_results_errors_logs_or_stored_rows(

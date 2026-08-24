@@ -11,6 +11,7 @@ import psycopg
 import pytest
 from argon2 import Type, extract_parameters
 from psycopg import sql
+from psycopg.errors import UniqueViolation
 
 from flo.kernel.config import Settings
 from flo.kernel.identity import (
@@ -79,6 +80,29 @@ def test_duplicate_identity_is_translated_to_the_port_error(
         )
 
     assert identity_connection.identities["duplicate@example.test"] == original
+
+
+def test_email_identity_is_casefolded_for_create_and_authentication(
+    identity_connection: FakeIdentityConnection,
+) -> None:
+    provider = build_local_identity_provider(identity_connection, fast_settings())
+    identity_id = provider.create_identity(
+        "User@Example.com", "the original safe passphrase"
+    )
+
+    with pytest.raises(IdentityAlreadyExistsError):
+        provider.create_identity(
+            "user@example.com",
+            "a replacement that must not be stored",
+        )
+
+    assert list(identity_connection.identities) == ["user@example.com"]
+    assert provider.authenticate(
+        "User@Example.com", "the original safe passphrase"
+    ).identity_id == identity_id
+    assert provider.authenticate(
+        "user@example.com", "the original safe passphrase"
+    ).identity_id == identity_id
 
 
 def test_higher_configured_cost_rehashes_on_successful_authentication(
@@ -198,6 +222,11 @@ def test_identity_migration_is_reversible_and_does_not_touch_seeded_data() -> No
         ).fetchone()
         assert stored_hash is not None
         assert str(stored_hash[0]).startswith("$argon2id$")
+        with pytest.raises(UniqueViolation):
+            connection.execute(
+                "INSERT INTO identity (id, email, password_hash) VALUES (%s, %s, %s)",
+                (uuid4(), "MIGRATION@EXAMPLE.TEST", stored_hash[0]),
+            )
 
         migration.downgrade(connection)
         assert connection.execute("SELECT to_regclass('public.identity')").fetchone() == (None,)

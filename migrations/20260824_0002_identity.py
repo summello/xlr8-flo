@@ -21,13 +21,14 @@ class MigrationConnection(Protocol):
 UPGRADE_SQL = """
 CREATE TABLE identity (
     id uuid PRIMARY KEY,
-    email text NOT NULL UNIQUE,
+    email text NOT NULL,
     password_hash text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT identity_password_hash_argon2id
         CHECK (password_hash LIKE '$argon2id$%')
-)
+);
+CREATE UNIQUE INDEX identity_email_case_insensitive_key ON identity (lower(email))
 """
 
 DOWNGRADE_SQL = "DROP TABLE identity"
