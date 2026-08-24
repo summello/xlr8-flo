@@ -47,6 +47,7 @@ Multi-tenant SaaS. Free-tier infrastructure until 10 paying customers or 200 MAU
 - No Terraform yet — deploy scripts in CI (D-13)
 - Modular monolith with `import-linter`-enforced boundaries (D-15)
 - First sellable release is **M3**, the full money loop including RFQ (D-16)
+- **One public origin**, `xlr8flo.summello.com`; Cloudflare path-splits `/api/*` to Cloud Run, the rest to Pages. No CORS anywhere — if a story needs it, D-17 has been violated (D-17)
 
 ## Rejected, with reasons — do not re-propose
 

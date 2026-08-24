@@ -40,6 +40,7 @@ Every row is a decision that was contested between the two prior plans, or an op
 | D-14 | Malware scanning | Allow-list + magic-byte verification + size cap + quarantine-until-cleared + **SHA-256 reputation lookup** (hash only, never the file) | ClamAV in-process (300 MB signature DB — will not fit), uploading customer files to a third party | COL-005 is not waived: the compensating controls are named, the residual risk is accepted in writing, and full AV is a hard gate at graduation (E19-S04). | Graduation, or first attachment-borne incident |
 | D-15 | Architecture style | **Modular monolith** with enforced import boundaries (`import-linter` in CI) | Microservices | Agreed with codex-plan. Budget, requisition and PO operations are one transaction; distributing them buys nothing and costs consistency. | A module needs independent scaling, with evidence |
 | D-16 | Sourcing exemption | **None.** SRC-018 stands: no PO without a completed RFQ | Day-1 exemption flag | You chose the full money loop as the first sellable milestone. Relaxing SRC-018 on day 1 would hollow out GOAL-004. | A customer contract requires spot-buy |
+| D-17 | Public origin | **One origin**, `xlr8flo.summello.com`. Cloudflare path-splits: `/api/*` proxies to Cloud Run, everything else serves from Pages | Split subdomains (`app.` + `api.`), path on the company apex (`summello.com/xlr8flo`) | Same origin removes CORS entirely and permits `__Host-` prefixed session cookies — which forbid a `Domain` attribute and so cannot be set or overwritten by any sibling subdomain. Split subdomains force `Domain=.xlr8flo.summello.com`, giving up that prefix and widening cookie reach to every future subdomain. A path on the apex is worse still: the marketing site and the authenticated app would share an origin, so an XSS on either reads the other's session. The cost is one Worker route. It also puts Cloud Run behind Cloudflare, so its ingress can be restricted rather than internet-facing (SEC-003). | A third-party client must call the API, making CORS unavoidable; or a second first-party frontend needs its own origin |
 
 ### 1.1 Open decisions from `requirements.md` §14 — now closed
 
@@ -131,8 +132,9 @@ flowchart TB
     RESEND[Resend · transactional email]
     ECB[ECB daily FX feed]
 
-    U[Browser] --> DNS --> PAGES
-    PAGES -->|"HTTPS · cookie session"| RUN
+    U[Browser] --> DNS
+    DNS -->|"xlr8flo.summello.com/*"| PAGES
+    DNS -->|"xlr8flo.summello.com/api/* · same-origin cookie session"| RUN
     CRON -->|"POST /internal/jobs/tick"| RUN
     RUN --> NEON
     RUN --> R2
@@ -142,6 +144,8 @@ flowchart TB
     RUN -->|daily| ECB
     RUN -.->|"nightly pg_dump → R2"| R2
 ```
+
+One public origin (D-17): Cloudflare splits `xlr8flo.summello.com` by path, so the browser never makes a cross-origin request and the session cookie carries the `__Host-` prefix. Cloud Run is reached only through Cloudflare.
 
 Four vendors, each replaceable: container runtime, Postgres wire protocol, S3 API, HTTP email. No vendor-proprietary runtime feature is used anywhere in application code.
 
