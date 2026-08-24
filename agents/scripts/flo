@@ -278,23 +278,82 @@ def cmd_submit(argv):
         print(f"  {r}:  flo review {sid}   → reviews/{sid}.{r}.json")
 
 
+# Machine-generated files. A reviewer reading them line by line learns nothing and
+# pays for every token. uv.lock alone was 1,108 of 3,178 packet lines on E01-S05 and
+# stalled two reviewers before their first output.
+GENERATED_FILES = (
+    "uv.lock", "package-lock.json", "pnpm-lock.yaml", "yarn.lock",
+    "poetry.lock", "Cargo.lock", "go.sum", "Gemfile.lock", "composer.lock",
+)
+
+
 def cmd_review(argv):
     if not argv:
         die("usage: flo review <STORY_ID>")
     sid = argv[0]
     pkt, wt = packet_of(sid), worktree_path(sid)
+    rng = f"{pkt['milestone_branch']}...{pkt['branch']}"
+    names = [n for n in git("diff", "--name-only", rng, cwd=wt, check=False).splitlines() if n]
+    generated = [n for n in names if n.rsplit("/", 1)[-1] in GENERATED_FILES]
+    # Reviewers run in sandboxes that refuse to open dotfiles, and the refusal kills the
+    # run rather than degrading it. Inline them instead of letting the reviewer try.
+    dotfiles = [n for n in names if n.rsplit("/", 1)[-1].startswith(".") and n not in generated]
+
     print(f"=== REVIEW PACKET {sid} — {pkt['title']} ===")
     print(f"kind {pkt['kind']} · size {pkt['size']} · tags {', '.join(pkt['tags']) or 'none'}")
     print(f"requirements: {', '.join(pkt['requirements'])}\n")
     print("--- design packet ---")
     print((ROOT / pkt["design"]).read_text())
+
     print("--- diff vs milestone branch ---")
-    print(git("diff", f"{pkt['milestone_branch']}...{pkt['branch']}", cwd=wt, check=False))
-    print("\n--- rules ---")
-    print("Run the tests: a verdict with ran_tests=false does not count toward the two-reviewer floor.")
-    print("Review only — do not rewrite the code. One finding per problem.")
-    print("You were deliberately not given the author's rationale.")
-    print(f"\nWrite: reviews/{sid}.<your-agent-id>.json   (schema in AGENTS.md §2.2)")
+    excludes = [f":(exclude){n}" for n in generated]
+    print(git("diff", rng, "--", ".", *excludes, cwd=wt, check=False))
+
+    if generated:
+        print("--- generated files, body omitted ---")
+        for n in generated:
+            print(f"{n} — machine-generated dependency pin. Judge that it is committed, "
+                  f"not its contents. Open it in the worktree if you must.")
+        print()
+
+    for n in dotfiles:
+        f = wt / n
+        if f.exists():
+            print(f"--- {n} (inlined; your sandbox will not open dotfiles) ---")
+            print(f.read_text())
+            print(f"--- end {n} ---\n")
+
+    print("--- how to review ---")
+    print(f"""\
+1. cd {wt}
+2. Run the tests. A verdict with ran_tests=false does not count toward the floor.
+     cd apps/api && uv run --extra dev pytest -q
+3. For EVERY gate, contract or guard in the diff: plant a violation, watch it fail,
+   then restore. A gate you have not seen fail is not reviewed.
+     <edit the guarded file>            # break it
+     <run the gate>                     # must fail
+     git checkout -- <file>             # restore
+4. Confirm each requirement id above is satisfied by what the diff does, not by what
+   it says. Cite the id in any finding it belongs to.
+5. Write your verdict, then stop.
+     reviews/{sid}.<your-agent-id>.json   # schema in AGENTS.md §2.2
+
+--- rules ---
+DO   keep every scratch file inside {wt}
+DO   use `git checkout -- <file>` to undo a planted violation
+DO   write the verdict file even with zero findings
+DO   leave the worktree clean apart from your verdict file
+
+DON'T open reviews/ — another reviewer's verdict is not evidence, and agreeing with
+      one you have read is not an independent review
+DON'T write outside the worktree, /tmp included — the sandbox kills the run
+DON'T rewrite the code; review only, the author fixes
+DON'T report a defect you have not reproduced in the file as it stands
+
+severity  blocker = wrong, unsafe, or violates a cited requirement (only this blocks merge)
+          major   = will break under a foreseeable condition
+          minor   = clarity, naming, dead code
+You were deliberately not given the author's rationale.""")
 
 
 def reviews_for(sid):
