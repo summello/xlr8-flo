@@ -27,7 +27,7 @@ jobs:
       api: ${{ steps.paths.outputs.api }}
       web: ${{ steps.paths.outputs.web }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - id: paths
         run: |
           echo "api=$([ -f apps/api/pyproject.toml ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
@@ -37,10 +37,10 @@ jobs:
     # Cheapest job: enforces the AGENTS.md rules that need no build.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0          # story-id check needs the base ref, not a shallow clone
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: pip install pyyaml
@@ -129,8 +129,8 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flo_test
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
@@ -167,8 +167,8 @@ jobs:
     needs: [detect, governance]
     if: needs.detect.outputs.web == 'true'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -201,18 +201,21 @@ jobs:
     runs-on: ubuntu-latest
     needs: governance
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v2
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7  # v2.3.9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: aquasecurity/trivy-action@0.28.0     # pinned, not @master (SEC-013)
+      # Pinned by digest, not tag — a tag can be repointed, a digest cannot (SEC-013).
+      - uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8  # v0.36.0
         with:
           scan-type: fs
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
           ignore-unfixed: true
+          # Trivy scans the checkout; nothing to scan yet, but the gate must be live
+          # from the first commit rather than switched on once dependencies exist.
 
   deploy:
     # Only main deploys. Milestone branches build but never release.
@@ -231,7 +234,7 @@ jobs:
     env:
       GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
