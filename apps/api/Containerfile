@@ -1,0 +1,42 @@
+ARG PYTHON_VERSION=3.12.11
+
+FROM python:${PYTHON_VERSION}-slim-bookworm@sha256:519591d6871b7bc437060736b9f7456b8731f1499a57e22e6c285135ae657bf7 AS build
+
+ENV VIRTUAL_ENV=/opt/venv
+
+WORKDIR /build
+
+RUN python -m venv "${VIRTUAL_ENV}"
+
+COPY pyproject.toml ./
+COPY src/ ./src/
+
+RUN "${VIRTUAL_ENV}/bin/pip" install --no-cache-dir . \
+    && "${VIRTUAL_ENV}/bin/pip" uninstall --yes xlr8flo-api \
+    && find "${VIRTUAL_ENV}" -type d -name __pycache__ -prune -exec rm -rf '{}' +
+
+FROM python:${PYTHON_VERSION}-slim-bookworm@sha256:519591d6871b7bc437060736b9f7456b8731f1499a57e22e6c285135ae657bf7 AS runtime
+
+ENV PATH=/opt/venv/bin:${PATH} \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/src
+
+RUN groupadd --gid 1001 flo \
+    && useradd --uid 1001 --gid 1001 --no-create-home --home-dir /nonexistent \
+        --shell /usr/sbin/nologin flo \
+    && rm -f /bin/sh /bin/dash /usr/bin/dash
+
+WORKDIR /app
+
+COPY --from=build /opt/venv/ /opt/venv/
+COPY --chown=1001:1001 src/ /app/src/
+
+USER 1001:1001
+
+STOPSIGNAL SIGTERM
+
+HEALTHCHECK --interval=30s --timeout=2s --start-period=5s --retries=3 \
+    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:' + __import__('os').environ.get('PORT', '8080') + '/healthz', timeout=1).close()"]
+
+ENTRYPOINT ["python", "-m", "flo.api.health"]
