@@ -27,6 +27,19 @@ def test_compose_uses_digest_pinned_images_and_defines_healthchecks() -> None:
         assert "healthcheck:" in block
 
 
+def test_compose_publishes_ports_on_loopback_only() -> None:
+    compose = (ROOT / "compose.yaml").read_text()
+    published_ports = re.findall(r'^\s+- "([^\"]+:\d+:\d+)"$', compose, flags=re.MULTILINE)
+
+    assert published_ports == [
+        "127.0.0.1:5432:5432",
+        "127.0.0.1:9000:9000",
+        "127.0.0.1:9001:9001",
+        "127.0.0.1:1025:1025",
+        "127.0.0.1:8025:8025",
+    ]
+
+
 def test_up_waits_for_health_and_prints_all_four_urls(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
