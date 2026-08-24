@@ -70,7 +70,7 @@ epics:
           - OPS-007
         dep:
           - E01-S01
-        st: todo
+        st: done
       - id: E01-S03
         t: API container image, slim multi-stage, non-root, health endpoints
         k: chore
