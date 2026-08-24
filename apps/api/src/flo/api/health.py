@@ -16,6 +16,7 @@ from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 
 from flo.kernel.config import Settings
+from flo.kernel.errors import ErrorCode, ProblemError, install_problem_details
 
 HealthProbe = Callable[[Settings], Awaitable[None]]
 
@@ -60,10 +61,12 @@ _readiness_cache = ReadinessCache()
 
 app = FastAPI(
     title="XLR8 FLO API",
+    version="1.0.0",
     docs_url=None,
     redoc_url=None,
     openapi_url=None,
 )
+install_problem_details(app)
 
 
 def get_settings() -> Settings:
@@ -164,10 +167,13 @@ async def readyz(
     """Report bounded, per-dependency readiness without leaking internal details."""
 
     result = await cache.get(settings, probes)
+    if not result.ready:
+        raise ProblemError(ErrorCode.SERVICE_UNAVAILABLE)
+
     return JSONResponse(
-        status_code=200 if result.ready else 503,
+        status_code=200,
         content={
-            "status": "ok" if result.ready else "degraded",
+            "status": "ok",
             "checks": result.checks,
         },
     )
