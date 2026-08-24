@@ -48,6 +48,7 @@ def tenant_database() -> Iterator[TenantDatabase]:
         if configured_url:
             pytest.fail(f"configured Postgres is unavailable: {type(exc).__name__}")
         pytest.skip("local Postgres is unavailable; run the repository stack")
+        raise  # unreachable: pytest.fail and pytest.skip both raise
 
     suffix = uuid4().hex[:12]
     table = f"tenancy_record_{suffix}"

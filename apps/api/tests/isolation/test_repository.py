@@ -176,14 +176,18 @@ def test_foreign_ids_are_404_and_all_collection_and_write_paths_are_scoped(
         assert client.get("/records/export", cookies=tenant_a_cookie).json() == [
             {"id": str(tenant_database.record_a), "name": "Tenant A record"}
         ]
-        assert client.patch(
+        # The mutating calls are bound first: an assert body is stripped under
+        # -O, which would silently turn these tamper attempts into no-ops.
+        tampered = client.patch(
             f"/records/{tenant_database.record_b}",
             json={"name": "tampered"},
             cookies=tenant_a_cookie,
-        ).status_code == 404
-        assert client.delete(
+        )
+        assert tampered.status_code == 404
+        deleted = client.delete(
             f"/records/{tenant_database.record_b}", cookies=tenant_a_cookie
-        ).status_code == 404
+        )
+        assert deleted.status_code == 404
         assert client.get(
             f"/records/{tenant_database.record_b}", cookies=tenant_b_cookie
         ).json() == {"id": str(tenant_database.record_b), "name": "Tenant B record"}
@@ -209,5 +213,7 @@ def test_repository_scope_still_hides_foreign_rows_when_rls_is_disabled(
     assert repository.search("Tenant") == [
         TenantRecord(tenant_database.record_a, "Tenant A record")
     ]
-    assert repository.rename(tenant_database.record_b, "tampered") is None
-    assert repository.delete(tenant_database.record_b) is False
+    renamed = repository.rename(tenant_database.record_b, "tampered")
+    assert renamed is None
+    removed = repository.delete(tenant_database.record_b)
+    assert removed is False
