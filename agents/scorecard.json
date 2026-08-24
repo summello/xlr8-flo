@@ -382,6 +382,50 @@
       },
       "recap": "Delivered the provider-independent identity port and an offline LocalIdentityProvider with NIST-aligned policy, Argon2id hashing, transparent cost upgrades, enumeration-resistant verification, and reversible Postgres storage.",
       "title": "IdentityProvider port + LocalIdentityProvider, argon2id, NIST password policy"
+    },
+    {
+      "story": "E03-S03",
+      "kind": "api",
+      "size": "M",
+      "tags": [
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [
+        "qwen"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "qwen": {
+          "ran_tests": true,
+          "findings": 4,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a0340b-8549-7631-b186-e08d339abd83",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "a8c2a1bf-3633-4a96-8941-8f5a43f2a7ce",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "unavailable: OpenRouter has no session concept - pass the generation id to `flo session qwen <id>`"
+        }
+      },
+      "recap": "Delivered a closed error taxonomy, one RFC 9457 response handler, request-wide correlation logging, safe generic 500s, form-addressable validation errors, and problem-schema OpenAPI documentation. Integrated the handler into health readiness failures and covered disclosure, recovery, tenancy-safe 404, and correlation behavior.",
+      "title": "RFC 9457 problem details, error taxonomy, no internal disclosure"
     }
   ]
 }

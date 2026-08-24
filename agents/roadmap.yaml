@@ -267,7 +267,7 @@ epics:
           - UX-005
         dep:
           - E01-S01
-        st: todo
+        st: done
       - id: E03-S04
         t: 'Audit trail: append-only table, triggers, before/after, correlation id'
         k: security
