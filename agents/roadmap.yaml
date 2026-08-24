@@ -243,7 +243,7 @@ epics:
           - D-06
         dep:
           - E01-S02
-        st: todo
+        st: done
       - id: E03-S03
         t: RFC 9457 problem details, error taxonomy, no internal disclosure
         k: api
