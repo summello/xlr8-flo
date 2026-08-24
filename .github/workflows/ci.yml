@@ -155,16 +155,16 @@ jobs:
       - name: No float in money modules (AGENTS.md 3.1)
         run: |
           set -euo pipefail
-          missing=0
+          targets=()
           for d in budget purchasing sourcing requisitions; do
-            [ -d "apps/api/src/flo/modules/$d" ] || { echo "::notice::module $d not built yet"; missing=1; }
+            if [ -d "apps/api/src/flo/modules/$d" ]; then
+              targets+=("apps/api/src/flo/modules/$d")
+            else
+              echo "::notice::module $d not built yet"
+            fi
           done
-          [ "$missing" = 1 ] && exit 0
-          if grep -rnE '\bfloat\(|:[[:space:]]*float\b' \
-               apps/api/src/flo/modules/budget \
-               apps/api/src/flo/modules/purchasing \
-               apps/api/src/flo/modules/sourcing \
-               apps/api/src/flo/modules/requisitions; then
+          if [ "${#targets[@]}" -gt 0 ] && \
+             grep -rnE '\bfloat\(|:[[:space:]]*float\b' "${targets[@]}"; then
             echo "::error::float is banned in money modules - use Decimal"; exit 1
           fi
 

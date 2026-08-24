@@ -24,7 +24,15 @@ milestone_overrides:
       or a breach. Authorship is concentrated on the strongest coding agent and every
       story takes an Opus final review, including the two that are not otherwise gated.
     sole_author: codex
-    reviewers: [opus, opencode-nemotron]
+    # Reviewers widened on 24 Aug 2026. opencode-nemotron returned approve with ZERO
+    # findings on its first three reviews (scorecard: findings_per_review 0.0) while
+    # Opus found six real defects in those same stories - a committed task packet in
+    # two of them, world-bound ports with repo-published credentials, root credentials
+    # in a healthcheck, an unauthenticated /readyz DoS path, and a tag-pinned base
+    # image. That is the rubber-stamping pattern AGENTS.md 2.3b calls a fleet defect.
+    # M0's remaining stories are money, tenancy and security foundations, so they now
+    # carry three independent reviewers plus the Opus final.
+    reviewers: [opus, qwen, deepseek, opencode-nemotron]
     opus_final_all: true
     cost: >
       The operator holds Codex usage resets, so the weekly cap is not the binding
@@ -90,8 +98,15 @@ agents:
       independent reviewer. Keep them assigned to different sides of a story.
 
   qwen:
-    model: qwen/qwen3-coder
-    cli: "openrouter"
+    model: qwen/qwen3.8-27b                      # OpenRouter; replaced nemotron as the
+    cli: "opencode run --model openrouter/qwen/qwen3.8-27b"   # primary reviewer
+    # Gotcha: opencode's SAVED OpenRouter credential is stale and shadows the environment
+    # key, so plain `opencode run -m openrouter/...` fails with `Error: User not found`
+    # even though the keychain key is valid. Run it with an isolated auth store instead:
+    #   XDG_DATA_HOME=<scratch> OPENROUTER_API_KEY=$(security find-generic-password \
+    #     -a "$USER" -s OPENROUTER_API_KEY -w) opencode run -m openrouter/...
+    # No secret is written to disk. OpenCode Zen's non-free models require a payment
+    # method, so the *-free models are the only Zen options.
     plan: openrouter-credits
     metered: spend
     monthly_budget_usd: 20       # hard cap; flo budget refuses assignment past it
@@ -99,7 +114,19 @@ agents:
     roles: [author, review]
     allowed_kinds: [crud, ui, docs, chore, test]
     max_author_size: S           # authors small stories only
-    fallback: [opencode]
+    fallback: [deepseek]
+
+  deepseek:
+    model: deepseek/deepseek-v4-pro-0813         # OpenRouter; qwen's review fallback
+    cli: "opencode run --model openrouter/deepseek/deepseek-v4-pro-0813"
+    plan: openrouter-credits
+    metered: spend
+    roles: [review]              # review only - authoring stays with codex for M0
+    allowed_kinds: []
+    fallback: [qwen]
+    notes: >
+      Second independent reviewer. Exists because opencode-ox's ox-alpha endpoint was
+      withdrawn, leaving the free pool at one model and no independent check on it.
 
 # Assignment algorithm (implemented in flo assign — this is the spec, not a suggestion):
 #   0. if a milestone_override applies to the story's milestone, its sole_author and

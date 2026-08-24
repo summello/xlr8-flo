@@ -1,4 +1,4 @@
-"""Database primitives shared by business modules."""
+"""Database primitives shared by application modules."""
 
 from flo.kernel.db.repo import ScopedRepo
 
