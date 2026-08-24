@@ -19,7 +19,8 @@ modules =
 name = Local identity adapter is hidden behind the port
 type = forbidden
 source_modules =
-    flo
+    flo.api
+    flo.modules
 forbidden_modules =
     flo.kernel.identity.local
 ignore_imports =
