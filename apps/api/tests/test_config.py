@@ -1,7 +1,9 @@
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
-from flo.kernel.config import Settings
+from flo.kernel.config import Settings, enforce_argon2_memory_limit
 
 
 class ExampleSettings(Settings):
@@ -21,6 +23,8 @@ def test_argon2_cost_defaults_and_environment_override(
     assert defaults.identity_argon2_time_cost == 3
     assert defaults.identity_argon2_memory_cost_kib == 64 * 1024
     assert defaults.identity_argon2_parallelism == 4
+    assert defaults.identity_argon2_max_concurrency == 4
+    assert defaults.required_argon2_instance_memory_mib == 512
 
     monkeypatch.setenv("FLO_IDENTITY_ARGON2_TIME_COST", "4")
 
@@ -34,3 +38,31 @@ def test_argon2_memory_cost_cannot_consume_the_whole_instance() -> None:
 
     with pytest.raises(ValidationError):
         Settings(identity_argon2_memory_cost_kib=256 * 1024 + 1)
+
+
+def test_argon2_concurrency_is_bounded_by_configuration() -> None:
+    assert Settings(identity_argon2_max_concurrency=32).identity_argon2_max_concurrency == 32
+
+    with pytest.raises(ValidationError):
+        Settings(identity_argon2_max_concurrency=0)
+    with pytest.raises(ValidationError):
+        Settings(identity_argon2_max_concurrency=33)
+
+
+def test_startup_refuses_a_cgroup_below_the_argon2_requirement(tmp_path: Path) -> None:
+    memory_limit = tmp_path / "memory.max"
+    memory_limit.write_text(str(511 * 1024 * 1024), encoding="ascii")
+
+    with pytest.raises(RuntimeError, match="need at least 512 MiB"):
+        enforce_argon2_memory_limit(Settings(), memory_limit)
+
+
+@pytest.mark.parametrize("limit", (None, "max"))
+def test_startup_skips_an_unreadable_or_unbounded_cgroup(
+    tmp_path: Path, limit: str | None
+) -> None:
+    memory_limit = tmp_path / "memory.max"
+    if limit is not None:
+        memory_limit.write_text(limit, encoding="ascii")
+
+    enforce_argon2_memory_limit(Settings(), memory_limit)

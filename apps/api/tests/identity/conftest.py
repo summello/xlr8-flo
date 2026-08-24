@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+from collections.abc import Awaitable
 from contextlib import nullcontext
 from dataclasses import dataclass
 from typing import cast
@@ -10,6 +12,10 @@ from psycopg.errors import UniqueViolation
 from flo.kernel.config import Settings
 from flo.kernel.identity import IdentityConnection, IdentityId, build_local_identity_provider
 from flo.kernel.identity.port import IdentityProvider
+
+
+def run[T](awaitable: Awaitable[T]) -> T:
+    return asyncio.run(awaitable)
 
 
 @dataclass
@@ -77,4 +83,4 @@ def identity_connection() -> FakeIdentityConnection:
 @pytest.fixture
 def identity_provider(identity_connection: FakeIdentityConnection) -> IdentityProvider:
     connection: IdentityConnection = identity_connection
-    return build_local_identity_provider(connection, fast_settings())
+    return run(build_local_identity_provider(connection, fast_settings()))

@@ -470,6 +470,69 @@
       },
       "recap": "Added isolated reject-and-clean self-tests for every existing release gate, including regressions for the three historical silent failures. Missing tools now fail unless explicitly exempted, and flo check points pytest at the local Postgres test database.",
       "title": "Gate self-tests - every CI gate proves it fails on a planted violation"
+    },
+    {
+      "story": "E01-S05",
+      "kind": "chore",
+      "size": "L",
+      "tags": [
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [
+        "deepseek",
+        "kimi"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "deepseek": {
+          "ran_tests": true,
+          "findings": 2,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        },
+        "kimi": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [
+        {
+          "from": "qwen",
+          "to": "kimi",
+          "model": "openrouter/moonshotai/kimi-k2.6",
+          "why": "qwen failed four consecutive review runs on this story: two killed by sandbox permission rejections mid-experiment (reading apps/web/.env.production, writing a backup to /tmp) and a fourth that ran 14 minutes producing zero output. Operator substituted kimi-k2.6. Not a capability judgement on qwen \u2014 its two partial passes correctly withdrew a failure() hypothesis and dismissed a preview-only ruff rule."
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a0361d-366c-7683-8135-b345b93880b2",
+          "source": "codex rollout matched on cwd"
+        },
+        "deepseek": {
+          "agent": "deepseek",
+          "id": null,
+          "source": "unavailable: no detector for deepseek"
+        },
+        "kimi": {
+          "agent": "kimi",
+          "id": null,
+          "source": "unavailable: no detector for kimi"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "1b3a04b1-1fb7-44a6-8f20-533a25a52129",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Main now builds, scans, inventories, pushes, migrates, and deploys the API by digest, then deploys a path-scoped Cloudflare Worker and secret-scanned SPA on the one D-17 origin. The browser uses relative /api with no CORS, while Argon2 work remains bounded with startup and CI memory enforcement.",
+      "title": "Deploy API to Cloud Run and SPA to Cloudflare Pages from CI"
     }
   ]
 }

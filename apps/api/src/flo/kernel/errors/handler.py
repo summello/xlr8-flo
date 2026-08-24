@@ -96,6 +96,12 @@ def _safe_http_headers(exc: HTTPException) -> dict[str, str]:
     return {key: value for key, value in exc.headers.items() if key.lower() in _SAFE_HTTP_HEADERS}
 
 
+def _safe_problem_headers(exc: ProblemError) -> dict[str, str]:
+    if exc.headers is None:
+        return {}
+    return {key: value for key, value in exc.headers.items() if key.lower() in _SAFE_HTTP_HEADERS}
+
+
 def _unmapped_http_problem(
     request: Request,
     exc: HTTPException,
@@ -155,6 +161,7 @@ async def problem_exception_handler(request: Request, exc: Exception) -> Respons
         detail = exc.detail
         errors = exc.errors or None
         checks = exc.checks
+        headers = _safe_problem_headers(exc)
     elif isinstance(exc, RequestValidationError):
         code = ErrorCode.VALIDATION_FAILED
         errors = _validation_errors(exc)

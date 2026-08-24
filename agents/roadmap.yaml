@@ -113,7 +113,7 @@ epics:
           - A Cloudflare account with an API token scoped to Pages, plus the
             CLOUDFLARE_API_TOKEN repository secret
           - DNS for the chosen hostname, delegated to Cloudflare
-        st: todo
+        st: done
       - id: E01-S06
         t: Neon + R2 + Secret Manager wiring, infra/SETUP.md, registry pruning
         k: chore

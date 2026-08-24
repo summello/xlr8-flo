@@ -22,6 +22,7 @@ docs/nemotron-plan.md
 .env
 .env.*
 !.env.example
+!apps/web/.env.production
 *.pem
 *.key
 gha-creds-*.json

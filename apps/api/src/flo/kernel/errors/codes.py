@@ -136,9 +136,11 @@ class ProblemError(Exception):
         detail: str | None = None,
         errors: tuple[ProblemFieldError, ...] = (),
         checks: Mapping[str, str] | None = None,
+        headers: Mapping[str, str] | None = None,
     ) -> None:
         super().__init__(code.value)
         self.code = code
         self.detail = detail
         self.errors = errors
         self.checks = dict(checks) if checks is not None else None
+        self.headers = dict(headers) if headers is not None else None
