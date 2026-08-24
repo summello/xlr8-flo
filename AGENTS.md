@@ -223,6 +223,11 @@ Deliberate shortcuts get a `ponytail:` comment naming the ceiling and the upgrad
 
 ## 5. Commit and PR format
 
+Every commit on a milestone branch is either a **story commit** or a **maintenance commit**.
+Story work always carries its story id; CI, tooling, docs and the agent harness legitimately
+belong to no story and use a conventional-commit type (`ci:`, `fix(ci):`, `build:`, `chore:`,
+`docs:`). CI enforces exactly these two shapes — anything else fails the PR.
+
 Commit (one per story after squash):
 
 ```

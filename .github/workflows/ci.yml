@@ -88,14 +88,25 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           # Milestone PRs preserve one squashed commit per story (AGENTS.md §5).
-          git fetch --no-tags --depth=0 origin "${{ github.base_ref }}"
-          bad=0
+          git fetch --no-tags origin \
+            "+refs/heads/${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}"
+          # A story commit is `Enn-Snn: subject` (one per story, after squash).
+          # Repo maintenance that legitimately belongs to no story — CI, tooling,
+          # docs, the agent harness — uses a conventional-commit type instead.
+          bad=0; maint=0
           while read -r sha subject; do
             case "$subject" in
-              E[0-9][0-9]-S[0-9][0-9]:*|Merge*) ;;
-              *) echo "::error::commit $sha has no story id: $subject"; bad=1 ;;
+              E[0-9][0-9]-S[0-9][0-9]:*|Merge*)
+                ;;
+              ci:*|ci\(*\):*|fix\(ci\):*|build:*|build\(*\):*|chore:*|chore\(*\):*|docs:*|docs\(*\):*)
+                maint=$((maint+1))
+                echo "::notice::maintenance commit (no story): $sha $subject" ;;
+              *)
+                echo "::error::commit $sha has neither a story id nor a maintenance type: $subject"
+                bad=1 ;;
             esac
           done < <(git log --format='%h %s' "origin/${{ github.base_ref }}..HEAD")
+          [ "$maint" -gt 0 ] && echo "::notice::$maint maintenance commit(s) in this PR"
           exit $bad
 
       - name: No story marked done without its commit
