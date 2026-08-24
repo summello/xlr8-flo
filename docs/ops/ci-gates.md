@@ -62,6 +62,17 @@ The local `flo check` command mirrors the repository's lint, type, boundary,
 test, accessibility, and secret-scanning gates. Run it before submitting a
 story so failures are fixed before reviewer capacity is used.
 
+`flo check` treats every missing gate executable as a failure. The named
+`M0_MISSING_TOOL_OPTOUTS` list in `agents/scripts/flo` is currently empty: every
+M0 gate in the table below has been delivered, so there are no exemptions or
+removal stories. Any future temporary entry must state why the executable is
+unavailable and name the story that removes the entry.
+
+The pytest check receives the local stack's
+`postgresql://flo:flo-local@127.0.0.1:5432/flo_test` URL when `DATABASE_URL` is
+not already configured. This makes real-Postgres persistence and isolation
+tests fail when the `flo up` database is absent instead of silently skipping.
+
 | Gate | Local check |
 |---|---|
 | Python lint | `ruff check apps/api` |

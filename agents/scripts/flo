@@ -1221,15 +1221,34 @@ CHECKS = [
     ("secrets", ["gitleaks", "detect", "--no-banner"]),
 ]
 
+# Every current M0 check is delivered and therefore mandatory. Temporary exemptions must
+# name both their reason and the story that removes them; docs/ops/ci-gates.md mirrors this.
+M0_MISSING_TOOL_OPTOUTS = {}
+LOCAL_TEST_DATABASE_URL = "postgresql://flo:flo-local@127.0.0.1:5432/flo_test"
+
 
 def run_check(cwd=None):
     cwd = cwd or ROOT
     ok = True
     for name, cmd in CHECKS:
-        r = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+        command_environment = os.environ.copy()
+        if name == "pytest":
+            command_environment.setdefault("DATABASE_URL", LOCAL_TEST_DATABASE_URL)
+        try:
+            r = subprocess.run(
+                cmd,
+                cwd=cwd,
+                capture_output=True,
+                text=True,
+                env=command_environment,
+            )
+        except FileNotFoundError:
+            r = subprocess.CompletedProcess(cmd, 127, "", f"required tool not found: {cmd[0]}")
         if r.returncode == 127:
-            print(f"  ?  {name:<12} not installed (M0 not complete)")
-            continue
+            exemption = M0_MISSING_TOOL_OPTOUTS.get(name)
+            if exemption is not None:
+                print(f"  ?  {name:<12} missing-tool opt-out: {exemption}")
+                continue
         print(f"  {'✓' if not r.returncode else '✗'}  {name}")
         if r.returncode:
             print((r.stdout + r.stderr).strip()[-2000:])
