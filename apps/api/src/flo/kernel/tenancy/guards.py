@@ -9,6 +9,43 @@ from collections.abc import Iterator, Mapping
 HTTP_METHODS = {"delete", "get", "head", "options", "patch", "post", "put", "trace"}
 
 
+def _parenthesized_body(source: str, opening: int) -> str | None:
+    """Return a balanced parenthesized body, ignoring quoted parentheses."""
+
+    if opening >= len(source) or source[opening] != "(":
+        return None
+    depth = 1
+    index = opening + 1
+    while index < len(source):
+        character = source[index]
+        if character in {"'", '"'}:
+            quote = character
+            index += 1
+            while index < len(source):
+                if source[index] == "\\":
+                    index += 2
+                    continue
+                if source[index] != quote:
+                    index += 1
+                    continue
+                if index + 1 < len(source) and source[index + 1] == quote:
+                    index += 2
+                    continue
+                index += 1
+                break
+            else:
+                return None
+            continue
+        if character == "(":
+            depth += 1
+        elif character == ")":
+            depth -= 1
+            if depth == 0:
+                return source[opening + 1 : index]
+        index += 1
+    return None
+
+
 def _resolve_ref(document: Mapping[str, object], node: object) -> object:
     if not isinstance(node, dict) or set(node) != {"$ref"}:
         return node
@@ -70,11 +107,12 @@ def forbidden_org_id_operations(document: Mapping[str, object]) -> list[str]:
 def _created_tenant_tables(source: str) -> Iterator[str]:
     raw_table = re.compile(
         r"CREATE\s+TABLE(?:\s+IF\s+NOT\s+EXISTS)?\s+"
-        r"(?P<table>[A-Za-z_][A-Za-z0-9_.]*)\s*\((?P<body>.*?)\)",
-        flags=re.IGNORECASE | re.DOTALL,
+        r"(?P<table>[A-Za-z_][A-Za-z0-9_.]*)\s*(?P<open>\()",
+        flags=re.IGNORECASE,
     )
     for match in raw_table.finditer(source):
-        if re.search(r"\borg_id\b", match.group("body"), flags=re.IGNORECASE):
+        body = _parenthesized_body(source, match.start("open"))
+        if body is None or re.search(r"\borg_id\b", body, flags=re.IGNORECASE):
             yield match.group("table").split(".")[-1]
 
     try:
@@ -98,6 +136,30 @@ def _created_tenant_tables(source: str) -> Iterator[str]:
             yield table
 
 
+def _has_tenant_policy(source: str, table: str) -> bool:
+    escaped = re.escape(table)
+    policy = re.compile(
+        r"CREATE\s+POLICY\s+tenant_isolation\s+ON\s+"
+        rf"(?:[A-Za-z_][A-Za-z0-9_]*\.)?{escaped}\b\s+"
+        r"USING\s*(?P<open>\()",
+        flags=re.IGNORECASE,
+    )
+    for match in policy.finditer(source):
+        predicate = _parenthesized_body(source, match.start("open"))
+        if predicate is None:
+            continue
+        normalized_predicate = re.sub(r"[\"']", "", predicate)
+        org_id = r"(?:[A-Za-z_][A-Za-z0-9_]*\.)?org_id"
+        setting = r"current_setting\s*\(\s*app\.org_id\s*\)\s*::\s*uuid"
+        tenant_comparison = re.compile(
+            rf"\s*(?:{org_id}\s*=\s*{setting}|{setting}\s*=\s*{org_id})\s*",
+            flags=re.IGNORECASE,
+        )
+        if tenant_comparison.fullmatch(normalized_predicate):
+            return True
+    return False
+
+
 def unprotected_tenant_tables(source: str) -> list[str]:
     """Find tenant tables created without all required RLS statements."""
 
@@ -110,9 +172,11 @@ def unprotected_tenant_tables(source: str) -> list[str]:
             r"ENABLE\s+ROW\s+LEVEL\s+SECURITY",
             rf"ALTER\s+TABLE\s+(?:[A-Za-z_][A-Za-z0-9_]*\.)?{escaped}\s+"
             r"FORCE\s+ROW\s+LEVEL\s+SECURITY",
-            rf"CREATE\s+POLICY\s+tenant_isolation\s+ON\s+"
-            rf"(?:[A-Za-z_][A-Za-z0-9_]*\.)?{escaped}\b",
         )
-        if not all(re.search(pattern, normalized, flags=re.IGNORECASE) for pattern in requirements):
+        has_rls = all(
+            re.search(pattern, normalized, flags=re.IGNORECASE)
+            for pattern in requirements
+        )
+        if not has_rls or not _has_tenant_policy(normalized, table):
             missing.append(table)
     return missing

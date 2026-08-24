@@ -49,12 +49,34 @@ def test_every_tenant_table_migration_enables_and_forces_rls() -> None:
         assert unprotected_tenant_tables(migration.read_text()) == []
 
 
-def test_migration_guard_rejects_a_tenant_table_without_force_rls() -> None:
+def test_migration_guard_detects_money_table_and_rejects_missing_rls() -> None:
     unsafe = """
     def upgrade(connection):
-        connection.execute('CREATE TABLE invoice (id uuid, org_id uuid NOT NULL)')
+        connection.execute(
+            'CREATE TABLE invoice (id uuid, amount NUMERIC(18,4), org_id uuid NOT NULL)'
+        )
     """
+
+    assert unprotected_tenant_tables(unsafe) == ["invoice"]
+
+
+def test_migration_guard_rejects_a_tenant_table_without_force_rls() -> None:
     protected = """
+    def upgrade(connection):
+        connection.execute('CREATE TABLE invoice (id uuid, org_id uuid NOT NULL)')
+        connection.execute('ALTER TABLE invoice ENABLE ROW LEVEL SECURITY')
+        connection.execute('ALTER TABLE invoice FORCE ROW LEVEL SECURITY')
+        connection.execute(
+            "CREATE POLICY tenant_isolation ON invoice "
+            "USING (org_id = current_setting('app.org_id')::uuid)"
+        )
+    """
+
+    assert unprotected_tenant_tables(protected) == []
+
+
+def test_migration_guard_rejects_constant_tenant_policy() -> None:
+    unsafe = """
     def upgrade(connection):
         connection.execute('CREATE TABLE invoice (id uuid, org_id uuid NOT NULL)')
         connection.execute('ALTER TABLE invoice ENABLE ROW LEVEL SECURITY')
@@ -63,7 +85,12 @@ def test_migration_guard_rejects_a_tenant_table_without_force_rls() -> None:
     """
 
     assert unprotected_tenant_tables(unsafe) == ["invoice"]
-    assert unprotected_tenant_tables(protected) == []
+
+
+def test_migration_guard_fails_closed_on_unbalanced_table_body() -> None:
+    malformed = "CREATE TABLE invoice (id uuid, org_id uuid NOT NULL"
+
+    assert unprotected_tenant_tables(malformed) == ["invoice"]
 
 
 def test_repository_without_scope_fails_mypy_strict(tmp_path: Path) -> None:
