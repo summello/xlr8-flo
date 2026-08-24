@@ -8,7 +8,7 @@ Loaded into every agent session. Updated by `flo done` (status) and by Opus at e
 | | |
 |---|---|
 | Milestone | **M0 — Rails** |
-| Stories | 3 / 160 done |
+| Stories | 4 / 160 done |
 | Branch | milestone/M0-rails |
 | In flight | — |
 | Blocked | — |
@@ -73,6 +73,28 @@ Multi-tenant SaaS. Free-tier infrastructure until 10 paying customers or 200 MAU
 | Artifact Registry | 0.5 GB free. Prune to the last 3 images or it fills quietly. |
 | Secrets | Keychain only: `security find-generic-password -a "$USER" -s OPENROUTER_API_KEY -w`. Never in the environment — an env dump leaks it verbatim. |
 | Free agent endpoints | nemotron-ultra and ox-alpha are free previews and can be withdrawn without notice. They are configured as **two separate agents** so a free author still gets a free reviewer; `agents.yaml` has the fallback chain. |
+
+## Fleet routing changes — evidence, not impressions
+
+**24 Aug 2026 — reviewers widened on M0 gated stories.** `opencode-nemotron` returned
+`approve` with **0.0 findings per review** on its first three reviews (E01-S01, S02, S03).
+Opus found six real defects in those same stories: a committed `task.json` in two of them,
+five ports bound to `0.0.0.0` with credentials published in this repo, MinIO root credentials
+inline in a healthcheck, an unauthenticated `/readyz` opening a Postgres connection per
+request, and a tag-pinned base image. That is AGENTS.md §2.3b rubber-stamping.
+
+Also discovered: **`opencode-ox` is dead** — the `ox-alpha` endpoint was withdrawn, so the
+"two free models so a free author still gets a free reviewer" design was silently a pool of
+one. This is exactly the gotcha this file already warned about.
+
+Change: M0 override reviewers are now `[opus, qwen, deepseek, opencode-nemotron]`.
+`qwen` = `openrouter/qwen/qwen3.8-27b`, `deepseek` = `openrouter/deepseek/deepseek-v4-pro-0813`,
+both metered on OpenRouter credits. Authoring is unchanged — codex remains M0 sole author.
+Revisit at the M0 retro with a real blocker-precision number for each.
+
+**Merge authority:** the operator has delegated GitHub merges for M0 to Opus, with the
+instruction to space them out so the repository does not read as bot-driven. Outside M0 the
+standing rule holds: push, never merge.
 
 ## Open questions for the human
 
