@@ -199,7 +199,9 @@ class LocalIdentityProvider:
         try:
             self._hasher.verify(self._dummy_hash, normalize_password(password))
         except VerifyMismatchError:
-            pass
+            # Expected and discarded: this verify exists only to spend the same
+            # time on an unknown email as on a known one.
+            return
 
 
 def build_local_identity_provider(

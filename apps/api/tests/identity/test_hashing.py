@@ -181,6 +181,7 @@ def test_identity_migration_is_reversible_and_does_not_touch_seeded_data() -> No
         if configured_url:
             pytest.fail(f"configured Postgres is unavailable: {type(exc).__name__}")
         pytest.skip("local Postgres is unavailable; run the repository stack")
+        raise  # unreachable: pytest.fail and pytest.skip both raise
 
     migration = _load_migration()
     sentinel = f"identity_migration_sentinel_{uuid4().hex[:12]}"

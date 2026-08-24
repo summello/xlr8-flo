@@ -37,7 +37,9 @@ target-version = "py312"
 line-length = 100
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP"]
+# B018 replaces the CodeQL py/ineffectual-statement query excluded in
+# .github/codeql/config.yml: same bug class, no Protocol false positives.
+select = ["E", "F", "I", "UP", "B018"]
 
 [tool.mypy]
 python_version = "3.12"

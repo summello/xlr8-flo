@@ -1,0 +1,16 @@
+# CodeQL configuration for SEC-012.
+#
+# The workflow runs `security-and-quality`, which is worth keeping: the quality
+# pack catches real maintainability defects the security pack does not. One of
+# its queries does not survive contact with this codebase.
+name: xlr8flo
+
+query-filters:
+  # py/ineffectual-statement flags the `...` body of every method on every
+  # `typing.Protocol`. This is a ports-and-adapters codebase — `IdentityProvider`,
+  # `IdentityConnection`, `RlsSession` and `MigrationConnection` already produce
+  # 14 of these, and every future port produces more. The bug class the query
+  # exists for (a bare expression written where a call was meant) is covered by
+  # ruff B018, which exempts Ellipsis in stub bodies and is enforced by `flo check`.
+  - exclude:
+      id: py/ineffectual-statement
