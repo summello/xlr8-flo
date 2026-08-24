@@ -31,7 +31,7 @@ Security-tab ingestion, or hosted-run duration.
 |---|---|---|---|---|
 | Ruff / strict mypy | Add an untyped Python function | `8c18159` / `ae096a7` | `mypy_exit=1`, `[no-untyped-def]` | Add failed/restored run links |
 | import-linter | Make `flo.modules.a` import `flo.modules.b` | `b514d35` / `d18a85f` | `Business modules are independent BROKEN` | Add failed/restored run links |
-| Float ban | Add `def f(x: float)` under `modules/budget` | `911de76` / `89708f3` | `float is banned in money modules` | Add failed/restored run links |
+| Float ban | Add `def total() -> float` under `modules/budget`; regression tests cover generic, union, optional, tuple, dictionary, and direct-call forms | `0dd8dd7` / `67eb6c1` | AST gate reports `float is banned in money-module annotations`; all eight checker tests pass after removal | Add failed/restored run links |
 | Hardcoded colour | Add `color: #ff0000` in a `.tsx` file | `d04ef5c` / `609c881` | `raw colour outside tokens.css` | Add failed/restored run links |
 | Roadmap drift | Edit generated section 5 in `docs/claude-plan.md` | `7e2d2d9` / `8b65468` | `docs/claude-plan.md §5 is stale` | Add failed/restored run links |
 | Scorecard drift | Edit `agents/SCORECARD.md` | `ada88b2` / `fe045f4` | `agents/SCORECARD.md is stale` | Add failed/restored run links |
