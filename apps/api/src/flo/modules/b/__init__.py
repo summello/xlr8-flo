@@ -1,0 +1,1 @@
+"""Deliberate CI boundary fixture."""
