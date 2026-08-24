@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -12,11 +13,16 @@ class ErrorCode(StrEnum):
     """Stable machine-readable codes; additions require a taxonomy entry."""
 
     BAD_REQUEST = "bad-request"
+    CONFLICT = "conflict"
+    FORBIDDEN = "forbidden"
     INSUFFICIENT_BUDGET = "insufficient-budget"
     INTERNAL_ERROR = "internal-error"
     METHOD_NOT_ALLOWED = "method-not-allowed"
     NOT_FOUND = "not-found"
     SERVICE_UNAVAILABLE = "service-unavailable"
+    TOO_MANY_REQUESTS = "too-many-requests"
+    UNAUTHORIZED = "unauthorized"
+    UNSUPPORTED_MEDIA_TYPE = "unsupported-media-type"
     VALIDATION_FAILED = "validation-failed"
 
 
@@ -39,14 +45,27 @@ ERROR_TAXONOMY: dict[ErrorCode, ErrorTaxonomyEntry] = {
         detail="The request was not processed. No data was changed.",
         recovery="Check the request and try again.",
     ),
+    ErrorCode.CONFLICT: ErrorTaxonomyEntry(
+        status=409,
+        type_uri="https://xlr8flo.app/errors/conflict",
+        title="The request conflicts with the current record",
+        detail="The record changed or is not in the required state. No data was changed.",
+        recovery="Refresh the record, review its current state, and try again.",
+    ),
+    ErrorCode.FORBIDDEN: ErrorTaxonomyEntry(
+        status=403,
+        type_uri="https://xlr8flo.app/errors/forbidden",
+        title="You cannot perform this action",
+        detail="Your account does not have permission for this action. No data was changed.",
+        recovery="Ask an organization administrator for access or choose another action.",
+    ),
     ErrorCode.INSUFFICIENT_BUDGET: ErrorTaxonomyEntry(
         status=409,
         type_uri="https://xlr8flo.app/errors/insufficient-budget",
         title="Insufficient available budget",
         detail="The request exceeds the available budget. No funds were reserved.",
         recovery=(
-            "Reduce the requested amount, transfer funds into the project, "
-            "or request an override."
+            "Reduce the requested amount, transfer funds into the project, or request an override."
         ),
     ),
     ErrorCode.INTERNAL_ERROR: ErrorTaxonomyEntry(
@@ -76,6 +95,27 @@ ERROR_TAXONOMY: dict[ErrorCode, ErrorTaxonomyEntry] = {
         detail="The request could not be completed. No data was changed.",
         recovery="Try again in a few minutes. If the problem continues, contact support.",
     ),
+    ErrorCode.TOO_MANY_REQUESTS: ErrorTaxonomyEntry(
+        status=429,
+        type_uri="https://xlr8flo.app/errors/too-many-requests",
+        title="Too many requests were sent",
+        detail="The request limit was reached. No data was changed.",
+        recovery="Wait before trying again.",
+    ),
+    ErrorCode.UNAUTHORIZED: ErrorTaxonomyEntry(
+        status=401,
+        type_uri="https://xlr8flo.app/errors/unauthorized",
+        title="Sign-in is required",
+        detail="A current sign-in is required for this request. No data was changed.",
+        recovery="Sign in and try again.",
+    ),
+    ErrorCode.UNSUPPORTED_MEDIA_TYPE: ErrorTaxonomyEntry(
+        status=415,
+        type_uri="https://xlr8flo.app/errors/unsupported-media-type",
+        title="The request format is not supported",
+        detail="The request body format is not supported. No data was changed.",
+        recovery="Use a supported Content-Type and send the request again.",
+    ),
     ErrorCode.VALIDATION_FAILED: ErrorTaxonomyEntry(
         status=422,
         type_uri="https://xlr8flo.app/errors/validation-failed",
@@ -95,8 +135,10 @@ class ProblemError(Exception):
         *,
         detail: str | None = None,
         errors: tuple[ProblemFieldError, ...] = (),
+        checks: Mapping[str, str] | None = None,
     ) -> None:
         super().__init__(code.value)
         self.code = code
         self.detail = detail
         self.errors = errors
+        self.checks = dict(checks) if checks is not None else None

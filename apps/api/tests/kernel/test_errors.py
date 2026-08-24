@@ -7,6 +7,7 @@ import pytest
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from flo.kernel.errors import (
     ERROR_TAXONOMY,
@@ -28,6 +29,16 @@ class RequisitionInput(BaseModel):
     lines: list[LineInput]
 
 
+class ExplodingMiddleware:
+    def __init__(self, app: ASGIApp) -> None:
+        self._app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == "http":
+            raise RuntimeError("middleware failure")
+        await self._app(scope, receive, send)
+
+
 @pytest.fixture
 def problem_app() -> FastAPI:
     app = FastAPI(title="Problem test API", version="1.0.0")
@@ -47,8 +58,7 @@ def problem_app() -> FastAPI:
         raise ProblemError(
             ErrorCode.INSUFFICIENT_BUDGET,
             detail=(
-                "The project has 12,400.00 USD available and this request needs "
-                "18,000.00 USD."
+                "The project has 12,400.00 USD available and this request needs 18,000.00 USD."
             ),
             errors=(
                 ProblemFieldError(
@@ -78,6 +88,10 @@ def problem_app() -> FastAPI:
         if owning_tenant != "tenant-a":
             raise HTTPException(status_code=404, detail=f"owner={owning_tenant}")
 
+    @app.get("/api/v1/http/{status_code}")
+    def http_error(status_code: int) -> None:
+        raise HTTPException(status_code=status_code, detail="unsafe framework detail")
+
     return app
 
 
@@ -105,15 +119,11 @@ def test_insufficient_budget_matches_the_public_problem_contract(client: TestCli
         "type": "https://xlr8flo.app/errors/insufficient-budget",
         "title": "Insufficient available budget",
         "status": 409,
-        "detail": (
-            "The project has 12,400.00 USD available and this request needs "
-            "18,000.00 USD."
-        ),
+        "detail": ("The project has 12,400.00 USD available and this request needs 18,000.00 USD."),
         "instance": "/api/v1/requisitions/8f2a/approve",
         "correlation_id": response.headers["x-correlation-id"],
         "recovery": (
-            "Reduce the requested amount, transfer funds into the project, "
-            "or request an override."
+            "Reduce the requested amount, transfer funds into the project, or request an override."
         ),
         "errors": [
             {
@@ -193,6 +203,59 @@ def test_every_response_has_a_server_generated_correlation_header(
     assert request_log.correlation_id == correlation_id
 
 
+def test_exception_from_user_middleware_is_a_correlated_problem_document() -> None:
+    app = FastAPI(title="Middleware failure API", version="1.0.0")
+    app.add_middleware(ExplodingMiddleware)
+    # This installer must remain last so correlation wraps every user middleware.
+    install_problem_details(app)
+
+    with TestClient(app, raise_server_exceptions=False) as middleware_client:
+        response = middleware_client.get("/")
+
+    assert response.status_code == 500
+    assert response.headers["content-type"] == "application/problem+json"
+    assert response.json() == {"correlation_id": response.headers["x-correlation-id"]}
+
+
+@pytest.mark.parametrize(
+    ("status_code", "code"),
+    [
+        (401, ErrorCode.UNAUTHORIZED),
+        (403, ErrorCode.FORBIDDEN),
+        (409, ErrorCode.CONFLICT),
+        (415, ErrorCode.UNSUPPORTED_MEDIA_TYPE),
+        (429, ErrorCode.TOO_MANY_REQUESTS),
+        (503, ErrorCode.SERVICE_UNAVAILABLE),
+    ],
+)
+def test_http_exceptions_use_status_specific_taxonomy(
+    client: TestClient,
+    status_code: int,
+    code: ErrorCode,
+) -> None:
+    response = client.get(f"/api/v1/http/{status_code}")
+    taxonomy = ERROR_TAXONOMY[code]
+
+    assert response.status_code == status_code
+    assert response.headers["content-type"] == "application/problem+json"
+    assert response.json()["type"] == taxonomy.type_uri
+    assert response.json()["title"] == taxonomy.title
+    assert response.json()["recovery"] == taxonomy.recovery
+
+
+def test_unmapped_http_exception_preserves_its_status_without_leaking_detail(
+    client: TestClient,
+) -> None:
+    response = client.get("/api/v1/http/418")
+
+    assert response.status_code == 418
+    assert response.headers["content-type"] == "application/problem+json"
+    assert response.json()["status"] == 418
+    assert response.json()["type"] == "about:blank"
+    assert response.json()["recovery"].strip()
+    assert "unsafe framework detail" not in response.text
+
+
 def test_all_emitted_4xx_and_5xx_responses_are_problem_json_with_recovery_on_4xx(
     client: TestClient,
 ) -> None:
@@ -224,6 +287,9 @@ def test_error_code_taxonomy_is_complete_and_one_to_one() -> None:
     for code, entry in ERROR_TAXONOMY.items():
         assert entry.type_uri == f"https://xlr8flo.app/errors/{code.value}"
         assert 400 <= entry.status <= 599
+        if 400 <= entry.status < 500:
+            assert entry.recovery is not None
+            assert entry.recovery.strip()
 
 
 def test_problem_schema_rejects_a_client_error_without_recovery() -> None:

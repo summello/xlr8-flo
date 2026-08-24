@@ -27,6 +27,7 @@ class ProblemDetails(BaseModel):
     correlation_id: str = Field(min_length=1)
     recovery: str | None = None
     errors: tuple[ProblemFieldError, ...] | None = None
+    checks: dict[str, str] | None = None
 
     @model_validator(mode="after")
     def require_recovery_for_client_errors(self) -> ProblemDetails:

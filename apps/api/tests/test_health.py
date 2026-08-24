@@ -132,6 +132,7 @@ def test_database_failure_degrades_readiness_but_not_liveness() -> None:
         "instance": "/readyz",
         "correlation_id": readiness_response.headers["x-correlation-id"],
         "recovery": "Try again in a few minutes. If the problem continues, contact support.",
+        "checks": {"database": "error", "storage": "ok"},
     }
     assert readiness_response.headers["content-type"] == "application/problem+json"
 
@@ -156,6 +157,7 @@ def test_readyz_bounds_a_slow_dependency_and_names_its_timeout(
         "instance": "/readyz",
         "correlation_id": response.headers["x-correlation-id"],
         "recovery": "Try again in a few minutes. If the problem continues, contact support.",
+        "checks": {"database": "ok", "storage": "timeout"},
     }
 
 

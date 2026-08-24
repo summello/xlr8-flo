@@ -66,6 +66,8 @@ app = FastAPI(
     redoc_url=None,
     openapi_url=None,
 )
+# Starlette prepends user middleware, so install problem details last to keep
+# correlation outermost and able to serialize failures from every other middleware.
 install_problem_details(app)
 
 
@@ -168,7 +170,7 @@ async def readyz(
 
     result = await cache.get(settings, probes)
     if not result.ready:
-        raise ProblemError(ErrorCode.SERVICE_UNAVAILABLE)
+        raise ProblemError(ErrorCode.SERVICE_UNAVAILABLE, checks=result.checks)
 
     return JSONResponse(
         status_code=200,

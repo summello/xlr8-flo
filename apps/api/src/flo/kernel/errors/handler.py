@@ -29,10 +29,9 @@ _METHODS = frozenset({"delete", "get", "head", "options", "patch", "post", "put"
 
 
 def _correlation_id() -> str:
-    correlation_id = current_correlation_id()
-    if correlation_id is None:
-        raise RuntimeError("problem handler called outside correlation middleware")
-    return correlation_id
+    """Return the request correlation id, generating a safe fallback if needed."""
+
+    return current_correlation_id() or uuid4().hex
 
 
 def _problem_response(
@@ -41,10 +40,13 @@ def _problem_response(
     status_code: int,
     headers: dict[str, str] | None = None,
 ) -> JSONResponse:
+    response_headers = dict(headers or {})
+    if "x-correlation-id" not in {name.lower() for name in response_headers}:
+        response_headers["X-Correlation-ID"] = problem.correlation_id
     return JSONResponse(
         status_code=status_code,
         content=problem.model_dump(mode="json", exclude_none=True),
-        headers=headers,
+        headers=response_headers,
         media_type=PROBLEM_MEDIA_TYPE,
     )
 
@@ -73,12 +75,19 @@ def _validation_errors(exc: RequestValidationError) -> tuple[ProblemFieldError, 
     )
 
 
-def _http_error_code(exc: HTTPException) -> ErrorCode:
+def _http_error_code(exc: HTTPException) -> ErrorCode | None:
     return {
+        400: ErrorCode.BAD_REQUEST,
+        401: ErrorCode.UNAUTHORIZED,
+        403: ErrorCode.FORBIDDEN,
         404: ErrorCode.NOT_FOUND,
         405: ErrorCode.METHOD_NOT_ALLOWED,
+        409: ErrorCode.CONFLICT,
+        415: ErrorCode.UNSUPPORTED_MEDIA_TYPE,
         422: ErrorCode.VALIDATION_FAILED,
-    }.get(exc.status_code, ErrorCode.BAD_REQUEST)
+        429: ErrorCode.TOO_MANY_REQUESTS,
+        503: ErrorCode.SERVICE_UNAVAILABLE,
+    }.get(exc.status_code)
 
 
 def _safe_http_headers(exc: HTTPException) -> dict[str, str]:
@@ -87,16 +96,50 @@ def _safe_http_headers(exc: HTTPException) -> dict[str, str]:
     return {key: value for key, value in exc.headers.items() if key.lower() in _SAFE_HTTP_HEADERS}
 
 
+def _unmapped_http_problem(
+    request: Request,
+    exc: HTTPException,
+    correlation_id: str,
+) -> ProblemDetails:
+    """Preserve an unknown HTTP status without exposing its potentially unsafe detail."""
+
+    is_client_error = 400 <= exc.status_code < 500
+    return ProblemDetails(
+        type="about:blank",
+        title=(
+            "The request could not be processed"
+            if is_client_error
+            else "The request could not be completed"
+        ),
+        status=exc.status_code,
+        detail=(
+            "The request was not processed. No data was changed."
+            if is_client_error
+            else "An error prevented the request from completing."
+        ),
+        instance=request.url.path,
+        correlation_id=correlation_id,
+        recovery="Check the request and try again." if is_client_error else None,
+    )
+
+
 async def problem_exception_handler(request: Request, exc: Exception) -> Response:
     """Serialize every handled and unhandled exception through one safe path."""
 
     correlation_id = _correlation_id()
     if not isinstance(exc, (ProblemError, RequestValidationError, HTTPException)):
         taxonomy = ERROR_TAXONOMY[ErrorCode.INTERNAL_ERROR]
-        _logger.error(
-            "Unhandled exception",
-            exc_info=(type(exc), exc, exc.__traceback__),
-        )
+        if current_correlation_id() is None:
+            with correlation_context(correlation_id):
+                _logger.error(
+                    "Unhandled exception",
+                    exc_info=(type(exc), exc, exc.__traceback__),
+                )
+        else:
+            _logger.error(
+                "Unhandled exception",
+                exc_info=(type(exc), exc, exc.__traceback__),
+            )
         return _problem_response(
             ProblemDetails(correlation_id=correlation_id),
             status_code=taxonomy.status,
@@ -105,16 +148,22 @@ async def problem_exception_handler(request: Request, exc: Exception) -> Respons
     headers: dict[str, str] | None = None
     errors: tuple[ProblemFieldError, ...] | None = None
     detail: str | None = None
+    checks: dict[str, str] | None = None
+    code: ErrorCode | None
     if isinstance(exc, ProblemError):
         code = exc.code
         detail = exc.detail
         errors = exc.errors or None
+        checks = exc.checks
     elif isinstance(exc, RequestValidationError):
         code = ErrorCode.VALIDATION_FAILED
         errors = _validation_errors(exc)
     else:
         code = _http_error_code(exc)
         headers = _safe_http_headers(exc)
+        if code is None:
+            problem = _unmapped_http_problem(request, exc, correlation_id)
+            return _problem_response(problem, status_code=exc.status_code, headers=headers)
 
     taxonomy = ERROR_TAXONOMY[code]
     problem = ProblemDetails(
@@ -126,6 +175,7 @@ async def problem_exception_handler(request: Request, exc: Exception) -> Respons
         correlation_id=correlation_id,
         recovery=taxonomy.recovery,
         errors=errors,
+        checks=checks,
     )
     return _problem_response(problem, status_code=taxonomy.status, headers=headers)
 
@@ -216,7 +266,11 @@ def _install_openapi_problem_responses(app: FastAPI) -> None:
 
 
 def install_problem_details(app: FastAPI) -> None:
-    """Install correlation, one exception handler, and global OpenAPI error docs."""
+    """Install problem handling after all other user middleware registrations.
+
+    Starlette prepends middleware as it is registered. Calling this installer last
+    keeps correlation outermost, so it can serialize failures from other middleware.
+    """
 
     if getattr(app.state, "problem_details_installed", False):
         return
