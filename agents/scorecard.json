@@ -129,6 +129,153 @@
       },
       "recap": "Delivered a slim multi-stage API container that runs read-only as uid 1001 and drains gracefully on SIGTERM. Separate unauthenticated liveness and bounded database/storage readiness endpoints return non-disclosing per-dependency status.",
       "title": "API container image, slim multi-stage, non-root, health endpoints"
+    },
+    {
+      "story": "E03-S01",
+      "kind": "ledger",
+      "size": "M",
+      "tags": [
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [
+        "deepseek",
+        "opencode-nemotron",
+        "qwen"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "deepseek": {
+          "ran_tests": true,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        },
+        "opencode-nemotron": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        },
+        "qwen": {
+          "ran_tests": true,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [
+        {
+          "from": "opencode-nemotron",
+          "to": "qwen",
+          "reason": "nemotron returned 0.0 findings per review across its first three; qwen/qwen3.8-27b added as primary reviewer (agents.yaml M0 override, 24 Aug 2026)"
+        },
+        {
+          "from": "opencode-ox",
+          "to": "deepseek",
+          "reason": "ox-alpha endpoint withdrawn; deepseek-v4-pro-0813 restores an independent second reviewer"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a03218-ec9c-7900-af67-d8516d1ec197",
+          "source": "codex rollout matched on cwd"
+        },
+        "deepseek": {
+          "agent": "deepseek",
+          "id": null,
+          "source": "unavailable: no detector for deepseek"
+        },
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E03-S01 and model~nemotron-ultra"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "a8c2a1bf-3633-4a96-8941-8f5a43f2a7ce",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "unavailable: OpenRouter has no session concept - pass the generation id to `flo session qwen <id>`"
+        }
+      },
+      "recap": "Delivered the immutable Decimal Money value object, centralized ISO 4217 HALF_UP rounding and remainder-preserving allocation. Added NUMERIC(18,4) plus CHAR(3) SQLAlchemy composite persistence, real-Postgres coverage, and an effective CI float ban.",
+      "title": "Money primitives: Decimal, NUMERIC(18,4), central rounding, float lint ban"
+    },
+    {
+      "story": "E03-S02",
+      "kind": "security",
+      "size": "L",
+      "tags": [
+        "security",
+        "auth"
+      ],
+      "author": "codex",
+      "reviewers": [
+        "opencode-nemotron",
+        "qwen"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "opencode-nemotron": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        },
+        "qwen": {
+          "ran_tests": true,
+          "findings": 2,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [
+        {
+          "from": "opencode-nemotron",
+          "to": "qwen",
+          "reason": "nemotron returned 0.0 findings per review across its first three; qwen/qwen3.8-27b added as primary reviewer (agents.yaml M0 override, 24 Aug 2026)"
+        },
+        {
+          "from": "opencode-ox",
+          "to": "deepseek",
+          "reason": "ox-alpha endpoint withdrawn; deepseek-v4-pro-0813 restores an independent second reviewer"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a03224-07db-7913-a780-3980644c2969",
+          "source": "codex rollout matched on cwd"
+        },
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E03-S02 and model~nemotron-ultra"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "a8c2a1bf-3633-4a96-8941-8f5a43f2a7ce",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "unavailable: OpenRouter has no session concept - pass the generation id to `flo session qwen <id>`"
+        }
+      },
+      "recap": "Delivered session-derived request scope, transaction-local Postgres RLS, and a repository base that requires tenant scope. Added reversible RLS migration coverage plus CI and TEN-010 guards for foreign-record access, OpenAPI inputs, future tenant tables, and pooled-connection bleed.",
+      "title": "Tenancy kernel: session org_id, RLS SET LOCAL, scoped repository base"
     }
   ]
 }
