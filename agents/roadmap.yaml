@@ -60,7 +60,7 @@ epics:
         reqs:
           - COMP-004
         dep: []
-        st: review
+        st: done
       - id: E01-S02
         t: 'Local stack: Postgres 17 + MinIO + Mailpit via one command'
         k: chore

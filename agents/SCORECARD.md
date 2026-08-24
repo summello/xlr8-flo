@@ -2,8 +2,33 @@
 
 # Agent scorecard
 
-**0 merged stories.** Scores appear once an agent has 3+ samples in that role —
+**1 merged stories.** Scores appear once an agent has 3+ samples in that role —
 before that the number would be noise, so it reads `—`.
 
-_No stories merged yet._
+## As author
+
+| Agent | Stories | Clean merge | Mean rounds | Escapes/story | Score |
+|---|---:|---:|---:|---:|---:|
+| `codex` | 1 | 100% | 1.00 | 0.00 | — |
+
+## As reviewer
+
+| Agent | Reviews | Ran tests | Findings/review | Blocker precision | Escapes missed | Score |
+|---|---:|---:|---:|---:|---:|---:|
+| `opencode-nemotron` | 1 | 100% | 0.0 | — | 0 | — |
+
+## How these are computed
+
+**Author score** = 50 × clean-merge rate + 30 × round efficiency + 20 × (1 − escape rate).
+A *clean merge* is one review round with no gate failure. *Round efficiency* is full at one
+round and zero at three. An *escape* is a blocker Opus found at final review — meaning two
+reviewers approved code that was wrong.
+
+**Reviewer score** = 25 × test compliance + 30 × blocker precision + 30 × catch rate
++ 15 × thoroughness. *Precision* is blockers upheld ÷ blockers raised, so crying wolf costs.
+*Catch rate* penalises escapes on stories this agent approved. *Thoroughness* saturates at two
+findings per review — more than that is not better.
+
+> Use these to route work, not to rank agents. A low author score on `money` stories and a high
+> one on `crud` is a routing signal, not a verdict. Adjust `allowed_kinds` in `agents/agents.yaml`.
 

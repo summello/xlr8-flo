@@ -1,5 +1,48 @@
 {
   "note": "Written by `flo done`. Render with `flo score`. One record per merged story. Do not hand-edit.",
   "min_sample": 3,
-  "stories": []
+  "stories": [
+    {
+      "story": "E01-S01",
+      "kind": "chore",
+      "size": "M",
+      "tags": [],
+      "author": "codex",
+      "reviewers": [
+        "opencode-nemotron"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "opencode-nemotron": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a03169-cca3-7010-bb45-a860edf69266",
+          "source": "codex rollout matched on cwd"
+        },
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E01-S01 and model~nemotron-ultra"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "a8c2a1bf-3633-4a96-8941-8f5a43f2a7ce",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Established the installable Python and React monorepo skeleton with strict linting, type checking, environment-backed configuration, and enforced module boundaries.",
+      "title": "Monorepo skeleton, tooling, ruff/mypy/eslint/tsc config"
+    }
+  ]
 }

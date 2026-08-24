@@ -8,9 +8,9 @@ Loaded into every agent session. Updated by `flo done` (status) and by Opus at e
 | | |
 |---|---|
 | Milestone | **M0 — Rails** |
-| Stories | 0 / 160 done |
+| Stories | 1 / 160 done |
 | Branch | milestone/M0-rails |
-| In flight | E01-S01 |
+| In flight | — |
 | Blocked | — |
 <!-- STATE:END -->
 
