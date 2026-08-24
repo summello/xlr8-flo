@@ -138,23 +138,72 @@ standing rule holds: push, never merge.
 
 _(none — add here rather than guessing)_
 
-## Session handoff — 24 Aug 2026
+## Session handoff — 25 Aug 2026
 
-Planning is complete and merged to `main`. M0 is under way.
+M0 is **10/25**. `main` is 79 commits behind `milestone/M0-rails` and that is correct —
+`main` advances only by milestone PR when M0's exit criteria are met, never on commit count.
+`flo ack` raises a `pr:M0` item by itself once every M0 story is done. Do not merge early.
 
-**In flight:** `E01-S01` is authored and sitting at `review` in worktree
-`../xlr8flo-E01-S01` (commit `e89f7cf`, author codex, session
-`01a03169-cca3-7010-bb45-a860edf69266`). It needs two reviews before `flo gate`:
-Opus and opencode-nemotron. Neither has been written yet — `reviews/` is empty.
+**Next up: `E04-S01` — design tokens, Tailwind v4, light/dark.** Worktree
+`../xlr8flo-E04-S01` was rebuilt today on the milestone head (`4378023`); the old one was six
+commits stale with a `task.json` naming qwen. Author codex, reviewers opus + kimi + deepseek,
+Opus final required. **Nothing has been authored yet — codex has not been dispatched.** This is
+the first `ui` story, so `design-system/MASTER.md` is binding and its §8 is the UI definition of
+done (§7 is Components — AGENTS.md and agents/claude.md were corrected today).
 
-**Gotcha discovered this session:** E01-S01's output appeared staged in the *main*
-repo tree as well as its worktree. All 17 files were byte-identical to the worktree
-commit, so nothing was lost, and the main tree was cleaned. Watch for this — files
-committed to the milestone branch outside the story flow bypass gate and review
-entirely. `flo` writes only `agents/roadmap.yaml` to ROOT by design; anything else
-appearing there is contamination.
+Its packet was revised today: an unverifiable "46 documented pairs" acceptance criterion is gone
+because the real count across MASTER.md §2 is well over sixty. The contrast test must now derive
+its pair list *from MASTER.md* and fail when a documented token is **absent** from `tokens.css` —
+otherwise it passes by testing nothing, which is the E01-S07 defect class in a new costume.
 
-**Branch protection is live** on `main`: PR required, merge-commit only, and
-`detect`/`governance`/`security` required. `backend`, `frontend` and the two CodeQL
-`analyze` checks start reporting once E01-S01 lands and must be added to the
-required list then — recorded as a done criterion on E01-S04.
+**Still owed on the merged `E01-S05`, and invisible on the board.** Four `notes.followup`
+entries live in a done story where nobody will look, three of them blocked on operator accounts
+that now exist:
+1. live deploy evidence run — failing migration aborts, vulnerable image never pushed, both SARIF
+   categories survive, rollback works
+2. attach `xlr8flo.summello.com` to Pages, deploy the `/api/*` Worker route, Full (strict), HSTS
+3. measure login p50 on the live 1 GiB / 2 vCPU revision against E02-S01's 250–500 ms target
+4. **Cloud Run ingress is open.** `run.app` bypasses the Worker *and* E19-S03's future edge rate
+   limiting. Two tracked closes: the free Secret Manager shared secret (needs E01-S06) or a paid
+   load balancer at graduation. `infra/SETUP.md` has the detail.
+
+The `prereq:` board rule added today only surfaces prerequisites for **non-done** stories, so
+these vanished the moment E01-S05 merged. That is a design error: prerequisites should follow
+followups, not story status. Fix it before relying on the board.
+
+**Reviewer harness was rebuilt today — read this before dispatching any reviewer.** Three
+reviewers failed on E01-S05 for reasons that were the *packet's* fault:
+- `flo review` now excludes generated lockfiles (`uv.lock` was 1,108 of 3,178 lines and stalled
+  two models before their first token), inlines dotfiles from the diff (a sandbox refuses to open
+  them and the refusal **kills the run**), and states its rules as numbered commands with the
+  `git checkout -- <file>` restore spelled out.
+- Two new prohibitions, both earned: reviewers must not open `reviews/` (one read another's
+  verdict two steps before writing its own and restated both findings), and must not report a
+  defect not reproduced in the file as it stands (the same reviewer reported a double pipe in a
+  regex that has one).
+- Enforce the first one physically: move `reviews/*.json` aside for the duration of a run.
+- Run reviewers **sequentially**, or give the second its own `git worktree add --detach` at the
+  same commit — both plant and revert violations and will corrupt each other otherwise.
+- `opencode run --auto` is required, or the sandbox kills the run on the first permission prompt.
+
+**Open question for the next gated story: qwen vs kimi.** Run both, compare findings that survive
+the Opus final. Comparable → keep kimi (qwen costs more). qwen clearly better → revert. The
+confound: qwen's four failures were all packet-caused and are now fixed, so it was probably never
+the problem. kimi's only clean-room outing produced **zero** independent findings.
+
+**Driving `flo`:** run it from the parent repo, but with the story worktree's venv first on
+`PATH` *and* as the interpreter, or `flo done` dies on `ruff` and then on missing PyYAML:
+
+```
+PATH="<worktree>/.venv/bin:$PATH" <worktree>/.venv/bin/python agents/scripts/flo done <STORY>
+```
+
+`pip install pyyaml` into each new story venv once.
+
+---
+
+## Branch protection
+
+Live on `main`: PR required, merge-commit only, `detect`/`governance`/`security` required.
+`backend`, `frontend` and the two CodeQL `analyze` checks report now and must be added to the
+required list — recorded as a done criterion on E01-S04.

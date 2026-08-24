@@ -340,7 +340,7 @@ epics:
           - A11Y-005
         dep:
           - E01-S01
-        st: todo
+        st: in_progress
       - id: E04-S02
         t: 'App shell: nav, breadcrumbs, command palette, focus management, skip links'
         k: ui
