@@ -5,6 +5,8 @@ Binding rules for every coding agent on this repository: **Claude Code (Opus)**,
 This file is read automatically by Codex CLI and OpenCode CLI. Claude Code reads it via `CLAUDE.md`. It is the single rulebook — if another document disagrees with this one, this one wins.
 
 **Read before every task:** this file, `agents/project-memory.md`, and your story's design packet at `design/<STORY_ID>.md`.
+Your packet is in your worktree at `design/<STORY_ID>.md` — packets are tracked, so it is there from the moment `flo start` creates the branch. Implement that packet exactly.
+
 **Before any UI story, additionally:** `design-system/MASTER.md`, then `design-system/pages/<page>.md` if one exists for the page you are touching — the page file overrides the master where it says so.
 
 ---

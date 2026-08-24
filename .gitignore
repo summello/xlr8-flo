@@ -1,10 +1,5 @@
 # ── Local / generated. Safe to ignore: nothing reads these from a worktree. ──
 
-# Design packets — flo resolves these from the repo root, never from the worktree,
-# so agents still get them via `flo review` / `flo start`.
-design/*.md
-!design/README.md
-
 # Review verdicts — per-story, ephemeral, consumed by `flo gate` in place.
 reviews/*.json
 
