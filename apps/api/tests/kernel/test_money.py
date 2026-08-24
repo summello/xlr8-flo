@@ -10,7 +10,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 from sqlalchemy.schema import CreateTable
 
 from flo.kernel.db.types import CurrencyCode, MoneyAmount, money_composite
-from flo.kernel.money import CurrencyMismatch, Money, quantize
+from flo.kernel.money import CurrencyMismatch, Money, currency_exponent, quantize
 
 
 class Base(DeclarativeBase):
@@ -35,8 +35,14 @@ def test_money_requires_decimal_and_valid_uppercase_currency() -> None:
 
     with pytest.raises(ValueError, match="uppercase"):
         Money(Decimal("10.50"), "usd")
+
+
+@pytest.mark.parametrize("currency", ["XAD", "ZZZ", "QQQ"])
+def test_well_formed_non_iso_currency_codes_are_rejected(currency: str) -> None:
     with pytest.raises(ValueError, match="unsupported"):
-        Money(Decimal("10.50"), "ZZZ")
+        currency_exponent(currency)
+    with pytest.raises(ValueError, match="unsupported"):
+        Money(Decimal("10.50"), currency)
 
 
 def test_arithmetic_never_implicitly_mixes_currencies() -> None:
