@@ -32,7 +32,14 @@ milestone_overrides:
     # image. That is the rubber-stamping pattern AGENTS.md 2.3b calls a fleet defect.
     # M0's remaining stories are money, tenancy and security foundations, so they now
     # carry three independent reviewers plus the Opus final.
-    reviewers: [opus, qwen, deepseek, opencode-nemotron]
+    # 24 Aug 2026, second routing change, now with a real sample. Across six M0
+    # reviews opencode-nemotron returned approve with 0.0 findings every time - on
+    # the same stories where qwen raised three majors and a blocker and deepseek
+    # raised two findings, including a non-ISO currency code accepted as money and
+    # a float ban that missed '-> float'. It is not malfunctioning; it is a cheap
+    # model doing a shallow pass. Gated M0 stories therefore carry opus + qwen +
+    # deepseek, and nemotron keeps ungated work where a shallow pass is adequate.
+    reviewers: [opus, qwen, deepseek]
     opus_final_all: true
     cost: >
       The operator holds Codex usage resets, so the weekly cap is not the binding
