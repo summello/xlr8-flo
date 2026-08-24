@@ -92,7 +92,7 @@ epics:
           - SEC-012
         dep:
           - E01-S03
-        st: todo
+        st: done
       - id: E01-S05
         t: Deploy API to Cloud Run and SPA to Cloudflare Pages from CI
         k: chore
