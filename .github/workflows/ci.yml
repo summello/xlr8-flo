@@ -145,7 +145,11 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
-      - run: pip install -e 'apps/api[dev]'
+      - name: Install API dependencies
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install -e 'apps/api[dev]'
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
       - run: ruff check apps/api
       - run: mypy --strict apps/api/src/flo
 
@@ -155,16 +159,16 @@ jobs:
       - name: No float in money modules (AGENTS.md 3.1)
         run: |
           set -euo pipefail
-          missing=0
+          money_modules=()
           for d in budget purchasing sourcing requisitions; do
-            [ -d "apps/api/src/flo/modules/$d" ] || { echo "::notice::module $d not built yet"; missing=1; }
+            if [ -d "apps/api/src/flo/modules/$d" ]; then
+              money_modules+=("apps/api/src/flo/modules/$d")
+            else
+              echo "::notice::module $d not built yet"
+            fi
           done
-          [ "$missing" = 1 ] && exit 0
-          if grep -rnE '\bfloat\(|:[[:space:]]*float\b' \
-               apps/api/src/flo/modules/budget \
-               apps/api/src/flo/modules/purchasing \
-               apps/api/src/flo/modules/sourcing \
-               apps/api/src/flo/modules/requisitions; then
+          [ "${#money_modules[@]}" -eq 0 ] && exit 0
+          if grep -rnE '\bfloat\(|:[[:space:]]*float\b' "${money_modules[@]}"; then
             echo "::error::float is banned in money modules - use Decimal"; exit 1
           fi
 
@@ -178,6 +182,16 @@ jobs:
             exit 0
           fi
           pytest -q apps/api/tests/isolation
+
+      - name: Python dependency SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610  # v0.24.0
+        with:
+          path: .venv
+          format: cyclonedx-json
+          artifact-name: sbom-python.cyclonedx.json
+          output-file: sbom-python.cyclonedx.json
+          upload-artifact-retention: 14
+          upload-release-assets: false
 
   frontend:
     runs-on: ubuntu-latest
@@ -219,9 +233,24 @@ jobs:
       - name: E2E and accessibility (A11Y-001)
         run: npm --prefix apps/web run test:e2e
 
+      - name: Node dependency SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610  # v0.24.0
+        env:
+          SYFT_JAVASCRIPT_INCLUDE_DEV_DEPENDENCIES: 'true'
+        with:
+          path: apps/web
+          format: cyclonedx-json
+          artifact-name: sbom-node.cyclonedx.json
+          output-file: sbom-node.cyclonedx.json
+          upload-artifact-retention: 14
+          upload-release-assets: false
+
   security:
     runs-on: ubuntu-latest
     needs: governance
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@v5
         with:
@@ -236,8 +265,24 @@ jobs:
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
           ignore-unfixed: true
-          # Trivy scans the checkout; nothing to scan yet, but the gate must be live
-          # from the first commit rather than switched on once dependencies exist.
+          format: sarif
+          output: trivy-results.sarif
+
+      - name: Attach dependency scan results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: trivy-dependency-scan
+          path: trivy-results.sarif
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Publish Trivy findings to code scanning
+        if: always() && hashFiles('trivy-results.sarif') != ''
+        uses: github/codeql-action/upload-sarif@42947a340483f03ba47bb1a039b2c519aab3df85  # v3
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy-dependency-scan
 
   deploy:
     # Only main deploys. Milestone branches build but never release.
