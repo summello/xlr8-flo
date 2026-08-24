@@ -1,0 +1,55 @@
+{
+  "story": "E01-S03",
+  "title": "API container image, slim multi-stage, non-root, health endpoints",
+  "epic": "E01",
+  "milestone": "M0",
+  "kind": "chore",
+  "size": "M",
+  "tags": [
+    "security"
+  ],
+  "requirements": [
+    "REL-003"
+  ],
+  "depends_on": [
+    "E01-S01"
+  ],
+  "branch": "story/E01-S03-api-container-image-slim-multi-stage-non-root-he",
+  "milestone_branch": "milestone/M0-rails",
+  "worktree": "/Users/sonammathuria/Workbench/xlr8flo-E01-S03",
+  "design": "design/E01-S03.md",
+  "author": "codex",
+  "reviewers": [
+    "opus",
+    "opencode-nemotron"
+  ],
+  "opus_final": true,
+  "override": "M0",
+  "rounds": 0,
+  "substitutions": [],
+  "notes": {
+    "blocked": "`podman build --file apps/api/Containerfile --tag xlr8flo-api:e01-s03 apps/api` could not run: `zsh:1: command not found: podman`. Docker 29.5.3 built and passed every equivalent OCI runtime check; only Podman-specific confirmation remains unverified.",
+    "followup": [
+      "Milestone PR dependency disclosure: FastAPI supplies the D-02-selected API framework; Uvicorn supplies the ASGI server and graceful drain; psycopg supplies PostgreSQL protocol connectivity unavailable in the standard library; httpx supplies in-process HTTP testing for the FastAPI surface. None replaces an existing dependency."
+    ],
+    "recap": "Delivered a slim multi-stage API container that runs read-only as uid 1001 and drains gracefully on SIGTERM. Separate unauthenticated liveness and bounded database/storage readiness endpoints return non-disclosing per-dependency status."
+  },
+  "traceability": {
+    "REL-003": [
+      "apps/api/tests/test_health.py::test_healthz_is_live_without_touching_dependencies",
+      "apps/api/tests/test_health.py::test_readyz_reports_each_healthy_dependency",
+      "apps/api/tests/test_health.py::test_database_failure_degrades_readiness_but_not_liveness",
+      "apps/api/tests/test_health.py::test_readyz_bounds_a_slow_dependency_and_names_its_timeout",
+      "apps/api/tests/test_health.py::test_readyz_does_not_disclose_dependency_error_details",
+      "docker run --read-only ... xlr8flo-api:e01-s03 plus curl /healthz and /readyz",
+      "docker stop --timeout 10 xlr8flo-e01-s03-drain while /readyz was in flight"
+    ]
+  },
+  "sessions": {
+    "codex": {
+      "agent": "codex",
+      "id": null,
+      "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E01-S03"
+    }
+  }
+}
