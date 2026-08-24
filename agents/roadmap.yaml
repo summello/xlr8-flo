@@ -229,7 +229,7 @@ epics:
           - FIN-009
         dep:
           - E01-S01
-        st: todo
+        st: done
       - id: E03-S02
         t: 'Tenancy kernel: session org_id, RLS SET LOCAL, scoped repository base'
         k: security
