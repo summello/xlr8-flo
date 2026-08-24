@@ -13,7 +13,7 @@ from argon2 import PasswordHasher
 from flo.kernel.identity import PasswordPolicyError, build_local_identity_provider
 from flo.kernel.identity.port import IdentityProvider
 
-from .conftest import FakeIdentityConnection, fast_settings
+from .conftest import FakeIdentityConnection, fast_settings, run
 
 
 def _failure_wire_bytes(result: object) -> bytes:
@@ -24,13 +24,13 @@ def test_unknown_email_and_wrong_password_have_byte_identical_failure_results(
     identity_provider: IdentityProvider,
     identity_connection: FakeIdentityConnection,
 ) -> None:
-    identity_provider.create_identity("known@example.test", "the known safe passphrase")
+    run(identity_provider.create_identity("known@example.test", "the known safe passphrase"))
 
-    wrong_email = identity_provider.authenticate(
-        "unknown@example.test", "an incorrect safe passphrase"
+    wrong_email = run(
+        identity_provider.authenticate("unknown@example.test", "an incorrect safe passphrase")
     )
-    wrong_password = identity_provider.authenticate(
-        "known@example.test", "an incorrect safe passphrase"
+    wrong_password = run(
+        identity_provider.authenticate("known@example.test", "an incorrect safe passphrase")
     )
 
     assert wrong_email == wrong_password
@@ -39,8 +39,8 @@ def test_unknown_email_and_wrong_password_have_byte_identical_failure_results(
 
     identity_id, _ = identity_connection.identities["known@example.test"]
     identity_connection.identities["known@example.test"] = (identity_id, "invalid hash")
-    malformed_hash = identity_provider.authenticate(
-        "known@example.test", "an incorrect safe passphrase"
+    malformed_hash = run(
+        identity_provider.authenticate("known@example.test", "an incorrect safe passphrase")
     )
     assert malformed_hash == wrong_email
 
@@ -48,17 +48,25 @@ def test_unknown_email_and_wrong_password_have_byte_identical_failure_results(
 def test_unknown_email_and_wrong_password_medians_differ_by_less_than_ten_percent(
     identity_provider: IdentityProvider,
 ) -> None:
-    identity_provider.create_identity("known@example.test", "the known safe passphrase")
+    run(identity_provider.create_identity("known@example.test", "the known safe passphrase"))
     unknown_timings: list[int] = []
     wrong_timings: list[int] = []
 
     for _ in range(100):
         started = time.perf_counter_ns()
-        identity_provider.authenticate("unknown@example.test", "an incorrect safe passphrase")
+        run(
+            identity_provider.authenticate(
+                "unknown@example.test", "an incorrect safe passphrase"
+            )
+        )
         unknown_timings.append(time.perf_counter_ns() - started)
 
         started = time.perf_counter_ns()
-        identity_provider.authenticate("known@example.test", "an incorrect safe passphrase")
+        run(
+            identity_provider.authenticate(
+                "known@example.test", "an incorrect safe passphrase"
+            )
+        )
         wrong_timings.append(time.perf_counter_ns() - started)
 
     unknown_median = statistics.median(unknown_timings)
@@ -88,17 +96,19 @@ def test_each_authentication_path_performs_exactly_one_verification(
 ) -> None:
     password = "the known safe passphrase"
     if path.startswith("stale"):
-        old_provider = build_local_identity_provider(
-            identity_connection, fast_settings(time_cost=1)
+        old_provider = run(
+            build_local_identity_provider(identity_connection, fast_settings(time_cost=1))
         )
-        old_provider.create_identity("known@example.test", password)
+        run(old_provider.create_identity("known@example.test", password))
     elif path != "unknown":
-        current_provider = build_local_identity_provider(
-            identity_connection, fast_settings(time_cost=2)
+        current_provider = run(
+            build_local_identity_provider(identity_connection, fast_settings(time_cost=2))
         )
-        current_provider.create_identity("known@example.test", password)
+        run(current_provider.create_identity("known@example.test", password))
 
-    provider = build_local_identity_provider(identity_connection, fast_settings(time_cost=2))
+    provider = run(
+        build_local_identity_provider(identity_connection, fast_settings(time_cost=2))
+    )
     if path == "malformed":
         identity_id, _ = identity_connection.identities["known@example.test"]
         identity_connection.identities["known@example.test"] = (identity_id, "invalid hash")
@@ -113,7 +123,7 @@ def test_each_authentication_path_performs_exactly_one_verification(
         autospec=True,
         side_effect=original_verify,
     ) as verify:
-        result = provider.authenticate(email, attempted_password)
+        result = run(provider.authenticate(email, attempted_password))
 
     assert result.authenticated is expected_authenticated
     assert verify.call_count == 1
@@ -126,11 +136,11 @@ def test_passwords_do_not_appear_in_results_errors_logs_or_stored_rows(
 ) -> None:
     sensitive = "never expose this safe passphrase"
     caplog.set_level(logging.DEBUG)
-    identity_provider.create_identity("secret@example.test", sensitive)
-    failure = identity_provider.authenticate("secret@example.test", sensitive + " wrong")
+    run(identity_provider.create_identity("secret@example.test", sensitive))
+    failure = run(identity_provider.authenticate("secret@example.test", sensitive + " wrong"))
 
     with pytest.raises(PasswordPolicyError) as captured:
-        identity_provider.create_identity("invalid@example.test", "too short")
+        run(identity_provider.create_identity("invalid@example.test", "too short"))
 
     observable = " ".join(
         [

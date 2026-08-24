@@ -15,7 +15,7 @@ import uvicorn
 from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 
-from flo.kernel.config import Settings
+from flo.kernel.config import Settings, enforce_argon2_memory_limit
 from flo.kernel.errors import ErrorCode, ProblemError, install_problem_details
 
 HealthProbe = Callable[[Settings], Awaitable[None]]
@@ -185,6 +185,7 @@ def main() -> None:
     """Run the API server as the container's signal-receiving process."""
 
     settings = Settings()
+    enforce_argon2_memory_limit(settings)
     uvicorn.run(
         app,
         host="0.0.0.0",

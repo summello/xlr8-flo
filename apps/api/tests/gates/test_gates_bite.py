@@ -59,6 +59,41 @@ def assert_accepts(result: subprocess.CompletedProcess[str]) -> None:
     assert result.returncode == 0, output(result)
 
 
+def workflow_step(source: str, name: str) -> str:
+    marker = f"      - name: {name}"
+    start = source.index(marker)
+    end = source.find("\n      - name:", start + len(marker))
+    return source[start:] if end == -1 else source[start:end]
+
+
+def assert_release_workflow_policy(source: str) -> None:
+    image_scan = workflow_step(source, "Scan built API image")
+    assert "scan-type: image" in image_scan
+    assert "severity: 'CRITICAL,HIGH'" in image_scan
+    assert "exit-code: '1'" in image_scan
+    assert "ignore-unfixed: true" in image_scan
+    assert "format: sarif" in image_scan
+    assert "continue-on-error" not in image_scan
+    assert source.index("- name: Scan built API image") < source.index(
+        'docker push "$IMAGE_TAG"'
+    )
+    assert source.index("- name: Generate deployed-image SBOM") < source.index(
+        'docker push "$IMAGE_TAG"'
+    )
+    assert "category: trivy-dependency-scan" in source
+    assert "category: trivy-container-image" in source
+    assert source.index("gcloud run jobs execute flo-migrate") < source.index(
+        "gcloud run deploy flo-api"
+    )
+    deploy = source[source.index("gcloud run deploy flo-api") :]
+    assert '--image "${{ steps.push.outputs.digest }}"' in deploy
+    assert "--source" not in deploy
+    assert "credentials_json" not in source
+    assert "workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}" in source
+    assert "grep -RIlE -- 'sk-|-----BEGIN' apps/web/dist" in source
+    assert 'grep -RIlF -- "$GCP_PROJECT" apps/web/dist' in source
+
+
 def make_package(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
     (path / "__init__.py").write_text("", encoding="utf-8")
@@ -250,6 +285,73 @@ def test_tenancy_openapi_rejects_org_id_parameter_and_then_passes(tmp_path: Path
     assert_rejects(run_tenancy(project), "OpenAPI operation accepts org_id", "GET /planted")
     health.write_bytes(clean_health)
     assert_accepts(run_tenancy(project))
+
+
+def test_deploy_resource_check_rejects_argon2_memory_drift_and_then_passes(
+    tmp_path: Path,
+) -> None:
+    project = tmp_path / "repo"
+    workflow = project / ".github" / "workflows" / "ci.yml"
+    config = project / "apps" / "api" / "src" / "flo" / "kernel" / "config.py"
+    script = project / "apps" / "api" / "scripts" / "check_deploy_resources.py"
+    workflow.parent.mkdir(parents=True)
+    config.parent.mkdir(parents=True)
+    script.parent.mkdir(parents=True)
+    shutil.copy2(ROOT / ".github" / "workflows" / "ci.yml", workflow)
+    shutil.copy2(ROOT / "apps" / "api" / "src" / "flo" / "kernel" / "config.py", config)
+    shutil.copy2(ROOT / "apps" / "api" / "scripts" / "check_deploy_resources.py", script)
+    clean_config = config.read_bytes()
+    config.write_text(
+        config.read_text(encoding="utf-8").replace(
+            "default=64 * 1024,",
+            "default=256 * 1024,",
+            1,
+        ),
+        encoding="utf-8",
+    )
+    command = [
+        sys.executable,
+        str(script),
+        "--workflow",
+        str(workflow),
+        "--config",
+        str(config),
+    ]
+
+    assert_rejects(run_gate(command, cwd=project), "Argon2 invariant", "require 1280 MiB")
+    config.write_bytes(clean_config)
+    assert_accepts(run_gate(command, cwd=project))
+
+
+def test_release_workflow_policy_rejects_a_nonblocking_image_scan_and_then_passes() -> None:
+    source = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    image_scan = workflow_step(source, "Scan built API image")
+    violation = source.replace(
+        image_scan,
+        image_scan.replace("exit-code: '1'", "exit-code: '0'"),
+        1,
+    )
+
+    with pytest.raises(AssertionError):
+        assert_release_workflow_policy(violation)
+    assert_release_workflow_policy(source)
+
+
+def test_production_runbook_and_spa_environment_keep_release_configuration_external() -> None:
+    production_env = (ROOT / "apps" / "web" / ".env.production").read_text(encoding="utf-8")
+    configured_names = {
+        line.partition("=")[0]
+        for line in production_env.splitlines()
+        if line and not line.startswith("#")
+    }
+    setup = (ROOT / "infra" / "SETUP.md").read_text(encoding="utf-8")
+
+    assert configured_names == {"VITE_API_BASE_URL"}
+    assert "Full (strict)" in setup
+    assert "Strict-Transport-Security" in setup
+    assert "gcloud run services update-traffic flo-api" in setup
+    assert "credentials_json" in setup
+    assert "not part of this deployment" in setup
 
 
 def test_gitleaks_rejects_fake_aws_key_and_then_passes(tmp_path: Path) -> None:

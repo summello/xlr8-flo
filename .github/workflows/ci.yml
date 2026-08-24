@@ -51,6 +51,9 @@ jobs:
       - name: Agent scorecard is current
         run: agents/scripts/flo score --check
 
+      - name: Cloud Run contains the configured Argon2 workload
+        run: python apps/api/scripts/check_deploy_resources.py
+
       - name: Roadmap is internally consistent
         run: |
           python3 - <<'PY'
@@ -293,8 +296,10 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      security-events: write
     env:
       GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+      IMAGE_TAG: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/flo/flo-api:${{ github.sha }}
     steps:
       - uses: actions/checkout@v5
       - uses: google-github-actions/auth@v2
@@ -303,11 +308,77 @@ jobs:
           service_account: ${{ secrets.GCP_DEPLOY_SA }}
       - uses: google-github-actions/setup-gcloud@v2
 
-      - name: Migrate then deploy API
+      - name: Authenticate Docker to Artifact Registry
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+
+      - name: Build API image locally
+        run: docker build --file apps/api/Containerfile --tag "$IMAGE_TAG" apps/api
+
+      # This is deliberately before docker push. A failed or vulnerable scan must
+      # leave neither an Artifact Registry image nor a deployable revision behind.
+      - name: Scan built API image
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8  # v0.36.0
+        with:
+          scan-type: image
+          image-ref: ${{ env.IMAGE_TAG }}
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-container-image.sarif
+
+      - name: Attach container image scan results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: trivy-container-image
+          path: trivy-container-image.sarif
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Publish container findings to code scanning
+        if: always() && hashFiles('trivy-container-image.sarif') != ''
+        uses: github/codeql-action/upload-sarif@42947a340483f03ba47bb1a039b2c519aab3df85  # v3
+        with:
+          sarif_file: trivy-container-image.sarif
+          category: trivy-container-image
+
+      - name: Generate deployed-image SBOM
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8  # v0.36.0
+        with:
+          scan-type: image
+          image-ref: ${{ env.IMAGE_TAG }}
+          format: cyclonedx
+          output: sbom-image.cyclonedx.json
+
+      - name: Attach deployed-image SBOM
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: sbom-image-cyclonedx
+          path: sbom-image.cyclonedx.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Push scanned API image and resolve its digest
+        id: push
         run: |
-          gcloud run jobs execute flo-migrate --region us-central1 --wait
+          set -euo pipefail
+          docker push "$IMAGE_TAG"
+          digest_ref=$(docker image inspect --format='{{index .RepoDigests 0}}' "$IMAGE_TAG")
+          case "$digest_ref" in
+            *@sha256:*) ;;
+            *) echo "::error::registry did not return a sha256 image digest"; exit 1 ;;
+          esac
+          echo "digest=$digest_ref" >> "$GITHUB_OUTPUT"
+
+      - name: Migrate before serving the new revision
+        run: gcloud run jobs execute flo-migrate --region us-central1 --wait
+
+      - name: Deploy API by immutable digest
+        run: |
           gcloud run deploy flo-api --region us-central1 \
-            --source apps/api --min-instances 0 --concurrency 80 \
+            --image "${{ steps.push.outputs.digest }}" \
+            --min-instances 0 --concurrency 80 --memory 1Gi --cpu 2 \
             --set-secrets DATABASE_URL=flo-database-url:latest
 
       - name: Prune registry to 3 images (Artifact Registry free tier is 0.5 GB)
@@ -321,7 +392,21 @@ jobs:
       - name: Deploy SPA
         if: needs.detect.outputs.web == 'true'
         run: |
-          npm --prefix apps/web ci && npm --prefix apps/web run build
+          set -euo pipefail
+          : "${GCP_PROJECT:?GCP_PROJECT is required for the bundle guard}"
+          : "${VITE_API_BASE_URL:?VITE_API_BASE_URL repository variable is required}"
+          npm --prefix apps/web ci
+          npm --prefix apps/web run build
+          if grep -RIlE -- 'sk-|-----BEGIN' apps/web/dist; then
+            echo "::error::SPA bundle contains a secret marker"
+            exit 1
+          fi
+          if grep -RIlF -- "$GCP_PROJECT" apps/web/dist; then
+            echo "::error::SPA bundle contains the GCP project id"
+            exit 1
+          fi
           npx wrangler pages deploy apps/web/dist --project-name flo-web
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
