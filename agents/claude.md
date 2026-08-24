@@ -35,7 +35,7 @@ Security pass:
 - Injection, output encoding, upload allow-list, error messages that leak nothing (SEC-011), no secret in a log or bundle.
 - Does a new failure mode exist with no monitor?
 
-UI/UX pass — measured against `design-system/MASTER.md` §7, not taste:
+UI/UX pass — measured against `design-system/MASTER.md` §8, not taste:
 
 - Keyboard-reachable, visible focus, logical order. Drag-and-drop has its non-drag equivalent **in this diff**.
 - Colour is never the only signal. Charts have their data table.

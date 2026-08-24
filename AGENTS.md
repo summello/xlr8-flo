@@ -188,7 +188,7 @@ Every story leaves behind the smallest runnable check that fails if the logic br
 | `money`, `concurrency` | Unit tests on the calculation **and** a real-Postgres concurrency test |
 | `auth`, `security` | Authorization test per role, plus a TEN-010 isolation case |
 | `workflow` | State-machine test covering every valid and invalid transition |
-| `ui` | Playwright happy path + `@axe-core/playwright` on the new route + a keyboard-only path + the `design-system/MASTER.md` §7 checklist |
+| `ui` | Playwright happy path + `@axe-core/playwright` on the new route + a keyboard-only path + the `design-system/MASTER.md` §8 checklist |
 | `migration` | Up, down, and a data-preservation assertion |
 | `crud`, `chore` | Unit or integration test on the non-trivial branch |
 
