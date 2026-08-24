@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -347,6 +348,43 @@ def test_deploy_resource_check_rejects_argon2_memory_drift_and_then_passes(
 
     assert_rejects(run_gate(command, cwd=project), "Argon2 invariant", "require 1280 MiB")
     config.write_bytes(clean_config)
+    assert_accepts(run_gate(command, cwd=project))
+
+
+def test_deploy_resource_check_rejects_a_missing_runtime_service_account(
+    tmp_path: Path,
+) -> None:
+    project = tmp_path / "repo"
+    workflow = project / ".github" / "workflows" / "ci.yml"
+    config = project / "apps" / "api" / "src" / "flo" / "kernel" / "config.py"
+    script = project / "apps" / "api" / "scripts" / "check_deploy_resources.py"
+    workflow.parent.mkdir(parents=True)
+    config.parent.mkdir(parents=True)
+    script.parent.mkdir(parents=True)
+    shutil.copy2(ROOT / ".github" / "workflows" / "ci.yml", workflow)
+    shutil.copy2(ROOT / "apps" / "api" / "src" / "flo" / "kernel" / "config.py", config)
+    shutil.copy2(ROOT / "apps" / "api" / "scripts" / "check_deploy_resources.py", script)
+    clean_workflow = workflow.read_bytes()
+    source = workflow.read_text(encoding="utf-8")
+    stripped = re.sub(
+        r"\n\s*--service-account [^\n]*\\",
+        "",
+        source,
+        count=1,
+    )
+    assert stripped != source, "the deploy step must name a runtime service account"
+    workflow.write_text(stripped, encoding="utf-8")
+    command = [
+        sys.executable,
+        str(script),
+        "--workflow",
+        str(workflow),
+        "--config",
+        str(config),
+    ]
+
+    assert_rejects(run_gate(command, cwd=project), "--service-account is missing")
+    workflow.write_bytes(clean_workflow)
     assert_accepts(run_gate(command, cwd=project))
 
 

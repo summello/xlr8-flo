@@ -377,10 +377,14 @@ jobs:
 
       - name: Deploy API by immutable digest
         run: |
+          # --service-account is not optional. Without it the revision runs as the
+          # default compute service account, which holds no secretmanager.secretAccessor,
+          # so the DATABASE_URL mount below fails at startup.
           gcloud run deploy flo-api --region us-central1 \
             --image "${{ steps.push.outputs.digest }}" \
             --min-instances 0 --concurrency 80 --memory 1Gi --cpu 2 \
             --ingress all \
+            --service-account "flo-runtime@${GCP_PROJECT}.iam.gserviceaccount.com" \
             --set-secrets DATABASE_URL=flo-database-url:latest
 
       - name: Prune registry to 3 images (Artifact Registry free tier is 0.5 GB)

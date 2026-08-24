@@ -118,6 +118,13 @@ def validate(workflow_path: Path, config_path: Path) -> list[str]:
             "Cloud Run --concurrency must not be lower than "
             "identity_argon2_max_concurrency"
         )
+
+    if "--service-account" not in command:
+        failures.append(
+            "Cloud Run --service-account is missing: the revision would run as the "
+            "default compute service account, which holds no "
+            "secretmanager.secretAccessor and cannot read DATABASE_URL"
+        )
     return failures
 
 

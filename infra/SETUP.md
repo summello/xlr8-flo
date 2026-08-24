@@ -10,6 +10,18 @@ Provisioning Neon, R2, Secret Manager, Artifact Registry, the Cloud Run migratio
 accounts belongs to E01-S06. This runbook records the deployment contract those resources must
 satisfy.
 
+Two of those resources must exist before the **first** deploy or it fails, and the failure is not
+obvious from the workflow log:
+
+- **`flo-runtime@<project>.iam.gserviceaccount.com`**, holding `roles/secretmanager.secretAccessor`,
+  and with the deploy service account granted `roles/iam.serviceAccountUser` on it. The deploy step
+  passes `--service-account`; without the account, or without that binding, the revision either
+  fails to deploy or comes up unable to read `DATABASE_URL`. `check_deploy_resources.py` asserts the
+  flag is present, but it cannot assert the account exists in GCP.
+- **The `flo-migrate` Cloud Run job.** `migrations/` already contains two migrations, so the migrate
+  step runs on every deploy and is not conditional. If the job does not exist the deploy fails at
+  that step, before any new revision serves — which is the intended ordering, not a bug.
+
 ## GitHub deployment configuration
 
 Configure GitHub's GCP trust with Workload Identity Federation. Do not create or download a service
