@@ -14,3 +14,13 @@ name = Business modules are independent
 type = independence
 modules =
     flo.modules.*
+
+[importlinter:contract:local-identity-adapter]
+name = Local identity adapter is hidden behind the port
+type = forbidden
+source_modules =
+    flo
+forbidden_modules =
+    flo.kernel.identity.local
+ignore_imports =
+    flo.kernel.identity -> flo.kernel.identity.local

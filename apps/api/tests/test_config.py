@@ -11,3 +11,16 @@ def test_settings_read_from_the_prefixed_environment(monkeypatch: pytest.MonkeyP
     monkeypatch.setenv("FLO_MESSAGE", "configured externally")
 
     assert ExampleSettings().message == "configured externally"
+
+
+def test_argon2_cost_defaults_and_environment_override(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    defaults = Settings()
+    assert defaults.identity_argon2_time_cost == 3
+    assert defaults.identity_argon2_memory_cost_kib == 64 * 1024
+    assert defaults.identity_argon2_parallelism == 4
+
+    monkeypatch.setenv("FLO_IDENTITY_ARGON2_TIME_COST", "4")
+
+    assert Settings().identity_argon2_time_cost == 4
