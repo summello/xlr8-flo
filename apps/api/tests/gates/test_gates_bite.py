@@ -75,6 +75,7 @@ def copy_import_linter_project(tmp_path: Path) -> Path:
         project / "flo" / "modules" / "a",
         project / "flo" / "modules" / "b",
         project / "flo" / "kernel",
+        project / "flo" / "kernel" / "db",
         project / "flo" / "kernel" / "identity",
     ):
         make_package(package)
@@ -191,16 +192,28 @@ def test_module_boundary_rejects_cross_module_import_and_then_passes(tmp_path: P
     assert_accepts(run_import_linter(project))
 
 
-def test_identity_contract_rejects_adapter_import_and_then_passes(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    ("source_module", "violation_path"),
+    [
+        ("flo.api.violation", Path("flo/api/violation.py")),
+        ("flo.modules.a.violation", Path("flo/modules/a/violation.py")),
+        ("flo.kernel.db.violation", Path("flo/kernel/db/violation.py")),
+    ],
+    ids=("api", "module", "kernel-sibling"),
+)
+def test_identity_contract_rejects_adapter_import_and_then_passes(
+    tmp_path: Path, source_module: str, violation_path: Path
+) -> None:
     project = copy_import_linter_project(tmp_path)
-    violation = project / "flo" / "api" / "violation.py"
+    violation = project / violation_path
     shutil.copy2(FIXTURES / "identity_adapter.py", violation)
 
     assert_rejects(
         run_import_linter(project),
         "Local identity adapter is hidden behind the port",
-        "flo.api",
+        source_module,
         "flo.kernel.identity.local",
+        "BROKEN",
     )
     violation.unlink()
     assert_accepts(run_import_linter(project))
