@@ -1,0 +1,76 @@
+name: CodeQL
+
+# Static analysis for SEC-012. Free here because the repository is public.
+#
+# There is no source to analyze until E01-S01 creates apps/api and apps/web, and
+# CodeQL fails outright on a language with no code. So the language matrix is
+# built from what actually exists, the same way ci.yml gates backend/frontend.
+# This workflow is green today and starts analyzing the moment code lands.
+
+on:
+  push:
+    branches: [main, 'milestone/**']
+  pull_request:
+  schedule:
+    # Weekly, so newly published advisories are caught against unchanged code.
+    - cron: '0 6 * * 1'
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      languages: ${{ steps.langs.outputs.languages }}
+      any: ${{ steps.langs.outputs.any }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: langs
+        run: |
+          langs=()
+          # Match what CodeQL can actually autodetect: extensioned source under apps/.
+          [ -n "$(git ls-files 'apps/api/**/*.py')" ] && langs+=('"python"')
+          [ -n "$(git ls-files 'apps/web/**/*.ts' 'apps/web/**/*.tsx')" ] \
+            && langs+=('"javascript-typescript"')
+          if [ ${#langs[@]} -eq 0 ]; then
+            echo "languages=[]" >> "$GITHUB_OUTPUT"
+            echo "any=false"    >> "$GITHUB_OUTPUT"
+            echo "::notice::No analyzable source yet — CodeQL starts once E01-S01 lands."
+          else
+            printf 'languages=[%s]\n' "$(IFS=,; echo "${langs[*]}")" >> "$GITHUB_OUTPUT"
+            echo "any=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  analyze:
+    needs: detect
+    if: needs.detect.outputs.any == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write      # required to upload results
+      contents: read
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ${{ fromJSON(needs.detect.outputs.languages) }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          # security-and-quality adds maintainability queries on top of the
+          # default security set. Findings are advisory here; the ruleset
+          # threshold decides what blocks a merge.
+          queries: security-and-quality
+
+      - uses: github/codeql-action/autobuild@v3
+
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.language }}
