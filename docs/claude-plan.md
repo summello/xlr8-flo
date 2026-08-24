@@ -448,7 +448,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 
 | | Story | Epic | Kind | Size | Requirements | Depends on |
 |---|---|---|---|---|---|---|
-| ⬜ | **E01-S01** Monorepo skeleton, tooling, ruff/mypy/eslint/tsc config | E01 | chore | M | COMP-004 | — |
+| 👀 | **E01-S01** Monorepo skeleton, tooling, ruff/mypy/eslint/tsc config | E01 | chore | M | COMP-004 | — |
 | ⬜ | **E01-S02** Local stack: Postgres 17 + MinIO + Mailpit via one command | E01 | chore | M | OPS-007 | E01-S01 |
 | ⬜ | **E01-S03** API container image, slim multi-stage, non-root, health endpoints | E01 | chore | M | REL-003 | E01-S01 |
 | ⬜ | **E01-S04** CI: lint, types, tests, gitleaks, import-linter, roadmap drift check | E01 | chore | L | SEC-012 | E01-S03 |

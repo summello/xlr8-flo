@@ -10,7 +10,7 @@ Loaded into every agent session. Updated by `flo done` (status) and by Opus at e
 | Milestone | **M0 — Rails** |
 | Stories | 0 / 160 done |
 | Branch | milestone/M0-rails |
-| In flight | — |
+| In flight | E01-S01 |
 | Blocked | — |
 <!-- STATE:END -->
 
@@ -77,3 +77,24 @@ Multi-tenant SaaS. Free-tier infrastructure until 10 paying customers or 200 MAU
 ## Open questions for the human
 
 _(none — add here rather than guessing)_
+
+## Session handoff — 24 Aug 2026
+
+Planning is complete and merged to `main`. M0 is under way.
+
+**In flight:** `E01-S01` is authored and sitting at `review` in worktree
+`../xlr8flo-E01-S01` (commit `e89f7cf`, author codex, session
+`01a03169-cca3-7010-bb45-a860edf69266`). It needs two reviews before `flo gate`:
+Opus and opencode-nemotron. Neither has been written yet — `reviews/` is empty.
+
+**Gotcha discovered this session:** E01-S01's output appeared staged in the *main*
+repo tree as well as its worktree. All 17 files were byte-identical to the worktree
+commit, so nothing was lost, and the main tree was cleaned. Watch for this — files
+committed to the milestone branch outside the story flow bypass gate and review
+entirely. `flo` writes only `agents/roadmap.yaml` to ROOT by design; anything else
+appearing there is contamination.
+
+**Branch protection is live** on `main`: PR required, merge-commit only, and
+`detect`/`governance`/`security` required. `backend`, `frontend` and the two CodeQL
+`analyze` checks start reporting once E01-S01 lands and must be added to the
+required list then — recorded as a done criterion on E01-S04.

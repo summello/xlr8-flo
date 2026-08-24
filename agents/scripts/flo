@@ -400,7 +400,11 @@ def cmd_done(argv):
     git("checkout", pkt["milestone_branch"])
     git("merge", "--squash", pkt["branch"])
     revs = ", ".join(sorted(r["reviewer"] for r in reviews_for(sid) if r.get("ran_tests")))
-    prov = json.loads(SCORECARD.read_text())["stories"][-1].get("sessions", {})
+    set_status(sid, "done")
+    record_score(sid, pkt, st)
+    # record_score appends this story last, so this is this story's provenance. Reading it
+    # before the append took the *previous* story's sessions, and crashed on the first story.
+    prov = load_scores()["stories"][-1].get("sessions", {})
     trailers = "".join(
         f"Session-{a}: {s['id']}\n" for a, s in sorted(prov.items()) if s.get("id"))
     msg = (f"{sid}: {st['t']}\n\n"
@@ -408,8 +412,6 @@ def cmd_done(argv):
            f"Author: {pkt['author']} | Reviewers: {revs}"
            f"{' | Opus final: approved' if pkt['opus_final'] else ''}\n"
            f"{trailers}")
-    set_status(sid, "done")
-    record_score(sid, pkt, st)
     cmd_roadmap([])
     cmd_score([])
     cmd_board([])
