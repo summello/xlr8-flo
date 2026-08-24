@@ -331,6 +331,57 @@
       },
       "recap": "Activated every backend, frontend, governance, and security CI gate against the application code. Added Python and Node CycloneDX SBOM artifacts, retained and published Trivy SARIF, and strengthened main branch protection.",
       "title": "CI: lint, types, tests, gitleaks, import-linter, roadmap drift check"
+    },
+    {
+      "story": "E02-S01",
+      "kind": "security",
+      "size": "L",
+      "tags": [
+        "auth",
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [
+        "deepseek"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "deepseek": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [
+        {
+          "from": "qwen",
+          "to": "deepseek",
+          "reason": "qwen produced four reviews on this story, including the vacuous-import-contract blocker and the kernel-sibling blocker, but five successive attempts to refresh its verdict against HEAD 9ee7964 were killed mid-run (this story's Argon2id-at-64MiB test suite makes a full verification pass long enough to be reaped). Its last written verdict judges commit 95bbac8, three fixes behind HEAD, and is archived at reviews/archive/E02-S01.qwen.at-95bbac8.json rather than deleted. deepseek reviewed HEAD independently and approved with tests run, per the fallback chain in agents.yaml."
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a033ca-dfda-72d3-a756-c46878e30e30",
+          "source": "codex rollout matched on cwd"
+        },
+        "deepseek": {
+          "agent": "deepseek",
+          "id": null,
+          "source": "unavailable: no detector for deepseek"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "a8c2a1bf-3633-4a96-8941-8f5a43f2a7ce",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Delivered the provider-independent identity port and an offline LocalIdentityProvider with NIST-aligned policy, Argon2id hashing, transparent cost upgrades, enumeration-resistant verification, and reversible Postgres storage.",
+      "title": "IdentityProvider port + LocalIdentityProvider, argon2id, NIST password policy"
     }
   ]
 }

@@ -149,7 +149,7 @@ epics:
           - D-05
         dep:
           - E01-S02
-        st: review
+        st: done
       - id: E02-S02
         t: Server sessions, httpOnly cookies, CSRF, idle and absolute timeout,
           revocation
