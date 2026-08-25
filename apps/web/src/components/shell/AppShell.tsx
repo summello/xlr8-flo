@@ -1,5 +1,5 @@
 import { ArrowRight } from "@phosphor-icons/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 import CommandMenu from "../command/CommandMenu";
 import {
@@ -24,11 +24,12 @@ export type ShellRoute = {
 };
 
 type AppShellProps = {
+  children?: ReactNode;
   navigate: (href: string) => void;
   route: ShellRoute;
 };
 
-export default function AppShell({ navigate, route }: AppShellProps) {
+export default function AppShell({ children, navigate, route }: AppShellProps) {
   const [commandOpen, setCommandOpen] = useState(false);
   const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
   const [commandReturnFocus, setCommandReturnFocus] = useState<HTMLElement | null>(null);
@@ -112,13 +113,15 @@ export default function AppShell({ navigate, route }: AppShellProps) {
             <p>{route.phase}</p>
             <h1 id="page-title">{route.title}</h1>
           </div>
-          <section aria-labelledby="workspace-heading" className="empty-state material">
-            <ArrowRight aria-hidden="true" weight="regular" />
-            <div>
-              <h2 id="workspace-heading">Shell route ready</h2>
-              <p>{route.description}</p>
-            </div>
-          </section>
+          {children ?? (
+            <section aria-labelledby="workspace-heading" className="empty-state material">
+              <ArrowRight aria-hidden="true" weight="regular" />
+              <div>
+                <h2 id="workspace-heading">Shell route ready</h2>
+                <p>{route.description}</p>
+              </div>
+            </section>
+          )}
         </main>
       </div>
       <p aria-atomic="true" aria-live="polite" className="visually-hidden" data-testid="route-announcer">

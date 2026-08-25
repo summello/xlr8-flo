@@ -782,6 +782,36 @@
       },
       "recap": "Append-only, monthly-partitioned audit_log enforced by a database trigger and RLS, with allowlisted before/after snapshots, truncated IP storage, correlation ids restored for background jobs, and permission-checked reads that write their own reader event.",
       "title": "Audit trail: append-only table, triggers, before/after, correlation id"
+    },
+    {
+      "story": "E04-S05",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E04-S05"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "6943502c-d56e-4353-af9a-3f691bb26487",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Closed, per-document-type StatusPill with a mandatory Phosphor icon, tones and geometry drawn entirely from MASTER 2.3 and 7.1 tokens, a dev throw and neutral unknown pill for an unmapped status, and greyscale, contrast, axe and source-enforcement coverage.",
+      "title": "StatusPill primitive: closed per-document-type tone map, icon always, never author-coloured"
     }
   ]
 }

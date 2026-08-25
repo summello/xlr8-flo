@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import AppShell, { type ShellRoute } from "../components/shell/AppShell";
 import type { Phase } from "../components/command/registry";
+import StatusGallery from "./_dev/status-gallery";
 
 type RouteDefinition = {
   activeHref: string;
@@ -129,6 +130,13 @@ const ROUTES: Readonly<Record<string, RouteDefinition>> = {
     phase: "foundation",
     title: "Archive current view",
   },
+  "/_dev/status-gallery": {
+    activeHref: "/projects",
+    description: "Every closed document status rendered from the shared status vocabulary.",
+    hierarchy: [ORGANIZATION, ["/_dev/status-gallery", "Status gallery"]],
+    phase: "foundation",
+    title: "Status gallery",
+  },
 };
 
 function routeFor(path: string): ShellRoute {
@@ -160,5 +168,9 @@ export default function RootRoute() {
     setRoute(activateRoute(href));
   }, []);
 
-  return <AppShell navigate={navigate} route={route} />;
+  return (
+    <AppShell navigate={navigate} route={route}>
+      {route.path === "/_dev/status-gallery" ? <StatusGallery /> : undefined}
+    </AppShell>
+  );
 }

@@ -3,6 +3,8 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+import { STATUS_TONES, TONES } from "../../components/status/tones";
+
 type Theme = "light" | "dark";
 type ThemeValues = Record<string, string>;
 type ThemePair = {
@@ -511,6 +513,24 @@ describe("design token contract", () => {
           ratio,
           `${theme}: ${pair.label} (${pair.foreground} on ${pair.background}) is ${ratio.toFixed(2)}:1`,
         ).toBeGreaterThanOrEqual(pair.threshold);
+      }
+    }
+  });
+
+  it("meets text contrast for every token pair consumed by StatusPill", () => {
+    expect(Object.keys(TONES)).toEqual(STATUS_TONES);
+    for (const theme of ["light", "dark"] as const) {
+      const values = actualThemeValues(theme);
+      for (const tone of STATUS_TONES) {
+        const definition = TONES[tone];
+        const ratio = contrast(
+          resolve(values, definition.foregroundToken),
+          resolve(values, definition.backgroundToken),
+        );
+        expect(
+          ratio,
+          `${theme}: StatusPill ${tone} (${definition.foregroundToken} on ${definition.backgroundToken}) is ${ratio.toFixed(2)}:1`,
+        ).toBeGreaterThanOrEqual(4.5);
       }
     }
   });
