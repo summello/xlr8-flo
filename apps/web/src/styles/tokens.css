@@ -151,6 +151,16 @@
   --row-h: 40px;
   --row-h-compact: 32px;
 
+  --pill-h: 22px;
+  --pill-radius: 6px;
+  --pill-pad-x: 8px;
+  --pill-gap: 5px;
+  --pill-icon: 13px;
+  --tag-radius: 999px;
+  --tag-pad-x: 9px;
+  --tag-gap: 6px;
+  --tag-dot: 6px;
+  --tag-remove: 12px;
   --icon-inline: 16px;
   --icon-control: 20px;
   --icon-nav: 24px;

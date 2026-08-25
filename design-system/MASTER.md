@@ -471,6 +471,23 @@ Reduced ≠ zero. Keep opacity and colour transitions that aid comprehension; dr
 └─────────────────┘
 ```
 
+Pills and tags are smaller than anything in §5, which is why they own the only component-scoped
+dimensions in this document. These are tokens like any other — a component may not restate the
+number:
+
+```css
+--pill-h:        22px;   /* both pill and tag — they must align on a grid row */
+--pill-radius:    6px;   /* the §2.4 shape rule: square-ish status, round tag */
+--pill-pad-x:     8px;
+--pill-gap:       5px;
+--pill-icon:     13px;
+--tag-radius:   999px;
+--tag-pad-x:      9px;
+--tag-gap:        6px;
+--tag-dot:        6px;
+--tag-remove:    12px;
+```
+
 Vocabulary from the §2.3 map. Icon always. Never author-coloured. Never a bare dot. In a grid, the status column is fixed-width and left-aligned so the eye can scan a single ragged edge.
 
 ### 7.2 Tag — free

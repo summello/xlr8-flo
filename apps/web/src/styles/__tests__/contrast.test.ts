@@ -338,6 +338,11 @@ function parseSupportingTokens(source: string): SupportingTokens {
   Object.assign(expected.light, declarations(motionCode));
 
   const components = section(source, "## 7. Components", "## 8. Definition");
+  // Pill and tag geometry is smaller than anything section 5 documents, so section 7.1
+  // names it. Parsed here for the same reason as everything else: a component that
+  // restates 22px instead of using the token is how a design system stops being one.
+  const pill = section(components, "### 7.1 StatusPill", "### 7.2 Tag");
+  Object.assign(expected.light, declarations(section(pill, "```css", "```")));
   const icons = section(components, "### 7.10 Icons", "---");
   const documentedIconSizes = icons.match(
     /(\d+px) inline\s*\/\s*(\d+px) control\s*\/\s*(\d+px) nav/,
