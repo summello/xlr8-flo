@@ -58,7 +58,7 @@ describe("command registry", () => {
   });
 
   it("requires the declared permission before advertising organization management", () => {
-    const permissions = new Set([...DEFAULT_PERMISSIONS, "organization:admin"] as const);
+    const permissions = new Set([...DEFAULT_PERMISSIONS, "organization.admin"] as const);
     expect(permittedCommands(permissions).map((command) => command.id)).toEqual([
       "record-north-plant-renewal",
       "create-project",

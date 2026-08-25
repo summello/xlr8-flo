@@ -179,6 +179,9 @@ jobs:
       - name: Tenancy OpenAPI and migration guards
         run: python apps/api/scripts/check_tenancy.py
 
+      - name: Every API route declares authorization
+        run: python apps/api/scripts/check_route_authz.py
+
       - name: Python dependency SBOM
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610  # v0.24.0
         with:

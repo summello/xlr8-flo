@@ -12,6 +12,7 @@ import psycopg
 from fastapi import APIRouter, Depends, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
 
+from flo.kernel.authz import public_route
 from flo.kernel.config import Settings
 from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.identity import IdentityConnection, IdentityProvider, build_local_identity_provider
@@ -150,6 +151,7 @@ def _delete_auth_cookies(response: Response) -> None:
 
 
 @router.post("/login", status_code=204)
+@public_route
 async def login(
     body: LoginRequest,
     request: Request,
@@ -176,6 +178,7 @@ async def login(
 
 
 @router.post("/logout", status_code=204)
+@public_route
 def logout(
     session: Annotated[SessionRecord, Depends(current_session)],
     store: Annotated[SessionStore, Depends(get_session_store)],
@@ -189,6 +192,7 @@ def logout(
 
 
 @router.get("/sessions", response_model=list[SessionResponse])
+@public_route
 def sessions(
     session: Annotated[SessionRecord, Depends(current_session)],
     store: Annotated[SessionStore, Depends(get_session_store)],
@@ -209,6 +213,7 @@ def sessions(
 
 
 @router.delete("/sessions", status_code=204)
+@public_route
 def revoke_other_sessions(
     session: Annotated[SessionRecord, Depends(current_session)],
     store: Annotated[SessionStore, Depends(get_session_store)],
@@ -220,6 +225,7 @@ def revoke_other_sessions(
 
 
 @router.delete("/sessions/{session_id}", status_code=204)
+@public_route
 def revoke_session(
     session_id: UUID,
     session: Annotated[SessionRecord, Depends(current_session)],

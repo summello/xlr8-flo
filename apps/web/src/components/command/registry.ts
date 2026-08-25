@@ -18,10 +18,10 @@ import {
 
 export type Phase = "foundation" | "plan" | "demand" | "commit";
 export type Permission =
-  | "records:read"
-  | "projects:create"
-  | "views:archive"
-  | "organization:admin";
+  | "record.read"
+  | "project.create"
+  | "view.archive"
+  | "organization.admin";
 export type CommandGroup = "Records" | "Actions" | "Navigation";
 
 export type NavigationItem = {
@@ -147,7 +147,7 @@ export const COMMANDS: readonly Command[] = [
     label: "North plant renewal",
     phase: "plan",
     recent: true,
-    requiredPermissions: ["records:read"],
+    requiredPermissions: ["record.read"],
   },
   {
     group: "Actions",
@@ -158,7 +158,7 @@ export const COMMANDS: readonly Command[] = [
     label: "Create project",
     phase: "plan",
     recent: true,
-    requiredPermissions: ["projects:create"],
+    requiredPermissions: ["project.create"],
     shortcut: "C",
   },
   {
@@ -177,7 +177,7 @@ export const COMMANDS: readonly Command[] = [
     keywords: ["admin", "settings"],
     label: "Manage organization",
     phase: "foundation",
-    requiredPermissions: ["organization:admin"],
+    requiredPermissions: ["organization.admin"],
   },
   {
     destructive: true,
@@ -187,15 +187,15 @@ export const COMMANDS: readonly Command[] = [
     id: "archive-view",
     keywords: ["delete", "remove"],
     label: "Archive current view",
-    requiredPermissions: ["views:archive"],
+    requiredPermissions: ["view.archive"],
   },
   ...NAVIGATION_COMMANDS,
 ] as const;
 
 export const DEFAULT_PERMISSIONS: ReadonlySet<Permission> = new Set([
-  "projects:create",
-  "records:read",
-  "views:archive",
+  "project.create",
+  "record.read",
+  "view.archive",
 ]);
 
 export function permittedCommands(

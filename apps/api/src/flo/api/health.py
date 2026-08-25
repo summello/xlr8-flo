@@ -4,19 +4,21 @@ from __future__ import annotations
 
 import asyncio
 import time
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import Awaitable, Callable, Iterator, Mapping
+from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Annotated
+from typing import Annotated, cast
 
 import psycopg
 import uvicorn
 from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 
-from flo.api.auth import production_session_store_factory
+from flo.api.auth import _database_url, production_session_store_factory
 from flo.api.auth import router as auth_router
 from flo.api.internal import router as internal_router
 from flo.api.origin_auth import require_origin_secret
+from flo.kernel.authz import PermissionResolverFactory, install_authorization, public_route
 from flo.kernel.config import Settings, enforce_argon2_memory_limit
 from flo.kernel.errors import ErrorCode, ProblemError, install_problem_details
 from flo.kernel.session import (
@@ -25,7 +27,10 @@ from flo.kernel.session import (
     install_session_authentication,
 )
 from flo.kernel.storage import create_storage
+from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.middleware import install_tenant_context
+from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
+from flo.modules.identity.resolver import AuthorizationConnection, AuthorizationResolver
 
 HealthProbe = Callable[[Settings], Awaitable[None]]
 
@@ -78,6 +83,28 @@ app = FastAPI(
 )
 app.include_router(internal_router)
 app.include_router(auth_router)
+
+
+@contextmanager
+def production_authorization_resolver(scope: Scope) -> Iterator[AuthorizationResolver]:
+    """Open one uncached, tenant-scoped resolver for one authorization check."""
+
+    settings = Settings()
+    try:
+        connection = psycopg.connect(_database_url(settings), autocommit=False)
+    except psycopg.Error as exc:
+        raise ProblemError(ErrorCode.SERVICE_UNAVAILABLE) from exc
+    try:
+        with tenant_transaction(cast(RlsSession, connection), scope):
+            yield AuthorizationResolver(cast(AuthorizationConnection, connection), scope)
+    finally:
+        connection.close()
+
+
+install_authorization(
+    app,
+    cast(PermissionResolverFactory, production_authorization_resolver),
+)
 # Starlette prepends user middleware. Request flow is CSRF -> session -> tenancy;
 # correlation then serializes their failures, and browser headers wrap every path.
 install_tenant_context(app)
@@ -153,6 +180,7 @@ async def _check_readiness(
 
 
 @app.get("/healthz", include_in_schema=False)
+@public_route
 async def healthz() -> dict[str, str]:
     """Report only that the API process can serve requests."""
 
@@ -160,6 +188,7 @@ async def healthz() -> dict[str, str]:
 
 
 @app.get("/readyz", include_in_schema=False)
+@public_route
 async def readyz(
     settings: Annotated[Settings, Depends(get_settings)],
     probes: Annotated[Mapping[str, HealthProbe], Depends(get_readiness_probes)],

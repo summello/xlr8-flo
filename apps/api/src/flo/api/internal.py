@@ -17,6 +17,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, ConfigDict, Field
 
 from flo.api.origin_auth import require_origin_secret
+from flo.kernel.authz import public_route
 from flo.kernel.config import Settings
 from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.storage import create_storage
@@ -343,6 +344,7 @@ router = APIRouter(dependencies=[Depends(require_origin_secret)])
     response_model=QuotaReport,
     include_in_schema=False,
 )
+@public_route
 async def quota_health(
     collectors: Annotated[Mapping[str, QuotaCollector], Depends(get_quota_collectors)],
 ) -> QuotaReport:
