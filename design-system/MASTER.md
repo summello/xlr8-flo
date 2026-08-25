@@ -50,12 +50,13 @@ Pure grey looks cheap because nothing in the physical world is neutral. Every ne
   --surface:       oklch(1     0     258);   /* #FFFFFF  cards, sheets */
   --raised:        oklch(1     0     258);   /* + shadow — popovers, dropdowns */
 
-  --fg:            oklch(0.240 0.022 262);   /* #1A1F2A  16.5:1  AAA */
-  --fg-secondary:  oklch(0.480 0.024 262);   /* #565E6C   6.5:1  AAA */
-  --fg-muted:      oklch(0.555 0.020 262);   /* #6D737F   4.8:1  AA  */
+  --fg:            oklch(0.240 0.022 262);   /* #1A1F2A  15.9:1  AAA */
+  --fg-secondary:  oklch(0.480 0.024 262);   /* #565E6C   6.3:1  AAA */
+  --fg-muted:      oklch(0.555 0.020 262);   /* #6D737F   4.5:1  AA  */
 
-  --border:        oklch(0.918 0.006 258);   /* hairline */
-  --border-strong: oklch(0.860 0.008 258);   /* inputs, active edges */
+  --border:        oklch(0.918 0.006 258);   /* hairline — decorative, never identifying */
+  --border-strong: oklch(0.860 0.008 258);   /* separators, active edges */
+  --border-control:oklch(0.642 0.014 258);   /* #888D95   3.2:1  control boundary */
   --ring:          oklch(0.520 0.185 272);   /* focus */
   --scrim:         oklch(0.24 0.02 262 / 0.42);
 }
@@ -66,17 +67,20 @@ Pure grey looks cheap because nothing in the physical world is neutral. Every ne
   --surface:       oklch(0.196 0.017 264);   /* #11151D */
   --raised:        oklch(0.238 0.019 264);   /* #1A1F28 */
 
-  --fg:            oklch(0.965 0.006 262);   /* #F1F3F8  16.5:1  AAA */
-  --fg-secondary:  oklch(0.795 0.016 262);   /* #B7BCC7   9.6:1  AAA */
-  --fg-muted:      oklch(0.660 0.022 262);   /* #8B93A0   5.9:1  AAA */
+  --fg:            oklch(0.965 0.006 262);   /* #F1F3F8  17.6:1  AAA */
+  --fg-secondary:  oklch(0.795 0.016 262);   /* #B7BCC7  10.2:1  AAA */
+  --fg-muted:      oklch(0.660 0.022 262);   /* #8B93A0   6.3:1  AAA */
 
   --border:        oklch(0.290 0.018 264);
   --border-strong: oklch(0.380 0.022 264);
+  --border-control:oklch(0.520 0.018 264);   /* #646974   3.5:1  control boundary */
   --ring:          oklch(0.720 0.135 272);
   --scrim:         oklch(0.10 0.014 264 / 0.62);
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { /* repeat the dark block */ } }
 ```
+
+The ratio beside each light-block token is its **enforced floor in both themes** — the measured minimum of the two, rounded down. The dark block's ratios are that theme's measured values, recorded for the reader. `contrast.test.ts` reads the floors from the light block.
 
 Borders are **redefined per theme**. A border tuned in light mode vanishes in dark — the single most common theme bug, and the reason `--border` is never an alpha value.
 
@@ -222,6 +226,7 @@ All ≥4.3:1 on the plot background — comfortably past the 3:1 floor. Beyond e
 - No raw hex or `oklch()` literal outside the token file. A hardcoded colour is a blocking review finding.
 - Max **one accent fill per viewport region**. Everything else is text, tint, or border.
 - Text ≥4.5:1, UI glyphs and chart marks ≥3:1, **measured in both themes**.
+- **A control is identified by its label, its ground and its focus ring — never by a hairline alone.** `--border` and `--border-strong` are decorative: at 1.5:1 and 1.9:1 against the canvas they are below the 3:1 floor and may not be the only thing that says *this is an input*. Any control whose boundary is its sole identifying mark uses `--border-control`, which measures ≥3:1 against every ground it can sit on — canvas, sunken, surface and raised — in both themes.
 - Colour is never the only signal — anywhere, ever.
 - Status hues never appear on a tag. Tag swatches never appear on a status.
 
@@ -254,6 +259,7 @@ Real shadows take the colour of the light around them. Pure-black shadows are wh
   --shadow-md: 0 2px 4px hsl(264 40% 2% / 0.5), 0 8px 16px hsl(264 40% 2% / 0.45);
   --shadow-lg: 0 4px 8px hsl(264 40% 2% / 0.5), 0 16px 40px hsl(264 40% 2% / 0.55);
   --shadow-xl: 0 8px 16px hsl(264 40% 2% / 0.55), 0 32px 72px hsl(264 40% 2% / 0.65);
+  --shadow-drag: 0 12px 28px hsl(264 40% 2% / 0.7), 0 2px 6px hsl(264 40% 2% / 0.5);
 }
 ```
 

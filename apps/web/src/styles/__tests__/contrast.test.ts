@@ -122,12 +122,21 @@ function parseDocumentedPalette(source: string): DocumentedPalette {
     expected.dark,
     declarations(blockAfter(chromeCode, ':root[data-theme="dark"]')),
   );
-  for (const match of chromeCode.matchAll(/(--[a-z-]+):[^;]+;\s*\/\*[^*]*(\d+(?:\.\d+)?)\s*:1/gi)) {
+  // Floors come from the LIGHT block only: MASTER.md documents there the measured
+  // minimum across both themes, and the dark block's ratios are that theme's own
+  // measurements. Reading both would apply a dark measurement as a light floor.
+  // The whitespace before the ratio also matters: without it a greedy prefix swallows
+  // the leading digits and "4.5:1" is read as a floor of 5.
+  const chromeLight = blockAfter(chromeCode, ":root");
+  for (const match of chromeLight.matchAll(/(--[a-z-]+):[^;]+;\s*\/\*[^*]*\s(\d+(?:\.\d+)?)\s*:1/gi)) {
     pairs.push({
       background: "--canvas",
       foreground: match[1]!,
       label: `chrome ${match[1]}`,
-      threshold: 4.5,
+      // The floor is the ratio MASTER.md documents beside the token, not a constant:
+      // section 2.1 carries text at 4.5 and control boundaries at 3, and a constant
+      // here would over-enforce the second on a compliant palette.
+      threshold: Number(match[2]),
     });
   }
   const focusToken = chromeCode.match(/(--[a-z-]+):[^;]+;\s*\/\*\s*focus\s*\*\//i)?.[1];
