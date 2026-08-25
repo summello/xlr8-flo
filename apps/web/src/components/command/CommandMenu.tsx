@@ -114,7 +114,8 @@ export default function CommandMenu({
         <Dialog.Overlay className="command-overlay" />
         <Dialog.Content
           aria-describedby="command-description"
-          className="command-menu glass"
+          className="command-menu glass-command-palette material-shadow"
+          data-shadow="xl"
           onCloseAutoFocus={(event) => {
             event.preventDefault();
             if (restoreOnClose.current) restoreFocus(returnFocusTo);

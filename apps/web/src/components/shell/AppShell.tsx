@@ -9,6 +9,7 @@ import {
   type Phase,
 } from "../command/registry";
 import { isEditableTarget, useFocusOnRouteChange } from "../../lib/focus";
+import Surface from "../ui/Surface";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import SkipLink from "./SkipLink";
@@ -114,13 +115,13 @@ export default function AppShell({ children, navigate, route }: AppShellProps) {
             <h1 id="page-title">{route.title}</h1>
           </div>
           {children ?? (
-            <section aria-labelledby="workspace-heading" className="empty-state material">
+            <Surface as="section" aria-labelledby="workspace-heading" className="empty-state">
               <ArrowRight aria-hidden="true" weight="regular" />
               <div>
                 <h2 id="workspace-heading">Shell route ready</h2>
                 <p>{route.description}</p>
               </div>
-            </section>
+            </Surface>
           )}
         </main>
       </div>

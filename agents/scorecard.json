@@ -843,6 +843,36 @@
       },
       "recap": "Scoped default-deny RBAC: eleven seeded roles, permissions resolved at org, business-unit, project, record and action scope, a single require(permission, target) route guard, and a CI gate that fails when any route is neither explicitly public nor guarded.",
       "title": "RBAC: roles, permissions, org/BU/project/record/action scope, default-deny"
+    },
+    {
+      "story": "E04-S06",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E04-S06"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "6943502c-d56e-4353-af9a-3f691bb26487",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented the MASTER section 3 material layer as token-backed CSS utilities and a Surface primitive, with explicit three-role glass enforcement, reduced-transparency fallbacks, dark-theme lit edges, glow focus, and mutation-proven accessibility contracts. Round 2 aligned the grain layer with MASTER section 3.3 at z-index 1 and added a computed-style regression proving it remains below sticky chrome.",
+      "title": "Material layer: tinted shadows, lit edge, grain, honest glass, glow focus ring"
     }
   ]
 }

@@ -412,7 +412,7 @@ epics:
           - A11Y-005
         dep:
           - E04-S01
-        st: in_progress
+        st: done
 
   # ────────────────────────── M1 — Budget spine ──────────────────────────
 

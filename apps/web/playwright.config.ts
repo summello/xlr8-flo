@@ -11,7 +11,7 @@ const url = `http://127.0.0.1:${port}`;
 
 export default defineConfig({
   testDir: ".",
-  testMatch: ["e2e/**/*.e2e.ts", "tests/e2e/**/*.spec.ts"],
+  testMatch: ["e2e/**/*.e2e.ts", "tests/{a11y,e2e}/**/*.spec.ts"],
   use: {
     baseURL: url,
   },

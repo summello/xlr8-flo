@@ -89,10 +89,11 @@ export default function Sidebar({
         open={mobileOpen}
       >
         <Dialog.Portal>
-          <Dialog.Overlay className="drawer-overlay" />
+          <Dialog.Overlay className="drawer-overlay glass-sheet-backdrop" />
           <Dialog.Content
             aria-describedby="mobile-navigation-description"
-            className="mobile-drawer"
+            className="mobile-drawer material-shadow"
+            data-shadow="xl"
             onCloseAutoFocus={(event) => {
               event.preventDefault();
               if (closeReason.current === "dismiss") restoreFocus(mobileTriggerRef.current);
