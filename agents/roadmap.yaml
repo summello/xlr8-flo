@@ -324,7 +324,7 @@ epics:
           - D-10
         dep:
           - E03-S04
-        st: in_progress
+        st: done
 
   - id: E04
     name: Design system & shell

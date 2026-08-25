@@ -28,6 +28,7 @@ from flo.kernel.tenancy.rls import tenant_transaction
 
 IDEMPOTENCY_HEADER = "Idempotency-Key"
 TRANSACTION_CONNECTION_STATE_KEY = "transaction_connection"
+_REPLAYABLE_RESPONSE_HEADERS = ("location", "etag")
 IDEMPOTENCY_KEY_EXEMPT_PATHS = frozenset(
     {
         "/api/v1/auth/login",
@@ -120,9 +121,7 @@ def _response_parts(messages: list[Message]) -> tuple[Message, bytes]:
     if len(starts) != 1:
         raise RuntimeError("idempotent endpoint did not produce exactly one response start")
     body = b"".join(
-        message.get("body", b"")
-        for message in messages
-        if message["type"] == "http.response.body"
+        message.get("body", b"") for message in messages if message["type"] == "http.response.body"
     )
     return starts[0], body
 
@@ -157,6 +156,15 @@ def _with_body(start: Message, body: bytes) -> list[Message]:
     ]
 
 
+def _replayable_headers(start: Message) -> dict[str, str]:
+    selected: dict[str, str] = {}
+    for raw_name, raw_value in start.get("headers", []):
+        name = raw_name.decode("ascii").lower()
+        if name in _REPLAYABLE_RESPONSE_HEADERS:
+            selected[name] = raw_value.decode("latin-1")
+    return selected
+
+
 def _stored_messages(response: StoredResponse) -> list[Message]:
     if response.status_code in {204, 205, 304}:
         body = b""
@@ -170,6 +178,11 @@ def _stored_messages(response: StoredResponse) -> list[Message]:
             separators=(",", ":"),
         ).encode()
         headers = [(b"content-type", b"application/json")]
+    headers.extend(
+        (name.encode("ascii"), response.headers[name].encode("latin-1"))
+        for name in _REPLAYABLE_RESPONSE_HEADERS
+        if name in response.headers
+    )
     headers.append((b"content-length", str(len(body)).encode("ascii")))
     return [
         {
@@ -268,6 +281,7 @@ class IdempotencyMiddleware:
                             key,
                             status_code=status_code,
                             serialized_response_body=serialized,
+                            response_headers=_replayable_headers(start),
                         )
                         outgoing = _with_body(start, wire_body)
             except _RollbackResponse as response:

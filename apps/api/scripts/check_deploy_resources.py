@@ -19,13 +19,17 @@ REQUIRED_SECRET_REFERENCES = {
     "ORIGIN_SHARED_SECRET": "flo-origin-shared-secret:latest",
     "S3_ACCESS_KEY_ID": "flo-r2-access-key-id:latest",
     "S3_SECRET_ACCESS_KEY": "flo-r2-secret-access-key:latest",
+    "RESEND_API_KEY": "flo-resend-api-key:latest",
 }
 REQUIRED_RUNTIME_CONFIGURATION = {
+    "STORAGE_PROVIDER": "r2",
     "S3_BUCKET": "flo-attachments",
     "S3_REGION": "auto",
     "CLOUD_RUN_SERVICE": "flo-api",
     "ARTIFACT_REGISTRY_LOCATION": "us-central1",
     "ARTIFACT_REGISTRY_REPOSITORY": "flo",
+    "EMAIL_PROVIDER": "resend",
+    "EMAIL_FROM": "notifications@xlr8flo.summello.com",
 }
 
 

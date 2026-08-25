@@ -65,6 +65,24 @@ def ensure_monthly_partition(
     if attached is not None:
         return partition
 
+    # The first concurrent background jobs of a month can all observe the
+    # partition as absent. Serialize only that cold path, then recheck after
+    # taking the transaction-scoped lock before issuing CREATE PARTITION.
+    connection.execute(
+        sql.SQL("SELECT pg_advisory_xact_lock(hashtextextended({}, 0))").format(
+            sql.Literal(f"audit-partition:{partition.name}")
+        )
+    )
+    attached = connection.execute(
+        sql.SQL(
+            "SELECT 1 FROM pg_catalog.pg_inherits "
+            "WHERE inhparent = 'audit_log'::regclass "
+            "AND inhrelid = to_regclass({})"
+        ).format(sql.Literal(f"public.{partition.name}"))
+    ).fetchone()
+    if attached is not None:
+        return partition
+
     connection.execute(
         sql.SQL(
             "CREATE TABLE IF NOT EXISTS {} PARTITION OF audit_log "

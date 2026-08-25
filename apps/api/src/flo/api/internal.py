@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import random
 import urllib.parse
 import urllib.request
 from collections.abc import Awaitable, Callable, Mapping
@@ -19,7 +20,12 @@ from pydantic import BaseModel, ConfigDict, Field
 from flo.api.origin_auth import require_origin_secret
 from flo.kernel.authz import public_route
 from flo.kernel.config import Settings
+from flo.kernel.email import create_email_sender
 from flo.kernel.errors import ErrorCode, ProblemError
+from flo.kernel.jobs import JobRunner
+from flo.kernel.jobs.runner import RunnerConnection
+from flo.kernel.outbox import OutboxDispatcher, email_handler
+from flo.kernel.outbox.dispatcher import DispatcherConnection
 from flo.kernel.storage import create_storage
 
 _logger = logging.getLogger(__name__)
@@ -34,6 +40,7 @@ QuotaCollector = Callable[[], Awaitable[int]]
 JsonObject = dict[str, object]
 JsonRequester = Callable[[str, str, float], JsonObject]
 TokenProvider = Callable[[float], str]
+TickProcessor = Callable[[], Awaitable["TickReport"]]
 
 
 @dataclass(frozen=True, slots=True)
@@ -101,6 +108,22 @@ class QuotaReport(BaseModel):
 
     metrics: dict[str, QuotaMetric]
     alerts: tuple[QuotaAlert, ...]
+
+
+class TickComponentSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    claimed: int = Field(ge=0)
+    done: int = Field(ge=0)
+    retried: int = Field(ge=0)
+    dead: int = Field(ge=0)
+
+
+class TickReport(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    jobs: TickComponentSummary
+    outbox: TickComponentSummary
 
 
 def _json_object(raw: bytes) -> JsonObject:
@@ -271,6 +294,50 @@ def get_quota_collectors(
     }
 
 
+def _run_jobs_tick(settings: Settings) -> TickReport:
+    if settings.database_url is None:
+        raise RuntimeError("DATABASE_URL is not configured")
+    connection = psycopg.connect(settings.database_url.get_secret_value())
+    try:
+        jobs = JobRunner(
+            cast(RunnerConnection, connection),
+            {},
+            random_fraction=random.random,
+        ).run(25.0)
+        outbox = OutboxDispatcher(
+            cast(DispatcherConnection, connection),
+            {"email": email_handler(create_email_sender(settings))},
+            random_fraction=random.random,
+        ).run(25.0)
+    finally:
+        connection.close()
+    return TickReport(
+        jobs=TickComponentSummary(
+            claimed=jobs.claimed,
+            done=jobs.done,
+            retried=jobs.retried,
+            dead=jobs.dead,
+        ),
+        outbox=TickComponentSummary(
+            claimed=outbox.claimed,
+            done=outbox.sent,
+            retried=outbox.retried,
+            dead=outbox.dead,
+        ),
+    )
+
+
+def get_tick_processor(
+    settings: Annotated[Settings, Depends(get_internal_settings)],
+) -> TickProcessor:
+    """Build the cron worker without doing work during dependency resolution."""
+
+    async def process() -> TickReport:
+        return await asyncio.to_thread(_run_jobs_tick, settings)
+
+    return process
+
+
 def _alert(metric: str, current: int, policy: QuotaPolicy) -> QuotaAlert | None:
     crossed = tuple(
         threshold
@@ -351,3 +418,16 @@ async def quota_health(
     """Report current free-tier usage and any pre-agreed graduation action."""
 
     return await build_quota_report(collectors)
+
+
+@router.post(
+    "/internal/jobs/tick",
+    response_model=TickReport,
+    include_in_schema=False,
+)
+async def jobs_tick(
+    process: Annotated[TickProcessor, Depends(get_tick_processor)],
+) -> TickReport:
+    """Drain durable asynchronous work for one bounded cron invocation."""
+
+    return await process()

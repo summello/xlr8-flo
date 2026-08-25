@@ -32,7 +32,7 @@ The fixed resource names are:
 - R2 bucket `flo-attachments`
 - Pages project `flo-web`
 - Secret Manager secrets `flo-database-url`, `flo-origin-shared-secret`,
-  `flo-r2-access-key-id`, and `flo-r2-secret-access-key`
+  `flo-r2-access-key-id`, `flo-r2-secret-access-key`, and `flo-resend-api-key`
 
 ## 2. Create and secure the GCP project
 
@@ -175,15 +175,24 @@ security add-generic-password -U -a "$USER" -s FLO_PROD_ORIGIN_SHARED_SECRET -w
 
    This value is shared only by Cloud Run and the Cloudflare Worker. It is never sent to a browser.
 
+7. Create a Resend API key restricted to sending mail for the production account and place it in
+   the keychain without printing it. The checked-in runtime configuration selects Resend; local
+   development selects SMTP and Mailpit instead.
+
+```bash
+security add-generic-password -U -a "$USER" -s FLO_PROD_RESEND_API_KEY -w
+```
+
 ## 6. Create one Secret Manager secret per value
 
-Create exactly four secret resources, then pipe each keychain value directly into a new version:
+Create exactly five secret resources, then pipe each keychain value directly into a new version:
 
 ```bash
 gcloud secrets create flo-database-url --replication-policy=automatic
 gcloud secrets create flo-origin-shared-secret --replication-policy=automatic
 gcloud secrets create flo-r2-access-key-id --replication-policy=automatic
 gcloud secrets create flo-r2-secret-access-key --replication-policy=automatic
+gcloud secrets create flo-resend-api-key --replication-policy=automatic
 
 security find-generic-password -a "$USER" -s FLO_PROD_DATABASE_URL -w \
   | gcloud secrets versions add flo-database-url --data-file=-
@@ -193,12 +202,14 @@ security find-generic-password -a "$USER" -s FLO_PROD_R2_ACCESS_KEY_ID -w \
   | gcloud secrets versions add flo-r2-access-key-id --data-file=-
 security find-generic-password -a "$USER" -s FLO_PROD_R2_SECRET_ACCESS_KEY -w \
   | gcloud secrets versions add flo-r2-secret-access-key --data-file=-
+security find-generic-password -a "$USER" -s FLO_PROD_RESEND_API_KEY -w \
+  | gcloud secrets versions add flo-resend-api-key --data-file=-
 ```
 
 Grant `flo-runtime` access on each secret resource, not all secrets in the project:
 
 ```bash
-for secret_name in flo-database-url flo-origin-shared-secret flo-r2-access-key-id flo-r2-secret-access-key; do
+for secret_name in flo-database-url flo-origin-shared-secret flo-r2-access-key-id flo-r2-secret-access-key flo-resend-api-key; do
   gcloud secrets add-iam-policy-binding "$secret_name" \
     --member='serviceAccount:flo-runtime@GCP_PROJECT_ID.iam.gserviceaccount.com' \
     --role='roles/secretmanager.secretAccessor'
@@ -279,9 +290,11 @@ security find-generic-password -a "$USER" -s FLO_PROD_ORIGIN_SHARED_SECRET -w \
    `wrangler.toml` declares this binding as required, so later deploys fail closed if it is absent.
    Wrangler preserves encrypted secret bindings across ordinary code deploys. The Worker overwrites
    any caller-supplied `X-FLO-Origin-Secret` header on every proxied request.
-6. The same Worker has a one-minute Cron Trigger and calls `/internal/health/quota` from its
-   scheduled handler with the encrypted binding. This is the scheduler selected by D-08; do not
-   create a second Google Cloud Scheduler job. Confirm **Workers & Pages → flo-api-proxy →
+6. The same Worker has a one-minute Cron Trigger and calls `/internal/health/quota` followed by
+   `POST /internal/jobs/tick` from its scheduled handler with the encrypted binding. The tick is
+   bounded to 50 seconds and drains the Postgres `SKIP LOCKED` queue and transactional outbox; no
+   daemon or Redis service exists. This is the scheduler selected by D-08; do not create a second
+   Google Cloud Scheduler job. Confirm **Workers & Pages → flo-api-proxy →
    Triggers** shows `* * * * *` and **Settings → Variables and Secrets** shows
    `ORIGIN_SHARED_SECRET` as encrypted.
 7. In **SSL/TLS**, select **Full (strict)**. Enable **Always Use HTTPS**. After the Pages certificate
@@ -301,7 +314,7 @@ deploys `flo-api` with:
 
 - 1 GiB memory, 2 CPUs, concurrency 80, minimum instances 0
 - runtime identity `flo-runtime`
-- four Secret Manager references, never literal secret environment values
+- five Secret Manager references, never literal secret environment values
 - R2 endpoint/bucket/region and GCP resource identifiers as ordinary non-secret variables
 - immutable `@sha256:` image reference
 

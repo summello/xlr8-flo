@@ -401,8 +401,8 @@ jobs:
             --min-instances 0 --concurrency 80 --memory 1Gi --cpu 2 \
             --ingress all \
             --service-account "flo-runtime@${GCP_PROJECT}.iam.gserviceaccount.com" \
-            --set-secrets DATABASE_URL=flo-database-url:latest,ORIGIN_SHARED_SECRET=flo-origin-shared-secret:latest,S3_ACCESS_KEY_ID=flo-r2-access-key-id:latest,S3_SECRET_ACCESS_KEY=flo-r2-secret-access-key:latest \
-            --set-env-vars "S3_ENDPOINT_URL=${R2_ENDPOINT_URL},S3_BUCKET=flo-attachments,S3_REGION=auto,GCP_PROJECT=${GCP_PROJECT},CLOUD_RUN_SERVICE=flo-api,ARTIFACT_REGISTRY_LOCATION=us-central1,ARTIFACT_REGISTRY_REPOSITORY=flo"
+            --set-secrets DATABASE_URL=flo-database-url:latest,ORIGIN_SHARED_SECRET=flo-origin-shared-secret:latest,S3_ACCESS_KEY_ID=flo-r2-access-key-id:latest,S3_SECRET_ACCESS_KEY=flo-r2-secret-access-key:latest,RESEND_API_KEY=flo-resend-api-key:latest \
+            --set-env-vars "STORAGE_PROVIDER=r2,S3_ENDPOINT_URL=${R2_ENDPOINT_URL},S3_BUCKET=flo-attachments,S3_REGION=auto,GCP_PROJECT=${GCP_PROJECT},CLOUD_RUN_SERVICE=flo-api,ARTIFACT_REGISTRY_LOCATION=us-central1,ARTIFACT_REGISTRY_REPOSITORY=flo,EMAIL_PROVIDER=resend,EMAIL_FROM=notifications@xlr8flo.summello.com"
 
       - name: Prune registry to 3 images (Artifact Registry free tier is 0.5 GB)
         run: >-

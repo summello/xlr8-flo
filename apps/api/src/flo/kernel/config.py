@@ -37,6 +37,10 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="S3_SECRET_ACCESS_KEY",
     )
+    storage_provider: Literal["r2", "minio"] = Field(
+        default="r2",
+        validation_alias="STORAGE_PROVIDER",
+    )
     origin_shared_secret: SecretStr | None = Field(
         default=None,
         min_length=32,
@@ -51,6 +55,22 @@ class Settings(BaseSettings):
         min_length=1,
         validation_alias="S3_REGION",
     )
+    email_provider: Literal["resend", "smtp"] = Field(
+        default="smtp",
+        validation_alias="EMAIL_PROVIDER",
+    )
+    email_from: str = Field(
+        default="noreply@xlr8flo.local",
+        min_length=3,
+        validation_alias="EMAIL_FROM",
+    )
+    resend_api_key: SecretStr | None = Field(
+        default=None,
+        validation_alias="RESEND_API_KEY",
+    )
+    smtp_host: str = Field(default="localhost", min_length=1, validation_alias="SMTP_HOST")
+    smtp_port: int = Field(default=1025, ge=1, le=65535, validation_alias="SMTP_PORT")
+    email_timeout_seconds: float = Field(default=10.0, gt=0, le=30)
     gcp_project: str | None = Field(
         default=None,
         min_length=6,

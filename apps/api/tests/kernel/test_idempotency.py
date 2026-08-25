@@ -16,7 +16,7 @@ from uuid import UUID, uuid4
 import httpx
 import psycopg
 import pytest
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from psycopg import sql
 from psycopg.errors import CheckViolation
 
@@ -35,10 +35,11 @@ from flo.kernel.tenancy.rls import tenant_transaction
 
 ROOT = Path(__file__).resolve().parents[4]
 MIGRATION_PATH = ROOT / "migrations" / "20260825_0003_idempotency.py"
+HEADERS_MIGRATION_PATH = ROOT / "migrations" / "20260825_0009_idempotency_response_headers.py"
 
 
-def _load_migration() -> ModuleType:
-    spec = importlib.util.spec_from_file_location("idempotency_migration", MIGRATION_PATH)
+def _load_migration(path: Path, name: str) -> ModuleType:
+    spec = importlib.util.spec_from_file_location(name, path)
     assert spec is not None and spec.loader is not None
     migration = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(migration)
@@ -51,6 +52,7 @@ class IdempotencyDatabase:
     admin: psycopg.Connection[tuple[object, ...]]
     effect_table: str
     migration: ModuleType
+    headers_migration: ModuleType
 
 
 @pytest.fixture
@@ -66,7 +68,8 @@ def idempotency_database() -> Iterator[IdempotencyDatabase]:
         pytest.skip("local Postgres is unavailable; run the repository stack")
         raise
 
-    migration = _load_migration()
+    migration = _load_migration(MIGRATION_PATH, "idempotency_migration")
+    headers_migration = _load_migration(HEADERS_MIGRATION_PATH, "idempotency_headers_migration")
     effect_table = f"idempotency_effect_{uuid4().hex[:12]}"
     connection.execute("DROP TABLE IF EXISTS idempotency_key")
     connection.execute(
@@ -75,14 +78,19 @@ def idempotency_database() -> Iterator[IdempotencyDatabase]:
         ).format(sql.Identifier(effect_table))
     )
     migration.upgrade(connection)
-    database = IdempotencyDatabase(database_url, connection, effect_table, migration)
+    headers_migration.upgrade(connection)
+    database = IdempotencyDatabase(
+        database_url,
+        connection,
+        effect_table,
+        migration,
+        headers_migration,
+    )
     try:
         yield database
     finally:
         connection.execute("DROP TABLE IF EXISTS idempotency_key")
-        connection.execute(
-            sql.SQL("DROP TABLE IF EXISTS {}").format(sql.Identifier(effect_table))
-        )
+        connection.execute(sql.SQL("DROP TABLE IF EXISTS {}").format(sql.Identifier(effect_table)))
         connection.close()
 
 
@@ -134,8 +142,9 @@ def _app(
             raise ValueError("test command requires an integer amount")
         connection = transaction_connection(request)
         connection.execute(
-            sql.SQL("INSERT INTO {} (id, org_id, amount) VALUES (%(id)s, %(org_id)s, %(amount)s)")
-            .format(sql.Identifier(database.effect_table)),
+            sql.SQL(
+                "INSERT INTO {} (id, org_id, amount) VALUES (%(id)s, %(org_id)s, %(amount)s)"
+            ).format(sql.Identifier(database.effect_table)),
             {"id": uuid4(), "org_id": current_scope().org_id, "amount": amount},
         )
         if command_control.fail_next:
@@ -155,6 +164,14 @@ def _app(
     @app.post("/notes")
     async def notes(body: dict[str, object]) -> dict[str, object]:
         return body
+
+    @app.post("/resources", status_code=201)
+    async def create_resource(response: Response) -> dict[str, str]:
+        response.headers["Location"] = "/resources/created-id"
+        response.headers["ETag"] = '"created-version"'
+        response.headers["Set-Cookie"] = "should-not-replay=true"
+        response.headers["Date"] = "Tue, 25 Aug 2026 00:00:00 GMT"
+        return {"id": "created-id"}
 
     @app.post("/ledger/{action}")
     async def other_money_action(action: str) -> dict[str, str]:
@@ -224,8 +241,7 @@ def _key_rows(database: IdempotencyDatabase, org_id: UUID) -> list[tuple[object,
     connection = cast(IdempotencyConnection, database.admin)
     with tenant_transaction(connection, Scope(org_id)):
         rows = database.admin.execute(
-            "SELECT key, state, status_code FROM idempotency_key "
-            "WHERE org_id = %s ORDER BY key",
+            "SELECT key, state, status_code FROM idempotency_key WHERE org_id = %s ORDER BY key",
             (org_id,),
         ).fetchall()
     return rows
@@ -269,16 +285,34 @@ def test_same_key_and_canonical_body_replays_original_201_with_one_effect(
     assert _key_rows(idempotency_database, org_a) == [("same-command", "completed", 201)]
 
 
+def test_replay_restores_only_the_original_location_and_etag_headers(
+    idempotency_database: IdempotencyDatabase,
+) -> None:
+    org_id = uuid4()
+    app = _app(idempotency_database, org_id, uuid4())
+
+    first = _run(_post(app, "/resources", key="create-resource", content="{}"))
+    replay = _run(_post(app, "/resources", key="create-resource", content="{}"))
+
+    assert first.status_code == replay.status_code == 201
+    assert replay.headers["location"] == first.headers["location"] == "/resources/created-id"
+    assert replay.headers["etag"] == first.headers["etag"] == '"created-version"'
+    assert "set-cookie" in first.headers
+    assert "date" in first.headers
+    assert "set-cookie" not in replay.headers
+    assert "date" not in replay.headers
+    assert idempotency_database.admin.execute(
+        "SELECT response_headers FROM idempotency_key WHERE org_id = %s AND key = %s",
+        (org_id, "create-resource"),
+    ).fetchone() == ({"location": "/resources/created-id", "etag": '"created-version"'},)
+
+
 def test_reusing_a_completed_key_for_a_different_body_is_422_without_an_effect(
     idempotency_database: IdempotencyDatabase,
 ) -> None:
     app = _app(idempotency_database, uuid4(), uuid4())
-    first = _run(
-        _post(app, "/ledger/adjust", key="reused", content='{"amount": 10}')
-    )
-    reused = _run(
-        _post(app, "/ledger/adjust", key="reused", content='{"amount": 11}')
-    )
+    first = _run(_post(app, "/ledger/adjust", key="reused", content='{"amount": 10}'))
+    reused = _run(_post(app, "/ledger/adjust", key="reused", content='{"amount": 11}'))
 
     assert first.status_code == 201
     assert reused.status_code == 422
@@ -291,14 +325,13 @@ def test_reusing_a_key_on_a_different_endpoint_is_422(
 ) -> None:
     app = _app(idempotency_database, uuid4(), uuid4())
     assert (
-        _run(_post(app, "/ledger/adjust", key="wrong-endpoint", content='{"amount": 10}'))
-        .status_code
+        _run(
+            _post(app, "/ledger/adjust", key="wrong-endpoint", content='{"amount": 10}')
+        ).status_code
         == 201
     )
 
-    response = _run(
-        _post(app, "/ledger/issue", key="wrong-endpoint", content='{"amount": 10}')
-    )
+    response = _run(_post(app, "/ledger/issue", key="wrong-endpoint", content='{"amount": 10}'))
 
     assert response.status_code == 422
     assert response.json()["type"].endswith("/idempotency_key_reused")
@@ -355,19 +388,13 @@ def test_crash_rolls_back_claim_and_effect_so_the_same_key_is_reusable(
         CommandControl(fail_next=True),
     )
 
-    crashed = _run(
-        _post(app, "/ledger/adjust", key="retry-after-crash", content='{"amount": 41}')
-    )
-    retried = _run(
-        _post(app, "/ledger/adjust", key="retry-after-crash", content='{"amount": 41}')
-    )
+    crashed = _run(_post(app, "/ledger/adjust", key="retry-after-crash", content='{"amount": 41}'))
+    retried = _run(_post(app, "/ledger/adjust", key="retry-after-crash", content='{"amount": 41}'))
 
     assert crashed.status_code == 500
     assert retried.status_code == 201
     assert _effect_count(idempotency_database) == 1
-    assert _key_rows(idempotency_database, org_a) == [
-        ("retry-after-crash", "completed", 201)
-    ]
+    assert _key_rows(idempotency_database, org_a) == [("retry-after-crash", "completed", 201)]
 
 
 @pytest.mark.parametrize(
@@ -438,9 +465,7 @@ def test_same_key_is_independent_between_organizations(
     org_a, org_b = uuid4(), uuid4()
     app = _app(idempotency_database, org_a, org_b)
 
-    tenant_a = _run(
-        _post(app, "/ledger/adjust", key="org-key", content='{"amount": 3}')
-    )
+    tenant_a = _run(_post(app, "/ledger/adjust", key="org-key", content='{"amount": 3}'))
     tenant_b = _run(
         _post(
             app,
@@ -540,9 +565,7 @@ def test_idempotency_table_rls_hides_foreign_rows_even_from_its_owner(
     )
     admin.execute(sql.SQL("CREATE ROLE {} NOLOGIN").format(sql.Identifier(application_owner)))
     admin.execute(
-        sql.SQL("ALTER TABLE idempotency_key OWNER TO {}").format(
-            sql.Identifier(application_owner)
-        )
+        sql.SQL("ALTER TABLE idempotency_key OWNER TO {}").format(sql.Identifier(application_owner))
     )
     try:
         admin.execute(sql.SQL("SET ROLE {}").format(sql.Identifier(application_owner)))
@@ -553,13 +576,9 @@ def test_idempotency_table_rls_hides_foreign_rows_even_from_its_owner(
     finally:
         admin.execute("RESET ROLE")
         admin.execute(
-            sql.SQL("ALTER TABLE idempotency_key OWNER TO {}").format(
-                sql.Identifier(admin_user)
-            )
+            sql.SQL("ALTER TABLE idempotency_key OWNER TO {}").format(sql.Identifier(admin_user))
         )
-        admin.execute(
-            sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(application_owner))
-        )
+        admin.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(application_owner)))
 
 
 def test_migration_has_the_complete_model_rls_and_reversible_data_preservation(
@@ -598,11 +617,13 @@ def test_migration_has_the_complete_model_rls_and_reversible_data_preservation(
         "response_body",
         "created_at",
         "completed_at",
+        "response_headers",
     ]
     assert protection == (True, True, "tenant_isolation")
     assert [row[0] for row in constraints] == [
         "idempotency_key_completion_valid",
         "idempotency_key_pkey",
+        "idempotency_key_response_headers_valid",
         "idempotency_key_state_valid",
     ]
     assert [row[0] for row in indexes] == [
@@ -629,3 +650,40 @@ def test_migration_has_the_complete_model_rls_and_reversible_data_preservation(
         idempotency_database.admin.execute(
             sql.SQL("DROP TABLE IF EXISTS {}").format(sql.Identifier(sentinel))
         )
+
+
+def test_response_header_migration_is_chained_and_reversibly_preserves_rows(
+    idempotency_database: IdempotencyDatabase,
+) -> None:
+    database = idempotency_database
+    assert database.headers_migration.revision == "20260825_0009"
+    assert database.headers_migration.down_revision == "20260825_0008"
+    org_id = uuid4()
+    database.admin.execute(
+        """
+        INSERT INTO idempotency_key
+            (org_id, key, endpoint, request_hash, state, status_code,
+             response_body, response_headers, completed_at)
+        VALUES
+            (%s, 'preserved', '/resources', 'hash', 'completed', 201,
+             '{"id":"created-id"}'::jsonb,
+             '{"location":"/resources/created-id"}'::jsonb,
+             CURRENT_TIMESTAMP)
+        """,
+        (org_id,),
+    )
+
+    database.headers_migration.downgrade(database.admin)
+
+    assert database.admin.execute(
+        "SELECT status_code, response_body FROM idempotency_key WHERE org_id = %s",
+        (org_id,),
+    ).fetchone() == (201, {"id": "created-id"})
+    assert (
+        database.admin.execute(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema = 'public' AND table_name = 'idempotency_key' "
+            "AND column_name = 'response_headers'"
+        ).fetchone()
+        is None
+    )

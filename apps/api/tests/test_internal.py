@@ -16,9 +16,12 @@ from flo.api.internal import (
     QUOTA_POLICIES,
     GoogleCloudUsage,
     QuotaCollector,
+    TickComponentSummary,
+    TickReport,
     build_quota_report,
     get_internal_settings,
     get_quota_collectors,
+    get_tick_processor,
 )
 from flo.api.origin_auth import ORIGIN_SECRET_HEADER, get_origin_settings
 from flo.kernel.config import Settings
@@ -276,3 +279,59 @@ def test_google_usage_reads_all_monitoring_and_registry_pages_without_credential
     assert all(token == "metadata-access-token" for _, token, _ in calls)
     assert all("metadata-access-token" not in url for url, _, _ in calls)
     assert all(timeout == 5.0 for _, _, timeout in calls)
+
+
+def test_jobs_tick_rejects_unauthenticated_calls_before_building_worker() -> None:
+    settings = Settings(origin_shared_secret=_TEST_ORIGIN_SECRET)
+    tick_app = FastAPI()
+    tick_app.include_router(internal.router)
+    install_problem_details(tick_app)
+    tick_app.dependency_overrides[get_origin_settings] = lambda: settings
+    built = 0
+
+    def processor_factory() -> internal.TickProcessor:
+        nonlocal built
+        built += 1
+
+        async def process() -> TickReport:
+            return TickReport(
+                jobs=TickComponentSummary(claimed=0, done=0, retried=0, dead=0),
+                outbox=TickComponentSummary(claimed=0, done=0, retried=0, dead=0),
+            )
+
+        return process
+
+    tick_app.dependency_overrides[get_tick_processor] = processor_factory
+
+    async def request() -> tuple[httpx.Response, httpx.Response, httpx.Response]:
+        transport = httpx.ASGITransport(app=tick_app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            missing = await client.post("/internal/jobs/tick")
+            wrong = await client.post(
+                "/internal/jobs/tick",
+                headers={ORIGIN_SECRET_HEADER: "wrong-origin-secret"},
+            )
+            assert built == 0
+            accepted = await client.post(
+                "/internal/jobs/tick",
+                headers={ORIGIN_SECRET_HEADER: _TEST_ORIGIN_SECRET},
+            )
+            return missing, wrong, accepted
+
+    missing, wrong, accepted = asyncio.run(request())
+
+    assert missing.status_code == 404
+    assert wrong.status_code == 404
+    assert accepted.status_code == 200
+    assert accepted.json() == {
+        "jobs": {"claimed": 0, "done": 0, "retried": 0, "dead": 0},
+        "outbox": {"claimed": 0, "done": 0, "retried": 0, "dead": 0},
+    }
+    assert built == 1
+
+
+def test_jobs_tick_is_absent_from_public_openapi_even_when_router_is_mounted() -> None:
+    documented_app = FastAPI()
+    documented_app.include_router(internal.router)
+
+    assert "/internal/jobs/tick" not in documented_app.openapi()["paths"]

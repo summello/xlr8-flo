@@ -13,8 +13,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_ROOTS = (ROOT / "apps" / "api" / "src", ROOT / "migrations")
 SESSION_SET = re.compile(
-    r"(?:^|;)\s*SET\s+(?!LOCAL\b)(?:ROLE\b|SESSION\b|[a-z_][\w.]*\s*(?:=|TO\b))",
-    flags=re.IGNORECASE | re.MULTILINE,
+    r"(?:\A|;)\s*SET\s+(?!LOCAL\b)(?:ROLE\b|SESSION\b|[a-z_][\w.]*\s*(?:=|TO\b))",
+    flags=re.IGNORECASE,
 )
 
 

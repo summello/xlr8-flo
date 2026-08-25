@@ -1,3 +1,5 @@
+import { tickJobs } from "../../../infra/cron-worker/jobs-tick";
+
 const API_PREFIX = "/api";
 const ORIGIN_SECRET_HEADER = "X-FLO-Origin-Secret";
 
@@ -43,6 +45,12 @@ export function cloudRunRequest(request: Request, environment: WorkerEnvironment
   incoming.protocol = origin.protocol;
   incoming.host = origin.host;
   incoming.pathname = incoming.pathname.slice(API_PREFIX.length) || "/";
+  if (
+    incoming.pathname === "/internal" ||
+    incoming.pathname.startsWith("/internal/")
+  ) {
+    throw new TypeError("internal routes are unavailable through the public proxy");
+  }
   const upstream = new Request(new Request(incoming, request), { redirect: "manual" });
   upstream.headers.set(ORIGIN_SECRET_HEADER, originSharedSecret(environment));
   return upstream;
@@ -63,6 +71,13 @@ async function checkQuota(environment: WorkerEnvironment): Promise<void> {
   }
 }
 
+async function runScheduledWork(environment: WorkerEnvironment): Promise<void> {
+  await Promise.all([
+    checkQuota(environment),
+    tickJobs(parseCloudRunOrigin(environment.CLOUD_RUN_ORIGIN), environment),
+  ]);
+}
+
 export default {
   async fetch(request: Request, environment: WorkerEnvironment): Promise<Response> {
     try {
@@ -79,6 +94,6 @@ export default {
     environment: WorkerEnvironment,
     context: WorkerExecutionContext,
   ): void {
-    context.waitUntil(checkQuota(environment));
+    context.waitUntil(runScheduledWork(environment));
   },
 };

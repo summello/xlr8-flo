@@ -5,6 +5,7 @@ import apiProxy, {
   quotaRequest,
   type WorkerEnvironment,
 } from "../worker/api-proxy";
+import { jobsTickRequest } from "../../../infra/cron-worker/jobs-tick";
 
 const environment: WorkerEnvironment = {
   CLOUD_RUN_ORIGIN: "https://flo-api-example-uc.a.run.app",
@@ -75,7 +76,8 @@ describe("Cloudflare API proxy", () => {
   it.each([
     "https://xlr8flo.summello.com/",
     "https://xlr8flo.summello.com/apiary",
-  ])("fails closed outside the configured /api route: %s", async (url) => {
+    "https://xlr8flo.summello.com/api/internal/jobs/tick",
+  ])("fails closed outside the configured public API surface: %s", async (url) => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
@@ -115,7 +117,7 @@ describe("Cloudflare API proxy", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("authenticates the scheduled quota check", async () => {
+  it("authenticates the scheduled quota and job tick calls", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
     let scheduled: Promise<unknown> | undefined;
@@ -127,16 +129,49 @@ describe("Cloudflare API proxy", () => {
     });
     await scheduled;
 
-    expect(fetchMock).toHaveBeenCalledOnce();
-    const request = fetchMock.mock.calls[0]?.[0] as Request;
-    expect(request.url).toBe(
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const quota = fetchMock.mock.calls[0]?.[0] as Request;
+    const jobs = fetchMock.mock.calls[1]?.[0] as Request;
+    expect(quota.url).toBe(
       "https://flo-api-example-uc.a.run.app/internal/health/quota",
     );
-    expect(request.headers.get("x-flo-origin-secret")).toBe(
+    expect(quota.headers.get("x-flo-origin-secret")).toBe(
+      environment.ORIGIN_SHARED_SECRET,
+    );
+    expect(jobs.url).toBe(
+      "https://flo-api-example-uc.a.run.app/internal/jobs/tick",
+    );
+    expect(jobs.method).toBe("POST");
+    expect(jobs.headers.get("x-flo-origin-secret")).toBe(
       environment.ORIGIN_SHARED_SECRET,
     );
     expect(quotaRequest(environment).headers.get("x-flo-origin-secret")).toBe(
       environment.ORIGIN_SHARED_SECRET,
     );
+    expect(
+      jobsTickRequest(new URL(environment.CLOUD_RUN_ORIGIN), environment).headers.get(
+        "x-flo-origin-secret",
+      ),
+    ).toBe(environment.ORIGIN_SHARED_SECRET);
+  });
+
+  it("still starts the job tick when the independent quota call fails", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockResolvedValueOnce(new Response(null, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    let scheduled: Promise<unknown> | undefined;
+
+    apiProxy.scheduled(null, environment, {
+      waitUntil(promise) {
+        scheduled = promise;
+      },
+    });
+
+    await expect(scheduled).rejects.toThrow("quota health check failed");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const jobs = fetchMock.mock.calls[1]?.[0] as Request;
+    expect(jobs.url).toContain("/internal/jobs/tick");
   });
 });

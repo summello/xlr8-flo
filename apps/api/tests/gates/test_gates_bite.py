@@ -268,6 +268,22 @@ def test_module_boundary_rejects_cross_module_import_and_then_passes(tmp_path: P
     assert_accepts(run_import_linter(project))
 
 
+def test_module_boto3_import_fails_and_then_passes(tmp_path: Path) -> None:
+    project = copy_import_linter_project(tmp_path)
+    violation = project / "flo" / "modules" / "a" / "storage_violation.py"
+    shutil.copy2(FIXTURES / "module_boto3.py", violation)
+
+    assert_rejects(
+        run_import_linter(project),
+        "Business modules use kernel ports for external effects",
+        "flo.modules.a",
+        "boto3",
+        "BROKEN",
+    )
+    violation.unlink()
+    assert_accepts(run_import_linter(project))
+
+
 @pytest.mark.parametrize(
     ("source_module", "violation_path"),
     [
@@ -345,7 +361,8 @@ def test_postgres_pooling_guard_rejects_missing_roots_and_session_set_then_passe
     source.mkdir()
     migrations.mkdir()
     (source / "safe.py").write_text(
-        'STATEMENT = "SET LOCAL app.org_id = \'safe\'"\n',
+        'LOCAL = "SET LOCAL app.org_id = \'safe\'"\n'
+        'UPDATE = """UPDATE job\nSET state = \'done\'"""\n',
         encoding="utf-8",
     )
     violation = migrations / "planted.py"
@@ -474,6 +491,46 @@ def test_deploy_resource_check_rejects_a_missing_r2_secret_mapping_and_then_pass
         run_gate(command, cwd=project),
         "MISSING",
         "S3_ACCESS_KEY_ID=flo-r2-access-key-id:latest",
+    )
+    workflow.write_bytes(clean_workflow)
+    assert_accepts(run_gate(command, cwd=project))
+
+
+def test_deploy_resource_check_rejects_a_missing_resend_secret_and_then_passes(
+    tmp_path: Path,
+) -> None:
+    project = tmp_path / "repo"
+    workflow = project / ".github" / "workflows" / "ci.yml"
+    config = project / "apps" / "api" / "src" / "flo" / "kernel" / "config.py"
+    script = project / "apps" / "api" / "scripts" / "check_deploy_resources.py"
+    workflow.parent.mkdir(parents=True)
+    config.parent.mkdir(parents=True)
+    script.parent.mkdir(parents=True)
+    shutil.copy2(ROOT / ".github" / "workflows" / "ci.yml", workflow)
+    shutil.copy2(ROOT / "apps" / "api" / "src" / "flo" / "kernel" / "config.py", config)
+    shutil.copy2(ROOT / "apps" / "api" / "scripts" / "check_deploy_resources.py", script)
+    clean_workflow = workflow.read_bytes()
+    source = workflow.read_text(encoding="utf-8")
+    planted = source.replace(
+        ",RESEND_API_KEY=flo-resend-api-key:latest",
+        "",
+        1,
+    )
+    assert planted != source, "the deploy step must map the Resend secret"
+    workflow.write_text(planted, encoding="utf-8")
+    command = [
+        sys.executable,
+        str(script),
+        "--workflow",
+        str(workflow),
+        "--config",
+        str(config),
+    ]
+
+    assert_rejects(
+        run_gate(command, cwd=project),
+        "MISSING",
+        "RESEND_API_KEY=flo-resend-api-key:latest",
     )
     workflow.write_bytes(clean_workflow)
     assert_accepts(run_gate(command, cwd=project))
@@ -650,6 +707,7 @@ def test_production_runbook_names_every_required_resource_and_verification() -> 
         "flo-database-url": "database secret",
         "flo-r2-access-key-id": "R2 access-key secret",
         "flo-r2-secret-access-key": "R2 secret-key secret",
+        "flo-resend-api-key": "Resend API-key secret",
         "flo-origin-shared-secret": "origin-authentication secret",
         "roles/monitoring.viewer": "Cloud Monitoring reader",
         "roles/artifactregistry.reader": "Artifact Registry reader",

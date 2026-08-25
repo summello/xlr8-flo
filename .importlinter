@@ -1,5 +1,6 @@
 [importlinter]
 root_package = flo
+include_external_packages = True
 
 [importlinter:contract:layers]
 name = Layered architecture
@@ -26,3 +27,16 @@ forbidden_modules =
     flo.kernel.identity.local
 ignore_imports =
     flo.kernel.identity -> flo.kernel.identity.local
+
+[importlinter:contract:module-external-effects]
+name = Business modules use kernel ports for external effects
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    flo.modules
+forbidden_modules =
+    boto3
+    botocore
+    httpx
+    requests
+    urllib

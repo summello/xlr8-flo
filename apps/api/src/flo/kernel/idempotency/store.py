@@ -11,6 +11,7 @@ from typing import Protocol, cast
 from uuid import UUID
 
 from psycopg import sql
+from psycopg.types.json import Jsonb
 
 from flo.kernel.db.repo import ScopedRepo
 from flo.kernel.tenancy.context import Scope
@@ -40,6 +41,7 @@ class IdempotencyConnection(RlsSession, Protocol):
         params: Mapping[str, object] | None = None,
     ) -> QueryResult: ...
 
+
 class ClaimKind(StrEnum):
     """All possible outcomes of trying to claim an organization key."""
 
@@ -55,6 +57,7 @@ class StoredResponse:
 
     status_code: int
     body: JsonValue
+    headers: Mapping[str, str]
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,9 +108,7 @@ class IdempotencyStore(ScopedRepo[StoredResponse]):
                 (%(org_id)s, %(key)s, %(endpoint)s, %(request_hash)s, 'in_progress')
             ON CONFLICT DO NOTHING
             """,
-            self.scoped_params(
-                {"key": key, "endpoint": endpoint, "request_hash": request_hash}
-            ),
+            self.scoped_params({"key": key, "endpoint": endpoint, "request_hash": request_hash}),
         )
         if inserted.rowcount == 1:
             return ClaimResult(ClaimKind.CLAIMED)
@@ -123,6 +124,7 @@ class IdempotencyStore(ScopedRepo[StoredResponse]):
         *,
         status_code: int,
         serialized_response_body: str,
+        response_headers: Mapping[str, str],
     ) -> None:
         """Store the exact successful outcome before the business transaction commits."""
 
@@ -132,6 +134,7 @@ class IdempotencyStore(ScopedRepo[StoredResponse]):
             SET state = 'completed',
                 status_code = %(status_code)s,
                 response_body = %(response_body)s::jsonb,
+                response_headers = %(response_headers)s,
                 completed_at = clock_timestamp()
             WHERE org_id = %(org_id)s AND key = %(key)s AND state = 'in_progress'
             """,
@@ -140,6 +143,7 @@ class IdempotencyStore(ScopedRepo[StoredResponse]):
                     "key": key,
                     "status_code": status_code,
                     "response_body": serialized_response_body,
+                    "response_headers": Jsonb(dict(response_headers)),
                 }
             ),
         )
@@ -152,8 +156,7 @@ class IdempotencyStore(ScopedRepo[StoredResponse]):
         if now.tzinfo is None or now.utcoffset() is None:
             raise ValueError("idempotency cleanup time must be timezone-aware")
         deleted = self._connection.execute(
-            "DELETE FROM idempotency_key "
-            "WHERE org_id = %(org_id)s AND created_at < %(cutoff)s",
+            "DELETE FROM idempotency_key WHERE org_id = %(org_id)s AND created_at < %(cutoff)s",
             self.scoped_params({"cutoff": now - IDEMPOTENCY_TTL}),
         )
         return deleted.rowcount
@@ -161,7 +164,8 @@ class IdempotencyStore(ScopedRepo[StoredResponse]):
     def _existing(self, key: str) -> DatabaseRow | None:
         return self._connection.execute(
             """
-            SELECT endpoint, request_hash, state, status_code, response_body
+            SELECT endpoint, request_hash, state, status_code, response_body,
+                   response_headers
             FROM idempotency_key
             WHERE org_id = %(org_id)s AND key = %(key)s
             """,
@@ -188,7 +192,14 @@ class IdempotencyStore(ScopedRepo[StoredResponse]):
         if not isinstance(status_code, int):
             raise RuntimeError("completed idempotency row has no status code")
         body = cast(JsonValue, _value(row, 4, "response_body"))
+        headers_value = _value(row, 5, "response_headers")
+        if not isinstance(headers_value, dict) or not all(
+            isinstance(name, str) and isinstance(value, str)
+            for name, value in headers_value.items()
+        ):
+            raise RuntimeError("completed idempotency row has invalid response headers")
+        headers = cast(dict[str, str], headers_value)
         return ClaimResult(
             ClaimKind.COMPLETED,
-            StoredResponse(status_code=status_code, body=body),
+            StoredResponse(status_code=status_code, body=body, headers=headers),
         )
