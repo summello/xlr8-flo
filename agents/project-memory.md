@@ -120,15 +120,16 @@ reviewer. Both now point at OpenRouter, where the operator holds real credits:
 answers. Prefer OpenRouter for every agent — a `:free` variant there can degrade to the
 paid model instead of disappearing.
 
-**Open: qwen vs kimi, decide on the next story.** Run **both** as reviewers on the next
-gated story and compare findings that survive the Opus final. If comparable, keep **kimi**
-— qwen is materially more expensive. If qwen clearly outperforms, revert to qwen. Context:
-qwen was replaced after four failed runs on E01-S05, but every one of those failures was
-later traced to the *review packet* — dotfile reads, `/tmp` writes, and a 1,108-line
-lockfile — all since fixed in `flo review`. qwen was probably never the problem. kimi's
-first outing was weak on its own merits: given a clean room it produced **zero**
-independent findings, and its earlier three were two copied from deepseek's verdict file
-plus one fabricated regex defect. Neither agent has a fair sample yet.
+**25 Aug 2026 — qwen reinstated, kimi demoted to fallback. Question closed.** Both ran on
+E04-S01, the first `ui` story, as the comparison the previous entry asked for. qwen planted
+**twelve** violations, cross-checked the contrast test's OKLCH→sRGB engine against its own
+implementation, and raised the story's only real blocker: the three `--money-*` tokens passed
+by *absence* — deleting all three left vitest 18/18 green. Opus reproduced it, upheld it as a
+blocker, and found a second of the same class. kimi returned `approve` with **zero** findings,
+its second clean-room story at 0.0 findings per review. Scorecard after the merge: qwen 2.4
+findings/review (85), deepseek 0.8 (76), kimi 0.0 (n=2). Both of qwen's runs completed, which
+also confirms the four E01-S05 failures were the review packet's fault, not the model's.
+`agents.yaml` M0 reviewers are now `[opus, qwen, deepseek]`; kimi is qwen's fallback.
 
 **Merge authority:** the operator has delegated GitHub merges for M0 to Opus, with the
 instruction to space them out so the repository does not read as bot-driven. Outside M0 the
@@ -140,21 +141,49 @@ _(none — add here rather than guessing)_
 
 ## Session handoff — 25 Aug 2026
 
-M0 is **10/25**. `main` is 79 commits behind `milestone/M0-rails` and that is correct —
-`main` advances only by milestone PR when M0's exit criteria are met, never on commit count.
+M0 is **11/161 overall, 11 of M0's 25**. `main` stays behind `milestone/M0-rails` by design —
+it advances only by milestone PR when M0's exit criteria are met, never on commit count.
 `flo ack` raises a `pr:M0` item by itself once every M0 story is done. Do not merge early.
 
-**Next up: `E04-S01` — design tokens, Tailwind v4, light/dark.** Worktree
-`../xlr8flo-E04-S01` was rebuilt today on the milestone head (`4378023`); the old one was six
-commits stale with a `task.json` naming qwen. Author codex, reviewers opus + kimi + deepseek,
-Opus final required. **Nothing has been authored yet — codex has not been dispatched.** This is
-the first `ui` story, so `design-system/MASTER.md` is binding and its §8 is the UI definition of
-done (§7 is Components — AGENTS.md and agents/claude.md were corrected today).
+**`E04-S01` merged (`e75892c`).** Design tokens, Tailwind v4, light/dark/system, MASTER-derived
+contrast + coverage test. Two rounds. Both round-1 blockers were the same defect class the
+packet exists to prevent — passing by absence — and neither was found by the two reviewers that
+approved: deleting all three `--money-*` tokens left the suite green, and a malformed MASTER.md
+table row dropped silently out of coverage with a bare `continue`. Both now fail by name,
+plant-verified by Opus and again by qwen on the re-review.
 
-Its packet was revised today: an unverifiable "46 documented pairs" acceptance criterion is gone
-because the real count across MASTER.md §2 is well over sixty. The contrast test must now derive
-its pair list *from MASTER.md* and fail when a documented token is **absent** from `tokens.css` —
-otherwise it passes by testing nothing, which is the E01-S07 defect class in a new costume.
+**MASTER.md §2.4 was unimplementable and is now fixed.** It promised a light-text/light-tint and
+dark-text/dark-tint quad per tag swatch and shipped one hex each — 42 of 56 values did not exist,
+so codex correctly refused to author rather than invent them. `design-system/derive-tag-swatches.py`
+now derives the missing values from each published hue and chroma and searches lightness for the
+least-contrasty value clearing §2.4's floors; every pair lands ≥5.9:1 light, ≥7.5:1 dark. **If a
+future MASTER.md section makes a claim its table does not carry, expect the author to block — that
+is the system working.**
+
+**Three MASTER.md debts, all Opus's, all before E04-S02 renders a control:**
+1. **§2.7 border rule.** `--border-strong` is 1.48:1 light and 1.95:1 dark against `--canvas`, and
+   no gate measures a border. Write the rule: a control is identified by its label, its ground and
+   its focus ring, never by the hairline alone; any control whose boundary is its only identifying
+   mark uses a 3:1 token, and §2.7 gains that pair so the derived-pair mechanism enforces it.
+2. **§3.1 dark `--shadow-drag`.** The dark block omits it, so dark inherits the light definition
+   through the light `--shadow-color` and paints a pale shadow on a near-black canvas. Fix
+   MASTER.md; the next shadow-touching UI story transcribes it. Never patch `tokens.css` first —
+   that breaks the transcription contract E04-S01 establishes.
+3. **`--fg-muted`'s comment claims 4.8:1; it measures 4.59:1.** Still above 4.5, so not urgent.
+   qwen found it by cross-checking the test's colour engine against its own.
+
+**Two test debts on `contrast.test.ts`,** both recorded in E04-S01's `notes.followup`: the
+*addition* direction is unguarded (an undocumented non-colour token redefined identically in both
+dark blocks passes), and the chrome-pair regex captures MASTER.md's documented ratio then hardcodes
+4.5.
+
+**Deferred to E04-S02:** the stored theme is applied from the module body, so an explicit override
+flashes the OS theme first. The fix is a blocking inline script in `index.html`'s `<head>`; it
+lands with the toggle.
+
+**Story worktrees ship without dependencies.** `flo start` gives you the tree, not the installs.
+Before dispatching any author: `npm ci` in `apps/web`, `uv sync --frozen` in `apps/api`. Codex runs
+under `-s workspace-write`, which has no network, so an install it has to do itself will fail.
 
 **Still owed on the merged `E01-S05`, and invisible on the board.** Four `notes.followup`
 entries live in a done story where nobody will look, three of them blocked on operator accounts
