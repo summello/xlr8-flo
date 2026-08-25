@@ -1,0 +1,268 @@
+:root {
+  color-scheme: light;
+
+  --canvas: oklch(0.988 0.004 258);
+  --sunken: oklch(0.966 0.006 258);
+  --surface: oklch(1 0 258);
+  --raised: oklch(1 0 258);
+  --fg: oklch(0.240 0.022 262);
+  --fg-secondary: oklch(0.480 0.024 262);
+  --fg-muted: oklch(0.555 0.020 262);
+  --border: oklch(0.918 0.006 258);
+  --border-strong: oklch(0.860 0.008 258);
+  --ring: oklch(0.520 0.185 272);
+  --scrim: oklch(0.24 0.02 262 / 0.42);
+
+  --phase-foundation: oklch(0.52 0.045 258);
+  --phase-plan: oklch(0.52 0.185 272);
+  --phase-demand: oklch(0.52 0.19 310);
+  --phase-commit: oklch(0.52 0.086 196);
+
+  --status-neutral: #565e6c;
+  --status-neutral-tint: #f1f4f8;
+  --status-info: #0072ae;
+  --status-info-tint: #dff3ff;
+  --status-success: #0a7e3a;
+  --status-success-tint: #e2f7e5;
+  --status-warning: #8f6200;
+  --status-warning-tint: #ffefd4;
+  --status-danger: #c72d31;
+  --status-danger-tint: #ffe9e6;
+
+  --tag-slate: #0d53af;
+  --tag-slate-tint: #dbe8fc;
+  --tag-blue: #2151af;
+  --tag-blue-tint: #dce8fc;
+  --tag-azure: #076082;
+  --tag-azure-tint: #d9f0fd;
+  --tag-cyan: #076566;
+  --tag-cyan-tint: #d7f4f4;
+  --tag-teal: #076758;
+  --tag-teal-tint: #daf5ee;
+  --tag-green: #076a2f;
+  --tag-green-tint: #e1f5e4;
+  --tag-lime: #456405;
+  --tag-lime-tint: #e8f2dd;
+  --tag-gold: #685704;
+  --tag-gold-tint: #f0ebd5;
+  --tag-amber: #745004;
+  --tag-amber-tint: #f4e7d3;
+  --tag-orange: #903a04;
+  --tag-orange-tint: #f7e0d5;
+  --tag-rose: #9c1f43;
+  --tag-rose-tint: #f4dadd;
+  --tag-magenta: #8e2873;
+  --tag-magenta-tint: #f1dbe8;
+  --tag-violet: #673ba2;
+  --tag-violet-tint: #e5def4;
+  --tag-indigo: #3c4baf;
+  --tag-indigo-tint: #dee5fa;
+
+  --money-inflow: var(--fg);
+  --money-outflow: var(--status-danger);
+  --money-zero: var(--fg-muted);
+
+  --chart-1: #5063d9;
+  --chart-2: #128283;
+  --chart-3: #9249c0;
+  --chart-4: #9e7112;
+  --chart-5: #c64060;
+  --chart-6: #298646;
+  --chart-7: #007fac;
+  --chart-8: #6a7586;
+  --chart-1-stroke: none;
+  --chart-2-stroke: 6 3;
+  --chart-3-stroke: 2 3;
+  --chart-4-stroke: 8 3 2 3;
+  --chart-5-stroke: 12 4;
+  --chart-6-stroke: none;
+  --chart-7-stroke: 3 3;
+  --chart-8-stroke: 1 3;
+  --chart-6-marker: circle;
+
+  --shadow-color: 262 25% 22%;
+  --shadow-sm: 0 1px 2px hsl(var(--shadow-color) / 0.06), 0 1px 1px hsl(var(--shadow-color) / 0.04);
+  --shadow-md: 0 2px 4px hsl(var(--shadow-color) / 0.05), 0 8px 16px hsl(var(--shadow-color) / 0.08);
+  --shadow-lg: 0 4px 8px hsl(var(--shadow-color) / 0.06), 0 16px 40px hsl(var(--shadow-color) / 0.12);
+  --shadow-xl: 0 8px 16px hsl(var(--shadow-color) / 0.08), 0 32px 72px hsl(var(--shadow-color) / 0.18);
+  --shadow-drag: 0 12px 28px hsl(var(--shadow-color) / 0.22), 0 2px 6px hsl(var(--shadow-color) / 0.12);
+  --lit-edge: inset 0 1px 0 0 oklch(1 0 0 / 0.9);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 48px;
+
+  --radius-input: 8px;
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --radius-pill: 999px;
+
+  --dur-instant: 0ms;
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --dur-slow: 260ms;
+  --dur-page: 320ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: linear(0,.009,.035,.078,.141,.285,.605,.867,.98,1.03,1.04,1.02,1);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --canvas: oklch(0.155 0.016 264);
+  --sunken: oklch(0.124 0.014 264);
+  --surface: oklch(0.196 0.017 264);
+  --raised: oklch(0.238 0.019 264);
+  --fg: oklch(0.965 0.006 262);
+  --fg-secondary: oklch(0.795 0.016 262);
+  --fg-muted: oklch(0.660 0.022 262);
+  --border: oklch(0.290 0.018 264);
+  --border-strong: oklch(0.380 0.022 264);
+  --ring: oklch(0.720 0.135 272);
+  --scrim: oklch(0.10 0.014 264 / 0.62);
+
+  --phase-foundation: oklch(0.72 0.05 258);
+  --phase-plan: oklch(0.72 0.135 272);
+  --phase-demand: oklch(0.72 0.165 310);
+  --phase-commit: oklch(0.78 0.12 196);
+
+  --status-neutral: #b7bcc7;
+  --status-neutral-tint: #1a1f28;
+  --status-info: #66bfff;
+  --status-info-tint: #0e2a3b;
+  --status-success: #6ad987;
+  --status-success-tint: #152e1b;
+  --status-warning: #fcba43;
+  --status-warning-tint: #302512;
+  --status-danger: #f98078;
+  --status-danger-tint: #361d1c;
+
+  --tag-slate: #80b3ff;
+  --tag-slate-tint: #18212e;
+  --tag-blue: #86b1ff;
+  --tag-blue-tint: #19212e;
+  --tag-azure: #70badf;
+  --tag-azure-tint: #12232c;
+  --tag-cyan: #71bfbf;
+  --tag-cyan-tint: #0f2525;
+  --tag-teal: #71c0ae;
+  --tag-teal-tint: #102520;
+  --tag-green: #6fc382;
+  --tag-green-tint: #172419;
+  --tag-lime: #99bd69;
+  --tag-lime-tint: #1d2314;
+  --tag-gold: #c2b069;
+  --tag-gold-tint: #242011;
+  --tag-amber: #d3ab6b;
+  --tag-amber-tint: #281f11;
+  --tag-orange: #f7986c;
+  --tag-orange-tint: #2c1c15;
+  --tag-rose: #fb90a2;
+  --tag-rose-tint: #2c1b1d;
+  --tag-magenta: #ec93ce;
+  --tag-magenta-tint: #2a1b25;
+  --tag-violet: #c0a0fa;
+  --tag-violet-tint: #221d2c;
+  --tag-indigo: #98adff;
+  --tag-indigo-tint: #1c202e;
+
+  --chart-1: #879ef9;
+  --chart-2: #3bcfd0;
+  --chart-3: #c484f1;
+  --chart-4: #d8bd51;
+  --chart-5: #fd9fad;
+  --chart-6: #7cd591;
+  --chart-7: #65cbfd;
+  --chart-8: #8b93a0;
+
+  --shadow-sm: 0 1px 2px hsl(264 40% 2% / 0.5);
+  --shadow-md: 0 2px 4px hsl(264 40% 2% / 0.5), 0 8px 16px hsl(264 40% 2% / 0.45);
+  --shadow-lg: 0 4px 8px hsl(264 40% 2% / 0.5), 0 16px 40px hsl(264 40% 2% / 0.55);
+  --shadow-xl: 0 8px 16px hsl(264 40% 2% / 0.55), 0 32px 72px hsl(264 40% 2% / 0.65);
+  --lit-edge: inset 0 1px 0 0 oklch(1 0 0 / 0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --canvas: oklch(0.155 0.016 264);
+    --sunken: oklch(0.124 0.014 264);
+    --surface: oklch(0.196 0.017 264);
+    --raised: oklch(0.238 0.019 264);
+    --fg: oklch(0.965 0.006 262);
+    --fg-secondary: oklch(0.795 0.016 262);
+    --fg-muted: oklch(0.660 0.022 262);
+    --border: oklch(0.290 0.018 264);
+    --border-strong: oklch(0.380 0.022 264);
+    --ring: oklch(0.720 0.135 272);
+    --scrim: oklch(0.10 0.014 264 / 0.62);
+
+    --phase-foundation: oklch(0.72 0.05 258);
+    --phase-plan: oklch(0.72 0.135 272);
+    --phase-demand: oklch(0.72 0.165 310);
+    --phase-commit: oklch(0.78 0.12 196);
+
+    --status-neutral: #b7bcc7;
+    --status-neutral-tint: #1a1f28;
+    --status-info: #66bfff;
+    --status-info-tint: #0e2a3b;
+    --status-success: #6ad987;
+    --status-success-tint: #152e1b;
+    --status-warning: #fcba43;
+    --status-warning-tint: #302512;
+    --status-danger: #f98078;
+    --status-danger-tint: #361d1c;
+
+    --tag-slate: #80b3ff;
+    --tag-slate-tint: #18212e;
+    --tag-blue: #86b1ff;
+    --tag-blue-tint: #19212e;
+    --tag-azure: #70badf;
+    --tag-azure-tint: #12232c;
+    --tag-cyan: #71bfbf;
+    --tag-cyan-tint: #0f2525;
+    --tag-teal: #71c0ae;
+    --tag-teal-tint: #102520;
+    --tag-green: #6fc382;
+    --tag-green-tint: #172419;
+    --tag-lime: #99bd69;
+    --tag-lime-tint: #1d2314;
+    --tag-gold: #c2b069;
+    --tag-gold-tint: #242011;
+    --tag-amber: #d3ab6b;
+    --tag-amber-tint: #281f11;
+    --tag-orange: #f7986c;
+    --tag-orange-tint: #2c1c15;
+    --tag-rose: #fb90a2;
+    --tag-rose-tint: #2c1b1d;
+    --tag-magenta: #ec93ce;
+    --tag-magenta-tint: #2a1b25;
+    --tag-violet: #c0a0fa;
+    --tag-violet-tint: #221d2c;
+    --tag-indigo: #98adff;
+    --tag-indigo-tint: #1c202e;
+
+    --chart-1: #879ef9;
+    --chart-2: #3bcfd0;
+    --chart-3: #c484f1;
+    --chart-4: #d8bd51;
+    --chart-5: #fd9fad;
+    --chart-6: #7cd591;
+    --chart-7: #65cbfd;
+    --chart-8: #8b93a0;
+
+    --shadow-sm: 0 1px 2px hsl(264 40% 2% / 0.5);
+    --shadow-md: 0 2px 4px hsl(264 40% 2% / 0.5), 0 8px 16px hsl(264 40% 2% / 0.45);
+    --shadow-lg: 0 4px 8px hsl(264 40% 2% / 0.5), 0 16px 40px hsl(264 40% 2% / 0.55);
+    --shadow-xl: 0 8px 16px hsl(264 40% 2% / 0.55), 0 32px 72px hsl(264 40% 2% / 0.65);
+    --lit-edge: inset 0 1px 0 0 oklch(1 0 0 / 0.06);
+  }
+}

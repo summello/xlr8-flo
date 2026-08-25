@@ -1,0 +1,17 @@
+@import "tailwindcss";
+@import "./tokens.css";
+@config "../../tailwind.config.ts";
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    background: var(--canvas);
+    color: var(--fg);
+  }
+}

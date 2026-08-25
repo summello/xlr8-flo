@@ -533,6 +533,81 @@
       },
       "recap": "Main now builds, scans, inventories, pushes, migrates, and deploys the API by digest, then deploys a path-scoped Cloudflare Worker and secret-scanned SPA on the one D-17 origin. The browser uses relative /api with no CORS, while Argon2 work remains bounded with startup and CI memory enforcement.",
       "title": "Deploy API to Cloud Run and SPA to Cloudflare Pages from CI"
+    },
+    {
+      "story": "E04-S01",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "codex",
+      "reviewers": [
+        "deepseek",
+        "kimi",
+        "qwen"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "deepseek": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        },
+        "kimi": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        },
+        "qwen": {
+          "ran_tests": true,
+          "findings": 4,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [
+        {
+          "from": "kimi",
+          "to": "qwen",
+          "role": "reviewer",
+          "reason": "project-memory.md's open question \u2014 run qwen and kimi on the next gated story and keep the one whose findings survive the Opus final. Both ran here. qwen planted 12 violations, cross-checked the test's OKLCH-to-sRGB engine against its own implementation, and raised the only real blocker (money tokens passing by absence). kimi approved with zero findings for the second clean-room story running. Question closed in qwen's favour; agents.yaml updated."
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a03659-0d95-7c32-8372-0a52dd2ce2de",
+          "source": "codex rollout matched on cwd"
+        },
+        "deepseek": {
+          "agent": "deepseek",
+          "id": null,
+          "source": "unavailable: no detector for deepseek"
+        },
+        "kimi": {
+          "agent": "kimi",
+          "id": null,
+          "source": "unavailable: no detector for kimi"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "6943502c-d56e-4353-af9a-3f691bb26487",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "unavailable: OpenRouter has no session concept - pass the generation id to `flo session qwen <id>`"
+        }
+      },
+      "recap": "Transcribed the MASTER palette and supporting tokens, wired Tailwind v4 and storage-safe theme selection, and added MASTER-derived contrast/coverage plus Playwright axe checks. New dependencies: tailwindcss and @tailwindcss/vite provide the packet-required Tailwind v4 compiler integration; @axe-core/playwright provides the AGENTS.md-required browser accessibility gate; @types/node types the direct source-file reads used by the Vitest coverage gate.",
+      "title": "Design tokens, Tailwind v4 setup, light/dark, neutral chrome palette"
     }
   ]
 }
