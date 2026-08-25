@@ -353,7 +353,7 @@ epics:
           - A11Y-002
         dep:
           - E04-S01
-        st: review
+        st: done
       - id: E04-S03
         t: 'Data grid: TanStack Table, virtualization, server filter/sort, saved views,
           grid semantics'

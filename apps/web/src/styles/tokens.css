@@ -89,6 +89,47 @@
   --shadow-drag: 0 12px 28px hsl(var(--shadow-color) / 0.22), 0 2px 6px hsl(var(--shadow-color) / 0.12);
   --lit-edge: inset 0 1px 0 0 oklch(1 0 0 / 0.9);
 
+  --font-ui: 'InterVariable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --text-display: 30px;
+  --leading-display: 36px;
+  --weight-display: 640;
+  --tracking-display: -0.025em;
+  --text-title: 20px;
+  --leading-title: 28px;
+  --weight-title: 620;
+  --tracking-title: -0.018em;
+  --text-heading: 16px;
+  --leading-heading: 24px;
+  --weight-heading: 600;
+  --tracking-heading: -0.011em;
+  --text-body: 14px;
+  --leading-body: 20px;
+  --weight-body: 420;
+  --tracking-body: 0;
+  --text-body-dense: 13px;
+  --leading-body-dense: 18px;
+  --weight-body-dense: 420;
+  --tracking-body-dense: 0;
+  --text-input-mobile: 16px;
+  --text-label: 12px;
+  --leading-label: 16px;
+  --weight-label: 560;
+  --tracking-label: 0.045em;
+  --text-caption: 12px;
+  --leading-caption: 16px;
+  --weight-caption: 400;
+  --tracking-caption: 0;
+  --text-numeric: 13px;
+  --leading-numeric: 20px;
+  --weight-numeric: 460;
+  --tracking-numeric: 0;
+  --text-metric: 28px;
+  --leading-metric: 32px;
+  --weight-metric: 620;
+  --tracking-metric: -0.02em;
+
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -102,6 +143,26 @@
   --radius-control: 8px;
   --radius-card: 12px;
   --radius-pill: 999px;
+
+  --header-h: 52px;
+  --sidebar-w: 240px;
+  --sidebar-w-collapsed: 56px;
+  --sheet-w: 520px;
+  --row-h: 40px;
+  --row-h-compact: 32px;
+
+  --icon-inline: 16px;
+  --icon-control: 20px;
+  --icon-nav: 24px;
+  --touch-target: 44px;
+
+  --z-base: 0;
+  --z-sticky: 10;
+  --z-dropdown: 20;
+  --z-sheet: 30;
+  --z-modal: 40;
+  --z-toast: 50;
+  --z-tooltip: 60;
 
   --dur-instant: 0ms;
   --dur-fast: 120ms;

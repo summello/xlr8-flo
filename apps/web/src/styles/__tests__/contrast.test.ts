@@ -284,20 +284,77 @@ function parseSupportingTokens(source: string): SupportingTokens {
   expected.light["--lit-edge"] = documentedEdges[0]![1]!.trim();
   expected.dark["--lit-edge"] = documentedEdges[1]![1]!.trim();
 
+  const typography = section(source, "## 4. Typography", "## 5. Space");
+  const fontCode = section(typography, "```css", "```");
+  Object.assign(expected.light, declarations(fontCode));
+  const documentedTypeScale = parsedTableRows(typography, "section 4", (row) => {
+    const role = row[0]?.toLocaleLowerCase().replace(/\s+/g, "-");
+    const dimensions = row[1]?.match(/^(\d+)\s*\/\s*(\d+)$/);
+    const weight = row[2]?.match(/^\d+$/)?.[0];
+    const tracking = row[3]
+      ?.replace("−", "-")
+      .replace(/^\+/, "")
+      .match(/^-?(?:\d+(?:\.\d+)?)(?:em)?/)?.[0];
+    if (
+      role === undefined ||
+      dimensions == null ||
+      weight === undefined ||
+      tracking === undefined
+    ) {
+      return undefined;
+    }
+    return {
+      leading: `${dimensions[2]}px`,
+      role,
+      size: `${dimensions[1]}px`,
+      tracking,
+      weight,
+    };
+  });
+  for (const { leading, role, size, tracking, weight } of documentedTypeScale) {
+    expected.light[`--text-${role}`] = size;
+    expected.light[`--leading-${role}`] = leading;
+    expected.light[`--weight-${role}`] = weight;
+    expected.light[`--tracking-${role}`] = tracking;
+  }
+  const mobileInputSize = typography.match(
+    /Two exceptions where (\d+px) is mandatory:\**\s*any input below \d+px/,
+  )?.[1];
+  if (mobileInputSize === undefined) {
+    throw new Error("MASTER.md does not document the mobile input text size");
+  }
+  expected.light["--text-input-mobile"] = mobileInputSize;
+
   const spacing = section(source, "## 5. Space", "## 6. Motion");
   const scale = spacing.match(/4px base grid\. `([^`]+)`/)?.[1];
   if (scale === undefined) throw new Error("MASTER.md does not document the spacing scale");
   for (const [index, value] of scale.split("·").map((item) => item.trim()).entries()) {
     expected.light[`--space-${index + 1}`] = `${value}px`;
   }
-  const radiusCode = section(spacing, "```css", "```");
-  for (const [token, value] of Object.entries(declarations(radiusCode))) {
-    if (token.startsWith("--radius-")) expected.light[token] = value;
-  }
+  Object.assign(expected.light, declarations(spacing));
 
   const motion = section(source, "## 6. Motion", "## 7. Components");
   const motionCode = section(motion, "```css", "```");
   Object.assign(expected.light, declarations(motionCode));
+
+  const components = section(source, "## 7. Components", "## 8. Definition");
+  const icons = section(components, "### 7.10 Icons", "---");
+  const documentedIconSizes = icons.match(
+    /(\d+px) inline\s*\/\s*(\d+px) control\s*\/\s*(\d+px) nav/,
+  );
+  if (documentedIconSizes === null) {
+    throw new Error("MASTER.md does not document all three icon sizes");
+  }
+  for (const [index, role] of ["inline", "control", "nav"].entries()) {
+    expected.light[`--icon-${role}`] = documentedIconSizes[index + 1]!;
+  }
+
+  const definitionOfDone = source.slice(source.indexOf("## 8. Definition"));
+  const touchTarget = definitionOfDone.match(/Touch targets\s*≥\s*(\d+px)/)?.[1];
+  if (touchTarget === undefined) {
+    throw new Error("MASTER.md does not document the minimum touch target");
+  }
+  expected.light["--touch-target"] = touchTarget;
   return expected;
 }
 
@@ -399,7 +456,7 @@ describe("design token contract", () => {
     }
   });
 
-  it("transcribes the documented shadow, lit-edge, space, radius, and motion tokens", () => {
+  it("transcribes every documented supporting design token", () => {
     for (const [token, expectedValue] of Object.entries(supporting.light)) {
       expect(actual.light[token], `light: missing token ${token}`).toBeDefined();
       expect(normalize(actual.light[token]!), `light: ${token}`).toBe(normalize(expectedValue));

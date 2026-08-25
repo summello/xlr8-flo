@@ -43,7 +43,7 @@ test("the token baseline is accessible and paints its own background", async ({ 
     canvas: getComputedStyle(document.documentElement).getPropertyValue("--canvas").trim(),
   }));
   expect(paint.background).toBe(paint.canvas);
-  expect(await page.locator("a, button, input, select, textarea, [tabindex]").count()).toBe(0);
+  expect(await page.locator("a, button, input, select, textarea, [tabindex]").count()).toBeGreaterThan(0);
 
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);

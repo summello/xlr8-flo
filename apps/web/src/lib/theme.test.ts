@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -35,6 +38,17 @@ function fakeStorage() {
 }
 
 describe("theme preference", () => {
+  it("applies an explicit stored theme in the head before the app module loads", () => {
+    const indexPath = fileURLToPath(new URL("../../index.html", import.meta.url));
+    const index = readFileSync(indexPath, "utf8");
+    const prePaintTheme = index.indexOf('localStorage.getItem("xlr8flo.theme")');
+    const appModule = index.indexOf('<script type="module" src="/src/main.tsx"></script>');
+
+    expect(prePaintTheme, "missing blocking pre-paint theme script").toBeGreaterThan(-1);
+    expect(index).toContain('document.documentElement.setAttribute("data-theme", theme)');
+    expect(prePaintTheme, "theme script must run before the app module").toBeLessThan(appModule);
+  });
+
   it("persists an explicit preference and restores it on reload", () => {
     const storage = fakeStorage();
     const firstRoot = fakeRoot();

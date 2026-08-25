@@ -653,6 +653,43 @@
       },
       "recap": "Delivered tenant-scoped transactional idempotency for POST commands, including canonical body hashing, exact status/body replay, conflict responses, rollback-safe retries, and real-Postgres concurrency coverage. Idempotency-Key enforcement now fails closed for every POST except the named auth exemptions, and a missing tenant scope emits a warning with the affected path.",
       "title": "Idempotency middleware keyed on (org, key, body hash)"
+    },
+    {
+      "story": "E04-S02",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "deepseek",
+          "to": "opus",
+          "role": "reviewer",
+          "reason": "Policy change mid-story (commit 6cfd45f): per-story review is Opus alone, and qwen and deepseek move to release review of the milestone diff. deepseek had already reviewed round 1 and its verdict stood at changes_requested against a diff that no longer exists. All four of its findings were upheld by Opus, cited in reviews/E04-S02.opus.json, and fixed in round 2; its verdict file was removed rather than edited, because a reviewer's verdict is not something another agent rewrites. Its round-1 findings are preserved verbatim in notes.deepseek_round1."
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a036dd-ad19-78a1-b43b-4756253291ba",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "6943502c-d56e-4353-af9a-3f691bb26487",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented the responsive app shell, linked hierarchy breadcrumbs, synchronized document and visible page titles, route focus announcements, labelled landmarks, lifecycle navigation, and a permission-filtered command registry with fuzzy search, recents, shared shortcuts, destructive modifiers, and explicit nested-layer Escape ordering. Round 2 distinguishes mobile navigation closes from dismissals so route changes keep focus on main, keeps breadcrumb focus glow outside the ellipsis clip, and derives every supporting typography, dimension, stacking, icon, and touch-target token from MASTER.md; a planted 999px sidebar width failed by token name before restoration. Added @radix-ui/react-dialog because the binding design requires Radix focus trapping/layer semantics, replacing bespoke modal plumbing; added @phosphor-icons/react because the binding design mandates Phosphor and no existing icon dependency provides it. Browser coverage includes zero-frame palette opening, keyboard-only navigation and dismissal paths at 375px, responsive widths, greyscale, and axe in both themes.",
+      "title": "App shell: nav, breadcrumbs, command palette, focus management, skip links"
     }
   ]
 }

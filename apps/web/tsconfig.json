@@ -19,5 +19,5 @@
     "noUncheckedIndexedAccess": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "e2e", "playwright.config.ts", "tailwind.config.ts", "vite.config.ts"]
+  "include": ["src", "e2e", "tests", "playwright.config.ts", "tailwind.config.ts", "vite.config.ts"]
 }
