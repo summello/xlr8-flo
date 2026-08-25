@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Literal
 from urllib.parse import urlsplit
 
-from pydantic import AliasChoices, Field, SecretStr, field_validator
+from pydantic import AliasChoices, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 CGROUP_V2_MEMORY_LIMIT = Path("/sys/fs/cgroup/memory.max")
@@ -80,6 +80,16 @@ class Settings(BaseSettings):
     )
     identity_argon2_parallelism: int = Field(default=4, ge=1, le=16)
     identity_argon2_max_concurrency: int = Field(default=4, ge=1, le=32)
+    session_idle_timeout_seconds: int = Field(default=8 * 60 * 60, ge=60)
+    session_absolute_timeout_seconds: int = Field(default=12 * 60 * 60, ge=60)
+
+    @model_validator(mode="after")
+    def require_ordered_session_timeouts(self) -> Settings:
+        """Keep the sliding expiry at or before the fixed absolute deadline."""
+
+        if self.session_absolute_timeout_seconds < self.session_idle_timeout_seconds:
+            raise ValueError("session absolute timeout must be at least the idle timeout")
+        return self
 
     @field_validator("database_url")
     @classmethod

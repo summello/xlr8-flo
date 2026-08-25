@@ -172,7 +172,7 @@ epics:
           - SEC-007
         dep:
           - E02-S01
-        st: todo
+        st: done
       - id: E02-S03
         t: 'Password reset: single-use short-lived tokens, no account enumeration'
         k: security
@@ -292,7 +292,7 @@ epics:
           - AUD-010
         dep:
           - E03-S02
-        st: todo
+        st: in_progress
       - id: E03-S05
         t: Idempotency middleware keyed on (org, key, body hash)
         k: concurrency
@@ -399,7 +399,7 @@ epics:
           - A11Y-004
         dep:
           - E04-S01
-        st: todo
+        st: in_progress
       - id: E04-S06
         t: "Material layer: tinted shadows, lit edge, grain, honest glass, glow focus ring"
         k: ui

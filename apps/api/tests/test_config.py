@@ -31,6 +31,29 @@ def test_argon2_cost_defaults_and_environment_override(
     assert Settings().identity_argon2_time_cost == 4
 
 
+def test_session_timeout_defaults_are_configurable_and_ordered(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    defaults = Settings()
+    assert defaults.session_idle_timeout_seconds == 8 * 60 * 60
+    assert defaults.session_absolute_timeout_seconds == 12 * 60 * 60
+
+    monkeypatch.setenv("FLO_SESSION_IDLE_TIMEOUT_SECONDS", "3600")
+    monkeypatch.setenv("FLO_SESSION_ABSOLUTE_TIMEOUT_SECONDS", "7200")
+    configured = Settings()
+    assert configured.session_idle_timeout_seconds == 3600
+    assert configured.session_absolute_timeout_seconds == 7200
+
+    with pytest.raises(
+        ValidationError,
+        match="session absolute timeout must be at least the idle timeout",
+    ):
+        Settings(
+            session_idle_timeout_seconds=7200,
+            session_absolute_timeout_seconds=3600,
+        )
+
+
 def test_argon2_memory_cost_cannot_consume_the_whole_instance() -> None:
     assert Settings(identity_argon2_memory_cost_kib=256 * 1024).identity_argon2_memory_cost_kib == (
         256 * 1024
