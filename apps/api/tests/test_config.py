@@ -49,6 +49,45 @@ def test_argon2_concurrency_is_bounded_by_configuration() -> None:
         Settings(identity_argon2_max_concurrency=33)
 
 
+def test_neon_database_url_requires_the_transaction_pooler_without_leaking_it() -> None:
+    direct_url = "postgresql://flo:do-not-log@ep-example.us-east-2.aws.neon.tech/flo"
+
+    with pytest.raises(ValidationError) as failure:
+        Settings(database_url=direct_url)
+
+    rendered = str(failure.value)
+    assert "DATABASE_URL must use the Neon pooled endpoint" in rendered
+    assert direct_url not in rendered
+    assert "do-not-log" not in rendered
+
+
+def test_neon_pooled_and_local_database_urls_are_accepted() -> None:
+    pooled = "postgresql://flo:secret@ep-example-pooler.us-east-2.aws.neon.tech/flo"
+    local = "postgresql://flo:flo-local@127.0.0.1:5432/flo_test"
+
+    assert Settings(database_url=pooled).database_url is not None
+    assert Settings(database_url=local).database_url is not None
+
+
+def test_storage_secrets_are_masked_in_settings_output() -> None:
+    settings = Settings(
+        origin_shared_secret="a-private-origin-secret-at-least-32-bytes",
+        storage_access_key_id="private-access",
+        storage_secret_access_key="private-secret",
+    )
+
+    rendered = repr(settings)
+    assert "a-private-origin-secret-at-least-32-bytes" not in rendered
+    assert "private-access" not in rendered
+    assert "private-secret" not in rendered
+    assert rendered.count("**********") >= 3
+
+
+def test_origin_shared_secret_rejects_short_values() -> None:
+    with pytest.raises(ValidationError):
+        Settings(origin_shared_secret="too-short")
+
+
 def test_startup_refuses_a_cgroup_below_the_argon2_requirement(tmp_path: Path) -> None:
     memory_limit = tmp_path / "memory.max"
     memory_limit.write_text(str(511 * 1024 * 1024), encoding="ascii")

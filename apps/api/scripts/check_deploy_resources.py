@@ -14,6 +14,19 @@ ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 DEFAULT_CONFIG = ROOT / "apps" / "api" / "src" / "flo" / "kernel" / "config.py"
 BASELINE_MEMORY_MIB = 256
+REQUIRED_SECRET_REFERENCES = {
+    "DATABASE_URL": "flo-database-url:latest",
+    "ORIGIN_SHARED_SECRET": "flo-origin-shared-secret:latest",
+    "S3_ACCESS_KEY_ID": "flo-r2-access-key-id:latest",
+    "S3_SECRET_ACCESS_KEY": "flo-r2-secret-access-key:latest",
+}
+REQUIRED_RUNTIME_CONFIGURATION = {
+    "S3_BUCKET": "flo-attachments",
+    "S3_REGION": "auto",
+    "CLOUD_RUN_SERVICE": "flo-api",
+    "ARTIFACT_REGISTRY_LOCATION": "us-central1",
+    "ARTIFACT_REGISTRY_REPOSITORY": "flo",
+}
 
 
 def _integer_expression(node: ast.expr) -> int:
@@ -87,6 +100,17 @@ def _memory_mib(value: str) -> int:
     return amount * 1024 if match.group(2) == "Gi" else amount
 
 
+def _assignments(value: str, flag: str) -> dict[str, str]:
+    value = value.strip("\"'")
+    assignments: dict[str, str] = {}
+    for item in value.split(","):
+        name, separator, configured = item.partition("=")
+        if not separator or not name or not configured:
+            raise ValueError(f"--{flag} must be comma-separated NAME=value assignments")
+        assignments[name] = configured
+    return assignments
+
+
 def validate(workflow_path: Path, config_path: Path) -> list[str]:
     defaults = _settings_defaults(config_path)
     command = _cloud_run_deploy_command(workflow_path)
@@ -125,6 +149,24 @@ def validate(workflow_path: Path, config_path: Path) -> list[str]:
             "default compute service account, which holds no "
             "secretmanager.secretAccessor and cannot read DATABASE_URL"
         )
+
+    secrets = _assignments(_flag(command, "set-secrets"), "set-secrets")
+    for name, reference in REQUIRED_SECRET_REFERENCES.items():
+        if secrets.get(name) != reference:
+            failures.append(
+                f"Cloud Run secret reference is MISSING or wrong: {name}={reference}"
+            )
+
+    runtime = _assignments(_flag(command, "set-env-vars"), "set-env-vars")
+    for name, configured in REQUIRED_RUNTIME_CONFIGURATION.items():
+        if runtime.get(name) != configured:
+            failures.append(
+                f"Cloud Run runtime configuration is MISSING or wrong: {name}={configured}"
+            )
+    if runtime.get("S3_ENDPOINT_URL") != "${R2_ENDPOINT_URL}":
+        failures.append("Cloud Run S3_ENDPOINT_URL must come from the R2_ENDPOINT_URL variable")
+    if runtime.get("GCP_PROJECT") != "${GCP_PROJECT}":
+        failures.append("Cloud Run GCP_PROJECT must come from the GCP_PROJECT identifier")
     return failures
 
 

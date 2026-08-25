@@ -690,6 +690,36 @@
       },
       "recap": "Implemented the responsive app shell, linked hierarchy breadcrumbs, synchronized document and visible page titles, route focus announcements, labelled landmarks, lifecycle navigation, and a permission-filtered command registry with fuzzy search, recents, shared shortcuts, destructive modifiers, and explicit nested-layer Escape ordering. Round 2 distinguishes mobile navigation closes from dismissals so route changes keep focus on main, keeps breadcrumb focus glow outside the ellipsis clip, and derives every supporting typography, dimension, stacking, icon, and touch-target token from MASTER.md; a planted 999px sidebar width failed by token name before restoration. Added @radix-ui/react-dialog because the binding design requires Radix focus trapping/layer semantics, replacing bespoke modal plumbing; added @phosphor-icons/react because the binding design mandates Phosphor and no existing icon dependency provides it. Browser coverage includes zero-frame palette opening, keyboard-only navigation and dismissal paths at 375px, responsive widths, greyscale, and axe in both themes.",
       "title": "App shell: nav, breadcrumbs, command palette, focus management, skip links"
+    },
+    {
+      "story": "E01-S06",
+      "kind": "chore",
+      "size": "M",
+      "tags": [
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 3,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a036d5-5151-7092-bfc1-13d3450c9984",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "6943502c-d56e-4353-af9a-3f691bb26487",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Neon pooled-endpoint and SET LOCAL guards, private R2 Storage wiring, four-source quota reporting with action/cost alerts, verified three-image pruning, and a from-zero operator runbook are complete. Round 2 adds one SecretStr-backed origin secret shared by Cloud Run and the Cloudflare Worker: all API and internal routes return 404 before opening provider connections when it is absent or wrong, every proxied and scheduled quota request carries the encrypted binding, and the deploy/runbook contract provisions both copies without exposing the value. D-08 uses the Cloudflare Cron Trigger rather than a second Google Cloud Scheduler job. QUOTA_POLICIES is the runtime source of truth for alert limits, bands, actions, and costs; docs/claude-plan.md section 7 remains the strategic graduation summary. No live provider call was attempted.",
+      "title": "Neon + R2 + Secret Manager wiring, infra/SETUP.md, registry pruning"
     }
   ]
 }

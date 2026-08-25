@@ -1,114 +1,429 @@
-# Production deployment setup
+# Production environment setup
 
-The `deploy` job in `.github/workflows/ci.yml` releases `main` after every required CI job
-passes. It builds the API image locally, blocks on the container scan, attaches an image SBOM,
-pushes the scanned image, runs the migration job, deploys the API by digest, scans the SPA bundle,
-deploys the `/api/*` Worker route, and publishes the SPA to Cloudflare Pages. Milestone branches
-build and test but never deploy.
+This runbook provisions the production contract used by `.github/workflows/ci.yml`: one GCP
+project, Workload Identity Federation (WIF), Neon PostgreSQL 17 through its pooled endpoint,
+private Cloudflare R2 storage, one Secret Manager secret per credential, Artifact Registry,
+Cloud Run, Cloudflare Pages, and the single public origin `xlr8flo.summello.com`.
 
-Provisioning Neon, R2, Secret Manager, Artifact Registry, the Cloud Run migration job, and service
-accounts belongs to E01-S06. This runbook records the deployment contract those resources must
-satisfy.
+Run these steps from an operator workstation, never from a story worktree. Commands use placeholders
+and resource identifiers only. Secret values are read directly from the macOS keychain into the
+receiving provider; they are never placed in a file, command argument, shell variable, or terminal
+output. Do not enable shell tracing while provisioning.
 
-Two of those resources must exist before the **first** deploy or it fails, and the failure is not
-obvious from the workflow log:
+## 1. Record the non-secret identifiers
 
-- **`flo-runtime@<project>.iam.gserviceaccount.com`**, holding `roles/secretmanager.secretAccessor`,
-  and with the deploy service account granted `roles/iam.serviceAccountUser` on it. The deploy step
-  passes `--service-account`; without the account, or without that binding, the revision either
-  fails to deploy or comes up unable to read `DATABASE_URL`. `check_deploy_resources.py` asserts the
-  flag is present, but it cannot assert the account exists in GCP.
-- **The `flo-migrate` Cloud Run job.** `migrations/` already contains two migrations, so the migrate
-  step runs on every deploy and is not conditional. If the job does not exist the deploy fails at
-  that step, before any new revision serves — which is the intended ordering, not a bug.
+Choose these values once and substitute them consistently:
 
-## GitHub deployment configuration
+| Placeholder | Required value |
+|---|---|
+| `GCP_PROJECT_ID` | Globally unique GCP project id |
+| `GCP_PROJECT_NUMBER` | Numeric project number shown after project creation |
+| `GITHUB_OWNER/GITHUB_REPOSITORY` | Repository allowed to exchange GitHub OIDC tokens |
+| `CLOUDFLARE_ACCOUNT_ID` | Account that owns the zone, R2, Worker, and Pages project |
+| `R2_ACCOUNT_ID` | Account id used in `https://R2_ACCOUNT_ID.r2.cloudflarestorage.com` |
+| `INITIAL_IMAGE_DIGEST` | A scanned `us-central1-docker.pkg.dev/...@sha256:...` API image |
 
-Configure GitHub's GCP trust with Workload Identity Federation. Do not create or download a service
-account key. The deploy job accepts only these GCP secrets:
+The fixed resource names are:
 
-- `GCP_WIF_PROVIDER`: full Workload Identity Provider resource name.
-- `GCP_DEPLOY_SA`: deploy service account email trusted by that provider.
-- `GCP_PROJECT`: GCP project id.
+- region `us-central1`
+- Artifact Registry repository `flo`, image `flo-api`
+- Cloud Run service `flo-api`, migration job `flo-migrate`
+- runtime service account `flo-runtime`, deploy service account `flo-deploy`
+- R2 bucket `flo-attachments`
+- Pages project `flo-web`
+- Secret Manager secrets `flo-database-url`, `flo-origin-shared-secret`,
+  `flo-r2-access-key-id`, and `flo-r2-secret-access-key`
 
-Configure these Cloudflare secrets:
+## 2. Create and secure the GCP project
 
-- `CLOUDFLARE_API_TOKEN`: scoped to edit Workers scripts/routes and the `flo-web` Pages project.
-- `CLOUDFLARE_ACCOUNT_ID`: account that owns the Pages project.
-
-Set the GitHub repository variable `CLOUD_RUN_ORIGIN` to the service's HTTPS `run.app` origin, with
-no trailing path. It is injected only into the Worker; it is never a `VITE_` variable. D-17 fixes
-the browser API base to the relative string `/api` in `apps/web/.env.production`. The deploy job
-rejects assets containing `sk-`, `-----BEGIN`, the GCP project id, or the configured Cloud Run
-hostname before Wrangler can publish them.
-
-The GCP GitHub secrets contain resource identifiers, not credentials. The GitHub OIDC token is
-short-lived and exchanged through WIF. A `credentials_json` input or service-account JSON secret is
-not part of this deployment.
-
-## Cloud Run contract
-
-The `flo-api` service is deployed in `us-central1` with 1 GiB memory, 2 CPUs, concurrency 80, zero
-minimum instances, `--ingress all`, and `DATABASE_URL` sourced from
-`flo-database-url:latest` in Secret Manager. The workflow's resource check derives the Argon2
-memory requirement from application defaults and fails if these flags drift below it.
-
-`--ingress all` leaves the default `run.app` URL reachable from the public internet. A Cloudflare
-Worker reaches that URL over the public internet; Cloudflare is not a GCP load balancer or a
-chokepoint in this topology. Callers can therefore bypass both the Worker and any edge rate limit,
-including the E19-S03 control, until an origin-authentication control ships.
-
-There are two tracked ways to close the bypass. The preferred free control depends on E01-S06:
-provision and rotate a shared origin secret in Secret Manager, inject it into the Cloudflare Worker
-and API runtimes, have the Worker attach it to origin requests, and have the API reject requests
-whose secret is missing or invalid. Cloud Run ingress remains `all`, but direct requests fail API
-authentication. The graduation alternative is to point the Worker at a paid Google External
-Application Load Balancer, switch Cloud Run to `--ingress internal-and-cloud-load-balancing`, and
-verify that the `run.app` URL rejects direct traffic. Do not switch ingress before one complete
-origin path is deployed, because doing so would make every `/api/*` request fail.
-
-The image is pushed only after a blocking CRITICAL/HIGH Trivy scan. The deployment input is the
-registry result in the form
-`us-central1-docker.pkg.dev/PROJECT/flo/flo-api@sha256:DIGEST`; a mutable tag is never passed to
-Cloud Run. The registry cleanup retains the three newest image versions to stay inside the 0.5 GB
-free tier.
-
-The deploy order is intentionally fixed:
-
-1. Execute `flo-migrate` with `--wait`.
-2. Deploy the new `flo-api` revision by digest only after the job exits successfully.
-
-To verify the failure path, point a temporary branch of the migration job at a migration that exits
-non-zero and run the workflow manually in an isolated GCP test project. The `Deploy API by immutable
-digest` step must be skipped and the revision receiving traffic before the run must remain at 100%.
-Revert the planted migration immediately and link both workflow runs in the milestone PR.
-
-After a successful deployment, verify the immutable image and readiness:
+1. In the GCP console, create `GCP_PROJECT_ID`, attach the production billing account, and set a
+   budget notification. A billing account is required to activate Cloud Run even while usage stays
+   inside the free tier.
+2. Select the project and enable the required APIs:
 
 ```bash
-gcloud run services describe flo-api --region us-central1 \
+gcloud config set project GCP_PROJECT_ID
+gcloud services enable \
+  artifactregistry.googleapis.com \
+  iamcredentials.googleapis.com \
+  monitoring.googleapis.com \
+  run.googleapis.com \
+  secretmanager.googleapis.com \
+  sts.googleapis.com
+```
+
+3. Create the Docker repository and the two service accounts:
+
+```bash
+gcloud artifacts repositories create flo \
+  --repository-format=docker \
+  --location=us-central1 \
+  --description='XLR8 FLO production images'
+
+gcloud iam service-accounts create flo-runtime \
+  --display-name='XLR8 FLO Cloud Run runtime'
+gcloud iam service-accounts create flo-deploy \
+  --display-name='XLR8 FLO GitHub deployer'
+```
+
+4. Grant the runtime identity only the non-secret read roles needed by the quota collectors:
+
+```bash
+gcloud projects add-iam-policy-binding GCP_PROJECT_ID \
+  --member='serviceAccount:flo-runtime@GCP_PROJECT_ID.iam.gserviceaccount.com' \
+  --role='roles/monitoring.viewer'
+gcloud projects add-iam-policy-binding GCP_PROJECT_ID \
+  --member='serviceAccount:flo-runtime@GCP_PROJECT_ID.iam.gserviceaccount.com' \
+  --role='roles/artifactregistry.reader'
+```
+
+5. Grant the deploy identity permission to update Cloud Run and push images. Grant service-account
+   use on `flo-runtime` at that account, not project-wide:
+
+```bash
+gcloud projects add-iam-policy-binding GCP_PROJECT_ID \
+  --member='serviceAccount:flo-deploy@GCP_PROJECT_ID.iam.gserviceaccount.com' \
+  --role='roles/run.admin'
+gcloud projects add-iam-policy-binding GCP_PROJECT_ID \
+  --member='serviceAccount:flo-deploy@GCP_PROJECT_ID.iam.gserviceaccount.com' \
+  --role='roles/artifactregistry.writer'
+gcloud iam service-accounts add-iam-policy-binding \
+  flo-runtime@GCP_PROJECT_ID.iam.gserviceaccount.com \
+  --member='serviceAccount:flo-deploy@GCP_PROJECT_ID.iam.gserviceaccount.com' \
+  --role='roles/iam.serviceAccountUser'
+```
+
+No service-account JSON key is created or downloaded.
+
+## 3. Configure GitHub Workload Identity Federation
+
+1. Create a dedicated pool and GitHub OIDC provider. The repository condition is mandatory; it
+   prevents an unrelated repository from presenting a valid GitHub token to this provider.
+
+```bash
+gcloud iam workload-identity-pools create github \
+  --location=global \
+  --display-name='GitHub Actions'
+
+gcloud iam workload-identity-pools providers create-oidc github \
+  --location=global \
+  --workload-identity-pool=github \
+  --display-name='GitHub repository provider' \
+  --issuer-uri='https://token.actions.githubusercontent.com' \
+  --attribute-mapping='google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.ref=assertion.ref' \
+  --attribute-condition="assertion.repository == 'GITHUB_OWNER/GITHUB_REPOSITORY'"
+```
+
+2. Allow only that repository principal set to impersonate `flo-deploy`:
+
+```bash
+gcloud iam service-accounts add-iam-policy-binding \
+  flo-deploy@GCP_PROJECT_ID.iam.gserviceaccount.com \
+  --role='roles/iam.workloadIdentityUser' \
+  --member='principalSet://iam.googleapis.com/projects/GCP_PROJECT_NUMBER/locations/global/workloadIdentityPools/github/attribute.repository/GITHUB_OWNER/GITHUB_REPOSITORY'
+```
+
+3. Record the provider resource name without exposing a credential:
+
+```bash
+gcloud iam workload-identity-pools providers describe github \
+  --location=global \
+  --workload-identity-pool=github \
+  --format='value(name)'
+```
+
+## 4. Create Neon and capture only the pooled URL
+
+1. In the Neon console, create the production project on PostgreSQL 17 in the region closest to
+   `us-central1`. Create the production database and a least-privilege application role.
+2. Open **Connect**, select the application role and database, enable **Pooled connection**, and
+   require TLS. The hostname must contain `-pooler.` and the URL must include `sslmode=require`.
+   A hostname without `-pooler` is the session endpoint and is forbidden: the API rejects it at
+   startup. Transaction pooling is compatible with tenant RLS because the application uses
+   `SET LOCAL`; session-scoped `SET` is blocked by CI.
+3. Store the complete pooled URL in the macOS keychain without printing it:
+
+```bash
+security add-generic-password -U -a "$USER" -s FLO_PROD_DATABASE_URL -w
+```
+
+Paste the value only at the hidden keychain prompt.
+
+## 5. Create the private R2 bucket and scoped token
+
+1. In Cloudflare **R2 Object Storage**, create bucket `flo-attachments` in the automatic location.
+2. Keep public development URLs disabled, attach no public custom domain, and confirm the bucket
+   has no public access policy.
+3. Create an R2 API token scoped to **Object Read & Write** on the single `flo-attachments` bucket.
+   Do not grant account-wide bucket administration.
+4. At the one-time credential display, place each value in its own keychain item:
+
+```bash
+security add-generic-password -U -a "$USER" -s FLO_PROD_R2_ACCESS_KEY_ID -w
+security add-generic-password -U -a "$USER" -s FLO_PROD_R2_SECRET_ACCESS_KEY -w
+```
+
+5. Record the non-secret S3 endpoint as
+   `https://R2_ACCOUNT_ID.r2.cloudflarestorage.com`. The runtime uses region `auto` and bucket
+   `flo-attachments`.
+6. Create a random origin-authentication value of at least 32 bytes in a password manager, then
+   paste it only at this hidden keychain prompt:
+
+```bash
+security add-generic-password -U -a "$USER" -s FLO_PROD_ORIGIN_SHARED_SECRET -w
+```
+
+   This value is shared only by Cloud Run and the Cloudflare Worker. It is never sent to a browser.
+
+## 6. Create one Secret Manager secret per value
+
+Create exactly four secret resources, then pipe each keychain value directly into a new version:
+
+```bash
+gcloud secrets create flo-database-url --replication-policy=automatic
+gcloud secrets create flo-origin-shared-secret --replication-policy=automatic
+gcloud secrets create flo-r2-access-key-id --replication-policy=automatic
+gcloud secrets create flo-r2-secret-access-key --replication-policy=automatic
+
+security find-generic-password -a "$USER" -s FLO_PROD_DATABASE_URL -w \
+  | gcloud secrets versions add flo-database-url --data-file=-
+security find-generic-password -a "$USER" -s FLO_PROD_ORIGIN_SHARED_SECRET -w \
+  | gcloud secrets versions add flo-origin-shared-secret --data-file=-
+security find-generic-password -a "$USER" -s FLO_PROD_R2_ACCESS_KEY_ID -w \
+  | gcloud secrets versions add flo-r2-access-key-id --data-file=-
+security find-generic-password -a "$USER" -s FLO_PROD_R2_SECRET_ACCESS_KEY -w \
+  | gcloud secrets versions add flo-r2-secret-access-key --data-file=-
+```
+
+Grant `flo-runtime` access on each secret resource, not all secrets in the project:
+
+```bash
+for secret_name in flo-database-url flo-origin-shared-secret flo-r2-access-key-id flo-r2-secret-access-key; do
+  gcloud secrets add-iam-policy-binding "$secret_name" \
+    --member='serviceAccount:flo-runtime@GCP_PROJECT_ID.iam.gserviceaccount.com' \
+    --role='roles/secretmanager.secretAccessor'
+done
+```
+
+The application reads process environment injected by Cloud Run. It has no secrets-file setting
+and never calls Secret Manager directly. Rotation of the origin secret must update both the GCP
+secret version and the Cloudflare Worker secret binding before the old Cloud Run revision is
+retired. Never edit an ordinary config file.
+
+## 7. Bootstrap the Cloud Run migration job
+
+The deploy workflow updates this job to the newly scanned image digest before every execution. It
+must exist before the first `main` deploy. `INITIAL_IMAGE_DIGEST` must be an immutable, scanned
+application image containing the migration command delivered by the deployment story.
+
+```bash
+gcloud run jobs create flo-migrate \
+  --region=us-central1 \
+  --image=INITIAL_IMAGE_DIGEST \
+  --service-account=flo-runtime@GCP_PROJECT_ID.iam.gserviceaccount.com \
+  --set-secrets=DATABASE_URL=flo-database-url:latest \
+  --command=alembic \
+  --args=upgrade,head \
+  --max-retries=0 \
+  --task-timeout=10m
+```
+
+Describe the job and confirm the image contains `@sha256:`, the runtime account is `flo-runtime`,
+and `DATABASE_URL` is a `secretKeyRef`; no secret value should appear:
+
+```bash
+gcloud run jobs describe flo-migrate --region=us-central1 --format=yaml
+```
+
+## 8. Configure GitHub deployment settings
+
+In **Repository settings → Secrets and variables → Actions**, create only these repository secrets:
+
+| Secret | Value |
+|---|---|
+| `GCP_WIF_PROVIDER` | Full WIF provider resource name from step 3 |
+| `GCP_DEPLOY_SA` | `flo-deploy@GCP_PROJECT_ID.iam.gserviceaccount.com` |
+| `GCP_PROJECT` | `GCP_PROJECT_ID` |
+| `CLOUDFLARE_API_TOKEN` | Token scoped to Workers scripts/routes and the `flo-web` Pages project |
+| `CLOUDFLARE_ACCOUNT_ID` | Owning Cloudflare account id |
+
+Create these repository variables:
+
+| Variable | Value |
+|---|---|
+| `R2_ENDPOINT_URL` | `https://R2_ACCOUNT_ID.r2.cloudflarestorage.com` |
+| `CLOUD_RUN_ORIGIN` | The `https://...run.app` origin after the first service creation |
+
+The GCP values are identifiers, not credentials. A `credentials_json` input or service-account key
+is not part of this deployment. Do not add either one, the Neon URL, or either R2 key to GitHub.
+
+## 9. Create Cloudflare Pages, Worker access, and DNS
+
+1. In Cloudflare Pages, create project `flo-web`. Production assets are uploaded by Wrangler; do
+   not connect a second automatic Git build.
+2. Create a Cloudflare API token limited to this account with Pages edit, Workers Scripts edit,
+   Workers Routes edit, and Zone read. Store it only in the GitHub secret from step 8.
+3. Attach `xlr8flo.summello.com` as the `flo-web` custom domain. If Cloudflare does not create it
+   automatically, add a proxied CNAME record named `xlr8flo` targeting `flo-web.pages.dev`.
+4. The checked-in `infra/cloudflare/wrangler.toml` deploys the more-specific
+   `xlr8flo.summello.com/api/*` Worker route. All unmatched paths continue to Pages. `workers_dev`
+   stays disabled; do not create a second public API hostname.
+5. From a clean checkout with `apps/web` dependencies installed, copy the same origin secret into
+   the Worker's encrypted `ORIGIN_SHARED_SECRET` binding without printing it or writing a file:
+
+```bash
+security find-generic-password -a "$USER" -s FLO_PROD_ORIGIN_SHARED_SECRET -w \
+  | npx wrangler secret put ORIGIN_SHARED_SECRET --config infra/cloudflare/wrangler.toml
+```
+
+   `wrangler.toml` declares this binding as required, so later deploys fail closed if it is absent.
+   Wrangler preserves encrypted secret bindings across ordinary code deploys. The Worker overwrites
+   any caller-supplied `X-FLO-Origin-Secret` header on every proxied request.
+6. The same Worker has a one-minute Cron Trigger and calls `/internal/health/quota` from its
+   scheduled handler with the encrypted binding. This is the scheduler selected by D-08; do not
+   create a second Google Cloud Scheduler job. Confirm **Workers & Pages → flo-api-proxy →
+   Triggers** shows `* * * * *` and **Settings → Variables and Secrets** shows
+   `ORIGIN_SHARED_SECRET` as encrypted.
+7. In **SSL/TLS**, select **Full (strict)**. Enable **Always Use HTTPS**. After the Pages certificate
+   is active and HTTPS has been stable, enable HSTS with a conservative max-age; include subdomains
+   only when every subdomain is HTTPS-ready.
+
+Cloud Run ingress remains `all` because a Cloudflare Worker is not a Google load balancer. The
+shared-secret dependency returns the same HTTP 404 for every request to the default `run.app` URL
+that lacks the Worker header, closing that bypass without a paid load balancer. Do not switch to
+`internal-and-cloud-load-balancing`; it would break every `/api/*` request.
+
+## 10. First release and service configuration
+
+Push to `main` only through the milestone pull request. The deploy job authenticates through WIF,
+scans the local image, pushes it, resolves its digest, updates and executes `flo-migrate`, and then
+deploys `flo-api` with:
+
+- 1 GiB memory, 2 CPUs, concurrency 80, minimum instances 0
+- runtime identity `flo-runtime`
+- four Secret Manager references, never literal secret environment values
+- R2 endpoint/bucket/region and GCP resource identifiers as ordinary non-secret variables
+- immutable `@sha256:` image reference
+
+If this is the first service creation, copy its HTTPS `run.app` origin into the GitHub repository
+variable `CLOUD_RUN_ORIGIN`, then re-run the failed deploy job. Do not put that hostname in a
+`VITE_` variable or browser bundle.
+
+The fixed release order is:
+
+1. Scan the built image and generate its SBOM.
+2. Push it and resolve the immutable digest.
+3. Update and execute `flo-migrate --wait`.
+4. Deploy `flo-api` only after the migration exits zero.
+5. Run `prune_registry.py`, which deletes older versions, lists again, and fails unless the expected
+   three newest available digests remain.
+6. Deploy the path-scoped Worker and Pages assets.
+
+## 11. Verify Neon, R2, quotas, registry, and secret handling
+
+Run these checks from the operator workstation after a successful deployment.
+
+### Immutable image and pooled Neon
+
+```bash
+gcloud run services describe flo-api --region=us-central1 \
   --format='value(spec.template.spec.containers[0].image)'
 curl --fail --silent --show-error https://xlr8flo.summello.com/api/readyz
 ```
 
-The first command must return an `@sha256:` reference. Readiness must return HTTP 200 with Neon and
-R2 checks reported as `ok`.
+The image must contain `@sha256:`. Readiness must return HTTP 200 with `database` and `storage`
+reported as `ok`. In Neon **Monitoring → Connections**, verify application connections use the
+pooled endpoint. The application config guard independently rejects a Neon hostname without
+`-pooler`.
 
-## Cloudflare single origin and TLS
+### R2 round-trip through the Storage port
 
-Attach `xlr8flo.summello.com` as the custom domain of the `flo-web` Pages project. The checked-in
-Worker configuration adds only the more-specific route
-`xlr8flo.summello.com/api/*`: that route strips `/api` and proxies to `CLOUD_RUN_ORIGIN`, while
-every unmatched path continues to the Pages origin. `workers_dev` is disabled, and there is no
-second public API hostname. Deploying with Wrangler keeps the route in source control.
+Create a one-off job using the serving digest and the same secret references. It runs
+`python -m flo.kernel.storage`, which writes random bytes through the `Storage` port, reads and
+compares them, and deletes the object in a `finally` block. It prints no SDK exception details.
 
-In **SSL/TLS**, choose **Full (strict)** so Cloudflare validates the Cloud Run origin certificate.
-In **Edge Certificates**, enable **Always Use HTTPS** and HSTS only after the custom domain has a
-valid certificate. Use a conservative initial HSTS max-age, then raise it after the domain is
-stable; include subdomains only when every subdomain is HTTPS-ready. Same-origin API responses must
-not add CORS middleware or `Access-Control-Allow-Origin`; needing either means D-17 has been broken.
+```bash
+gcloud run jobs create flo-storage-smoke \
+  --region=us-central1 \
+  --image="$(gcloud run services describe flo-api --region=us-central1 --format='value(spec.template.spec.containers[0].image)')" \
+  --service-account=flo-runtime@GCP_PROJECT_ID.iam.gserviceaccount.com \
+  --set-secrets=S3_ACCESS_KEY_ID=flo-r2-access-key-id:latest,S3_SECRET_ACCESS_KEY=flo-r2-secret-access-key:latest \
+  --set-env-vars="S3_ENDPOINT_URL=https://R2_ACCOUNT_ID.r2.cloudflarestorage.com,S3_BUCKET=flo-attachments,S3_REGION=auto" \
+  --command=python \
+  --args=-m,flo.kernel.storage \
+  --max-retries=0
+gcloud run jobs execute flo-storage-smoke --region=us-central1 --wait
+gcloud run jobs delete flo-storage-smoke --region=us-central1 --quiet
+```
 
-Verify the edge behavior from outside the Cloudflare and GCP networks:
+The execution must print `storage round-trip passed and the smoke object was deleted`. Confirm the
+R2 bucket has no `operator-smoke/` object afterward.
+
+### Quota document and alert actions
+
+```bash
+curl --fail --silent --show-error \
+  https://xlr8flo.summello.com/api/internal/health/quota
+```
+
+The document must contain exactly `neon_storage`, `cloud_run_requests`, `r2_storage`, and
+`artifact_registry`, each with `current`, `limit`, `unit`, and `percentage`. A crossed policy also
+appears in `alerts` and emits a structured warning containing its pre-agreed action and cost:
+
+| Metric | Alerts | Action | Cost |
+|---|---:|---|---:|
+| Neon storage, 512 MB | 60 / 80 / 90 % | Archive audit partitions to R2 first; then Neon Launch | $19/mo |
+| Cloud Run, 2M requests/month | 60 / 80 / 90 % | Still free; set `min-instances=1` for latency | ~$8–15/mo |
+| R2 storage, 10 GB | 60 / 80 / 90 % | Pay-as-you-go | ~$0.15/mo per 10 GB |
+| Artifact Registry, 0.5 GB | 80 % | Prune to 3 images (automate first) | ~$0 |
+
+The Cloudflare Cron Trigger calls this endpoint every minute through the scheduled Worker handler.
+The edge Worker adds the same encrypted header for manual and scheduled calls; the value never
+appears in this command, the response, or Worker logs.
+
+### Registry pruning after four deploys
+
+After four successful deploys, list the versions:
+
+```bash
+gcloud artifacts docker images list \
+  us-central1-docker.pkg.dev/GCP_PROJECT_ID/flo/flo-api \
+  --sort-by='~UPDATE_TIME' \
+  --format='table(version,updateTime,imageSizeBytes)'
+```
+
+Exactly three digests must remain. The deploy job itself verifies the same condition after every
+delete; a successful delete command that leaves an image behind makes the job fail.
+
+### Secret non-disclosure
+
+```bash
+gcloud run services describe flo-api --region=us-central1 --format=yaml
+gcloud run jobs describe flo-migrate --region=us-central1 --format=yaml
+```
+
+The documents may show secret resource names and versions, but never values. Search the deployment
+logs and API error bodies for neither the Neon hostname/user nor either R2 credential. Do not run
+`env`, `printenv`, shell tracing, SDK wire logging, or a command that renders a secret version. API
+collector failures return a generic RFC 9457 503 and log only the failed metric name.
+
+Resolve the non-secret `run.app` URL and prove direct callers cannot discover either the public or
+internal API paths. Both calls must return HTTP 404 and must not open a Neon connection; the edge
+request with the Worker's correct binding must still return HTTP 200:
+
+```bash
+curl --silent --output /dev/null --write-out '%{http_code}\n' \
+  "$(gcloud run services describe flo-api --region=us-central1 --format='value(status.url)')/healthz"
+curl --silent --output /dev/null --write-out '%{http_code}\n' \
+  -H 'X-FLO-Origin-Secret: deliberately-wrong' \
+  "$(gcloud run services describe flo-api --region=us-central1 --format='value(status.url)')/internal/health/quota"
+curl --fail --silent --show-error \
+  https://xlr8flo.summello.com/api/internal/health/quota
+```
+
+## 12. Edge verification
+
+From outside the Cloudflare and GCP networks:
 
 ```bash
 curl --head http://xlr8flo.summello.com
@@ -116,28 +431,43 @@ curl --head https://xlr8flo.summello.com
 curl --fail --silent --show-error https://xlr8flo.summello.com/api/healthz
 ```
 
-The HTTP request must redirect to HTTPS. The HTTPS response must include
-`Strict-Transport-Security`, and the final request must return the Cloud Run health document through
-the same origin. Cloud Run's public endpoint is HTTPS-only; never expose the container's internal
-cleartext port directly.
+The HTTP request must redirect to HTTPS, the HTTPS response must include
+`Strict-Transport-Security`, and the API request must return the Cloud Run health document through
+the same origin. Same-origin responses must not contain CORS headers.
 
-## Rollback
+## 13. Rollback
+
+### API traffic
 
 List revisions and identify the revision immediately before the current one:
 
 ```bash
-gcloud run revisions list --service flo-api --region us-central1 \
+gcloud run revisions list --service=flo-api --region=us-central1 \
   --sort-by='~metadata.creationTimestamp' \
   --format='table(metadata.name,status.conditions[0].status,metadata.creationTimestamp)'
 ```
 
-Rollback is one traffic command against that previous revision:
+Move all traffic to that revision:
 
 ```bash
-gcloud run services update-traffic flo-api --region us-central1 \
+gcloud run services update-traffic flo-api --region=us-central1 \
   --to-revisions=PREVIOUS_REVISION=100
 ```
 
-Confirm `/readyz` and the application smoke path after traffic moves. Rollback changes traffic only;
-it does not reverse a database migration, so production migrations must remain backward-compatible
+Confirm `/readyz`, `/internal/health/quota`, and the application smoke path. Traffic rollback does
+not reverse a database migration, so every production migration must remain backward-compatible
 with the previously serving revision.
+
+### Pages and Worker
+
+In Cloudflare **Workers & Pages → flo-web → Deployments**, select the previous successful production
+deployment and choose **Rollback to this deployment**. If the Worker caused the incident, redeploy
+the last known-good repository commit with its checked-in `infra/cloudflare/wrangler.toml`; do not
+edit the route ad hoc in the dashboard. Re-run all three edge checks after rollback.
+
+### Failed migration
+
+The workflow uses `gcloud run jobs execute flo-migrate --wait` before `gcloud run deploy`. A
+non-zero migration therefore skips the new service revision and leaves existing traffic unchanged.
+Inspect the job execution, correct the migration in a new commit, and redeploy. Never bypass the job
+or manually point traffic at the unserved image.

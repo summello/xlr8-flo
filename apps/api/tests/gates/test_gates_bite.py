@@ -96,6 +96,16 @@ def assert_release_workflow_policy(source: str) -> None:
     assert 'grep -RIlF -- "$GCP_PROJECT" apps/web/dist' in source
 
 
+def assert_registry_prune_policy(source: str) -> None:
+    prune = workflow_step(
+        source,
+        "Prune registry to 3 images (Artifact Registry free tier is 0.5 GB)",
+    )
+    assert "python apps/api/scripts/prune_registry.py" in prune
+    assert '--image "us-central1-docker.pkg.dev/${GCP_PROJECT}/flo/flo-api"' in prune
+    assert '--current-image "${{ steps.push.outputs.digest }}"' in prune
+
+
 def assert_single_origin_release_policy(
     workflow: str,
     production_environment: str,
@@ -110,10 +120,13 @@ def assert_single_origin_release_policy(
     assert environment == {"VITE_API_BASE_URL": "/api"}
     assert "CLOUD_RUN_ORIGIN: ${{ vars.CLOUD_RUN_ORIGIN }}" in workflow
     assert "--ingress all" in workflow
+    assert "ORIGIN_SHARED_SECRET=flo-origin-shared-secret:latest" in workflow
     assert 'grep -RIlF -- "$cloud_run_host" apps/web/dist' in workflow
     assert "https?://xlr8flo\\.summello\\.com/api" in workflow
     assert workflow.index("npx wrangler deploy") < workflow.index("npx wrangler pages deploy")
     assert worker["workers_dev"] is False
+    assert worker["secrets"] == {"required": ["ORIGIN_SHARED_SECRET"]}
+    assert worker["triggers"] == {"crons": ["* * * * *"]}
     assert worker["routes"] == [
         {
             "pattern": "xlr8flo.summello.com/api/*",
@@ -315,6 +328,41 @@ def test_tenancy_openapi_rejects_org_id_parameter_and_then_passes(tmp_path: Path
     assert_accepts(run_tenancy(project))
 
 
+def test_postgres_pooling_guard_rejects_missing_roots_and_session_set_then_passes(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "src"
+    migrations = tmp_path / "migrations"
+    command = [
+        sys.executable,
+        str(ROOT / "apps" / "api" / "scripts" / "check_postgres_pooling.py"),
+        str(source),
+        str(migrations),
+    ]
+
+    assert_rejects(run_gate(command, cwd=tmp_path), "MISSING", "pooling scan root")
+
+    source.mkdir()
+    migrations.mkdir()
+    (source / "safe.py").write_text(
+        'STATEMENT = "SET LOCAL app.org_id = \'safe\'"\n',
+        encoding="utf-8",
+    )
+    violation = migrations / "planted.py"
+    violation.write_text(
+        'STATEMENT = "SET app.org_id = \'leaks-across-clients\'"\n',
+        encoding="utf-8",
+    )
+
+    assert_rejects(
+        run_gate(command, cwd=tmp_path),
+        "planted.py",
+        "session-scoped SET is forbidden",
+    )
+    violation.unlink()
+    assert_accepts(run_gate(command, cwd=tmp_path))
+
+
 def test_deploy_resource_check_rejects_argon2_memory_drift_and_then_passes(
     tmp_path: Path,
 ) -> None:
@@ -367,7 +415,10 @@ def test_deploy_resource_check_rejects_a_missing_runtime_service_account(
     clean_workflow = workflow.read_bytes()
     source = workflow.read_text(encoding="utf-8")
     stripped = re.sub(
-        r"\n\s*--service-account [^\n]*\\",
+        (
+            r"\n\s*--service-account [^\n]*\\"
+            r"(?=\n\s*--set-secrets DATABASE_URL=flo-database-url:latest,ORIGIN_SHARED)"
+        ),
         "",
         source,
         count=1,
@@ -388,6 +439,86 @@ def test_deploy_resource_check_rejects_a_missing_runtime_service_account(
     assert_accepts(run_gate(command, cwd=project))
 
 
+def test_deploy_resource_check_rejects_a_missing_r2_secret_mapping_and_then_passes(
+    tmp_path: Path,
+) -> None:
+    project = tmp_path / "repo"
+    workflow = project / ".github" / "workflows" / "ci.yml"
+    config = project / "apps" / "api" / "src" / "flo" / "kernel" / "config.py"
+    script = project / "apps" / "api" / "scripts" / "check_deploy_resources.py"
+    workflow.parent.mkdir(parents=True)
+    config.parent.mkdir(parents=True)
+    script.parent.mkdir(parents=True)
+    shutil.copy2(ROOT / ".github" / "workflows" / "ci.yml", workflow)
+    shutil.copy2(ROOT / "apps" / "api" / "src" / "flo" / "kernel" / "config.py", config)
+    shutil.copy2(ROOT / "apps" / "api" / "scripts" / "check_deploy_resources.py", script)
+    clean_workflow = workflow.read_bytes()
+    source = workflow.read_text(encoding="utf-8")
+    planted = source.replace(
+        ",S3_ACCESS_KEY_ID=flo-r2-access-key-id:latest",
+        "",
+        1,
+    )
+    assert planted != source, "the deploy step must map the R2 access-key secret"
+    workflow.write_text(planted, encoding="utf-8")
+    command = [
+        sys.executable,
+        str(script),
+        "--workflow",
+        str(workflow),
+        "--config",
+        str(config),
+    ]
+
+    assert_rejects(
+        run_gate(command, cwd=project),
+        "MISSING",
+        "S3_ACCESS_KEY_ID=flo-r2-access-key-id:latest",
+    )
+    workflow.write_bytes(clean_workflow)
+    assert_accepts(run_gate(command, cwd=project))
+
+
+def test_deploy_resource_check_rejects_a_missing_origin_secret_mapping_and_then_passes(
+    tmp_path: Path,
+) -> None:
+    project = tmp_path / "repo"
+    workflow = project / ".github" / "workflows" / "ci.yml"
+    config = project / "apps" / "api" / "src" / "flo" / "kernel" / "config.py"
+    script = project / "apps" / "api" / "scripts" / "check_deploy_resources.py"
+    workflow.parent.mkdir(parents=True)
+    config.parent.mkdir(parents=True)
+    script.parent.mkdir(parents=True)
+    shutil.copy2(ROOT / ".github" / "workflows" / "ci.yml", workflow)
+    shutil.copy2(ROOT / "apps" / "api" / "src" / "flo" / "kernel" / "config.py", config)
+    shutil.copy2(ROOT / "apps" / "api" / "scripts" / "check_deploy_resources.py", script)
+    clean_workflow = workflow.read_bytes()
+    source = workflow.read_text(encoding="utf-8")
+    planted = source.replace(
+        ",ORIGIN_SHARED_SECRET=flo-origin-shared-secret:latest",
+        "",
+        1,
+    )
+    assert planted != source, "the deploy step must map the origin shared secret"
+    workflow.write_text(planted, encoding="utf-8")
+    command = [
+        sys.executable,
+        str(script),
+        "--workflow",
+        str(workflow),
+        "--config",
+        str(config),
+    ]
+
+    assert_rejects(
+        run_gate(command, cwd=project),
+        "MISSING",
+        "ORIGIN_SHARED_SECRET=flo-origin-shared-secret:latest",
+    )
+    workflow.write_bytes(clean_workflow)
+    assert_accepts(run_gate(command, cwd=project))
+
+
 def test_release_workflow_policy_rejects_a_nonblocking_image_scan_and_then_passes() -> None:
     source = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     image_scan = workflow_step(source, "Scan built API image")
@@ -402,6 +533,19 @@ def test_release_workflow_policy_rejects_a_nonblocking_image_scan_and_then_passe
     assert_release_workflow_policy(source)
 
 
+def test_registry_prune_workflow_rejects_a_missing_verification_input_and_then_passes() -> None:
+    source = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    violation = source.replace(
+        '--current-image "${{ steps.push.outputs.digest }}"',
+        "--current-image removed",
+        1,
+    )
+
+    with pytest.raises(AssertionError):
+        assert_registry_prune_policy(violation)
+    assert_registry_prune_policy(source)
+
+
 @pytest.mark.parametrize(
     "violation",
     (
@@ -409,6 +553,9 @@ def test_release_workflow_policy_rejects_a_nonblocking_image_scan_and_then_passe
         "missing-host-guard",
         "missing-absolute-guard",
         "missing-ingress",
+        "missing-origin-secret",
+        "missing-worker-secret",
+        "missing-quota-cron",
         "wrong-route",
     ),
 )
@@ -442,6 +589,21 @@ def test_single_origin_release_policy_rejects_d17_violations_and_then_passes(
         )
     elif violation == "missing-ingress":
         planted_workflow = workflow.replace("--ingress all", "--ingress unspecified")
+    elif violation == "missing-origin-secret":
+        planted_workflow = workflow.replace(
+            ",ORIGIN_SHARED_SECRET=flo-origin-shared-secret:latest",
+            "",
+        )
+    elif violation == "missing-worker-secret":
+        planted_worker = worker_configuration.replace(
+            'required = ["ORIGIN_SHARED_SECRET"]',
+            "required = []",
+        )
+    elif violation == "missing-quota-cron":
+        planted_worker = worker_configuration.replace(
+            'crons = ["* * * * *"]',
+            "crons = []",
+        )
     else:
         planted_worker = worker_configuration.replace(
             "xlr8flo.summello.com/api/*",
@@ -477,6 +639,31 @@ def test_production_runbook_and_spa_environment_keep_release_configuration_exter
     assert "gcloud run services update-traffic flo-api" in setup
     assert "credentials_json" in setup
     assert "not part of this deployment" in setup
+
+
+def test_production_runbook_names_every_required_resource_and_verification() -> None:
+    setup = (ROOT / "infra" / "SETUP.md").read_text(encoding="utf-8")
+    required = {
+        "Workload Identity Federation": "GCP WIF",
+        "Pooled connection": "Neon pooled endpoint",
+        "flo-attachments": "private R2 bucket",
+        "flo-database-url": "database secret",
+        "flo-r2-access-key-id": "R2 access-key secret",
+        "flo-r2-secret-access-key": "R2 secret-key secret",
+        "flo-origin-shared-secret": "origin-authentication secret",
+        "roles/monitoring.viewer": "Cloud Monitoring reader",
+        "roles/artifactregistry.reader": "Artifact Registry reader",
+        "R2_ENDPOINT_URL": "R2 runtime endpoint",
+        "python -m flo.kernel.storage": "R2 round-trip smoke",
+        "/internal/health/quota": "quota verification",
+        "wrangler secret put ORIGIN_SHARED_SECRET": "Worker secret provisioning",
+        "Exactly three digests must remain": "registry verification",
+        "Rollback to this deployment": "Pages rollback",
+        "gcloud run services update-traffic flo-api": "API rollback",
+    }
+
+    missing = [label for text, label in required.items() if text not in setup]
+    assert not missing, f"MISSING production setup instructions: {', '.join(missing)}"
 
 
 def test_gitleaks_rejects_fake_aws_key_and_then_passes(tmp_path: Path) -> None:

@@ -54,6 +54,9 @@ jobs:
       - name: Cloud Run contains the configured Argon2 workload
         run: python apps/api/scripts/check_deploy_resources.py
 
+      - name: Neon transaction pooling forbids session-scoped SET
+        run: python apps/api/scripts/check_postgres_pooling.py
+
       - name: Roadmap is internally consistent
         run: |
           python3 - <<'PY'
@@ -301,6 +304,7 @@ jobs:
       GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
       IMAGE_TAG: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/flo/flo-api:${{ github.sha }}
       CLOUD_RUN_ORIGIN: ${{ vars.CLOUD_RUN_ORIGIN }}
+      R2_ENDPOINT_URL: ${{ vars.R2_ENDPOINT_URL }}
     steps:
       - uses: actions/checkout@v5
       - uses: google-github-actions/auth@v2
@@ -372,11 +376,20 @@ jobs:
           esac
           echo "digest=$digest_ref" >> "$GITHUB_OUTPUT"
 
-      - name: Migrate before serving the new revision
-        run: gcloud run jobs execute flo-migrate --region us-central1 --wait
+      - name: Configure and run migrations before serving the new revision
+        run: |
+          gcloud run jobs update flo-migrate --region us-central1 \
+            --image "${{ steps.push.outputs.digest }}" \
+            --service-account "flo-runtime@${GCP_PROJECT}.iam.gserviceaccount.com" \
+            --set-secrets DATABASE_URL=flo-database-url:latest
+          gcloud run jobs execute flo-migrate --region us-central1 --wait
 
       - name: Deploy API by immutable digest
         run: |
+          case "$R2_ENDPOINT_URL" in
+            https://*.r2.cloudflarestorage.com) ;;
+            *) echo "::error::R2_ENDPOINT_URL must be the account-scoped HTTPS R2 endpoint"; exit 1 ;;
+          esac
           # --service-account is not optional. Without it the revision runs as the
           # default compute service account, which holds no secretmanager.secretAccessor,
           # so the DATABASE_URL mount below fails at startup.
@@ -385,15 +398,14 @@ jobs:
             --min-instances 0 --concurrency 80 --memory 1Gi --cpu 2 \
             --ingress all \
             --service-account "flo-runtime@${GCP_PROJECT}.iam.gserviceaccount.com" \
-            --set-secrets DATABASE_URL=flo-database-url:latest
+            --set-secrets DATABASE_URL=flo-database-url:latest,ORIGIN_SHARED_SECRET=flo-origin-shared-secret:latest,S3_ACCESS_KEY_ID=flo-r2-access-key-id:latest,S3_SECRET_ACCESS_KEY=flo-r2-secret-access-key:latest \
+            --set-env-vars "S3_ENDPOINT_URL=${R2_ENDPOINT_URL},S3_BUCKET=flo-attachments,S3_REGION=auto,GCP_PROJECT=${GCP_PROJECT},CLOUD_RUN_SERVICE=flo-api,ARTIFACT_REGISTRY_LOCATION=us-central1,ARTIFACT_REGISTRY_REPOSITORY=flo"
 
       - name: Prune registry to 3 images (Artifact Registry free tier is 0.5 GB)
-        run: |
-          gcloud artifacts docker images list \
-            "us-central1-docker.pkg.dev/${GCP_PROJECT}/flo/flo-api" \
-            --sort-by=~CREATE_TIME --format='value(version)' | tail -n +4 \
-            | xargs -r -I{} gcloud artifacts docker images delete \
-                "us-central1-docker.pkg.dev/${GCP_PROJECT}/flo/flo-api@{}" --quiet
+        run: >-
+          python apps/api/scripts/prune_registry.py
+          --image "us-central1-docker.pkg.dev/${GCP_PROJECT}/flo/flo-api"
+          --current-image "${{ steps.push.outputs.digest }}"
 
       - name: Deploy single-origin Worker route and SPA
         if: needs.detect.outputs.web == 'true'

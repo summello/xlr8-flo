@@ -1,7 +1,20 @@
 const API_PREFIX = "/api";
+const ORIGIN_SECRET_HEADER = "X-FLO-Origin-Secret";
 
 export interface WorkerEnvironment {
   CLOUD_RUN_ORIGIN: string;
+  ORIGIN_SHARED_SECRET: string;
+}
+
+interface WorkerExecutionContext {
+  waitUntil(promise: Promise<unknown>): void;
+}
+
+function originSharedSecret(environment: WorkerEnvironment): string {
+  if (environment.ORIGIN_SHARED_SECRET.length < 32) {
+    throw new TypeError("ORIGIN_SHARED_SECRET must be configured");
+  }
+  return environment.ORIGIN_SHARED_SECRET;
 }
 
 function parseCloudRunOrigin(value: string): URL {
@@ -30,7 +43,24 @@ export function cloudRunRequest(request: Request, environment: WorkerEnvironment
   incoming.protocol = origin.protocol;
   incoming.host = origin.host;
   incoming.pathname = incoming.pathname.slice(API_PREFIX.length) || "/";
-  return new Request(incoming, request);
+  const upstream = new Request(new Request(incoming, request), { redirect: "manual" });
+  upstream.headers.set(ORIGIN_SECRET_HEADER, originSharedSecret(environment));
+  return upstream;
+}
+
+export function quotaRequest(environment: WorkerEnvironment): Request {
+  const origin = parseCloudRunOrigin(environment.CLOUD_RUN_ORIGIN);
+  return new Request(new URL("/internal/health/quota", origin), {
+    headers: { [ORIGIN_SECRET_HEADER]: originSharedSecret(environment) },
+    redirect: "manual",
+  });
+}
+
+async function checkQuota(environment: WorkerEnvironment): Promise<void> {
+  const response = await fetch(quotaRequest(environment));
+  if (!response.ok) {
+    throw new Error(`quota health check failed with HTTP ${response.status}`);
+  }
 }
 
 export default {
@@ -43,5 +73,12 @@ export default {
       }
       throw error;
     }
+  },
+  scheduled(
+    _controller: unknown,
+    environment: WorkerEnvironment,
+    context: WorkerExecutionContext,
+  ): void {
+    context.waitUntil(checkQuota(environment));
   },
 };

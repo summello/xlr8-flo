@@ -1,11 +1,9 @@
-"""Unauthenticated process and dependency health endpoints."""
+"""Origin-authenticated process and dependency health endpoints."""
 
 from __future__ import annotations
 
 import asyncio
 import time
-import urllib.error
-import urllib.request
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
 from typing import Annotated
@@ -15,8 +13,11 @@ import uvicorn
 from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 
+from flo.api.internal import router as internal_router
+from flo.api.origin_auth import require_origin_secret
 from flo.kernel.config import Settings, enforce_argon2_memory_limit
 from flo.kernel.errors import ErrorCode, ProblemError, install_problem_details
+from flo.kernel.storage import create_storage
 
 HealthProbe = Callable[[Settings], Awaitable[None]]
 
@@ -65,7 +66,9 @@ app = FastAPI(
     docs_url=None,
     redoc_url=None,
     openapi_url=None,
+    dependencies=[Depends(require_origin_secret)],
 )
+app.include_router(internal_router)
 # Starlette prepends user middleware, so install problem details last to keep
 # correlation outermost and able to serialize failures from every other middleware.
 install_problem_details(app)
@@ -90,28 +93,11 @@ async def check_database(settings: Settings) -> None:
         await connection.close()
 
 
-def _touch_storage(endpoint_url: str, timeout_seconds: float) -> None:
-    request = urllib.request.Request(endpoint_url, method="HEAD")
-    try:
-        with urllib.request.urlopen(request, timeout=timeout_seconds):  # noqa: S310
-            pass
-    except urllib.error.HTTPError:
-        # Authentication and bucket checks belong to the storage adapter. Any HTTP
-        # response proves the configured S3-compatible endpoint is reachable.
-        pass
-
-
 async def check_storage(settings: Settings) -> None:
-    """Reach the configured S3-compatible HTTP endpoint without exposing its URL."""
+    """Authenticate and list the private bucket without exposing configuration."""
 
-    if settings.storage_endpoint_url is None:
-        raise RuntimeError("storage is not configured")
-
-    await asyncio.to_thread(
-        _touch_storage,
-        settings.storage_endpoint_url.get_secret_value(),
-        settings.readiness_timeout_seconds,
-    )
+    storage = create_storage(settings)
+    await asyncio.to_thread(storage.usage_bytes)
 
 
 def get_readiness_probes() -> Mapping[str, HealthProbe]:

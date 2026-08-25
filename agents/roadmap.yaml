@@ -125,7 +125,7 @@ epics:
           - OPS-001
         dep:
           - E01-S05
-        st: review
+        st: done
       - id: E01-S07
         t: Gate self-tests - every CI gate proves it fails on a planted violation
         k: chore

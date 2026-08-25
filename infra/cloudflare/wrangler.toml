@@ -3,6 +3,12 @@ main = "../../apps/web/worker/api-proxy.ts"
 compatibility_date = "2026-08-25"
 workers_dev = false
 
+[secrets]
+required = ["ORIGIN_SHARED_SECRET"]
+
+[triggers]
+crons = ["* * * * *"]
+
 [[routes]]
 pattern = "xlr8flo.summello.com/api/*"
 zone_name = "summello.com"

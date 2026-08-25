@@ -13,7 +13,13 @@ from flo.api.health import (
     get_readiness_probes,
     get_settings,
 )
+from flo.api.origin_auth import (
+    ORIGIN_SECRET_HEADER,
+    get_origin_settings,
+)
 from flo.kernel.config import Settings
+
+_TEST_ORIGIN_SECRET = "test-origin-shared-secret-at-least-32-bytes"
 
 
 class FakeMonotonicClock:
@@ -31,6 +37,9 @@ class FakeMonotonicClock:
 def clear_dependency_overrides() -> Iterator[None]:
     cache = ReadinessCache()
     app.dependency_overrides[get_readiness_cache] = lambda: cache
+    app.dependency_overrides[get_origin_settings] = lambda: Settings(
+        origin_shared_secret=_TEST_ORIGIN_SECRET
+    )
     yield
     app.dependency_overrides.clear()
 
@@ -43,10 +52,15 @@ def _override_probes(**probes: HealthProbe) -> None:
     app.dependency_overrides[get_readiness_probes] = lambda: probes
 
 
-def _get(path: str) -> httpx.Response:
+def _get(path: str, origin_secret: str | None = _TEST_ORIGIN_SECRET) -> httpx.Response:
     async def request() -> httpx.Response:
         transport = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        headers = {} if origin_secret is None else {ORIGIN_SECRET_HEADER: origin_secret}
+        async with httpx.AsyncClient(
+            transport=transport,
+            base_url="http://test",
+            headers=headers,
+        ) as client:
             return await client.get(path)
 
     return asyncio.run(request())
@@ -62,6 +76,12 @@ def test_healthz_is_live_without_touching_dependencies() -> None:
 
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+def test_cloud_run_origin_authentication_hides_every_api_path() -> None:
+    assert _get("/healthz", None).status_code == 404
+    assert _get("/healthz", "wrong-origin-secret").status_code == 404
+    assert _get("/healthz", _TEST_ORIGIN_SECRET).status_code == 200
 
 
 def test_readyz_reports_each_healthy_dependency() -> None:
@@ -80,7 +100,11 @@ def test_api_emits_no_cors_headers_or_middleware() -> None:
     async def request_every_response_shape() -> list[httpx.Response]:
         _override_probes(database=_ok, storage=_ok)
         transport = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        async with httpx.AsyncClient(
+            transport=transport,
+            base_url="http://test",
+            headers={ORIGIN_SECRET_HEADER: _TEST_ORIGIN_SECRET},
+        ) as client:
             return [
                 await client.get("/healthz"),
                 await client.get("/readyz"),
@@ -136,7 +160,11 @@ def test_concurrent_readyz_requests_share_one_database_connection_attempt(
         monkeypatch.setattr(health.psycopg.AsyncConnection, "connect", connect)
 
         transport = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        async with httpx.AsyncClient(
+            transport=transport,
+            base_url="http://test",
+            headers={ORIGIN_SECRET_HEADER: _TEST_ORIGIN_SECRET},
+        ) as client:
             requests = [asyncio.create_task(client.get("/readyz")) for _ in range(20)]
             await connection_started.wait()
             await asyncio.sleep(0)
@@ -164,7 +192,11 @@ def test_readyz_cache_expires_after_ttl(monkeypatch: pytest.MonkeyPatch) -> None
         monkeypatch.setattr(health, "time", clock)
 
         transport = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        async with httpx.AsyncClient(
+            transport=transport,
+            base_url="http://test",
+            headers={ORIGIN_SECRET_HEADER: _TEST_ORIGIN_SECRET},
+        ) as client:
             assert (await client.get("/readyz")).status_code == 200
             assert (await client.get("/readyz")).status_code == 200
             assert probe_attempts == 1
