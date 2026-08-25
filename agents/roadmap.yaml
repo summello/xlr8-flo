@@ -185,7 +185,8 @@ epics:
           - AUTH-008
         dep:
           - E02-S02
-        st: todo
+          - E03-S06
+        st: in_progress
       - id: E02-S04
         t: TOTP MFA, mandatory for privileged roles, step-up re-auth for high-risk
           actions
@@ -323,7 +324,7 @@ epics:
           - D-10
         dep:
           - E03-S04
-        st: todo
+        st: in_progress
 
   - id: E04
     name: Design system & shell
