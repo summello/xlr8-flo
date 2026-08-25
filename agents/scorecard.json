@@ -751,6 +751,37 @@
       },
       "recap": "Server-side sessions with opaque tokens stored only as SHA-256, HttpOnly/Secure/SameSite=Lax cookies, constant-time double-submit CSRF on every unsafe method, idle and absolute timeouts, id rotation on login, identity-scoped revocation and revoke-others, and append-only security evidence on revoked-token reuse.",
       "title": "Server sessions, httpOnly cookies, CSRF, idle and absolute timeout, revocation"
+    },
+    {
+      "story": "E03-S04",
+      "kind": "security",
+      "size": "L",
+      "tags": [
+        "security",
+        "migration"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E03-S04"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "6943502c-d56e-4353-af9a-3f691bb26487",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Append-only, monthly-partitioned audit_log enforced by a database trigger and RLS, with allowlisted before/after snapshots, truncated IP storage, correlation ids restored for background jobs, and permission-checked reads that write their own reader event.",
+      "title": "Audit trail: append-only table, triggers, before/after, correlation id"
     }
   ]
 }

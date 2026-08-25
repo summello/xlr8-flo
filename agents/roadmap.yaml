@@ -292,7 +292,7 @@ epics:
           - AUD-010
         dep:
           - E03-S02
-        st: in_progress
+        st: done
       - id: E03-S05
         t: Idempotency middleware keyed on (org, key, body hash)
         k: concurrency
