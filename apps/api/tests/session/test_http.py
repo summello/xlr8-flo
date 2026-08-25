@@ -178,6 +178,7 @@ def test_login_sets_exact_secure_cookie_attributes_and_rotates_existing_session(
     session_database: SessionDatabase,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
+    assert SESSION_COOKIE_NAME == "__Host-flo_session", "MISSING __Host- cookie prefix"
     clock = MutableClock(START)
     session_store = store(session_database, clock)
     app = build_app(

@@ -34,6 +34,8 @@ IDEMPOTENCY_KEY_EXEMPT_PATHS = frozenset(
         "/api/v1/auth/login",
         "/api/v1/auth/logout",
         "/api/v1/auth/refresh",
+        "/api/v1/auth/reset",
+        "/api/v1/auth/reset-request",
     }
 )
 

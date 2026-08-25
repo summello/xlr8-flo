@@ -374,3 +374,18 @@ class SessionStore:
                 (now, identity_id, current_id),
             )
         return result.rowcount
+
+    def revoke_all(self, identity_id: IdentityId) -> int:
+        """Revoke every active session after an identity credential reset."""
+
+        now = self._clock()
+        with self._connection.transaction():
+            result = self._connection.execute(
+                """
+                UPDATE auth_session
+                   SET revoked_at = %s
+                 WHERE identity_id = %s AND revoked_at IS NULL
+                """,
+                (now, identity_id),
+            )
+        return result.rowcount

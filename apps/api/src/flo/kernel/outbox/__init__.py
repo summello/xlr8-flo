@@ -7,9 +7,10 @@ from flo.kernel.outbox.dispatcher import (
     TransientOutboxError,
     email_handler,
 )
-from flo.kernel.outbox.store import OutboxRecord, OutboxState, OutboxStore
+from flo.kernel.outbox.store import IdentityOutboxStore, OutboxRecord, OutboxState, OutboxStore
 
 __all__ = [
+    "IdentityOutboxStore",
     "OutboxDispatcher",
     "OutboxRecord",
     "OutboxState",

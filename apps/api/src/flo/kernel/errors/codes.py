@@ -16,6 +16,7 @@ class ErrorCode(StrEnum):
     CONFLICT = "conflict"
     FORBIDDEN = "forbidden"
     IDEMPOTENCY_KEY_REUSED = "idempotency_key_reused"
+    INVALID_OR_EXPIRED = "invalid_or_expired"
     INSUFFICIENT_BUDGET = "insufficient-budget"
     INTERNAL_ERROR = "internal-error"
     METHOD_NOT_ALLOWED = "method-not-allowed"
@@ -76,6 +77,13 @@ ERROR_TAXONOMY: dict[ErrorCode, ErrorTaxonomyEntry] = {
         recovery=(
             "Reduce the requested amount, transfer funds into the project, or request an override."
         ),
+    ),
+    ErrorCode.INVALID_OR_EXPIRED: ErrorTaxonomyEntry(
+        status=400,
+        type_uri="https://xlr8flo.app/errors/invalid_or_expired",
+        title="This reset link is invalid or expired",
+        detail="The reset link is invalid, expired, or has already been used. No data was changed.",
+        recovery="Request a new password reset link and try again.",
     ),
     ErrorCode.INTERNAL_ERROR: ErrorTaxonomyEntry(
         status=500,

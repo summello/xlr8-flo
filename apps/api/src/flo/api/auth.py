@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import datetime, timedelta
@@ -14,8 +16,14 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from flo.kernel.authz import public_route
 from flo.kernel.config import Settings
-from flo.kernel.errors import ErrorCode, ProblemError
-from flo.kernel.identity import IdentityConnection, IdentityProvider, build_local_identity_provider
+from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError
+from flo.kernel.identity import (
+    IdentityConnection,
+    IdentityProvider,
+    PasswordPolicyError,
+    build_local_identity_provider,
+)
+from flo.kernel.identity.reset import PasswordResetService, ResetConnection
 from flo.kernel.session.csrf import CSRF_COOKIE_NAME, rotate_csrf_cookie
 from flo.kernel.session.middleware import clear_session_cookie, set_session_cookie
 from flo.kernel.session.store import (
@@ -29,6 +37,7 @@ from flo.kernel.session.store import (
 )
 
 router = APIRouter(prefix="/api/v1/auth", tags=["authentication"])
+_RESET_REQUEST_MIN_SECONDS = 0.05
 
 
 class LoginRequest(BaseModel):
@@ -37,6 +46,23 @@ class LoginRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     email: str = Field(min_length=3, max_length=254)
+    password: str = Field(min_length=1, max_length=256)
+
+
+class PasswordResetRequest(BaseModel):
+    """The sole account locator accepted before authentication."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    email: str = Field(min_length=3, max_length=254)
+
+
+class PasswordResetCompletion(BaseModel):
+    """One opaque token and the replacement credential."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    token: str = Field(min_length=1, max_length=256)
     password: str = Field(min_length=1, max_length=256)
 
 
@@ -105,6 +131,17 @@ def get_session_store(
     )
 
 
+def get_password_reset_service(
+    connection: Annotated[
+        psycopg.Connection[tuple[object, ...]], Depends(get_auth_connection)
+    ],
+    settings: Annotated[Settings, Depends(get_auth_settings)],
+) -> PasswordResetService:
+    """Bind password-reset state to the request transaction connection."""
+
+    return PasswordResetService(cast(ResetConnection, connection), settings)
+
+
 @contextmanager
 def production_session_store() -> Iterator[SessionStore]:
     """Open the short-lived store used by session-authentication middleware."""
@@ -148,6 +185,55 @@ def _delete_auth_cookies(response: Response) -> None:
         samesite="lax",
         path="/",
     )
+
+
+@router.post("/reset-request", status_code=202)
+@public_route
+async def request_password_reset(
+    body: PasswordResetRequest,
+    request: Request,
+    service: Annotated[PasswordResetService, Depends(get_password_reset_service)],
+) -> Response:
+    """Accept every syntactically valid account locator without revealing existence."""
+
+    started_at = time.perf_counter()
+    service.request_reset(body.email, request_device(request))
+    remaining = _RESET_REQUEST_MIN_SECONDS - (time.perf_counter() - started_at)
+    if remaining > 0:
+        await asyncio.sleep(remaining)
+    return Response(status_code=202)
+
+
+@router.post("/reset", status_code=204)
+@public_route
+async def reset_password(
+    body: PasswordResetCompletion,
+    request: Request,
+    service: Annotated[PasswordResetService, Depends(get_password_reset_service)],
+    provider: Annotated[IdentityProvider, Depends(get_identity_provider)],
+    sessions: Annotated[SessionStore, Depends(get_session_store)],
+) -> Response:
+    """Replace one credential after atomically consuming its reset token."""
+
+    try:
+        await service.complete_reset(
+            body.token,
+            body.password,
+            request_device(request),
+            provider,
+            sessions,
+        )
+    except PasswordPolicyError as error:
+        raise ProblemError(
+            ErrorCode.VALIDATION_FAILED,
+            errors=(
+                ProblemFieldError(
+                    field="password",
+                    message="The password does not meet the password policy.",
+                ),
+            ),
+        ) from error
+    return Response(status_code=204)
 
 
 @router.post("/login", status_code=204)

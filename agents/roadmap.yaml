@@ -186,7 +186,7 @@ epics:
         dep:
           - E02-S02
           - E03-S06
-        st: in_progress
+        st: done
       - id: E02-S04
         t: TOTP MFA, mandatory for privileged roles, step-up re-auth for high-risk
           actions
@@ -200,7 +200,7 @@ epics:
           - SEC-009
         dep:
           - E02-S02
-        st: todo
+        st: in_progress
       - id: E02-S05
         t: 'RBAC: roles, permissions, org/BU/project/record/action scope, default-deny'
         k: security
@@ -369,7 +369,7 @@ epics:
           - A11Y-008
         dep:
           - E04-S02
-        st: todo
+        st: in_progress
       - id: E04-S04
         t: OpenAPI to TS client generation, forms kit, a11y harness (axe + keyboard) in
           CI

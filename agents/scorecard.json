@@ -903,6 +903,37 @@
       },
       "recap": "Delivered the Postgres SKIP LOCKED job queue and transactional outbox with bounded retries, dead-letter visibility, audit correlation, and an authenticated 50-second cron tick, plus private storage and email provider ports. Round 2 adds a lock-contention regression that proves workers skip held jobs and persists only Location and ETag on completed idempotency claims so creation responses remain usable on replay.",
       "title": "Job queue (SKIP LOCKED), outbox, cron tick endpoint, Storage and Email ports"
+    },
+    {
+      "story": "E02-S03",
+      "kind": "security",
+      "size": "M",
+      "tags": [
+        "auth",
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E02-S03"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "6943502c-d56e-4353-af9a-3f691bb26487",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented identity-scoped password-reset issuance through the expiring transactional outbox, atomic single-use consumption, password-policy enforcement, all-session revocation, append-only pre-auth security events, per-email/IP rate limits, and the __Host-flo_session cookie rename.",
+      "title": "Password reset: single-use short-lived tokens, no account enumeration"
     }
   ]
 }

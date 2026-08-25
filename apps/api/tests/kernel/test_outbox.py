@@ -32,8 +32,11 @@ from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import tenant_transaction
 
 ROOT = Path(__file__).resolve().parents[4]
+IDENTITY_MIGRATION = ROOT / "migrations" / "20260824_0002_identity.py"
+SESSION_MIGRATION = ROOT / "migrations" / "20260825_0004_session.py"
 AUDIT_MIGRATION = ROOT / "migrations" / "20260825_0005_audit_log.py"
 JOBS_MIGRATION = ROOT / "migrations" / "20260825_0007_jobs_outbox.py"
+RESET_MIGRATION = ROOT / "migrations" / "20260825_0010_password_reset.py"
 
 
 def _load_migration(path: Path, name: str) -> ModuleType:
@@ -47,6 +50,10 @@ def _load_migration(path: Path, name: str) -> ModuleType:
 def _drop_objects(connection: psycopg.Connection[tuple[object, ...]]) -> None:
     connection.execute("DROP TABLE IF EXISTS outbox")
     connection.execute("DROP TABLE IF EXISTS job")
+    connection.execute("DROP TABLE IF EXISTS password_reset_rate_limit")
+    connection.execute("DROP TABLE IF EXISTS password_reset")
+    connection.execute("DROP TABLE IF EXISTS session_security_event")
+    connection.execute("DROP TABLE IF EXISTS auth_session")
     rows = connection.execute(
         "SELECT tablename FROM pg_catalog.pg_tables "
         "WHERE schemaname = 'public' AND tablename LIKE 'audit_log_%'"
@@ -57,6 +64,8 @@ def _drop_objects(connection: psycopg.Connection[tuple[object, ...]]) -> None:
         )
     connection.execute("DROP TABLE IF EXISTS audit_log")
     connection.execute("DROP FUNCTION IF EXISTS raise_append_only()")
+    connection.execute("DROP FUNCTION IF EXISTS reject_session_security_event_mutation()")
+    connection.execute("DROP TABLE IF EXISTS identity")
 
 
 @pytest.fixture
@@ -72,8 +81,11 @@ def outbox_database() -> Iterator[psycopg.Connection[tuple[object, ...]]]:
         pytest.skip("local Postgres is unavailable; run the repository stack")
         raise
     _drop_objects(connection)
+    _load_migration(IDENTITY_MIGRATION, "outbox_identity_migration").upgrade(connection)
+    _load_migration(SESSION_MIGRATION, "outbox_session_migration").upgrade(connection)
     _load_migration(AUDIT_MIGRATION, "outbox_audit_migration").upgrade(connection)
     _load_migration(JOBS_MIGRATION, "outbox_migration").upgrade(connection)
+    _load_migration(RESET_MIGRATION, "outbox_reset_migration").upgrade(connection)
     try:
         yield connection
     finally:
@@ -198,10 +210,10 @@ def test_ambiguous_timeout_retry_delivers_once_and_records_provider_id(
     assert sender.calls == ["send-purchase-order-42", "send-purchase-order-42"]
     assert sender.delivered == {"send-purchase-order-42": "provider-message-42"}
     assert connection.execute(
-        "SELECT state, attempts, provider_message_id, sent_at IS NOT NULL "
+        "SELECT state, attempts, provider_message_id, sent_at IS NOT NULL, payload "
         "FROM outbox WHERE id = %s",
         (outbox_id,),
-    ).fetchone() == ("sent", 2, "provider-message-42", True)
+    ).fetchone() == ("sent", 2, "provider-message-42", True, {})
     assert connection.execute(
         "SELECT action, correlation_id FROM audit_log "
         "WHERE org_id = %s AND target_id = %s ORDER BY occurred_at",
@@ -244,6 +256,7 @@ def _outbox_record(payload: dict[str, object]) -> OutboxRecord:
     return OutboxRecord(
         id=uuid4(),
         org_id=uuid4(),
+        identity_id=None,
         topic="email",
         payload=payload,
         state=OutboxState.PENDING,
@@ -255,6 +268,7 @@ def _outbox_record(payload: dict[str, object]) -> OutboxRecord:
         provider_message_id=None,
         idempotency_key="email-key",
         correlation_id="request-correlation",
+        expires_at=None,
     )
 
 

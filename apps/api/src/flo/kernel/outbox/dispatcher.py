@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterator, Mapping
+from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Protocol, cast
 
@@ -143,33 +144,46 @@ class OutboxDispatcher:
             if handler is None:
                 raise PermanentOutboxError("outbox topic has no registered handler")
             provider_message_id = handler(row)
-            with correlation_context(row.correlation_id), tenant_transaction(
-                cast(RlsSession, self._connection), Scope(row.org_id)
-            ):
+            with correlation_context(row.correlation_id), self._delivery_transaction(row):
                 self._store.sent(row, provider_message_id)
-                self._audit(row, "outbox.sent", Outcome.SUCCESS)
+                if row.org_id is not None:
+                    self._audit(row, "outbox.sent", Outcome.SUCCESS)
             return "sent"
         except TransientOutboxError as error:
             if row.attempts >= row.max_attempts:
                 self._record_dead(row, _safe_error(error))
                 return "dead"
             delay = backoff_seconds(row.attempts, self._random_fraction)
-            with correlation_context(row.correlation_id), tenant_transaction(
-                cast(RlsSession, self._connection), Scope(row.org_id)
-            ):
+            with correlation_context(row.correlation_id), self._delivery_transaction(row):
                 self._store.retry(row, delay_seconds=delay, last_error=_safe_error(error))
-                self._audit(row, "outbox.retry", Outcome.ERROR, _safe_error(error))
+                if row.org_id is not None:
+                    self._audit(row, "outbox.retry", Outcome.ERROR, _safe_error(error))
             return "retried"
         except Exception as error:
             self._record_dead(row, _safe_error(error))
             return "dead"
 
     def _record_dead(self, row: OutboxRecord, last_error: str) -> None:
-        with correlation_context(row.correlation_id), tenant_transaction(
-            cast(RlsSession, self._connection), Scope(row.org_id)
-        ):
+        with correlation_context(row.correlation_id), self._delivery_transaction(row):
             self._store.dead(row, last_error=last_error)
-            self._audit(row, "outbox.dead", Outcome.ERROR, last_error)
+            if row.org_id is not None:
+                self._audit(row, "outbox.dead", Outcome.ERROR, last_error)
+
+    @contextmanager
+    def _delivery_transaction(self, row: OutboxRecord) -> Iterator[None]:
+        if row.org_id is not None:
+            with tenant_transaction(
+                cast(RlsSession, self._connection), Scope(row.org_id)
+            ):
+                yield
+            return
+
+        with self._connection.transaction():
+            self._connection.execute(
+                "SET LOCAL app.org_id = '00000000-0000-0000-0000-000000000000'"
+            )
+            self._connection.execute("SET LOCAL app.worker = 'jobs'")
+            yield
 
     def _audit(
         self,
@@ -178,6 +192,8 @@ class OutboxDispatcher:
         outcome: Outcome,
         reason: str | None = None,
     ) -> None:
+        if row.org_id is None:
+            raise RuntimeError("identity-scoped outbox delivery has no tenant audit scope")
         AuditWriter(cast(AuditConnection, self._connection), Scope(row.org_id)).write(
             actor=AuditActor(ActorKind.JOB),
             action=action,

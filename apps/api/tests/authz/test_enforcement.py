@@ -8,7 +8,7 @@ from typing import cast
 from uuid import UUID, uuid4
 
 import httpx
-from fastapi import Depends, FastAPI
+from fastapi import APIRouter, Depends, FastAPI
 from starlette.middleware.base import RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
@@ -192,4 +192,27 @@ def test_route_guard_rejects_a_planted_unclassified_route_then_passes() -> None:
     def classified() -> dict[str, str]:
         return {"guard": "declared"}
 
+    assert route_authorization_failures(clean) == []
+
+
+def test_route_guard_descends_into_included_routers_and_bites() -> None:
+    router = APIRouter(prefix="/nested")
+
+    @router.get("/planted")
+    def planted() -> dict[str, str]:
+        return {"guard": "missing"}
+
+    app = FastAPI()
+    app.include_router(router)
+    assert route_authorization_failures(app) == ["GET /nested/planted"]
+
+    clean_router = APIRouter(prefix="/nested")
+
+    @clean_router.get("/planted")
+    @public_route
+    def classified() -> dict[str, str]:
+        return {"guard": "declared"}
+
+    clean = FastAPI()
+    clean.include_router(clean_router)
     assert route_authorization_failures(clean) == []

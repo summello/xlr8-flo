@@ -8,7 +8,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from flo.kernel.session.store import SessionStoreFactory, request_device
 
-SESSION_COOKIE_NAME = "flo_session"
+SESSION_COOKIE_NAME = "__Host-flo_session"
 
 SECURITY_HEADERS: dict[bytes, bytes] = {
     b"content-security-policy": (

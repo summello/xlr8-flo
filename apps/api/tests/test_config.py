@@ -54,6 +54,21 @@ def test_session_timeout_defaults_are_configurable_and_ordered(
         )
 
 
+def test_password_reset_security_limits_are_configurable_and_bounded() -> None:
+    defaults = Settings()
+    assert defaults.password_reset_ttl_seconds == 30 * 60
+    assert defaults.password_reset_rate_window_seconds == 60 * 60
+    assert defaults.password_reset_email_limit == 5
+    assert defaults.password_reset_ip_limit == 20
+
+    with pytest.raises(ValidationError):
+        Settings(password_reset_ttl_seconds=59)
+    with pytest.raises(ValidationError):
+        Settings(password_reset_email_limit=0)
+    with pytest.raises(ValidationError):
+        Settings(password_reset_ip_limit=0)
+
+
 def test_argon2_memory_cost_cannot_consume_the_whole_instance() -> None:
     assert Settings(identity_argon2_memory_cost_kib=256 * 1024).identity_argon2_memory_cost_kib == (
         256 * 1024

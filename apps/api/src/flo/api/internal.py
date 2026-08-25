@@ -425,6 +425,7 @@ async def quota_health(
     response_model=TickReport,
     include_in_schema=False,
 )
+@public_route
 async def jobs_tick(
     process: Annotated[TickProcessor, Depends(get_tick_processor)],
 ) -> TickReport:

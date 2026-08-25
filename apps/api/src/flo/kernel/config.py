@@ -102,6 +102,14 @@ class Settings(BaseSettings):
     identity_argon2_max_concurrency: int = Field(default=4, ge=1, le=32)
     session_idle_timeout_seconds: int = Field(default=8 * 60 * 60, ge=60)
     session_absolute_timeout_seconds: int = Field(default=12 * 60 * 60, ge=60)
+    password_reset_ttl_seconds: int = Field(default=30 * 60, ge=60, le=24 * 60 * 60)
+    password_reset_rate_window_seconds: int = Field(
+        default=60 * 60,
+        ge=60,
+        le=24 * 60 * 60,
+    )
+    password_reset_email_limit: int = Field(default=5, ge=1, le=1000)
+    password_reset_ip_limit: int = Field(default=20, ge=1, le=5000)
 
     @model_validator(mode="after")
     def require_ordered_session_timeouts(self) -> Settings:

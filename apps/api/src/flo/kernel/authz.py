@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from contextlib import AbstractContextManager
 from typing import Protocol, cast
 from uuid import UUID
@@ -137,13 +137,23 @@ def _dependency_calls(route: APIRoute) -> Iterator[Callable[..., object]]:
         pending.extend(dependant.dependencies)
 
 
+def _api_routes(routes: Iterable[object]) -> Iterator[APIRoute]:
+    for route in routes:
+        if isinstance(route, APIRoute):
+            yield route
+            continue
+        nested = getattr(route, "routes", None)
+        if nested is None:
+            nested = getattr(getattr(route, "original_router", None), "routes", None)
+        if isinstance(nested, Iterable):
+            yield from _api_routes(nested)
+
+
 def route_authorization_failures(app: FastAPI) -> list[str]:
     """List routes that are neither explicitly public nor guarded by ``require``."""
 
     failures: list[str] = []
-    for route in app.routes:
-        if not isinstance(route, APIRoute):
-            continue
+    for route in _api_routes(app.routes):
         endpoint = route.endpoint
         if getattr(endpoint, _PUBLIC_MARKER, False):
             continue
