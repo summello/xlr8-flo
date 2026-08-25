@@ -221,7 +221,9 @@ jobs:
       - name: No hardcoded colour outside the token file (design-system MASTER 2.7)
         run: |
           set -euo pipefail
-          if grep -rnE '#[0-9a-fA-F]{6}\b|oklch\(' apps/web/src \
+          # Every colour syntax CSS accepts, not just the two we happened to think of:
+          # a planted rgb() violation walked straight through the old pattern.
+          if grep -rniE '#[0-9a-fA-F]{3,8}\b|\b(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(' apps/web/src \
                --include='*.tsx' --include='*.ts' --include='*.css' \
                --exclude='tokens.css'; then
             echo "::error::raw colour outside tokens.css - use a design token"; exit 1

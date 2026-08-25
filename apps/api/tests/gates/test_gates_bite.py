@@ -7,6 +7,7 @@ import re
 import shutil
 import subprocess
 import sys
+import textwrap
 import tomllib
 from collections.abc import Sequence
 from importlib.machinery import SourceFileLoader
@@ -888,3 +889,35 @@ def test_run_check_points_pytest_at_local_postgres(
 
     assert flo.run_check(tmp_path) is True
     assert observed_environment["DATABASE_URL"] == flo.LOCAL_TEST_DATABASE_URL
+
+
+@pytest.mark.parametrize(
+    "literal",
+    ["rgb(255 255 255)", "rgba(0, 0, 0, 0.5)", "hsl(210 40% 96%)", "#fff", "#1A1F2A"],
+)
+def test_colour_gate_rejects_every_css_colour_syntax_and_then_passes(
+    tmp_path: Path, literal: str
+) -> None:
+    """It shipped matching only #rrggbb and oklch(, so a planted rgb() walked straight through."""
+
+    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    step = workflow_step(
+        workflow, "No hardcoded colour outside the token file (design-system MASTER 2.7)"
+    )
+    body = step.split("run: |", 1)[1]
+    # workflow_step stops at the next named step, so an unnamed "- run:" that follows is
+    # still in the slice; keep only the indented script lines.
+    script = textwrap.dedent(
+        "\n".join(line for line in body.split("\n") if not line.lstrip().startswith("- "))
+    ).strip("\n")
+
+    styles = tmp_path / "apps" / "web" / "src" / "styles"
+    styles.mkdir(parents=True)
+    (styles / "tokens.css").write_text(":root { --canvas: oklch(0.988 0.004 258); }\n")
+    planted = styles / "planted.css"
+    planted.write_text(f".planted {{ color: {literal}; }}\n", encoding="utf-8")
+
+    command = ["bash", "-c", script]
+    assert_rejects(run_gate(command, cwd=tmp_path), "raw colour outside tokens.css")
+    planted.write_text(".planted { color: var(--fg); }\n", encoding="utf-8")
+    assert_accepts(run_gate(command, cwd=tmp_path))
