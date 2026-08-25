@@ -5,7 +5,11 @@ version: 1
 
 policy:
   max_stories_in_flight: 3      # two reviewers per story saturates the fleet at 3
-  min_reviewers: 2              # a story never merges on one review
+  min_reviewers: 1              # 25 Aug 2026: per-story review is Opus only. Two
+                                # metered reviewers per story cost more wall-clock than
+                                # they returned once Opus reviewed every story anyway.
+  release_reviewers: [qwen, deepseek]   # second and third pass on the whole milestone
+                                        # diff, before the PR to main — not per story
   max_review_rounds: 3          # then flo escalate → opus arbitration
   free_reviewer_pool: [opencode-nemotron, opencode-ox]  # at least one reviewer must come from here,
                                                         # so a rationed agent is never the merge blocker
@@ -57,7 +61,13 @@ milestone_overrides:
     # four failures that cost qwen this slot were all caused by the review packet
     # (dotfile reads, /tmp writes, a 1,108-line lockfile) and are fixed; qwen has now
     # completed two consecutive runs. Scorecard: qwen 2.4 findings/review, kimi 0.0.
-    reviewers: [opus, qwen, deepseek]
+    # 25 Aug 2026, fifth routing change, operator decision. Per-story review is Opus
+    # alone; qwen and deepseek move to release review, where they read the whole
+    # milestone diff before the PR to main. Rationale: codex authors M0 end to end and
+    # a two-reviewer round trip per story dominated the cycle time. The fleet-wide
+    # independent check is not removed — it moves from 25 story-sized passes to one
+    # milestone-sized pass, which is also where cross-story drift is visible at all.
+    reviewers: [opus]
     opus_final_all: true
     cost: >
       The operator holds Codex usage resets, so the weekly cap is not the binding

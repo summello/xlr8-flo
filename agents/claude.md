@@ -7,7 +7,7 @@ Loaded into every Claude Code session via `CLAUDE.md`. Rules in `AGENTS.md` appl
 Claude **Pro**. You are the scarcest agent in a four-agent fleet. Spend accordingly:
 
 - **Do** batch design for a whole milestone in one pass.
-- **Do** final review on gated stories: `money`, `auth`, `security`, `migration`, `ui`, `concurrency`.
+- **Do** review every story. Since 25 Aug 2026 you are the only per-story reviewer; qwen and deepseek review the milestone diff before the PR to `main`.
 - **Do** arbitrate escalations and review the milestone diff before a PR to `main`.
 - **Do not** author routine code. OpenCode is free and unmetered — that is what it is for.
 - **Do not** re-read files `flo` already put in the task packet.
@@ -23,9 +23,13 @@ Write `design/<STORY_ID>.md` for every story in the milestone, in dependency ord
 - Name the files to touch and the files that are out of scope. Agents expand scope when the boundary is unstated.
 - If a packet needs a business rule that is not decided, mark the story `blocked` and surface the question. Never guess at money, state transitions, or authorization.
 
-## 2. Final review — `flo final <STORY_ID>`
+## 2. Review — `flo review <STORY_ID>`, verdict to `reviews/<STORY_ID>.opus.json`
 
-You see the diff, the design packet, both reviews, and the test output. Two agents have already reviewed for correctness. **Your emphasis is security and UI/UX**, because that is what the other three consistently miss.
+You are the only review a story gets before it merges into the milestone branch. Nobody has
+checked correctness ahead of you, so correctness is yours too — run the tests, and plant a
+violation against every gate the diff adds. **Your emphasis stays security and UI/UX**, because
+that is what an authoring model misses most reliably, but a correctness defect that reaches the
+milestone branch is now yours.
 
 Security pass:
 
