@@ -1,7 +1,10 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import type { IncomingMessage } from "node:http";
 import type { Plugin } from "vite";
 import { defineConfig } from "vitest/config";
+
+import type { components } from "./src/api/generated/schema.ts";
 
 const PROJECT_STATUSES = [
   "draft",
@@ -13,6 +16,9 @@ const PROJECT_STATUSES = [
 ] as const;
 const OWNERS = ["Avery Chen", "Jordan Singh", "Morgan Lee", "Riley Jones"] as const;
 const GRID_PAGE_SIZE = 50;
+
+type LoginRequest = components["schemas"]["LoginRequest"];
+type ProblemDetails = components["schemas"]["ProblemDetails"];
 
 type FixtureRow = {
   id: string;
@@ -116,8 +122,57 @@ function gridFixture(): Plugin {
   };
 }
 
+async function requestBody(request: IncomingMessage): Promise<string> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of request) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+function formFixture(): Plugin {
+  return {
+    configureServer(server) {
+      server.middlewares.use("/api/v1/auth/login", (request, response, next) => {
+        if (request.method !== "POST") {
+          next();
+          return;
+        }
+
+        void requestBody(request).then((rawBody) => {
+          const body = JSON.parse(rawBody) as LoginRequest;
+          if (body.email === "locked@example.com") {
+            const problem: ProblemDetails = {
+              correlation_id: "form-fixture-correlation",
+              detail: "The account cannot accept a login while it is locked.",
+              errors: [
+                {
+                  field: "email",
+                  message: "This account is locked. Reset its password, then submit again.",
+                },
+              ],
+              recovery: "Reset the password or enter another account email.",
+              status: 422,
+              title: "Validation failed",
+              type: "https://xlr8flo.app/errors/validation_failed",
+            };
+            response.statusCode = 422;
+            response.setHeader("Content-Type", "application/problem+json");
+            response.end(JSON.stringify(problem));
+            return;
+          }
+
+          response.statusCode = 204;
+          response.end();
+        });
+      });
+    },
+    name: "xlr8flo-form-fixture",
+  };
+}
+
 export default defineConfig({
-  plugins: [react(), tailwindcss(), gridFixture()],
+  plugins: [react(), tailwindcss(), gridFixture(), formFixture()],
   test: {
     exclude: ["e2e/**", "tests/a11y/**", "tests/e2e/**", "node_modules/**"],
   },

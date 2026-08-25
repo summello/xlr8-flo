@@ -33,6 +33,7 @@ Security-tab ingestion, or hosted-run duration.
 | import-linter | Make `flo.modules.a` import `flo.modules.b` | `b514d35` / `d18a85f` | `Business modules are independent BROKEN` | Add failed/restored run links |
 | Float ban | Add `def total() -> float` under `modules/budget`; regression tests cover generic, union, optional, tuple, dictionary, and direct-call forms | `0dd8dd7` / `67eb6c1` | AST gate reports `float is banned in money-module annotations`; all eight checker tests pass after removal | Add failed/restored run links |
 | Hardcoded colour | Add `color: #ff0000` in a `.tsx` file | `d04ef5c` / `609c881` | `raw colour outside tokens.css` | Add failed/restored run links |
+| Generated API client | Edit a Pydantic request field without regenerating `apps/web/src/api/generated` | E04-S04 local plant / restore | `generated client is stale - run npm run generate:api` | Add failed/restored run links |
 | Roadmap drift | Edit generated section 5 in `docs/claude-plan.md` | `7e2d2d9` / `8b65468` | `docs/claude-plan.md §5 is stale` | Add failed/restored run links |
 | Scorecard drift | Edit `agents/SCORECARD.md` | `ada88b2` / `fe045f4` | `agents/SCORECARD.md is stale` | Add failed/restored run links |
 | Story-id commit | Use a commit subject without a story id or maintenance type | `02760d8` / `d854ee6` (amended) | `has neither a story id nor a maintenance type` | Add failed/restored run links |
@@ -81,9 +82,15 @@ tests fail when the `flo up` database is absent instead of silently skipping.
 | Backend tests and coverage | `pytest -q apps/api --cov=flo --cov-report=term-missing` |
 | Frontend lint | `npm --prefix apps/web run lint` |
 | Frontend types | `npm --prefix apps/web run typecheck` |
+| Generated API client | `PATH="$PWD/apps/api/.venv/bin:$PATH" npm --prefix apps/web run generate:api` followed by a clean diff under `apps/web/src/api/generated` |
 | Frontend unit tests | `npm --prefix apps/web run test` |
 | End-to-end and accessibility | `npm --prefix apps/web run test:e2e` |
 | Secret scanning | `gitleaks detect --no-banner` |
+
+The generator imports the production FastAPI application object and writes a deterministic
+OpenAPI document before running `openapi-typescript`. It never fetches an HTTP schema endpoint:
+production intentionally sets `openapi_url=None`. Commit both generated files after an API schema
+change; the frontend CI job installs the API package, regenerates them, and rejects any diff.
 
 ## Identity hashing configuration
 

@@ -315,6 +315,11 @@ def test_openapi_documents_problem_schema_for_every_operation(problem_app: FastA
 
     assert schema["openapi"].startswith("3.1.")
     assert "ProblemDetails" in schema["components"]["schemas"]
+    assert "ProblemFieldError" in schema["components"]["schemas"]
+    problem_errors = schema["components"]["schemas"]["ProblemDetails"]["properties"]["errors"]
+    assert problem_errors["anyOf"][0]["items"] == {
+        "$ref": "#/components/schemas/ProblemFieldError"
+    }
     for path_item in schema["paths"].values():
         for operation in path_item.values():
             responses = operation["responses"]

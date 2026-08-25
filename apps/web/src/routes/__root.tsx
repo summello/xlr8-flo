@@ -2,8 +2,10 @@ import { useCallback, useEffect, useState } from "react";
 
 import AppShell, { type ShellRoute } from "../components/shell/AppShell";
 import type { Phase } from "../components/command/registry";
+import FormGallery from "./_dev/form-gallery";
 import GridGallery from "./_dev/grid-gallery";
 import StatusGallery from "./_dev/status-gallery";
+import type { RoutePath } from "./route-paths";
 
 type RouteDefinition = {
   activeHref: string;
@@ -18,7 +20,7 @@ const BUSINESS_UNIT = ["/organization/infrastructure", "Infrastructure BU"] as c
 const PROJECT = ["/projects/north-plant-renewal", "North plant renewal"] as const;
 const SUB_PROJECT = ["/projects/north-plant-renewal/cooling", "Cooling system upgrade"] as const;
 
-const ROUTES: Readonly<Record<string, RouteDefinition>> = {
+const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
   "/": {
     activeHref: "/projects",
     description: "Choose a lifecycle module or press Command K or Control K to move anywhere.",
@@ -145,10 +147,17 @@ const ROUTES: Readonly<Record<string, RouteDefinition>> = {
     phase: "plan",
     title: "Data grid",
   },
+  "/_dev/forms": {
+    activeHref: "/projects",
+    description: "The shared accessible form primitives and generated API error bridge.",
+    hierarchy: [ORGANIZATION, ["/_dev/forms", "Forms kit"]],
+    phase: "foundation",
+    title: "Forms kit",
+  },
 };
 
 function routeFor(path: string): ShellRoute {
-  const definition = ROUTES[path] ?? ROUTES["/"]!;
+  const definition = ROUTES[path as RoutePath] ?? ROUTES["/"];
   return {
     ...definition,
     breadcrumbs: definition.hierarchy.map(([href, label]) => ({ href, label })),
@@ -180,6 +189,7 @@ export default function RootRoute() {
     <AppShell navigate={navigate} route={route}>
       {route.path === "/_dev/status-gallery" ? <StatusGallery /> : undefined}
       {route.path === "/_dev/grid" ? <GridGallery /> : undefined}
+      {route.path === "/_dev/forms" ? <FormGallery /> : undefined}
     </AppShell>
   );
 }

@@ -203,20 +203,21 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: apps/web/package-lock.json
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
       - run: npm --prefix apps/web ci
-      - run: npm --prefix apps/web run lint
-      - run: npm --prefix apps/web run typecheck
 
       - name: Generated API client is current (AGENTS.md 3.4)
         run: |
           set -euo pipefail
-          if ! grep -q '"generate:api"' apps/web/package.json; then
-            echo "::notice::no generate:api script yet - nothing to generate until the first OpenAPI surface lands"
-            exit 0
-          fi
+          python -m pip install -e apps/api
           npm --prefix apps/web run generate:api
           git diff --exit-code apps/web/src/api/generated \
             || { echo "::error::generated client is stale - run npm run generate:api"; exit 1; }
+
+      - run: npm --prefix apps/web run lint
+      - run: npm --prefix apps/web run typecheck
 
       - name: No hardcoded colour outside the token file (design-system MASTER 2.7)
         run: |

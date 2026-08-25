@@ -231,7 +231,7 @@ epics:
           - USR-009
         dep:
           - E02-S05
-        st: todo
+        st: in_progress
 
   - id: E03
     name: Application kernel
@@ -385,7 +385,7 @@ epics:
         dep:
           - E04-S03
           - E03-S03
-        st: todo
+        st: done
 
       - id: E04-S05
         t: "StatusPill primitive: closed per-document-type tone map, icon always, never author-coloured"

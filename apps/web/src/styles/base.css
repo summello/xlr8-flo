@@ -2,6 +2,7 @@
 @import "./tokens.css";
 @import "./material.css";
 @import "./grid.css";
+@import "./form.css";
 @config "../../tailwind.config.ts";
 
 @layer base {
