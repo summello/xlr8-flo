@@ -155,10 +155,22 @@ A user never has to compare hues to know which is which.
 
 **"Labels can be random" — with one constraint, for a reason.** Arbitrary tenant hex fails WCAG in one theme or both, and an admin picking `#FFFF00` at 2am ships an unreadable tag to every user. Instead tenants choose from **14 pre-verified swatches**, each authored as a light-text/light-tint and dark-text/dark-tint quad. It *feels* free, and it is impossible to make illegible:
 
-| | | | | | | |
-|---|---|---|---|---|---|---|
-| `slate` `#0D53AF` | `blue` `#2151AF` | `azure` `#076082` | `cyan` `#076566` | `teal` `#076758` | `green` `#076A2F` | `lime` `#456405` |
-| `gold` `#685704` | `amber` `#745004` | `orange` `#903A04` | `rose` `#9C1F43` | `magenta` `#8E2873` | `violet` `#673BA2` | `indigo` `#3C4BAF` |
+| Swatch | Light text / tint | Dark text / tint |
+|---|---|---|
+| `slate` | `#0D53AF` / `#DBE8FC` | `#80B3FF` / `#18212E` |
+| `blue` | `#2151AF` / `#DCE8FC` | `#86B1FF` / `#19212E` |
+| `azure` | `#076082` / `#D9F0FD` | `#70BADF` / `#12232C` |
+| `cyan` | `#076566` / `#D7F4F4` | `#71BFBF` / `#0F2525` |
+| `teal` | `#076758` / `#DAF5EE` | `#71C0AE` / `#102520` |
+| `green` | `#076A2F` / `#E1F5E4` | `#6FC382` / `#172419` |
+| `lime` | `#456405` / `#E8F2DD` | `#99BD69` / `#1D2314` |
+| `gold` | `#685704` / `#F0EBD5` | `#C2B069` / `#242011` |
+| `amber` | `#745004` / `#F4E7D3` | `#D3AB6B` / `#281F11` |
+| `orange` | `#903A04` / `#F7E0D5` | `#F7986C` / `#2C1C15` |
+| `rose` | `#9C1F43` / `#F4DADD` | `#FB90A2` / `#2C1B1D` |
+| `magenta` | `#8E2873` / `#F1DBE8` | `#EC93CE` / `#2A1B25` |
+| `violet` | `#673BA2` / `#E5DEF4` | `#C0A0FA` / `#221D2C` |
+| `indigo` | `#3C4BAF` / `#DEE5FA` | `#98ADFF` / `#1C202E` |
 
 Every one measures **≥5.9:1 light** and **≥7.5:1 dark** on its own tint. If a tenant expresses no preference, the swatch is assigned deterministically by hashing the tag name — so *Strategic* is the same colour for everyone, forever, without anyone choosing.
 
