@@ -40,7 +40,14 @@ class FakeIdentityConnection:
         params: tuple[object, ...] = (),
     ) -> FakeResult:
         if query.startswith("SELECT"):
-            stored = self.identities.get(cast(str, params[0]))
+            key = params[0]
+            if isinstance(key, str):
+                stored = self.identities.get(key)
+            else:
+                stored = next(
+                    (stored for stored in self.identities.values() if stored[0] == key),
+                    None,
+                )
             return FakeResult(None if stored is None else (stored[0], stored[1]))
         if query.startswith("INSERT"):
             identity_id, email, password_hash = cast(tuple[IdentityId, str, str], params)
@@ -49,9 +56,7 @@ class FakeIdentityConnection:
             self.identities[email] = (identity_id, password_hash)
             return FakeResult(rowcount=1)
         if "AND password_hash" in query:
-            replacement, identity_id, previous = cast(
-                tuple[str, IdentityId, str], params
-            )
+            replacement, identity_id, previous = cast(tuple[str, IdentityId, str], params)
             for email, stored in self.identities.items():
                 if stored == (identity_id, previous):
                     self.identities[email] = (identity_id, replacement)

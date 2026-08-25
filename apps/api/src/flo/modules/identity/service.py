@@ -17,6 +17,7 @@ from flo.kernel.tenancy.rls import tenant_transaction
 from flo.modules.identity.models import (
     BASELINE_ROLE_PERMISSIONS,
     BASELINE_ROLES,
+    MFA_REQUIRED_ROLE_CODES,
     AuthorizationTarget,
     PermissionCode,
     Role,
@@ -98,9 +99,7 @@ class RoleRepository(ScopedRepo[Role]):
             ON CONFLICT (org_id, code) DO NOTHING
             RETURNING id, code, name, is_system
             """,
-            self.scoped_params(
-                {"id": role_id, "code": code, "name": name, "is_system": is_system}
-            ),
+            self.scoped_params({"id": role_id, "code": code, "name": name, "is_system": is_system}),
         ).fetchone()
         if row is not None:
             return _role(row), True
@@ -154,8 +153,7 @@ class RoleRepository(ScopedRepo[Role]):
         if scope_type is ScopeType.ORG:
             raise ValueError("organization scope is derived from the session")
         if scope_type is ScopeType.BU and (
-            parent_scope_type is not ScopeType.ORG
-            or parent_scope_id != self.scope.org_id
+            parent_scope_type is not ScopeType.ORG or parent_scope_id != self.scope.org_id
         ):
             raise ValueError("a BU scope must be directly contained by the session organization")
         if scope_type is ScopeType.PROJECT and parent_scope_type is ScopeType.ORG:
@@ -163,21 +161,24 @@ class RoleRepository(ScopedRepo[Role]):
 
         parent_exists = parent_scope_type is ScopeType.ORG
         if not parent_exists:
-            parent_exists = self._connection.execute(
-                """
+            parent_exists = (
+                self._connection.execute(
+                    """
                 SELECT 1
                   FROM authorization_scope
                  WHERE org_id = %(org_id)s
                    AND scope_type = %(parent_scope_type)s
                    AND scope_id = %(parent_scope_id)s
                 """,
-                self.scoped_params(
-                    {
-                        "parent_scope_type": parent_scope_type.value,
-                        "parent_scope_id": parent_scope_id,
-                    }
-                ),
-            ).fetchone() is not None
+                    self.scoped_params(
+                        {
+                            "parent_scope_type": parent_scope_type.value,
+                            "parent_scope_id": parent_scope_id,
+                        }
+                    ),
+                ).fetchone()
+                is not None
+            )
         if not parent_exists:
             raise LookupError("parent authorization scope was not found")
 
@@ -215,11 +216,21 @@ class RoleRepository(ScopedRepo[Role]):
         user_id: IdentityId,
         role_id: UUID,
         target: AuthorizationTarget,
-    ) -> tuple[UserRole, bool]:
+    ) -> tuple[UserRole, bool, RoleCode]:
         if target.record_id is not None:
             raise ValueError("roles can be granted only to org, BU, or project scopes")
         if target.scope_type is ScopeType.ORG and target.scope_id != self.scope.org_id:
             raise LookupError("organization scope was not found")
+        role_row = self._connection.execute(
+            """
+            SELECT code FROM role
+             WHERE org_id = %(org_id)s AND id = %(role_id)s
+            """,
+            self.scoped_params({"role_id": role_id}),
+        ).fetchone()
+        if role_row is None:
+            raise LookupError("role or authorization scope was not found")
+        granted_role_code = RoleCode(cast(str, _value(role_row, 0, "code")))
         assignment_id = uuid4()
         row = self._connection.execute(
             """
@@ -253,7 +264,7 @@ class RoleRepository(ScopedRepo[Role]):
             ),
         ).fetchone()
         if row is not None:
-            return _user_role(row), True
+            return _user_role(row), True, granted_role_code
         existing = self._connection.execute(
             """
             SELECT id, user_id, role_id, scope_type, scope_id
@@ -275,18 +286,43 @@ class RoleRepository(ScopedRepo[Role]):
         ).fetchone()
         if existing is None:
             raise LookupError("role or authorization scope was not found")
-        return _user_role(existing), False
+        return _user_role(existing), False, granted_role_code
 
-    def revoke_role(self, assignment_id: UUID) -> UserRole | None:
+    def revoke_role(self, assignment_id: UUID) -> tuple[UserRole, RoleCode] | None:
         row = self._connection.execute(
             """
-            DELETE FROM user_role
-             WHERE org_id = %(org_id)s AND id = %(assignment_id)s
-            RETURNING id, user_id, role_id, scope_type, scope_id
+            DELETE FROM user_role AS assignment
+             USING role
+             WHERE assignment.org_id = %(org_id)s
+               AND assignment.id = %(assignment_id)s
+               AND role.org_id = assignment.org_id
+               AND role.id = assignment.role_id
+            RETURNING assignment.id, assignment.user_id, assignment.role_id,
+                      assignment.scope_type, assignment.scope_id, role.code
             """,
             self.scoped_params({"assignment_id": assignment_id}),
         ).fetchone()
-        return None if row is None else _user_role(row)
+        if row is None:
+            return None
+        return _user_role(row), RoleCode(cast(str, _value(row, 5, "code")))
+
+    def adjust_privileged_role_grants(self, user_id: IdentityId, delta: int) -> None:
+        """Maintain only a global count, never tenant role details, for the MFA gate."""
+
+        if delta not in {-1, 1}:
+            raise ValueError("privileged role grant adjustment must be -1 or 1")
+        updated = self._connection.execute(
+            """
+            UPDATE identity
+               SET privileged_role_grants = privileged_role_grants + %(delta)s,
+                   updated_at = CURRENT_TIMESTAMP
+             WHERE id = %(user_id)s
+               AND privileged_role_grants + %(delta)s >= 0
+            """,
+            {"user_id": user_id, "delta": delta},
+        )
+        if updated.rowcount != 1:
+            raise RuntimeError("privileged role grant count could not be updated")
 
 
 class IdentityAuthorizationService:
@@ -410,8 +446,12 @@ class IdentityAuthorizationService:
         """Assign a role at one validated contained scope and audit the grant."""
 
         with tenant_transaction(self._connection, self._scope):
-            assignment, created = self._repository().grant_role(user_id, role_id, target)
+            assignment, created, granted_role_code = self._repository().grant_role(
+                user_id, role_id, target
+            )
             if created:
+                if granted_role_code in MFA_REQUIRED_ROLE_CODES:
+                    self._repository().adjust_privileged_role_grants(user_id, 1)
                 self._audit().write(
                     actor=self._actor,
                     action="user_role.grant",
@@ -427,9 +467,12 @@ class IdentityAuthorizationService:
         """Remove an assignment and audit its complete prior grant."""
 
         with tenant_transaction(self._connection, self._scope):
-            assignment = self._repository().revoke_role(assignment_id)
-            if assignment is None:
+            revoked = self._repository().revoke_role(assignment_id)
+            if revoked is None:
                 return False
+            assignment, revoked_role_code = revoked
+            if revoked_role_code in MFA_REQUIRED_ROLE_CODES:
+                self._repository().adjust_privileged_role_grants(assignment.user_id, -1)
             self._audit().write(
                 actor=self._actor,
                 action="user_role.revoke",

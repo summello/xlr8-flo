@@ -100,6 +100,13 @@ class Settings(BaseSettings):
     )
     identity_argon2_parallelism: int = Field(default=4, ge=1, le=16)
     identity_argon2_max_concurrency: int = Field(default=4, ge=1, le=32)
+    mfa_encryption_key: SecretStr | None = Field(
+        default=None,
+        validation_alias="MFA_ENCRYPTION_KEY",
+    )
+    mfa_max_failed_attempts: int = Field(default=5, ge=1, le=20)
+    mfa_failure_window_seconds: int = Field(default=5 * 60, ge=30, le=3600)
+    mfa_lock_duration_seconds: int = Field(default=15 * 60, ge=30, le=86400)
     session_idle_timeout_seconds: int = Field(default=8 * 60 * 60, ge=60)
     session_absolute_timeout_seconds: int = Field(default=12 * 60 * 60, ge=60)
     password_reset_ttl_seconds: int = Field(default=30 * 60, ge=60, le=24 * 60 * 60)
@@ -137,9 +144,7 @@ class Settings(BaseSettings):
     def required_argon2_instance_memory_mib(self) -> int:
         """Return hashing memory plus the process baseline, rounded up to MiB."""
 
-        hashing_kib = (
-            self.identity_argon2_memory_cost_kib * self.identity_argon2_max_concurrency
-        )
+        hashing_kib = self.identity_argon2_memory_cost_kib * self.identity_argon2_max_concurrency
         hashing_mib = (hashing_kib + 1023) // 1024
         return hashing_mib + ARGON2_PROCESS_BASELINE_MIB
 

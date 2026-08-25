@@ -13,6 +13,7 @@ from flo.kernel.session.middleware import (
     install_browser_security,
     install_session_authentication,
 )
+from flo.kernel.session.stepup import recent_auth_max_age, requires_recent_auth
 from flo.kernel.session.store import (
     IssuedSession,
     RequestDevice,
@@ -43,5 +44,7 @@ __all__ = [
     "install_csrf_protection",
     "install_session_authentication",
     "request_device",
+    "recent_auth_max_age",
+    "requires_recent_auth",
     "rotate_csrf_cookie",
 ]

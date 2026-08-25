@@ -9,6 +9,7 @@ import pytest
 from flo.modules.identity.models import (
     BASELINE_ROLE_PERMISSIONS,
     BASELINE_ROLES,
+    MFA_REQUIRED_ROLE_CODES,
     PERMISSION_CODES,
     AuthorizationTarget,
     ScopeType,
@@ -78,6 +79,11 @@ def test_baseline_role_and_permission_catalogs_are_complete_by_name() -> None:
     assert {str(permission) for permission in PERMISSION_CODES} == EXPECTED_PERMISSIONS
     assert set(BASELINE_ROLE_PERMISSIONS) == {code for code, _ in BASELINE_ROLES}
     assert all(BASELINE_ROLE_PERMISSIONS[code] for code, _ in BASELINE_ROLES)
+    required_mfa = {str(code) for code in MFA_REQUIRED_ROLE_CODES}
+    expected_mfa = {"organization-administrator", "auditor"}
+    assert required_mfa == expected_mfa, (
+        f"MISSING privileged MFA roles: {sorted(expected_mfa - required_mfa)}"
+    )
 
 
 def test_every_command_palette_permission_exists_in_the_server_catalog() -> None:

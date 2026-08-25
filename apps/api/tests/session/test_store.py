@@ -217,7 +217,7 @@ def test_device_metadata_is_truncated_and_contains_no_version_or_precise_address
     )
 
 
-def test_migration_has_complete_constraints_and_is_reversible_with_seeded_data(
+def test_mfa_migration_extends_sessions_and_is_reversible_with_seeded_data(
     session_database: SessionDatabase,
 ) -> None:
     connection = session_database.connection
@@ -252,6 +252,8 @@ def test_migration_has_complete_constraints_and_is_reversible_with_seeded_data(
         "revoked_at",
         "ip_prefix",
         "user_agent",
+        "last_auth_at",
+        "mfa_verified_at",
     ]
     assert [row[0] for row in event_columns] == [
         "id",
@@ -266,20 +268,26 @@ def test_migration_has_complete_constraints_and_is_reversible_with_seeded_data(
         "auth_session_expiry_order",
         "auth_session_identity_id_fkey",
         "auth_session_idle_timeout_seconds_check",
+        "auth_session_mfa_verification_order",
         "auth_session_pkey",
+        "auth_session_recent_auth_order",
         "auth_session_revocation_order",
         "auth_session_token_hash_key",
         "auth_session_token_hash_sha256",
     ]
     assert trigger == [("session_security_event_append_only",)]
+    persisted_session = store(session_database, MutableClock(START)).issue(
+        session_database.identity_id, DEVICE
+    )
 
     with pytest.raises(CheckViolation):
         connection.execute(
             """
             INSERT INTO auth_session
                 (id, identity_id, token_hash, created_at, last_seen_at,
-                 idle_timeout_seconds, idle_expires_at, absolute_expires_at, user_agent)
-            VALUES (%s, %s, 'plaintext', %s, %s, 60, %s, %s, 'Other browser')
+                 idle_timeout_seconds, idle_expires_at, absolute_expires_at, user_agent,
+                 last_auth_at)
+            VALUES (%s, %s, 'plaintext', %s, %s, 60, %s, %s, 'Other browser', %s)
             """,
             (
                 uuid4(),
@@ -288,6 +296,7 @@ def test_migration_has_complete_constraints_and_is_reversible_with_seeded_data(
                 START,
                 START + timedelta(minutes=1),
                 START + timedelta(minutes=2),
+                START,
             ),
         )
 
@@ -303,10 +312,10 @@ def test_migration_has_complete_constraints_and_is_reversible_with_seeded_data(
     try:
         session_database.migration.downgrade(connection)
         assert connection.execute("SELECT to_regclass('public.auth_session')").fetchone() == (
-            None,
+            "auth_session",
         )
         assert connection.execute(
-            "SELECT to_regclass('public.session_security_event')"
+            "SELECT to_regclass('public.mfa_factor')"
         ).fetchone() == (None,)
         assert connection.execute(
             sql.SQL("SELECT value FROM {}").format(sql.Identifier(sentinel))
@@ -314,5 +323,9 @@ def test_migration_has_complete_constraints_and_is_reversible_with_seeded_data(
         assert connection.execute(
             "SELECT email FROM identity WHERE id = %s", (session_database.identity_id,)
         ).fetchone() == ("session@example.test",)
+        assert connection.execute(
+            "SELECT id FROM auth_session WHERE identity_id = %s",
+            (session_database.identity_id,),
+        ).fetchall() == [(persisted_session.session.id,)]
     finally:
         connection.execute(sql.SQL("DROP TABLE IF EXISTS {}").format(sql.Identifier(sentinel)))

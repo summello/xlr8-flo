@@ -174,6 +174,15 @@ BASELINE_ROLES: tuple[tuple[RoleCode, str], ...] = tuple(
     )
 )
 
+# Authentication consumes only this closed classification. Tenant-owned role and
+# scope details never cross into the pre-tenant credential boundary.
+MFA_REQUIRED_ROLE_CODES: frozenset[RoleCode] = frozenset(
+    {
+        role_code("organization-administrator"),
+        role_code("auditor"),
+    }
+)
+
 _ALL_PERMISSIONS = frozenset(PERMISSION_CODES)
 _READ_ONLY_PERMISSIONS = frozenset(
     permission

@@ -412,3 +412,43 @@ def test_rls_and_scoped_queries_hide_another_organizations_grants(
         "project.view",
         AuthorizationTarget.organization(database.org_a),
     ) == (False, False)
+
+
+def test_privileged_role_grants_maintain_global_mfa_count_transactionally(
+    authorization_database: AuthorizationDatabase,
+) -> None:
+    database = authorization_database
+    scope = Scope(database.org_a)
+    user_id = insert_identity(database, "privileged-mfa")
+    with service_for(database, scope, "privileged-mfa-grants") as service:
+        roles = service.seed_baseline_roles()
+        regular = service.grant_role(
+            user_id,
+            roles[role_code("requestor")].id,
+            AuthorizationTarget.organization(database.org_a),
+        )
+        administrator = service.grant_role(
+            user_id,
+            roles[role_code("organization-administrator")].id,
+            AuthorizationTarget.organization(database.org_a),
+        )
+        auditor = service.grant_role(
+            user_id,
+            roles[role_code("auditor")].id,
+            AuthorizationTarget.organization(database.org_a),
+        )
+
+    assert database.connection.execute(
+        "SELECT privileged_role_grants FROM identity WHERE id = %s", (user_id,)
+    ).fetchone() == (2,)
+    with service_for(database, scope, "privileged-mfa-revokes") as service:
+        assert service.revoke_role(regular.id)
+        assert service.revoke_role(administrator.id)
+    assert database.connection.execute(
+        "SELECT privileged_role_grants FROM identity WHERE id = %s", (user_id,)
+    ).fetchone() == (1,)
+    with service_for(database, scope, "privileged-mfa-last-revoke") as service:
+        assert service.revoke_role(auditor.id)
+    assert database.connection.execute(
+        "SELECT privileged_role_grants FROM identity WHERE id = %s", (user_id,)
+    ).fetchone() == (0,)

@@ -15,7 +15,7 @@ from uuid import UUID, uuid4
 
 from starlette.requests import Request
 
-from flo.kernel.identity import IdentityId
+from flo.kernel.identity.port import IdentityId
 
 SessionId = NewType("SessionId", UUID)
 Clock = Callable[[], datetime]
@@ -45,6 +45,8 @@ class SessionRecord:
     identity_id: IdentityId
     created_at: datetime
     last_seen_at: datetime
+    last_auth_at: datetime
+    mfa_verified_at: datetime | None
     idle_expires_at: datetime
     absolute_expires_at: datetime
     ip_prefix: str | None
@@ -160,16 +162,18 @@ def _record(row: Sequence[object]) -> SessionRecord:
         identity_id=IdentityId(cast(UUID, row[1])),
         created_at=_as_datetime(row[2]),
         last_seen_at=_as_datetime(row[3]),
-        idle_expires_at=_as_datetime(row[4]),
-        absolute_expires_at=_as_datetime(row[5]),
-        ip_prefix=None if row[6] is None else str(row[6]),
-        user_agent=cast(str, row[7]),
+        last_auth_at=_as_datetime(row[4]),
+        mfa_verified_at=None if row[5] is None else _as_datetime(row[5]),
+        idle_expires_at=_as_datetime(row[6]),
+        absolute_expires_at=_as_datetime(row[7]),
+        ip_prefix=None if row[8] is None else str(row[8]),
+        user_agent=cast(str, row[9]),
     )
 
 
 _RETURNING_COLUMNS = (
-    "id, identity_id, created_at, last_seen_at, idle_expires_at, "
-    "absolute_expires_at, ip_prefix, user_agent"
+    "id, identity_id, created_at, last_seen_at, last_auth_at, mfa_verified_at, "
+    "idle_expires_at, absolute_expires_at, ip_prefix, user_agent"
 )
 
 
@@ -193,7 +197,13 @@ class SessionStore:
         self._absolute_timeout = absolute_timeout
         self._clock = clock
 
-    def issue(self, identity_id: IdentityId, device: RequestDevice) -> IssuedSession:
+    def issue(
+        self,
+        identity_id: IdentityId,
+        device: RequestDevice,
+        *,
+        mfa_verified: bool = False,
+    ) -> IssuedSession:
         """Persist one 256-bit opaque token while retaining only its SHA-256 hash."""
 
         token = secrets.token_urlsafe(32)
@@ -206,9 +216,9 @@ class SessionStore:
                 f"""
                 INSERT INTO auth_session
                     (id, identity_id, token_hash, created_at, last_seen_at,
-                     idle_timeout_seconds, idle_expires_at, absolute_expires_at,
-                     ip_prefix, user_agent)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                     last_auth_at, mfa_verified_at, idle_timeout_seconds,
+                     idle_expires_at, absolute_expires_at, ip_prefix, user_agent)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING {_RETURNING_COLUMNS}
                 """,
                 (
@@ -217,6 +227,8 @@ class SessionStore:
                     hash_session_token(token),
                     now,
                     now,
+                    now,
+                    now if mfa_verified else None,
                     int(self._idle_timeout.total_seconds()),
                     idle_expires_at,
                     absolute_expires_at,
@@ -281,6 +293,8 @@ class SessionStore:
         identity_id: IdentityId,
         device: RequestDevice,
         reason: RotationReason,
+        *,
+        mfa_verified: bool = False,
     ) -> IssuedSession:
         """Revoke the old row and issue a distinct row for a privilege change."""
 
@@ -301,9 +315,9 @@ class SessionStore:
                 f"""
                 INSERT INTO auth_session
                     (id, identity_id, token_hash, created_at, last_seen_at,
-                     idle_timeout_seconds, idle_expires_at, absolute_expires_at,
-                     ip_prefix, user_agent)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                     last_auth_at, mfa_verified_at, idle_timeout_seconds,
+                     idle_expires_at, absolute_expires_at, ip_prefix, user_agent)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING {_RETURNING_COLUMNS}
                 """,
                 (
@@ -312,6 +326,8 @@ class SessionStore:
                     hash_session_token(token),
                     now,
                     now,
+                    now,
+                    now if mfa_verified else None,
                     int(self._idle_timeout.total_seconds()),
                     idle_expires_at,
                     absolute_expires_at,

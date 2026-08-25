@@ -934,6 +934,37 @@
       },
       "recap": "Implemented identity-scoped password-reset issuance through the expiring transactional outbox, atomic single-use consumption, password-policy enforcement, all-session revocation, append-only pre-auth security events, per-email/IP rate limits, and the __Host-flo_session cookie rename.",
       "title": "Password reset: single-use short-lived tokens, no account enumeration"
+    },
+    {
+      "story": "E02-S04",
+      "kind": "security",
+      "size": "L",
+      "tags": [
+        "auth",
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E02-S04"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "6943502c-d56e-4353-af9a-3f691bb26487",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Delivered encrypted TOTP MFA with one-time recovery codes, replay prevention, privileged-role enrollment gates, factor lockout evidence, and rotating-session step-up authentication. Added pyotp for RFC 6238 interoperability and cryptography for authenticated encryption because the standard library provides neither primitive. After rebasing onto E02-S03, updated its reset fixture to apply the complete migration chain in order and downgrade it in reverse so shared auth_session changes remain integration-safe.",
+      "title": "TOTP MFA, mandatory for privileged roles, step-up re-auth for high-risk actions"
     }
   ]
 }

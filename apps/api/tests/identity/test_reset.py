@@ -60,10 +60,8 @@ from flo.kernel.session import (
 from flo.kernel.session.store import SessionConnection
 
 ROOT = Path(__file__).resolve().parents[4]
-IDENTITY_MIGRATION = ROOT / "migrations" / "20260824_0002_identity.py"
-SESSION_MIGRATION = ROOT / "migrations" / "20260825_0004_session.py"
-JOBS_MIGRATION = ROOT / "migrations" / "20260825_0007_jobs_outbox.py"
-RESET_MIGRATION = ROOT / "migrations" / "20260825_0010_password_reset.py"
+MIGRATION_DIRECTORY = ROOT / "migrations"
+RESET_REVISION = "20260825_0010"
 EMAIL_TEMPLATE = ROOT / "apps" / "api" / "templates" / "email" / "password_reset.html"
 START = datetime.now(UTC).replace(microsecond=0)
 DEVICE = RequestDevice("203.0.113.0/24", "Chrome on macOS")
@@ -81,6 +79,13 @@ def _load_migration(path: Path, name: str) -> ModuleType:
     migration = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(migration)
     return migration
+
+
+def _load_migration_chain() -> tuple[ModuleType, ...]:
+    return tuple(
+        _load_migration(path, f"reset_{path.stem}")
+        for path in sorted(MIGRATION_DIRECTORY.glob("[0-9]*.py"))
+    )
 
 
 def _drop_objects(connection: psycopg.Connection[tuple[object, ...]]) -> None:
@@ -141,11 +146,12 @@ def reset_database() -> Iterator[ResetDatabase]:
         raise
 
     _drop_objects(connection)
-    _load_migration(IDENTITY_MIGRATION, "reset_identity_migration").upgrade(connection)
-    _load_migration(SESSION_MIGRATION, "reset_session_migration").upgrade(connection)
-    _load_migration(JOBS_MIGRATION, "reset_outbox_migration").upgrade(connection)
-    migration = _load_migration(RESET_MIGRATION, "reset_migration")
-    migration.upgrade(connection)
+    migrations = _load_migration_chain()
+    for migration in migrations:
+        migration.upgrade(connection)
+    reset_migration = next(
+        migration for migration in migrations if migration.revision == RESET_REVISION
+    )
     settings = _settings()
     provider = run(
         build_local_identity_provider(cast(IdentityConnection, connection), settings)
@@ -169,10 +175,11 @@ def reset_database() -> Iterator[ResetDatabase]:
             service,
             settings,
             clock,
-            migration,
+            reset_migration,
         )
     finally:
-        _drop_objects(connection)
+        for migration in reversed(migrations):
+            migration.downgrade(connection)
         connection.close()
 
 
@@ -817,19 +824,20 @@ def test_migration_contracts_are_present_bite_and_downgrade_preserves_seeded_row
         """,
         (existing_id, org_id),
     )
-    reset_database.migration.downgrade(connection)
+    with connection.transaction(force_rollback=True):
+        reset_database.migration.downgrade(connection)
 
-    assert connection.execute(
-        "SELECT id, org_id FROM outbox WHERE id = %s", (existing_id,)
-    ).fetchone() == (existing_id, org_id)
-    assert connection.execute("SELECT to_regclass('public.password_reset')").fetchone() == (
-        None,
-    )
-    restored = connection.execute(
-        "SELECT is_nullable FROM information_schema.columns "
-        "WHERE table_name = 'session_security_event' AND column_name = 'session_id'"
-    ).fetchone()
-    assert restored == ("NO",)
+        assert connection.execute(
+            "SELECT id, org_id FROM outbox WHERE id = %s", (existing_id,)
+        ).fetchone() == (existing_id, org_id)
+        assert connection.execute(
+            "SELECT to_regclass('public.password_reset')"
+        ).fetchone() == (None,)
+        restored = connection.execute(
+            "SELECT is_nullable FROM information_schema.columns "
+            "WHERE table_name = 'session_security_event' AND column_name = 'session_id'"
+        ).fetchone()
+        assert restored == ("NO",)
 
 
 def test_email_template_names_every_required_user_message() -> None:

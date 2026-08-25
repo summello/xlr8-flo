@@ -14,13 +14,18 @@ import uvicorn
 from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 
-from flo.api.auth import _database_url, production_session_store_factory
+from flo.api.auth import (
+    _database_url,
+    production_mfa_service_factory,
+    production_session_store_factory,
+)
 from flo.api.auth import router as auth_router
 from flo.api.internal import router as internal_router
 from flo.api.origin_auth import require_origin_secret
 from flo.kernel.authz import PermissionResolverFactory, install_authorization, public_route
 from flo.kernel.config import Settings, enforce_argon2_memory_limit
 from flo.kernel.errors import ErrorCode, ProblemError, install_problem_details
+from flo.kernel.identity import install_mfa_access_gate
 from flo.kernel.session import (
     install_browser_security,
     install_csrf_protection,
@@ -108,6 +113,7 @@ install_authorization(
 # Starlette prepends user middleware. Request flow is CSRF -> session -> tenancy;
 # correlation then serializes their failures, and browser headers wrap every path.
 install_tenant_context(app)
+install_mfa_access_gate(app, production_mfa_service_factory())
 install_session_authentication(app, production_session_store_factory())
 install_csrf_protection(app)
 install_problem_details(app)

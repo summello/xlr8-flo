@@ -3,20 +3,24 @@
 from __future__ import annotations
 
 import asyncio
-from asyncio import AbstractEventLoop
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from typing import Protocol, cast
 from uuid import UUID, uuid4
-from weakref import WeakKeyDictionary
 
-from argon2 import PasswordHasher, Type
+from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
 from psycopg.errors import UniqueViolation
 
 from flo.kernel.config import Settings
-from flo.kernel.errors import ErrorCode, ProblemError
+from flo.kernel.identity.hashing import (
+    acquire_argon2,
+    argon2_semaphore,
+    build_argon2_hasher,
+    run_argon2,
+    try_acquire_argon2,
+)
 from flo.kernel.identity.policy import PasswordPolicy, normalize_password
 from flo.kernel.identity.port import (
     AuthResult,
@@ -29,64 +33,6 @@ from flo.kernel.identity.port import (
 )
 
 _DUMMY_PASSWORD = "dummy credential used only to equalize authentication work"
-_ARGON2_WAIT_TIMEOUT_SECONDS = 2.0
-_ARGON2_RETRY_AFTER_SECONDS = 2
-
-# One semaphore per running event loop is process-global to every provider on that
-# loop. The weak keys keep short-lived test loops from retaining their semaphores.
-_ARGON2_SEMAPHORES: WeakKeyDictionary[
-    AbstractEventLoop, tuple[int, asyncio.Semaphore]
-] = WeakKeyDictionary()
-
-
-def _argon2_semaphore(max_concurrency: int) -> asyncio.Semaphore:
-    loop = asyncio.get_running_loop()
-    configured = _ARGON2_SEMAPHORES.get(loop)
-    if configured is None:
-        semaphore = asyncio.Semaphore(max_concurrency)
-        _ARGON2_SEMAPHORES[loop] = (max_concurrency, semaphore)
-        return semaphore
-    capacity, semaphore = configured
-    if capacity != max_concurrency:
-        raise RuntimeError("Argon2 concurrency must be configured once per process")
-    return semaphore
-
-
-async def _acquire_argon2(semaphore: asyncio.Semaphore) -> None:
-    try:
-        await asyncio.wait_for(
-            semaphore.acquire(),
-            timeout=_ARGON2_WAIT_TIMEOUT_SECONDS,
-        )
-    except TimeoutError as exc:
-        raise ProblemError(
-            ErrorCode.SERVICE_UNAVAILABLE,
-            headers={"Retry-After": str(_ARGON2_RETRY_AFTER_SECONDS)},
-        ) from exc
-
-
-async def _try_acquire_argon2(semaphore: asyncio.Semaphore) -> bool:
-    """Acquire immediately when capacity is free without joining the wait queue."""
-
-    if semaphore.locked():
-        return False
-    await semaphore.acquire()
-    return True
-
-
-async def _run_argon2[**P, T](
-    max_concurrency: int,
-    operation: Callable[P, T],
-    /,
-    *args: P.args,
-    **kwargs: P.kwargs,
-) -> T:
-    semaphore = _argon2_semaphore(max_concurrency)
-    await _acquire_argon2(semaphore)
-    try:
-        return await asyncio.to_thread(operation, *args, **kwargs)
-    finally:
-        semaphore.release()
 
 
 def _normalize_email(email: str) -> str:
@@ -104,6 +50,8 @@ class _StoredIdentity:
 
 class _IdentityStore(Protocol):
     def find_by_email(self, email: str) -> _StoredIdentity | None: ...
+
+    def find_by_id(self, identity_id: IdentityId) -> _StoredIdentity | None: ...
 
     def insert(self, identity_id: IdentityId, email: str, password_hash: str) -> None: ...
 
@@ -144,6 +92,15 @@ class _PostgresIdentityStore:
         row = self._connection.execute(
             "SELECT id, password_hash FROM identity WHERE email = %s",
             (email,),
+        ).fetchone()
+        if row is None:
+            return None
+        return _StoredIdentity(IdentityId(cast(UUID, row[0])), cast(str, row[1]))
+
+    def find_by_id(self, identity_id: IdentityId) -> _StoredIdentity | None:
+        row = self._connection.execute(
+            "SELECT id, password_hash FROM identity WHERE id = %s",
+            (identity_id,),
         ).fetchone()
         if row is None:
             return None
@@ -205,8 +162,8 @@ class LocalIdentityProvider:
 
         # Take the permit before the account lookup. Branching first would let a
         # saturated server answer unknown accounts faster than known accounts.
-        semaphore = _argon2_semaphore(self._max_concurrency)
-        await _acquire_argon2(semaphore)
+        semaphore = argon2_semaphore(self._max_concurrency)
+        await acquire_argon2(semaphore)
         try:
             stored = self._store.find_by_email(_normalize_email(email))
             normalized = normalize_password(password)
@@ -226,8 +183,8 @@ class LocalIdentityProvider:
         # unknown emails only for identities with a pre-change hash, and only until
         # their next successful sign-in; operations must keep that rehash window short.
         if self._hasher.check_needs_rehash(stored.password_hash):
-            rehash_semaphore = _argon2_semaphore(self._max_concurrency)
-            if await _try_acquire_argon2(rehash_semaphore):
+            rehash_semaphore = argon2_semaphore(self._max_concurrency)
+            if await try_acquire_argon2(rehash_semaphore):
                 try:
                     replacement = await asyncio.to_thread(self._hasher.hash, normalized)
                 finally:
@@ -244,7 +201,7 @@ class LocalIdentityProvider:
 
         self._require_policy(password)
         identity_id = IdentityId(uuid4())
-        password_hash = await _run_argon2(
+        password_hash = await run_argon2(
             self._max_concurrency,
             self._hasher.hash,
             normalize_password(password),
@@ -256,7 +213,7 @@ class LocalIdentityProvider:
         """Validate and replace an identity's local credential."""
 
         self._require_policy(new)
-        password_hash = await _run_argon2(
+        password_hash = await run_argon2(
             self._max_concurrency,
             self._hasher.hash,
             normalize_password(new),
@@ -269,10 +226,31 @@ class LocalIdentityProvider:
 
         return self._policy.verify(password)
 
+    async def verify_current_password(
+        self,
+        identity_id: IdentityId,
+        password: str,
+    ) -> bool:
+        """Verify a known identity's password for credential-management re-auth."""
+
+        stored = self._store.find_by_id(identity_id)
+        password_hash = self._dummy_hash if stored is None else stored.password_hash
+        try:
+            await run_argon2(
+                self._max_concurrency,
+                self._hasher.verify,
+                password_hash,
+                normalize_password(password),
+            )
+        except (InvalidHashError, VerificationError, VerifyMismatchError):
+            return False
+        return stored is not None
+
     def _require_policy(self, password: str) -> None:
         result = self.verify_password_policy(password)
         if not result.accepted:
             raise PasswordPolicyError(result)
+
 
 async def build_local_identity_provider(
     connection: IdentityConnection,
@@ -280,13 +258,8 @@ async def build_local_identity_provider(
 ) -> IdentityProvider:
     """Build the Phase-1 adapter while returning only the provider port type."""
 
-    hasher = PasswordHasher(
-        time_cost=settings.identity_argon2_time_cost,
-        memory_cost=settings.identity_argon2_memory_cost_kib,
-        parallelism=settings.identity_argon2_parallelism,
-        type=Type.ID,
-    )
-    dummy_hash = await _run_argon2(
+    hasher = build_argon2_hasher(settings)
+    dummy_hash = await run_argon2(
         settings.identity_argon2_max_concurrency,
         hasher.hash,
         _DUMMY_PASSWORD,

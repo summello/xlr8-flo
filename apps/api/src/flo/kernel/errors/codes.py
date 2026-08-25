@@ -20,9 +20,12 @@ class ErrorCode(StrEnum):
     INSUFFICIENT_BUDGET = "insufficient-budget"
     INTERNAL_ERROR = "internal-error"
     METHOD_NOT_ALLOWED = "method-not-allowed"
+    MFA_ENROLLMENT_REQUIRED = "mfa-enrollment-required"
+    MFA_VERIFICATION_REQUIRED = "mfa-verification-required"
     NOT_FOUND = "not-found"
     REQUEST_IN_FLIGHT = "request_in_flight"
     SERVICE_UNAVAILABLE = "service-unavailable"
+    STEP_UP_REQUIRED = "step-up-required"
     TOO_MANY_REQUESTS = "too-many-requests"
     UNAUTHORIZED = "unauthorized"
     UNSUPPORTED_MEDIA_TYPE = "unsupported-media-type"
@@ -98,6 +101,20 @@ ERROR_TAXONOMY: dict[ErrorCode, ErrorTaxonomyEntry] = {
         detail="The requested action is not available for this resource. No data was changed.",
         recovery="Use one of the actions supported by this resource.",
     ),
+    ErrorCode.MFA_ENROLLMENT_REQUIRED: ErrorTaxonomyEntry(
+        status=403,
+        type_uri="https://xlr8flo.app/errors/mfa-enrollment-required",
+        title="Set up multi-factor authentication to continue",
+        detail="This privileged identity must enroll a current MFA factor before continuing.",
+        recovery="Complete MFA enrollment or sign out.",
+    ),
+    ErrorCode.MFA_VERIFICATION_REQUIRED: ErrorTaxonomyEntry(
+        status=403,
+        type_uri="https://xlr8flo.app/errors/mfa-verification-required",
+        title="Verify multi-factor authentication to continue",
+        detail="This session must verify its enrolled MFA factor before continuing.",
+        recovery="Enter a current authenticator or recovery code, then try again.",
+    ),
     ErrorCode.NOT_FOUND: ErrorTaxonomyEntry(
         status=404,
         type_uri="https://xlr8flo.app/errors/not-found",
@@ -118,6 +135,13 @@ ERROR_TAXONOMY: dict[ErrorCode, ErrorTaxonomyEntry] = {
         title="The service is temporarily unavailable",
         detail="The request could not be completed. No data was changed.",
         recovery="Try again in a few minutes. If the problem continues, contact support.",
+    ),
+    ErrorCode.STEP_UP_REQUIRED: ErrorTaxonomyEntry(
+        status=403,
+        type_uri="https://xlr8flo.app/errors/step-up-required",
+        title="Confirm your identity to continue",
+        detail="This action requires authentication completed within the last 15 minutes.",
+        recovery="Verify your current MFA factor, then retry the original action.",
     ),
     ErrorCode.TOO_MANY_REQUESTS: ErrorTaxonomyEntry(
         status=429,

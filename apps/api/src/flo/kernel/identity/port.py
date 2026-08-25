@@ -92,4 +92,10 @@ class IdentityProvider(Protocol):
 
     async def change_password(self, identity_id: IdentityId, new: str) -> None: ...
 
+    async def verify_current_password(
+        self,
+        identity_id: IdentityId,
+        password: str,
+    ) -> bool: ...
+
     def verify_password_policy(self, password: str) -> PolicyResult: ...

@@ -18,6 +18,7 @@ from flo.kernel.session.store import SessionConnection
 ROOT = Path(__file__).resolve().parents[4]
 IDENTITY_MIGRATION = ROOT / "migrations" / "20260824_0002_identity.py"
 SESSION_MIGRATION = ROOT / "migrations" / "20260825_0004_session.py"
+MFA_MIGRATION = ROOT / "migrations" / "20260825_0011_mfa.py"
 
 
 def load_migration(path: Path, name: str) -> ModuleType:
@@ -51,12 +52,19 @@ def session_database() -> Iterator[SessionDatabase]:
 
     identity_migration = load_migration(IDENTITY_MIGRATION, "session_test_identity")
     session_migration = load_migration(SESSION_MIGRATION, "session_test_migration")
+    mfa_migration = load_migration(MFA_MIGRATION, "session_test_mfa")
+    connection.execute("DROP TABLE IF EXISTS mfa_security_event")
+    connection.execute("DROP FUNCTION IF EXISTS reject_mfa_security_event_mutation()")
+    connection.execute("DROP TABLE IF EXISTS mfa_totp_consumption")
+    connection.execute("DROP TABLE IF EXISTS mfa_recovery_code")
+    connection.execute("DROP TABLE IF EXISTS mfa_factor")
     connection.execute("DROP TABLE IF EXISTS session_security_event")
     connection.execute("DROP TABLE IF EXISTS auth_session")
     connection.execute("DROP FUNCTION IF EXISTS reject_session_security_event_mutation()")
     connection.execute("DROP TABLE IF EXISTS identity")
     identity_migration.upgrade(connection)
     session_migration.upgrade(connection)
+    mfa_migration.upgrade(connection)
     identity_id = IdentityId(uuid4())
     connection.execute(
         "INSERT INTO identity (id, email, password_hash) VALUES (%s, %s, %s)",
@@ -67,9 +75,14 @@ def session_database() -> Iterator[SessionDatabase]:
             connection,
             cast(SessionConnection, connection),
             identity_id,
-            session_migration,
+            mfa_migration,
         )
     finally:
+        connection.execute("DROP TABLE IF EXISTS mfa_security_event")
+        connection.execute("DROP FUNCTION IF EXISTS reject_mfa_security_event_mutation()")
+        connection.execute("DROP TABLE IF EXISTS mfa_totp_consumption")
+        connection.execute("DROP TABLE IF EXISTS mfa_recovery_code")
+        connection.execute("DROP TABLE IF EXISTS mfa_factor")
         connection.execute("DROP TABLE IF EXISTS session_security_event")
         connection.execute("DROP TABLE IF EXISTS auth_session")
         connection.execute("DROP FUNCTION IF EXISTS reject_session_security_event_mutation()")

@@ -12,11 +12,19 @@ from fastapi import FastAPI
 
 from flo.api.auth import (
     get_identity_provider,
+    get_mfa_service,
     get_session_store,
     router,
 )
 from flo.kernel.errors import install_problem_details
-from flo.kernel.identity import AuthResult, IdentityId, IdentityProvider, PolicyResult
+from flo.kernel.identity import (
+    AuthResult,
+    IdentityId,
+    IdentityProvider,
+    MfaAccessRequirement,
+    MfaService,
+    PolicyResult,
+)
 from flo.kernel.session import (
     CSRF_COOKIE_NAME,
     CSRF_HEADER_NAME,
@@ -50,9 +58,18 @@ class SuccessfulProvider:
     async def change_password(self, identity_id: IdentityId, new: str) -> None:
         del identity_id, new
 
+    async def verify_current_password(self, identity_id: IdentityId, password: str) -> bool:
+        return identity_id == self._identity_id and password == "correct safe passphrase"
+
     def verify_password_policy(self, password: str) -> PolicyResult:
         del password
         return PolicyResult()
+
+
+class NoMfaService:
+    def access_requirement(self, identity_id: IdentityId) -> MfaAccessRequirement:
+        del identity_id
+        return MfaAccessRequirement.NONE
 
 
 def build_app(
@@ -79,6 +96,9 @@ def build_app(
 
     app.dependency_overrides[get_identity_provider] = lambda: provider
     app.dependency_overrides[get_session_store] = lambda: session_store
+    app.dependency_overrides[get_mfa_service] = lambda: cast(
+        MfaService, NoMfaService()
+    )
 
     @contextmanager
     def store_factory() -> Iterator[SessionStore]:
@@ -351,9 +371,7 @@ def test_unknown_or_foreign_session_id_is_not_found_and_logout_clears_cookies(
                 "/api/v1/auth/sessions/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
                 headers=csrf_headers(client),
             )
-            logged_out = await client.post(
-                "/api/v1/auth/logout", headers=csrf_headers(client)
-            )
+            logged_out = await client.post("/api/v1/auth/logout", headers=csrf_headers(client))
             return missing, logged_out
 
     missing, logged_out = run(requests())

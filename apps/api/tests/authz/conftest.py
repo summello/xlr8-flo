@@ -20,6 +20,8 @@ ROOT = Path(__file__).resolve().parents[4]
 IDENTITY_MIGRATION = ROOT / "migrations" / "20260824_0002_identity.py"
 AUDIT_MIGRATION = ROOT / "migrations" / "20260825_0005_audit_log.py"
 RBAC_MIGRATION = ROOT / "migrations" / "20260825_0008_rbac.py"
+SESSION_MIGRATION = ROOT / "migrations" / "20260825_0004_session.py"
+MFA_MIGRATION = ROOT / "migrations" / "20260825_0011_mfa.py"
 
 
 def load_migration(path: Path, name: str) -> ModuleType:
@@ -43,6 +45,11 @@ class AuthorizationDatabase:
 
 def drop_objects(connection: psycopg.Connection[tuple[object, ...]]) -> None:
     connection.execute("RESET ROLE")
+    connection.execute("DROP TABLE IF EXISTS mfa_security_event")
+    connection.execute("DROP FUNCTION IF EXISTS reject_mfa_security_event_mutation()")
+    connection.execute("DROP TABLE IF EXISTS mfa_totp_consumption")
+    connection.execute("DROP TABLE IF EXISTS mfa_recovery_code")
+    connection.execute("DROP TABLE IF EXISTS mfa_factor")
     partitions = connection.execute(
         "SELECT tablename FROM pg_catalog.pg_tables "
         "WHERE schemaname = 'public' AND tablename LIKE 'audit_log_%'"
@@ -56,6 +63,9 @@ def drop_objects(connection: psycopg.Connection[tuple[object, ...]]) -> None:
     connection.execute("DROP TABLE IF EXISTS permission")
     connection.execute("DROP TABLE IF EXISTS audit_log")
     connection.execute("DROP FUNCTION IF EXISTS raise_append_only()")
+    connection.execute("DROP TABLE IF EXISTS session_security_event")
+    connection.execute("DROP TABLE IF EXISTS auth_session")
+    connection.execute("DROP FUNCTION IF EXISTS reject_session_security_event_mutation()")
     connection.execute("DROP TABLE IF EXISTS identity")
 
 
@@ -75,10 +85,14 @@ def authorization_database() -> Iterator[AuthorizationDatabase]:
     identity_migration = load_migration(IDENTITY_MIGRATION, "authz_test_identity")
     audit_migration = load_migration(AUDIT_MIGRATION, "authz_test_audit")
     rbac_migration = load_migration(RBAC_MIGRATION, "authz_test_rbac")
+    session_migration = load_migration(SESSION_MIGRATION, "authz_test_session")
+    mfa_migration = load_migration(MFA_MIGRATION, "authz_test_mfa")
     drop_objects(connection)
     identity_migration.upgrade(connection)
+    session_migration.upgrade(connection)
     audit_migration.upgrade(connection)
     rbac_migration.upgrade(connection)
+    mfa_migration.upgrade(connection)
     actor_id = IdentityId(uuid4())
     connection.execute(
         "INSERT INTO identity (id, email, password_hash) VALUES (%s, %s, %s)",
