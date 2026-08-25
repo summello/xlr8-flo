@@ -125,7 +125,7 @@ epics:
           - OPS-001
         dep:
           - E01-S05
-        st: todo
+        st: review
       - id: E01-S07
         t: Gate self-tests - every CI gate proves it fails on a planted violation
         k: chore
@@ -306,7 +306,7 @@ epics:
           - WF-004
         dep:
           - E03-S03
-        st: todo
+        st: done
       - id: E03-S06
         t: Job queue (SKIP LOCKED), outbox, cron tick endpoint, Storage and Email ports
         k: engine
@@ -353,7 +353,7 @@ epics:
           - A11Y-002
         dep:
           - E04-S01
-        st: todo
+        st: review
       - id: E04-S03
         t: 'Data grid: TanStack Table, virtualization, server filter/sort, saved views,
           grid semantics'

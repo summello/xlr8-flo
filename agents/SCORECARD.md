@@ -2,21 +2,21 @@
 
 # Agent scorecard
 
-**11 merged stories.** Scores appear once an agent has 3+ samples in that role —
+**12 merged stories.** Scores appear once an agent has 3+ samples in that role —
 before that the number would be noise, so it reads `—`.
 
 ## As author
 
 | Agent | Stories | Clean merge | Mean rounds | Escapes/story | Score |
 |---|---:|---:|---:|---:|---:|
-| `codex` | 11 | 100% | 1.00 | 0.00 | **100.0** |
+| `codex` | 12 | 100% | 1.00 | 0.00 | **100.0** |
 
 ## As reviewer
 
 | Agent | Reviews | Ran tests | Findings/review | Blocker precision | Escapes missed | Score |
 |---|---:|---:|---:|---:|---:|---:|
 | `qwen` | 5 | 100% | 2.4 | — | 0 | **85.0** |
-| `deepseek` | 5 | 100% | 0.8 | — | 0 | **76.0** |
+| `deepseek` | 6 | 100% | 1.0 | — | 0 | **77.5** |
 | `opencode-nemotron` | 5 | 100% | 0.0 | — | 0 | **70.0** |
 | `kimi` | 2 | 100% | 0.0 | — | 0 | — |
 

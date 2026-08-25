@@ -15,10 +15,12 @@ class ErrorCode(StrEnum):
     BAD_REQUEST = "bad-request"
     CONFLICT = "conflict"
     FORBIDDEN = "forbidden"
+    IDEMPOTENCY_KEY_REUSED = "idempotency_key_reused"
     INSUFFICIENT_BUDGET = "insufficient-budget"
     INTERNAL_ERROR = "internal-error"
     METHOD_NOT_ALLOWED = "method-not-allowed"
     NOT_FOUND = "not-found"
+    REQUEST_IN_FLIGHT = "request_in_flight"
     SERVICE_UNAVAILABLE = "service-unavailable"
     TOO_MANY_REQUESTS = "too-many-requests"
     UNAUTHORIZED = "unauthorized"
@@ -59,6 +61,13 @@ ERROR_TAXONOMY: dict[ErrorCode, ErrorTaxonomyEntry] = {
         detail="Your account does not have permission for this action. No data was changed.",
         recovery="Ask an organization administrator for access or choose another action.",
     ),
+    ErrorCode.IDEMPOTENCY_KEY_REUSED: ErrorTaxonomyEntry(
+        status=422,
+        type_uri="https://xlr8flo.app/errors/idempotency_key_reused",
+        title="This idempotency key was already used",
+        detail="The key belongs to a different request. No data was changed.",
+        recovery="Use a new Idempotency-Key for a different request.",
+    ),
     ErrorCode.INSUFFICIENT_BUDGET: ErrorTaxonomyEntry(
         status=409,
         type_uri="https://xlr8flo.app/errors/insufficient-budget",
@@ -87,6 +96,13 @@ ERROR_TAXONOMY: dict[ErrorCode, ErrorTaxonomyEntry] = {
         title="Record not found",
         detail="The requested record was not found. No data was changed.",
         recovery="Check the address or return to the previous page and choose the record again.",
+    ),
+    ErrorCode.REQUEST_IN_FLIGHT: ErrorTaxonomyEntry(
+        status=409,
+        type_uri="https://xlr8flo.app/errors/request_in_flight",
+        title="This request is already in progress",
+        detail="Another request with this Idempotency-Key is still running.",
+        recovery="Wait one second, then retry with the same Idempotency-Key.",
     ),
     ErrorCode.SERVICE_UNAVAILABLE: ErrorTaxonomyEntry(
         status=503,

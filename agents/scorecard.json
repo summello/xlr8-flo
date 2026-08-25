@@ -608,6 +608,51 @@
       },
       "recap": "Transcribed the MASTER palette and supporting tokens, wired Tailwind v4 and storage-safe theme selection, and added MASTER-derived contrast/coverage plus Playwright axe checks. New dependencies: tailwindcss and @tailwindcss/vite provide the packet-required Tailwind v4 compiler integration; @axe-core/playwright provides the AGENTS.md-required browser accessibility gate; @types/node types the direct source-file reads used by the Vitest coverage gate.",
       "title": "Design tokens, Tailwind v4 setup, light/dark, neutral chrome palette"
+    },
+    {
+      "story": "E03-S05",
+      "kind": "concurrency",
+      "size": "M",
+      "tags": [
+        "money",
+        "concurrency"
+      ],
+      "author": "codex",
+      "reviewers": [
+        "deepseek"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "deepseek": {
+          "ran_tests": true,
+          "findings": 2,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a036d5-1451-7ba2-b36b-8d1cf52cb5a2",
+          "source": "codex rollout matched on cwd"
+        },
+        "deepseek": {
+          "agent": "deepseek",
+          "id": null,
+          "source": "unavailable: no detector for deepseek"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "6943502c-d56e-4353-af9a-3f691bb26487",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Delivered tenant-scoped transactional idempotency for POST commands, including canonical body hashing, exact status/body replay, conflict responses, rollback-safe retries, and real-Postgres concurrency coverage. Idempotency-Key enforcement now fails closed for every POST except the named auth exemptions, and a missing tenant scope emits a warning with the affected path.",
+      "title": "Idempotency middleware keyed on (org, key, body hash)"
     }
   ]
 }
