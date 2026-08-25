@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import AppShell, { type ShellRoute } from "../components/shell/AppShell";
 import type { Phase } from "../components/command/registry";
+import GridGallery from "./_dev/grid-gallery";
 import StatusGallery from "./_dev/status-gallery";
 
 type RouteDefinition = {
@@ -137,6 +138,13 @@ const ROUTES: Readonly<Record<string, RouteDefinition>> = {
     phase: "foundation",
     title: "Status gallery",
   },
+  "/_dev/grid": {
+    activeHref: "/projects",
+    description: "The shared server-driven data grid fixture.",
+    hierarchy: [ORGANIZATION, BUSINESS_UNIT, ["/_dev/grid", "Data grid"]],
+    phase: "plan",
+    title: "Data grid",
+  },
 };
 
 function routeFor(path: string): ShellRoute {
@@ -171,6 +179,7 @@ export default function RootRoute() {
   return (
     <AppShell navigate={navigate} route={route}>
       {route.path === "/_dev/status-gallery" ? <StatusGallery /> : undefined}
+      {route.path === "/_dev/grid" ? <GridGallery /> : undefined}
     </AppShell>
   );
 }

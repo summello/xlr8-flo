@@ -145,9 +145,9 @@ for (const theme of ["light", "dark"] as const) {
     page,
   }) => {
     await selectTheme(page, theme);
-    await page.goto("/");
+    await page.goto("/_dev/grid?fixture=empty");
 
-    const defaultSurface = page.locator(".empty-state");
+    const defaultSurface = page.locator(".grid-empty-state");
     await expect(defaultSurface).toHaveClass(/\bmaterial-surface\b/);
     await expect(defaultSurface).toHaveClass(/\bmaterial-shadow\b/);
     await expect(defaultSurface).toHaveAttribute("data-shadow", "md");
