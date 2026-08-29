@@ -63,14 +63,19 @@ type GridWindow<TData> = GridPage<TData> & {
 type LoadMode = "append" | "prepend" | "replace";
 
 type DataGridProps<TData extends RowData> = {
+  ariaLabel: string;
   columns: readonly GridColumnDef<TData>[];
   emptyActionLabel: string;
   emptyMessage: string;
   endpoint: string;
+  filterLabel: string;
+  filterPlaceholder: string;
   getRowId: (row: TData) => string;
   gridId: string;
   onEmptyAction: () => void;
   onOpenRow: (row: TData, origin: HTMLElement) => void;
+  parseRow?: (value: unknown) => TData;
+  recordLabel: string;
   sortableColumnIds: readonly string[];
   userId: string;
 };
@@ -90,7 +95,10 @@ function optionalString(value: unknown): value is string | null {
   return value === null || typeof value === "string";
 }
 
-function parsePage<TData>(value: unknown): GridPage<TData> {
+function parsePage<TData>(
+  value: unknown,
+  parseRow?: (row: unknown) => TData,
+): GridPage<TData> {
   if (
     !isRecord(value) ||
     !Array.isArray(value.rows) ||
@@ -105,13 +113,17 @@ function parsePage<TData>(value: unknown): GridPage<TData> {
   ) {
     throw new GridLoadError("The server returned an invalid paginated grid response.");
   }
-  return value as GridPage<TData>;
+  return {
+    ...(value as Omit<GridPage<TData>, "rows">),
+    rows: parseRow === undefined ? value.rows as TData[] : value.rows.map(parseRow),
+  };
 }
 
 async function fetchPage<TData>(
   endpoint: string,
   query: GridQuery,
   signal: AbortSignal,
+  parseRow?: (value: unknown) => TData,
 ): Promise<GridPage<TData>> {
   const response = await fetch(gridRequestUrl(endpoint, query), {
     headers: { Accept: "application/json" },
@@ -120,7 +132,7 @@ async function fetchPage<TData>(
   if (!response.ok) {
     throw new GridLoadError(`The server responded with ${response.status}.`);
   }
-  return parsePage<TData>(await response.json());
+  return parsePage<TData>(await response.json(), parseRow);
 }
 
 function applyUpdater<T>(updater: Updater<T>, current: T): T {
@@ -168,14 +180,19 @@ function mergeWindow<TData>(
 }
 
 export default function DataGrid<TData extends RowData>({
+  ariaLabel,
   columns,
   emptyActionLabel,
   emptyMessage,
   endpoint,
+  filterLabel,
+  filterPlaceholder,
   getRowId,
   gridId,
   onEmptyAction,
   onOpenRow,
+  parseRow,
+  recordLabel,
   sortableColumnIds,
   userId,
 }: DataGridProps<TData>) {
@@ -273,7 +290,7 @@ export default function DataGrid<TData extends RowData>({
     const controller = new AbortController();
     setLoading(loadMode === "replace" ? "initial" : "partial");
     setError(null);
-    fetchPage<TData>(endpoint, query, controller.signal)
+    fetchPage<TData>(endpoint, query, controller.signal, parseRow)
       .then((page) => {
         setGridWindow((current) => mergeWindow(current, page, loadMode));
         setLoading(null);
@@ -284,7 +301,7 @@ export default function DataGrid<TData extends RowData>({
         setError(reason instanceof Error ? reason.message : "The request failed unexpectedly.");
       });
     return () => controller.abort();
-  }, [commitUrl, endpoint, loadMode, query]);
+  }, [commitUrl, endpoint, loadMode, parseRow, query]);
 
   const virtualItems = rowVirtualizer.getVirtualItems();
   useEffect(() => {
@@ -544,7 +561,7 @@ export default function DataGrid<TData extends RowData>({
 
   return (
     <Surface
-      aria-label="Projects data grid controls"
+      aria-label={`${ariaLabel} controls`}
       className="data-grid-frame"
       data-density={density}
       onBlurCapture={(event) => {
@@ -559,11 +576,11 @@ export default function DataGrid<TData extends RowData>({
     >
       <div className="grid-toolbar">
         <form className="grid-filter" onSubmit={submitFilter}>
-          <label htmlFor={`${gridId}-filter`}>Filter records</label>
+          <label htmlFor={`${gridId}-filter`}>{filterLabel}</label>
           <input
             id={`${gridId}-filter`}
             onChange={(event) => setFilterDraft(event.target.value)}
-            placeholder="Filter server results"
+            placeholder={filterPlaceholder}
             ref={filterRef}
             type="search"
             value={filterDraft}
@@ -593,7 +610,7 @@ export default function DataGrid<TData extends RowData>({
         ref={scrollRef}
       >
         <table
-          aria-label="Projects data grid"
+          aria-label={ariaLabel}
           aria-colcount={visibleColumns.length}
           aria-rowcount={gridWindow?.total ?? 0}
           className="data-grid"
@@ -615,7 +632,7 @@ export default function DataGrid<TData extends RowData>({
         <span>
           {gridWindow === null
             ? "Loading records"
-            : `${gridWindow.total.toLocaleString()} server records · ${rows.length} loaded`}
+            : `${gridWindow.total.toLocaleString()} ${recordLabel} · ${rows.length} loaded`}
         </span>
         {loading === "partial" ? <span role="status">Loading more records…</span> : undefined}
         {gridWindow === null || gridWindow.nextCursor === null || loading !== null ? undefined : (

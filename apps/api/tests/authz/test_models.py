@@ -32,6 +32,7 @@ EXPECTED_ROLES = {
 }
 
 EXPECTED_PERMISSIONS = {
+    "admin.access.read",
     "asset.create",
     "asset.edit",
     "asset.view",
@@ -77,6 +78,7 @@ ROOT = Path(__file__).resolve().parents[4]
 def test_baseline_role_and_permission_catalogs_are_complete_by_name() -> None:
     assert {str(code): name for code, name in BASELINE_ROLES} == EXPECTED_ROLES
     assert {str(permission) for permission in PERMISSION_CODES} == EXPECTED_PERMISSIONS
+    assert "admin.access.read" in EXPECTED_PERMISSIONS, "MISSING explorer permission"
     assert set(BASELINE_ROLE_PERMISSIONS) == {code for code, _ in BASELINE_ROLES}
     assert all(BASELINE_ROLE_PERMISSIONS[code] for code, _ in BASELINE_ROLES)
     required_mfa = {str(code) for code in MFA_REQUIRED_ROLE_CODES}

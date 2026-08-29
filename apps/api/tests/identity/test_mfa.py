@@ -58,6 +58,7 @@ ROOT = Path(__file__).resolve().parents[4]
 IDENTITY_MIGRATION = ROOT / "migrations" / "20260824_0002_identity.py"
 SESSION_MIGRATION = ROOT / "migrations" / "20260825_0004_session.py"
 MFA_MIGRATION = ROOT / "migrations" / "20260825_0011_mfa.py"
+ACCESS_MIGRATION = ROOT / "migrations" / "20260825_0012_effective_access.py"
 START = datetime(2026, 8, 25, 9, 0, tzinfo=UTC)
 DEVICE = RequestDevice("203.0.113.0/24", "Chrome on macOS")
 
@@ -75,6 +76,10 @@ def load_migration(path: Path, name: str) -> ModuleType:
 
 
 def drop_mfa_objects(connection: psycopg.Connection[tuple[object, ...]]) -> None:
+    connection.execute("DROP TABLE IF EXISTS user_role")
+    connection.execute("DROP TABLE IF EXISTS role_permission")
+    connection.execute("DROP TABLE IF EXISTS permission")
+    connection.execute("DROP TABLE IF EXISTS role")
     connection.execute("DROP TABLE IF EXISTS mfa_security_event")
     connection.execute("DROP FUNCTION IF EXISTS reject_mfa_security_event_mutation()")
     connection.execute("DROP TABLE IF EXISTS mfa_totp_consumption")
@@ -118,10 +123,22 @@ def mfa_database() -> Iterator[MfaDatabase]:
     identity_migration = load_migration(IDENTITY_MIGRATION, "mfa_test_identity")
     session_migration = load_migration(SESSION_MIGRATION, "mfa_test_session")
     mfa_migration = load_migration(MFA_MIGRATION, "mfa_test_migration")
+    access_migration = load_migration(ACCESS_MIGRATION, "mfa_test_access")
     drop_mfa_objects(connection)
     identity_migration.upgrade(connection)
     session_migration.upgrade(connection)
     mfa_migration.upgrade(connection)
+    connection.execute("CREATE TABLE role (id uuid, org_id uuid, PRIMARY KEY (org_id, id))")
+    connection.execute("CREATE TABLE permission (code text PRIMARY KEY)")
+    connection.execute(
+        "CREATE TABLE role_permission (org_id uuid, role_id uuid, permission_code text)"
+    )
+    connection.execute(
+        "CREATE TABLE user_role ("
+        "id uuid PRIMARY KEY, org_id uuid, user_id uuid, role_id uuid, "
+        "scope_type text, scope_id uuid)"
+    )
+    access_migration.upgrade(connection)
     identity_id = IdentityId(uuid4())
     foreign_identity_id = IdentityId(uuid4())
     for values in (
@@ -302,6 +319,7 @@ def test_concurrent_replay_allows_exactly_one_consumer(
     secret, _ = run(_enroll_and_confirm(mfa, mfa_database.identity_id, session, clock))
     clock.now += timedelta(seconds=30)
     code = pyotp.TOTP(secret).at(clock.now)
+
     def consume() -> bool:
         connection = psycopg.connect(mfa_database.connection_url, autocommit=True)
         try:
@@ -342,9 +360,7 @@ def test_recovery_code_is_single_use_and_warns_at_three_remaining(
     clock = MutableClock(START)
     mfa = service(mfa_database, clock)
     _, session = _session(mfa_database, clock)
-    _, recovery_codes = run(
-        _enroll_and_confirm(mfa, mfa_database.identity_id, session, clock)
-    )
+    _, recovery_codes = run(_enroll_and_confirm(mfa, mfa_database.identity_id, session, clock))
     results = [
         run(
             mfa.verify(
@@ -438,9 +454,7 @@ class FakeProvider:
     async def change_password(self, identity_id: IdentityId, new: str) -> None:
         del identity_id, new
 
-    async def verify_current_password(
-        self, identity_id: IdentityId, password: str
-    ) -> bool:
+    async def verify_current_password(self, identity_id: IdentityId, password: str) -> bool:
         return identity_id == self._identity_id and password == "current password"
 
     def verify_password_policy(self, password: str) -> PolicyResult:
@@ -549,9 +563,7 @@ def test_privileged_login_forces_enrollment_then_rotates_and_step_up_refreshes(
                 json={"code": pyotp.TOTP(secret).at(clock.now)},
                 headers=csrf_headers(client),
             )
-            after_step_up = await client.post(
-                "/high-risk", headers=csrf_headers(client)
-            )
+            after_step_up = await client.post("/high-risk", headers=csrf_headers(client))
             return (
                 login,
                 before_enrollment,
@@ -660,8 +672,7 @@ def test_migration_chain_constraints_append_only_guard_and_down_preserve_seeded_
     stored_tables = {
         row[0]
         for row in connection.execute(
-            "SELECT tablename FROM pg_tables WHERE schemaname = 'public' "
-            "AND tablename LIKE 'mfa_%'"
+            "SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename LIKE 'mfa_%'"
         ).fetchall()
     }
     assert stored_tables == expected_tables, (
@@ -678,18 +689,15 @@ def test_migration_chain_constraints_append_only_guard_and_down_preserve_seeded_
     )
     with pytest.raises(RaiseException, match="append-only"):
         connection.execute("DELETE FROM mfa_security_event")
-    identity_before = connection.execute(
-        "SELECT email FROM identity ORDER BY email"
-    ).fetchall()
+    identity_before = connection.execute("SELECT email FROM identity ORDER BY email").fetchall()
     sessions_before = connection.execute("SELECT id FROM auth_session ORDER BY id").fetchall()
 
     mfa_database.migration.downgrade(connection)
-    assert connection.execute(
-        "SELECT email FROM identity ORDER BY email"
-    ).fetchall() == identity_before
+    assert (
+        connection.execute("SELECT email FROM identity ORDER BY email").fetchall()
+        == identity_before
+    )
     assert connection.execute("SELECT id FROM auth_session ORDER BY id").fetchall() == (
         sessions_before
     )
-    assert connection.execute("SELECT to_regclass('public.mfa_factor')").fetchone() == (
-        None,
-    )
+    assert connection.execute("SELECT to_regclass('public.mfa_factor')").fetchone() == (None,)

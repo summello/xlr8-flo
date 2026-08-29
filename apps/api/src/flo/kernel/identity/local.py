@@ -90,7 +90,8 @@ class _PostgresIdentityStore:
 
     def find_by_email(self, email: str) -> _StoredIdentity | None:
         row = self._connection.execute(
-            "SELECT id, password_hash FROM identity WHERE email = %s",
+            "SELECT id, password_hash FROM identity WHERE email = %s "
+            "AND COALESCE(to_jsonb(identity)->>'status', 'active') = 'active'",
             (email,),
         ).fetchone()
         if row is None:
@@ -99,7 +100,8 @@ class _PostgresIdentityStore:
 
     def find_by_id(self, identity_id: IdentityId) -> _StoredIdentity | None:
         row = self._connection.execute(
-            "SELECT id, password_hash FROM identity WHERE id = %s",
+            "SELECT id, password_hash FROM identity WHERE id = %s "
+            "AND COALESCE(to_jsonb(identity)->>'status', 'active') = 'active'",
             (identity_id,),
         ).fetchone()
         if row is None:

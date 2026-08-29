@@ -27,6 +27,7 @@ export const STATUS_LABELS = {
   within: "Within budget",
   nearing: "Nearing limit",
   exceeded: "Exceeded",
+  deactivated: "Deactivated",
 } as const satisfies Record<KnownStatus, string>;
 
 export const DOC_TYPE_LABELS = {
@@ -36,6 +37,7 @@ export const DOC_TYPE_LABELS = {
   rfq: "RFQ",
   vendor: "Vendor",
   budget: "Budget",
+  user: "User",
 } as const satisfies Record<DocType, string>;
 
 export const UNKNOWN_STATUS_LABEL = "Unknown status";

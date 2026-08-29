@@ -29,6 +29,10 @@ class RotationReason(StrEnum):
     PASSWORD_CHANGE = "password_change"
 
 
+class SessionIssueDenied(LookupError):
+    """Raised when an inactive identity cannot receive a new session."""
+
+
 @dataclass(frozen=True, slots=True)
 class RequestDevice:
     """Privacy-minimized request metadata stored with a session."""
@@ -98,6 +102,24 @@ def hash_session_token(token: str) -> str:
     """Return the only representation of a session token allowed in storage."""
 
     return sha256(token.encode("ascii"), usedforsecurity=True).hexdigest()
+
+
+def revoke_all_sessions(
+    connection: SessionConnection,
+    identity_id: IdentityId,
+    revoked_at: datetime,
+) -> int:
+    """Revoke an identity's sessions inside the caller's active transaction."""
+
+    result = connection.execute(
+        """
+        UPDATE auth_session
+           SET revoked_at = %s
+         WHERE identity_id = %s AND revoked_at IS NULL
+        """,
+        (revoked_at, identity_id),
+    )
+    return result.rowcount
 
 
 def _ip_prefix(address: str | None) -> str | None:
@@ -212,6 +234,12 @@ class SessionStore:
         idle_expires_at = now + self._idle_timeout
         absolute_expires_at = now + self._absolute_timeout
         with self._connection.transaction():
+            active = self._connection.execute(
+                "SELECT 1 FROM identity WHERE id = %s AND status = 'active' FOR SHARE",
+                (identity_id,),
+            ).fetchone()
+            if active is None:
+                raise SessionIssueDenied("identity is not active")
             row = self._connection.execute(
                 f"""
                 INSERT INTO auth_session
@@ -258,6 +286,12 @@ class SessionStore:
                    AND revoked_at IS NULL
                    AND idle_expires_at > %s
                    AND absolute_expires_at > %s
+                   AND EXISTS (
+                       SELECT 1
+                         FROM identity
+                        WHERE identity.id = auth_session.identity_id
+                          AND identity.status = 'active'
+                   )
                 RETURNING {_RETURNING_COLUMNS}
                 """,
                 (now, now, token_hash, now, now),
@@ -305,6 +339,12 @@ class SessionStore:
         idle_expires_at = now + self._idle_timeout
         absolute_expires_at = now + self._absolute_timeout
         with self._connection.transaction():
+            active = self._connection.execute(
+                "SELECT 1 FROM identity WHERE id = %s AND status = 'active' FOR SHARE",
+                (identity_id,),
+            ).fetchone()
+            if active is None:
+                raise SessionIssueDenied("identity is not active")
             revoked = self._connection.execute(
                 "UPDATE auth_session SET revoked_at = %s WHERE id = %s AND revoked_at IS NULL",
                 (now, current.id),
@@ -396,12 +436,4 @@ class SessionStore:
 
         now = self._clock()
         with self._connection.transaction():
-            result = self._connection.execute(
-                """
-                UPDATE auth_session
-                   SET revoked_at = %s
-                 WHERE identity_id = %s AND revoked_at IS NULL
-                """,
-                (now, identity_id),
-            )
-        return result.rowcount
+            return revoke_all_sessions(self._connection, identity_id, now)

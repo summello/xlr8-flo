@@ -231,7 +231,7 @@ epics:
           - USR-009
         dep:
           - E02-S05
-        st: in_progress
+        st: done
 
   - id: E03
     name: Application kernel

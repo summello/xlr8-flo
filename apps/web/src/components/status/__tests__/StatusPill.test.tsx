@@ -65,6 +65,10 @@ const expectedStatus = {
     nearing: "warning",
     exceeded: "danger",
   },
+  user: {
+    active: "success",
+    deactivated: "neutral",
+  },
 } as const;
 
 const expectedLabels = {
@@ -94,6 +98,7 @@ const expectedLabels = {
   within: "Within budget",
   nearing: "Nearing limit",
   exceeded: "Exceeded",
+  deactivated: "Deactivated",
 } as const;
 
 function renderSelection(selection: StatusSelection): string {

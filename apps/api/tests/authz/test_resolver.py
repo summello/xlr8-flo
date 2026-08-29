@@ -353,6 +353,9 @@ def test_revocation_changes_the_next_check_and_writes_before_after_audit(
     assert [row[0] for row in rows] == ["user_role.grant", "user_role.revoke"]
     assert rows[0][1] is None
     assert rows[0][2] == {
+        "effective_from": None,
+        "granted_at": assignment.granted_at.isoformat(),
+        "granted_by": str(database.actor_id),
         "id": str(assignment.id),
         "role_id": str(assignment.role_id),
         "scope_id": str(database.org_a),

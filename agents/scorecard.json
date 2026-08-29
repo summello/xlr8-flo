@@ -1025,6 +1025,36 @@
       },
       "recap": "Generated OpenAPI in-process from the private FastAPI app, added the typed openapi-fetch bridge and automatic RFC 9457 field mapping, shipped the accessible React Hook Form/Zod primitives and fixture, and made axe cover every manifest route in both themes plus keyboard and reduced-motion flows. New dependencies: openapi-typescript replaces handwritten DTO generation because TypeScript cannot consume OpenAPI; openapi-fetch binds native fetch to that generated contract; react-hook-form provides preserved form state and focus management absent from React; zod provides runtime blur validation because TypeScript types are erased. TypeScript moved from 6.0 to supported 5.9 because openapi-typescript 7 declares a TypeScript 5 peer range and npm ci must remain reproducible without force flags.",
       "title": "OpenAPI to TS client generation, forms kit, a11y harness (axe + keyboard) in CI"
+    },
+    {
+      "story": "E02-S06",
+      "kind": "api",
+      "size": "M",
+      "tags": [
+        "auth"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E02-S06"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "6943502c-d56e-4353-af9a-3f691bb26487",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Administrative effective-access explorer answering why a person holds an access: roles, the scope each grant came from, who granted it and when, read from the E02-S05 resolver rather than a second copy of the rules. Deactivation revokes live sessions, blocks new ones, and retains attribution. The endpoint is guarded by require(\"admin.access.read\") and a foreign-tenant subject returns 404.",
+      "title": "Effective-access explorer endpoint and screen"
     }
   ]
 }

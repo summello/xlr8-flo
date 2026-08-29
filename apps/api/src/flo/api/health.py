@@ -14,6 +14,7 @@ import uvicorn
 from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 
+from flo.api.admin_users import router as admin_users_router
 from flo.api.auth import (
     _database_url,
     production_mfa_service_factory,
@@ -25,6 +26,8 @@ from flo.api.origin_auth import require_origin_secret
 from flo.kernel.authz import PermissionResolverFactory, install_authorization, public_route
 from flo.kernel.config import Settings, enforce_argon2_memory_limit
 from flo.kernel.errors import ErrorCode, ProblemError, install_problem_details
+from flo.kernel.idempotency import install_idempotency
+from flo.kernel.idempotency.store import IdempotencyConnection
 from flo.kernel.identity import install_mfa_access_gate
 from flo.kernel.session import (
     install_browser_security,
@@ -88,6 +91,7 @@ app = FastAPI(
 )
 app.include_router(internal_router)
 app.include_router(auth_router)
+app.include_router(admin_users_router)
 
 
 @contextmanager
@@ -110,8 +114,26 @@ install_authorization(
     app,
     cast(PermissionResolverFactory, production_authorization_resolver),
 )
+
+
+@contextmanager
+def production_idempotency_connection() -> Iterator[IdempotencyConnection]:
+    """Open the transaction used to claim and complete one POST command."""
+
+    settings = Settings()
+    try:
+        connection = psycopg.connect(_database_url(settings), autocommit=False)
+    except psycopg.Error as exc:
+        raise ProblemError(ErrorCode.SERVICE_UNAVAILABLE) from exc
+    try:
+        yield cast(IdempotencyConnection, connection)
+    finally:
+        connection.close()
+
+
 # Starlette prepends user middleware. Request flow is CSRF -> session -> tenancy;
 # correlation then serializes their failures, and browser headers wrap every path.
+install_idempotency(app, production_idempotency_connection)
 install_tenant_context(app)
 install_mfa_access_gate(app, production_mfa_service_factory())
 install_session_authentication(app, production_session_store_factory())

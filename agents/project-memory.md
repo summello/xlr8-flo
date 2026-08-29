@@ -7,10 +7,10 @@ Loaded into every agent session. Updated by `flo done` (status) and by Opus at e
 
 | | |
 |---|---|
-| Milestone | **M0 — Rails** |
-| Stories | 24 / 161 done |
-| Branch | milestone/M0-rails |
-| In flight | E02-S06 |
+| Milestone | **M1 — Budget spine** |
+| Stories | 25 / 161 done |
+| Branch | milestone/M1-budget-spine |
+| In flight | — |
 | Blocked | — |
 <!-- STATE:END -->
 

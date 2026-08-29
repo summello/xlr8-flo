@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from datetime import datetime
 from enum import StrEnum
 from typing import NewType
 from uuid import UUID
@@ -44,6 +45,9 @@ class UserRole:
     role_id: UUID
     scope_type: ScopeType
     scope_id: UUID
+    granted_by: IdentityId | None
+    granted_at: datetime
+    effective_from: datetime | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -117,6 +121,7 @@ def role_code(value: str) -> RoleCode:
 PERMISSION_CODES: tuple[PermissionCode, ...] = tuple(
     permission_code(value)
     for value in (
+        "admin.access.read",
         "asset.create",
         "asset.edit",
         "asset.view",

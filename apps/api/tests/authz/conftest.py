@@ -22,6 +22,7 @@ AUDIT_MIGRATION = ROOT / "migrations" / "20260825_0005_audit_log.py"
 RBAC_MIGRATION = ROOT / "migrations" / "20260825_0008_rbac.py"
 SESSION_MIGRATION = ROOT / "migrations" / "20260825_0004_session.py"
 MFA_MIGRATION = ROOT / "migrations" / "20260825_0011_mfa.py"
+ACCESS_MIGRATION = ROOT / "migrations" / "20260825_0012_effective_access.py"
 
 
 def load_migration(path: Path, name: str) -> ModuleType:
@@ -38,6 +39,7 @@ class AuthorizationDatabase:
     authorization_connection: AuthorizationConnection
     service_connection: IdentityAuthorizationConnection
     migration: ModuleType
+    access_migration: ModuleType
     org_a: UUID
     org_b: UUID
     actor_id: IdentityId
@@ -66,6 +68,10 @@ def drop_objects(connection: psycopg.Connection[tuple[object, ...]]) -> None:
     connection.execute("DROP TABLE IF EXISTS session_security_event")
     connection.execute("DROP TABLE IF EXISTS auth_session")
     connection.execute("DROP FUNCTION IF EXISTS reject_session_security_event_mutation()")
+    # A test builds this to prove attribution survives deactivation. It lives in the test body,
+    # so a failing assertion used to leak it — and because it carries a foreign key to identity,
+    # the leak broke the NEXT test's setup rather than its own. Teardown owns it now.
+    connection.execute("DROP TABLE IF EXISTS historical_record")
     connection.execute("DROP TABLE IF EXISTS identity")
 
 
@@ -87,12 +93,14 @@ def authorization_database() -> Iterator[AuthorizationDatabase]:
     rbac_migration = load_migration(RBAC_MIGRATION, "authz_test_rbac")
     session_migration = load_migration(SESSION_MIGRATION, "authz_test_session")
     mfa_migration = load_migration(MFA_MIGRATION, "authz_test_mfa")
+    access_migration = load_migration(ACCESS_MIGRATION, "authz_test_access")
     drop_objects(connection)
     identity_migration.upgrade(connection)
     session_migration.upgrade(connection)
     audit_migration.upgrade(connection)
     rbac_migration.upgrade(connection)
     mfa_migration.upgrade(connection)
+    access_migration.upgrade(connection)
     actor_id = IdentityId(uuid4())
     connection.execute(
         "INSERT INTO identity (id, email, password_hash) VALUES (%s, %s, %s)",
@@ -103,6 +111,7 @@ def authorization_database() -> Iterator[AuthorizationDatabase]:
         authorization_connection=cast(AuthorizationConnection, connection),
         service_connection=cast(IdentityAuthorizationConnection, connection),
         migration=rbac_migration,
+        access_migration=access_migration,
         org_a=uuid4(),
         org_b=uuid4(),
         actor_id=actor_id,

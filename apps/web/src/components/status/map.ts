@@ -7,6 +7,7 @@ export const DOC_TYPES = [
   "rfq",
   "vendor",
   "budget",
+  "user",
 ] as const;
 
 export type DocType = (typeof DOC_TYPES)[number];
@@ -60,6 +61,10 @@ export const STATUS = {
     within: "success",
     nearing: "warning",
     exceeded: "danger",
+  },
+  user: {
+    active: "success",
+    deactivated: "neutral",
   },
 } as const satisfies Record<DocType, Readonly<Record<string, StatusTone>>>;
 

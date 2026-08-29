@@ -53,10 +53,13 @@ export default function GridGallery() {
   return (
     <>
       <DataGrid
+        ariaLabel="Projects data grid"
         columns={columns}
         emptyActionLabel="Add your first project — press C"
         emptyMessage="No projects exist in this view."
         endpoint={endpoint}
+        filterLabel="Filter records"
+        filterPlaceholder="Filter server results"
         getRowId={(row) => row.id}
         gridId="project-gallery"
         onEmptyAction={() => setAnnouncement("Create project action is ready.")}
@@ -64,6 +67,7 @@ export default function GridGallery() {
           originRef.current = origin;
           setOpenRow(row);
         }}
+        recordLabel="server records"
         sortableColumnIds={["reference", "name", "status", "owner", "units"]}
         userId="fixture-user"
       />

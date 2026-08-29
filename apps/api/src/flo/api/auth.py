@@ -37,6 +37,7 @@ from flo.kernel.session.store import (
     RotationReason,
     SessionConnection,
     SessionId,
+    SessionIssueDenied,
     SessionRecord,
     SessionStore,
     SessionStoreFactory,
@@ -180,9 +181,7 @@ def get_session_store(
 
 
 def get_password_reset_service(
-    connection: Annotated[
-        psycopg.Connection[tuple[object, ...]], Depends(get_auth_connection)
-    ],
+    connection: Annotated[psycopg.Connection[tuple[object, ...]], Depends(get_auth_connection)],
     settings: Annotated[Settings, Depends(get_auth_settings)],
 ) -> PasswordResetService:
     """Bind password-reset state to the request transaction connection."""
@@ -354,16 +353,19 @@ async def login(
     device = request_device(request)
     requires_mfa = mfa.access_requirement(result.identity_id).value != "none"
     existing = getattr(request.state, "session", None)
-    if isinstance(existing, SessionRecord):
-        issued = store.rotate(
-            existing,
-            result.identity_id,
-            device,
-            RotationReason.LOGIN,
-            mfa_verified=not requires_mfa,
-        )
-    else:
-        issued = store.issue(result.identity_id, device, mfa_verified=not requires_mfa)
+    try:
+        if isinstance(existing, SessionRecord):
+            issued = store.rotate(
+                existing,
+                result.identity_id,
+                device,
+                RotationReason.LOGIN,
+                mfa_verified=not requires_mfa,
+            )
+        else:
+            issued = store.issue(result.identity_id, device, mfa_verified=not requires_mfa)
+    except SessionIssueDenied as exc:
+        raise ProblemError(ErrorCode.UNAUTHORIZED) from exc
 
     response = Response(status_code=204)
     set_session_cookie(response, issued.cookie_value())
@@ -378,13 +380,16 @@ def _mfa_completion_response(
     *,
     warning_remaining: int | None = None,
 ) -> Response:
-    issued = store.rotate(
-        session,
-        session.identity_id,
-        request_device(request),
-        RotationReason.MFA_COMPLETION,
-        mfa_verified=True,
-    )
+    try:
+        issued = store.rotate(
+            session,
+            session.identity_id,
+            request_device(request),
+            RotationReason.MFA_COMPLETION,
+            mfa_verified=True,
+        )
+    except SessionIssueDenied as exc:
+        raise ProblemError(ErrorCode.UNAUTHORIZED) from exc
     response = Response(status_code=204)
     set_session_cookie(response, issued.cookie_value())
     rotate_csrf_cookie(response)
@@ -476,12 +481,15 @@ async def disable_mfa(
         session_id=session.id,
         device=request_device(request),
     )
-    issued = store.rotate(
-        session,
-        session.identity_id,
-        request_device(request),
-        RotationReason.MFA_COMPLETION,
-    )
+    try:
+        issued = store.rotate(
+            session,
+            session.identity_id,
+            request_device(request),
+            RotationReason.MFA_COMPLETION,
+        )
+    except SessionIssueDenied as exc:
+        raise ProblemError(ErrorCode.UNAUTHORIZED) from exc
     response = Response(status_code=204)
     set_session_cookie(response, issued.cookie_value())
     rotate_csrf_cookie(response)

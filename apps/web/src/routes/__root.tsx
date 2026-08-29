@@ -5,6 +5,7 @@ import type { Phase } from "../components/command/registry";
 import FormGallery from "./_dev/form-gallery";
 import GridGallery from "./_dev/grid-gallery";
 import StatusGallery from "./_dev/status-gallery";
+import EffectiveAccessExplorer from "./admin/users/$id";
 import type { RoutePath } from "./route-paths";
 
 type RouteDefinition = {
@@ -19,6 +20,7 @@ const ORGANIZATION = ["/organization", "Northstar Capital"] as const;
 const BUSINESS_UNIT = ["/organization/infrastructure", "Infrastructure BU"] as const;
 const PROJECT = ["/projects/north-plant-renewal", "North plant renewal"] as const;
 const SUB_PROJECT = ["/projects/north-plant-renewal/cooling", "Cooling system upgrade"] as const;
+const ADMIN_USER_PATH = /^\/admin\/users\/([^/]+)$/;
 
 const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
   "/": {
@@ -157,6 +159,22 @@ const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
 };
 
 function routeFor(path: string): ShellRoute {
+  const adminUser = path.match(ADMIN_USER_PATH)?.[1];
+  if (adminUser !== undefined) {
+    return {
+      activeHref: "/administration",
+      breadcrumbs: [
+        { href: ORGANIZATION[0], label: ORGANIZATION[1] },
+        { href: "/administration", label: "Administration" },
+        { href: "/administration/users", label: "Users" },
+        { href: path, label: adminUser },
+      ],
+      description: "Inspect active and pending grants and the source of every permission.",
+      path,
+      phase: "foundation",
+      title: "Effective access",
+    };
+  }
   const definition = ROUTES[path as RoutePath] ?? ROUTES["/"];
   return {
     ...definition,
@@ -184,12 +202,14 @@ export default function RootRoute() {
     if (window.location.pathname !== href) window.history.pushState(null, "", href);
     setRoute(activateRoute(href));
   }, []);
+  const adminUserId = route.path.match(ADMIN_USER_PATH)?.[1];
 
   return (
     <AppShell navigate={navigate} route={route}>
       {route.path === "/_dev/status-gallery" ? <StatusGallery /> : undefined}
       {route.path === "/_dev/grid" ? <GridGallery /> : undefined}
       {route.path === "/_dev/forms" ? <FormGallery /> : undefined}
+      {adminUserId === undefined ? undefined : <EffectiveAccessExplorer userId={adminUserId} />}
     </AppShell>
   );
 }

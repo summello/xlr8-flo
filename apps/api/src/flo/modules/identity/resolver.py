@@ -92,9 +92,13 @@ class AuthorizationResolver(ScopedRepo[AuthorizationDecision]):
                    AND hierarchy.parent_scope_type IS NOT NULL
             ), eligible_grants AS (
                 SELECT assignment.role_id
-                  FROM user_role AS assignment
+                 FROM user_role AS assignment
                  WHERE assignment.org_id = %(org_id)s
                    AND assignment.user_id = %(user_id)s
+                   AND (
+                       assignment.effective_from IS NULL
+                       OR assignment.effective_from <= CURRENT_TIMESTAMP
+                   )
                    AND (
                        (
                            assignment.scope_type = 'org'
