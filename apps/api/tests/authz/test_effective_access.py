@@ -405,6 +405,51 @@ def test_mutations_require_step_up_and_preserve_state_when_stale(
     ) == (1,)
 
 
+def _foreign_subject(database: AuthorizationDatabase) -> IdentityId:
+    foreign_id = insert_identity(database, "foreign-subject")
+    with service_for(database, Scope(database.org_b), "foreign-subject-grant") as service:
+        role = service.create_role("foreign-reader", "Foreign reader")
+        service.grant_permission(role.id, "project.view")
+        service.grant_role(foreign_id, role.id, AuthorizationTarget.organization(database.org_b))
+    return foreign_id
+
+
+def test_permissions_conceals_a_foreign_tenant_subject(
+    authorization_database: AuthorizationDatabase,
+) -> None:
+    database = authorization_database
+    viewer_id = insert_identity(database, "tenant-viewer")
+    grant_permissions(database, viewer_id, "admin.access.read")
+    foreign_id = _foreign_subject(database)
+
+    response = run(
+        get(
+            build_app(database, viewer_id),
+            f"/api/v1/admin/users/{foreign_id}/effective-access/permissions",
+        )
+    )
+    assert response.status_code == 404
+
+
+def test_deactivate_conceals_a_foreign_tenant_subject(
+    authorization_database: AuthorizationDatabase,
+) -> None:
+    database = authorization_database
+    viewer_id = insert_identity(database, "tenant-admin")
+    grant_permissions(database, viewer_id, "organization.admin")
+    foreign_id = _foreign_subject(database)
+    app = build_app(database, viewer_id)
+
+    async def deactivate() -> httpx.Response:
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app),
+            base_url="https://testserver",
+        ) as client:
+            return await client.post(f"/api/v1/admin/users/{foreign_id}/deactivate")
+
+    assert run(deactivate()).status_code == 404
+
+
 def test_fresh_step_up_allows_subject_bound_revoke(
     authorization_database: AuthorizationDatabase,
 ) -> None:

@@ -16,7 +16,7 @@ from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.identity.port import IdentityId, IdentityProvider, PasswordPolicyError
 from flo.kernel.outbox import IdentityOutboxStore
 from flo.kernel.outbox.store import OutboxConnection
-from flo.kernel.session.store import RequestDevice, SessionStore
+from flo.kernel.session.store import RequestDevice, SessionStore, hash_session_token
 
 PASSWORD_RESET_TEMPLATE = "password-reset-v1"
 PASSWORD_RESET_ORIGIN = "https://xlr8flo.summello.com"
@@ -52,10 +52,8 @@ def _utc_now() -> datetime:
     return datetime.now(UTC)
 
 
-def hash_reset_token(token: str) -> str:
-    """Return the only reset-token representation stored outside the expiring outbox."""
-
-    return sha256(token.encode("ascii"), usedforsecurity=True).hexdigest()
+# One credential-hash definition for sessions and resets: kernel/session owns it.
+hash_reset_token = hash_session_token
 
 
 def _rate_key(value: str) -> str:
