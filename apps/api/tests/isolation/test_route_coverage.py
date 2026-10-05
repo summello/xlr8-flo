@@ -9,6 +9,7 @@ from fastapi import APIRouter
 
 from flo.api.admin_users import router as admin_users_router
 from flo.api.auth import router as auth_router
+from flo.api.fiscal import router as fiscal_router
 from flo.api.master import router as master_router
 from flo.api.org import router as org_router
 
@@ -16,6 +17,14 @@ TESTS = Path(__file__).resolve().parents[1]
 
 # (method, path) -> "file::test" that proves a foreign id returns 404.
 COVERED = {
+    ("PUT", "/api/v1/fiscal/calendar"): "org/test_fiscal.py::test_collection_tenant_isolation",
+    ("GET", "/api/v1/fiscal/periods"): "org/test_fiscal.py::test_collection_tenant_isolation",
+    (
+        "POST",
+        "/api/v1/fiscal/years/{fiscal_year}:generate",
+    ): "org/test_fiscal.py::test_collection_tenant_isolation",
+    ("POST", "/api/v1/fiscal/periods/{id}:close"): "org/test_fiscal.py::test_foreign_period_id",
+    ("POST", "/api/v1/fiscal/periods/{id}:reopen"): "org/test_fiscal.py::test_foreign_period_id",
     ("GET", "/api/v1/master/currency"): "org/test_master.py::test_collection_tenant_isolation",
     ("GET", "/api/v1/master/{kind}"): "org/test_master.py::test_collection_tenant_isolation",
     ("POST", "/api/v1/master/{kind}"): "org/test_master.py::test_collection_tenant_isolation",
@@ -84,7 +93,8 @@ def missing_cases(routes: set[tuple[str, str]], covered: dict[tuple[str, str], s
 def test_every_id_route_has_a_named_foreign_tenant_case() -> None:
     assert (
         missing_cases(
-            id_routes(admin_users_router, auth_router, org_router, master_router), COVERED
+            id_routes(admin_users_router, auth_router, org_router, master_router, fiscal_router),
+            COVERED,
         )
         == []
     )
@@ -94,7 +104,10 @@ def test_gate_fails_on_an_uncovered_route_and_on_a_dangling_reference() -> None:
     dangling = {("GET", "/api/v1/admin/users/{user_id}/new"): "authz/test_enforcement.py::nope"}
     extra = COVERED | dangling
     widget = {("GET", "/api/v1/widgets/{widget_id}")}
-    routes = id_routes(admin_users_router, auth_router, org_router, master_router) | widget
+    routes = (
+        id_routes(admin_users_router, auth_router, org_router, master_router, fiscal_router)
+        | widget
+    )
     problems = missing_cases(routes, extra)
     assert "no isolation case: GET /api/v1/widgets/{widget_id}" in problems
     assert any("covering test not found" in problem for problem in problems)

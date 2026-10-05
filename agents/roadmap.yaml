@@ -480,7 +480,7 @@ epics:
           - FIN-010
         dep:
           - E05-S01
-        st: todo
+        st: done
       - id: E05-S05
         t: 'FX: ECB daily rate ingest, rate table, effective dating, missing-rate block'
         k: engine

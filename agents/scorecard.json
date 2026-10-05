@@ -1188,6 +1188,42 @@
       },
       "recap": "Implemented master data, permissions, scoped routes, migration 0015 after 0014, generated client and real-Postgres regression coverage. No new dependency or UI. Currency exposes bundled code/exponent; duplicate deactivation is a no-op without a second audit write.",
       "title": "Master data: departments, ledger accounts, UoM, tax codes, payment terms, categories"
+    },
+    {
+      "story": "E05-S04",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a10e5e-a333-76c0-aba7-8a36713059f5",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "dbfe4938-296f-4d21-81ae-13d6551bb13d",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented fiscal calendar and period APIs, org.service exports, migration 20260826_0016, database-enforced immutable transition history, scoped permissions, 15-minute step-up, idempotency and posting locks. Removed the competing fiscal_year_start_month setting. Regenerated OpenAPI client. flo check: all nine checks green (ruff, strict mypy, import boundaries, full Postgres pytest, eslint, tsc, vitest, Playwright/axe, gitleaks). API suite: 560 tests collected, including 69 fiscal tests. Web unit suite: 59 passing. Migration chain validated with MIGRATIONS_DIR=../../migrations; next head is 20260826_0016 after 0015. Lazy generation audits as system; explicit operations audit as the session user. No dependencies added. No submit, gate, done, push or merge run.",
+      "title": "Fiscal calendar and period open/close with authorization and audit"
     }
   ]
 }

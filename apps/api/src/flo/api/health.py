@@ -21,6 +21,7 @@ from flo.api.auth import (
     production_session_store_factory,
 )
 from flo.api.auth import router as auth_router
+from flo.api.fiscal import router as fiscal_router
 from flo.api.internal import router as internal_router
 from flo.api.master import router as master_router
 from flo.api.org import router as org_router
@@ -96,6 +97,7 @@ app.include_router(auth_router)
 app.include_router(admin_users_router)
 app.include_router(org_router)
 app.include_router(master_router)
+app.include_router(fiscal_router)
 
 
 @contextmanager

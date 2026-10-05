@@ -481,7 +481,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E04-S05** StatusPill primitive: closed per-document-type tone map, icon always, never author-coloured | E04 | ui | M | TAG-001, TAG-002, TAG-003, A11Y-004 | ~~E04-S01~~ |
 | ✅ | **E04-S06** Material layer: tinted shadows, lit edge, grain, honest glass, glow focus ring | E04 | ui | M | UX-006, A11Y-005 | ~~E04-S01~~ |
 
-#### M1 — Budget spine · 3/26 done
+#### M1 — Budget spine · 4/26 done
 
 > The trustworthy system of record. Projects, hierarchy and the complete budget ledger.
 
@@ -490,7 +490,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E05-S01** Organization and BU/OU with unique codes, settings precedence | E05 | crud | M | ORG-001, ORG-002, ORG-012 | ~~E02-S05~~ |
 | ✅ | **E05-S02** Bill To / Ship To addresses with effective dates | E05 | crud | S | ORG-005 | ~~E05-S01~~ |
 | ✅ | **E05-S03** Master data: departments, ledger accounts, UoM, tax codes, payment terms, categories | E05 | crud | L | ORG-010, ORG-011, ORG-009, XFN-009 | ~~E05-S01~~ |
-| ⬜ | **E05-S04** Fiscal calendar and period open/close with authorization and audit | E05 | engine | M | BUD-010, FIN-010 | ~~E05-S01~~ |
+| ✅ | **E05-S04** Fiscal calendar and period open/close with authorization and audit | E05 | engine | M | BUD-010, FIN-010 | ~~E05-S01~~ |
 | ⬜ | **E05-S05** FX: ECB daily rate ingest, rate table, effective dating, missing-rate block | E05 | engine | M | FX-001, FX-002, FX-003, FX-004, FIN-003 | ~~E03-S06~~ |
 | ⬜ | **E06-S01** Project entity, scoped numbering sequence, department and ledger account | E06 | crud | M | PROJ-001, PROJ-014, PROJ-019, SEQ-001, SEQ-002, SEQ-003, SEQ-004 | ~~E05-S03~~ |
 | ⬜ | **E06-S02** Five-level hierarchy with recursive CTE traversal and depth guard | E06 | engine | L | PROJ-004, PROJ-005 | E06-S01 |
@@ -597,7 +597,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E15-S02** Read models and materialized summaries with as-of time and refresh status | E15 | engine | L | ARCH-004, RPT-014, PERF-003 | E15-S01 |
 | ⬜ | **E15-S03** Row- and field-level authorization enforced at query time | E15 | security | M | RPT-012, SEC-008 | E15-S02, ~~E02-S05~~ |
 | ⬜ | **E15-S04** Drill-down: organization to BU/OU to project to document to transaction | E15 | api | M | RPT-002, PROJ-010 | E15-S03 |
-| ⬜ | **E15-S05** Time analysis across year, fiscal period, quarter, month, week and range | E15 | api | M | RPT-004, BUD-009 | E15-S04, E05-S04 |
+| ⬜ | **E15-S05** Time analysis across year, fiscal period, quarter, month, week and range | E15 | api | M | RPT-004, BUD-009 | E15-S04, ~~E05-S04~~ |
 | ⬜ | **E15-S06** Executive dashboard, operational dashboards, configurable home dashboard | E15 | ui | L | PROJ-010, RPT-005, XFN-004, RPT-013 | E15-S05, ~~E04-S03~~ |
 | ⬜ | **E15-S07** Saved personal views and governed shared views | E15 | crud | M | RPT-008, XFN-003 | E15-S06 |
 | ⬜ | **E15-S08** Export to HTML, PDF and Excel with context header, reconciling to the dashboard | E15 | engine | L | RPT-009, RPT-010, RPT-007, IMP-010, IMP-011 | E15-S06 |

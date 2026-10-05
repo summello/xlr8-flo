@@ -97,6 +97,23 @@
         "title": "AccessUserResponse",
         "type": "object"
       },
+      "CalendarPut": {
+        "additionalProperties": false,
+        "properties": {
+          "start_month": {
+            "description": "Fiscal first month (1\u201312).",
+            "maximum": 12.0,
+            "minimum": 1.0,
+            "title": "Start Month",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "start_month"
+        ],
+        "title": "CalendarPut",
+        "type": "object"
+      },
       "CurrencyRead": {
         "properties": {
           "code": {
@@ -216,6 +233,77 @@
           "source"
         ],
         "title": "EffectiveSetting",
+        "type": "object"
+      },
+      "FiscalPeriod": {
+        "properties": {
+          "closed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed At"
+          },
+          "closed_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed By"
+          },
+          "ends_on": {
+            "format": "date",
+            "title": "Ends On",
+            "type": "string"
+          },
+          "fiscal_year": {
+            "title": "Fiscal Year",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "period_no": {
+            "title": "Period No",
+            "type": "integer"
+          },
+          "starts_on": {
+            "format": "date",
+            "title": "Starts On",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "open",
+              "closed"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "fiscal_year",
+          "period_no",
+          "starts_on",
+          "ends_on",
+          "status",
+          "closed_by",
+          "closed_at"
+        ],
+        "title": "FiscalPeriod",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -1260,6 +1348,22 @@
           "message"
         ],
         "title": "ProblemFieldError",
+        "type": "object"
+      },
+      "ReopenBody": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "description": "Explain why this period must be reopened.",
+            "minLength": 10,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "ReopenBody",
         "type": "object"
       },
       "ScopeType": {
@@ -2468,6 +2572,376 @@
         "summary": "Revoke Session",
         "tags": [
           "authentication"
+        ]
+      }
+    },
+    "/api/v1/fiscal/calendar": {
+      "put": {
+        "description": "Configure the fiscal first month before any periods have been generated.",
+        "operationId": "set_calendar_api_v1_fiscal_calendar_put",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalendarPut"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarPut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Set Calendar",
+        "tags": [
+          "fiscal"
+        ]
+      }
+    },
+    "/api/v1/fiscal/periods": {
+      "get": {
+        "description": "Read generated periods without generating history or locking calendar configuration.",
+        "operationId": "list_periods_api_v1_fiscal_periods_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "fiscal_year",
+            "required": true,
+            "schema": {
+              "maximum": 9998,
+              "minimum": 2,
+              "title": "Fiscal Year",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FiscalPeriod"
+                  },
+                  "title": "Response List Periods Api V1 Fiscal Periods Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "List Periods",
+        "tags": [
+          "fiscal"
+        ]
+      }
+    },
+    "/api/v1/fiscal/periods/{id}:close": {
+      "post": {
+        "description": "Close after the immediately preceding generated period has been closed.",
+        "operationId": "close_period_api_v1_fiscal_periods__id__close_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiscalPeriod"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Close Period",
+        "tags": [
+          "fiscal"
+        ]
+      }
+    },
+    "/api/v1/fiscal/periods/{id}:reopen": {
+      "post": {
+        "description": "Reauthenticate within 15 minutes and explain why; later closed periods block reopening.",
+        "operationId": "reopen_period_api_v1_fiscal_periods__id__reopen_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReopenBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiscalPeriod"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Reopen Period",
+        "tags": [
+          "fiscal"
+        ]
+      }
+    },
+    "/api/v1/fiscal/years/{fiscal_year}:generate": {
+      "post": {
+        "description": "Generate twelve monthly periods, using the year in which the fiscal year ends.",
+        "operationId": "generate_api_v1_fiscal_years__fiscal_year__generate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fiscal_year",
+            "required": true,
+            "schema": {
+              "maximum": 9998,
+              "minimum": 2,
+              "title": "Fiscal Year",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FiscalPeriod"
+                  },
+                  "title": "Response Generate Api V1 Fiscal Years  Fiscal Year  Generate Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Generate",
+        "tags": [
+          "fiscal"
         ]
       }
     },

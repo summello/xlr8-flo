@@ -17,6 +17,9 @@ from flo.modules.identity.service import (
     IdentityAuthorizationConnection,
     register_business_unit_scope,
 )
+from flo.modules.org.fiscal import FiscalPeriod
+from flo.modules.org.fiscal import FiscalService as FiscalService
+from flo.modules.org.fiscal import PeriodClosed as PeriodClosed
 from flo.modules.org.master_kinds import known_kind, validate_attributes
 from flo.modules.org.models import OrgRepository
 from flo.modules.org.schemas import (
@@ -577,3 +580,28 @@ def list_currencies(q: str = "") -> list[CurrencyRead]:
         for code, exponent in sorted(data.items())
         if code.startswith(q.strip().upper())
     ]
+
+
+def period_for(
+    connection: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    effective_date: date,
+) -> FiscalPeriod:
+    return FiscalService(connection, scope).period_for(effective_date)
+
+
+def assert_postable(
+    connection: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    effective_date: date,
+) -> None:
+    FiscalService(connection, scope).assert_postable(effective_date)
+
+
+def range_for(
+    connection: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    kind: Literal["mtd", "qtd", "ytd", "fiscal_year"],
+    as_of: date,
+) -> tuple[date, date]:
+    return FiscalService(connection, scope).range_for(kind, as_of)

@@ -14,7 +14,7 @@ def test_precedence_replaces_value_and_clear_falls_back_one_level(
     admin(db)
     parent = create(db, "P")
     child = create(db, "C", parent.id, kind="ou")
-    key = "fiscal_year_start_month"
+    key = "funding_mode"
 
     def effective() -> dict[str, object]:
         response = request(db, "GET", f"/units/{child.id}/settings/{key}/effective")
@@ -22,10 +22,10 @@ def test_precedence_replaces_value_and_clear_falls_back_one_level(
         return response.json()
 
     assert effective() == {
-        "value": 1,
+        "value": "roll_down",
         "source": {"scope": "default", "unit_id": None, "unit_code": None},
     }
-    for unit, value in [(None, 4), (parent.id, 7), (child.id, 10)]:
+    for unit, value in [(None, "roll_up"), (parent.id, "roll_down"), (child.id, "roll_up")]:
         assert (
             request(
                 db,
@@ -36,17 +36,17 @@ def test_precedence_replaces_value_and_clear_falls_back_one_level(
             == 200
         )
     assert effective() == {
-        "value": 10,
+        "value": "roll_up",
         "source": {"scope": "unit", "unit_id": str(child.id), "unit_code": "C"},
     }
     assert request(db, "DELETE", f"/settings/{key}?unit_id={child.id}").status_code == 204
     assert effective() == {
-        "value": 7,
+        "value": "roll_down",
         "source": {"scope": "unit", "unit_id": str(parent.id), "unit_code": "P"},
     }
     assert request(db, "DELETE", f"/settings/{key}?unit_id={parent.id}").status_code == 204
     assert effective() == {
-        "value": 4,
+        "value": "roll_up",
         "source": {"scope": "org", "unit_id": None, "unit_code": None},
     }
     assert request(db, "DELETE", f"/settings/{key}").status_code == 204
@@ -124,10 +124,6 @@ def test_unknown_key_guard_rejects_violation(
         ("allow_negative_budget", None),
         ("funding_mode", "banana"),
         ("funding_mode", True),
-        ("fiscal_year_start_month", 0),
-        ("fiscal_year_start_month", 13),
-        ("fiscal_year_start_month", "4"),
-        ("fiscal_year_start_month", True),
     ],
 )
 def test_setting_values_are_type_checked(
@@ -142,7 +138,7 @@ def test_setting_values_are_type_checked(
 
 @pytest.mark.parametrize(
     ("key", "value"),
-    [("allow_negative_budget", True), ("funding_mode", "roll_up"), ("fiscal_year_start_month", 4)],
+    [("allow_negative_budget", True), ("funding_mode", "roll_up")],
 )
 def test_valid_setting_values_are_accepted(
     org_database: AuthorizationDatabase, key: str, value: object
