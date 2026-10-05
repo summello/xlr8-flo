@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Protocol
 
 revision = "20260825_0007"
-down_revision = "20260825_0006"
+down_revision = "20260825_0005"
 
 
 class MigrationConnection(Protocol):

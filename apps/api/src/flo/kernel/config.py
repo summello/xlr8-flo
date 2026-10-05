@@ -25,6 +25,10 @@ class Settings(BaseSettings):
 
     port: int = Field(default=8080, ge=1, le=65535, validation_alias="PORT")
     database_url: SecretStr | None = Field(default=None, validation_alias="DATABASE_URL")
+    migrations_dir: Path = Field(
+        default=Path("/app/migrations"),
+        validation_alias="MIGRATIONS_DIR",
+    )
     storage_endpoint_url: SecretStr | None = Field(
         default=None,
         validation_alias=AliasChoices("S3_ENDPOINT_URL", "STORAGE_ENDPOINT_URL"),

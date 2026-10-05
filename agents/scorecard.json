@@ -1055,6 +1055,37 @@
       },
       "recap": "Administrative effective-access explorer answering why a person holds an access: roles, the scope each grant came from, who granted it and when, read from the E02-S05 resolver rather than a second copy of the rules. Deactivation revokes live sessions, blocks new ones, and retains attribution. The endpoint is guarded by require(\"admin.access.read\") and a foreign-tenant subject returns 404.",
       "title": "Effective-access explorer endpoint and screen"
+    },
+    {
+      "story": "E01-S08",
+      "kind": "migration",
+      "size": "M",
+      "tags": [
+        "migration",
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E01-S08"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "98833b00-3142-4433-9b26-9f0626c70fef",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Added the transactional migration runner, packaged revisions into the API image, wired create-or-update Cloud Run job execution and guarded manual deploys, and fixed the permitted 0007 parent metadata.",
+      "title": "Production migration runner, packaged in the image, run by flo-migrate"
     }
   ]
 }

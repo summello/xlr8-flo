@@ -4,6 +4,7 @@ on:
   push:
     branches: [main, 'milestone/**']
   pull_request:
+  workflow_dispatch:
 
 # Free tier is 2000 minutes/month (OPS-001). Superseded runs are cancelled.
 concurrency:
@@ -292,16 +293,24 @@ jobs:
           category: trivy-dependency-scan
 
   deploy:
-    # Only main deploys. Milestone branches build but never release.
+    # Main pushes deploy automatically. Manual milestone dispatches support release rehearsal.
     # `always() && !failure() && !cancelled()` so a legitimately skipped
     # backend/frontend job does not also skip the deploy.
     runs-on: ubuntu-latest
     needs: [detect, backend, frontend, security]
     if: |
       always() && !failure() && !cancelled()
-      && github.ref == 'refs/heads/main'
-      && github.event_name == 'push'
       && needs.detect.outputs.api == 'true'
+      && (
+        (github.ref == 'refs/heads/main' && github.event_name == 'push')
+        || (
+          github.event_name == 'workflow_dispatch'
+          && (
+            github.ref == 'refs/heads/main'
+            || startsWith(github.ref, 'refs/heads/milestone/')
+          )
+        )
+      )
     permissions:
       contents: read
       id-token: write
@@ -323,7 +332,13 @@ jobs:
         run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
 
       - name: Build API image locally
-        run: docker build --file apps/api/Containerfile --tag "$IMAGE_TAG" apps/api
+        run: docker build --file apps/api/Containerfile --tag "$IMAGE_TAG" .
+
+      - name: Verify migration runner in API image
+        run: |
+          docker run --rm --entrypoint python "$IMAGE_TAG" -m flo.kernel.migrate --check
+          docker run --rm --entrypoint python "$IMAGE_TAG" -c \
+            "from pathlib import Path; raise SystemExit(not any(Path('/app/migrations').glob('*.py')))"
 
       # This is deliberately before docker push. A failed or vulnerable scan must
       # leave neither an Artifact Registry image nor a deployable revision behind.
@@ -384,10 +399,25 @@ jobs:
 
       - name: Configure and run migrations before serving the new revision
         run: |
-          gcloud run jobs update flo-migrate --region us-central1 \
-            --image "${{ steps.push.outputs.digest }}" \
-            --service-account "flo-runtime@${GCP_PROJECT}.iam.gserviceaccount.com" \
-            --set-secrets DATABASE_URL=flo-database-url:latest
+          if gcloud run jobs describe flo-migrate --region us-central1 >/dev/null 2>&1; then
+            gcloud run jobs update flo-migrate --region us-central1 \
+              --image "${{ steps.push.outputs.digest }}" \
+              --service-account "flo-runtime@${GCP_PROJECT}.iam.gserviceaccount.com" \
+              --command python \
+              --args=-m,flo.kernel.migrate \
+              --max-retries 0 \
+              --task-timeout 10m \
+              --set-secrets DATABASE_URL=flo-database-url:latest
+          else
+            gcloud run jobs create flo-migrate --region us-central1 \
+              --image "${{ steps.push.outputs.digest }}" \
+              --service-account "flo-runtime@${GCP_PROJECT}.iam.gserviceaccount.com" \
+              --command python \
+              --args=-m,flo.kernel.migrate \
+              --max-retries 0 \
+              --task-timeout 10m \
+              --set-secrets DATABASE_URL=flo-database-url:latest
+          fi
           gcloud run jobs execute flo-migrate --region us-central1 --wait
 
       - name: Deploy API by immutable digest

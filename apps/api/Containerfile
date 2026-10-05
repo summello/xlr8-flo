@@ -8,8 +8,8 @@ WORKDIR /build
 
 RUN python -m venv "${VIRTUAL_ENV}"
 
-COPY pyproject.toml ./
-COPY src/ ./src/
+COPY apps/api/pyproject.toml ./
+COPY apps/api/src/ ./src/
 
 RUN "${VIRTUAL_ENV}/bin/pip" install --no-cache-dir . \
     && "${VIRTUAL_ENV}/bin/pip" uninstall --yes xlr8flo-api \
@@ -30,7 +30,8 @@ RUN groupadd --gid 1001 flo \
 WORKDIR /app
 
 COPY --from=build /opt/venv/ /opt/venv/
-COPY --chown=1001:1001 src/ /app/src/
+COPY --chown=1001:1001 apps/api/src/ /app/src/
+COPY --chown=1001:1001 migrations/ /app/migrations/
 
 USER 1001:1001
 

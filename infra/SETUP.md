@@ -233,8 +233,8 @@ gcloud run jobs create flo-migrate \
   --image=INITIAL_IMAGE_DIGEST \
   --service-account=flo-runtime@GCP_PROJECT_ID.iam.gserviceaccount.com \
   --set-secrets=DATABASE_URL=flo-database-url:latest \
-  --command=alembic \
-  --args=upgrade,head \
+  --command=python \
+  --args=-m,flo.kernel.migrate \
   --max-retries=0 \
   --task-timeout=10m
 ```

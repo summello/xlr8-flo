@@ -363,7 +363,7 @@ def test_migration_revision_rls_down_and_unrelated_data_preservation(
     connection, _ = jobs_database
     migration = _load_migration(JOBS_MIGRATION, "jobs_migration_contract")
     assert migration.revision == "20260825_0007"
-    assert migration.down_revision == "20260825_0006"
+    assert migration.down_revision == "20260825_0005"
     sentinel = f"migration_sentinel_{uuid4().hex[:12]}"
     connection.execute(
         sql.SQL("CREATE TABLE {} (value text NOT NULL)").format(sql.Identifier(sentinel))

@@ -97,6 +97,49 @@ def assert_release_workflow_policy(source: str) -> None:
     assert 'grep -RIlF -- "$GCP_PROJECT" apps/web/dist' in source
 
 
+def assert_migration_workflow_policy(source: str) -> None:
+    build = workflow_step(source, "Build API image locally")
+    verify = workflow_step(source, "Verify migration runner in API image")
+    configure = workflow_step(
+        source,
+        "Configure and run migrations before serving the new revision",
+    )
+    assert 'docker build --file apps/api/Containerfile --tag "$IMAGE_TAG" .' in build
+    assert '"$IMAGE_TAG" -m flo.kernel.migrate --check' in verify
+    assert "Path('/app/migrations').glob('*.py')" in verify
+    assert "gcloud run jobs describe flo-migrate" in configure
+    assert "gcloud run jobs update flo-migrate" in configure
+    assert "gcloud run jobs create flo-migrate" in configure
+    assert configure.count("--command python") == 2
+    assert configure.count("--args=-m,flo.kernel.migrate") == 2
+    assert configure.count("--max-retries 0") == 2
+    assert configure.count("--task-timeout 10m") == 2
+    assert configure.count("--set-secrets DATABASE_URL=flo-database-url:latest") == 2
+
+
+def _deploy_condition(source: str) -> str:
+    deploy = source.index("  deploy:\n")
+    start = source.index("    if: |\n", deploy) + len("    if: |\n")
+    end = source.index("    permissions:\n", start)
+    return " ".join(line.strip() for line in source[start:end].splitlines())
+
+
+def evaluate_deploy_condition(source: str, event_name: str, ref: str) -> bool:
+    expected = (
+        "always() && !failure() && !cancelled() "
+        "&& needs.detect.outputs.api == 'true' "
+        "&& ( (github.ref == 'refs/heads/main' && github.event_name == 'push') "
+        "|| ( github.event_name == 'workflow_dispatch' "
+        "&& ( github.ref == 'refs/heads/main' "
+        "|| startsWith(github.ref, 'refs/heads/milestone/') ) ) )"
+    )
+    assert _deploy_condition(source) == expected
+    return (event_name == "push" and ref == "refs/heads/main") or (
+        event_name == "workflow_dispatch"
+        and (ref == "refs/heads/main" or ref.startswith("refs/heads/milestone/"))
+    )
+
+
 def assert_registry_prune_policy(source: str) -> None:
     prune = workflow_step(
         source,
@@ -589,6 +632,32 @@ def test_release_workflow_policy_rejects_a_nonblocking_image_scan_and_then_passe
     with pytest.raises(AssertionError):
         assert_release_workflow_policy(violation)
     assert_release_workflow_policy(source)
+
+
+def test_migration_workflow_policy_rejects_a_shell_command_and_then_passes() -> None:
+    source = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    violation = source.replace("--command python", "--command /bin/sh", 1)
+
+    with pytest.raises(AssertionError):
+        assert_migration_workflow_policy(violation)
+    assert_migration_workflow_policy(source)
+
+
+def test_manual_deploy_condition_rejects_feature_ref_and_accepts_milestone_ref() -> None:
+    source = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+
+    assert not evaluate_deploy_condition(
+        source,
+        "workflow_dispatch",
+        "refs/heads/feature/x",
+    )
+    assert evaluate_deploy_condition(
+        source,
+        "workflow_dispatch",
+        "refs/heads/milestone/M0-rails",
+    )
+    assert evaluate_deploy_condition(source, "push", "refs/heads/main")
+    assert not evaluate_deploy_condition(source, "push", "refs/heads/milestone/M0-rails")
 
 
 def test_registry_prune_workflow_rejects_a_missing_verification_input_and_then_passes() -> None:

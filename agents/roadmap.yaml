@@ -149,7 +149,7 @@ epics:
           - SEC-005
         dep:
           - E01-S05
-        st: todo
+        st: done
 
   - id: E02
     name: Identity & access
