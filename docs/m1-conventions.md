@@ -43,3 +43,29 @@ permission with a grant in scope → 403; foreign tenant → 404).
 - If something is genuinely undecided after reading the packet **and** this file, write
   `notes.blocked` with the specific question and stop. Do not guess at a money, state or
   authorization rule, but do not block on anything these two documents answer.
+
+## D. Error responses — do not extend the taxonomy
+
+`kernel/errors` is a closed taxonomy and **no M1 story edits it** (except where a packet says so).
+The problem names written in packets (`duplicate_code`, `PeriodClosed`, `StaleVersion`, ...) are
+**labels**. Raise `ProblemError` with the existing code that matches the status, put the plain-language
+explanation in `detail` (it must say what happened and what to do), and carry the label in
+`checks={"problem": "<label as snake_case>"}`. Tests assert status, code and `checks["problem"]`.
+
+| Status | `ErrorCode` | Typical labels |
+|---|---|---|
+| 409 (state or uniqueness conflict) | `CONFLICT` | duplicate_code, PeriodClosed, StaleVersion, InvalidTransition, ClosingBlocked, TransferNotEligible, FundFromParent, ProjectNotFunding, ReleaseExceedsReservation, FundingModeLocked, NotValidated, HasErrors, StaleValidation, ImportKeyConflict, TransferInvariantViolation, address_overlap, ParentInsufficient |
+| 409 (money) | `INSUFFICIENT_BUDGET` | InsufficientBudget |
+| 422 (bad values) | `VALIDATION_FAILED` (with `errors` field entries where a field is at fault) | depth limit, CurrencyMismatch, FxRateMissing, unknown kind or key, attribute-schema errors, formula-in-file, structure errors |
+| 422 (key reused for different content) | `IDEMPOTENCY_KEY_REUSED` | idempotency_conflict |
+| 400 | `BAD_REQUEST` | malformed request not about field values |
+| 403 / 404 | `FORBIDDEN` / `NOT_FOUND` | see section A |
+
+If a packet needs a status with no entry (E08-S01's 413 and 415 are the only ones), it names the
+taxonomy addition explicitly.
+
+## E. Cross-module imports
+
+The import-linter contract allows `flo.modules.<a>` to import `flo.modules.<b>.service` and
+`flo.modules.<b>.schemas`, and nothing else of `<b>` (not `models`, `repo`, `db`, or the package
+root). Import the service function, not the package. Kernel imports are always fine.
