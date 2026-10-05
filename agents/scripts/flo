@@ -960,6 +960,17 @@ color:var(--fg3);padding:11px 16px 9px;border-bottom:1px solid var(--border)}
 .sc .ag{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px}
 .scv{font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:620;font-size:13px}
 .g80{color:var(--ok)}.g60{color:var(--info)}.g0{color:var(--warn)}.gn{color:var(--fg3);font-weight:400}
+.burn{width:100%;border-collapse:collapse;font-size:12px}
+.burn th{text-align:left;font-weight:560;white-space:nowrap;padding:6px 12px 6px 0}
+.burn td{padding:6px 0 6px 12px;white-space:nowrap;color:var(--fg3)}
+.burn td.r{text-align:right;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px}
+.burn td.bar{width:100%;padding-left:0;display:table-cell}
+.burn td.bar{background:none}
+.burn td.bar{line-height:0}
+.burn td.bar i{display:inline-block;height:12px}
+.legend span{display:inline-flex;align-items:center;gap:6px;margin-right:14px}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .spark{display:inline-block;width:60px;height:5px;border-radius:3px;background:var(--sunken);
 overflow:hidden;vertical-align:middle;margin-right:8px}
 .spark i{display:block;height:100%;border-radius:3px}
@@ -988,32 +999,38 @@ def _esc(s):
 
 
 def _burnup(rm, recaps):
-    """Cumulative completion per milestone — where we are, at a glance."""
-    ms = rm["milestones"]
-    W, H, pad = 720, 150, 26
-    totals, dones, x = [], [], []
-    run_t = run_d = 0
-    for m in ms:
-        eps = [e for e in rm["epics"] if e["milestone"] == m["id"]]
-        ss = [s for e in eps for s in e["stories"]]
-        run_t += len(ss); run_d += sum(1 for s in ss if s["st"] == "done")
-        totals.append(run_t); dones.append(run_d)
-    top = totals[-1] or 1
-    step = (W - pad * 2) / max(1, len(ms) - 1)
-    def pt(i, v): return (pad + i * step, H - pad - (v / top) * (H - pad * 2))
-    plan = " ".join(f"{a:.0f},{b:.0f}" for a, b in (pt(i, v) for i, v in enumerate(totals)))
-    act = " ".join(f"{a:.0f},{b:.0f}" for a, b in (pt(i, v) for i, v in enumerate(dones)))
-    labels = "".join(
-        f'<text x="{pt(i,0)[0]:.0f}" y="{H-8}" font-size="10" fill="var(--fg3)" '
-        f'text-anchor="middle">{m["id"]}</text>' for i, m in enumerate(ms))
-    dots = "".join(f'<circle cx="{a:.0f}" cy="{b:.0f}" r="3" fill="var(--ok)"/>'
-                   for a, b in (pt(i, v) for i, v in enumerate(dones)))
-    return f'''<svg viewBox="0 0 {W} {H}" role="img" aria-label="Cumulative stories planned versus delivered by milestone">
-  <polyline points="{plan}" fill="none" stroke="var(--bs)" stroke-width="1.5" stroke-dasharray="5 4"/>
-  <polyline points="{act}" fill="none" stroke="var(--ok)" stroke-width="2"/>
-  {dots}{labels}
-  <text x="{pad}" y="16" font-size="10" fill="var(--fg3)">0 → {top} stories · dashed = scope, solid = delivered</text>
-</svg>'''
+    """Per-milestone completed vs in flight vs outstanding, with the counts as text."""
+    rows = []
+    for m in rm["milestones"]:
+        ss = [s for e in rm["epics"] if e["milestone"] == m["id"] for s in e["stories"]]
+        done = sum(1 for s in ss if s["st"] == "done")
+        live = sum(1 for s in ss if s["st"] in ACTIVE)
+        rows.append((m, len(ss), done, live, len(ss) - done - live))
+    top = max((r[1] for r in rows), default=0) or 1
+    total = sum(r[1] for r in rows)
+    done_all = sum(r[2] for r in rows)
+    live_all = sum(r[3] for r in rows)
+    out = []
+    for m, n, d, l, o in rows:
+        def seg(v, color):
+            return (f'<i style="width:{v / top * 100:.2f}%;background:var({color})"></i>'
+                    if v else "")
+        out.append(
+            f'<tr><th scope="row">{_esc(m["id"])} <span class="gn">{_esc(m["name"])}</span></th>'
+            f'<td class="bar" aria-hidden="true">{seg(d, "--ok")}{seg(l, "--info")}'
+            f'{seg(o, "--sunken")}</td>'
+            f'<td class="r">{d} done</td><td class="r">{l} in flight</td>'
+            f'<td class="r">{o} outstanding</td><td class="r">{n} total</td></tr>')
+    return (f'<p class="hint" style="padding:0 0 10px">{done_all} of {total} stories delivered, '
+            f'{live_all} in flight, {total - done_all - live_all} outstanding. '
+            f'Bar length is scaled to the largest milestone.</p>'
+            f'<table class="burn"><caption class="sr">Stories completed, in flight and '
+            f'outstanding, by milestone</caption><tbody>{"".join(out)}</tbody></table>'
+            f'<p class="hint legend" style="padding:10px 0 0">'
+            f'<span><i style="background:var(--ok)"></i>Done</span> '
+            f'<span><i style="background:var(--info)"></i>In flight</span> '
+            f'<span><i style="background:var(--sunken);outline:1px solid var(--border)"></i>'
+            f'Outstanding</span></p>')
 
 
 def pending_on_human(rm, fleet):
