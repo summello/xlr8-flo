@@ -166,6 +166,20 @@ jobs:
       - name: No float in money modules (AGENTS.md 3.1)
         run: python apps/api/scripts/check_money_floats.py
 
+      # The gate self-tests plant a real secret and need the gitleaks binary. Pinned and
+      # checksum-verified; the security job's action does not put it on PATH.
+      - name: Install gitleaks for the gate self-tests
+        run: |
+          set -euo pipefail
+          version=8.30.1
+          curl -fsSL -o gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${version}/gitleaks_${version}_linux_x64.tar.gz"
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tar.gz" \
+            | sha256sum -c -
+          tar -xzf gitleaks.tar.gz gitleaks
+          sudo install -m 0755 gitleaks /usr/local/bin/gitleaks
+          rm gitleaks.tar.gz gitleaks
+
       - run: pytest -q apps/api --cov=flo --cov-report=term-missing
 
       - name: Cross-tenant isolation suite (TEN-010)
@@ -232,6 +246,9 @@ jobs:
           fi
 
       - run: npm --prefix apps/web run test
+
+      - name: Install the Playwright browser
+        run: npm --prefix apps/web exec -- playwright install --with-deps chromium
 
       - name: E2E and accessibility (A11Y-001)
         run: npm --prefix apps/web run test:e2e
