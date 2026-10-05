@@ -23,6 +23,7 @@ by opening a follow-up story after it merges.
 | D-M1-16 | Project state machine and closing rule (table in the packet); `approval_pending` to `active` by `project.approve` until the M2 engine | E06-S03 |
 | D-M1-17 | Funding modes: roll-down funds a child by transfer from its parent; roll-up aggregates descendants at read time; one mode per tree, locked once money exists | E06-S04 |
 | D-M1-18 | Risk indicator thresholds (budget 80/95 percent, schedule overdue/14 days, recorded risk score 8/15) | E06-S08 |
+| D-M1-20 | BU/OU authorization: every org unit registers as a `bu`-type authorization scope under the org; nesting drives settings precedence only | E05-S01 |
 | D-M1-19 | Import: CSV and XLSX only, any formula or macro rejects the file, standard-library XLSX parsing, no new dependency | E08-S01 |
 
 Not decided (kept out of scope on purpose): derived percent complete on projects, planned items
