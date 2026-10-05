@@ -11,6 +11,7 @@ by opening a follow-up story after it merges.
 | D-M1-3 | `allow_negative_budget` defaults to **false** | E07-S02 |
 | D-M1-5 | Master data is one generic table keyed by `kind`, not eight tables | E05-S03 |
 | D-M1-6 | Fiscal years named by ending calendar year, 12 monthly periods, no 4-4-5 | E05-S04 |
+| D-M1-22 | The fiscal calendar table is the only authority for the fiscal year start; the overridable org setting is removed; close order checks the preceding existing period across years | E05-S04 |
 | D-M1-7 | Periods are `open` or `closed`; reopening needs its own permission, step-up and a reason | E05-S04 |
 | D-M1-8 | FX: ECB daily rates, a weekend lookup may use the latest prior published date within 7 days (shown to the user), older blocks; no fabrication | E05-S05 |
 | D-M1-9 | Every ledger row names its balance bucket; balances are `SUM(amount) GROUP BY bucket` | E07-S01 |
