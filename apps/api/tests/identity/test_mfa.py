@@ -452,7 +452,7 @@ class FakeProvider:
         return self._identity_id
 
     async def change_password(self, identity_id: IdentityId, new: str) -> None:
-        del identity_id, new
+        return None
 
     async def verify_current_password(self, identity_id: IdentityId, password: str) -> bool:
         return identity_id == self._identity_id and password == "current password"

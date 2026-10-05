@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-from asyncio import AbstractEventLoop
 from collections.abc import Callable
 from weakref import WeakKeyDictionary
 
@@ -17,7 +16,7 @@ ARGON2_RETRY_AFTER_SECONDS = 2
 
 # One semaphore per running event loop is process-global to password and recovery-code
 # hashing on that loop. Weak keys keep short-lived test loops from being retained.
-_ARGON2_SEMAPHORES: WeakKeyDictionary[AbstractEventLoop, tuple[int, asyncio.Semaphore]] = (
+_ARGON2_SEMAPHORES: WeakKeyDictionary[asyncio.AbstractEventLoop, tuple[int, asyncio.Semaphore]] = (
     WeakKeyDictionary()
 )
 

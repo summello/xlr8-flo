@@ -251,7 +251,7 @@ def test_google_usage_reads_all_monitoring_and_registry_pages_without_credential
         calls.append((url, token, timeout))
         query = urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)
         page_token = query.get("pageToken", [None])[0]
-        if "monitoring.googleapis.com" in url:
+        if urllib.parse.urlsplit(url).hostname == "monitoring.googleapis.com":
             if page_token is None:
                 return {
                     "timeSeries": [{"points": [{"value": {"int64Value": "17"}}]}],
