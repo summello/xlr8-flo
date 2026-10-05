@@ -17,9 +17,15 @@ from flo.modules.identity.service import (
     IdentityAuthorizationConnection,
     register_business_unit_scope,
 )
+from flo.modules.org.master_kinds import known_kind, validate_attributes
 from flo.modules.org.models import OrgRepository
 from flo.modules.org.schemas import (
+    CurrencyRead,
     EffectiveSetting,
+    MasterCreate,
+    MasterPage,
+    MasterPatch,
+    MasterRef,
     OrgAddressClose,
     OrgAddressCreate,
     OrgAddressRead,
@@ -405,3 +411,169 @@ class OrgService:
             after = self.repo.address(unit_id, address_id)
             self._audit("org_address.close", address_id, before, after)
             return OrgAddressRead.model_validate(after)
+
+    def get_master(self, kind: str, record_id: UUID) -> MasterRef:
+        known_kind(kind)
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            row = self.repo.master(kind, record_id)
+            if row is None:
+                raise ProblemError(ErrorCode.NOT_FOUND)
+            return MasterRef.model_validate(row)
+
+    def create_master(self, kind: str, body: MasterCreate) -> MasterRef:
+        validate_attributes(kind, dict(body.attributes))
+        validate_master_dates(body.effective_from, body.effective_to)
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            record_id = uuid4()
+            inserted = self.repo.execute(
+                """INSERT INTO master_record
+                (id, org_id, kind, code, name, attributes, effective_from, effective_to, active)
+                VALUES (%(id)s, %(org_id)s, %(kind)s, %(code)s, %(name)s, %(attributes)s,
+                %(effective_from)s, %(effective_to)s, %(active)s)
+                ON CONFLICT (org_id, kind, code) DO NOTHING RETURNING id""",
+                body.model_dump()
+                | {
+                    "id": record_id,
+                    "kind": kind,
+                    "code": body.code.strip().upper(),
+                    "attributes": Jsonb(body.attributes),
+                },
+            ).fetchone()
+            if inserted is None:
+                raise ProblemError(
+                    ErrorCode.CONFLICT,
+                    detail="This master code already exists. Choose a different code.",
+                    checks={"problem": "duplicate_code"},
+                )
+            row = self.repo.master(kind, record_id)
+            self._audit("master_record.create", record_id, None, row)
+            return MasterRef.model_validate(row)
+
+    def update_master(self, kind: str, record_id: UUID, body: MasterPatch) -> MasterRef:
+        known_kind(kind)
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            before = self.repo.master(kind, record_id, lock=True)
+            if before is None:
+                raise ProblemError(ErrorCode.NOT_FOUND)
+            after = before | body.model_dump(exclude_unset=True)
+            validate_attributes(kind, cast(dict[str, object], after["attributes"]))
+            validate_master_dates(
+                cast(date, after["effective_from"]), cast(date | None, after["effective_to"])
+            )
+            if after != before:
+                self.repo.execute(
+                    """UPDATE master_record SET name = %(name)s, attributes = %(attributes)s,
+                    effective_from = %(effective_from)s, effective_to = %(effective_to)s,
+                    active = %(active)s, updated_at = now()
+                    WHERE org_id = %(org_id)s AND kind = %(kind)s AND id = %(id)s""",
+                    after | {"attributes": Jsonb(after["attributes"])},
+                )
+                after = cast(dict[str, object], self.repo.master(kind, record_id))
+                self._audit("master_record.update", record_id, before, after)
+            return MasterRef.model_validate(after)
+
+    def deactivate_master(self, kind: str, record_id: UUID) -> MasterRef:
+        return self.update_master(kind, record_id, MasterPatch(active=False))
+
+    def list_master(
+        self,
+        kind: str,
+        *,
+        q: str = "",
+        active: bool | None = None,
+        as_of: date | None = None,
+        cursor: UUID | None = None,
+        page_size: int = 50,
+    ) -> MasterPage:
+        known_kind(kind)
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            prefix = (
+                q.strip().upper().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+                + "%"
+            )
+            rows = self.repo.execute(
+                """SELECT id FROM master_record WHERE org_id = %(org_id)s AND kind = %(kind)s
+                AND (code LIKE %(prefix)s OR upper(name) LIKE %(prefix)s)
+                AND (%(active)s::boolean IS NULL OR active = %(active)s)
+                AND (%(as_of)s::date IS NULL OR (effective_from <= %(as_of)s
+                  AND (effective_to IS NULL OR effective_to >= %(as_of)s)))
+                AND (%(cursor)s::uuid IS NULL OR id > %(cursor)s)
+                ORDER BY id LIMIT %(limit)s""",
+                {
+                    "kind": kind,
+                    "prefix": prefix,
+                    "active": active,
+                    "as_of": as_of,
+                    "cursor": cursor,
+                    "limit": min(50, max(1, page_size)) + 1,
+                },
+            ).fetchall()
+            size = min(50, max(1, page_size))
+            records = [
+                MasterRef.model_validate(self.repo.master(kind, row[0])) for row in rows[:size]
+            ]
+            return MasterPage(
+                rows=records, next_cursor=records[-1].id if len(rows) > size else None
+            )
+
+    def assert_usable(self, kind: str, code: str, on_date: date) -> MasterRef:
+        known_kind(kind)
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            row = self.repo.execute(
+                """SELECT id FROM master_record WHERE org_id = %(org_id)s
+                AND kind = %(kind)s AND code = %(code)s""",
+                {"kind": kind, "code": code.strip().upper()},
+            ).fetchone()
+            if row is None:
+                raise MasterCodeUnusable(code, "unknown")
+            ref = MasterRef.model_validate(self.repo.master(kind, row[0]))
+            if not ref.active:
+                raise MasterCodeUnusable(code, "inactive")
+            if on_date < ref.effective_from or (
+                ref.effective_to is not None and on_date > ref.effective_to
+            ):
+                raise MasterCodeUnusable(code, "not_effective")
+            return ref
+
+
+class MasterCodeUnusable(ValueError):
+    def __init__(self, code: str, reason: Literal["unknown", "inactive", "not_effective"]) -> None:
+        self.code = code
+        self.reason = reason
+        super().__init__(f"Master code {code} is {reason}")
+
+
+def validate_master_dates(start: date, end: date | None) -> None:
+    if end is not None and end < start:
+        raise ProblemError(
+            ErrorCode.VALIDATION_FAILED,
+            detail="Effective end precedes the start. Choose an end on or after the start.",
+            errors=(
+                ProblemFieldError(
+                    field="effective_to", message="Must be on or after effective_from."
+                ),
+            ),
+        )
+
+
+def assert_usable(
+    connection: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    kind: str,
+    code: str,
+    on_date: date,
+) -> MasterRef:
+    """Scoped service entry point for transaction consumers."""
+    return OrgService(connection, scope).assert_usable(kind, code, on_date)
+
+
+def list_currencies(q: str = "") -> list[CurrencyRead]:
+    import json
+    from importlib.resources import files
+
+    data = json.loads(files("flo.kernel.data").joinpath("iso4217.json").read_text())
+    return [
+        CurrencyRead(code=code, exponent=exponent)
+        for code, exponent in sorted(data.items())
+        if code.startswith(q.strip().upper())
+    ]

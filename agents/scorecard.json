@@ -1154,6 +1154,40 @@
       },
       "recap": "Implemented effective-dated address creation, as-of reads, one-way close, transactional audit, tenant-scoped authorization, database exclusion/RLS, reversible revision 0014 and generated OpenAPI client. Reuses organization locking to serialize address writes; downgrade retains shared btree_gist extension. Verification: flo check green (all nine checks, including coverage, Playwright/axe and gitleaks); API strict mypy, ruff and migration-chain check green; web vitest 59 passed. Final full direct pytest: 433 passed, 1 skipped (existing money round-trip requires explicit DATABASE_URL and runs under flo check). All 24 address cases pass. Foreign address lookup precedes authorization, including wrong-permission callers.",
       "title": "Bill To / Ship To addresses with effective dates"
+    },
+    {
+      "story": "E05-S03",
+      "kind": "crud",
+      "size": "L",
+      "tags": [],
+      "author": "opencode-nemotron",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E05-S03 and model~nvidia/nemotron-3-ultra-550b-a55b:free"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "dbfe4938-296f-4d21-81ae-13d6551bb13d",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented master data, permissions, scoped routes, migration 0015 after 0014, generated client and real-Postgres regression coverage. No new dependency or UI. Currency exposes bundled code/exponent; duplicate deactivation is a no-op without a second audit write.",
+      "title": "Master data: departments, ledger accounts, UoM, tax codes, payment terms, categories"
     }
   ]
 }

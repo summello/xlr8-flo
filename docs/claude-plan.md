@@ -481,7 +481,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E04-S05** StatusPill primitive: closed per-document-type tone map, icon always, never author-coloured | E04 | ui | M | TAG-001, TAG-002, TAG-003, A11Y-004 | ~~E04-S01~~ |
 | ✅ | **E04-S06** Material layer: tinted shadows, lit edge, grain, honest glass, glow focus ring | E04 | ui | M | UX-006, A11Y-005 | ~~E04-S01~~ |
 
-#### M1 — Budget spine · 2/26 done
+#### M1 — Budget spine · 3/26 done
 
 > The trustworthy system of record. Projects, hierarchy and the complete budget ledger.
 
@@ -489,10 +489,10 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 |---|---|---|---|---|---|---|
 | ✅ | **E05-S01** Organization and BU/OU with unique codes, settings precedence | E05 | crud | M | ORG-001, ORG-002, ORG-012 | ~~E02-S05~~ |
 | ✅ | **E05-S02** Bill To / Ship To addresses with effective dates | E05 | crud | S | ORG-005 | ~~E05-S01~~ |
-| ⬜ | **E05-S03** Master data: departments, ledger accounts, UoM, tax codes, payment terms, categories | E05 | crud | L | ORG-010, ORG-011, ORG-009, XFN-009 | ~~E05-S01~~ |
+| ✅ | **E05-S03** Master data: departments, ledger accounts, UoM, tax codes, payment terms, categories | E05 | crud | L | ORG-010, ORG-011, ORG-009, XFN-009 | ~~E05-S01~~ |
 | ⬜ | **E05-S04** Fiscal calendar and period open/close with authorization and audit | E05 | engine | M | BUD-010, FIN-010 | ~~E05-S01~~ |
 | ⬜ | **E05-S05** FX: ECB daily rate ingest, rate table, effective dating, missing-rate block | E05 | engine | M | FX-001, FX-002, FX-003, FX-004, FIN-003 | ~~E03-S06~~ |
-| ⬜ | **E06-S01** Project entity, scoped numbering sequence, department and ledger account | E06 | crud | M | PROJ-001, PROJ-014, PROJ-019, SEQ-001, SEQ-002, SEQ-003, SEQ-004 | E05-S03 |
+| ⬜ | **E06-S01** Project entity, scoped numbering sequence, department and ledger account | E06 | crud | M | PROJ-001, PROJ-014, PROJ-019, SEQ-001, SEQ-002, SEQ-003, SEQ-004 | ~~E05-S03~~ |
 | ⬜ | **E06-S02** Five-level hierarchy with recursive CTE traversal and depth guard | E06 | engine | L | PROJ-004, PROJ-005 | E06-S01 |
 | ⬜ | **E06-S03** Project lifecycle state machine with permission and budget-effect enforcement | E06 | engine | L | PROJ-012, PROJ-013, PROJ-018, WF-002, WF-006 | E06-S01 |
 | ⬜ | **E06-S04** Roll-down and roll-up funding modes, set per BU/OU and inherited | E06 | ledger | L | PROJ-006, PROJ-007, PROJ-008 | E06-S02, E07-S02 |
@@ -602,7 +602,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E15-S07** Saved personal views and governed shared views | E15 | crud | M | RPT-008, XFN-003 | E15-S06 |
 | ⬜ | **E15-S08** Export to HTML, PDF and Excel with context header, reconciling to the dashboard | E15 | engine | L | RPT-009, RPT-010, RPT-007, IMP-010, IMP-011 | E15-S06 |
 | ⬜ | **E15-S09** Async long reports and bulk exports with progress and notification | E15 | engine | M | RPT-011, IMP-012, PERF-004 | E15-S08, ~~E03-S06~~ |
-| ⬜ | **E16-S01** Field definitions: types, scope, effective dates, order, permissions, retirement | E16 | engine | L | CUS-001, CUS-002, CUS-003, CUS-010 | E05-S03 |
+| ⬜ | **E16-S01** Field definitions: types, scope, effective dates, order, permissions, retirement | E16 | engine | L | CUS-001, CUS-002, CUS-003, CUS-010 | ~~E05-S03~~ |
 | ⬜ | **E16-S02** JSONB values with GIN index; generated column plus btree for searchable fields | E16 | migration | L | CUS-009, D-12 | E16-S01 |
 | ⬜ | **E16-S03** Field-level authorization, export and log exclusion for sensitive fields | E16 | security | M | CUS-008, AUD-006, IMP-010 | E16-S02, ~~E02-S05~~ |
 | ⬜ | **E16-S04** Propagation of project custom fields into downstream transactions | E16 | engine | M | CUS-004 | E16-S02 |
@@ -627,7 +627,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 
 | | Story | Epic | Kind | Size | Requirements | Depends on |
 |---|---|---|---|---|---|---|
-| ⬜ | **E18-S01** Operator tenant provisioning: idempotent, reversible, seeds admin and master data | E18 | engine | M | TEN-001, TEN-002 | E05-S03 |
+| ⬜ | **E18-S01** Operator tenant provisioning: idempotent, reversible, seeds admin and master data | E18 | engine | M | TEN-001, TEN-002 | ~~E05-S03~~ |
 | ⬜ | **E18-S02** Self-serve signup with email verification and anti-abuse controls | E18 | security | L | TEN-012, SEC-010, TEN-001 | E18-S01, ~~E02-S03~~ |
 | ⬜ | **E18-S03** MAU metering: distinct authenticated users per rolling 30 days, per tenant and total | E18 | engine | M | TEN-003, OPS-002 | E18-S01 |
 | ⬜ | **E18-S04** Plan limits, server-side quota enforcement, actionable limit errors | E18 | engine | L | TEN-004, TEN-005, OPS-004 | E18-S03 |

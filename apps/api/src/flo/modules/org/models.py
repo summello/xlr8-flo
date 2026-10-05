@@ -69,3 +69,34 @@ class OrgRepository(ScopedRepo[object]):
                 strict=True,
             )
         )
+
+    def master(
+        self, kind: str, record_id: object, *, lock: bool = False
+    ) -> dict[str, object] | None:
+        row = self.execute(
+            """SELECT id, kind, code, name, attributes, effective_from, effective_to,
+            active, created_at, updated_at FROM master_record
+            WHERE org_id = %(org_id)s AND kind = %(kind)s AND id = %(id)s"""
+            + (" FOR UPDATE" if lock else ""),
+            {"kind": kind, "id": record_id},
+        ).fetchone()
+        if row is None:
+            return None
+        return dict(
+            zip(
+                (
+                    "id",
+                    "kind",
+                    "code",
+                    "name",
+                    "attributes",
+                    "effective_from",
+                    "effective_to",
+                    "active",
+                    "created_at",
+                    "updated_at",
+                ),
+                row,
+                strict=True,
+            )
+        )

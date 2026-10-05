@@ -468,7 +468,7 @@ epics:
           - XFN-009
         dep:
           - E05-S01
-        st: todo
+        st: done
       - id: E05-S04
         t: Fiscal calendar and period open/close with authorization and audit
         k: engine

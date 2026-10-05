@@ -103,3 +103,57 @@ class OrgAddressRead(OrgAddressCreate):
     unit_id: UUID
     created_by: UUID
     created_at: datetime
+
+
+class MasterCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    code: str = Field(min_length=1, description="Immutable; trimmed and stored uppercase.")
+    name: str = Field(min_length=1)
+    attributes: dict[str, JsonValue] = Field(default_factory=dict)
+    effective_from: date = Field(default_factory=date.today)
+    effective_to: date | None = None
+    active: bool = True
+
+    @field_validator("code", "name")
+    @classmethod
+    def nonblank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Must not be blank")
+        return value.strip()
+
+
+class MasterPatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str | None = Field(default=None, min_length=1)
+    attributes: dict[str, JsonValue] | None = None
+    effective_from: date | None = None
+    effective_to: date | None = None
+    active: bool | None = None
+
+    @model_validator(mode="after")
+    def nonnull(self) -> "MasterPatch":
+        for key in self.model_fields_set - {"effective_to"}:
+            if getattr(self, key) is None:
+                raise ValueError(f"{key} must not be null")
+        if self.name is not None:
+            if not self.name.strip():
+                raise ValueError("name must not be blank")
+            self.name = self.name.strip()
+        return self
+
+
+class MasterRef(MasterCreate):
+    id: UUID
+    kind: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class MasterPage(BaseModel):
+    rows: list[MasterRef]
+    next_cursor: UUID | None
+
+
+class CurrencyRead(BaseModel):
+    code: str
+    exponent: int
