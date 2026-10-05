@@ -454,7 +454,7 @@ epics:
           - ORG-005
         dep:
           - E05-S01
-        st: todo
+        st: done
       - id: E05-S03
         t: 'Master data: departments, ledger accounts, UoM, tax codes, payment terms,
           categories'

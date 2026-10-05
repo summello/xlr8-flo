@@ -1,10 +1,10 @@
 """Organization HTTP contracts."""
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator, model_validator
 
 
 class OrgUnitCreate(BaseModel):
@@ -72,3 +72,34 @@ class SettingSource(BaseModel):
 class EffectiveSetting(BaseModel):
     value: JsonValue
     source: SettingSource
+
+
+class OrgAddressCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    kind: Literal["bill_to", "ship_to"]
+    line1: str = Field(min_length=1)
+    line2: str | None = None
+    city: str = Field(min_length=1)
+    region: str | None = None
+    postal_code: str | None = None
+    country: str = Field(min_length=2, max_length=2)
+    effective_from: date
+    effective_to: date | None = None
+
+    @model_validator(mode="after")
+    def valid_range(self) -> "OrgAddressCreate":
+        if self.effective_to is not None and self.effective_to < self.effective_from:
+            raise ValueError("effective_to must be on or after effective_from")
+        return self
+
+
+class OrgAddressClose(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    effective_to: date = Field(description="Close an open address; closed history cannot change.")
+
+
+class OrgAddressRead(OrgAddressCreate):
+    id: UUID
+    unit_id: UUID
+    created_by: UUID
+    created_at: datetime

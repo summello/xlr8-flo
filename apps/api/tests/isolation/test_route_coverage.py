@@ -15,6 +15,18 @@ TESTS = Path(__file__).resolve().parents[1]
 
 # (method, path) -> "file::test" that proves a foreign id returns 404.
 COVERED = {
+    (
+        "POST",
+        "/api/v1/org/units/{unit_id}/addresses",
+    ): "org/test_addresses.py::test_foreign_unit_addresses",
+    (
+        "GET",
+        "/api/v1/org/units/{unit_id}/addresses",
+    ): "org/test_addresses.py::test_foreign_unit_addresses",
+    (
+        "PATCH",
+        "/api/v1/org/units/{unit_id}/addresses/{id}",
+    ): "org/test_addresses.py::test_foreign_address_id",
     ("POST", "/api/v1/org/units"): "org/test_units.py::test_create_foreign_parent",
     ("GET", "/api/v1/org/units"): "org/test_units.py::test_list_tenant_filter_and_cursor",
     ("GET", "/api/v1/org/units/{id}"): "org/test_units.py::test_get_foreign_unit",
@@ -22,7 +34,8 @@ COVERED = {
     ("PUT", "/api/v1/org/settings/{key}"): "org/test_settings.py::test_put_foreign_unit",
     ("DELETE", "/api/v1/org/settings/{key}"): "org/test_settings.py::test_delete_foreign_unit",
     ("GET", "/api/v1/org/units/{id}/settings/{key}/effective"): (
-        "org/test_settings.py::test_effective_foreign_unit"),
+        "org/test_settings.py::test_effective_foreign_unit"
+    ),
     ("GET", "/api/v1/admin/users/{user_id}/effective-access"): (
         "authz/test_effective_access.py::test_effective_access_conceals_a_foreign_tenant_subject"
     ),

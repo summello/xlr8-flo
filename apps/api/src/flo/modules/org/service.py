@@ -1,5 +1,6 @@
 """Transactional unit structure and nearest-scope settings resolution."""
 
+from datetime import UTC, date, datetime
 from typing import Literal, cast
 from uuid import UUID, uuid4
 
@@ -19,6 +20,9 @@ from flo.modules.identity.service import (
 from flo.modules.org.models import OrgRepository
 from flo.modules.org.schemas import (
     EffectiveSetting,
+    OrgAddressClose,
+    OrgAddressCreate,
+    OrgAddressRead,
     OrgUnitCreate,
     OrgUnitPage,
     OrgUnitPatch,
@@ -50,6 +54,10 @@ def valid_value(key: str, value: JsonValue) -> None:
         )
 
 
+def today() -> date:
+    return datetime.now(UTC).date()
+
+
 class OrgService:
     def __init__(
         self,
@@ -72,7 +80,7 @@ class OrgService:
         AuditWriter(cast(AuditConnection, self.connection), self.scope).write(
             actor=AuditActor(ActorKind.USER, self.actor_id),
             action=action,
-            target_type="org_setting" if action.startswith("org_setting") else "org_unit",
+            target_type=action.split(".")[0],
             target_id=target_id,
             outcome=Outcome.SUCCESS,
             before_source=before,
@@ -301,3 +309,99 @@ class OrgService:
                     unit_code=cast(str | None, row[3]),
                 ),
             )
+
+    def get_address(self, unit_id: UUID, address_id: UUID) -> OrgAddressRead:
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self._unit(unit_id)
+            row = self.repo.address(unit_id, address_id)
+            if row is None:
+                raise ProblemError(ErrorCode.NOT_FOUND)
+            return OrgAddressRead.model_validate(row)
+
+    def create_address(self, unit_id: UUID, body: OrgAddressCreate) -> OrgAddressRead:
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self.repo.lock_organization()
+            self._unit(unit_id)
+            conflict = self.repo.execute(
+                """SELECT id FROM org_address WHERE org_id = %(org_id)s
+                AND unit_id = %(unit_id)s AND kind = %(kind)s
+                AND daterange(effective_from, effective_to, '[]') &&
+                    daterange(%(effective_from)s, %(effective_to)s, '[]')""",
+                body.model_dump() | {"unit_id": unit_id},
+            ).fetchone()
+            if conflict:
+                raise ProblemError(
+                    ErrorCode.CONFLICT,
+                    detail=(
+                        f"Address overlaps existing row {conflict[0]}. "
+                        "Close it or choose non-overlapping dates."
+                    ),
+                    checks={"problem": "address_overlap", "address_id": str(conflict[0])},
+                )
+            address_id = uuid4()
+            self.repo.execute(
+                """INSERT INTO org_address
+                (id, org_id, unit_id, kind, line1, line2, city, region, postal_code,
+                 country, effective_from, effective_to, created_by)
+                VALUES (%(id)s, %(org_id)s, %(unit_id)s, %(kind)s, %(line1)s,
+                %(line2)s, %(city)s, %(region)s, %(postal_code)s, %(country)s,
+                %(effective_from)s, %(effective_to)s, %(actor)s)""",
+                body.model_dump() | {"id": address_id, "unit_id": unit_id, "actor": self.actor_id},
+            )
+            row = self.repo.address(unit_id, address_id)
+            self._audit("org_address.create", address_id, None, row)
+            return OrgAddressRead.model_validate(row)
+
+    def list_addresses(
+        self, unit_id: UUID, kind: Literal["bill_to", "ship_to"] | None, as_of: date | None
+    ) -> list[OrgAddressRead]:
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self._unit(unit_id)
+            rows = self.repo.execute(
+                """SELECT id FROM org_address WHERE org_id = %(org_id)s
+                AND unit_id = %(unit_id)s AND (%(kind)s::text IS NULL OR kind = %(kind)s)
+                AND daterange(effective_from, effective_to, '[]') @> %(as_of)s::date
+                ORDER BY kind, id""",
+                {"unit_id": unit_id, "kind": kind, "as_of": as_of or today()},
+            ).fetchall()
+            return [
+                OrgAddressRead.model_validate(self.repo.address(unit_id, row[0])) for row in rows
+            ]
+
+    def close_address(
+        self, unit_id: UUID, address_id: UUID, body: OrgAddressClose
+    ) -> OrgAddressRead:
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self.repo.lock_organization()
+            self._unit(unit_id)
+            before = self.repo.address(unit_id, address_id)
+            if before is None:
+                raise ProblemError(ErrorCode.NOT_FOUND)
+            if before["effective_to"] is not None:
+                raise ProblemError(
+                    ErrorCode.CONFLICT,
+                    detail=(
+                        "This address is already closed. Create a new address to change history."
+                    ),
+                    checks={"problem": "address_closed"},
+                )
+            if body.effective_to < cast(date, before["effective_from"]):
+                raise ProblemError(
+                    ErrorCode.VALIDATION_FAILED,
+                    detail=(
+                        "Closing date precedes the start. Choose a date on or after effective_from."
+                    ),
+                    errors=(
+                        ProblemFieldError(
+                            field="effective_to", message="Must be on or after effective_from."
+                        ),
+                    ),
+                )
+            self.repo.execute(
+                """UPDATE org_address SET effective_to = %(effective_to)s
+                WHERE org_id = %(org_id)s AND unit_id = %(unit_id)s AND id = %(id)s""",
+                {"unit_id": unit_id, "id": address_id, "effective_to": body.effective_to},
+            )
+            after = self.repo.address(unit_id, address_id)
+            self._audit("org_address.close", address_id, before, after)
+            return OrgAddressRead.model_validate(after)

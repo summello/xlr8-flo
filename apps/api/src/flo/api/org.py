@@ -1,5 +1,6 @@
 """Thin adapters for organization structure and replacing settings."""
 
+from datetime import date
 from typing import Annotated, Literal, cast
 from uuid import UUID
 
@@ -13,6 +14,9 @@ from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.org.schemas import (
     EffectiveSetting,
+    OrgAddressClose,
+    OrgAddressCreate,
+    OrgAddressRead,
     OrgUnitCreate,
     OrgUnitPage,
     OrgUnitPatch,
@@ -111,3 +115,57 @@ def effective_setting(
     Each override replaces the entire value. Clear it to restore the next inherited value.
     """
     return OrgService(connection, current_scope(), context.user_id).effective_setting(id, key)
+
+
+def address_unit_target(unit_id: UUID, connection: Connection) -> TargetProtocol:
+    return unit_target(unit_id, connection)
+
+
+def address_target(unit_id: UUID, id: UUID, connection: Connection) -> TargetProtocol:
+    address = OrgService(connection, current_scope()).get_address(unit_id, id)
+    return cast(
+        TargetProtocol,
+        AuthorizationTarget(ScopeType.BU, address.unit_id, "org_address", address.id),
+    )
+
+
+AddressCloseContext = Annotated[
+    AuthorizationContext, Depends(require("org.unit.manage", address_target))
+]
+AddressReadContext = Annotated[
+    AuthorizationContext, Depends(require("org.unit.read", address_unit_target))
+]
+AddressWriteContext = Annotated[
+    AuthorizationContext, Depends(require("org.unit.manage", address_unit_target))
+]
+
+
+@router.post("/units/{unit_id}/addresses", status_code=201, response_model=OrgAddressRead)
+def create_address(
+    unit_id: UUID, body: OrgAddressCreate, context: AddressWriteContext, connection: Connection
+) -> OrgAddressRead:
+    return OrgService(connection, current_scope(), context.user_id).create_address(unit_id, body)
+
+
+@router.get("/units/{unit_id}/addresses", response_model=list[OrgAddressRead])
+def list_addresses(
+    unit_id: UUID,
+    context: AddressReadContext,
+    connection: Connection,
+    kind: Literal["bill_to", "ship_to"] | None = None,
+    as_of: date | None = None,
+) -> list[OrgAddressRead]:
+    return OrgService(connection, current_scope(), context.user_id).list_addresses(
+        unit_id, kind, as_of
+    )
+
+
+@router.patch("/units/{unit_id}/addresses/{id}", response_model=OrgAddressRead)
+def close_address(
+    unit_id: UUID,
+    id: UUID,
+    body: OrgAddressClose,
+    context: AddressCloseContext,
+    connection: Connection,
+) -> OrgAddressRead:
+    return OrgService(connection, current_scope(), context.user_id).close_address(unit_id, id, body)

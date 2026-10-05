@@ -37,3 +37,35 @@ class OrgRepository(ScopedRepo[object]):
                 strict=True,
             )
         )
+
+    def address(self, unit_id: object, address_id: object) -> dict[str, object] | None:
+        row = self.execute(
+            """SELECT id, unit_id, kind, line1, line2, city, region, postal_code,
+            country, effective_from, effective_to, created_by, created_at
+            FROM org_address WHERE org_id = %(org_id)s
+            AND unit_id = %(unit_id)s AND id = %(id)s""",
+            {"unit_id": unit_id, "id": address_id},
+        ).fetchone()
+        if row is None:
+            return None
+        return dict(
+            zip(
+                (
+                    "id",
+                    "unit_id",
+                    "kind",
+                    "line1",
+                    "line2",
+                    "city",
+                    "region",
+                    "postal_code",
+                    "country",
+                    "effective_from",
+                    "effective_to",
+                    "created_by",
+                    "created_at",
+                ),
+                row,
+                strict=True,
+            )
+        )

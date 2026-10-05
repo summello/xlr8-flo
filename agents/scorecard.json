@@ -1120,6 +1120,40 @@
       },
       "recap": "Implemented E05-S01 including migration 20260826_0013, org-scoped repositories, seven guarded endpoints, replacing nearest-scope settings resolution, audit no-op semantics, and generated OpenAPI client. Organization-row locking serializes structure and setting writes. API pytest: 398 passed, no skips; ruff and mypy --strict src/flo green; real migration chain validated; import-linter 4 kept; web lint/typecheck green and vitest 59 passed. No new dependencies. No submit/gate/done/push/merge performed.",
       "title": "Organization and BU/OU with unique codes, settings precedence"
+    },
+    {
+      "story": "E05-S02",
+      "kind": "crud",
+      "size": "S",
+      "tags": [],
+      "author": "opencode-nemotron",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E05-S02 and model~nvidia/nemotron-3-ultra-550b-a55b:free"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "dbfe4938-296f-4d21-81ae-13d6551bb13d",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented effective-dated address creation, as-of reads, one-way close, transactional audit, tenant-scoped authorization, database exclusion/RLS, reversible revision 0014 and generated OpenAPI client. Reuses organization locking to serialize address writes; downgrade retains shared btree_gist extension. Verification: flo check green (all nine checks, including coverage, Playwright/axe and gitleaks); API strict mypy, ruff and migration-chain check green; web vitest 59 passed. Final full direct pytest: 433 passed, 1 skipped (existing money round-trip requires explicit DATABASE_URL and runs under flo check). All 24 address cases pass. Foreign address lookup precedes authorization, including wrong-permission callers.",
+      "title": "Bill To / Ship To addresses with effective dates"
     }
   ]
 }
