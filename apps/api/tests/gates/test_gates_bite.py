@@ -312,6 +312,36 @@ def test_module_boundary_rejects_cross_module_import_and_then_passes(tmp_path: P
     assert_accepts(run_import_linter(project))
 
 
+@pytest.mark.parametrize(
+    ("imported", "allowed"),
+    (
+        ("service", True),
+        ("schemas", True),
+        ("models", False),
+        ("repo", False),
+        ("db", False),
+    ),
+)
+def test_module_boundary_allows_only_service_and_schemas(
+    tmp_path: Path, imported: str, allowed: bool
+) -> None:
+    project = copy_import_linter_project(tmp_path)
+    (project / "flo" / "modules" / "b" / f"{imported}.py").write_text(
+        "VALUE = 1\n", encoding="utf-8"
+    )
+    (project / "flo" / "modules" / "a" / "caller.py").write_text(
+        f"from flo.modules.b.{imported} import VALUE\n\nTOTAL = VALUE\n",
+        encoding="utf-8",
+    )
+    result = run_import_linter(project)
+    if allowed:
+        assert_accepts(result)
+    else:
+        assert_rejects(
+            result, "Business modules are independent", "flo.modules.a", f"flo.modules.b.{imported}"
+        )
+
+
 def test_module_boto3_import_fails_and_then_passes(tmp_path: Path) -> None:
     project = copy_import_linter_project(tmp_path)
     violation = project / "flo" / "modules" / "a" / "storage_violation.py"
