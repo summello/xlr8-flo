@@ -652,3 +652,12 @@ class IdentityAuthorizationService:
                 after_fields=("email", "status"),
             )
             return True
+
+
+def register_business_unit_scope(
+    connection: IdentityAuthorizationConnection, scope: Scope, unit_id: UUID
+) -> None:
+    """Register either unit kind directly under its org in the caller's transaction."""
+    RoleRepository(connection, scope).register_scope(
+        ScopeType.BU, unit_id, ScopeType.ORG, scope.org_id, roll_down=True
+    )

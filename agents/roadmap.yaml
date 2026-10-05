@@ -444,7 +444,7 @@ epics:
           - ORG-012
         dep:
           - E02-S05
-        st: todo
+        st: done
       - id: E05-S02
         t: Bill To / Ship To addresses with effective dates
         k: crud

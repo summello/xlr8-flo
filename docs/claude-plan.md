@@ -481,16 +481,16 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E04-S05** StatusPill primitive: closed per-document-type tone map, icon always, never author-coloured | E04 | ui | M | TAG-001, TAG-002, TAG-003, A11Y-004 | ~~E04-S01~~ |
 | ✅ | **E04-S06** Material layer: tinted shadows, lit edge, grain, honest glass, glow focus ring | E04 | ui | M | UX-006, A11Y-005 | ~~E04-S01~~ |
 
-#### M1 — Budget spine · 0/26 done
+#### M1 — Budget spine · 1/26 done
 
 > The trustworthy system of record. Projects, hierarchy and the complete budget ledger.
 
 | | Story | Epic | Kind | Size | Requirements | Depends on |
 |---|---|---|---|---|---|---|
-| ⬜ | **E05-S01** Organization and BU/OU with unique codes, settings precedence | E05 | crud | M | ORG-001, ORG-002, ORG-012 | ~~E02-S05~~ |
-| ⬜ | **E05-S02** Bill To / Ship To addresses with effective dates | E05 | crud | S | ORG-005 | E05-S01 |
-| ⬜ | **E05-S03** Master data: departments, ledger accounts, UoM, tax codes, payment terms, categories | E05 | crud | L | ORG-010, ORG-011, ORG-009, XFN-009 | E05-S01 |
-| ⬜ | **E05-S04** Fiscal calendar and period open/close with authorization and audit | E05 | engine | M | BUD-010, FIN-010 | E05-S01 |
+| ✅ | **E05-S01** Organization and BU/OU with unique codes, settings precedence | E05 | crud | M | ORG-001, ORG-002, ORG-012 | ~~E02-S05~~ |
+| ⬜ | **E05-S02** Bill To / Ship To addresses with effective dates | E05 | crud | S | ORG-005 | ~~E05-S01~~ |
+| ⬜ | **E05-S03** Master data: departments, ledger accounts, UoM, tax codes, payment terms, categories | E05 | crud | L | ORG-010, ORG-011, ORG-009, XFN-009 | ~~E05-S01~~ |
+| ⬜ | **E05-S04** Fiscal calendar and period open/close with authorization and audit | E05 | engine | M | BUD-010, FIN-010 | ~~E05-S01~~ |
 | ⬜ | **E05-S05** FX: ECB daily rate ingest, rate table, effective dating, missing-rate block | E05 | engine | M | FX-001, FX-002, FX-003, FX-004, FIN-003 | ~~E03-S06~~ |
 | ⬜ | **E06-S01** Project entity, scoped numbering sequence, department and ledger account | E06 | crud | M | PROJ-001, PROJ-014, PROJ-019, SEQ-001, SEQ-002, SEQ-003, SEQ-004 | E05-S03 |
 | ⬜ | **E06-S02** Five-level hierarchy with recursive CTE traversal and depth guard | E06 | engine | L | PROJ-004, PROJ-005 | E06-S01 |
@@ -551,7 +551,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 
 | | Story | Epic | Kind | Size | Requirements | Depends on |
 |---|---|---|---|---|---|---|
-| ⬜ | **E11-S01** Vendor profile, searchable list, global and BU/OU scope, local disable | E11 | crud | M | VEN-001, VEN-008, VEN-009, ORG-003 | E05-S01 |
+| ⬜ | **E11-S01** Vendor profile, searchable list, global and BU/OU scope, local disable | E11 | crud | M | VEN-001, VEN-008, VEN-009, ORG-003 | ~~E05-S01~~ |
 | ⬜ | **E11-S02** Typed contacts: billing, service/delivery, additional types | E11 | crud | S | VEN-002 | E11-S01 |
 | ⬜ | **E11-S03** Vendor documents with issue/expiry, verification status, expiry notification | E11 | crud | M | VEN-003, VEN-011, OBS-004 | E11-S01, E09-S10 |
 | ⬜ | **E11-S04** Field-level access control and masking for tax and banking data | E11 | security | M | VEN-014, CUS-008, PRIV-001 | E11-S01, ~~E02-S05~~ |
@@ -586,7 +586,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 
 | | Story | Epic | Kind | Size | Requirements | Depends on |
 |---|---|---|---|---|---|---|
-| ⬜ | **E14-S01** Warehouses: locations, custodians, status, supported categories | E14 | crud | M | AST-001, AST-002, ORG-007 | E05-S01 |
+| ⬜ | **E14-S01** Warehouses: locations, custodians, status, supported categories | E14 | crud | M | AST-001, AST-002, ORG-007 | ~~E05-S01~~ |
 | ⬜ | **E14-S02** Append-only stock movements: receipt, transfer, assignment, return, adjustment, disposal | E14 | migration | L | AST-003, AST-006, ARCH-003 | E14-S01 |
 | ⬜ | **E14-S03** FIFO physical assignment with audited exception override | E14 | engine | M | AST-004 | E14-S02 |
 | ⬜ | **E14-S04** Weighted-average valuation, negative-stock prevention | E14 | ledger | M | AST-005, AST-007 | E14-S02 |

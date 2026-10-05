@@ -22,6 +22,7 @@ from flo.api.auth import (
 )
 from flo.api.auth import router as auth_router
 from flo.api.internal import router as internal_router
+from flo.api.org import router as org_router
 from flo.api.origin_auth import require_origin_secret
 from flo.kernel.authz import PermissionResolverFactory, install_authorization, public_route
 from flo.kernel.config import Settings, enforce_argon2_memory_limit
@@ -92,6 +93,7 @@ app = FastAPI(
 app.include_router(internal_router)
 app.include_router(auth_router)
 app.include_router(admin_users_router)
+app.include_router(org_router)
 
 
 @contextmanager
