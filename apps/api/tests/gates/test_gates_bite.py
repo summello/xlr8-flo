@@ -990,3 +990,44 @@ def test_colour_gate_rejects_every_css_colour_syntax_and_then_passes(
     assert_rejects(run_gate(command, cwd=tmp_path), "raw colour outside tokens.css")
     planted.write_text(".planted { color: var(--fg); }\n", encoding="utf-8")
     assert_accepts(run_gate(command, cwd=tmp_path))
+
+
+def _commit_shape_exit_code(subjects: Sequence[str]) -> int:
+    """Run the real governance step against fake `git log` subjects."""
+
+    lines = (ROOT / ".github" / "workflows" / "ci.yml").read_text().splitlines()
+    start = lines.index("      - name: Every commit references a story id")
+    body = lines[lines.index("        run: |", start) + 1 :]
+    block: list[str] = []
+    for line in body:
+        if line.strip() and not line.startswith("          "):
+            break
+        block.append(line[10:])
+    step = {"run": "\n".join(block)}
+    script = step["run"].replace("${{ github.base_ref }}", "main")
+    shim = 'git() { if [ "$1" = fetch ]; then return 0; fi; printf "%s\\n" "$SUBJECTS"; }\n'
+    result = subprocess.run(
+        ["bash", "-c", shim + script],
+        env={**os.environ, "SUBJECTS": "\n".join(f"abc1234 {item}" for item in subjects)},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return result.returncode
+
+
+def test_commit_shape_gate_accepts_story_and_maintenance_commits_and_rejects_the_rest() -> None:
+    accepted = [
+        "E01-S08: Production migration runner",
+        "Merge pull request #14 from summello/milestone/M0-rails",
+        "ci: tighten the gate",
+        "fix: a bug",
+        "fix(web): ship security headers",
+        "fix(ci): colour gate",
+        "build: bump cryptography",
+        "chore(m0): close review findings",
+        "docs: add E01-S08",
+    ]
+    assert _commit_shape_exit_code(accepted) == 0
+    for rejected in ("update stuff", "feat(web): add a thing", "Fixed the bug", "wip"):
+        assert _commit_shape_exit_code([*accepted, rejected]) == 1, rejected
