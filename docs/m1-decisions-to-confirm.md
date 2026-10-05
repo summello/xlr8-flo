@@ -28,3 +28,19 @@ by opening a follow-up story after it merges.
 
 Not decided (kept out of scope on purpose): derived percent complete on projects, planned items
 per phase, cross-currency posting, approval of manual adjustments (M2).
+
+## Open topic: commercial terms (explore separately, requested by the operator)
+
+E05-S03 stores `tax_code.rate`, `payment_term.net_days` and the optional early-payment discount as
+validated reference data **and applies none of it**. How these are *used* is undecided and is its
+own design topic before any story computes with them:
+
+- **Tax:** inclusive versus exclusive pricing, per-line versus per-document rounding, compound
+  taxes, tax on freight, recoverable versus non-recoverable tax and how each posts to the ledger,
+  effective-dated rate changes on open documents.
+- **Payment terms:** how `net_days` and the discount window derive a due date and a discount
+  deadline, which date they count from (invoice, receipt, PO), and how a discount taken posts.
+- **Freight and other charges:** whether freight is a line, a header charge or an allocation across
+  lines, how it is apportioned to projects and ledger accounts, and its tax treatment.
+
+Touches M3 (RFQ, PO) and M4 (reporting) most; none of it blocks M1.
