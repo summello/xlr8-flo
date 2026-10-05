@@ -208,3 +208,17 @@ def test_storage_factory_names_missing_configuration_without_echoing_values() ->
 
     assert "S3_SECRET_ACCESS_KEY is not configured" in str(failure.value)
     assert secret not in str(failure.value)
+
+
+def test_usage_of_an_empty_bucket_whose_listing_omits_contents() -> None:
+    """S3 and R2 omit Contents for an empty bucket: zero bytes, not an error."""
+
+    class OmittingPaginator:
+        def paginate(self, **_: object) -> list[dict[str, object]]:
+            return [{"KeyCount": 0, "IsTruncated": False}]
+
+    class OmittingClient(FakeS3Client):
+        def get_paginator(self, name: str) -> OmittingPaginator:  # type: ignore[override]
+            return OmittingPaginator()
+
+    assert R2Storage(OmittingClient(), "flo-attachments").usage_bytes() == 0
