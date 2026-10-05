@@ -137,6 +137,19 @@ epics:
         dep:
           - E01-S04
         st: done
+      - id: E01-S08
+        t: Production migration runner, packaged in the image, run by flo-migrate
+        k: migration
+        s: M
+        tags:
+          - migration
+          - security
+        reqs:
+          - REL-002
+          - SEC-005
+        dep:
+          - E01-S05
+        st: todo
 
   - id: E02
     name: Identity & access
