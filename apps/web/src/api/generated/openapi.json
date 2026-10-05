@@ -1,6 +1,189 @@
 {
   "components": {
     "schemas": {
+      "AccessGrantResponse": {
+        "description": "One role assignment with timing and grant provenance.",
+        "properties": {
+          "effective_from": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective From"
+          },
+          "granted_at": {
+            "format": "date-time",
+            "title": "Granted At",
+            "type": "string"
+          },
+          "granted_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Granted By"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "role_name": {
+            "title": "Role Name",
+            "type": "string"
+          },
+          "scope_id": {
+            "format": "uuid",
+            "title": "Scope Id",
+            "type": "string"
+          },
+          "scope_name": {
+            "title": "Scope Name",
+            "type": "string"
+          },
+          "scope_type": {
+            "$ref": "#/components/schemas/ScopeType"
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "role_name",
+          "scope_type",
+          "scope_id",
+          "scope_name",
+          "granted_by",
+          "granted_at",
+          "effective_from"
+        ],
+        "title": "AccessGrantResponse",
+        "type": "object"
+      },
+      "AccessUserResponse": {
+        "description": "Non-secret identity facts shown in the explorer header.",
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "status"
+        ],
+        "title": "AccessUserResponse",
+        "type": "object"
+      },
+      "DeniedExampleResponse": {
+        "description": "A missing permission paired with an actionable explanation.",
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "reason"
+        ],
+        "title": "DeniedExampleResponse",
+        "type": "object"
+      },
+      "EffectiveAccessResponse": {
+        "description": "Serialized effective-access contract.",
+        "properties": {
+          "denied_examples": {
+            "items": {
+              "$ref": "#/components/schemas/DeniedExampleResponse"
+            },
+            "title": "Denied Examples",
+            "type": "array"
+          },
+          "grants": {
+            "items": {
+              "$ref": "#/components/schemas/AccessGrantResponse"
+            },
+            "title": "Grants",
+            "type": "array"
+          },
+          "pending_grants": {
+            "items": {
+              "$ref": "#/components/schemas/AccessGrantResponse"
+            },
+            "title": "Pending Grants",
+            "type": "array"
+          },
+          "permissions": {
+            "items": {
+              "$ref": "#/components/schemas/EffectivePermissionResponse"
+            },
+            "title": "Permissions",
+            "type": "array"
+          },
+          "user": {
+            "$ref": "#/components/schemas/AccessUserResponse"
+          }
+        },
+        "required": [
+          "user",
+          "grants",
+          "pending_grants",
+          "permissions",
+          "denied_examples"
+        ],
+        "title": "EffectiveAccessResponse",
+        "type": "object"
+      },
+      "EffectivePermissionResponse": {
+        "description": "An allowed permission that can never omit its source.",
+        "properties": {
+          "allowed": {
+            "title": "Allowed",
+            "type": "boolean"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/PermissionSourceResponse"
+          }
+        },
+        "required": [
+          "code",
+          "allowed",
+          "source"
+        ],
+        "title": "EffectivePermissionResponse",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -174,6 +357,136 @@
         "title": "PasswordResetRequest",
         "type": "object"
       },
+      "PermissionPageResponse": {
+        "description": "Cursor page in the shared DataGrid wire format.",
+        "properties": {
+          "lastCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastcursor"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          },
+          "previousCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previouscursor"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/PermissionTableRowResponse"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "startIndex": {
+            "title": "Startindex",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rows",
+          "startIndex",
+          "total"
+        ],
+        "title": "PermissionPageResponse",
+        "type": "object"
+      },
+      "PermissionSourceResponse": {
+        "description": "The concrete source of one effective permission.",
+        "properties": {
+          "inherited_from": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inherited From"
+          },
+          "via_role": {
+            "title": "Via Role",
+            "type": "string"
+          },
+          "via_scope_id": {
+            "format": "uuid",
+            "title": "Via Scope Id",
+            "type": "string"
+          },
+          "via_scope_type": {
+            "$ref": "#/components/schemas/ScopeType"
+          }
+        },
+        "required": [
+          "via_role",
+          "via_scope_type",
+          "via_scope_id",
+          "inherited_from"
+        ],
+        "title": "PermissionSourceResponse",
+        "type": "object"
+      },
+      "PermissionTableRowResponse": {
+        "description": "One searchable permission-grid row.",
+        "properties": {
+          "access": {
+            "title": "Access",
+            "type": "string"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "explanation": {
+            "title": "Explanation",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "access",
+          "source",
+          "explanation"
+        ],
+        "title": "PermissionTableRowResponse",
+        "type": "object"
+      },
       "ProblemDetails": {
         "additionalProperties": false,
         "description": "Problem details, including the support-safe request correlation identifier.",
@@ -316,6 +629,16 @@
         "title": "ProblemFieldError",
         "type": "object"
       },
+      "ScopeType": {
+        "description": "The only scopes to which a role can be granted.",
+        "enum": [
+          "org",
+          "bu",
+          "project"
+        ],
+        "title": "ScopeType",
+        "type": "string"
+      },
       "SessionResponse": {
         "description": "Privacy-minimized active-session representation.",
         "properties": {
@@ -413,6 +736,357 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/admin/users/{user_id}/deactivate": {
+      "post": {
+        "description": "Deactivate a tenant user and atomically revoke every browser session.",
+        "operationId": "deactivate_user_api_v1_admin_users__user_id__deactivate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Deactivate User",
+        "tags": [
+          "administration"
+        ]
+      }
+    },
+    "/api/v1/admin/users/{user_id}/effective-access": {
+      "get": {
+        "description": "Explain active, pending, allowed, and denied access and audit the inspection.",
+        "operationId": "effective_access_api_v1_admin_users__user_id__effective_access_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EffectiveAccessResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Effective Access",
+        "tags": [
+          "administration"
+        ]
+      }
+    },
+    "/api/v1/admin/users/{user_id}/effective-access/permissions": {
+      "get": {
+        "description": "Return a server-filtered permission table without exposing unguarded data.",
+        "operationId": "effective_access_permissions_api_v1_admin_users__user_id__effective_access_permissions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "filter",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 200,
+              "title": "Filter",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "code",
+                    "access",
+                    "source"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sort"
+            }
+          },
+          {
+            "in": "query",
+            "name": "direction",
+            "required": false,
+            "schema": {
+              "default": "asc",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "title": "Direction",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionPageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Effective Access Permissions",
+        "tags": [
+          "administration"
+        ]
+      }
+    },
+    "/api/v1/admin/users/{user_id}/roles/{grant_id}": {
+      "delete": {
+        "description": "Revoke exactly one subject-owned assignment after recent authentication.",
+        "operationId": "revoke_user_role_api_v1_admin_users__user_id__roles__grant_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "grant_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Grant Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Revoke User Role",
+        "tags": [
+          "administration"
+        ]
+      }
+    },
     "/api/v1/auth/login": {
       "post": {
         "description": "Authenticate credentials and rotate any already authenticated session.",

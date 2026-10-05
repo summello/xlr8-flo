@@ -4,6 +4,86 @@
  */
 
 export interface paths {
+    "/api/v1/admin/users/{user_id}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Deactivate User
+         * @description Deactivate a tenant user and atomically revoke every browser session.
+         */
+        post: operations["deactivate_user_api_v1_admin_users__user_id__deactivate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{user_id}/effective-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Effective Access
+         * @description Explain active, pending, allowed, and denied access and audit the inspection.
+         */
+        get: operations["effective_access_api_v1_admin_users__user_id__effective_access_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{user_id}/effective-access/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Effective Access Permissions
+         * @description Return a server-filtered permission table without exposing unguarded data.
+         */
+        get: operations["effective_access_permissions_api_v1_admin_users__user_id__effective_access_permissions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{user_id}/roles/{grant_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke User Role
+         * @description Revoke exactly one subject-owned assignment after recent authentication.
+         */
+        delete: operations["revoke_user_role_api_v1_admin_users__user_id__roles__grant_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login": {
         parameters: {
             query?: never;
@@ -212,6 +292,89 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AccessGrantResponse
+         * @description One role assignment with timing and grant provenance.
+         */
+        AccessGrantResponse: {
+            /** Effective From */
+            effective_from: string | null;
+            /**
+             * Granted At
+             * Format: date-time
+             */
+            granted_at: string;
+            /** Granted By */
+            granted_by: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Role */
+            role: string;
+            /** Role Name */
+            role_name: string;
+            /**
+             * Scope Id
+             * Format: uuid
+             */
+            scope_id: string;
+            /** Scope Name */
+            scope_name: string;
+            scope_type: components["schemas"]["ScopeType"];
+        };
+        /**
+         * AccessUserResponse
+         * @description Non-secret identity facts shown in the explorer header.
+         */
+        AccessUserResponse: {
+            /** Email */
+            email: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Status */
+            status: string;
+        };
+        /**
+         * DeniedExampleResponse
+         * @description A missing permission paired with an actionable explanation.
+         */
+        DeniedExampleResponse: {
+            /** Code */
+            code: string;
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * EffectiveAccessResponse
+         * @description Serialized effective-access contract.
+         */
+        EffectiveAccessResponse: {
+            /** Denied Examples */
+            denied_examples: components["schemas"]["DeniedExampleResponse"][];
+            /** Grants */
+            grants: components["schemas"]["AccessGrantResponse"][];
+            /** Pending Grants */
+            pending_grants: components["schemas"]["AccessGrantResponse"][];
+            /** Permissions */
+            permissions: components["schemas"]["EffectivePermissionResponse"][];
+            user: components["schemas"]["AccessUserResponse"];
+        };
+        /**
+         * EffectivePermissionResponse
+         * @description An allowed permission that can never omit its source.
+         */
+        EffectivePermissionResponse: {
+            /** Allowed */
+            allowed: boolean;
+            /** Code */
+            code: string;
+            source: components["schemas"]["PermissionSourceResponse"];
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -284,6 +447,56 @@ export interface components {
             email: string;
         };
         /**
+         * PermissionPageResponse
+         * @description Cursor page in the shared DataGrid wire format.
+         */
+        PermissionPageResponse: {
+            /** Lastcursor */
+            lastCursor?: string | null;
+            /** Nextcursor */
+            nextCursor?: string | null;
+            /** Previouscursor */
+            previousCursor?: string | null;
+            /** Rows */
+            rows: components["schemas"]["PermissionTableRowResponse"][];
+            /** Startindex */
+            startIndex: number;
+            /** Total */
+            total: number;
+        };
+        /**
+         * PermissionSourceResponse
+         * @description The concrete source of one effective permission.
+         */
+        PermissionSourceResponse: {
+            /** Inherited From */
+            inherited_from: string | null;
+            /** Via Role */
+            via_role: string;
+            /**
+             * Via Scope Id
+             * Format: uuid
+             */
+            via_scope_id: string;
+            via_scope_type: components["schemas"]["ScopeType"];
+        };
+        /**
+         * PermissionTableRowResponse
+         * @description One searchable permission-grid row.
+         */
+        PermissionTableRowResponse: {
+            /** Access */
+            access: string;
+            /** Code */
+            code: string;
+            /** Explanation */
+            explanation: string;
+            /** Id */
+            id: string;
+            /** Source */
+            source: string;
+        };
+        /**
          * ProblemDetails
          * @description Problem details, including the support-safe request correlation identifier.
          */
@@ -344,6 +557,12 @@ export interface components {
             message: string;
         };
         /**
+         * ScopeType
+         * @description The only scopes to which a role can be granted.
+         * @enum {string}
+         */
+        ScopeType: "org" | "bu" | "project";
+        /**
          * SessionResponse
          * @description Privacy-minimized active-session representation.
          */
@@ -392,6 +611,177 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    deactivate_user_api_v1_admin_users__user_id__deactivate_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    effective_access_api_v1_admin_users__user_id__effective_access_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EffectiveAccessResponse"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    effective_access_permissions_api_v1_admin_users__user_id__effective_access_permissions_get: {
+        parameters: {
+            query?: {
+                page_size?: number;
+                filter?: string;
+                sort?: ("code" | "access" | "source") | null;
+                direction?: "asc" | "desc";
+                cursor?: string | null;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissionPageResponse"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    revoke_user_role_api_v1_admin_users__user_id__roles__grant_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                user_id: string;
+                grant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     login_api_v1_auth_login_post: {
         parameters: {
             query?: never;
