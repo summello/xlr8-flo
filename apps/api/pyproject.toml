@@ -10,7 +10,7 @@ requires-python = ">=3.12"
 dependencies = [
     "argon2-cffi>=25.1,<26",
     "boto3>=1.40,<2",
-    "cryptography>=45,<46",
+    "cryptography>=50,<51",
     "fastapi>=0.116,<1",
     "pydantic-settings>=2.10,<3",
     "psycopg[binary]>=3.2,<4",
