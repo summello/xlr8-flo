@@ -13,6 +13,7 @@ COPY apps/api/src/ ./src/
 
 RUN "${VIRTUAL_ENV}/bin/pip" install --no-cache-dir . \
     && "${VIRTUAL_ENV}/bin/pip" uninstall --yes xlr8flo-api \
+    && "${VIRTUAL_ENV}/bin/python" -m pip uninstall --yes pip setuptools \
     && find "${VIRTUAL_ENV}" -type d -name __pycache__ -prune -exec rm -rf '{}' +
 
 FROM python:${PYTHON_VERSION}-slim-bookworm@sha256:54c85f3c47607a77f32adec749d3c81d1348bf25833671f512b26a9b6d778cb3 AS runtime
@@ -21,6 +22,10 @@ ENV PATH=/opt/venv/bin:${PATH} \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/src
+
+# pip is a build tool the API never runs; the base image's copy trips Trivy's HIGH gate
+# (CVE-2026-8643 is CVSS 8.0). Removing it also removes a package manager from the runtime image.
+RUN /usr/local/bin/python -m pip uninstall --yes pip setuptools wheel
 
 # Debian published fixes for these two after the base image was last rebuilt; Trivy fails the
 # deploy on their HIGH findings. Pinned so the layer is reproducible; drop this once a base
