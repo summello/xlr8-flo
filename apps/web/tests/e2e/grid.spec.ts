@@ -52,38 +52,45 @@ test("sort, filter, and cursor pagination are URL-addressed server requests capp
   expect(await rejected.text()).toContain("page_size must be 50");
 });
 
-test("the 10,000-row fixture virtualizes an accumulated server window within a frame budget", async ({
-  page,
-}) => {
-  const table = await openGrid(page);
-  await page.getByRole("button", { name: "Load next 50" }).click();
-  await expect(page.getByText("10,000 server records · 100 loaded")).toBeVisible();
+// Frame time is wall-clock on a shared headless runner: one noisy neighbour pushed it to
+// 25.5 ms against the 20 ms budget while a sibling run passed. Retry only this test; a real
+// regression (an unvirtualized grid) misses the budget on every attempt and still fails.
+test.describe("frame budget", () => {
+  test.describe.configure({ retries: 2 });
 
-  const rowNodes = page.locator("tr[data-grid-row]");
-  expect(await rowNodes.count()).toBeLessThan(60);
-  await expect(table).toHaveAttribute("aria-rowcount", "10000");
-  await expect(rowNodes.first()).toHaveAttribute("aria-rowindex", "1");
+  test("the 10,000-row fixture virtualizes an accumulated server window within a frame budget", async ({
+    page,
+  }) => {
+    const table = await openGrid(page);
+    await page.getByRole("button", { name: "Load next 50" }).click();
+    await expect(page.getByText("10,000 server records · 100 loaded")).toBeVisible();
 
-  const frameIntervals = await page.locator(".data-grid-scroller").evaluate(
-    (scroller) =>
-      new Promise<number[]>((resolve) => {
-        const samples: number[] = [];
-        let previous = performance.now();
-        const step = () => {
-          const now = performance.now();
-          if (samples.length > 0) samples.push(now - previous);
-          else samples.push(0);
-          previous = now;
-          scroller.scrollTop += scroller.clientHeight / 8;
-          if (samples.length < 24) requestAnimationFrame(step);
-          else resolve(samples.slice(2));
-        };
-        requestAnimationFrame(step);
-      }),
-  );
-  const averageFrame = frameIntervals.reduce((total, sample) => total + sample, 0) / frameIntervals.length;
-  expect(averageFrame).toBeLessThan(20);
-  expect(await rowNodes.count()).toBeLessThan(60);
+    const rowNodes = page.locator("tr[data-grid-row]");
+    expect(await rowNodes.count()).toBeLessThan(60);
+    await expect(table).toHaveAttribute("aria-rowcount", "10000");
+    await expect(rowNodes.first()).toHaveAttribute("aria-rowindex", "1");
+
+    const frameIntervals = await page.locator(".data-grid-scroller").evaluate(
+      (scroller) =>
+        new Promise<number[]>((resolve) => {
+          const samples: number[] = [];
+          let previous = performance.now();
+          const step = () => {
+            const now = performance.now();
+            if (samples.length > 0) samples.push(now - previous);
+            else samples.push(0);
+            previous = now;
+            scroller.scrollTop += scroller.clientHeight / 8;
+            if (samples.length < 24) requestAnimationFrame(step);
+            else resolve(samples.slice(2));
+          };
+          requestAnimationFrame(step);
+        }),
+    );
+    const averageFrame = frameIntervals.reduce((total, sample) => total + sample, 0) / frameIntervals.length;
+    expect(averageFrame).toBeLessThan(20);
+    expect(await rowNodes.count()).toBeLessThan(60);
+  });
 });
 
 test("sortable semantics and the complete keyboard model operate against server row positions", async ({
