@@ -84,9 +84,14 @@ gcloud projects add-iam-policy-binding GCP_PROJECT_ID \
 gcloud projects add-iam-policy-binding GCP_PROJECT_ID \
   --member='serviceAccount:flo-deploy@GCP_PROJECT_ID.iam.gserviceaccount.com' \
   --role='roles/run.admin'
-gcloud projects add-iam-policy-binding GCP_PROJECT_ID \
+# repoAdmin, scoped to the flo repository only: the prune step deletes old images and writer cannot.
+gcloud artifacts repositories add-iam-policy-binding flo --location=us-central1 \
   --member='serviceAccount:flo-deploy@GCP_PROJECT_ID.iam.gserviceaccount.com' \
-  --role='roles/artifactregistry.writer'
+  --role='roles/artifactregistry.repoAdmin'
+# The Worker reaches Cloud Run over the public URL, so the service needs the public invoker.
+# The origin shared secret, not IAM, gates access: requests without it get a uniform 404.
+gcloud run services add-iam-policy-binding flo-api --region=us-central1 \
+  --member=allUsers --role=roles/run.invoker
 gcloud iam service-accounts add-iam-policy-binding \
   flo-runtime@GCP_PROJECT_ID.iam.gserviceaccount.com \
   --member='serviceAccount:flo-deploy@GCP_PROJECT_ID.iam.gserviceaccount.com' \
