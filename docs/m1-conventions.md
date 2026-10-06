@@ -69,3 +69,8 @@ taxonomy addition explicitly.
 The import-linter contract allows `flo.modules.<a>` to import `flo.modules.<b>.service` and
 `flo.modules.<b>.schemas`, and nothing else of `<b>` (not `models`, `repo`, `db`, or the package
 root). Import the service function, not the package. Kernel imports are always fine.
+
+## F. Known fixed edits every migration story makes
+
+`apps/api/tests/kernel/test_migrate.py` hardcodes the list of revisions; a story that adds a migration appends its revision id to that list (this is allowed in every packet's file scope).
+
