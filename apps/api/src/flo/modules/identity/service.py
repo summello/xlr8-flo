@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from datetime import datetime
-from typing import Protocol, cast
+from typing import Literal, Protocol, cast
 from uuid import UUID, uuid4
 
 from psycopg import sql
@@ -660,4 +660,30 @@ def register_business_unit_scope(
     """Register either unit kind directly under its org in the caller's transaction."""
     RoleRepository(connection, scope).register_scope(
         ScopeType.BU, unit_id, ScopeType.ORG, scope.org_id, roll_down=True
+    )
+
+
+def register_project_scope(
+    connection: IdentityAuthorizationConnection,
+    scope: Scope,
+    project_id: UUID,
+    parent_kind: Literal["bu", "project"],
+    parent_id: UUID,
+) -> None:
+    """Register containment in the existing project creation transaction."""
+    RoleRepository(connection, scope).register_scope(
+        ScopeType.PROJECT, project_id, ScopeType(parent_kind), parent_id, roll_down=True
+    )
+
+
+def user_exists(connection: IdentityAuthorizationConnection, scope: Scope, user_id: UUID) -> bool:
+    """Membership is evidenced by a role assignment in the session organization."""
+    repository = RoleRepository(connection, scope)
+    return (
+        connection.execute(
+            """SELECT 1 FROM identity WHERE id = %(user_id)s AND EXISTS (
+        SELECT 1 FROM user_role WHERE org_id = %(org_id)s AND user_id = identity.id)""",
+            repository.scoped_params({"user_id": user_id}),
+        ).fetchone()
+        is not None
     )

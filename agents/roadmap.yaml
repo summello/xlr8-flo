@@ -516,7 +516,7 @@ epics:
           - SEQ-004
         dep:
           - E05-S03
-        st: todo
+        st: done
       - id: E06-S02
         t: Five-level hierarchy with recursive CTE traversal and depth guard
         k: engine

@@ -571,6 +571,42 @@ export interface paths {
         patch: operations["close_address_api_v1_org_units__unit_id__addresses__id__patch"];
         trace?: never;
     };
+    "/api/v1/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Projects */
+        get: operations["list_projects_api_v1_projects_get"];
+        put?: never;
+        /** Create Project */
+        post: operations["create_project_api_v1_projects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Project */
+        get: operations["get_project_api_v1_projects__id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Project */
+        patch: operations["patch_project_api_v1_projects__id__patch"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1125,6 +1161,104 @@ export interface components {
             /** Message */
             message: string;
         };
+        /** ProjectCreate */
+        ProjectCreate: {
+            /**
+             * Bu Id
+             * Format: uuid
+             */
+            bu_id: string;
+            /** Currency */
+            currency: string;
+            /** Department Code */
+            department_code: string;
+            /** Description */
+            description?: string | null;
+            /** Ledger Account Code */
+            ledger_account_code: string;
+            /** Name */
+            name: string;
+            /** Owner Id */
+            owner_id?: string | null;
+            /** Parent Id */
+            parent_id?: string | null;
+            /** Planned End */
+            planned_end?: string | null;
+            /** Planned Start */
+            planned_start?: string | null;
+            /** Sponsor Id */
+            sponsor_id?: string | null;
+        };
+        /** ProjectPage */
+        ProjectPage: {
+            /** Next Cursor */
+            next_cursor: string | null;
+            /** Rows */
+            rows: components["schemas"]["ProjectRead"][];
+        };
+        /** ProjectPatch */
+        ProjectPatch: {
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Owner Id */
+            owner_id?: string | null;
+            /** Planned End */
+            planned_end?: string | null;
+            /** Planned Start */
+            planned_start?: string | null;
+            /** Sponsor Id */
+            sponsor_id?: string | null;
+        };
+        /** ProjectRead */
+        ProjectRead: {
+            /**
+             * Bu Id
+             * Format: uuid
+             */
+            bu_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Currency */
+            currency: string;
+            /** Department Code */
+            department_code: string;
+            /** Description */
+            description: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Ledger Account Code */
+            ledger_account_code: string;
+            /** Name */
+            name: string;
+            /** Number */
+            number: string;
+            /**
+             * Owner Id
+             * Format: uuid
+             */
+            owner_id: string;
+            /** Parent Id */
+            parent_id: string | null;
+            /** Planned End */
+            planned_end: string | null;
+            /** Planned Start */
+            planned_start: string | null;
+            /** Sponsor Id */
+            sponsor_id: string | null;
+            status: components["schemas"]["ProjectStatus"];
+            /** Version */
+            version: number;
+        };
+        /** @enum {string} */
+        ProjectStatus: "draft" | "approval_pending" | "active" | "deferred" | "completed" | "abandoned";
         /** ReopenBody */
         ReopenBody: {
             /**
@@ -2698,6 +2832,187 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrgAddressRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    list_projects_api_v1_projects_get: {
+        parameters: {
+            query?: {
+                q?: string;
+                status?: components["schemas"]["ProjectStatus"] | null;
+                bu_id?: string | null;
+                sort?: "number" | "name" | "status" | "created_at";
+                direction?: "asc" | "desc";
+                cursor?: string | null;
+                page_size?: number;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectPage"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    create_project_api_v1_projects_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    get_project_api_v1_projects__id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    patch_project_api_v1_projects__id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

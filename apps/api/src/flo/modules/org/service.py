@@ -22,6 +22,7 @@ from flo.modules.org.fiscal import FiscalService as FiscalService
 from flo.modules.org.fiscal import PeriodClosed as PeriodClosed
 from flo.modules.org.master_kinds import known_kind, validate_attributes
 from flo.modules.org.models import OrgRepository
+from flo.modules.org.numbering import NumberingService as NumberingService
 from flo.modules.org.schemas import (
     CurrencyRead,
     EffectiveSetting,

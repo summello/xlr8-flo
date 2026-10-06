@@ -12,11 +12,16 @@ from flo.api.auth import router as auth_router
 from flo.api.fiscal import router as fiscal_router
 from flo.api.master import router as master_router
 from flo.api.org import router as org_router
+from flo.api.projects import router as projects_router
 
 TESTS = Path(__file__).resolve().parents[1]
 
 # (method, path) -> "file::test" that proves a foreign id returns 404.
 COVERED = {
+    ("POST", "/api/v1/projects"): "projects/test_projects.py::test_create_foreign_bu",
+    ("GET", "/api/v1/projects"): "projects/test_projects.py::test_list_tenant_isolation",
+    ("GET", "/api/v1/projects/{id}"): "projects/test_projects.py::test_get_foreign_project",
+    ("PATCH", "/api/v1/projects/{id}"): "projects/test_projects.py::test_patch_foreign_project",
     ("PUT", "/api/v1/fiscal/calendar"): "org/test_fiscal.py::test_collection_tenant_isolation",
     ("GET", "/api/v1/fiscal/periods"): "org/test_fiscal.py::test_collection_tenant_isolation",
     (
@@ -93,7 +98,14 @@ def missing_cases(routes: set[tuple[str, str]], covered: dict[tuple[str, str], s
 def test_every_id_route_has_a_named_foreign_tenant_case() -> None:
     assert (
         missing_cases(
-            id_routes(admin_users_router, auth_router, org_router, master_router, fiscal_router),
+            id_routes(
+                admin_users_router,
+                auth_router,
+                org_router,
+                master_router,
+                fiscal_router,
+                projects_router,
+            ),
             COVERED,
         )
         == []
@@ -105,7 +117,14 @@ def test_gate_fails_on_an_uncovered_route_and_on_a_dangling_reference() -> None:
     extra = COVERED | dangling
     widget = {("GET", "/api/v1/widgets/{widget_id}")}
     routes = (
-        id_routes(admin_users_router, auth_router, org_router, master_router, fiscal_router)
+        id_routes(
+            admin_users_router,
+            auth_router,
+            org_router,
+            master_router,
+            fiscal_router,
+            projects_router,
+        )
         | widget
     )
     problems = missing_cases(routes, extra)
