@@ -921,8 +921,10 @@ summary .caret{color:var(--fg3);transition:transform .15s cubic-bezier(.22,1,.36
 details[open]>summary .caret{transform:rotate(90deg)}
 summary .nm{font-weight:600;letter-spacing:-.01em}
 summary .sp{flex:1}
-.track{height:6px;border-radius:3px;background:var(--sunken);overflow:hidden;width:150px;flex:none}
-.fill{height:100%;border-radius:3px;background:var(--pl)}
+.track{display:flex;height:6px;border-radius:3px;background:var(--sunken);box-shadow:inset 0 0 0 1px var(--border);overflow:hidden;width:150px;flex:none}
+.fill{display:block;height:100%}
+.fill.done{background:var(--ok)}
+.fill.live{background:var(--info)}
 .cnt{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:var(--fg3);min-width:52px;text-align:right}
 .epic{border-top:1px solid var(--border);padding:2px 0}
 .epic>summary{padding:10px 16px 10px 34px;font-size:13px}
@@ -1143,6 +1145,17 @@ def cmd_unack(argv):
     cmd_board([])
 
 
+def _bar(done, live, total, label, width=None):
+    """Progress bar: done in one colour, in-flight in another, scaled to the total."""
+    pct = lambda n: (n / total * 100) if total else 0
+    style = f' style="width:{width}"' if width else ""
+    return (f'<span class="track"{style} role="progressbar" aria-label="{_esc(label)}" '
+            f'aria-valuemin="0" aria-valuemax="{total}" aria-valuenow="{done}" '
+            f'aria-valuetext="{done} of {total} done, {live} in flight">'
+            f'<span class="fill done" style="width:{pct(done):.2f}%"></span>'
+            f'<span class="fill live" style="width:{pct(live):.2f}%"></span></span>')
+
+
 def cmd_board(argv):
     rm, fleet = roadmap(), load_yaml(FLEET)
     sc = {s["story"]: s for s in load_scores()["stories"]}
@@ -1265,21 +1278,21 @@ def cmd_board(argv):
         eps = [e for e in rm["epics"] if e["milestone"] == m["id"]]
         ms_s = [s for e in eps for s in e["stories"]]
         d = sum(1 for s in ms_s if s["st"] == "done")
-        w = (d / len(ms_s) * 100) if ms_s else 0
+        lv = sum(1 for s in ms_s if s["st"] in ACTIVE)
         opn = "open" if any(s["st"] != "done" for s in ms_s) and d < len(ms_s) else ""
         parts.append(
             f'<details class="card ms" {opn}><summary>'
             f'<span class="caret">▸</span><span class="nm">{m["id"]} · {_esc(m["name"])}</span>'
-            f'<span class="sp"></span><span class="track"><span class="fill" style="width:{w:.0f}%"></span></span>'
+            f'<span class="sp"></span>' + _bar(d, lv, len(ms_s), f'{m["id"]} {m["name"]}') +
             f'<span class="cnt">{d}/{len(ms_s)}</span></summary>')
         for e in eps:
             ed = sum(1 for s in e["stories"] if s["st"] == "done")
-            ew = ed / len(e["stories"]) * 100
+            el = sum(1 for s in e["stories"] if s["st"] in ACTIVE)
             parts.append(
                 f'<details class="epic"><summary><span class="caret">▸</span>'
                 f'<span class="mono" style="font-size:11.5px;color:var(--fg3)">{e["id"]}</span>'
                 f'<span>{_esc(e["name"])}</span><span class="sp"></span>'
-                f'<span class="track" style="width:88px"><span class="fill" style="width:{ew:.0f}%"></span></span>'
+                + _bar(ed, el, len(e["stories"]), f'{e["id"]} {e["name"]}', "88px") +
                 f'<span class="cnt">{ed}/{len(e["stories"])}</span></summary><table>')
             for s in e["stories"]:
                 rec = sc.get(s["id"], {})
