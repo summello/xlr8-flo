@@ -644,7 +644,7 @@ epics:
           - D-11
         dep:
           - E07-S01
-        st: todo
+        st: done
       - id: E07-S03
         t: Allocation command with authorization, reason, effective date and audit
         k: ledger

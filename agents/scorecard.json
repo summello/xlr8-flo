@@ -1329,6 +1329,43 @@
       },
       "recap": "Implemented unpartitioned ledger revision 20260826_0019 after validated 0018, immutable Decimal row and SQL/Python rule mirror. No endpoints or dependencies. Existing budget.transfer permission and grants preserved across downgrade. Validation: full pytest 685 passed, 1 existing skip (kernel money round-trip requires DATABASE_URL); 51 ledger cases passed on Postgres, including concurrent reversal. Ruff, strict mypy (90 files), migration --check, tenancy, money-float and import-linter (4 contracts) passed. No web changes or OpenAPI regeneration needed.",
       "title": "Ledger schema, append-only triggers, entry types, partitioning, source linkage"
+    },
+    {
+      "story": "E07-S02",
+      "kind": "ledger",
+      "size": "L",
+      "tags": [
+        "money",
+        "concurrency"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a10eb9-d777-7143-bb37-a25e47f119c3",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "dbfe4938-296f-4d21-81ae-13d6551bb13d",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented migration 20260826_0020, transactional posting/rollup and balance reads, project creation initialization, and real PostgreSQL invariant/concurrency tests. Currency amounts use kernel HALF_UP quantization. No endpoint, dependency, or web changes; existing operator amendments in design/E07-S02.md are left untouched. Final verification: full API pytest 733 passed, zero skipped; ruff, mypy --strict (93 source files), import-linter (4 contracts), money-float lint, and migration-chain validation green.",
+      "title": "project_balance rollup maintained in-transaction with the ledger write"
     }
   ]
 }

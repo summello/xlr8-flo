@@ -192,6 +192,11 @@ class ProjectService:
                     ),
                     checks={"problem": "duplicate_number"},
                 )
+            self.repo.execute(
+                "INSERT INTO project_balance(project_id, org_id, bu_id, currency) "
+                "VALUES (%(project_id)s, %(org_id)s, %(bu_id)s, %(currency)s)",
+                {"project_id": project_id, "bu_id": body.bu_id, "currency": body.currency},
+            )
             register_project_scope(
                 cast(IdentityAuthorizationConnection, self.connection),
                 self.scope,

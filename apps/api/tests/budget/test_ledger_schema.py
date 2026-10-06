@@ -27,12 +27,7 @@ MIGRATION = load_migration(ROOT / "migrations/20260826_0019_ledger.py", "ledger_
 
 @pytest.fixture
 def ledger_db(project_db):
-    MIGRATION.upgrade(project_db.connection)
-    try:
-        yield project_db
-    finally:
-        project_db.connection.execute("RESET ROLE")
-        MIGRATION.downgrade(project_db.connection)
+    yield project_db
 
 
 def entry(db, org=None, **changes):
@@ -266,29 +261,41 @@ def test_up_down_preserves_preexisting_rows(project_db):
         "authorization_scope",
         "numbering_counter",
     ]
-    before = {t: db.connection.execute(f"SELECT * FROM {t} ORDER BY 1").fetchall() for t in tables}
-    MIGRATION.upgrade(db.connection)
-    try:
-        insert(db, {**entry_without_create(db), "idempotency_key": "preservation"})
-        assert set(
-            db.connection.execute(
-                "SELECT code FROM permission WHERE code IN "
-                "('ledger.read','budget.allocate','budget.adjust','budget.transfer')"
-            ).fetchall()
-        ) == {("ledger.read",), ("budget.allocate",), ("budget.adjust",), ("budget.transfer",)}
-        assert (
-            db.connection.execute("SELECT * FROM role_permission ORDER BY 1").fetchall()
-            == before["role_permission"]
+    # Keep the fixture schema intact even when a preservation assertion fails.
+    with db.connection.transaction():
+        balance_migration = load_migration(
+            ROOT / "migrations/20260826_0020_project_balance.py", "balance_preserve"
         )
-    finally:
+        balance_migration.downgrade(db.connection)
         MIGRATION.downgrade(db.connection)
-    for table in tables:
-        assert (
-            db.connection.execute(f"SELECT * FROM {table} ORDER BY 1").fetchall() == before[table]
-        )
-    assert db.connection.execute("SELECT to_regclass('ledger_entry')").fetchone() == (None,)
-    MIGRATION.upgrade(db.connection)
-    MIGRATION.downgrade(db.connection)
+        before = {
+            t: db.connection.execute(f"SELECT * FROM {t} ORDER BY 1").fetchall() for t in tables
+        }
+        MIGRATION.upgrade(db.connection)
+        try:
+            insert(db, {**entry_without_create(db), "idempotency_key": "preservation"})
+            assert set(
+                db.connection.execute(
+                    "SELECT code FROM permission WHERE code IN "
+                    "('ledger.read','budget.allocate','budget.adjust','budget.transfer')"
+                ).fetchall()
+            ) == {("ledger.read",), ("budget.allocate",), ("budget.adjust",), ("budget.transfer",)}
+            assert (
+                db.connection.execute("SELECT * FROM role_permission ORDER BY 1").fetchall()
+                == before["role_permission"]
+            )
+        finally:
+            MIGRATION.downgrade(db.connection)
+        for table in tables:
+            assert (
+                db.connection.execute(f"SELECT * FROM {table} ORDER BY 1").fetchall()
+                == before[table]
+            )
+        assert db.connection.execute("SELECT to_regclass('ledger_entry')").fetchone() == (None,)
+        MIGRATION.upgrade(db.connection)
+        MIGRATION.downgrade(db.connection)
+        MIGRATION.upgrade(db.connection)
+        balance_migration.upgrade(db.connection)
 
 
 def entry_without_create(db):
