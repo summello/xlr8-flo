@@ -493,7 +493,7 @@ jobs:
           fi
           npx wrangler deploy --config infra/cloudflare/wrangler.toml \
             --var "CLOUD_RUN_ORIGIN:${CLOUD_RUN_ORIGIN}"
-          npx wrangler pages deploy apps/web/dist --project-name flo-web
+          npx wrangler pages deploy apps/web/dist --project-name flo-web --branch main
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
