@@ -18,6 +18,11 @@ TESTS = Path(__file__).resolve().parents[1]
 
 # (method, path) -> "file::test" that proves a foreign id returns 404.
 COVERED = {
+    (
+        "GET",
+        "/api/v1/projects/{id}/children",
+    ): "projects/test_hierarchy.py::test_children_foreign_project",
+    ("GET", "/api/v1/projects/{id}/tree"): "projects/test_hierarchy.py::test_tree_foreign_project",
     ("POST", "/api/v1/projects"): "projects/test_projects.py::test_create_foreign_bu",
     ("GET", "/api/v1/projects"): "projects/test_projects.py::test_list_tenant_isolation",
     ("GET", "/api/v1/projects/{id}"): "projects/test_projects.py::test_get_foreign_project",

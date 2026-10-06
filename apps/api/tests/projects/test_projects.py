@@ -113,7 +113,6 @@ def test_parent_currency_users_and_dates_are_validated(project_db):
         role = identity.create_role("member", "Member")
         identity.grant_role(foreign, role.id, AuthorizationTarget.organization(db.org_b))
     for changes, field, label in [
-        ({"parent_id": str(uuid4())}, "parent_id", "parenting_not_supported"),
         ({"currency": "ZZZ"}, "currency", "invalid_project"),
         ({"owner_id": str(foreign)}, "owner_id", "invalid_project"),
         ({"sponsor_id": str(foreign)}, "sponsor_id", "invalid_project"),

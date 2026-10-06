@@ -85,3 +85,38 @@ class ProjectRead(BaseModel):
 class ProjectPage(BaseModel):
     rows: list[ProjectRead]
     next_cursor: str | None
+
+
+class ProjectRef(BaseModel):
+    id: UUID
+    parent_id: UUID | None
+    root_id: UUID
+    number: str
+    name: str
+    status: ProjectStatus
+    depth: int
+
+
+class PathRead(BaseModel):
+    up: list[UUID]
+    lca: UUID | None
+    down: list[UUID]
+
+
+class ChildrenPage(BaseModel):
+    rows: list[ProjectRef]
+    next_cursor: str | None
+
+
+class TreeNode(BaseModel):
+    id: UUID
+    number: str
+    name: str
+    status: ProjectStatus
+    depth: int
+    children: list["TreeNode"] = Field(default_factory=list)
+
+
+class TreeRead(BaseModel):
+    tree: TreeNode
+    truncated: bool

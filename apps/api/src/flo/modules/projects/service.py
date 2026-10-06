@@ -26,15 +26,21 @@ from flo.modules.org.service import (
     assert_usable,
     list_currencies,
 )
+from flo.modules.projects.hierarchy import Hierarchy
 from flo.modules.projects.models import COLUMNS, FIELDS, ProjectRepository
 from flo.modules.projects.schemas import (
+    ChildrenPage,
     Direction,
+    PathRead,
     ProjectCreate,
     ProjectPage,
     ProjectPatch,
     ProjectRead,
+    ProjectRef,
     ProjectSort,
     ProjectStatus,
+    TreeNode,
+    TreeRead,
 )
 
 
@@ -109,11 +115,13 @@ class ProjectService:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             OrgService(self.connection, self.scope).get_unit(body.bu_id)
             if body.parent_id is not None:
-                raise invalid(
-                    "parent_id",
-                    "Parenting is not supported yet. Create a root project.",
-                    "parenting_not_supported",
-                )
+                parent = self.depth_of(body.parent_id)
+                if parent >= 5:
+                    raise invalid(
+                        "parent_id",
+                        "The parent is at level five. Choose a shallower parent.",
+                        "project_depth_exceeded",
+                    )
             on_date = datetime.now(UTC).date()
             codes: dict[str, str] = {}
             for field, kind in [
@@ -153,16 +161,28 @@ class ProjectService:
                     "created_by": self.actor_id,
                 }
             )
-            inserted = self.repo.execute(
-                """INSERT INTO project(id, org_id, bu_id, parent_id, number, name, description,
-                owner_id, sponsor_id, department_code, ledger_account_code, currency,
-                planned_start, planned_end, created_by)
-                VALUES (%(id)s, %(org_id)s, %(bu_id)s, %(parent_id)s, %(number)s, %(name)s,
-                %(description)s, %(owner_id)s, %(sponsor_id)s, %(department_code)s,
-                %(ledger_account_code)s, %(currency)s, %(planned_start)s, %(planned_end)s,
-                %(created_by)s) ON CONFLICT (org_id, bu_id, number) DO NOTHING RETURNING id""",
-                values,
-            ).fetchone()
+            try:
+                with self.connection.transaction():
+                    inserted = self.repo.execute(
+                        """INSERT INTO project(id, org_id, bu_id, parent_id, number, name,
+                        description,
+                        owner_id, sponsor_id, department_code, ledger_account_code, currency,
+                        planned_start, planned_end, created_by)
+                        VALUES (%(id)s, %(org_id)s, %(bu_id)s, %(parent_id)s, %(number)s, %(name)s,
+                        %(description)s, %(owner_id)s, %(sponsor_id)s, %(department_code)s,
+                        %(ledger_account_code)s, %(currency)s, %(planned_start)s, %(planned_end)s,
+                        %(created_by)s) ON CONFLICT (org_id, bu_id, number)
+                        DO NOTHING RETURNING id""",
+                        values,
+                    ).fetchone()
+            except psycopg.errors.CheckViolation as exc:
+                if exc.diag.message_primary != "project depth exceeded":
+                    raise
+                raise invalid(
+                    "parent_id",
+                    "The parent is at level five. Choose a shallower parent.",
+                    "project_depth_exceeded",
+                ) from exc
             if inserted is None:
                 raise ProblemError(
                     ErrorCode.CONFLICT,
@@ -176,12 +196,117 @@ class ProjectService:
                 cast(IdentityAuthorizationConnection, self.connection),
                 self.scope,
                 project_id,
-                parent_kind="bu",
-                parent_id=body.bu_id,
+                parent_kind="project" if body.parent_id is not None else "bu",
+                parent_id=body.parent_id or body.bu_id,
             )
             row = self._get(project_id)
             self._audit("project.create", project_id, None, row)
             return ProjectRead.model_validate(row)
+
+    def ancestors(self, project_id: UUID) -> list[ProjectRef]:
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            return Hierarchy(self.repo).ancestors(project_id)
+
+    def descendants(self, project_id: UUID, include_self: bool = True) -> list[ProjectRef]:
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            return Hierarchy(self.repo).descendants(project_id, include_self)
+
+    def lowest_common_ancestor(self, a: UUID, b: UUID) -> ProjectRef | None:
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            return Hierarchy(self.repo).common_path(a, b)[0]
+
+    def path_between(self, a: UUID, b: UUID) -> PathRead:
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            return Hierarchy(self.repo).common_path(a, b)[1]
+
+    def depth_of(self, project_id: UUID) -> int:
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            row = self.repo.execute(
+                "SELECT depth FROM project WHERE org_id = %(org_id)s AND id = %(id)s",
+                {"id": project_id},
+            ).fetchone()
+            if row is None:
+                raise ProblemError(ErrorCode.NOT_FOUND)
+            return cast(int, row[0])
+
+    def children(
+        self, project_id: UUID, cursor: str | None = None, page_size: int = 50
+    ) -> ChildrenPage:
+        if not 1 <= page_size <= 50:
+            raise invalid("page_size", "Choose a page size between 1 and 50.")
+        number, cursor_id = "", UUID(int=0)
+        if cursor is not None:
+            try:
+                decoded = json.loads(base64.urlsafe_b64decode(cursor).decode())
+                number, cursor_id = decoded["number"], UUID(decoded["id"])
+                if not isinstance(number, str) or decoded["parent"] != str(project_id):
+                    raise ValueError("cursor mismatch")
+            except (ValueError, KeyError, TypeError, UnicodeError) as exc:
+                raise invalid("cursor", "Invalid cursor. Restart paging.") from exc
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self._get(project_id)
+            rows = self.repo.execute(
+                """SELECT id, parent_id, root_id, number, name, status, depth FROM project
+                WHERE org_id = %(org_id)s AND parent_id = %(parent)s
+                AND (number, id) > (%(number)s, %(cursor_id)s)
+                ORDER BY number, id LIMIT %(limit)s""",
+                {
+                    "parent": project_id,
+                    "number": number,
+                    "cursor_id": cursor_id,
+                    "limit": page_size + 1,
+                },
+            ).fetchall()
+            from flo.modules.projects.hierarchy import FIELDS as REF_FIELDS
+
+            records = [
+                ProjectRef.model_validate(dict(zip(REF_FIELDS, row, strict=True)))
+                for row in rows[:page_size]
+            ]
+            next_cursor = None
+            if len(rows) > page_size:
+                last = records[-1]
+                next_cursor = base64.urlsafe_b64encode(
+                    json.dumps(
+                        {"parent": str(project_id), "number": last.number, "id": str(last.id)}
+                    ).encode()
+                ).decode()
+            return ChildrenPage(rows=records, next_cursor=next_cursor)
+
+    def tree(self, project_id: UUID, max_depth: int = 5) -> TreeRead:
+        if not 1 <= max_depth <= 5:
+            raise invalid("max_depth", "Choose a depth between 1 and 5.")
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            rows = self.repo.execute(
+                """WITH RECURSIVE walk AS (
+                SELECT id, parent_id, number, name, status, depth, 1 AS depth_guard
+                FROM project WHERE org_id = %(org_id)s AND id = %(id)s
+                UNION
+                SELECT p.id, p.parent_id, p.number, p.name, p.status, p.depth, depth_guard + 1
+                FROM walk JOIN project p ON p.parent_id = walk.id AND p.org_id = %(org_id)s
+                WHERE depth_guard < 6 AND depth_guard < %(max_depth)s
+                ) SELECT DISTINCT ON (depth, id) id, parent_id, number, name, status, depth
+                FROM walk ORDER BY depth, id LIMIT 501""",
+                {"id": project_id, "max_depth": max_depth},
+            ).fetchall()
+            if not rows:
+                raise ProblemError(ErrorCode.NOT_FOUND)
+            nodes: dict[UUID, TreeNode] = {}
+            for row in rows[:500]:
+                node = TreeNode.model_validate(
+                    dict(
+                        zip(
+                            ("id", "number", "name", "status", "depth"),
+                            (row[0], *row[2:]),
+                            strict=True,
+                        )
+                    )
+                )
+                nodes[node.id] = node
+                parent_id = cast(UUID | None, row[1])
+                if parent_id in nodes and node.id != project_id:
+                    nodes[parent_id].children.append(node)
+            return TreeRead(tree=nodes[project_id], truncated=len(rows) > 500)
 
     def update(self, project_id: UUID, body: ProjectPatch, version: str | None) -> ProjectRead:
         if version is None:
@@ -312,3 +437,36 @@ def get_status(
 ) -> str:
     """Read-only entry point for funding checks."""
     return ProjectService(connection, scope).get_status(project_id)
+
+
+def ancestors(
+    connection: psycopg.Connection[tuple[object, ...]], scope: Scope, project_id: UUID
+) -> list[ProjectRef]:
+    return ProjectService(connection, scope).ancestors(project_id)
+
+
+def descendants(
+    connection: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    project_id: UUID,
+    include_self: bool = True,
+) -> list[ProjectRef]:
+    return ProjectService(connection, scope).descendants(project_id, include_self)
+
+
+def lowest_common_ancestor(
+    connection: psycopg.Connection[tuple[object, ...]], scope: Scope, a: UUID, b: UUID
+) -> ProjectRef | None:
+    return ProjectService(connection, scope).lowest_common_ancestor(a, b)
+
+
+def path_between(
+    connection: psycopg.Connection[tuple[object, ...]], scope: Scope, a: UUID, b: UUID
+) -> PathRead:
+    return ProjectService(connection, scope).path_between(a, b)
+
+
+def depth_of(
+    connection: psycopg.Connection[tuple[object, ...]], scope: Scope, project_id: UUID
+) -> int:
+    return ProjectService(connection, scope).depth_of(project_id)

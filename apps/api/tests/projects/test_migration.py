@@ -126,7 +126,7 @@ def test_database_constraints_reject_real_violations(project_db, violation):
             UniqueViolation
             if violation == "number"
             else CheckViolation
-            if violation in ["status", "dates"]
+            if violation in ["status", "dates", "parent"]
             else ForeignKeyViolation
         )
     with pytest.raises(expected):

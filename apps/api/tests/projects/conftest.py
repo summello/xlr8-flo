@@ -26,7 +26,11 @@ def project_db(org_database) -> Iterator:
     db = org_database
     migrations = [
         load_migration(ROOT / ("migrations/" + name), name)
-        for name in ["20260826_0015_master_records.py", "20260826_0017_projects.py"]
+        for name in [
+            "20260826_0015_master_records.py",
+            "20260826_0017_projects.py",
+            "20260826_0018_project_hierarchy.py",
+        ]
     ]
     for migration in migrations:
         migration.upgrade(db.connection)

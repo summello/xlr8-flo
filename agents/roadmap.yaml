@@ -527,7 +527,7 @@ epics:
           - PROJ-005
         dep:
           - E06-S01
-        st: todo
+        st: done
       - id: E06-S03
         t: Project lifecycle state machine with permission and budget-effect enforcement
         k: engine

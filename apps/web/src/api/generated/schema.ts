@@ -607,6 +607,40 @@ export interface paths {
         patch: operations["patch_project_api_v1_projects__id__patch"];
         trace?: never;
     };
+    "/api/v1/projects/{id}/children": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Project Children */
+        get: operations["project_children_api_v1_projects__id__children_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{id}/tree": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Project Tree */
+        get: operations["project_tree_api_v1_projects__id__tree_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -665,6 +699,13 @@ export interface components {
              * @description Fiscal first month (1–12).
              */
             start_month: number;
+        };
+        /** ChildrenPage */
+        ChildrenPage: {
+            /** Next Cursor */
+            next_cursor: string | null;
+            /** Rows */
+            rows: components["schemas"]["ProjectRef"][];
         };
         /** CurrencyRead */
         CurrencyRead: {
@@ -1257,6 +1298,28 @@ export interface components {
             /** Version */
             version: number;
         };
+        /** ProjectRef */
+        ProjectRef: {
+            /** Depth */
+            depth: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Number */
+            number: string;
+            /** Parent Id */
+            parent_id: string | null;
+            /**
+             * Root Id
+             * Format: uuid
+             */
+            root_id: string;
+            status: components["schemas"]["ProjectStatus"];
+        };
         /** @enum {string} */
         ProjectStatus: "draft" | "approval_pending" | "active" | "deferred" | "completed" | "abandoned";
         /** ReopenBody */
@@ -1318,6 +1381,29 @@ export interface components {
             unit_code?: string | null;
             /** Unit Id */
             unit_id?: string | null;
+        };
+        /** TreeNode */
+        TreeNode: {
+            /** Children */
+            children?: components["schemas"]["TreeNode"][];
+            /** Depth */
+            depth: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Number */
+            number: string;
+            status: components["schemas"]["ProjectStatus"];
+        };
+        /** TreeRead */
+        TreeRead: {
+            tree: components["schemas"]["TreeNode"];
+            /** Truncated */
+            truncated: boolean;
         };
         /** ValidationError */
         ValidationError: {
@@ -3013,6 +3099,95 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    project_children_api_v1_projects__id__children_get: {
+        parameters: {
+            query?: {
+                cursor?: string | null;
+                page_size?: number;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChildrenPage"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    project_tree_api_v1_projects__id__tree_get: {
+        parameters: {
+            query?: {
+                max_depth?: number;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TreeRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */
