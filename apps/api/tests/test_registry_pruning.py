@@ -47,7 +47,7 @@ class FakeGcloud:
             return subprocess.CompletedProcess(command, 0, "\n".join(self.versions) + "\n", "")
         assert command[4] == "delete"
         if self.delete_works:
-            version = command[-2].rpartition("@")[2]
+            version = command[5].rpartition("@")[2]
             self.versions.remove(version)
         return subprocess.CompletedProcess(command, 0, "", "")
 

@@ -73,6 +73,7 @@ def prune_registry(
                 "images",
                 "delete",
                 f"{image}@{version}",
+                "--delete-tags",
                 "--quiet",
             ),
             runner,
