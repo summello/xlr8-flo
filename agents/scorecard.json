@@ -1292,6 +1292,43 @@
       },
       "recap": "Implemented bounded hierarchy traversals, parent-aware creation and parent project scope registration, read-authorized children/tree routes, reversible revision 20260826_0018, isolation entries and regenerated OpenAPI client. API: 634 passed, 1 existing DATABASE_URL-dependent money round-trip skipped; ruff and strict mypy pass. Web: lint/types pass, 59 tests pass. Migration chain and 4 import contracts pass. max_depth is relative to the requested subtree root. No dependency added; no submit/gate/done/push/merge run.",
       "title": "Five-level hierarchy with recursive CTE traversal and depth guard"
+    },
+    {
+      "story": "E07-S01",
+      "kind": "migration",
+      "size": "L",
+      "tags": [
+        "money",
+        "migration"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a10e9f-cf38-7950-a5e1-07442eb608ba",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "dbfe4938-296f-4d21-81ae-13d6551bb13d",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented unpartitioned ledger revision 20260826_0019 after validated 0018, immutable Decimal row and SQL/Python rule mirror. No endpoints or dependencies. Existing budget.transfer permission and grants preserved across downgrade. Validation: full pytest 685 passed, 1 existing skip (kernel money round-trip requires DATABASE_URL); 51 ledger cases passed on Postgres, including concurrent reversal. Ruff, strict mypy (90 files), migration --check, tenancy, money-float and import-linter (4 contracts) passed. No web changes or OpenAPI regeneration needed.",
+      "title": "Ledger schema, append-only triggers, entry types, partitioning, source linkage"
     }
   ]
 }

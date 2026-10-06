@@ -629,7 +629,7 @@ epics:
         dep:
           - E03-S01
           - E03-S04
-        st: todo
+        st: done
       - id: E07-S02
         t: project_balance rollup maintained in-transaction with the ledger write
         k: ledger
