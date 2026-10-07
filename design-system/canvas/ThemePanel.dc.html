@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Theme panel</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="xlr8flo.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;560;600;640&amp;family=JetBrains+Mono:wght@400;460;620&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="xf" data-theme="{{theme}}" style="width:100%;padding:32px;display:flex;flex-direction:column;gap:32px;min-height:2600px">
+  <header><h2 class="t-title">{{title}}</h2><p class="t-caption">Tokens transcribed from design-system/MASTER.md. No amendments.</p></header>
+
+  <section aria-labelledby="s-chrome" style="display:flex;flex-direction:column;gap:12px">
+    <h3 class="t-label" id="s-chrome">Chrome (2.1)</h3>
+    <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap:12px">
+      <sc-for list="{{chrome}}" as="c" hint-placeholder-count="11">
+        <div><div style="{{c.style}};height:44px;border-radius:8px;border:1px solid var(--border-strong)"></div><div class="t-dense" style="font-weight:520;margin-top:4px">{{c.name}}</div><div class="t-caption num" style="text-align:left;white-space:normal">{{c.val}}</div></div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-phase" style="display:flex;flex-direction:column;gap:12px">
+    <h3 class="t-label" id="s-phase">Lifecycle phases (2.2)</h3>
+    <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:12px">
+      <sc-for list="{{phases}}" as="p" hint-placeholder-count="4">
+        <div class="card" style="padding:12px;display:flex;gap:12px;align-items:center">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="{{p.style}}" aria-hidden="true"><path d="{{p.d}}"></path></svg>
+          <div><div style="font-weight:560">{{p.name}}</div><div class="t-caption">{{p.mods}}</div></div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-status" style="display:flex;flex-direction:column;gap:12px">
+    <h3 class="t-label" id="s-status">Status (2.3, 7.1): closed vocabulary, icon always</h3>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <sc-for list="{{statuses}}" as="s" hint-placeholder-count="5">
+        <div style="display:grid;grid-template-columns: 150px minmax(0,1fr);gap:12px;align-items:center">
+          <span><span class="{{s.cls}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{s.d}}"></path></svg>{{s.label}}</span></span>
+          <span class="t-dense secondary">{{s.meaning}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-tags" style="display:flex;flex-direction:column;gap:12px">
+    <h3 class="t-label" id="s-tags">Tags (2.4, 7.2): outline, pill radius, dot, never an icon</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <sc-for list="{{tags}}" as="t" hint-placeholder-count="14">
+        <span class="tag" style="{{t.style}}">{{t.name}}</span>
+      </sc-for>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-chart" style="display:flex;flex-direction:column;gap:12px">
+    <h3 class="t-label" id="s-chart">Chart series (2.6): colour plus stroke pattern</h3>
+    <div style="display:grid;grid-template-columns: 1fr 1fr;gap:8px 24px">
+      <sc-for list="{{series}}" as="s" hint-placeholder-count="8">
+        <div style="display:flex;align-items:center;gap:10px"><svg width="64" height="10" aria-hidden="true"><line x1="0" x2="64" y1="5" y2="5" stroke="{{s.color}}" stroke-width="2.5" stroke-dasharray="{{s.dash}}"></line></svg><span class="t-dense">Series {{s.n}}</span></div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-type" style="display:flex;flex-direction:column;gap:10px">
+    <h3 class="t-label" id="s-type">Type (4): Inter and JetBrains Mono</h3>
+    <div class="t-display">Display 30 / 36</div>
+    <div class="t-title">Title 20 / 28</div>
+    <div class="t-heading">Heading 16 / 24</div>
+    <div>Body 14 / 20, default for interface text.</div>
+    <div class="t-dense">Body dense 13 / 18 for grid rows and lists.</div>
+    <div class="t-label">Label 12 / 16</div>
+    <div class="t-caption">Caption 12 / 16 for timestamps and helper text.</div>
+    <div class="metric">1,284,500.00</div>
+  </section>
+
+  <section aria-labelledby="s-comp" style="display:flex;flex-direction:column;gap:16px">
+    <h3 class="t-label" id="s-comp">Components</h3>
+    <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:8px;max-width:320px">
+      <div class="t-label">Available</div>
+      <div><span class="metric">9,810,000.00</span><span class="t-caption" style="margin-left:6px">USD</span></div>
+      <div class="t-dense secondary">20.3% of allocated remains</div>
+      <div class="t-caption">as of 8 Oct 2026 14:02</div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="row head" style="grid-template-columns: minmax(0,1fr) 170px"><span>Money (7.4)</span><span class="r">Amount</span></div>
+      <div class="row" style="grid-template-columns: minmax(0,1fr) 170px"><span>Inflow</span><span class="num r">1,250,000.00<span class="cur">USD</span></span></div>
+      <div class="row" style="grid-template-columns: minmax(0,1fr) 170px"><span>Outflow</span><span class="num r neg">(1,250,000.00)<span class="cur">USD</span></span></div>
+      <div class="row" style="grid-template-columns: minmax(0,1fr) 170px"><span>Zero</span><span class="num r muted">—</span></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+      <button class="btn primary" type="button">Primary</button>
+      <button class="btn" type="button">Secondary</button>
+      <button class="btn" type="button" style="outline:2px solid var(--ring);outline-offset:2px;box-shadow:0 0 0 6px color-mix(in oklab, var(--ring) 18%, transparent)">Focus ring</button>
+    </div>
+    <div style="display:grid;grid-template-columns: repeat(3, 1fr);gap:16px">
+      <div class="card" style="height:72px;display:grid;place-items:center;box-shadow:var(--shadow-sm),var(--lit)"><span class="t-caption">shadow-sm</span></div>
+      <div class="card" style="height:72px;display:grid;place-items:center"><span class="t-caption">shadow-md</span></div>
+      <div class="card" style="height:72px;display:grid;place-items:center;box-shadow:var(--shadow-lg),var(--lit)"><span class="t-caption">shadow-lg</span></div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"light","options":["light","dark"]},"$preview":{"width":700,"height":2600}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = this.props.theme === 'dark';
+    const T = (n, l, d) => ({ name: n, val: dark ? d : l, style: 'background:var(--' + n.replace('--', '') + ')' });
+    const chrome = [
+      T('canvas', 'oklch(0.988 0.004 258)', 'oklch(0.155 0.016 264)'),
+      T('sunken', 'oklch(0.966 0.006 258)', 'oklch(0.124 0.014 264)'),
+      T('surface', 'oklch(1 0 258)', 'oklch(0.196 0.017 264)'),
+      T('raised', 'oklch(1 0 258)', 'oklch(0.238 0.019 264)'),
+      T('fg', '15.9:1', '17.6:1'),
+      T('fg-secondary', '6.3:1', '10.2:1'),
+      T('fg-muted', '4.5:1', '6.3:1'),
+      T('border', 'hairline, decorative', 'hairline, decorative'),
+      T('border-strong', 'separators', 'separators'),
+      T('border-control', '3.2:1 control boundary', '3.5:1 control boundary'),
+      T('ring', 'oklch(0.520 0.185 272)', 'oklch(0.720 0.135 272)')
+    ];
+    const ph = (name, mods, v, d) => ({ name, mods, d, style: 'color:var(--phase-' + v + ')' });
+    const phases = [
+      ph('Foundation', 'Organization, Administration', 'foundation', "M4 21V5l8-2v18M12 9h8v12M7 8h2M7 12h2M7 16h2M15 13h2M15 17h2"),
+      ph('Plan', 'Projects, Budget, Reporting', 'plan', "M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"),
+      ph('Demand', 'Requisitions, Approvals', 'demand', "M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"),
+      ph('Commit', 'Vendors, Sourcing, Purchase orders, Assets', 'commit', "M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6")
+    ];
+    const st = (key, label, meaning, d) => ({ cls: 'pill ' + key, label, meaning, d });
+    const statuses = [
+      st('neutral', 'Draft', 'Draft, not started, inactive', "M12 21a9 9 0 100-18 9 9 0 000 18z"),
+      st('info', 'Approval pending', 'In flight: pending approval, sourcing, published', "M20 11a8 8 0 00-14-4M4 4v4h4M4 13a8 8 0 0014 4M20 20v-4h-4"),
+      st('success', 'Approved', 'Approved, issued, paid, under budget, on time', "M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6"),
+      st('warning', 'Nearing limit', 'At risk: nearing limit, due soon, document expiring', "M12 3l10 18H2zM12 10v5M12 18h.01"),
+      st('danger', 'Over budget', 'Blocked: rejected, over budget, failed, expired, cancelled', "M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6")
+    ];
+    const S = [['slate','#0D53AF','#80B3FF'],['blue','#2151AF','#86B1FF'],['azure','#076082','#70BADF'],['cyan','#076566','#71BFBF'],['teal','#076758','#71C0AE'],['green','#076A2F','#6FC382'],['lime','#456405','#99BD69'],['gold','#685704','#C2B069'],['amber','#745004','#D3AB6B'],['orange','#903A04','#F7986C'],['rose','#9C1F43','#FB90A2'],['magenta','#8E2873','#EC93CE'],['violet','#673BA2','#C0A0FA'],['indigo','#3C4BAF','#98ADFF']];
+    const tags = S.map(s => { const c = dark ? s[2] : s[1]; return { name: s[0], style: 'color:' + c + ';border-color:color-mix(in oklab, ' + c + ' 55%, transparent)' }; });
+    const D = ['', '6 3', '2 3', '8 3 2 3', '12 4', '', '3 3', '1 3'];
+    const L = ['#5063D9','#128283','#9249C0','#9E7112','#C64060','#298646','#007FAC','#6A7586'];
+    const Dk = ['#879EF9','#3BCFD0','#C484F1','#D8BD51','#FD9FAD','#7CD591','#65CBFD','#8B93A0'];
+    const series = L.map((c, i) => ({ n: i + 1, color: dark ? Dk[i] : c, dash: D[i] || 'none' }));
+    return { theme: this.props.theme ?? 'light', title: dark ? 'Dark theme' : 'Light theme', chrome, phases, statuses, tags, series };
+  }
+}
+</script>
+</body>
+</html>

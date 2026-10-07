@@ -1,0 +1,19 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "DesignSystem.dc.html": {"expand": "fill", "h": 2700, "title": "Design system (from MASTER.md)", "w": 1440, "x": 3040, "y": 0},
+    "ExecutiveDashboard.dc.html": {"expand": "fill", "h": 1560, "title": "Executive dashboard", "w": 1440, "x": 1520, "y": 0},
+    "Main.dc.html": {"expand": "fill", "h": 1040, "title": "Home", "w": 1440, "x": 0, "y": 0},
+    "ThemePanel.dc.html": {"h": 2600, "title": "Theme panel (used by design system)", "w": 700, "x": 4560, "y": 0}
+  },
+  "createdOnFiles": {"at": "2026-10-08T12:00:00Z", "v": 1},
+  "designSystems": [],
+  "launch": {"view": "canvas"},
+  "notes": {
+    "t1": {"kind": "title1", "maxW": 5260, "text": "XLR8 FLO - Home, Executive dashboard, tokens from MASTER.md (round 1)", "w": 240, "x": 0, "y": -260}
+  },
+  "order": ["Main.dc.html", "ExecutiveDashboard.dc.html", "DesignSystem.dc.html", "ThemePanel.dc.html"],
+  "pages": [],
+  "title": "xlr8flo-design-system"
+}

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Design system</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="xlr8flo.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;560;600;640&amp;family=JetBrains+Mono:wght@400;460;620&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="xf" data-theme="light" style="min-height:2700px;padding:40px 32px;display:flex;flex-direction:column;gap:24px">
+  <header style="max-width:1280px">
+    <h1 class="t-display">XLR8 FLO design system</h1>
+    <p class="secondary" style="margin-top:4px">Neutral chrome, chromatic data. Light and dark side by side. Source of truth: design-system/MASTER.md.</p>
+  </header>
+  <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;max-width:1400px">
+    <div style="flex:1 1 640px;min-width:0;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden">
+      <dc-import name="ThemePanel" theme="light" hint-size="100%,2600px"></dc-import>
+    </div>
+    <div style="flex:1 1 640px;min-width:0;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden">
+      <dc-import name="ThemePanel" theme="dark" hint-size="100%,2600px"></dc-import>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2700}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
