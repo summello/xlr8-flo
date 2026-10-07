@@ -1,0 +1,67 @@
+"""TEN-010: every route that takes a resource id has a named foreign-tenant/owner 404 case."""
+
+from __future__ import annotations
+
+import re
+from pathlib import Path
+
+from fastapi import APIRouter
+
+from flo.api.admin_users import router as admin_users_router
+from flo.api.auth import router as auth_router
+
+TESTS = Path(__file__).resolve().parents[1]
+
+# (method, path) -> "file::test" that proves a foreign id returns 404.
+COVERED = {
+    ("GET", "/api/v1/admin/users/{user_id}/effective-access"): (
+        "authz/test_effective_access.py::test_effective_access_conceals_a_foreign_tenant_subject"
+    ),
+    ("GET", "/api/v1/admin/users/{user_id}/effective-access/permissions"): (
+        "authz/test_effective_access.py::test_permissions_conceals_a_foreign_tenant_subject"
+    ),
+    ("POST", "/api/v1/admin/users/{user_id}/deactivate"): (
+        "authz/test_effective_access.py::test_deactivate_conceals_a_foreign_tenant_subject"
+    ),
+    ("DELETE", "/api/v1/admin/users/{user_id}/roles/{grant_id}"): (
+        "authz/test_effective_access.py::test_fresh_step_up_allows_subject_bound_revoke"
+    ),
+    ("DELETE", "/api/v1/auth/sessions/{session_id}"): (
+        "session/test_http.py::test_unknown_or_foreign_session_id_is_not_found_and_logout_clears_cookies"
+    ),
+}
+
+
+def id_routes(*routers: APIRouter) -> set[tuple[str, str]]:
+    return {
+        (method, route.path)  # type: ignore[attr-defined]
+        for router in routers
+        for route in router.routes
+        if "{" in route.path  # type: ignore[attr-defined]
+        for method in route.methods  # type: ignore[attr-defined]
+    }
+
+
+def missing_cases(routes: set[tuple[str, str]], covered: dict[tuple[str, str], str]) -> list[str]:
+    problems = [
+        f"no isolation case: {method} {path}" for method, path in sorted(routes - covered.keys())
+    ]
+    for target in covered.values():
+        file, name = target.split("::")
+        if not re.search(rf"^def {name}\(", (TESTS / file).read_text(), re.MULTILINE):
+            problems.append(f"covering test not found: {target}")
+    return problems
+
+
+def test_every_id_route_has_a_named_foreign_tenant_case() -> None:
+    assert missing_cases(id_routes(admin_users_router, auth_router), COVERED) == []
+
+
+def test_gate_fails_on_an_uncovered_route_and_on_a_dangling_reference() -> None:
+    dangling = {("GET", "/api/v1/admin/users/{user_id}/new"): "authz/test_enforcement.py::nope"}
+    extra = COVERED | dangling
+    widget = {("GET", "/api/v1/widgets/{widget_id}")}
+    routes = id_routes(admin_users_router, auth_router) | widget
+    problems = missing_cases(routes, extra)
+    assert "no isolation case: GET /api/v1/widgets/{widget_id}" in problems
+    assert any("covering test not found" in problem for problem in problems)

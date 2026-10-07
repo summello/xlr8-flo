@@ -8,14 +8,23 @@ version = "0.0.0"
 description = "XLR8 FLO API"
 requires-python = ">=3.12"
 dependencies = [
+    "argon2-cffi>=25.1,<26",
+    "boto3>=1.40,<2",
+    "cryptography>=50,<51",
+    "fastapi>=0.116,<1",
     "pydantic-settings>=2.10,<3",
+    "psycopg[binary]>=3.2,<4",
+    "pyotp>=2.9,<3",
+    "sqlalchemy>=2.0,<3",
+    "uvicorn>=0.35,<1",
 ]
 
 [project.optional-dependencies]
 dev = [
+    "httpx>=0.28,<1",
     "import-linter>=2.3,<3",
     "mypy>=1.17,<2",
-    "pytest>=8.4,<9",
+    "pytest>=9.0.3,<10",
     "pytest-cov>=6.2,<7",
     "ruff>=0.12,<1",
 ]
@@ -23,12 +32,17 @@ dev = [
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+flo = ["kernel/data/*.json", "kernel/identity/data/*.txt"]
+
 [tool.ruff]
 target-version = "py312"
 line-length = 100
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP"]
+# B018 replaces the CodeQL py/ineffectual-statement query excluded in
+# .github/codeql/config.yml: same bug class, no Protocol false positives.
+select = ["E", "F", "I", "UP", "B018"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -37,3 +51,10 @@ strict = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["--strict-config", "--strict-markers"]
+
+[tool.coverage.run]
+source = ["flo"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true

@@ -21,13 +21,15 @@ Stdlib only, except PyYAML for the two config files.
   flo roadmap [--check]     regenerate docs/claude-plan.md §5 (or verify it)
   flo board                 regenerate board.html - drilldown status view (gitignored)\n  flo ack     [KEY|all]     confirm a 'waiting on you' item (list keys with no argument)\n  flo unack   <KEY|all>     reopen a confirmed item
   flo check                 run everything CI runs, locally
-  flo up                    local stack: Postgres + MinIO + Mailpit
+  flo up [--reset]          start local Postgres + MinIO + Mailpit; optionally reset data
+  flo down                  stop the local stack
 """
 import json
 import os
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -276,23 +278,102 @@ def cmd_submit(argv):
         print(f"  {r}:  flo review {sid}   → reviews/{sid}.{r}.json")
 
 
+# Machine-generated files. A reviewer reading them line by line learns nothing and
+# pays for every token. uv.lock alone was 1,108 of 3,178 packet lines on E01-S05 and
+# stalled two reviewers before their first output.
+GENERATED_FILES = (
+    "uv.lock", "package-lock.json", "pnpm-lock.yaml", "yarn.lock",
+    "poetry.lock", "Cargo.lock", "go.sum", "Gemfile.lock", "composer.lock",
+)
+
+
 def cmd_review(argv):
     if not argv:
         die("usage: flo review <STORY_ID>")
     sid = argv[0]
     pkt, wt = packet_of(sid), worktree_path(sid)
+    rng = f"{pkt['milestone_branch']}...{pkt['branch']}"
+    names = [n for n in git("diff", "--name-only", rng, cwd=wt, check=False).splitlines() if n]
+    generated = [n for n in names if n.rsplit("/", 1)[-1] in GENERATED_FILES]
+    # Reviewers run in sandboxes that refuse to open dotfiles, and the refusal kills the
+    # run rather than degrading it. Inline them instead of letting the reviewer try.
+    dotfiles = [n for n in names if n.rsplit("/", 1)[-1].startswith(".") and n not in generated]
+
     print(f"=== REVIEW PACKET {sid} — {pkt['title']} ===")
     print(f"kind {pkt['kind']} · size {pkt['size']} · tags {', '.join(pkt['tags']) or 'none'}")
     print(f"requirements: {', '.join(pkt['requirements'])}\n")
     print("--- design packet ---")
     print((ROOT / pkt["design"]).read_text())
+
     print("--- diff vs milestone branch ---")
-    print(git("diff", f"{pkt['milestone_branch']}...{pkt['branch']}", cwd=wt, check=False))
-    print("\n--- rules ---")
-    print("Run the tests: a verdict with ran_tests=false does not count toward the two-reviewer floor.")
-    print("Review only — do not rewrite the code. One finding per problem.")
-    print("You were deliberately not given the author's rationale.")
-    print(f"\nWrite: reviews/{sid}.<your-agent-id>.json   (schema in AGENTS.md §2.2)")
+    excludes = [f":(exclude){n}" for n in generated]
+    print(git("diff", rng, "--", ".", *excludes, cwd=wt, check=False))
+
+    if generated:
+        print("--- generated files, body omitted ---")
+        for n in generated:
+            print(f"{n} — machine-generated dependency pin. Judge that it is committed, "
+                  f"not its contents. Open it in the worktree if you must.")
+        print()
+
+    for n in dotfiles:
+        f = wt / n
+        if f.exists():
+            print(f"--- {n} (inlined; your sandbox will not open dotfiles) ---")
+            print(f.read_text())
+            print(f"--- end {n} ---\n")
+
+    print("--- how to review ---")
+    print(f"""\
+1. cd {wt}
+2. Run the tests. A verdict with ran_tests=false does not count toward the floor.
+     cd apps/api && uv run --extra dev pytest -q
+3. For EVERY gate, contract or guard in the diff: plant a violation, watch it fail,
+   then restore. A gate you have not seen fail is not reviewed.
+     <edit the guarded file>            # break it
+     <run the gate>                     # must fail
+     git checkout -- <file>             # restore
+4. Confirm each requirement id above is satisfied by what the diff does, not by what
+   it says. Cite the id in any finding it belongs to.
+5. Write your verdict, then stop.
+     reviews/{sid}.<your-agent-id>.json   # schema in AGENTS.md §2.2
+
+--- rules ---
+DO   keep every scratch file inside {wt}
+DO   use `git checkout -- <file>` to undo a planted violation
+DO   write the verdict file even with zero findings
+DO   leave the worktree clean apart from your verdict file
+
+DON'T open reviews/ — another reviewer's verdict is not evidence, and agreeing with
+      one you have read is not an independent review
+DON'T write outside the worktree, /tmp included — the sandbox kills the run
+DON'T rewrite the code; review only, the author fixes
+DON'T report a defect you have not reproduced in the file as it stands
+
+severity  blocker = wrong, unsafe, or violates a cited requirement (only this blocks merge)
+          major   = will break under a foreseeable condition
+          minor   = clarity, naming, dead code
+You were deliberately not given the author's rationale.""")
+
+
+# Reviewers are four different models writing JSON by hand, and the schema lives in
+# prose in AGENTS.md §2.2 with nothing validating it at write time. "approved" for
+# "approve" once read as a rejection and would have blocked a story on a typo. Accept
+# the obvious spellings; anything else fails loudly AS MALFORMED rather than quietly
+# counting as a rejection.
+APPROVE = {"approve", "approved", "lgtm"}
+CHANGES_REQUESTED = {"changes_requested", "changes-requested", "request_changes",
+                     "changes requested", "reject", "rejected"}
+
+
+def verdict_of(review):
+    """True = approved, False = changes requested, None = unreadable."""
+    v = str(review.get("verdict") or "").strip().lower()
+    if v in APPROVE:
+        return True
+    if v in CHANGES_REQUESTED:
+        return False
+    return None
 
 
 def reviews_for(sid):
@@ -333,7 +414,11 @@ def cmd_gate(argv):
     blockers = [f for r in revs for f in r.get("findings", []) if f.get("severity") == "blocker"]
     if blockers:
         fails.append(f"{len(blockers)} open blocker finding(s)")
-    if any(r.get("verdict") != "approve" for r in counted):
+    unreadable = [r for r in counted if verdict_of(r) is None]
+    for r in unreadable:
+        fails.append(f"{r.get('reviewer', '?')}: unreadable verdict {r.get('verdict')!r} — "
+                     f"expected one of {sorted(APPROVE | CHANGES_REQUESTED)}")
+    if any(verdict_of(r) is False for r in counted):
         fails.append("not every counted reviewer approved")
 
     if pkt["opus_final"]:
@@ -875,6 +960,17 @@ color:var(--fg3);padding:11px 16px 9px;border-bottom:1px solid var(--border)}
 .sc .ag{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px}
 .scv{font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:620;font-size:13px}
 .g80{color:var(--ok)}.g60{color:var(--info)}.g0{color:var(--warn)}.gn{color:var(--fg3);font-weight:400}
+.burn{width:100%;border-collapse:collapse;font-size:12px}
+.burn th{text-align:left;font-weight:560;white-space:nowrap;padding:6px 12px 6px 0}
+.burn td{padding:6px 0 6px 12px;white-space:nowrap;color:var(--fg3)}
+.burn td.r{text-align:right;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px}
+.burn td.bar{width:100%;padding-left:0;display:table-cell}
+.burn td.bar{background:none}
+.burn td.bar{line-height:0}
+.burn td.bar i{display:inline-block;height:12px}
+.legend span{display:inline-flex;align-items:center;gap:6px;margin-right:14px}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .spark{display:inline-block;width:60px;height:5px;border-radius:3px;background:var(--sunken);
 overflow:hidden;vertical-align:middle;margin-right:8px}
 .spark i{display:block;height:100%;border-radius:3px}
@@ -903,32 +999,38 @@ def _esc(s):
 
 
 def _burnup(rm, recaps):
-    """Cumulative completion per milestone — where we are, at a glance."""
-    ms = rm["milestones"]
-    W, H, pad = 720, 150, 26
-    totals, dones, x = [], [], []
-    run_t = run_d = 0
-    for m in ms:
-        eps = [e for e in rm["epics"] if e["milestone"] == m["id"]]
-        ss = [s for e in eps for s in e["stories"]]
-        run_t += len(ss); run_d += sum(1 for s in ss if s["st"] == "done")
-        totals.append(run_t); dones.append(run_d)
-    top = totals[-1] or 1
-    step = (W - pad * 2) / max(1, len(ms) - 1)
-    def pt(i, v): return (pad + i * step, H - pad - (v / top) * (H - pad * 2))
-    plan = " ".join(f"{a:.0f},{b:.0f}" for a, b in (pt(i, v) for i, v in enumerate(totals)))
-    act = " ".join(f"{a:.0f},{b:.0f}" for a, b in (pt(i, v) for i, v in enumerate(dones)))
-    labels = "".join(
-        f'<text x="{pt(i,0)[0]:.0f}" y="{H-8}" font-size="10" fill="var(--fg3)" '
-        f'text-anchor="middle">{m["id"]}</text>' for i, m in enumerate(ms))
-    dots = "".join(f'<circle cx="{a:.0f}" cy="{b:.0f}" r="3" fill="var(--ok)"/>'
-                   for a, b in (pt(i, v) for i, v in enumerate(dones)))
-    return f'''<svg viewBox="0 0 {W} {H}" role="img" aria-label="Cumulative stories planned versus delivered by milestone">
-  <polyline points="{plan}" fill="none" stroke="var(--bs)" stroke-width="1.5" stroke-dasharray="5 4"/>
-  <polyline points="{act}" fill="none" stroke="var(--ok)" stroke-width="2"/>
-  {dots}{labels}
-  <text x="{pad}" y="16" font-size="10" fill="var(--fg3)">0 → {top} stories · dashed = scope, solid = delivered</text>
-</svg>'''
+    """Per-milestone completed vs in flight vs outstanding, with the counts as text."""
+    rows = []
+    for m in rm["milestones"]:
+        ss = [s for e in rm["epics"] if e["milestone"] == m["id"] for s in e["stories"]]
+        done = sum(1 for s in ss if s["st"] == "done")
+        live = sum(1 for s in ss if s["st"] in ACTIVE)
+        rows.append((m, len(ss), done, live, len(ss) - done - live))
+    top = max((r[1] for r in rows), default=0) or 1
+    total = sum(r[1] for r in rows)
+    done_all = sum(r[2] for r in rows)
+    live_all = sum(r[3] for r in rows)
+    out = []
+    for m, n, d, l, o in rows:
+        def seg(v, color):
+            return (f'<i style="width:{v / top * 100:.2f}%;background:var({color})"></i>'
+                    if v else "")
+        out.append(
+            f'<tr><th scope="row">{_esc(m["id"])} <span class="gn">{_esc(m["name"])}</span></th>'
+            f'<td class="bar" aria-hidden="true">{seg(d, "--ok")}{seg(l, "--info")}'
+            f'{seg(o, "--sunken")}</td>'
+            f'<td class="r">{d} done</td><td class="r">{l} in flight</td>'
+            f'<td class="r">{o} outstanding</td><td class="r">{n} total</td></tr>')
+    return (f'<p class="hint" style="padding:0 0 10px">{done_all} of {total} stories delivered, '
+            f'{live_all} in flight, {total - done_all - live_all} outstanding. '
+            f'Bar length is scaled to the largest milestone.</p>'
+            f'<table class="burn"><caption class="sr">Stories completed, in flight and '
+            f'outstanding, by milestone</caption><tbody>{"".join(out)}</tbody></table>'
+            f'<p class="hint legend" style="padding:10px 0 0">'
+            f'<span><i style="background:var(--ok)"></i>Done</span> '
+            f'<span><i style="background:var(--info)"></i>In flight</span> '
+            f'<span><i style="background:var(--sunken);outline:1px solid var(--border)"></i>'
+            f'Outstanding</span></p>')
 
 
 def pending_on_human(rm, fleet):
@@ -948,6 +1050,13 @@ def pending_on_human(rm, fleet):
             items.append(dict(key=f"blocked:{s['id']}", sig=s["st"],
                               kind="Decision needed", ref=s["id"], name=s["t"],
                               why=q or "Story is blocked; the question is in its task packet."))
+        # operator prerequisites: things only a person with an account can provide
+        pre = s.get("prereq") or []
+        if pre and s["st"] != "done":
+            items.append(dict(key=f"prereq:{s['id']}", sig=str(len(pre)),
+                              kind="Operator prerequisite", ref=s["id"], name=s["t"],
+                              why="Cannot be verified end to end until you provide: "
+                                  + "; ".join(pre)))
     # a milestone fully done but not yet merged to main
     for m in rm["milestones"]:
         eps = [e for e in rm["epics"] if e["milestone"] == m["id"]]
@@ -1046,8 +1155,12 @@ def cmd_board(argv):
 
     parts = [f"<title>XLR8 FLO Board</title>", f"<style>{BOARD_CSS}</style>",
              '<link rel="preconnect" href="https://fonts.googleapis.com">',
-             '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?'
-             'family=Inter:wght@400;500;560;600;620;640&family=JetBrains+Mono:wght@400;460;620&display=swap">',
+             # Explicit +, not implicit adjacency: CodeQL reads adjacent string
+             # literals inside a list as a possible missing comma, and that warning
+             # fails the code-scanning gate on every pull request.
+             ('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?'
+              + 'family=Inter:wght@400;500;560;600;620;640'
+              + '&family=JetBrains+Mono:wght@400;460;620&display=swap">'),
              '<div class="w">', "<header>",
              f'<div><p class="eb">Delivery board</p><h1>XLR8 FLO</h1></div><div class="sp"></div>',
              f'<div class="stat"><span class="eb">Delivered</span><b>{len(done)}/{len(all_s)}</b></div>',
@@ -1215,15 +1328,34 @@ CHECKS = [
     ("secrets", ["gitleaks", "detect", "--no-banner"]),
 ]
 
+# Every current M0 check is delivered and therefore mandatory. Temporary exemptions must
+# name both their reason and the story that removes them; docs/ops/ci-gates.md mirrors this.
+M0_MISSING_TOOL_OPTOUTS = {}
+LOCAL_TEST_DATABASE_URL = "postgresql://flo:flo-local@127.0.0.1:5432/flo_test"
+
 
 def run_check(cwd=None):
     cwd = cwd or ROOT
     ok = True
     for name, cmd in CHECKS:
-        r = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+        command_environment = os.environ.copy()
+        if name == "pytest":
+            command_environment.setdefault("DATABASE_URL", LOCAL_TEST_DATABASE_URL)
+        try:
+            r = subprocess.run(
+                cmd,
+                cwd=cwd,
+                capture_output=True,
+                text=True,
+                env=command_environment,
+            )
+        except FileNotFoundError:
+            r = subprocess.CompletedProcess(cmd, 127, "", f"required tool not found: {cmd[0]}")
         if r.returncode == 127:
-            print(f"  ?  {name:<12} not installed (M0 not complete)")
-            continue
+            exemption = M0_MISSING_TOOL_OPTOUTS.get(name)
+            if exemption is not None:
+                print(f"  ?  {name:<12} missing-tool opt-out: {exemption}")
+                continue
         print(f"  {'✓' if not r.returncode else '✗'}  {name}")
         if r.returncode:
             print((r.stdout + r.stderr).strip()[-2000:])
@@ -1235,11 +1367,85 @@ def cmd_check(argv):
     sys.exit(0 if run_check(Path.cwd()) else 1)
 
 
-def cmd_up(argv):
-    compose = ROOT / "compose.yaml"
-    if not compose.exists():
+COMPOSE = ROOT / "compose.yaml"
+STACK_SERVICES = ("postgres", "minio", "mailpit")
+
+
+def _run_compose(*args, capture_output=False):
+    if not COMPOSE.exists():
         die("compose.yaml missing — story E01-S02 delivers it")
-    os.execvp("podman", ["podman", "compose", "-f", str(compose), "up", "-d"])
+    cmd = ["podman", "compose", "-f", str(COMPOSE), *args]
+    try:
+        return subprocess.run(cmd, check=True, capture_output=capture_output, text=True)
+    except FileNotFoundError:
+        die("podman is required for the local stack but was not found on PATH")
+    except subprocess.CalledProcessError as exc:
+        detail = (exc.stderr or exc.stdout or "no error output").strip()
+        die(f"{' '.join(cmd)} failed: {detail}")
+
+
+def _container_status(service, include_stopped=False):
+    ps_args = ["ps"]
+    if include_stopped:
+        ps_args.append("--all")
+    ps_args.extend(["--quiet", service])
+    result = _run_compose(*ps_args, capture_output=True)
+    container_ids = result.stdout.splitlines()
+    if not container_ids:
+        return None, None, None
+    inspect = subprocess.run(
+        [
+            "podman",
+            "inspect",
+            "--format",
+            "{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{end}}|{{.State.ExitCode}}",
+            container_ids[0],
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if inspect.returncode:
+        return None, None, None
+    status, health, exit_code = inspect.stdout.strip().split("|", maxsplit=2)
+    return status, health or None, int(exit_code)
+
+
+def _wait_for_stack(timeout_seconds=120):
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        services = {service: _container_status(service) for service in STACK_SERVICES}
+        for service, (status, health, _) in services.items():
+            if health == "unhealthy" or status in {"dead", "exited"}:
+                die(f"{service} failed while the local stack was starting ({health or status})")
+
+        init_status, _, init_exit_code = _container_status("minio-init", include_stopped=True)
+        init_ready = init_status == "exited" and init_exit_code == 0
+        if init_status == "exited" and init_exit_code != 0:
+            die(f"minio-init failed with exit code {init_exit_code}")
+        if all(health == "healthy" for _, health, _ in services.values()) and init_ready:
+            return
+        time.sleep(1)
+    die(f"local stack did not become healthy within {timeout_seconds} seconds")
+
+
+def cmd_up(argv):
+    if argv not in ([], ["--reset"]):
+        die("usage: flo up [--reset]")
+    if argv == ["--reset"]:
+        _run_compose("down", "--volumes", "--remove-orphans")
+    _run_compose("up", "-d")
+    _wait_for_stack()
+    print("Postgres:     postgresql://localhost:5432/flo_dev")
+    print("MinIO API:   http://localhost:9000")
+    print("MinIO console: http://localhost:9001")
+    print("Mailpit UI:  http://localhost:8025")
+
+
+def cmd_down(argv):
+    if argv:
+        die("usage: flo down")
+    _run_compose("down")
 
 
 def cmd_design(argv):
@@ -1268,7 +1474,8 @@ COMMANDS = {
     "next": cmd_next, "start": cmd_start, "assign": cmd_assign, "submit": cmd_submit,
     "review": cmd_review, "gate": cmd_gate, "final": cmd_final, "escalate": cmd_escalate,
     "done": cmd_done, "design": cmd_design, "status": cmd_status, "budget": cmd_budget,
-    "roadmap": cmd_roadmap, "score": cmd_score, "session": cmd_session, "board": cmd_board, "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "up": cmd_up,
+    "roadmap": cmd_roadmap, "score": cmd_score, "session": cmd_session, "board": cmd_board,
+    "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "up": cmd_up, "down": cmd_down,
 }
 
 if __name__ == "__main__":

@@ -1,0 +1,56 @@
+ARG PYTHON_VERSION=3.12.15
+
+FROM python:${PYTHON_VERSION}-slim-bookworm@sha256:54c85f3c47607a77f32adec749d3c81d1348bf25833671f512b26a9b6d778cb3 AS build
+
+ENV VIRTUAL_ENV=/opt/venv
+
+WORKDIR /build
+
+RUN python -m venv "${VIRTUAL_ENV}"
+
+COPY apps/api/pyproject.toml ./
+COPY apps/api/src/ ./src/
+
+RUN "${VIRTUAL_ENV}/bin/pip" install --no-cache-dir . \
+    && "${VIRTUAL_ENV}/bin/pip" uninstall --yes xlr8flo-api \
+    && "${VIRTUAL_ENV}/bin/python" -m pip uninstall --yes pip setuptools \
+    && find "${VIRTUAL_ENV}" -type d -name __pycache__ -prune -exec rm -rf '{}' +
+
+FROM python:${PYTHON_VERSION}-slim-bookworm@sha256:54c85f3c47607a77f32adec749d3c81d1348bf25833671f512b26a9b6d778cb3 AS runtime
+
+ENV PATH=/opt/venv/bin:${PATH} \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/src
+
+# pip is a build tool the API never runs; the base image's copy trips Trivy's HIGH gate
+# (CVE-2026-8643 is CVSS 8.0). Removing it also removes a package manager from the runtime image.
+RUN /usr/local/bin/python -m pip uninstall --yes pip setuptools wheel
+
+# Debian published fixes for these two after the base image was last rebuilt; Trivy fails the
+# deploy on their HIGH findings. Pinned so the layer is reproducible; drop this once a base
+# digest ships them (the scan in CI will say so by passing without it).
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends --only-upgrade \
+        perl-base=5.36.0-7+deb12u4 libpcre2-8-0=10.42-1+deb12u2 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN groupadd --gid 1001 flo \
+    && useradd --uid 1001 --gid 1001 --no-create-home --home-dir /nonexistent \
+        --shell /usr/sbin/nologin flo \
+    && rm -f /bin/sh /bin/dash /usr/bin/dash
+
+WORKDIR /app
+
+COPY --from=build /opt/venv/ /opt/venv/
+COPY --chown=1001:1001 apps/api/src/ /app/src/
+COPY --chown=1001:1001 migrations/ /app/migrations/
+
+USER 1001:1001
+
+STOPSIGNAL SIGTERM
+
+HEALTHCHECK --interval=30s --timeout=2s --start-period=5s --retries=3 \
+    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:' + __import__('os').environ.get('PORT', '8080') + '/healthz', timeout=1).close()"]
+
+ENTRYPOINT ["python", "-m", "flo.api.health"]

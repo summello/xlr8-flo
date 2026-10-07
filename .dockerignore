@@ -1,0 +1,14 @@
+# Deny all repository content; allow only API build inputs.
+**
+!apps/
+!apps/api/
+!apps/api/pyproject.toml
+!apps/api/src/
+!apps/api/src/**
+!migrations/
+!migrations/**
+# Keep secrets and Git metadata excluded even beneath allowed directories.
+**/.env
+**/.env.*
+**/.git
+**/.git/**

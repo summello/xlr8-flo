@@ -43,6 +43,1049 @@
       },
       "recap": "Established the installable Python and React monorepo skeleton with strict linting, type checking, environment-backed configuration, and enforced module boundaries.",
       "title": "Monorepo skeleton, tooling, ruff/mypy/eslint/tsc config"
+    },
+    {
+      "story": "E01-S02",
+      "kind": "chore",
+      "size": "M",
+      "tags": [],
+      "author": "codex",
+      "reviewers": [
+        "opencode-nemotron"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "opencode-nemotron": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a031a0-23dc-7a70-9597-299d47aa1537",
+          "source": "codex rollout matched on cwd"
+        },
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E01-S02 and model~nemotron-ultra"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "a8c2a1bf-3633-4a96-8941-8f5a43f2a7ce",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Delivered a digest-pinned local Postgres 17, MinIO and Mailpit stack with dev/test database initialization and an idempotent attachment bucket. flo up, flo up --reset and flo down now health-gate startup, reset volumes and stop the stack.",
+      "title": "Local stack: Postgres 17 + MinIO + Mailpit via one command"
+    },
+    {
+      "story": "E01-S03",
+      "kind": "chore",
+      "size": "M",
+      "tags": [
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [
+        "opencode-nemotron"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "opencode-nemotron": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a031ae-7d64-7300-b3a8-946a3c31ccfa",
+          "source": "codex rollout matched on cwd"
+        },
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E01-S03 and model~nemotron-ultra"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "a8c2a1bf-3633-4a96-8941-8f5a43f2a7ce",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Delivered a slim multi-stage API container that runs read-only as uid 1001 and drains gracefully on SIGTERM. Separate unauthenticated liveness and bounded database/storage readiness endpoints return non-disclosing per-dependency status.",
+      "title": "API container image, slim multi-stage, non-root, health endpoints"
+    },
+    {
+      "story": "E03-S01",
+      "kind": "ledger",
+      "size": "M",
+      "tags": [
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [
+        "deepseek",
+        "opencode-nemotron",
+        "qwen"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "deepseek": {
+          "ran_tests": true,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        },
+        "opencode-nemotron": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        },
+        "qwen": {
+          "ran_tests": true,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [
+        {
+          "from": "opencode-nemotron",
+          "to": "qwen",
+          "reason": "nemotron returned 0.0 findings per review across its first three; qwen/qwen3.8-27b added as primary reviewer (agents.yaml M0 override, 24 Aug 2026)"
+        },
+        {
+          "from": "opencode-ox",
+          "to": "deepseek",
+          "reason": "ox-alpha endpoint withdrawn; deepseek-v4-pro-0813 restores an independent second reviewer"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a03218-ec9c-7900-af67-d8516d1ec197",
+          "source": "codex rollout matched on cwd"
+        },
+        "deepseek": {
+          "agent": "deepseek",
+          "id": null,
+          "source": "unavailable: no detector for deepseek"
+        },
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E03-S01 and model~nemotron-ultra"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "a8c2a1bf-3633-4a96-8941-8f5a43f2a7ce",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "unavailable: OpenRouter has no session concept - pass the generation id to `flo session qwen <id>`"
+        }
+      },
+      "recap": "Delivered the immutable Decimal Money value object, centralized ISO 4217 HALF_UP rounding and remainder-preserving allocation. Added NUMERIC(18,4) plus CHAR(3) SQLAlchemy composite persistence, real-Postgres coverage, and an effective CI float ban.",
+      "title": "Money primitives: Decimal, NUMERIC(18,4), central rounding, float lint ban"
+    },
+    {
+      "story": "E03-S02",
+      "kind": "security",
+      "size": "L",
+      "tags": [
+        "security",
+        "auth"
+      ],
+      "author": "codex",
+      "reviewers": [
+        "opencode-nemotron",
+        "qwen"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "opencode-nemotron": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        },
+        "qwen": {
+          "ran_tests": true,
+          "findings": 2,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [
+        {
+          "from": "opencode-nemotron",
+          "to": "qwen",
+          "reason": "nemotron returned 0.0 findings per review across its first three; qwen/qwen3.8-27b added as primary reviewer (agents.yaml M0 override, 24 Aug 2026)"
+        },
+        {
+          "from": "opencode-ox",
+          "to": "deepseek",
+          "reason": "ox-alpha endpoint withdrawn; deepseek-v4-pro-0813 restores an independent second reviewer"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a03224-07db-7913-a780-3980644c2969",
+          "source": "codex rollout matched on cwd"
+        },
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E03-S02 and model~nemotron-ultra"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "a8c2a1bf-3633-4a96-8941-8f5a43f2a7ce",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "unavailable: OpenRouter has no session concept - pass the generation id to `flo session qwen <id>`"
+        }
+      },
+      "recap": "Delivered session-derived request scope, transaction-local Postgres RLS, and a repository base that requires tenant scope. Added reversible RLS migration coverage plus CI and TEN-010 guards for foreign-record access, OpenAPI inputs, future tenant tables, and pooled-connection bleed.",
+      "title": "Tenancy kernel: session org_id, RLS SET LOCAL, scoped repository base"
+    },
+    {
+      "story": "E01-S04",
+      "kind": "chore",
+      "size": "L",
+      "tags": [
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [
+        "deepseek"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "deepseek": {
+          "ran_tests": true,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [
+        {
+          "from": "opencode-nemotron",
+          "to": "qwen",
+          "reason": "nemotron returned 0.0 findings per review across its first three; qwen/qwen3.8-27b added as primary reviewer (agents.yaml M0 override, 24 Aug 2026)"
+        },
+        {
+          "from": "opencode-ox",
+          "to": "deepseek",
+          "reason": "ox-alpha endpoint withdrawn; deepseek-v4-pro-0813 restores an independent second reviewer"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a03232-e8b2-7c81-8a35-fb55794057f5",
+          "source": "codex rollout matched on cwd"
+        },
+        "deepseek": {
+          "agent": "deepseek",
+          "id": null,
+          "source": "unavailable: no detector for deepseek"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "a8c2a1bf-3633-4a96-8941-8f5a43f2a7ce",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Activated every backend, frontend, governance, and security CI gate against the application code. Added Python and Node CycloneDX SBOM artifacts, retained and published Trivy SARIF, and strengthened main branch protection.",
+      "title": "CI: lint, types, tests, gitleaks, import-linter, roadmap drift check"
+    },
+    {
+      "story": "E02-S01",
+      "kind": "security",
+      "size": "L",
+      "tags": [
+        "auth",
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [
+        "deepseek"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "deepseek": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [
+        {
+          "from": "qwen",
+          "to": "deepseek",
+          "reason": "qwen produced four reviews on this story, including the vacuous-import-contract blocker and the kernel-sibling blocker, but five successive attempts to refresh its verdict against HEAD 9ee7964 were killed mid-run (this story's Argon2id-at-64MiB test suite makes a full verification pass long enough to be reaped). Its last written verdict judges commit 95bbac8, three fixes behind HEAD, and is archived at reviews/archive/E02-S01.qwen.at-95bbac8.json rather than deleted. deepseek reviewed HEAD independently and approved with tests run, per the fallback chain in agents.yaml."
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a033ca-dfda-72d3-a756-c46878e30e30",
+          "source": "codex rollout matched on cwd"
+        },
+        "deepseek": {
+          "agent": "deepseek",
+          "id": null,
+          "source": "unavailable: no detector for deepseek"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "a8c2a1bf-3633-4a96-8941-8f5a43f2a7ce",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Delivered the provider-independent identity port and an offline LocalIdentityProvider with NIST-aligned policy, Argon2id hashing, transparent cost upgrades, enumeration-resistant verification, and reversible Postgres storage.",
+      "title": "IdentityProvider port + LocalIdentityProvider, argon2id, NIST password policy"
+    },
+    {
+      "story": "E03-S03",
+      "kind": "api",
+      "size": "M",
+      "tags": [
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [
+        "qwen"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "qwen": {
+          "ran_tests": true,
+          "findings": 4,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a0340b-8549-7631-b186-e08d339abd83",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "a8c2a1bf-3633-4a96-8941-8f5a43f2a7ce",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "unavailable: OpenRouter has no session concept - pass the generation id to `flo session qwen <id>`"
+        }
+      },
+      "recap": "Delivered a closed error taxonomy, one RFC 9457 response handler, request-wide correlation logging, safe generic 500s, form-addressable validation errors, and problem-schema OpenAPI documentation. Integrated the handler into health readiness failures and covered disclosure, recovery, tenancy-safe 404, and correlation behavior.",
+      "title": "RFC 9457 problem details, error taxonomy, no internal disclosure"
+    },
+    {
+      "story": "E01-S07",
+      "kind": "chore",
+      "size": "M",
+      "tags": [
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [
+        "qwen"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "qwen": {
+          "ran_tests": true,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a03517-c393-76a3-9462-aaa0f265d778",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "1b3a04b1-1fb7-44a6-8f20-533a25a52129",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "unavailable: OpenRouter has no session concept - pass the generation id to `flo session qwen <id>`"
+        }
+      },
+      "recap": "Added isolated reject-and-clean self-tests for every existing release gate, including regressions for the three historical silent failures. Missing tools now fail unless explicitly exempted, and flo check points pytest at the local Postgres test database.",
+      "title": "Gate self-tests - every CI gate proves it fails on a planted violation"
+    },
+    {
+      "story": "E01-S05",
+      "kind": "chore",
+      "size": "L",
+      "tags": [
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [
+        "deepseek",
+        "kimi"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "deepseek": {
+          "ran_tests": true,
+          "findings": 2,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        },
+        "kimi": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [
+        {
+          "from": "qwen",
+          "to": "kimi",
+          "model": "openrouter/moonshotai/kimi-k2.6",
+          "why": "qwen failed four consecutive review runs on this story: two killed by sandbox permission rejections mid-experiment (reading apps/web/.env.production, writing a backup to /tmp) and a fourth that ran 14 minutes producing zero output. Operator substituted kimi-k2.6. Not a capability judgement on qwen \u2014 its two partial passes correctly withdrew a failure() hypothesis and dismissed a preview-only ruff rule."
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a0361d-366c-7683-8135-b345b93880b2",
+          "source": "codex rollout matched on cwd"
+        },
+        "deepseek": {
+          "agent": "deepseek",
+          "id": null,
+          "source": "unavailable: no detector for deepseek"
+        },
+        "kimi": {
+          "agent": "kimi",
+          "id": null,
+          "source": "unavailable: no detector for kimi"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "1b3a04b1-1fb7-44a6-8f20-533a25a52129",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Main now builds, scans, inventories, pushes, migrates, and deploys the API by digest, then deploys a path-scoped Cloudflare Worker and secret-scanned SPA on the one D-17 origin. The browser uses relative /api with no CORS, while Argon2 work remains bounded with startup and CI memory enforcement.",
+      "title": "Deploy API to Cloud Run and SPA to Cloudflare Pages from CI"
+    },
+    {
+      "story": "E04-S01",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "codex",
+      "reviewers": [
+        "deepseek",
+        "kimi",
+        "qwen"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "deepseek": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        },
+        "kimi": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        },
+        "qwen": {
+          "ran_tests": true,
+          "findings": 4,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [
+        {
+          "from": "kimi",
+          "to": "qwen",
+          "role": "reviewer",
+          "reason": "project-memory.md's open question \u2014 run qwen and kimi on the next gated story and keep the one whose findings survive the Opus final. Both ran here. qwen planted 12 violations, cross-checked the test's OKLCH-to-sRGB engine against its own implementation, and raised the only real blocker (money tokens passing by absence). kimi approved with zero findings for the second clean-room story running. Question closed in qwen's favour; agents.yaml updated."
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a03659-0d95-7c32-8372-0a52dd2ce2de",
+          "source": "codex rollout matched on cwd"
+        },
+        "deepseek": {
+          "agent": "deepseek",
+          "id": null,
+          "source": "unavailable: no detector for deepseek"
+        },
+        "kimi": {
+          "agent": "kimi",
+          "id": null,
+          "source": "unavailable: no detector for kimi"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "6943502c-d56e-4353-af9a-3f691bb26487",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "unavailable: OpenRouter has no session concept - pass the generation id to `flo session qwen <id>`"
+        }
+      },
+      "recap": "Transcribed the MASTER palette and supporting tokens, wired Tailwind v4 and storage-safe theme selection, and added MASTER-derived contrast/coverage plus Playwright axe checks. New dependencies: tailwindcss and @tailwindcss/vite provide the packet-required Tailwind v4 compiler integration; @axe-core/playwright provides the AGENTS.md-required browser accessibility gate; @types/node types the direct source-file reads used by the Vitest coverage gate.",
+      "title": "Design tokens, Tailwind v4 setup, light/dark, neutral chrome palette"
+    },
+    {
+      "story": "E03-S05",
+      "kind": "concurrency",
+      "size": "M",
+      "tags": [
+        "money",
+        "concurrency"
+      ],
+      "author": "codex",
+      "reviewers": [
+        "deepseek"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "deepseek": {
+          "ran_tests": true,
+          "findings": 2,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a036d5-1451-7ba2-b36b-8d1cf52cb5a2",
+          "source": "codex rollout matched on cwd"
+        },
+        "deepseek": {
+          "agent": "deepseek",
+          "id": null,
+          "source": "unavailable: no detector for deepseek"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "6943502c-d56e-4353-af9a-3f691bb26487",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Delivered tenant-scoped transactional idempotency for POST commands, including canonical body hashing, exact status/body replay, conflict responses, rollback-safe retries, and real-Postgres concurrency coverage. Idempotency-Key enforcement now fails closed for every POST except the named auth exemptions, and a missing tenant scope emits a warning with the affected path.",
+      "title": "Idempotency middleware keyed on (org, key, body hash)"
+    },
+    {
+      "story": "E04-S02",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "deepseek",
+          "to": "opus",
+          "role": "reviewer",
+          "reason": "Policy change mid-story (commit 6cfd45f): per-story review is Opus alone, and qwen and deepseek move to release review of the milestone diff. deepseek had already reviewed round 1 and its verdict stood at changes_requested against a diff that no longer exists. All four of its findings were upheld by Opus, cited in reviews/E04-S02.opus.json, and fixed in round 2; its verdict file was removed rather than edited, because a reviewer's verdict is not something another agent rewrites. Its round-1 findings are preserved verbatim in notes.deepseek_round1."
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a036dd-ad19-78a1-b43b-4756253291ba",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "6943502c-d56e-4353-af9a-3f691bb26487",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented the responsive app shell, linked hierarchy breadcrumbs, synchronized document and visible page titles, route focus announcements, labelled landmarks, lifecycle navigation, and a permission-filtered command registry with fuzzy search, recents, shared shortcuts, destructive modifiers, and explicit nested-layer Escape ordering. Round 2 distinguishes mobile navigation closes from dismissals so route changes keep focus on main, keeps breadcrumb focus glow outside the ellipsis clip, and derives every supporting typography, dimension, stacking, icon, and touch-target token from MASTER.md; a planted 999px sidebar width failed by token name before restoration. Added @radix-ui/react-dialog because the binding design requires Radix focus trapping/layer semantics, replacing bespoke modal plumbing; added @phosphor-icons/react because the binding design mandates Phosphor and no existing icon dependency provides it. Browser coverage includes zero-frame palette opening, keyboard-only navigation and dismissal paths at 375px, responsive widths, greyscale, and axe in both themes.",
+      "title": "App shell: nav, breadcrumbs, command palette, focus management, skip links"
+    },
+    {
+      "story": "E01-S06",
+      "kind": "chore",
+      "size": "M",
+      "tags": [
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 3,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a036d5-5151-7092-bfc1-13d3450c9984",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "6943502c-d56e-4353-af9a-3f691bb26487",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Neon pooled-endpoint and SET LOCAL guards, private R2 Storage wiring, four-source quota reporting with action/cost alerts, verified three-image pruning, and a from-zero operator runbook are complete. Round 2 adds one SecretStr-backed origin secret shared by Cloud Run and the Cloudflare Worker: all API and internal routes return 404 before opening provider connections when it is absent or wrong, every proxied and scheduled quota request carries the encrypted binding, and the deploy/runbook contract provisions both copies without exposing the value. D-08 uses the Cloudflare Cron Trigger rather than a second Google Cloud Scheduler job. QUOTA_POLICIES is the runtime source of truth for alert limits, bands, actions, and costs; docs/claude-plan.md section 7 remains the strategic graduation summary. No live provider call was attempted.",
+      "title": "Neon + R2 + Secret Manager wiring, infra/SETUP.md, registry pruning"
+    },
+    {
+      "story": "E02-S02",
+      "kind": "security",
+      "size": "L",
+      "tags": [
+        "auth",
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E02-S02"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "6943502c-d56e-4353-af9a-3f691bb26487",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Server-side sessions with opaque tokens stored only as SHA-256, HttpOnly/Secure/SameSite=Lax cookies, constant-time double-submit CSRF on every unsafe method, idle and absolute timeouts, id rotation on login, identity-scoped revocation and revoke-others, and append-only security evidence on revoked-token reuse.",
+      "title": "Server sessions, httpOnly cookies, CSRF, idle and absolute timeout, revocation"
+    },
+    {
+      "story": "E03-S04",
+      "kind": "security",
+      "size": "L",
+      "tags": [
+        "security",
+        "migration"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E03-S04"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "6943502c-d56e-4353-af9a-3f691bb26487",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Append-only, monthly-partitioned audit_log enforced by a database trigger and RLS, with allowlisted before/after snapshots, truncated IP storage, correlation ids restored for background jobs, and permission-checked reads that write their own reader event.",
+      "title": "Audit trail: append-only table, triggers, before/after, correlation id"
+    },
+    {
+      "story": "E04-S05",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E04-S05"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "6943502c-d56e-4353-af9a-3f691bb26487",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Closed, per-document-type StatusPill with a mandatory Phosphor icon, tones and geometry drawn entirely from MASTER 2.3 and 7.1 tokens, a dev throw and neutral unknown pill for an unmapped status, and greyscale, contrast, axe and source-enforcement coverage.",
+      "title": "StatusPill primitive: closed per-document-type tone map, icon always, never author-coloured"
+    },
+    {
+      "story": "E02-S05",
+      "kind": "security",
+      "size": "L",
+      "tags": [
+        "auth",
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E02-S05"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "6943502c-d56e-4353-af9a-3f691bb26487",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Scoped default-deny RBAC: eleven seeded roles, permissions resolved at org, business-unit, project, record and action scope, a single require(permission, target) route guard, and a CI gate that fails when any route is neither explicitly public nor guarded.",
+      "title": "RBAC: roles, permissions, org/BU/project/record/action scope, default-deny"
+    },
+    {
+      "story": "E04-S06",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E04-S06"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "6943502c-d56e-4353-af9a-3f691bb26487",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented the MASTER section 3 material layer as token-backed CSS utilities and a Surface primitive, with explicit three-role glass enforcement, reduced-transparency fallbacks, dark-theme lit edges, glow focus, and mutation-proven accessibility contracts. Round 2 aligned the grain layer with MASTER section 3.3 at z-index 1 and added a computed-style regression proving it remains below sticky chrome.",
+      "title": "Material layer: tinted shadows, lit edge, grain, honest glass, glow focus ring"
+    },
+    {
+      "story": "E03-S06",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E03-S06"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "6943502c-d56e-4353-af9a-3f691bb26487",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Delivered the Postgres SKIP LOCKED job queue and transactional outbox with bounded retries, dead-letter visibility, audit correlation, and an authenticated 50-second cron tick, plus private storage and email provider ports. Round 2 adds a lock-contention regression that proves workers skip held jobs and persists only Location and ETag on completed idempotency claims so creation responses remain usable on replay.",
+      "title": "Job queue (SKIP LOCKED), outbox, cron tick endpoint, Storage and Email ports"
+    },
+    {
+      "story": "E02-S03",
+      "kind": "security",
+      "size": "M",
+      "tags": [
+        "auth",
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E02-S03"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "6943502c-d56e-4353-af9a-3f691bb26487",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented identity-scoped password-reset issuance through the expiring transactional outbox, atomic single-use consumption, password-policy enforcement, all-session revocation, append-only pre-auth security events, per-email/IP rate limits, and the __Host-flo_session cookie rename.",
+      "title": "Password reset: single-use short-lived tokens, no account enumeration"
+    },
+    {
+      "story": "E02-S04",
+      "kind": "security",
+      "size": "L",
+      "tags": [
+        "auth",
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E02-S04"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "6943502c-d56e-4353-af9a-3f691bb26487",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Delivered encrypted TOTP MFA with one-time recovery codes, replay prevention, privileged-role enrollment gates, factor lockout evidence, and rotating-session step-up authentication. Added pyotp for RFC 6238 interoperability and cryptography for authenticated encryption because the standard library provides neither primitive. After rebasing onto E02-S03, updated its reset fixture to apply the complete migration chain in order and downgrade it in reverse so shared auth_session changes remain integration-safe.",
+      "title": "TOTP MFA, mandatory for privileged roles, step-up re-auth for high-risk actions"
+    },
+    {
+      "story": "E04-S03",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E04-S03"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "6943502c-d56e-4353-af9a-3f691bb26487",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Delivered the shared server-driven DataGrid with fixed cursor pagination, virtualization, complete keyboard semantics, accessible column controls, personal density and saved views, and designed loading, partial, empty, and error states. After the milestone rebase, all grid state wrappers now use the shared material Surface and the two-theme shadow regression targets the stable grid empty state while retaining its full theme-scale and lit-edge assertions.",
+      "title": "Data grid: TanStack Table, virtualization, server filter/sort, saved views, grid semantics"
+    },
+    {
+      "story": "E04-S04",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E04-S04"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "6943502c-d56e-4353-af9a-3f691bb26487",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Generated OpenAPI in-process from the private FastAPI app, added the typed openapi-fetch bridge and automatic RFC 9457 field mapping, shipped the accessible React Hook Form/Zod primitives and fixture, and made axe cover every manifest route in both themes plus keyboard and reduced-motion flows. New dependencies: openapi-typescript replaces handwritten DTO generation because TypeScript cannot consume OpenAPI; openapi-fetch binds native fetch to that generated contract; react-hook-form provides preserved form state and focus management absent from React; zod provides runtime blur validation because TypeScript types are erased. TypeScript moved from 6.0 to supported 5.9 because openapi-typescript 7 declares a TypeScript 5 peer range and npm ci must remain reproducible without force flags.",
+      "title": "OpenAPI to TS client generation, forms kit, a11y harness (axe + keyboard) in CI"
+    },
+    {
+      "story": "E02-S06",
+      "kind": "api",
+      "size": "M",
+      "tags": [
+        "auth"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E02-S06"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "6943502c-d56e-4353-af9a-3f691bb26487",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Administrative effective-access explorer answering why a person holds an access: roles, the scope each grant came from, who granted it and when, read from the E02-S05 resolver rather than a second copy of the rules. Deactivation revokes live sessions, blocks new ones, and retains attribution. The endpoint is guarded by require(\"admin.access.read\") and a foreign-tenant subject returns 404.",
+      "title": "Effective-access explorer endpoint and screen"
+    },
+    {
+      "story": "E01-S08",
+      "kind": "migration",
+      "size": "M",
+      "tags": [
+        "migration",
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E01-S08"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "98833b00-3142-4433-9b26-9f0626c70fef",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Added the transactional migration runner, packaged revisions into the API image, wired create-or-update Cloud Run job execution and guarded manual deploys, and fixed the permitted 0007 parent metadata.",
+      "title": "Production migration runner, packaged in the image, run by flo-migrate"
     }
   ]
 }

@@ -26,13 +26,23 @@ Your packet is in your worktree at `design/<STORY_ID>.md` — packets are tracke
 
 | Agent | Authors | Reviews | Never |
 |---|---|---|---|
-| **Opus** (`claude-opus-5`, Claude Pro) | Design packets, arbitration patches | Final review on gated stories; whole-milestone diff before PR | Routine authoring — it is the scarcest capacity in the fleet |
+| **Opus** (`claude-opus-5`, Claude Pro) | Design packets, arbitration patches | **Every story**; whole-milestone diff before PR | Routine authoring — it is the scarcest capacity in the fleet |
 | **Codex** (ChatGPT Plus) | Ledger, approvals engine, concurrency, migrations, security-sensitive backend | Any story | Boilerplate, CRUD screens, docs — its cap is too tight to spend there |
 | **OpenCode-nemotron** (nemotron-ultra, free) | Default author for everything else | Any story | — |
 | **OpenCode-ox** (ox-alpha, free) | Author when nemotron is the reviewer, or on fallback | Any story | — |
-| **Qwen** (qwen-3-coder, OpenRouter, <$20/mo) | Small stories (`size: S`) | Any story, budget permitting | Exceeding the monthly cap in `agents/agents.yaml` |
+| **Qwen** (OpenRouter, <$20/mo) | Small stories (`size: S`) | Release review — the milestone diff, not single stories | Exceeding the monthly cap in `agents/agents.yaml` |
+| **DeepSeek** (OpenRouter) | — | Release review — the milestone diff, not single stories | Authoring |
 
-**At least one reviewer on every story comes from the free pool** (`opencode-nemotron`, `opencode-ox`). Two free models exist precisely so that a free author still gets a free, independent reviewer — a rationed agent is never the reason a story cannot merge.
+**Per-story review is Opus alone. Release review is qwen and deepseek.** A story needs one
+review — Opus's — and Opus runs the tests and plants the violations like any other reviewer.
+The independent second and third passes happen once per milestone, on the whole diff, before
+the pull request to `main`: `policy.release_reviewers` in `agents/agents.yaml`.
+
+This is a deliberate trade made on 25 Aug 2026. Two metered reviewers per story cost more
+wall-clock than they returned once Opus reviewed every story anyway, and cross-story drift —
+the failure a per-story reviewer structurally cannot see — is only visible in the milestone
+diff. What it costs: a defect now has one gate before it merges into the milestone branch
+instead of three. Opus does not get to skim.
 
 Assignment is computed, not chosen: `agents/scripts/flo assign <STORY_ID>`.
 
@@ -90,16 +100,17 @@ Write your verdict to `reviews/<STORY_ID>.<your-agent-id>.json`:
 
 Rules while reviewing:
 
-- **Run the tests.** `ran_tests: false` makes your verdict advisory only and does not count toward the two-reviewer floor.
+- **Run the tests.** `ran_tests: false` makes your verdict advisory only and does not count toward the reviewer floor.
 - One finding per problem. State the failure, not a preference.
 - Severity: `blocker` (wrong, unsafe, or violates a cited requirement) · `major` (will break under a foreseeable condition) · `minor` (clarity, naming, dead code). Only `blocker` prevents merge.
 - **Do not rewrite the code.** Review only. The author fixes.
 - Check the requirement IDs the design cites are actually satisfied. A green test suite that tests the wrong thing is the most common agent failure mode.
+- **For every gate, contract or guard in the diff, plant a violation and watch it fail.** A regex, an `.importlinter` contract or a CI step that reports green may enforce nothing — three M0 gates did. A gate you have not seen fail is not reviewed.
 - Silence is not approval. Every review produces a file.
 
 ### 2.3 Rounds and arbitration
 
-Maximum **3** author↔reviewer rounds. If blockers remain, `flo escalate <STORY_ID>` hands the story, both reviews, and the diff to Opus for arbitration. Opus's ruling is final and is recorded in the task packet.
+Maximum **3** author↔reviewer rounds. Opus reviews and, if it comes to it, arbitrates; `flo escalate <STORY_ID>` exists for a story where the author and Opus have deadlocked and the operator needs to see it. Opus's ruling is final and is recorded in the task packet.
 
 ### 2.3b You are measured
 
@@ -131,7 +142,14 @@ flo gate E07-S03             # Definition of Done, machine-checked
 flo done E07-S03             # squash-merge into the milestone branch, update roadmap, drop the worktree
 ```
 
-`flo done` refuses unless: `flo gate` is green, two independent reviewers with `ran_tests: true` have `verdict: approve`, and — for gated stories — Opus's final review is recorded.
+`flo done` refuses unless: `flo gate` is green, the reviewer floor in `policy.min_reviewers`
+is met with `ran_tests: true` and `verdict: approve`, and — for gated stories — Opus's final
+review is recorded.
+
+**Before the milestone pull request**, the whole milestone diff goes to
+`policy.release_reviewers` for an independent second and third pass, after Opus's own
+milestone review. Their verdicts live in `reviews/<MILESTONE>.<agent>.json` and an open
+`blocker` there stops the PR exactly as it would stop a story.
 
 ---
 
@@ -187,7 +205,7 @@ Every story leaves behind the smallest runnable check that fails if the logic br
 | `money`, `concurrency` | Unit tests on the calculation **and** a real-Postgres concurrency test |
 | `auth`, `security` | Authorization test per role, plus a TEN-010 isolation case |
 | `workflow` | State-machine test covering every valid and invalid transition |
-| `ui` | Playwright happy path + `@axe-core/playwright` on the new route + a keyboard-only path + the `design-system/MASTER.md` §7 checklist |
+| `ui` | Playwright happy path + `@axe-core/playwright` on the new route + a keyboard-only path + the `design-system/MASTER.md` §8 checklist |
 | `migration` | Up, down, and a data-preservation assertion |
 | `crud`, `chore` | Unit or integration test on the non-trivial branch |
 
@@ -218,6 +236,8 @@ Deliberate shortcuts get a `ponytail:` comment naming the ceiling and the upgrad
 7. No open `blocker` finding, and no unaccepted critical/high security finding.
 8. Requirement→test traceability is recorded in the task packet.
 9. `agents/roadmap.yaml` status is updated and §5 of `docs/claude-plan.md` is regenerated (`flo roadmap`).
+10. Any gate, contract or guard the story adds or edits ships a test that plants a real
+    violation and proves the gate fails on it. A gate nobody has seen fail is not a gate.
 
 ---
 
@@ -225,8 +245,8 @@ Deliberate shortcuts get a `ponytail:` comment naming the ceiling and the upgrad
 
 Every commit on a milestone branch is either a **story commit** or a **maintenance commit**.
 Story work always carries its story id; CI, tooling, docs and the agent harness legitimately
-belong to no story and use a conventional-commit type (`ci:`, `fix(ci):`, `build:`, `chore:`,
-`docs:`). CI enforces exactly these two shapes — anything else fails the PR.
+belong to no story and use a conventional-commit type (`ci:`, `fix:`, `build:`, `chore:`, `docs:`, each
+with an optional `(scope)`). CI enforces exactly these two shapes — anything else fails the PR.
 
 Commit (one per story after squash):
 

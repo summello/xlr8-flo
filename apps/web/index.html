@@ -4,6 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>XLR8 FLO</title>
+    <script>
+      try {
+        const theme = localStorage.getItem("xlr8flo.theme");
+        if (theme === "light" || theme === "dark") {
+          document.documentElement.setAttribute("data-theme", theme);
+        }
+      } catch {
+        // System preference remains the safe pre-paint fallback when storage is unavailable.
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

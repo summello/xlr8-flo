@@ -70,7 +70,7 @@ epics:
           - OPS-007
         dep:
           - E01-S01
-        st: todo
+        st: done
       - id: E01-S03
         t: API container image, slim multi-stage, non-root, health endpoints
         k: chore
@@ -81,7 +81,7 @@ epics:
           - REL-003
         dep:
           - E01-S01
-        st: todo
+        st: done
       - id: E01-S04
         t: 'CI: lint, types, tests, gitleaks, import-linter, roadmap drift check'
         k: chore
@@ -92,7 +92,7 @@ epics:
           - SEC-012
         dep:
           - E01-S03
-        st: todo
+        st: done
       - id: E01-S05
         t: Deploy API to Cloud Run and SPA to Cloudflare Pages from CI
         k: chore
@@ -103,9 +103,17 @@ epics:
           - SEC-003
           - SEC-005
           - COMP-004
+          - SEC-012
         dep:
           - E01-S04
-        st: todo
+        prereq:
+          - A GCP project with Workload Identity Federation configured for this
+            repository, plus the GCP_WIF_PROVIDER, GCP_DEPLOY_SA and GCP_PROJECT
+            repository secrets
+          - A Cloudflare account with an API token scoped to Pages, plus the
+            CLOUDFLARE_API_TOKEN repository secret
+          - DNS for the chosen hostname, delegated to Cloudflare
+        st: done
       - id: E01-S06
         t: Neon + R2 + Secret Manager wiring, infra/SETUP.md, registry pruning
         k: chore
@@ -117,7 +125,31 @@ epics:
           - OPS-001
         dep:
           - E01-S05
-        st: todo
+        st: done
+      - id: E01-S07
+        t: Gate self-tests - every CI gate proves it fails on a planted violation
+        k: chore
+        s: M
+        tags:
+          - security
+        reqs:
+          - SEC-012
+        dep:
+          - E01-S04
+        st: done
+      - id: E01-S08
+        t: Production migration runner, packaged in the image, run by flo-migrate
+        k: migration
+        s: M
+        tags:
+          - migration
+          - security
+        reqs:
+          - REL-002
+          - SEC-005
+        dep:
+          - E01-S05
+        st: done
 
   - id: E02
     name: Identity & access
@@ -138,7 +170,7 @@ epics:
           - D-05
         dep:
           - E01-S02
-        st: todo
+        st: done
       - id: E02-S02
         t: Server sessions, httpOnly cookies, CSRF, idle and absolute timeout,
           revocation
@@ -153,7 +185,7 @@ epics:
           - SEC-007
         dep:
           - E02-S01
-        st: todo
+        st: done
       - id: E02-S03
         t: 'Password reset: single-use short-lived tokens, no account enumeration'
         k: security
@@ -166,7 +198,8 @@ epics:
           - AUTH-008
         dep:
           - E02-S02
-        st: todo
+          - E03-S06
+        st: done
       - id: E02-S04
         t: TOTP MFA, mandatory for privileged roles, step-up re-auth for high-risk
           actions
@@ -180,7 +213,7 @@ epics:
           - SEC-009
         dep:
           - E02-S02
-        st: todo
+        st: done
       - id: E02-S05
         t: 'RBAC: roles, permissions, org/BU/project/record/action scope, default-deny'
         k: security
@@ -198,7 +231,7 @@ epics:
         dep:
           - E02-S02
           - E03-S02
-        st: todo
+        st: done
       - id: E02-S06
         t: Effective-access explorer endpoint and screen
         k: api
@@ -211,7 +244,7 @@ epics:
           - USR-009
         dep:
           - E02-S05
-        st: todo
+        st: done
 
   - id: E03
     name: Application kernel
@@ -229,7 +262,7 @@ epics:
           - FIN-009
         dep:
           - E01-S01
-        st: todo
+        st: done
       - id: E03-S02
         t: 'Tenancy kernel: session org_id, RLS SET LOCAL, scoped repository base'
         k: security
@@ -243,7 +276,7 @@ epics:
           - D-06
         dep:
           - E01-S02
-        st: todo
+        st: done
       - id: E03-S03
         t: RFC 9457 problem details, error taxonomy, no internal disclosure
         k: api
@@ -256,7 +289,7 @@ epics:
           - UX-005
         dep:
           - E01-S01
-        st: todo
+        st: done
       - id: E03-S04
         t: 'Audit trail: append-only table, triggers, before/after, correlation id'
         k: security
@@ -273,7 +306,7 @@ epics:
           - AUD-010
         dep:
           - E03-S02
-        st: todo
+        st: done
       - id: E03-S05
         t: Idempotency middleware keyed on (org, key, body hash)
         k: concurrency
@@ -287,7 +320,7 @@ epics:
           - WF-004
         dep:
           - E03-S03
-        st: todo
+        st: done
       - id: E03-S06
         t: Job queue (SKIP LOCKED), outbox, cron tick endpoint, Storage and Email ports
         k: engine
@@ -304,7 +337,7 @@ epics:
           - D-10
         dep:
           - E03-S04
-        st: todo
+        st: done
 
   - id: E04
     name: Design system & shell
@@ -321,7 +354,7 @@ epics:
           - A11Y-005
         dep:
           - E01-S01
-        st: todo
+        st: done
       - id: E04-S02
         t: 'App shell: nav, breadcrumbs, command palette, focus management, skip links'
         k: ui
@@ -334,7 +367,7 @@ epics:
           - A11Y-002
         dep:
           - E04-S01
-        st: todo
+        st: done
       - id: E04-S03
         t: 'Data grid: TanStack Table, virtualization, server filter/sort, saved views,
           grid semantics'
@@ -349,7 +382,7 @@ epics:
           - A11Y-008
         dep:
           - E04-S02
-        st: todo
+        st: done
       - id: E04-S04
         t: OpenAPI to TS client generation, forms kit, a11y harness (axe + keyboard) in
           CI
@@ -365,7 +398,7 @@ epics:
         dep:
           - E04-S03
           - E03-S03
-        st: todo
+        st: done
 
       - id: E04-S05
         t: "StatusPill primitive: closed per-document-type tone map, icon always, never author-coloured"
@@ -380,7 +413,7 @@ epics:
           - A11Y-004
         dep:
           - E04-S01
-        st: todo
+        st: done
       - id: E04-S06
         t: "Material layer: tinted shadows, lit edge, grain, honest glass, glow focus ring"
         k: ui
@@ -392,7 +425,7 @@ epics:
           - A11Y-005
         dep:
           - E04-S01
-        st: todo
+        st: done
 
   # ────────────────────────── M1 — Budget spine ──────────────────────────
 

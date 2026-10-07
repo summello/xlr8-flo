@@ -40,6 +40,9 @@ Every row is a decision that was contested between the two prior plans, or an op
 | D-14 | Malware scanning | Allow-list + magic-byte verification + size cap + quarantine-until-cleared + **SHA-256 reputation lookup** (hash only, never the file) | ClamAV in-process (300 MB signature DB — will not fit), uploading customer files to a third party | COL-005 is not waived: the compensating controls are named, the residual risk is accepted in writing, and full AV is a hard gate at graduation (E19-S04). | Graduation, or first attachment-borne incident |
 | D-15 | Architecture style | **Modular monolith** with enforced import boundaries (`import-linter` in CI) | Microservices | Agreed with codex-plan. Budget, requisition and PO operations are one transaction; distributing them buys nothing and costs consistency. | A module needs independent scaling, with evidence |
 | D-16 | Sourcing exemption | **None.** SRC-018 stands: no PO without a completed RFQ | Day-1 exemption flag | You chose the full money loop as the first sellable milestone. Relaxing SRC-018 on day 1 would hollow out GOAL-004. | A customer contract requires spot-buy |
+| D-17 | Public origin | **One origin**, `xlr8flo.summello.com`. Cloudflare path-splits: `/api/*` proxies to Cloud Run, everything else serves from Pages | Split subdomains (`app.` + `api.`), path on the company apex (`summello.com/xlr8flo`) | Same origin removes CORS entirely and permits `__Host-` prefixed session cookies — which forbid a `Domain` attribute and so cannot be set or overwritten by any sibling subdomain. Split subdomains force `Domain=.xlr8flo.summello.com`, giving up that prefix and widening cookie reach to every future subdomain. A path on the apex is worse still: the marketing site and the authenticated app would share an origin, so an XSS on either reads the other's session. The cost is one Worker route. It also puts Cloud Run behind Cloudflare, so its ingress can be restricted rather than internet-facing (SEC-003). | A third-party client must call the API, making CORS unavoidable; or a second first-party frontend needs its own origin |
+| D-18 | Secrets in the outbox | A single-use credential **may** sit in an outbox payload — password-reset and invitation tokens — provided the row's TTL equals the token's TTL, the payload is deleted on successful delivery, and the payload is never logged or included in an error body | Sending the email from the request handler (violates invariant 6); encrypting outbox payloads; storing only the hash and reconstructing the link at send time | A reset email must contain the plaintext token, and the outbox is the only legal path to an external effect. Encrypting payloads moves the problem to key custody for a value that is already worthless in fifteen minutes. Reconstructing at send time means the sender can mint tokens, which is a worse blast radius than a short-lived row. The compensating controls are the ones that make the token cheap: short TTL, single use, deleted on send. | An outbox payload needs to carry a long-lived secret, which this rule does not cover |
+| D-19 | Pre-authentication security events | Widen `session_security_event` to identity-scoped events with a nullable `session_id`, rather than writing them to `audit_log` | `audit_log` for everything | `audit_log` is `org_id NOT NULL` under RLS, and a password-reset request happens before any tenant scope exists — there is no org to attribute it to. `session_security_event` is already identity-scoped, append-only and trigger-enforced; it needs a nullable `session_id` and a wider `event_type` check. Two append-only tables split by whether a tenant is known is a smaller lie than a fabricated `org_id`. | Identities gain a mandatory home organization, at which point the two tables can merge |
 
 ### 1.1 Open decisions from `requirements.md` §14 — now closed
 
@@ -131,8 +134,9 @@ flowchart TB
     RESEND[Resend · transactional email]
     ECB[ECB daily FX feed]
 
-    U[Browser] --> DNS --> PAGES
-    PAGES -->|"HTTPS · cookie session"| RUN
+    U[Browser] --> DNS
+    DNS -->|"xlr8flo.summello.com/*"| PAGES
+    DNS -->|"xlr8flo.summello.com/api/* · same-origin cookie session"| RUN
     CRON -->|"POST /internal/jobs/tick"| RUN
     RUN --> NEON
     RUN --> R2
@@ -142,6 +146,8 @@ flowchart TB
     RUN -->|daily| ECB
     RUN -.->|"nightly pg_dump → R2"| R2
 ```
+
+One public origin (D-17): Cloudflare splits `xlr8flo.summello.com` by path, so the browser never makes a cross-origin request and the session cookie carries the `__Host-` prefix. Cloud Run is reached only through Cloudflare.
 
 Four vendors, each replaceable: container runtime, Postgres wire protocol, S3 API, HTTP email. No vendor-proprietary runtime feature is used anywhere in application code.
 
@@ -422,14 +428,14 @@ Each phase ends at a **milestone** (`M0`…`M5`). A milestone is the only thing 
 
 | Milestone | Name | Delivers | Exit criteria | Stories |
 |---|---|---|---|---:|
-| **M0** | Rails | A deployed, empty, production-shaped application: sign in, one seeded tenant, an audited CRUD screen, CI green, agent orchestration proven end-to-end. Nothing business-valuable — everything the business logic will stand on. | Deployed to Cloud Run + Pages on a real domain; auth with MFA; RLS proven by the TEN-010 isolation suite; audit, idempotency, outbox, job runner, storage and email ports all exercised by a test; OpenAPI→TS client generated in CI; app shell with ⌘K, dark/light, virtualized grid; a11y harness failing on a seeded violation. | 24 |
+| **M0** | Rails | A deployed, empty, production-shaped application: sign in, one seeded tenant, an audited CRUD screen, CI green, agent orchestration proven end-to-end. Nothing business-valuable — everything the business logic will stand on. | Deployed to Cloud Run + Pages on a real domain; auth with MFA; RLS proven by the TEN-010 isolation suite; audit, idempotency, outbox, job runner, storage and email ports all exercised by a test; OpenAPI→TS client generated in CI; app shell with ⌘K, dark/light, virtualized grid; a11y harness failing on a seeded violation. | 26 |
 | **M1** | Budget spine | The trustworthy system of record. Organizations, BU/OUs, master data, projects to five levels with roll-up/roll-down, and the complete budget ledger including cross-hierarchy transfers, plus Excel/CSV import. | ACC-001 and ACC-003 pass against real Postgres; every dashboard balance reconciles to its ledger; nightly drift report reads zero; 10,000-row import completes as a background job with a row-level error report. | 26 |
 | **M2** | Governed demand | Capital requisitions that reserve real money, and the approval engine that authorizes them — including the visual builder and its keyboard equivalent. | A requisition moves Draft→Approved through a multi-level conditional workflow, generates its sub-project, and reserves budget atomically; editing the workflow does not alter in-flight documents (ACC-007); the builder is fully operable without a mouse (APR-002). | 24 |
 | **M3** | **First sellable release** | Vendors, RFQs, bid comparison, awards, and purchase orders issued by email with change orders. Closes the money loop end to end. | ACC-002, ACC-005, ACC-006 pass; a complete project→requisition→RFQ→award→PO→email flow is operable without a mouse (ACC-008); PO PDF reproduces from its snapshot (PO-014); SPF/DKIM/DMARC verified (EML-001). **This is the first release you can sell.** | 28 |
 | **M4** | Full Phase-1 scope | Warehouses and fixed assets, reporting and exports, custom fields and rules, search, notifications, preferences and help. Completes `requirements.md` Phase 1. | Every Phase-1 ✅ in `requirements.md` §2.2 is implemented and traced; HTML/PDF/Excel exports reconcile to the dashboard under identical filters (RPT-007). | 34 |
 | **M5** | Customer-ready | Self-serve tenancy, plan quotas, MAU metering, security and accessibility verification, backup/restore evidence, legal surface, graduation dashboard. | ASVS L2 self-assessment complete with no open critical/high; WCAG 2.2 AA audit passed on critical paths; restore drill evidence committed; ToS/Privacy/DPA published; graduation triggers instrumented and alerting. | 24 |
 
-**Total: 160 stories.**
+**Total: 162 stories.**
 
 Phase order is not negotiable and follows dependency, not preference: money before demand, demand before sourcing, sourcing before commitment. Reporting sits in M4 because a report of nothing is nothing.
 
@@ -442,36 +448,38 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 <!-- ROADMAP:BEGIN -->
 <!-- generated by agents/scripts/flo roadmap — do not edit by hand -->
 
-#### M0 — Rails · 1/24 done
+#### M0 — Rails · 26/26 done
 
 > A deployed, empty, production-shaped application. No business value, everything the business logic stands on.
 
 | | Story | Epic | Kind | Size | Requirements | Depends on |
 |---|---|---|---|---|---|---|
 | ✅ | **E01-S01** Monorepo skeleton, tooling, ruff/mypy/eslint/tsc config | E01 | chore | M | COMP-004 | — |
-| ⬜ | **E01-S02** Local stack: Postgres 17 + MinIO + Mailpit via one command | E01 | chore | M | OPS-007 | ~~E01-S01~~ |
-| ⬜ | **E01-S03** API container image, slim multi-stage, non-root, health endpoints | E01 | chore | M | REL-003 | ~~E01-S01~~ |
-| ⬜ | **E01-S04** CI: lint, types, tests, gitleaks, import-linter, roadmap drift check | E01 | chore | L | SEC-012 | E01-S03 |
-| ⬜ | **E01-S05** Deploy API to Cloud Run and SPA to Cloudflare Pages from CI | E01 | chore | L | SEC-003, SEC-005, COMP-004 | E01-S04 |
-| ⬜ | **E01-S06** Neon + R2 + Secret Manager wiring, infra/SETUP.md, registry pruning | E01 | chore | M | SEC-005, OPS-001 | E01-S05 |
-| ⬜ | **E02-S01** IdentityProvider port + LocalIdentityProvider, argon2id, NIST password policy | E02 | security | L | AUTH-003, AUTH-004, AUTH-005, AUTH-007, D-05 | E01-S02 |
-| ⬜ | **E02-S02** Server sessions, httpOnly cookies, CSRF, idle and absolute timeout, revocation | E02 | security | L | AUTH-009, AUTH-010, SEC-007 | E02-S01 |
-| ⬜ | **E02-S03** Password reset: single-use short-lived tokens, no account enumeration | E02 | security | M | AUTH-007, AUTH-008 | E02-S02 |
-| ⬜ | **E02-S04** TOTP MFA, mandatory for privileged roles, step-up re-auth for high-risk actions | E02 | security | L | AUTH-006, SEC-009 | E02-S02 |
-| ⬜ | **E02-S05** RBAC: roles, permissions, org/BU/project/record/action scope, default-deny | E02 | security | L | USR-001, USR-002, USR-003, USR-004, USR-005, USR-006 | E02-S02, E03-S02 |
-| ⬜ | **E02-S06** Effective-access explorer endpoint and screen | E02 | api | M | USR-010, USR-008, USR-009 | E02-S05 |
-| ⬜ | **E03-S01** Money primitives: Decimal, NUMERIC(18,4), central rounding, float lint ban | E03 | ledger | M | FIN-001, FIN-002, FIN-009 | ~~E01-S01~~ |
-| ⬜ | **E03-S02** Tenancy kernel: session org_id, RLS SET LOCAL, scoped repository base | E03 | security | L | SEC-008, ACC-004, D-06 | E01-S02 |
-| ⬜ | **E03-S03** RFC 9457 problem details, error taxonomy, no internal disclosure | E03 | api | M | ARCH-007, SEC-011, UX-005 | ~~E01-S01~~ |
-| ⬜ | **E03-S04** Audit trail: append-only table, triggers, before/after, correlation id | E03 | security | L | AUD-001, AUD-002, AUD-003, AUD-004, AUD-006, AUD-010 | E03-S02 |
-| ⬜ | **E03-S05** Idempotency middleware keyed on (org, key, body hash) | E03 | concurrency | M | DATA-003, FIN-012, WF-004 | E03-S03 |
-| ⬜ | **E03-S06** Job queue (SKIP LOCKED), outbox, cron tick endpoint, Storage and Email ports | E03 | engine | L | ARCH-006, REL-007, PERF-004, COL-006, D-07, D-08, D-10 | E03-S04 |
-| ⬜ | **E04-S01** Design tokens, Tailwind v4 setup, light/dark, neutral chrome palette | E04 | ui | M | UX-006, A11Y-005 | ~~E01-S01~~ |
-| ⬜ | **E04-S02** App shell: nav, breadcrumbs, command palette, focus management, skip links | E04 | ui | L | UX-001, XFN-010, A11Y-002 | E04-S01 |
-| ⬜ | **E04-S03** Data grid: TanStack Table, virtualization, server filter/sort, saved views, grid semantics | E04 | ui | L | XFN-002, XFN-003, PERF-005, A11Y-008 | E04-S02 |
-| ⬜ | **E04-S04** OpenAPI to TS client generation, forms kit, a11y harness (axe + keyboard) in CI | E04 | ui | L | A11Y-001, A11Y-006, A11Y-010, XFN-008 | E04-S03, E03-S03 |
-| ⬜ | **E04-S05** StatusPill primitive: closed per-document-type tone map, icon always, never author-coloured | E04 | ui | M | TAG-001, TAG-002, TAG-003, A11Y-004 | E04-S01 |
-| ⬜ | **E04-S06** Material layer: tinted shadows, lit edge, grain, honest glass, glow focus ring | E04 | ui | M | UX-006, A11Y-005 | E04-S01 |
+| ✅ | **E01-S02** Local stack: Postgres 17 + MinIO + Mailpit via one command | E01 | chore | M | OPS-007 | ~~E01-S01~~ |
+| ✅ | **E01-S03** API container image, slim multi-stage, non-root, health endpoints | E01 | chore | M | REL-003 | ~~E01-S01~~ |
+| ✅ | **E01-S04** CI: lint, types, tests, gitleaks, import-linter, roadmap drift check | E01 | chore | L | SEC-012 | ~~E01-S03~~ |
+| ✅ | **E01-S05** Deploy API to Cloud Run and SPA to Cloudflare Pages from CI | E01 | chore | L | SEC-003, SEC-005, COMP-004, SEC-012 | ~~E01-S04~~ |
+| ✅ | **E01-S06** Neon + R2 + Secret Manager wiring, infra/SETUP.md, registry pruning | E01 | chore | M | SEC-005, OPS-001 | ~~E01-S05~~ |
+| ✅ | **E01-S07** Gate self-tests - every CI gate proves it fails on a planted violation | E01 | chore | M | SEC-012 | ~~E01-S04~~ |
+| ✅ | **E01-S08** Production migration runner, packaged in the image, run by flo-migrate | E01 | migration | M | REL-002, SEC-005 | ~~E01-S05~~ |
+| ✅ | **E02-S01** IdentityProvider port + LocalIdentityProvider, argon2id, NIST password policy | E02 | security | L | AUTH-003, AUTH-004, AUTH-005, AUTH-007, D-05 | ~~E01-S02~~ |
+| ✅ | **E02-S02** Server sessions, httpOnly cookies, CSRF, idle and absolute timeout, revocation | E02 | security | L | AUTH-009, AUTH-010, SEC-007 | ~~E02-S01~~ |
+| ✅ | **E02-S03** Password reset: single-use short-lived tokens, no account enumeration | E02 | security | M | AUTH-007, AUTH-008 | ~~E02-S02~~, ~~E03-S06~~ |
+| ✅ | **E02-S04** TOTP MFA, mandatory for privileged roles, step-up re-auth for high-risk actions | E02 | security | L | AUTH-006, SEC-009 | ~~E02-S02~~ |
+| ✅ | **E02-S05** RBAC: roles, permissions, org/BU/project/record/action scope, default-deny | E02 | security | L | USR-001, USR-002, USR-003, USR-004, USR-005, USR-006 | ~~E02-S02~~, ~~E03-S02~~ |
+| ✅ | **E02-S06** Effective-access explorer endpoint and screen | E02 | api | M | USR-010, USR-008, USR-009 | ~~E02-S05~~ |
+| ✅ | **E03-S01** Money primitives: Decimal, NUMERIC(18,4), central rounding, float lint ban | E03 | ledger | M | FIN-001, FIN-002, FIN-009 | ~~E01-S01~~ |
+| ✅ | **E03-S02** Tenancy kernel: session org_id, RLS SET LOCAL, scoped repository base | E03 | security | L | SEC-008, ACC-004, D-06 | ~~E01-S02~~ |
+| ✅ | **E03-S03** RFC 9457 problem details, error taxonomy, no internal disclosure | E03 | api | M | ARCH-007, SEC-011, UX-005 | ~~E01-S01~~ |
+| ✅ | **E03-S04** Audit trail: append-only table, triggers, before/after, correlation id | E03 | security | L | AUD-001, AUD-002, AUD-003, AUD-004, AUD-006, AUD-010 | ~~E03-S02~~ |
+| ✅ | **E03-S05** Idempotency middleware keyed on (org, key, body hash) | E03 | concurrency | M | DATA-003, FIN-012, WF-004 | ~~E03-S03~~ |
+| ✅ | **E03-S06** Job queue (SKIP LOCKED), outbox, cron tick endpoint, Storage and Email ports | E03 | engine | L | ARCH-006, REL-007, PERF-004, COL-006, D-07, D-08, D-10 | ~~E03-S04~~ |
+| ✅ | **E04-S01** Design tokens, Tailwind v4 setup, light/dark, neutral chrome palette | E04 | ui | M | UX-006, A11Y-005 | ~~E01-S01~~ |
+| ✅ | **E04-S02** App shell: nav, breadcrumbs, command palette, focus management, skip links | E04 | ui | L | UX-001, XFN-010, A11Y-002 | ~~E04-S01~~ |
+| ✅ | **E04-S03** Data grid: TanStack Table, virtualization, server filter/sort, saved views, grid semantics | E04 | ui | L | XFN-002, XFN-003, PERF-005, A11Y-008 | ~~E04-S02~~ |
+| ✅ | **E04-S04** OpenAPI to TS client generation, forms kit, a11y harness (axe + keyboard) in CI | E04 | ui | L | A11Y-001, A11Y-006, A11Y-010, XFN-008 | ~~E04-S03~~, ~~E03-S03~~ |
+| ✅ | **E04-S05** StatusPill primitive: closed per-document-type tone map, icon always, never author-coloured | E04 | ui | M | TAG-001, TAG-002, TAG-003, A11Y-004 | ~~E04-S01~~ |
+| ✅ | **E04-S06** Material layer: tinted shadows, lit edge, grain, honest glass, glow focus ring | E04 | ui | M | UX-006, A11Y-005 | ~~E04-S01~~ |
 
 #### M1 — Budget spine · 0/26 done
 
@@ -479,20 +487,20 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 
 | | Story | Epic | Kind | Size | Requirements | Depends on |
 |---|---|---|---|---|---|---|
-| ⬜ | **E05-S01** Organization and BU/OU with unique codes, settings precedence | E05 | crud | M | ORG-001, ORG-002, ORG-012 | E02-S05 |
+| ⬜ | **E05-S01** Organization and BU/OU with unique codes, settings precedence | E05 | crud | M | ORG-001, ORG-002, ORG-012 | ~~E02-S05~~ |
 | ⬜ | **E05-S02** Bill To / Ship To addresses with effective dates | E05 | crud | S | ORG-005 | E05-S01 |
 | ⬜ | **E05-S03** Master data: departments, ledger accounts, UoM, tax codes, payment terms, categories | E05 | crud | L | ORG-010, ORG-011, ORG-009, XFN-009 | E05-S01 |
 | ⬜ | **E05-S04** Fiscal calendar and period open/close with authorization and audit | E05 | engine | M | BUD-010, FIN-010 | E05-S01 |
-| ⬜ | **E05-S05** FX: ECB daily rate ingest, rate table, effective dating, missing-rate block | E05 | engine | M | FX-001, FX-002, FX-003, FX-004, FIN-003 | E03-S06 |
+| ⬜ | **E05-S05** FX: ECB daily rate ingest, rate table, effective dating, missing-rate block | E05 | engine | M | FX-001, FX-002, FX-003, FX-004, FIN-003 | ~~E03-S06~~ |
 | ⬜ | **E06-S01** Project entity, scoped numbering sequence, department and ledger account | E06 | crud | M | PROJ-001, PROJ-014, PROJ-019, SEQ-001, SEQ-002, SEQ-003, SEQ-004 | E05-S03 |
 | ⬜ | **E06-S02** Five-level hierarchy with recursive CTE traversal and depth guard | E06 | engine | L | PROJ-004, PROJ-005 | E06-S01 |
 | ⬜ | **E06-S03** Project lifecycle state machine with permission and budget-effect enforcement | E06 | engine | L | PROJ-012, PROJ-013, PROJ-018, WF-002, WF-006 | E06-S01 |
 | ⬜ | **E06-S04** Roll-down and roll-up funding modes, set per BU/OU and inherited | E06 | ledger | L | PROJ-006, PROJ-007, PROJ-008 | E06-S02, E07-S02 |
 | ⬜ | **E06-S05** Phases, milestones, planned vs actual dates, owner, sponsor, health, percent complete | E06 | crud | M | PROJ-011, PROJ-015 | E06-S01 |
 | ⬜ | **E06-S06** Project risks with likelihood, impact, owner, mitigation, due date, status | E06 | crud | M | PROJ-016 | E06-S01 |
-| ⬜ | **E06-S07** Project list and detail screens, filter/sort/group/search, saved views | E06 | ui | L | PROJ-020, XFN-002 | E06-S03, E04-S03 |
+| ⬜ | **E06-S07** Project list and detail screens, filter/sort/group/search, saved views | E06 | ui | L | PROJ-020, XFN-002 | E06-S03, ~~E04-S03~~ |
 | ⬜ | **E06-S08** Project dashboard with hierarchy visual and drill-down to ledger entries | E06 | ui | L | PROJ-009, PROJ-021, RPT-002, RPT-003, A11Y-009 | E06-S07, E07-S06 |
-| ⬜ | **E07-S01** Ledger schema, append-only triggers, entry types, partitioning, source linkage | E07 | migration | L | FIN-004, FIN-007, BUD-005, BUD-006, ARCH-003 | E03-S01, E03-S04 |
+| ⬜ | **E07-S01** Ledger schema, append-only triggers, entry types, partitioning, source linkage | E07 | migration | L | FIN-004, FIN-007, BUD-005, BUD-006, ARCH-003 | ~~E03-S01~~, ~~E03-S04~~ |
 | ⬜ | **E07-S02** project_balance rollup maintained in-transaction with the ledger write | E07 | ledger | L | FIN-005, FIN-006, BUD-011, D-11 | E07-S01 |
 | ⬜ | **E07-S03** Allocation command with authorization, reason, effective date and audit | E07 | ledger | M | BUD-001, BUD-006, BUD-007 | E07-S02 |
 | ⬜ | **E07-S04** Reservation and release primitives, exactly-once release guarantee | E07 | ledger | L | FIN-011, FIN-012, BUD-008, ACC-001, ACC-006 | E07-S02 |
@@ -500,8 +508,8 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E07-S06** Balance query API: MTD/QTD/YTD/fiscal/life-to-date/range, reconcile to entries | E07 | api | M | BUD-009, BUD-011, ACC-003 | E07-S05 |
 | ⬜ | **E07-S07** Same-level transfer, atomic, one transfer_group_id | E07 | ledger | M | BUD-002, BUD-004 | E07-S05 |
 | ⬜ | **E07-S08** Cross-hierarchy transfer up-then-down through both ancestries, one transaction | E07 | ledger | L | BUD-003, BUD-004, WF-003 | E07-S07, E06-S02 |
-| ⬜ | **E07-S09** Nightly reconciliation job: recompute from ledger, report drift, never correct | E07 | engine | M | BUD-013, OBS-004 | E07-S06, E03-S06 |
-| ⬜ | **E08-S01** Import framework: template versioning, column mapping, type and reference validation | E08 | engine | L | IMP-001, IMP-002, IMP-003, IMP-004 | E03-S06 |
+| ⬜ | **E07-S09** Nightly reconciliation job: recompute from ledger, report drift, never correct | E07 | engine | M | BUD-013, OBS-004 | E07-S06, ~~E03-S06~~ |
+| ⬜ | **E08-S01** Import framework: template versioning, column mapping, type and reference validation | E08 | engine | L | IMP-001, IMP-002, IMP-003, IMP-004 | ~~E03-S06~~ |
 | ⬜ | **E08-S02** Dry-run preview, row/column error report, atomic or explicitly partial commit | E08 | engine | L | IMP-005, IMP-006, IMP-007 | E08-S01 |
 | ⬜ | **E08-S03** Import batch record, idempotent re-import by external key, async with progress | E08 | engine | M | IMP-008, IMP-009, IMP-012, PERF-004 | E08-S02 |
 | ⬜ | **E08-S04** Project and budget import templates end to end | E08 | crud | M | PROJ-001, IMP-001 | E08-S03, E07-S03 |
@@ -521,19 +529,19 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E09-S07** Release on reject, withdraw, cancel, expire or reduce — exactly once | E09 | ledger | M | REQ-013, FIN-011, ACC-006 | E09-S06 |
 | ⬜ | **E09-S08** Controlled return, amendment and resubmission preserving prior values | E09 | engine | M | REQ-012, APR-015, DATA-002 | E09-S05 |
 | ⬜ | **E09-S09** Linked-record graph: RFQs, bids, awards, POs, approvals, notes, ledger entries | E09 | api | M | REQ-009, WF-001 | E09-S06 |
-| ⬜ | **E09-S10** Notes and attachments on all business documents, upload validation, quarantine | E09 | security | L | COL-001, COL-002, COL-003, COL-004, COL-005, COL-006, COL-007, COL-008, D-14 | E03-S06 |
-| ⬜ | **E09-S11** Requisition screens: create, lines, submit, track, quantity rollup | E09 | ui | L | REQ-015, UX-003, UX-004 | E09-S09, E04-S03 |
-| ⬜ | **E10-S01** Workflow definition schema, versioning, active-document version pinning | E10 | migration | L | APR-011, ACC-007 | E03-S04 |
+| ⬜ | **E09-S10** Notes and attachments on all business documents, upload validation, quarantine | E09 | security | L | COL-001, COL-002, COL-003, COL-004, COL-005, COL-006, COL-007, COL-008, D-14 | ~~E03-S06~~ |
+| ⬜ | **E09-S11** Requisition screens: create, lines, submit, track, quantity rollup | E09 | ui | L | REQ-015, UX-003, UX-004 | E09-S09, ~~E04-S03~~ |
+| ⬜ | **E10-S01** Workflow definition schema, versioning, active-document version pinning | E10 | migration | L | APR-011, ACC-007 | ~~E03-S04~~ |
 | ⬜ | **E10-S02** Condition evaluator over any document attribute including amount and custom fields | E10 | engine | L | APR-005, APR-010 | E10-S01 |
 | ⬜ | **E10-S03** Graph validation: cycle detection, unreachable steps, duplicate approvals, depth limit | E10 | engine | M | APR-006, APR-007, APR-008, APR-012 | E10-S01 |
-| ⬜ | **E10-S04** Approver eligibility resolution scoped to organization and BU/OU | E10 | engine | M | APR-004, APR-019, USR-007 | E10-S02, E02-S05 |
+| ⬜ | **E10-S04** Approver eligibility resolution scoped to organization and BU/OU | E10 | engine | M | APR-004, APR-019, USR-007 | E10-S02, ~~E02-S05~~ |
 | ⬜ | **E10-S05** Execution engine: instances, tasks, any-one/all/quorum groups, membership snapshot | E10 | engine | L | APR-009, APR-018, WF-002 | E10-S04 |
 | ⬜ | **E10-S06** Decisions: approve, reject, return, comment, withdraw; full attribution recorded | E10 | engine | M | APR-013, APR-014, AUD-001 | E10-S05 |
 | ⬜ | **E10-S07** Stale-version guard and material-change resubmission policy | E10 | concurrency | M | APR-015, APR-016, DATA-002, WF-001 | E10-S06 |
 | ⬜ | **E10-S08** Delegation, out-of-office, due dates, reminders and escalation | E10 | engine | L | APR-017 | E10-S06 |
 | ⬜ | **E10-S09** Routing explainability: which rule matched and why this approver | E10 | api | M | APR-021 | E10-S05 |
-| ⬜ | **E10-S10** Approval inbox: pending, overdue, completed, delegated views | E10 | ui | M | APR-020 | E10-S06, E04-S03 |
-| ⬜ | **E10-S11** Visual workflow builder, drag-and-drop canvas | E10 | ui | L | APR-001 | E10-S03, E04-S02 |
+| ⬜ | **E10-S10** Approval inbox: pending, overdue, completed, delegated views | E10 | ui | M | APR-020 | E10-S06, ~~E04-S03~~ |
+| ⬜ | **E10-S11** Visual workflow builder, drag-and-drop canvas | E10 | ui | L | APR-001 | E10-S03, ~~E04-S02~~ |
 | ⬜ | **E10-S12** Keyboard/list workflow editor with identical capability to the canvas | E10 | ui | L | APR-002, A11Y-003 | E10-S11 |
 | ⬜ | **E10-S13** Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes | E10 | engine | M | APR-003, PROJ-002, VEN-005, BUD-007 | E10-S07 |
 
@@ -546,7 +554,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E11-S01** Vendor profile, searchable list, global and BU/OU scope, local disable | E11 | crud | M | VEN-001, VEN-008, VEN-009, ORG-003 | E05-S01 |
 | ⬜ | **E11-S02** Typed contacts: billing, service/delivery, additional types | E11 | crud | S | VEN-002 | E11-S01 |
 | ⬜ | **E11-S03** Vendor documents with issue/expiry, verification status, expiry notification | E11 | crud | M | VEN-003, VEN-011, OBS-004 | E11-S01, E09-S10 |
-| ⬜ | **E11-S04** Field-level access control and masking for tax and banking data | E11 | security | M | VEN-014, CUS-008, PRIV-001 | E11-S01, E02-S05 |
+| ⬜ | **E11-S04** Field-level access control and masking for tax and banking data | E11 | security | M | VEN-014, CUS-008, PRIV-001 | E11-S01, ~~E02-S05~~ |
 | ⬜ | **E11-S05** Onboarding request, configurable questionnaire, weights and scoring | E11 | engine | L | VEN-004, VEN-006 | E11-S01 |
 | ⬜ | **E11-S06** Duplicate identifier detection, approval on create/activate/suspend/reactivate | E11 | engine | M | VEN-005, VEN-010, VEN-012 | E11-S05, E10-S13 |
 | ⬜ | **E11-S07** Performance scoring across quality, price, delivery, service, with dispute history | E11 | crud | M | VEN-007, VEN-015 | E11-S01 |
@@ -559,7 +567,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E12-S07** Evaluation scoring with comments and conflict-of-interest declarations | E12 | crud | M | SRC-011 | E12-S06 |
 | ⬜ | **E12-S08** Award: split by line/quantity, scope and reserved-funds guard, non-lowest justification | E12 | ledger | L | SRC-012, SRC-013, SRC-014, SRC-016, REQ-014 | E12-S07, E07-S04 |
 | ⬜ | **E12-S09** Cancel or supersede RFQ/award, preserve history, reconcile budget effect | E12 | ledger | M | SRC-017, SRC-015, WF-005 | E12-S08 |
-| ⬜ | **E12-S10** Comparison dashboard screen with accessible table equivalent | E12 | ui | L | SRC-009, A11Y-009, RPT-013 | E12-S06, E04-S03 |
+| ⬜ | **E12-S10** Comparison dashboard screen with accessible table equivalent | E12 | ui | L | SRC-009, A11Y-009, RPT-013 | E12-S06, ~~E04-S03~~ |
 | ⬜ | **E13-S01** PO from awarded requisition lines or authorized project items, scoped numbering | E13 | crud | L | PO-001, PO-002, PO-006, SEQ-001 | E12-S08 |
 | ⬜ | **E13-S02** Tax and freight per BU/OU policy, separately visible on line and document | E13 | ledger | M | FIN-008, FIN-009, PO-016 | E13-S01 |
 | ⬜ | **E13-S03** PO lifecycle state machine | E13 | engine | M | PO-007, WF-002 | E13-S01 |
@@ -568,7 +576,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E13-S06** Immutable issued PO; numbered, approved change orders with field-level diff | E13 | engine | L | PO-010, PO-011, DATA-005, ACC-005 | E13-S05 |
 | ⬜ | **E13-S07** Cancel or reduce releases unused commitment exactly once, history preserved | E13 | ledger | M | PO-013, FIN-011, ACC-006, WF-005 | E13-S06 |
 | ⬜ | **E13-S08** PO PDF reproducible from stored snapshot and template version | E13 | engine | L | PO-014, DATA-005 | E13-S06 |
-| ⬜ | **E13-S09** Email transmission via outbox, recipient/time/result/version recorded, retry without duplication | E13 | engine | L | PO-004, PO-012, PO-015, ARCH-006, ACC-002 | E13-S08, E03-S06 |
+| ⬜ | **E13-S09** Email transmission via outbox, recipient/time/result/version recorded, retry without duplication | E13 | engine | L | PO-004, PO-012, PO-015, ARCH-006, ACC-002 | E13-S08, ~~E03-S06~~ |
 | ⬜ | **E13-S10** Deliverability: SPF/DKIM/DMARC verification, bounce and complaint handling, suppression list | E13 | engine | M | EML-001, EML-002, EML-003, EML-006 | E13-S09 |
 | ⬜ | **E13-S11** Internal vs vendor-facing notes and attachments, enforced by test | E13 | security | M | PO-017, EML-005, COL-002 | E13-S09, E09-S10 |
 
@@ -587,30 +595,30 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E14-S07** Stock-count adjustment with reason and configurable approval; manual actual posting | E14 | ledger | M | AST-010, BUD-007 | E14-S04, E07-S05 |
 | ⬜ | **E15-S01** Governed KPI registry: definition, source, calculation, time basis, currency, refresh | E15 | engine | M | RPT-001, RPT-006 | E07-S06 |
 | ⬜ | **E15-S02** Read models and materialized summaries with as-of time and refresh status | E15 | engine | L | ARCH-004, RPT-014, PERF-003 | E15-S01 |
-| ⬜ | **E15-S03** Row- and field-level authorization enforced at query time | E15 | security | M | RPT-012, SEC-008 | E15-S02, E02-S05 |
+| ⬜ | **E15-S03** Row- and field-level authorization enforced at query time | E15 | security | M | RPT-012, SEC-008 | E15-S02, ~~E02-S05~~ |
 | ⬜ | **E15-S04** Drill-down: organization to BU/OU to project to document to transaction | E15 | api | M | RPT-002, PROJ-010 | E15-S03 |
 | ⬜ | **E15-S05** Time analysis across year, fiscal period, quarter, month, week and range | E15 | api | M | RPT-004, BUD-009 | E15-S04, E05-S04 |
-| ⬜ | **E15-S06** Executive dashboard, operational dashboards, configurable home dashboard | E15 | ui | L | PROJ-010, RPT-005, XFN-004, RPT-013 | E15-S05, E04-S03 |
+| ⬜ | **E15-S06** Executive dashboard, operational dashboards, configurable home dashboard | E15 | ui | L | PROJ-010, RPT-005, XFN-004, RPT-013 | E15-S05, ~~E04-S03~~ |
 | ⬜ | **E15-S07** Saved personal views and governed shared views | E15 | crud | M | RPT-008, XFN-003 | E15-S06 |
 | ⬜ | **E15-S08** Export to HTML, PDF and Excel with context header, reconciling to the dashboard | E15 | engine | L | RPT-009, RPT-010, RPT-007, IMP-010, IMP-011 | E15-S06 |
-| ⬜ | **E15-S09** Async long reports and bulk exports with progress and notification | E15 | engine | M | RPT-011, IMP-012, PERF-004 | E15-S08, E03-S06 |
+| ⬜ | **E15-S09** Async long reports and bulk exports with progress and notification | E15 | engine | M | RPT-011, IMP-012, PERF-004 | E15-S08, ~~E03-S06~~ |
 | ⬜ | **E16-S01** Field definitions: types, scope, effective dates, order, permissions, retirement | E16 | engine | L | CUS-001, CUS-002, CUS-003, CUS-010 | E05-S03 |
 | ⬜ | **E16-S02** JSONB values with GIN index; generated column plus btree for searchable fields | E16 | migration | L | CUS-009, D-12 | E16-S01 |
-| ⬜ | **E16-S03** Field-level authorization, export and log exclusion for sensitive fields | E16 | security | M | CUS-008, AUD-006, IMP-010 | E16-S02, E02-S05 |
+| ⬜ | **E16-S03** Field-level authorization, export and log exclusion for sensitive fields | E16 | security | M | CUS-008, AUD-006, IMP-010 | E16-S02, ~~E02-S05~~ |
 | ⬜ | **E16-S04** Propagation of project custom fields into downstream transactions | E16 | engine | M | CUS-004 | E16-S02 |
 | ⬜ | **E16-S05** Rule engine: deterministic, versioned, auditable, cycle-protected | E16 | engine | L | CUS-005, CUS-006, CUS-007 | E16-S04 |
-| ⬜ | **E16-S06** Custom fields in forms, grids, filters, imports and exports | E16 | ui | M | CUS-002, IMP-003, XFN-002 | E16-S05, E04-S04 |
+| ⬜ | **E16-S06** Custom fields in forms, grids, filters, imports and exports | E16 | ui | M | CUS-002, IMP-003, XFN-002 | E16-S05, ~~E04-S04~~ |
 | ⬜ | **E16-S07** Label groups and tags: scoped definitions, single/multi, required, retire-not-delete | E16 | engine | L | TAG-004, TAG-005, TAG-006, TAG-011, TAG-012, TAG-013, TAG-014 | E16-S01 |
-| ⬜ | **E16-S08** Tag swatch palette: 14 pre-verified colours, deterministic assignment, no free-form hex | E16 | ui | M | TAG-008, TAG-009, TAG-010, A11Y-005 | E16-S07, E04-S05 |
+| ⬜ | **E16-S08** Tag swatch palette: 14 pre-verified colours, deterministic assignment, no free-form hex | E16 | ui | M | TAG-008, TAG-009, TAG-010, A11Y-005 | E16-S07, ~~E04-S05~~ |
 | ⬜ | **E16-S09** Tag component and grid density: pill outline plus dot, max 3 inline plus overflow, keyboard reachable | E16 | ui | M | TAG-010, TAG-015, A11Y-002 | E16-S08 |
 | ⬜ | **E16-S10** Reportable groups become group-by axis, filter facet and export column automatically | E16 | engine | L | TAG-007, TAG-016, RPT-008, IMP-010 | E16-S07, E15-S07 |
 | ⬜ | **E17-S01** Global search over authorized records: identifiers, names, vendor, project, documents | E17 | api | L | XFN-001, SEC-008, SEC-010 | E15-S03 |
-| ⬜ | **E17-S02** Notification engine: in-app and email channels, per-event preferences | E17 | engine | L | XFN-005, XFN-006, AUTH-001 | E03-S06 |
+| ⬜ | **E17-S02** Notification engine: in-app and email channels, per-event preferences | E17 | engine | L | XFN-005, XFN-006, AUTH-001 | ~~E03-S06~~ |
 | ⬜ | **E17-S03** Digest batching so notifications never starve transactional email | E17 | engine | M | EML-004, OPS-004 | E17-S02 |
 | ⬜ | **E17-S04** Safe notification content: authorized deep links, no sensitive data in subjects or previews | E17 | security | M | XFN-007, COL-009, AUD-006 | E17-S02 |
 | ⬜ | **E17-S05** Mentions and subscriptions without exposing unauthorized records | E17 | engine | M | COL-009 | E17-S04 |
-| ⬜ | **E17-S06** User preferences: locale, timezone, theme, notification settings, grid defaults | E17 | crud | M | AUTH-001, UX-007, XFN-003 | E04-S04 |
-| ⬜ | **E17-S07** Contextual field help and tooltips across every screen | E17 | ui | M | XFN-008, UX-010 | E04-S04 |
+| ⬜ | **E17-S06** User preferences: locale, timezone, theme, notification settings, grid defaults | E17 | crud | M | AUTH-001, UX-007, XFN-003 | ~~E04-S04~~ |
+| ⬜ | **E17-S07** Contextual field help and tooltips across every screen | E17 | ui | M | XFN-008, UX-010 | ~~E04-S04~~ |
 | ⬜ | **E17-S08** Role-based onboarding tour, skippable, plus quick-start documentation | E17 | ui | M | UX-009, UX-010, SUP-005 | E17-S07 |
 
 #### M5 — Customer-ready · 0/24 done
@@ -620,7 +628,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | | Story | Epic | Kind | Size | Requirements | Depends on |
 |---|---|---|---|---|---|---|
 | ⬜ | **E18-S01** Operator tenant provisioning: idempotent, reversible, seeds admin and master data | E18 | engine | M | TEN-001, TEN-002 | E05-S03 |
-| ⬜ | **E18-S02** Self-serve signup with email verification and anti-abuse controls | E18 | security | L | TEN-012, SEC-010, TEN-001 | E18-S01, E02-S03 |
+| ⬜ | **E18-S02** Self-serve signup with email verification and anti-abuse controls | E18 | security | L | TEN-012, SEC-010, TEN-001 | E18-S01, ~~E02-S03~~ |
 | ⬜ | **E18-S03** MAU metering: distinct authenticated users per rolling 30 days, per tenant and total | E18 | engine | M | TEN-003, OPS-002 | E18-S01 |
 | ⬜ | **E18-S04** Plan limits, server-side quota enforcement, actionable limit errors | E18 | engine | L | TEN-004, TEN-005, OPS-004 | E18-S03 |
 | ⬜ | **E18-S05** Billing hookpoint on the tenant record; no processor integrated | E18 | crud | S | TEN-006 | E18-S04 |
@@ -632,14 +640,14 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E19-S02** ASVS 5.0 L2 self-assessment with evidence and threat models | E19 | security | L | SEC-001, SEC-002 | E19-S01 |
 | ⬜ | **E19-S03** Browser protections: CSP, secure cookies, CSRF, clickjacking, HSTS; abuse throttling | E19 | security | M | SEC-007, SEC-010, SEC-003 | E19-S02 |
 | ⬜ | **E19-S04** Attachment scanning gate: hash reputation lookup, quarantine, upgrade path to full AV | E19 | security | M | COL-005, COL-007, ACC-009, D-14 | E19-S03 |
-| ⬜ | **E19-S05** Nightly pg_dump to R2, retention policy, monthly restore drill with committed evidence | E19 | engine | L | REL-004, REL-005, REL-006, OPS-003, ACC-010 | E03-S06 |
+| ⬜ | **E19-S05** Nightly pg_dump to R2, retention policy, monthly restore drill with committed evidence | E19 | engine | L | REL-004, REL-005, REL-006, OPS-003, ACC-010 | ~~E03-S06~~ |
 | ⬜ | **E19-S06** Free-tier headroom monitors with 60/80/90 percent alerts and degradation behaviour | E19 | engine | M | OPS-001, OPS-004, OPS-005, OBS-002 | E19-S05 |
 | ⬜ | **E19-S07** Business monitors: stuck approvals, balance drift, expiring documents, failed transmissions | E19 | engine | M | OBS-003, OBS-004, OBS-005 | E19-S06 |
 | ⬜ | **E19-S08** Performance baseline at reference load; cold start measured separately | E19 | test | L | PERF-001, PERF-002, PERF-003, PERF-006, OPS-006 | E19-S07 |
 | ⬜ | **E19-S09** WCAG 2.2 AA audit of critical paths, keyboard and screen-reader review, remediation | E19 | test | L | A11Y-001, A11Y-007, A11Y-011, A11Y-012, ACC-008 | E17-S08 |
 | ⬜ | **E20-S01** Terms of Service, Privacy Policy, subprocessor list, DPA template | E20 | docs | M | LEG-001, LEG-002, LEG-003 | E19-S02 |
 | ⬜ | **E20-S02** Public status page and incident notification commitment | E20 | chore | M | SUP-003, LEG-004 | E19-S07 |
-| ⬜ | **E20-S03** Correlation id surfaced in user errors; in-app feedback capture | E20 | ui | M | SUP-001, SUP-002, OBS-006 | E03-S03 |
+| ⬜ | **E20-S03** Correlation id surfaced in user errors; in-app feedback capture | E20 | ui | M | SUP-001, SUP-002, OBS-006 | ~~E03-S03~~ |
 | ⬜ | **E20-S04** Per-tenant feature flags so incomplete modules are hidden, never half-exposed | E20 | engine | M | SUP-004 | E18-S04 |
 | ⬜ | **E20-S05** Administrator and operator documentation, runbooks linked from every alert | E20 | docs | M | UX-010, SUP-005, OBS-003 | E19-S07 |
 | ⬜ | **E20-S06** Graduation dashboard: MAU, customers, storage, email, requests against §7 triggers | E20 | ui | M | OPS-002, TEN-003 | E19-S06, E18-S03 |
