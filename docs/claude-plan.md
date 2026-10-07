@@ -481,7 +481,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E04-S05** StatusPill primitive: closed per-document-type tone map, icon always, never author-coloured | E04 | ui | M | TAG-001, TAG-002, TAG-003, A11Y-004 | ~~E04-S01~~ |
 | ✅ | **E04-S06** Material layer: tinted shadows, lit edge, grain, honest glass, glow focus ring | E04 | ui | M | UX-006, A11Y-005 | ~~E04-S01~~ |
 
-#### M1 — Budget spine · 10/29 done
+#### M1 — Budget spine · 11/29 done
 
 > The trustworthy system of record. Projects, hierarchy and the complete budget ledger.
 
@@ -507,9 +507,9 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E07-S02** project_balance rollup maintained in-transaction with the ledger write | E07 | ledger | L | FIN-005, FIN-006, BUD-011, D-11 | ~~E07-S01~~ |
 | ✅ | **E07-S03** Allocation command with authorization, reason, effective date and audit | E07 | ledger | M | BUD-001, BUD-006, BUD-007 | ~~E07-S02~~ |
 | ✅ | **E07-S04** Reservation and release primitives, exactly-once release guarantee | E07 | ledger | L | FIN-011, FIN-012, BUD-008, ACC-001, ACC-006 | ~~E07-S02~~ |
-| ⬜ | **E07-S05** Commitment, actual and reversal primitives with source-document lineage | E07 | ledger | L | FIN-004, FIN-011, AUD-007 | ~~E07-S04~~ |
-| ⬜ | **E07-S06** Balance query API: MTD/QTD/YTD/fiscal/life-to-date/range, reconcile to entries | E07 | api | M | BUD-009, BUD-011, ACC-003 | E07-S05 |
-| ⬜ | **E07-S07** Same-level transfer, atomic, one transfer_group_id | E07 | ledger | M | BUD-002, BUD-004 | E07-S05 |
+| ✅ | **E07-S05** Commitment, actual and reversal primitives with source-document lineage | E07 | ledger | L | FIN-004, FIN-011, AUD-007 | ~~E07-S04~~ |
+| ⬜ | **E07-S06** Balance query API: MTD/QTD/YTD/fiscal/life-to-date/range, reconcile to entries | E07 | api | M | BUD-009, BUD-011, ACC-003 | ~~E07-S05~~ |
+| ⬜ | **E07-S07** Same-level transfer, atomic, one transfer_group_id | E07 | ledger | M | BUD-002, BUD-004 | ~~E07-S05~~ |
 | ⬜ | **E07-S08** Cross-hierarchy transfer up-then-down through both ancestries, one transaction | E07 | ledger | L | BUD-003, BUD-004, WF-003 | E07-S07, ~~E06-S02~~ |
 | ⬜ | **E07-S09** Nightly reconciliation job: recompute from ledger, report drift, never correct | E07 | engine | M | BUD-013, OBS-004 | E07-S06, ~~E03-S06~~ |
 | ⬜ | **E08-S01** Import framework: template versioning, column mapping, type and reference validation | E08 | engine | L | IMP-001, IMP-002, IMP-003, IMP-004 | ~~E03-S06~~ |
@@ -575,7 +575,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E13-S02** Tax and freight per BU/OU policy, separately visible on line and document | E13 | ledger | M | FIN-008, FIN-009, PO-016 | E13-S01 |
 | ⬜ | **E13-S03** PO lifecycle state machine | E13 | engine | M | PO-007, WF-002 | E13-S01 |
 | ⬜ | **E13-S04** PO approval workflow before issue | E13 | engine | M | PO-003, APR-003 | E13-S03, E10-S13 |
-| ⬜ | **E13-S05** Issue converts reservation to commitment atomically; partial POs reduce open quantity only | E13 | ledger | L | PO-008, PO-009, WF-003, ACC-002 | E13-S04, E07-S05 |
+| ⬜ | **E13-S05** Issue converts reservation to commitment atomically; partial POs reduce open quantity only | E13 | ledger | L | PO-008, PO-009, WF-003, ACC-002 | E13-S04, ~~E07-S05~~ |
 | ⬜ | **E13-S06** Immutable issued PO; numbered, approved change orders with field-level diff | E13 | engine | L | PO-010, PO-011, DATA-005, ACC-005 | E13-S05 |
 | ⬜ | **E13-S07** Cancel or reduce releases unused commitment exactly once, history preserved | E13 | ledger | M | PO-013, FIN-011, ACC-006, WF-005 | E13-S06 |
 | ⬜ | **E13-S08** PO PDF reproducible from stored snapshot and template version | E13 | engine | L | PO-014, DATA-005 | E13-S06 |
@@ -595,7 +595,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E14-S04** Weighted-average valuation, negative-stock prevention | E14 | ledger | M | AST-005, AST-007 | E14-S02 |
 | ⬜ | **E14-S05** Fixed-asset register with full attribute set and BU/OU linkage | E14 | crud | M | AST-008, ORG-006 | E14-S01 |
 | ⬜ | **E14-S06** Asset creation from PO with lineage to the originating purchase | E14 | engine | M | AST-009, AUD-007 | E14-S05, E13-S05 |
-| ⬜ | **E14-S07** Stock-count adjustment with reason and configurable approval; manual actual posting | E14 | ledger | M | AST-010, BUD-007 | E14-S04, E07-S05 |
+| ⬜ | **E14-S07** Stock-count adjustment with reason and configurable approval; manual actual posting | E14 | ledger | M | AST-010, BUD-007 | E14-S04, ~~E07-S05~~ |
 | ⬜ | **E15-S01** Governed KPI registry: definition, source, calculation, time basis, currency, refresh | E15 | engine | M | RPT-001, RPT-006 | E07-S06 |
 | ⬜ | **E15-S02** Read models and materialized summaries with as-of time and refresh status | E15 | engine | L | ARCH-004, RPT-014, PERF-003 | E15-S01 |
 | ⬜ | **E15-S03** Row- and field-level authorization enforced at query time | E15 | security | M | RPT-012, SEC-008 | E15-S02, ~~E02-S05~~ |

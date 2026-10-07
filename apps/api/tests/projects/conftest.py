@@ -33,6 +33,7 @@ def project_db(org_database) -> Iterator:
             "20260826_0019_ledger.py",
             "20260826_0020_project_balance.py",
             "20260826_0022_reservation_release.py",
+            "20260826_0023_ledger_lineage.py",
         ]
     ]
     for migration in migrations:

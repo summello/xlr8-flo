@@ -559,6 +559,17 @@
           "bucket": {
             "$ref": "#/components/schemas/LedgerBucket"
           },
+          "converts_entry_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Converts Entry Id"
+          },
           "currency": {
             "title": "Currency",
             "type": "string"

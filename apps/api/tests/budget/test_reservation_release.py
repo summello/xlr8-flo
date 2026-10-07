@@ -26,6 +26,7 @@ from tests.org.conftest import org_database as org_database
 from tests.projects.conftest import project_db as project_db
 
 MIGRATION = load_migration(ROOT / "migrations/20260826_0022_reservation_release.py", "release")
+LINEAGE = load_migration(ROOT / "migrations/20260826_0023_ledger_lineage.py", "release_lineage")
 
 
 def reservation(db, project, amount=Decimal(100)):
@@ -196,16 +197,19 @@ def test_migration_preserves_rows_and_append_only(posting_db, project):
         row[0]
         for row in db.connection.execute(
             "SELECT column_name FROM information_schema.columns "
-            "WHERE table_name='ledger_entry' AND column_name <> 'releases_entry_id' "
+            "WHERE table_name='ledger_entry' "
+            "AND column_name NOT IN ('releases_entry_id', 'converts_entry_id') "
             "ORDER BY ordinal_position"
         ).fetchall()
     ]
     old_rows = db.connection.execute(
         f"SELECT {', '.join(columns)} FROM ledger_entry ORDER BY id"
     ).fetchall()
+    LINEAGE.downgrade(db.connection)
     MIGRATION.downgrade(db.connection)
     assert db.connection.execute("SELECT * FROM ledger_entry ORDER BY id").fetchall() == old_rows
     MIGRATION.upgrade(db.connection)
+    LINEAGE.upgrade(db.connection)
     assert db.connection.execute("SELECT * FROM ledger_entry ORDER BY id").fetchall() == before
     for table, rows in related.items():
         assert db.connection.execute(f"SELECT * FROM {table} ORDER BY 1").fetchall() == rows
@@ -229,6 +233,7 @@ def test_link_constraint_and_migration_preflight_reject_violation(posting_db, pr
     release(db, entry)
     with pytest.raises(psycopg.errors.RaiseException, match="unlinked releases"):
         with db.connection.transaction():
+            LINEAGE.downgrade(db.connection)
             MIGRATION.downgrade(db.connection)
             MIGRATION.upgrade(db.connection)
 

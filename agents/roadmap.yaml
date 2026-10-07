@@ -729,7 +729,7 @@ epics:
           - AUD-007
         dep:
           - E07-S04
-        st: todo
+        st: done
       - id: E07-S06
         t: 'Balance query API: MTD/QTD/YTD/fiscal/life-to-date/range, reconcile to
           entries'

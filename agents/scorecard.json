@@ -1439,6 +1439,42 @@
       },
       "recap": "Implemented service-only reserve/release primitives, revision 20260826_0022, linked release payload, remaining view, and generated API client. Full pytest: 782 passed, 1 skipped (money DB round-trip requires DATABASE_URL); final release tests: 12 passed. Ruff, strict mypy, migration chain, import contracts, web lint/typecheck and 59 web tests pass. No dependencies or endpoints added. Pre-existing design/conventions edits preserved and excluded from implementation commit.",
       "title": "Reservation and release primitives, exactly-once release guarantee"
+    },
+    {
+      "story": "E07-S05",
+      "kind": "ledger",
+      "size": "L",
+      "tags": [
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a1183c-c1e9-7e70-8a5e-170093d1f729",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "f145f7ca-a28e-4b66-bc45-fd4e8ea242d4",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Added service-only commitments, actuals and explicit reversals with atomic conversions, immutable conversion linkage, commitment remaining and recursive tenant-safe lineage views. Reused the existing ledger posting transaction and reservation remaining view; regenerated the ledger response client and updated older migration fixtures for the extended chain.",
+      "title": "Commitment, actual and reversal primitives with source-document lineage"
     }
   ]
 }

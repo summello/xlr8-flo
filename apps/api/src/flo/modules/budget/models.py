@@ -47,3 +47,4 @@ class LedgerEntry:
     reason: str | None
     releases_entry_id: int | None
     idempotency_key: str | None
+    converts_entry_id: int | None = None

@@ -924,6 +924,8 @@ export interface components {
              */
             bu_id: string;
             bucket: components["schemas"]["LedgerBucket"];
+            /** Converts Entry Id */
+            converts_entry_id?: number | null;
             /** Currency */
             currency: string;
             /** Department Code */

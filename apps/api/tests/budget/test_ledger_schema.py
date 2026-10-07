@@ -269,6 +269,10 @@ def test_up_down_preserves_preexisting_rows(project_db):
         release_migration = load_migration(
             ROOT / "migrations/20260826_0022_reservation_release.py", "release_preserve"
         )
+        lineage_migration = load_migration(
+            ROOT / "migrations/20260826_0023_ledger_lineage.py", "lineage_preserve"
+        )
+        lineage_migration.downgrade(db.connection)
         release_migration.downgrade(db.connection)
         balance_migration.downgrade(db.connection)
         MIGRATION.downgrade(db.connection)
@@ -301,6 +305,7 @@ def test_up_down_preserves_preexisting_rows(project_db):
         MIGRATION.upgrade(db.connection)
         balance_migration.upgrade(db.connection)
         release_migration.upgrade(db.connection)
+        lineage_migration.upgrade(db.connection)
 
 
 def entry_without_create(db):
