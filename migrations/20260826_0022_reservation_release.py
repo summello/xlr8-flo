@@ -24,11 +24,13 @@ CREATE INDEX ledger_releases_entry_idx ON ledger_entry(releases_entry_id);
 CREATE VIEW reservation_remaining WITH (security_invoker = true) AS
 SELECT r.id AS reservation_entry_id, r.org_id, r.amount AS reserved_amount,
  COALESCE((SELECT SUM(l.amount) FROM ledger_entry l
-  WHERE l.org_id = r.org_id AND l.releases_entry_id = r.id), 0) AS released_amount,
+  WHERE l.org_id = r.org_id AND (l.releases_entry_id = r.id OR l.reverses_entry_id IN
+   (SELECT d.id FROM ledger_entry d WHERE d.org_id = r.org_id AND d.releases_entry_id = r.id))), 0) AS released_amount,
  CASE WHEN EXISTS (SELECT 1 FROM ledger_entry v
   WHERE v.org_id = r.org_id AND v.reverses_entry_id = r.id) THEN 0
  ELSE r.amount + COALESCE((SELECT SUM(l.amount) FROM ledger_entry l
-  WHERE l.org_id = r.org_id AND l.releases_entry_id = r.id), 0) END AS remaining
+  WHERE l.org_id = r.org_id AND (l.releases_entry_id = r.id OR l.reverses_entry_id IN
+   (SELECT d.id FROM ledger_entry d WHERE d.org_id = r.org_id AND d.releases_entry_id = r.id))), 0) END AS remaining
 FROM ledger_entry r WHERE r.entry_type = 'reservation';
 """
 DOWNGRADE_SQL = """

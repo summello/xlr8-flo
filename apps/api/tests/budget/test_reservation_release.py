@@ -144,6 +144,20 @@ def test_concurrent_full_releases(posting_db, project):
     assert balance(db, project).reserved == 0
 
 
+def test_reversed_release_restores_remaining(posting_db, project):
+    db = posting_db
+    post(db, project)
+    entry = reservation(db, project)
+    part = release(db, entry, amount=Decimal(40))
+    post(db, project, entry_type=LedgerType.REVERSAL, reverses_entry_id=part.id)
+    remaining = db.connection.execute(
+        "SELECT remaining FROM reservation_remaining WHERE reservation_entry_id=%s", (entry.id,)
+    ).fetchone()[0]
+    assert remaining == balance(db, project).reserved == Decimal(100)
+    assert release(db, entry).amount == Decimal(-100)
+    assert balance(db, project).reserved == 0
+
+
 def test_seeded_remaining_reconciles(posting_db, project):
     db = posting_db
     post(db, project, amount=Decimal(10000))
