@@ -2472,6 +2472,84 @@
         "title": "SettingSource",
         "type": "object"
       },
+      "TransferCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "string"
+          },
+          "currency": {
+            "pattern": "^[A-Z]{3}$",
+            "title": "Currency",
+            "type": "string"
+          },
+          "effective_date": {
+            "format": "date",
+            "title": "Effective Date",
+            "type": "string"
+          },
+          "evidence_ref": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Ref"
+          },
+          "from_project_id": {
+            "format": "uuid",
+            "title": "From Project Id",
+            "type": "string"
+          },
+          "reason": {
+            "minLength": 10,
+            "title": "Reason",
+            "type": "string"
+          },
+          "to_project_id": {
+            "format": "uuid",
+            "title": "To Project Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "currency",
+          "effective_date",
+          "reason",
+          "from_project_id",
+          "to_project_id"
+        ],
+        "title": "TransferCreate",
+        "type": "object"
+      },
+      "TransferRead": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/LedgerEntryRead"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "transfer_group_id": {
+            "format": "uuid",
+            "title": "Transfer Group Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "transfer_group_id",
+          "entries"
+        ],
+        "title": "TransferRead",
+        "type": "object"
+      },
       "TreeNode": {
         "properties": {
           "children": {
@@ -3609,6 +3687,85 @@
         "summary": "Revoke Session",
         "tags": [
           "authentication"
+        ]
+      }
+    },
+    "/api/v1/budget/transfers": {
+      "post": {
+        "operationId": "transfer_budget_api_v1_budget_transfers_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Transfer Budget",
+        "tags": [
+          "budget"
         ]
       }
     },

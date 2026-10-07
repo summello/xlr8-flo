@@ -293,6 +293,11 @@ def reverse_entry(
     with tenant_transaction(cast(RlsSession, conn), scope):
         repo = LedgerRepository(conn, scope)
         original = original_entry(repo, entry_id)
+        if original.entry_type == LedgerType.TRANSFER:
+            raise conflict(
+                "cannot_reverse_transfer",
+                "A transfer leg cannot be reversed. Make a new reverse transfer instead.",
+            )
         existing = repo.entry("idempotency_key = %(key)s", {"key": idempotency_key})
         if existing is None:
             if original.entry_type == LedgerType.REVERSAL:

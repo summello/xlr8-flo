@@ -104,3 +104,13 @@ class ReconciliationRead(BaseModel):
 class LedgerPage(BaseModel):
     entries: list[LedgerEntryRead]
     next_cursor: str | None
+
+
+class TransferCreate(AllocationCreate):
+    from_project_id: UUID
+    to_project_id: UUID
+
+
+class TransferRead(BaseModel):
+    transfer_group_id: UUID
+    entries: list[LedgerEntryRead]

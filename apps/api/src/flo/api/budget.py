@@ -18,12 +18,14 @@ from flo.modules.budget.schemas import (
     BalanceQueryRead,
     LedgerPage,
     ReconciliationRead,
+    TransferCreate,
+    TransferRead,
 )
-from flo.modules.budget.service import adjust, allocate, balance_query, ledger_query
+from flo.modules.budget.service import adjust, allocate, balance_query, ledger_query, transfer
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.projects.service import ProjectService
 
-router = APIRouter(prefix="/api/v1/projects/{project_id}", tags=["budget"])
+router = APIRouter(tags=["budget"])
 
 
 def project_target(project_id: UUID, connection: Connection) -> TargetProtocol:
@@ -41,7 +43,11 @@ AdjustContext = Annotated[AuthorizationContext, Depends(require("budget.adjust",
 Key = Annotated[str, Header(alias="Idempotency-Key", min_length=1)]
 
 
-@router.post("/budget/allocations", status_code=201, response_model=AllocationResult)
+@router.post(
+    "/api/v1/projects/{project_id}/budget/allocations",
+    status_code=201,
+    response_model=AllocationResult,
+)
 def allocate_budget(
     project_id: UUID,
     body: AllocationCreate,
@@ -52,7 +58,11 @@ def allocate_budget(
     return allocate(connection, current_scope(), project_id, body, context.user_id, idempotency_key)
 
 
-@router.post("/budget/adjustments", status_code=201, response_model=AllocationResult)
+@router.post(
+    "/api/v1/projects/{project_id}/budget/adjustments",
+    status_code=201,
+    response_model=AllocationResult,
+)
 def adjust_budget(
     project_id: UUID,
     body: AdjustmentCreate,
@@ -74,7 +84,7 @@ class BalanceParameters:
         self.period, self.as_of, self.start, self.end = period, as_of, start, end
 
 
-@router.get("/balance", response_model=BalanceQueryRead)
+@router.get("/api/v1/projects/{project_id}/balance", response_model=BalanceQueryRead)
 def read_balance(
     project_id: UUID,
     context: ReadContext,
@@ -95,7 +105,7 @@ def read_balance(
     )
 
 
-@router.get("/balance/reconcile", response_model=ReconciliationRead)
+@router.get("/api/v1/projects/{project_id}/balance/reconcile", response_model=ReconciliationRead)
 def reconcile_balance(
     project_id: UUID,
     context: ReadContext,
@@ -117,7 +127,7 @@ def reconcile_balance(
     )
 
 
-@router.get("/ledger", response_model=LedgerPage)
+@router.get("/api/v1/projects/{project_id}/ledger", response_model=LedgerPage)
 def read_ledger(
     project_id: UUID,
     context: ReadContext,
@@ -132,3 +142,28 @@ def read_ledger(
     return ledger_query(
         connection, current_scope(), project_id, bucket, entry_type, start, end, cursor, page_size
     )
+
+
+def giving_target(body: TransferCreate, connection: Connection) -> TargetProtocol:
+    return project_target(body.from_project_id, connection)
+
+
+def receiving_target(body: TransferCreate, connection: Connection) -> TargetProtocol:
+    return project_target(body.to_project_id, connection)
+
+
+GivingContext = Annotated[AuthorizationContext, Depends(require("budget.transfer", giving_target))]
+ReceivingContext = Annotated[
+    AuthorizationContext, Depends(require("budget.transfer", receiving_target))
+]
+
+
+@router.post("/api/v1/budget/transfers", status_code=201, response_model=TransferRead)
+def transfer_budget(
+    body: TransferCreate,
+    context: GivingContext,
+    receiving_context: ReceivingContext,
+    connection: Connection,
+    idempotency_key: Key,
+) -> TransferRead:
+    return transfer(connection, current_scope(), body, context.user_id, idempotency_key)

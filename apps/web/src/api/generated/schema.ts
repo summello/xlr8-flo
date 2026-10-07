@@ -288,6 +288,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/budget/transfers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Transfer Budget */
+        post: operations["transfer_budget_api_v1_budget_transfers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/fiscal/calendar": {
         parameters: {
             query?: never;
@@ -1674,6 +1691,42 @@ export interface components {
             /** Unit Id */
             unit_id?: string | null;
         };
+        /** TransferCreate */
+        TransferCreate: {
+            /** Amount */
+            amount: string;
+            /** Currency */
+            currency: string;
+            /**
+             * Effective Date
+             * Format: date
+             */
+            effective_date: string;
+            /** Evidence Ref */
+            evidence_ref?: string | null;
+            /**
+             * From Project Id
+             * Format: uuid
+             */
+            from_project_id: string;
+            /** Reason */
+            reason: string;
+            /**
+             * To Project Id
+             * Format: uuid
+             */
+            to_project_id: string;
+        };
+        /** TransferRead */
+        TransferRead: {
+            /** Entries */
+            entries: components["schemas"]["LedgerEntryRead"][];
+            /**
+             * Transfer Group Id
+             * Format: uuid
+             */
+            transfer_group_id: string;
+        };
         /** TreeNode */
         TreeNode: {
             /** Children */
@@ -2323,6 +2376,51 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    transfer_budget_api_v1_budget_transfers_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferRead"];
+                };
             };
             /** @description Client error expressed as RFC 9457 problem details. */
             "4XX": {

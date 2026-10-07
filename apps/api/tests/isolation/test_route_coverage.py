@@ -20,6 +20,10 @@ TESTS = Path(__file__).resolve().parents[1]
 # (method, path) -> "file::test" that proves a foreign id returns 404.
 COVERED = {
     (
+        "POST",
+        "/api/v1/budget/transfers",
+    ): "budget/test_transfer_same_level.py::test_foreign_transfer",
+    (
         "GET",
         "/api/v1/projects/{project_id}/balance",
     ): "budget/test_balance_queries.py::test_foreign_balance",

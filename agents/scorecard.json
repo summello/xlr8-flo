@@ -1511,6 +1511,42 @@
       },
       "recap": "Implemented fiscal-period ledger balances, current-life reconciliation with single-statement snapshot, bounded keyset drill-down, authorization/isolation cases, and regenerated OpenAPI client. Commit c1dd42a. No dependency or migration changes. Existing test edited: isolation/test_route_coverage.py (three named route entries). Verification: story tests 42 passed; standalone full pytest 859 passed, 1 skipped (DATABASE_URL-dependent money round-trip; flo check supplies DATABASE_URL); vitest 59 passed; Playwright/axe 112 passed; Ruff, strict mypy (98 files), all four import contracts, migration chain, secret scan and full flo check green. No submit, gate, done, push or merge performed.",
       "title": "Balance query API: MTD/QTD/YTD/fiscal/life-to-date/range, reconcile to entries"
+    },
+    {
+      "story": "E07-S07",
+      "kind": "ledger",
+      "size": "M",
+      "tags": [
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a11886-4a41-7652-b75a-9efb5edc21d1",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "f145f7ca-a28e-4b66-bc45-fd4e8ea242d4",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented sibling transfers with ordered balance locks, atomic ledger legs, group audit, evidence and replay, dual project authorization, and single-leg reversal rejection. Parent comparison mutation was caught by test_cousin_guard (201 instead of 409), then restored. No dependency or migration added; existing transfer ledger schema reused. Verification: flo check green on all nine checks; final offline pytest 902 passed/1 DATABASE_URL-dependent skip, and that money round-trip passed separately using flo local DB configuration. New story tests: 43. Web: 59 vitest and 112 Playwright/axe passed. Strict mypy and ruff green; real migration chain check green with FLO_MIGRATIONS_DIR=../../migrations.",
+      "title": "Same-level transfer, atomic, one transfer_group_id"
     }
   ]
 }

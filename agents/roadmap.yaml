@@ -755,7 +755,7 @@ epics:
           - BUD-004
         dep:
           - E07-S05
-        st: todo
+        st: done
       - id: E07-S08
         t: Cross-hierarchy transfer up-then-down through both ancestries, one
           transaction
