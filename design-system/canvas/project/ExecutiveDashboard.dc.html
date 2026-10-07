@@ -13,21 +13,24 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;560;600;640&amp;family=JetBrains+Mono:wght@400;460;620&amp;display=swap" rel="stylesheet">
 <style>body{margin:0}</style>
 </helmet>
-<div class="xf" data-theme="{{theme}}" style="min-height: 1560px">
-<div class="app">
+<div class="xf" data-theme="{{theme}}" style="min-height: 100vh">
+<div class="{{appCls}}">
   <nav class="side" aria-label="Primary">
-    <div class="brand"><span class="brand-mark">FL</span>XLR8 FLO</div>
+    <div class="brand"><span class="brand-mark">FL</span><span class="brand-name">XLR8 FLO</span><button class="iconbtn side-close" type="button" onClick="{{closeNav}}" aria-label="Close navigation"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
     <sc-for list="{{nav}}" as="n" hint-placeholder-count="18">
       <sc-if value="{{n.isHead}}" hint-placeholder-val="{{ false }}"><div class="nav-h">{{n.label}}</div></sc-if>
       <sc-if value="{{n.isLink}}" hint-placeholder-val="{{ true }}">
-        <a href="#" class="{{n.cls}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{n.d}}"></path></svg>{{n.label}}</a>
+        <a href="#" class="{{n.cls}}" aria-label="{{n.label}}" data-tip="{{n.label}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{n.d}}"></path></svg><span class="lbl">{{n.label}}</span></a>
       </sc-if>
     </sc-for>
   </nav>
+  <div class="scrim" onClick="{{closeNav}}"></div>
   <div class="main">
     <header class="top">
-      <div class="crumbs">Reporting<span aria-hidden="true">/</span><b>Executive dashboard</b></div>
-      <button class="cmdk" type="button" aria-label="Open command menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4"></path></svg>Search or run a command<kbd>⌘K</kbd></button>
+      <button class="iconbtn collapse-btn" type="button" onClick="{{toggleCollapse}}" aria-label="{{collapseLabel}}" aria-expanded="{{expanded}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4zM9 5v14"></path></svg></button>
+      <button class="iconbtn menu-btn" type="button" onClick="{{toggleNav}}" aria-label="Open navigation" aria-expanded="{{navOpen}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
+      <div class="crumbs"><span class="crumb-parent">Reporting</span><span class="sep" aria-hidden="true">/</span><b>Executive dashboard</b></div>
+      <button class="cmdk" type="button" aria-label="Open command menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4"></path></svg><span class="txt">Search or run a command</span><kbd>⌘K</kbd></button>
       <button class="iconbtn" type="button" aria-label="Notifications"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 17V11a6 6 0 1112 0v6l2 2H4zM10 21h4"></path></svg></button>
       <span class="avatar" aria-label="Signed in as Sonam">SM</span>
     </header>
@@ -47,7 +50,7 @@
         </div>
       </div>
 
-      <section aria-label="Portfolio key figures" class="grid" style="grid-template-columns: repeat(auto-fit, minmax(190px, 1fr))">
+      <section aria-label="Portfolio key figures" class="kpis">
         <sc-for list="{{kpis}}" as="k" hint-placeholder-count="5">
           <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:8px">
             <div class="t-label" style="display:flex;align-items:center;gap:8px"><i class="sw" style="{{k.swatch}}"></i>{{k.label}}</div>
@@ -58,12 +61,12 @@
         </sc-for>
       </section>
 
-      <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: start">
-        <section class="card" style="grid-column: span 2" aria-labelledby="h-wf">
+      <div class="cols-2-1">
+        <section class="card" aria-labelledby="h-wf">
           <div class="card-h"><h2 class="t-heading" id="h-wf">Budget waterfall</h2><span class="t-caption">USD millions</span></div>
           <div class="card-b" style="display:flex;flex-direction:column;gap:8px">
             <p class="t-dense secondary">Of 48.25M allocated, 38.44M is spoken for. 9.81M remains available.</p>
-            <svg class="chart-t" viewBox="0 0 680 275" role="img" aria-label="Waterfall from 48.25 million allocated, minus 6.12 reserved, minus 14.38 committed, minus 17.94 actual, leaving 9.81 available.">
+            <div class="chart-scroll" tabindex="0" role="region" aria-label="Budget waterfall chart"><svg class="chart-t" viewBox="0 0 680 275" role="img" aria-label="Waterfall from 48.25 million allocated, minus 6.12 reserved, minus 14.38 committed, minus 17.94 actual, leaving 9.81 available.">
               <defs><pattern id="hz" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2.5" height="6" fill="#fff" fill-opacity="0.45"></rect></pattern></defs>
               <line class="grid-l" x1="50" x2="660" y1="196" y2="196"></line><line class="grid-l" x1="50" x2="660" y1="152" y2="152"></line><line class="grid-l" x1="50" x2="660" y1="108" y2="108"></line><line class="grid-l" x1="50" x2="660" y1="64" y2="64"></line><line class="grid-l" x1="50" x2="660" y1="20" y2="20"></line>
               <line class="axis" x1="50" x2="660" y1="240" y2="240"></line>
@@ -80,7 +83,7 @@
               <text class="mono" x="470" y="110" text-anchor="middle">▼ −17.94</text>
               <text class="mono" x="590" y="189" text-anchor="middle">9.81</text>
               <text x="110" y="260" text-anchor="middle">Allocated</text><text x="230" y="260" text-anchor="middle">Reserved</text><text x="350" y="260" text-anchor="middle">Committed</text><text x="470" y="260" text-anchor="middle">Actual</text><text x="590" y="260" text-anchor="middle">Available</text>
-            </svg>
+            </svg></div>
             <details class="tbl"><summary>Show data table</summary>
               <table><thead><tr><th scope="col">Stage</th><th scope="col">Change (USD)</th><th scope="col">Running total (USD)</th></tr></thead>
               <tbody><tr><td>Allocated</td><td>48,250,000.00</td><td>48,250,000.00</td></tr><tr><td>Reserved</td><td>(6,120,000.00)</td><td>42,130,000.00</td></tr><tr><td>Committed</td><td>(14,380,000.00)</td><td>27,750,000.00</td></tr><tr><td>Actual</td><td>(17,940,000.00)</td><td>9,810,000.00</td></tr><tr><td>Available</td><td>9,810,000.00</td><td>9,810,000.00</td></tr></tbody></table>
@@ -103,12 +106,12 @@
         </section>
       </div>
 
-      <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: start">
-        <section class="card" style="grid-column: span 2" aria-labelledby="h-line">
+      <div class="cols-2-1">
+        <section class="card" aria-labelledby="h-line">
           <div class="card-h"><h2 class="t-heading" id="h-line">Cumulative spend over time</h2><span class="t-caption">USD millions · FY27</span></div>
           <div class="card-b" style="display:flex;flex-direction:column;gap:8px">
             <p class="t-dense secondary">Actual spend is 4.6M under plan. Actual plus committed is 9.8M over plan.</p>
-            <svg class="chart-t" viewBox="0 0 700 255" role="img" aria-label="Cumulative spend April to September. Actual reaches 17.94 million, actual plus committed 32.32 million, plan 22.5 million.">
+            <div class="chart-scroll" tabindex="0" role="region" aria-label="Cumulative spend chart"><svg class="chart-t" viewBox="0 0 700 255" role="img" aria-label="Cumulative spend April to September. Actual reaches 17.94 million, actual plus committed 32.32 million, plan 22.5 million.">
               <line class="grid-l" x1="50" x2="600" y1="162.9" y2="162.9"></line><line class="grid-l" x1="50" x2="600" y1="105.7" y2="105.7"></line><line class="grid-l" x1="50" x2="600" y1="48.6" y2="48.6"></line>
               <line class="axis" x1="50" x2="600" y1="220" y2="220"></line>
               <text x="42" y="224" text-anchor="end">0</text><text x="42" y="167" text-anchor="end">10</text><text x="42" y="110" text-anchor="end">20</text><text x="42" y="53" text-anchor="end">30</text>
@@ -118,7 +121,7 @@
               <circle cx="70" cy="209.7" r="3.5" fill="var(--c1)"></circle><circle cx="175" cy="196.6" r="3.5" fill="var(--c1)"></circle><circle cx="280" cy="180" r="3.5" fill="var(--c1)"></circle><circle cx="385" cy="159.4" r="3.5" fill="var(--c1)"></circle><circle cx="490" cy="138.9" r="3.5" fill="var(--c1)"></circle><circle cx="595" cy="117.7" r="3.5" fill="var(--c1)"></circle>
               <text class="mono" x="606" y="39">32.32</text><text class="mono" x="606" y="95">22.50</text><text class="mono" x="606" y="121">17.94</text>
               <text x="70" y="240" text-anchor="middle">Apr</text><text x="175" y="240" text-anchor="middle">May</text><text x="280" y="240" text-anchor="middle">Jun</text><text x="385" y="240" text-anchor="middle">Jul</text><text x="490" y="240" text-anchor="middle">Aug</text><text x="595" y="240" text-anchor="middle">Sep</text>
-            </svg>
+            </svg></div>
             <div class="legend">
               <span><svg width="28" height="8" aria-hidden="true"><line x1="0" x2="28" y1="4" y2="4" stroke="var(--c1)" stroke-width="2.5"></line></svg>Actual</span>
               <span><svg width="28" height="8" aria-hidden="true"><line x1="0" x2="28" y1="4" y2="4" stroke="var(--c2)" stroke-width="2.5" stroke-dasharray="6 3"></line></svg>Actual plus committed</span>
@@ -149,14 +152,14 @@
       <section class="card" aria-labelledby="h-att">
         <div class="card-h"><h2 class="t-heading" id="h-att">Projects needing attention</h2><a href="#" class="t-dense secondary">All projects</a></div>
         <div class="card-b" style="padding:12px 0 0">
-          <div class="row head" style="grid-template-columns: minmax(0,1.6fr) 150px 150px 150px 150px"><span>Project</span><span class="r">Allocated</span><span class="r">Used</span><span class="r">Remaining</span><span>Budget</span></div>
+          <div class="row head cols-att stack"><span>Project</span><span class="r">Allocated</span><span class="r">Used</span><span class="r">Remaining</span><span>Budget</span></div>
           <sc-for list="{{attention}}" as="p" hint-placeholder-count="4">
-            <div class="row" style="grid-template-columns: minmax(0,1.6fr) 150px 150px 150px 150px; min-height:48px">
-              <a href="#" style="min-width:0"><div style="font-weight:520">{{p.name}}</div><div class="t-caption">{{p.bu}}</div></a>
-              <span class="num r">{{p.alloc}}<span class="cur">USD</span></span>
-              <span class="num r">{{p.used}}<span class="cur">USD</span></span>
-              <span class="{{p.remCls}}">{{p.rem}}<span class="cur">USD</span></span>
-              <span><span class="{{p.pillCls}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{p.pd}}"></path></svg>{{p.pill}}</span></span>
+            <div class="row cols-att stack" style="min-height:48px">
+              <a href="#" class="stack-main" style="min-width:0"><div style="font-weight:520">{{p.name}}</div><div class="t-caption">{{p.bu}}</div></a>
+              <span class="num r" data-label="Allocated">{{p.alloc}}<span class="cur">USD</span></span>
+              <span class="num r" data-label="Used">{{p.used}}<span class="cur">USD</span></span>
+              <span class="{{p.remCls}}" data-label="Remaining">{{p.rem}}<span class="cur">USD</span></span>
+              <span data-label="Budget"><span class="{{p.pillCls}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{p.pd}}"></path></svg>{{p.pill}}</span></span>
             </div>
           </sc-for>
         </div>
@@ -167,9 +170,17 @@
 </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"light","options":["light","dark"]},"$preview":{"width":1440,"height":1560}}'>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"dark","options":["light","dark"]},"collapsed":{"editor":"enum","default":"auto","options":["auto","yes","no"]},"navOpen":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1560}}'>
 class Component extends DCLogic {
+  componentDidMount() {
+    if ((this.props.collapsed ?? 'auto') === 'auto') {
+      try { if (localStorage.getItem('xf.sidebar') === 'collapsed') this.setState({ collapsed: true }); } catch (e) {}
+    }
+  }
   renderVals() {
+    const st = this.state || {};
+    const collapsed = st.collapsed ?? (this.props.collapsed === 'yes');
+    const navOpen = st.navOpen ?? (this.props.navOpen === true);
     const I = {
       home: "M3 11l9-8 9 8M5 10v10h14V10M10 20v-6h4v6",
       org: "M4 21V5l8-2v18M12 9h8v12M7 8h2M7 12h2M7 16h2M15 13h2M15 17h2",
@@ -221,7 +232,17 @@ class Component extends DCLogic {
       att('Data centre cooling', 'IT', '1,900,000.00', '1,748,000.00', '152,000.00', false, 'warning', P.warn, 'Nearing limit'),
       att('Plant 4 line retrofit', 'Manufacturing', '4,200,000.00', '3,654,000.00', '546,000.00', false, 'warning', P.warn, 'Nearing limit')
     ];
-    return { theme: this.props.theme ?? 'light', nav, kpis, bus, funnel, attention };
+    return {
+      theme: this.props.theme ?? 'light', nav, kpis, bus, funnel, attention,
+      appCls: 'app' + (collapsed ? ' collapsed' : '') + (navOpen ? ' nav-open' : ''),
+      navOpen, expanded: !collapsed, collapseLabel: collapsed ? 'Expand sidebar' : 'Collapse sidebar',
+      toggleCollapse: () => {
+        this.setState({ collapsed: !collapsed });
+        try { localStorage.setItem('xf.sidebar', collapsed ? 'expanded' : 'collapsed'); } catch (e) {}
+      },
+      toggleNav: () => this.setState({ navOpen: !navOpen }),
+      closeNav: () => this.setState({ navOpen: false })
+    };
   }
 }
 </script>

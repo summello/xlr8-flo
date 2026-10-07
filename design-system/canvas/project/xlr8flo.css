@@ -62,8 +62,16 @@
 .metric { font-family: var(--font-mono); font-size: 28px; line-height: 32px; font-weight: 620; letter-spacing: -0.02em; font-feature-settings: 'zero' 1; }
 
 /* shell */
-.app { display: flex; flex-wrap: wrap; min-height: 100%; }
-.side { width: 240px; flex: none; background: var(--surface); border-right: 1px solid var(--border); padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; }
+.app { display: flex; position: relative; min-height: 100%; }
+.side { width: 240px; flex: none; background: var(--surface); border-right: 1px solid var(--border); padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; z-index: 30; }
+.menu-btn, .side-close, .scrim { display: none; }
+/* >=1024: user-collapsible rail (56px). The tablet block below forces the same look. */
+.app.collapsed .side { width: 56px; }
+.app.collapsed .side .lbl, .app.collapsed .side .brand-name { display: none; }
+.app.collapsed .side .nav-h { height: 1px; padding: 0; margin: 8px 10px; background: var(--border); font-size: 0; }
+.app.collapsed .side .nav-i, .app.collapsed .side .brand { justify-content: center; padding: 0; }
+.app:not(.nav-open) .side .nav-i:is(:hover, :focus-visible)::after { content: none; }
+.app.collapsed:not(.nav-open) .side .nav-i:is(:hover, :focus-visible)::after { content: attr(data-tip); position: absolute; left: calc(100% + 12px); top: 50%; transform: translateY(-50%); background: var(--fg); color: var(--surface); font-size: 12px; font-weight: 520; padding: 4px 8px; border-radius: 6px; white-space: nowrap; z-index: 60; pointer-events: none; }
 .brand { display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; margin-bottom: 8px; font-weight: 640; letter-spacing: -0.011em; }
 .brand-mark { width: 24px; height: 24px; border-radius: 6px; background: var(--fg); color: var(--surface); display: grid; place-items: center; font-size: 11px; font-weight: 700; }
 .nav-h { padding: 14px 10px 4px; font-size: 11px; line-height: 16px; font-weight: 560; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-muted); }
@@ -74,7 +82,7 @@
 .nav-i.on::before { content: ''; position: absolute; left: -8px; top: 8px; bottom: 8px; width: 2px; border-radius: 2px; background: var(--ph, var(--fg)); }
 .p-foundation { --ph: var(--phase-foundation); } .p-plan { --ph: var(--phase-plan); }
 .p-demand { --ph: var(--phase-demand); } .p-commit { --ph: var(--phase-commit); }
-.main { flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; }
+.main { flex: 999 1 0; min-width: 0; display: flex; flex-direction: column; container: main / inline-size; }
 .top { height: 52px; flex: none; display: flex; align-items: center; gap: 16px; padding: 0 24px; background: var(--surface); border-bottom: 1px solid var(--border); }
 .crumbs { display: flex; align-items: center; gap: 8px; color: var(--fg-secondary); font-size: 13px; }
 .crumbs b { color: var(--fg); font-weight: 560; }
@@ -133,4 +141,59 @@ details.tbl th, details.tbl td { padding: 4px 8px; border-top: 1px solid var(--b
 details.tbl th:first-child, details.tbl td:first-child { text-align: left; }
 details.tbl td { font-family: var(--font-mono); }
 details.tbl td:first-child { font-family: var(--font-ui); }
-@media (max-width: 760px) { .page { padding: 16px; } .side { width: 100%; flex-direction: row; flex-wrap: wrap; } .nav-h { display: none; } .cmdk { width: auto; flex: 1; } }
+/* layout primitives that react to the content width, so a collapsed sidebar reflows too */
+.kpis { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); }
+.cols-2-1 { display: grid; gap: 16px; align-items: start; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+.cols-2-1 > * { min-width: 0; }
+.cols-tasks { grid-template-columns: 20px minmax(0, 1fr) 150px 150px; }
+.cols-proj { grid-template-columns: minmax(0, 1.4fr) minmax(120px, 1fr) 150px 150px; }
+.cols-att { grid-template-columns: minmax(0, 1.6fr) 150px 150px 150px 150px; }
+.chart-scroll { overflow-x: auto; }
+@container main (max-width: 900px) { .cols-2-1 { grid-template-columns: minmax(0, 1fr); } }
+/* grids become stacked cards, never a sideways-scrolling table (MASTER 5) */
+@container main (max-width: 720px) {
+  .page { padding: 16px; }
+  .phead .t-display { font-size: 24px; line-height: 30px; }
+  .row.head.stack { display: none; }
+  .row.stack { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 16px; padding: 12px 16px; }
+  .row.stack .ico { display: none; }
+  .row.stack > .stack-main { flex: 1 1 100%; }
+  .row.stack > [data-label] { flex: 1 1 120px; min-width: 0; }
+  .row.stack > [data-label]::before { content: attr(data-label); display: block; margin-bottom: 2px; font-size: 11px; font-weight: 560; letter-spacing: 0.045em; text-transform: uppercase; color: var(--fg-muted); }
+  .row.stack .r { justify-self: auto; text-align: left; }
+  .chart-scroll .chart-t { min-width: 560px; }
+}
+
+/* shell modes. >=1024 sidebar 240 or collapsed 56; 768-1023 rail 56 + overlay; <768 drawer */
+@media (max-width: 1023px) {
+  .menu-btn { display: grid; }
+  .collapse-btn { display: none; }
+  .btn, select.btn, .cmdk { min-height: 44px; }
+  .iconbtn { width: 44px; height: 44px; }
+  .nav-i { height: 44px; }
+  .app.nav-open .side .lbl, .app.nav-open .side .brand-name { display: inline; }
+  .app.nav-open .side .nav-h { height: auto; padding: 14px 10px 4px; margin: 0; background: none; font-size: 11px; }
+  .app.nav-open .side .nav-i, .app.nav-open .side .brand { justify-content: flex-start; padding: 0 10px; }
+  .app.nav-open .side-close { display: grid; margin-left: auto; }
+  .app.nav-open .scrim { display: block; position: absolute; inset: 0; background: var(--scrim); z-index: 20; }
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .side { position: absolute; left: 0; top: 0; bottom: 0; width: 56px; }
+  .main { margin-left: 56px; }
+  .app .side .lbl, .app .side .brand-name { display: none; }
+  .app .side .nav-h { height: 1px; padding: 0; margin: 8px 10px; background: var(--border); font-size: 0; }
+  .app .side .nav-i, .app .side .brand { justify-content: center; padding: 0; }
+  .app:not(.nav-open) .side .nav-i:is(:hover, :focus-visible)::after { content: attr(data-tip); position: absolute; left: calc(100% + 12px); top: 50%; transform: translateY(-50%); background: var(--fg); color: var(--surface); font-size: 12px; font-weight: 520; padding: 4px 8px; border-radius: 6px; white-space: nowrap; z-index: 60; pointer-events: none; }
+  .app.nav-open .side { width: 240px; box-shadow: var(--shadow-lg); }
+  .app.nav-open .side .lbl, .app.nav-open .side .brand-name { display: inline; }
+  .app.nav-open .side .nav-h { height: auto; padding: 14px 10px 4px; margin: 0; background: none; font-size: 11px; }
+  .app.nav-open .side .nav-i, .app.nav-open .side .brand { justify-content: flex-start; padding: 0 10px; }
+}
+@media (max-width: 767px) {
+  .side { display: none; }
+  .app.nav-open .side { display: flex; position: absolute; left: 0; top: 0; bottom: 0; width: min(280px, 86%); box-shadow: var(--shadow-lg); }
+  .top { padding: 0 8px; gap: 8px; }
+  .crumbs .crumb-parent, .crumbs .sep { display: none; }
+  .cmdk { width: 44px; padding: 0; justify-content: center; flex: none; margin-left: auto; }
+  .cmdk .txt, .cmdk kbd { display: none; }
+}

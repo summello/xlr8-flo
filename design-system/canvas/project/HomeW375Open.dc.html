@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Home, 375, drawer open</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="xlr8flo.css">
+</head>
+<body>
+<x-dc>
+<helmet><style>body{margin:0}</style></helmet>
+<dc-import name="Main" theme="{{theme}}" collapsed="no" nav-open="{{open}}" hint-size="100%,2400px"></dc-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"light","options":["light","dark"]},"$preview":{"width":375,"height":2400}}'>
+class Component extends DCLogic {
+  renderVals() { return { theme: this.props.theme ?? 'light', open: true }; }
+}
+</script>
+</body>
+</html>

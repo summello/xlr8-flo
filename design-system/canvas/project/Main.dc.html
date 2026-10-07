@@ -13,21 +13,24 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;560;600;640&amp;family=JetBrains+Mono:wght@400;460;620&amp;display=swap" rel="stylesheet">
 <style>body{margin:0}</style>
 </helmet>
-<div class="xf" data-theme="{{theme}}" style="min-height: 1040px">
-<div class="app">
+<div class="xf" data-theme="{{theme}}" style="min-height: 100vh">
+<div class="{{appCls}}">
   <nav class="side" aria-label="Primary">
-    <div class="brand"><span class="brand-mark">FL</span>XLR8 FLO</div>
+    <div class="brand"><span class="brand-mark">FL</span><span class="brand-name">XLR8 FLO</span><button class="iconbtn side-close" type="button" onClick="{{closeNav}}" aria-label="Close navigation"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
     <sc-for list="{{nav}}" as="n" hint-placeholder-count="18">
       <sc-if value="{{n.isHead}}" hint-placeholder-val="{{ false }}"><div class="nav-h">{{n.label}}</div></sc-if>
       <sc-if value="{{n.isLink}}" hint-placeholder-val="{{ true }}">
-        <a href="#" class="{{n.cls}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{n.d}}"></path></svg>{{n.label}}</a>
+        <a href="#" class="{{n.cls}}" aria-label="{{n.label}}" data-tip="{{n.label}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{n.d}}"></path></svg><span class="lbl">{{n.label}}</span></a>
       </sc-if>
     </sc-for>
   </nav>
+  <div class="scrim" onClick="{{closeNav}}"></div>
   <div class="main">
     <header class="top">
+      <button class="iconbtn collapse-btn" type="button" onClick="{{toggleCollapse}}" aria-label="{{collapseLabel}}" aria-expanded="{{expanded}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4zM9 5v14"></path></svg></button>
+      <button class="iconbtn menu-btn" type="button" onClick="{{toggleNav}}" aria-label="Open navigation" aria-expanded="{{navOpen}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
       <div class="crumbs"><b>Home</b></div>
-      <button class="cmdk" type="button" aria-label="Open command menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4"></path></svg>Search or run a command<kbd>⌘K</kbd></button>
+      <button class="cmdk" type="button" aria-label="Open command menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4"></path></svg><span class="txt">Search or run a command</span><kbd>⌘K</kbd></button>
       <button class="iconbtn" type="button" aria-label="Notifications"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 17V11a6 6 0 1112 0v6l2 2H4zM10 21h4"></path></svg></button>
       <span class="avatar" aria-label="Signed in as Sonam">SM</span>
     </header>
@@ -44,8 +47,8 @@
         </div>
       </div>
 
-      <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: start">
-        <div style="grid-column: span 2; display:flex; flex-direction:column; gap:16px; min-width:0">
+      <div class="cols-2-1">
+        <div style="display:flex; flex-direction:column; gap:16px; min-width:0">
 
           <section class="card" aria-labelledby="h-tasks">
             <div class="card-h">
@@ -53,13 +56,13 @@
               <a href="#" class="t-dense secondary">Open approval inbox</a>
             </div>
             <div class="card-b" style="padding:12px 0 0">
-              <div class="row head" style="grid-template-columns: 20px minmax(0,1fr) 150px 150px"><span></span><span>Task</span><span class="r">Amount</span><span>Status</span></div>
+              <div class="row head cols-tasks stack"><span></span><span>Task</span><span class="r">Amount</span><span>Status</span></div>
               <sc-for list="{{tasks}}" as="t" hint-placeholder-count="4">
-                <div class="row" style="grid-template-columns: 20px minmax(0,1fr) 150px 150px; min-height:48px">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="color: var(--phase-demand)" aria-hidden="true"><path d="{{t.d}}"></path></svg>
-                  <a href="#" style="min-width:0"><div style="font-weight:520;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{t.title}}</div><div class="t-caption num" style="text-align:left">{{t.ref}}</div></a>
-                  <span class="num r">{{t.amt}}<span class="cur">USD</span></span>
-                  <span><span class="{{t.pillCls}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.pd}}"></path></svg>{{t.pill}}</span></span>
+                <div class="row cols-tasks stack" style="min-height:48px">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="ico" style="color: var(--phase-demand)" aria-hidden="true"><path d="{{t.d}}"></path></svg>
+                  <a href="#" class="stack-main" style="min-width:0"><div style="font-weight:520;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{t.title}}</div><div class="t-caption num" style="text-align:left">{{t.ref}}</div></a>
+                  <span class="num r" data-label="Amount">{{t.amt}}<span class="cur">USD</span></span>
+                  <span data-label="Status"><span class="{{t.pillCls}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.pd}}"></path></svg>{{t.pill}}</span></span>
                 </div>
               </sc-for>
             </div>
@@ -71,13 +74,13 @@
               <a href="#" class="t-dense secondary">All projects</a>
             </div>
             <div class="card-b" style="padding:12px 0 0">
-              <div class="row head" style="grid-template-columns: minmax(0,1.4fr) minmax(120px,1fr) 150px 150px"><span>Project</span><span>Used of allocated</span><span class="r">Remaining</span><span>Budget</span></div>
+              <div class="row head cols-proj stack"><span>Project</span><span>Used of allocated</span><span class="r">Remaining</span><span>Budget</span></div>
               <sc-for list="{{projects}}" as="p" hint-placeholder-count="3">
-                <div class="row" style="grid-template-columns: minmax(0,1.4fr) minmax(120px,1fr) 150px 150px; min-height:56px">
-                  <a href="#" style="min-width:0"><div style="font-weight:520;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{p.name}}</div><div class="t-caption">{{p.bu}}</div></a>
-                  <div><div class="bar" role="img" aria-label="{{p.aria}}"><span style="{{p.fill}}"></span></div><div class="t-caption" style="margin-top:4px">{{p.used}} of {{p.alloc}} USD · {{p.pct}}</div></div>
-                  <span class="{{p.remCls}}">{{p.rem}}<span class="cur">USD</span></span>
-                  <span><span class="{{p.pillCls}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{p.pd}}"></path></svg>{{p.pill}}</span></span>
+                <div class="row cols-proj stack" style="min-height:56px">
+                  <a href="#" class="stack-main" style="min-width:0"><div style="font-weight:520;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{p.name}}</div><div class="t-caption">{{p.bu}}</div></a>
+                  <div data-label="Used of allocated"><div class="bar" role="img" aria-label="{{p.aria}}"><span style="{{p.fill}}"></span></div><div class="t-caption" style="margin-top:4px">{{p.used}} of {{p.alloc}} USD · {{p.pct}}</div></div>
+                  <span class="{{p.remCls}}" data-label="Remaining">{{p.rem}}<span class="cur">USD</span></span>
+                  <span data-label="Budget"><span class="{{p.pillCls}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{p.pd}}"></path></svg>{{p.pill}}</span></span>
                 </div>
               </sc-for>
             </div>
@@ -115,9 +118,17 @@
 </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"light","options":["light","dark"]},"$preview":{"width":1440,"height":1040}}'>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"light","options":["light","dark"]},"collapsed":{"editor":"enum","default":"auto","options":["auto","yes","no"]},"navOpen":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1040}}'>
 class Component extends DCLogic {
+  componentDidMount() {
+    if ((this.props.collapsed ?? 'auto') === 'auto') {
+      try { if (localStorage.getItem('xf.sidebar') === 'collapsed') this.setState({ collapsed: true }); } catch (e) {}
+    }
+  }
   renderVals() {
+    const st = this.state || {};
+    const collapsed = st.collapsed ?? (this.props.collapsed === 'yes');
+    const navOpen = st.navOpen ?? (this.props.navOpen === true);
     const I = {
       home: "M3 11l9-8 9 8M5 10v10h14V10M10 20v-6h4v6",
       org: "M4 21V5l8-2v18M12 9h8v12M7 8h2M7 12h2M7 16h2M15 13h2M15 17h2",
@@ -161,7 +172,17 @@ class Component extends DCLogic {
       { who: 'SM', text: 'You reserved 184,500.00 USD against Plant 4 line retrofit', when: 'Yesterday, 16:55' },
       { who: 'PR', text: 'Purchase order PO-00233 change order submitted', when: 'Yesterday, 09:20' }
     ];
-    return { theme: this.props.theme ?? 'light', nav, tasks, projects, activity };
+    return {
+      theme: this.props.theme ?? 'light', nav, tasks, projects, activity,
+      appCls: 'app' + (collapsed ? ' collapsed' : '') + (navOpen ? ' nav-open' : ''),
+      navOpen, expanded: !collapsed, collapseLabel: collapsed ? 'Expand sidebar' : 'Collapse sidebar',
+      toggleCollapse: () => {
+        this.setState({ collapsed: !collapsed });
+        try { localStorage.setItem('xf.sidebar', collapsed ? 'expanded' : 'collapsed'); } catch (e) {}
+      },
+      toggleNav: () => this.setState({ navOpen: !navOpen }),
+      closeNav: () => this.setState({ navOpen: false })
+    };
   }
 }
 </script>
