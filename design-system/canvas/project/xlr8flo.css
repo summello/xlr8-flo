@@ -64,7 +64,10 @@
 /* shell */
 .app { display: flex; position: relative; min-height: 100%; }
 .side { width: 240px; flex: none; background: var(--surface); border-right: 1px solid var(--border); padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; z-index: 30; }
-.menu-btn, .side-close, .scrim { display: none; }
+.iconbtn.menu-btn, .iconbtn.toggle-nav, .scrim { display: none; }
+.side { position: relative; }
+.side-toggle { position: absolute; top: 16px; right: 8px; }
+.app.collapsed .side-toggle { position: static; align-self: center; margin: 0 0 8px; }
 /* >=1024: user-collapsible rail (56px). The tablet block below forces the same look. */
 .app.collapsed .side { width: 56px; }
 .app.collapsed .side .lbl, .app.collapsed .side .brand-name { display: none; }
@@ -166,20 +169,20 @@ details.tbl td:first-child { font-family: var(--font-ui); }
 
 /* shell modes. >=1024 sidebar 240 or collapsed 56; 768-1023 rail 56 + overlay; <768 drawer */
 @media (max-width: 1023px) {
-  .menu-btn { display: grid; }
-  .collapse-btn { display: none; }
+  .iconbtn.toggle-collapse { display: none; }
+  .iconbtn.toggle-nav { display: grid; }
   .btn, select.btn, .cmdk { min-height: 44px; }
   .iconbtn { width: 44px; height: 44px; }
   .nav-i { height: 44px; }
   .app.nav-open .side .lbl, .app.nav-open .side .brand-name { display: inline; }
   .app.nav-open .side .nav-h { height: auto; padding: 14px 10px 4px; margin: 0; background: none; font-size: 11px; }
   .app.nav-open .side .nav-i, .app.nav-open .side .brand { justify-content: flex-start; padding: 0 10px; }
-  .app.nav-open .side-close { display: grid; margin-left: auto; }
   .app.nav-open .scrim { display: block; position: absolute; inset: 0; background: var(--scrim); z-index: 20; }
 }
 @media (min-width: 768px) and (max-width: 1023px) {
   .side { position: absolute; left: 0; top: 0; bottom: 0; width: 56px; }
   .main { margin-left: 56px; }
+  .app:not(.nav-open) .side-toggle { position: static; align-self: center; margin: 0 0 8px; }
   .app .side .lbl, .app .side .brand-name { display: none; }
   .app .side .nav-h { height: 1px; padding: 0; margin: 8px 10px; background: var(--border); font-size: 0; }
   .app .side .nav-i, .app .side .brand { justify-content: center; padding: 0; }
@@ -190,6 +193,7 @@ details.tbl td:first-child { font-family: var(--font-ui); }
   .app.nav-open .side .nav-i, .app.nav-open .side .brand { justify-content: flex-start; padding: 0 10px; }
 }
 @media (max-width: 767px) {
+  .iconbtn.menu-btn { display: grid; }
   .side { display: none; }
   .app.nav-open .side { display: flex; position: absolute; left: 0; top: 0; bottom: 0; width: min(280px, 86%); box-shadow: var(--shadow-lg); }
   .top { padding: 0 8px; gap: 8px; }
