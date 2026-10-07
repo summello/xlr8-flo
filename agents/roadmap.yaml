@@ -743,7 +743,7 @@ epics:
           - ACC-003
         dep:
           - E07-S05
-        st: todo
+        st: done
       - id: E07-S07
         t: Same-level transfer, atomic, one transfer_group_id
         k: ledger

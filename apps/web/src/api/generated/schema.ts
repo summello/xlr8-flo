@@ -641,6 +641,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Balance */
+        get: operations["read_balance_api_v1_projects__project_id__balance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/balance/reconcile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Reconcile Balance */
+        get: operations["reconcile_balance_api_v1_projects__project_id__balance_reconcile_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/budget/adjustments": {
         parameters: {
             query?: never;
@@ -669,6 +703,23 @@ export interface paths {
         put?: never;
         /** Allocate Budget */
         post: operations["allocate_budget_api_v1_projects__project_id__budget_allocations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/ledger": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Ledger */
+        get: operations["read_ledger_api_v1_projects__project_id__ledger_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -763,6 +814,45 @@ export interface components {
             balance: components["schemas"]["BalanceRead"];
             /** Entries */
             entries: components["schemas"]["LedgerEntryRead"][];
+        };
+        /** BalanceQueryRead */
+        BalanceQueryRead: {
+            /** Actual */
+            actual: string;
+            /** Allocated */
+            allocated: string;
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+            /** Available */
+            available: string;
+            /** Committed */
+            committed: string;
+            /** Consumption Pct */
+            consumption_pct: string | null;
+            /** Currency */
+            currency: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            range: components["schemas"]["BalanceRange"];
+            /** Reconciles */
+            reconciles: boolean | null;
+            /** Reserved */
+            reserved: string;
+            /** Variance */
+            variance: string;
+        };
+        /** BalanceRange */
+        BalanceRange: {
+            /** From */
+            from: string | null;
+            /** To */
+            to: string | null;
         };
         /** BalanceRead */
         BalanceRead: {
@@ -969,6 +1059,13 @@ export interface components {
             source_type: string;
             /** Transfer Group Id */
             transfer_group_id: string | null;
+        };
+        /** LedgerPage */
+        LedgerPage: {
+            /** Entries */
+            entries: components["schemas"]["LedgerEntryRead"][];
+            /** Next Cursor */
+            next_cursor: string | null;
         };
         /**
          * LedgerType
@@ -1505,6 +1602,18 @@ export interface components {
         };
         /** @enum {string} */
         ProjectStatus: "draft" | "approval_pending" | "active" | "deferred" | "completed" | "abandoned";
+        /** ReconciliationRead */
+        ReconciliationRead: {
+            balance: components["schemas"]["BalanceQueryRead"];
+            /** Difference By Bucket */
+            difference_by_bucket: {
+                [key: string]: string;
+            };
+            /** Entries Total By Bucket */
+            entries_total_by_bucket: {
+                [key: string]: string;
+            };
+        };
         /** ReopenBody */
         ReopenBody: {
             /**
@@ -3393,6 +3502,100 @@ export interface operations {
             };
         };
     };
+    read_balance_api_v1_projects__project_id__balance_get: {
+        parameters: {
+            query?: {
+                period?: "mtd" | "qtd" | "ytd" | "fiscal_year" | "life" | "range";
+                as_of?: string | null;
+                from?: string | null;
+                to?: string | null;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BalanceQueryRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    reconcile_balance_api_v1_projects__project_id__balance_reconcile_get: {
+        parameters: {
+            query?: {
+                period?: "mtd" | "qtd" | "ytd" | "fiscal_year" | "life" | "range";
+                as_of?: string | null;
+                from?: string | null;
+                to?: string | null;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReconciliationRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     adjust_budget_api_v1_projects__project_id__budget_adjustments_post: {
         parameters: {
             query?: never;
@@ -3465,6 +3668,55 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AllocationResult"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    read_ledger_api_v1_projects__project_id__ledger_get: {
+        parameters: {
+            query?: {
+                bucket?: components["schemas"]["LedgerBucket"] | null;
+                entry_type?: components["schemas"]["LedgerType"] | null;
+                from?: string | null;
+                to?: string | null;
+                cursor?: string | null;
+                page_size?: number;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerPage"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

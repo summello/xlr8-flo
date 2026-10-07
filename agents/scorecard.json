@@ -1475,6 +1475,42 @@
       },
       "recap": "Added service-only commitments, actuals and explicit reversals with atomic conversions, immutable conversion linkage, commitment remaining and recursive tenant-safe lineage views. Reused the existing ledger posting transaction and reservation remaining view; regenerated the ledger response client and updated older migration fixtures for the extended chain.",
       "title": "Commitment, actual and reversal primitives with source-document lineage"
+    },
+    {
+      "story": "E07-S06",
+      "kind": "api",
+      "size": "M",
+      "tags": [
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a1184a-06b4-70c2-a42b-cb89dd2491d7",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "f145f7ca-a28e-4b66-bc45-fd4e8ea242d4",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented fiscal-period ledger balances, current-life reconciliation with single-statement snapshot, bounded keyset drill-down, authorization/isolation cases, and regenerated OpenAPI client. Commit c1dd42a. No dependency or migration changes. Existing test edited: isolation/test_route_coverage.py (three named route entries). Verification: story tests 42 passed; standalone full pytest 859 passed, 1 skipped (DATABASE_URL-dependent money round-trip; flo check supplies DATABASE_URL); vitest 59 passed; Playwright/axe 112 passed; Ruff, strict mypy (98 files), all four import contracts, migration chain, secret scan and full flo check green. No submit, gate, done, push or merge performed.",
+      "title": "Balance query API: MTD/QTD/YTD/fiscal/life-to-date/range, reconcile to entries"
     }
   ]
 }

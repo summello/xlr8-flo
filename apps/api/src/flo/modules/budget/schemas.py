@@ -72,3 +72,35 @@ class LedgerEntryRead(LedgerEntry):
 class AllocationResult(BaseModel):
     entries: list[LedgerEntryRead]
     balance: BalanceRead
+
+
+class BalanceRange(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    start: date | None = Field(alias="from")
+    end: date | None = Field(alias="to")
+
+
+class BalanceQueryRead(BaseModel):
+    project_id: UUID
+    currency: str
+    as_of: date
+    range: BalanceRange
+    allocated: str
+    reserved: str
+    committed: str
+    actual: str
+    available: str
+    consumption_pct: str | None
+    variance: str
+    reconciles: bool | None
+
+
+class ReconciliationRead(BaseModel):
+    balance: BalanceQueryRead
+    entries_total_by_bucket: dict[str, str]
+    difference_by_bucket: dict[str, str]
+
+
+class LedgerPage(BaseModel):
+    entries: list[LedgerEntryRead]
+    next_cursor: str | None

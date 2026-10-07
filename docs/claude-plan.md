@@ -481,7 +481,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E04-S05** StatusPill primitive: closed per-document-type tone map, icon always, never author-coloured | E04 | ui | M | TAG-001, TAG-002, TAG-003, A11Y-004 | ~~E04-S01~~ |
 | ✅ | **E04-S06** Material layer: tinted shadows, lit edge, grain, honest glass, glow focus ring | E04 | ui | M | UX-006, A11Y-005 | ~~E04-S01~~ |
 
-#### M1 — Budget spine · 11/29 done
+#### M1 — Budget spine · 12/29 done
 
 > The trustworthy system of record. Projects, hierarchy and the complete budget ledger.
 
@@ -502,16 +502,16 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E06-S05** Phases, milestones, planned vs actual dates, owner, sponsor, health, percent complete | E06 | crud | M | PROJ-011, PROJ-015 | ~~E06-S01~~ |
 | ⬜ | **E06-S06** Project risks with likelihood, impact, owner, mitigation, due date, status | E06 | crud | M | PROJ-016 | ~~E06-S01~~ |
 | ⬜ | **E06-S07** Project list and detail screens, filter/sort/group/search, saved views | E06 | ui | L | PROJ-020, XFN-002 | E06-S03, ~~E04-S03~~ |
-| ⬜ | **E06-S08** Project dashboard with hierarchy visual and drill-down to ledger entries | E06 | ui | L | PROJ-009, PROJ-021, RPT-002, RPT-003, A11Y-009 | E06-S07, E07-S06 |
+| ⬜ | **E06-S08** Project dashboard with hierarchy visual and drill-down to ledger entries | E06 | ui | L | PROJ-009, PROJ-021, RPT-002, RPT-003, A11Y-009 | E06-S07, ~~E07-S06~~ |
 | ✅ | **E07-S01** Ledger schema, append-only triggers, entry types, partitioning, source linkage | E07 | migration | L | FIN-004, FIN-007, BUD-005, BUD-006, ARCH-003 | ~~E03-S01~~, ~~E03-S04~~ |
 | ✅ | **E07-S02** project_balance rollup maintained in-transaction with the ledger write | E07 | ledger | L | FIN-005, FIN-006, BUD-011, D-11 | ~~E07-S01~~ |
 | ✅ | **E07-S03** Allocation command with authorization, reason, effective date and audit | E07 | ledger | M | BUD-001, BUD-006, BUD-007 | ~~E07-S02~~ |
 | ✅ | **E07-S04** Reservation and release primitives, exactly-once release guarantee | E07 | ledger | L | FIN-011, FIN-012, BUD-008, ACC-001, ACC-006 | ~~E07-S02~~ |
 | ✅ | **E07-S05** Commitment, actual and reversal primitives with source-document lineage | E07 | ledger | L | FIN-004, FIN-011, AUD-007 | ~~E07-S04~~ |
-| ⬜ | **E07-S06** Balance query API: MTD/QTD/YTD/fiscal/life-to-date/range, reconcile to entries | E07 | api | M | BUD-009, BUD-011, ACC-003 | ~~E07-S05~~ |
+| ✅ | **E07-S06** Balance query API: MTD/QTD/YTD/fiscal/life-to-date/range, reconcile to entries | E07 | api | M | BUD-009, BUD-011, ACC-003 | ~~E07-S05~~ |
 | ⬜ | **E07-S07** Same-level transfer, atomic, one transfer_group_id | E07 | ledger | M | BUD-002, BUD-004 | ~~E07-S05~~ |
 | ⬜ | **E07-S08** Cross-hierarchy transfer up-then-down through both ancestries, one transaction | E07 | ledger | L | BUD-003, BUD-004, WF-003 | E07-S07, ~~E06-S02~~ |
-| ⬜ | **E07-S09** Nightly reconciliation job: recompute from ledger, report drift, never correct | E07 | engine | M | BUD-013, OBS-004 | E07-S06, ~~E03-S06~~ |
+| ⬜ | **E07-S09** Nightly reconciliation job: recompute from ledger, report drift, never correct | E07 | engine | M | BUD-013, OBS-004 | ~~E07-S06~~, ~~E03-S06~~ |
 | ⬜ | **E08-S01** Import framework: template versioning, column mapping, type and reference validation | E08 | engine | L | IMP-001, IMP-002, IMP-003, IMP-004 | ~~E03-S06~~ |
 | ⬜ | **E08-S02** Dry-run preview, row/column error report, atomic or explicitly partial commit | E08 | engine | L | IMP-005, IMP-006, IMP-007 | E08-S01 |
 | ⬜ | **E08-S03** Import batch record, idempotent re-import by external key, async with progress | E08 | engine | M | IMP-008, IMP-009, IMP-012, PERF-004 | E08-S02 |
@@ -526,7 +526,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E09-S01** Requisition header, scoped numbering, project-linked and standalone | E09 | crud | M | REQ-001, REQ-010, SEQ-001 | E06-S03 |
 | ⬜ | **E09-S02** Item and service lines with explicit type tagging and quantity/amount tracking | E09 | crud | M | REQ-006, REQ-015 | E09-S01 |
 | ⬜ | **E09-S03** Catalogue: BU/OU-scoped suggestions from prior requested, sourced and purchased items | E09 | engine | M | REQ-007, REQ-008, XFN-009 | E09-S02 |
-| ⬜ | **E09-S04** Submission validation: fields, active master data, eligibility, funds, routing | E09 | engine | L | REQ-011, WF-002, WF-006 | E09-S02, E07-S06 |
+| ⬜ | **E09-S04** Submission validation: fields, active master data, eligibility, funds, routing | E09 | engine | L | REQ-011, WF-002, WF-006 | E09-S02, ~~E07-S06~~ |
 | ⬜ | **E09-S05** Requisition lifecycle state machine | E09 | engine | L | REQ-005, REQ-016, WF-002 | E09-S04 |
 | ⬜ | **E09-S06** Approval reserves budget and generates the sub-project, one transaction | E09 | ledger | L | REQ-002, REQ-003, REQ-004, PROJ-003, ACC-001, WF-003 | E09-S05, ~~E07-S04~~, E10-S05 |
 | ⬜ | **E09-S07** Release on reject, withdraw, cancel, expire or reduce — exactly once | E09 | ledger | M | REQ-013, FIN-011, ACC-006 | E09-S06 |
@@ -596,7 +596,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E14-S05** Fixed-asset register with full attribute set and BU/OU linkage | E14 | crud | M | AST-008, ORG-006 | E14-S01 |
 | ⬜ | **E14-S06** Asset creation from PO with lineage to the originating purchase | E14 | engine | M | AST-009, AUD-007 | E14-S05, E13-S05 |
 | ⬜ | **E14-S07** Stock-count adjustment with reason and configurable approval; manual actual posting | E14 | ledger | M | AST-010, BUD-007 | E14-S04, ~~E07-S05~~ |
-| ⬜ | **E15-S01** Governed KPI registry: definition, source, calculation, time basis, currency, refresh | E15 | engine | M | RPT-001, RPT-006 | E07-S06 |
+| ⬜ | **E15-S01** Governed KPI registry: definition, source, calculation, time basis, currency, refresh | E15 | engine | M | RPT-001, RPT-006 | ~~E07-S06~~ |
 | ⬜ | **E15-S02** Read models and materialized summaries with as-of time and refresh status | E15 | engine | L | ARCH-004, RPT-014, PERF-003 | E15-S01 |
 | ⬜ | **E15-S03** Row- and field-level authorization enforced at query time | E15 | security | M | RPT-012, SEC-008 | E15-S02, ~~E02-S05~~ |
 | ⬜ | **E15-S04** Drill-down: organization to BU/OU to project to document to transaction | E15 | api | M | RPT-002, PROJ-010 | E15-S03 |

@@ -25,6 +25,8 @@ from flo.modules.budget.postings import commit as commit
 from flo.modules.budget.postings import record_actual as record_actual
 from flo.modules.budget.postings import release_commitment as release_commitment
 from flo.modules.budget.postings import reverse_entry as reverse_entry
+from flo.modules.budget.queries import balance_query as balance_query
+from flo.modules.budget.queries import ledger_query as ledger_query
 from flo.modules.budget.reservations import (
     release_reservation as release_reservation,
 )

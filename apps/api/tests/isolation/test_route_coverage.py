@@ -20,6 +20,18 @@ TESTS = Path(__file__).resolve().parents[1]
 # (method, path) -> "file::test" that proves a foreign id returns 404.
 COVERED = {
     (
+        "GET",
+        "/api/v1/projects/{project_id}/balance",
+    ): "budget/test_balance_queries.py::test_foreign_balance",
+    (
+        "GET",
+        "/api/v1/projects/{project_id}/balance/reconcile",
+    ): "budget/test_balance_queries.py::test_foreign_reconcile",
+    (
+        "GET",
+        "/api/v1/projects/{project_id}/ledger",
+    ): "budget/test_balance_queries.py::test_foreign_ledger",
+    (
         "POST",
         "/api/v1/projects/{project_id}/budget/allocations",
     ): "budget/test_allocation.py::test_foreign_allocation",
