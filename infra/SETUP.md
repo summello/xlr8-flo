@@ -84,9 +84,14 @@ gcloud projects add-iam-policy-binding GCP_PROJECT_ID \
 gcloud projects add-iam-policy-binding GCP_PROJECT_ID \
   --member='serviceAccount:flo-deploy@GCP_PROJECT_ID.iam.gserviceaccount.com' \
   --role='roles/run.admin'
-gcloud projects add-iam-policy-binding GCP_PROJECT_ID \
+# repoAdmin, scoped to the flo repository only: the prune step deletes old images and writer cannot.
+gcloud artifacts repositories add-iam-policy-binding flo --location=us-central1 \
   --member='serviceAccount:flo-deploy@GCP_PROJECT_ID.iam.gserviceaccount.com' \
-  --role='roles/artifactregistry.writer'
+  --role='roles/artifactregistry.repoAdmin'
+# The Worker reaches Cloud Run over the public URL, so the service needs the public invoker.
+# The origin shared secret, not IAM, gates access: requests without it get a uniform 404.
+gcloud run services add-iam-policy-binding flo-api --region=us-central1 \
+  --member=allUsers --role=roles/run.invoker
 gcloud iam service-accounts add-iam-policy-binding \
   flo-runtime@GCP_PROJECT_ID.iam.gserviceaccount.com \
   --member='serviceAccount:flo-deploy@GCP_PROJECT_ID.iam.gserviceaccount.com' \
@@ -185,7 +190,8 @@ security add-generic-password -U -a "$USER" -s FLO_PROD_RESEND_API_KEY -w
 
 ## 6. Create one Secret Manager secret per value
 
-Create exactly five secret resources, then pipe each keychain value directly into a new version:
+Create six secret resources. Pipe each keychain value directly into a new version, and generate
+the 32-byte urlsafe-base64 MFA encryption key directly into Secret Manager:
 
 ```bash
 gcloud secrets create flo-database-url --replication-policy=automatic
@@ -193,6 +199,8 @@ gcloud secrets create flo-origin-shared-secret --replication-policy=automatic
 gcloud secrets create flo-r2-access-key-id --replication-policy=automatic
 gcloud secrets create flo-r2-secret-access-key --replication-policy=automatic
 gcloud secrets create flo-resend-api-key --replication-policy=automatic
+python3 -c "import os,base64;print(base64.urlsafe_b64encode(os.urandom(32)).decode().rstrip('='))" \
+  | gcloud secrets create flo-mfa-encryption-key --replication-policy=automatic --data-file=-
 
 security find-generic-password -a "$USER" -s FLO_PROD_DATABASE_URL -w \
   | gcloud secrets versions add flo-database-url --data-file=-
@@ -209,12 +217,15 @@ security find-generic-password -a "$USER" -s FLO_PROD_RESEND_API_KEY -w \
 Grant `flo-runtime` access on each secret resource, not all secrets in the project:
 
 ```bash
-for secret_name in flo-database-url flo-origin-shared-secret flo-r2-access-key-id flo-r2-secret-access-key flo-resend-api-key; do
+for secret_name in flo-database-url flo-origin-shared-secret flo-r2-access-key-id flo-r2-secret-access-key flo-resend-api-key flo-mfa-encryption-key; do
   gcloud secrets add-iam-policy-binding "$secret_name" \
     --member='serviceAccount:flo-runtime@GCP_PROJECT_ID.iam.gserviceaccount.com' \
     --role='roles/secretmanager.secretAccessor'
 done
 ```
+
+Retain the MFA encryption key: losing it makes stored MFA factors unreadable. Do not replace it
+with a freshly generated key during routine deployment.
 
 The application reads process environment injected by Cloud Run. It has no secrets-file setting
 and never calls Secret Manager directly. Rotation of the origin secret must update both the GCP
@@ -314,7 +325,9 @@ deploys `flo-api` with:
 
 - 1 GiB memory, 2 CPUs, concurrency 80, minimum instances 0
 - runtime identity `flo-runtime`
-- five Secret Manager references, never literal secret environment values
+- six Secret Manager references: `flo-database-url`, `flo-origin-shared-secret`,
+  `flo-r2-access-key-id`, `flo-r2-secret-access-key`, `flo-resend-api-key`, and
+  `flo-mfa-encryption-key`, never literal secret environment values
 - R2 endpoint/bucket/region and GCP resource identifiers as ordinary non-secret variables
 - immutable `@sha256:` image reference
 

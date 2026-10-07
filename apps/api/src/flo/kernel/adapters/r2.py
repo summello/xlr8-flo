@@ -85,7 +85,8 @@ class R2Storage(Storage):
         total = 0
         paginator = self._client.get_paginator("list_objects_v2")
         for page in paginator.paginate(Bucket=self._bucket):
-            contents = page.get("Contents", ())
+            # S3 and R2 omit Contents entirely for an empty bucket.
+            contents = page.get("Contents", [])
             if not isinstance(contents, list):
                 raise RuntimeError("storage listing returned an invalid Contents value")
             for item in contents:

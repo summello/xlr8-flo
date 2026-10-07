@@ -610,6 +610,55 @@ def test_deploy_resource_check_rejects_a_missing_resend_secret_and_then_passes(
     assert_accepts(run_gate(command, cwd=project))
 
 
+def test_deploy_resource_check_rejects_a_missing_mfa_secret_and_then_passes(
+    tmp_path: Path,
+) -> None:
+    project = tmp_path / "repo"
+    workflow = project / ".github" / "workflows" / "ci.yml"
+    config = project / "apps" / "api" / "src" / "flo" / "kernel" / "config.py"
+    script = project / "apps" / "api" / "scripts" / "check_deploy_resources.py"
+    workflow.parent.mkdir(parents=True)
+    config.parent.mkdir(parents=True)
+    script.parent.mkdir(parents=True)
+    shutil.copy2(ROOT / ".github" / "workflows" / "ci.yml", workflow)
+    shutil.copy2(ROOT / "apps" / "api" / "src" / "flo" / "kernel" / "config.py", config)
+    shutil.copy2(ROOT / "apps" / "api" / "scripts" / "check_deploy_resources.py", script)
+    clean_workflow = workflow.read_bytes()
+    source = workflow.read_text(encoding="utf-8")
+    planted = source.replace(
+        ",MFA_ENCRYPTION_KEY=flo-mfa-encryption-key:latest",
+        "",
+        1,
+    )
+    assert planted != source, "the deploy step must map the MFA encryption-key secret"
+    workflow.write_text(planted, encoding="utf-8")
+    command = [
+        sys.executable,
+        str(script),
+        "--workflow",
+        str(workflow),
+        "--config",
+        str(config),
+    ]
+
+    assert_rejects(
+        run_gate(command, cwd=project),
+        "MISSING",
+        "MFA_ENCRYPTION_KEY=flo-mfa-encryption-key:latest",
+    )
+    workflow.write_bytes(clean_workflow)
+    assert_accepts(run_gate(command, cwd=project))
+
+
+def test_deploy_resource_check_accepts_the_current_workflow() -> None:
+    command = [
+        sys.executable,
+        str(ROOT / "apps" / "api" / "scripts" / "check_deploy_resources.py"),
+    ]
+
+    assert_accepts(run_gate(command, cwd=ROOT))
+
+
 def test_deploy_resource_check_rejects_a_missing_origin_secret_mapping_and_then_passes(
     tmp_path: Path,
 ) -> None:
