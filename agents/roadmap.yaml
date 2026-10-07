@@ -496,6 +496,49 @@ epics:
         dep:
           - E03-S06
         st: todo
+      - id: E05-S09
+        t: 'Identity belongs to an organization: membership, org_id on the session, seeded first tenant and bootstrap command'
+        k: security
+        s: L
+        tags:
+          - auth
+          - security
+        reqs:
+          - AUTH-001
+          - AUTH-005
+          - ORG-001
+          - TEN-010
+        dep:
+          - E05-S01
+        st: todo
+      - id: E05-S10
+        t: 'Sign-in screen: CSRF bootstrap, login, MFA challenge, logout, error and locked states'
+        k: ui
+        s: L
+        tags:
+          - auth
+          - ui
+        reqs:
+          - AUTH-001
+          - AUTH-007
+          - AUTH-010
+        dep:
+          - E05-S09
+        st: todo
+      - id: E05-S11
+        t: 'Login throttling: per-identity and per-client failure limits, trusted client IP behind Cloudflare'
+        k: security
+        s: M
+        tags:
+          - auth
+          - security
+        reqs:
+          - AUTH-004
+          - AUTH-007
+          - SEC-001
+        dep:
+          - E05-S09
+        st: todo
 
   - id: E06
     name: Projects
@@ -657,7 +700,7 @@ epics:
           - BUD-007
         dep:
           - E07-S02
-        st: todo
+        st: in_progress
       - id: E07-S04
         t: Reservation and release primitives, exactly-once release guarantee
         k: ledger
