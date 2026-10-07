@@ -266,6 +266,10 @@ def test_up_down_preserves_preexisting_rows(project_db):
         balance_migration = load_migration(
             ROOT / "migrations/20260826_0020_project_balance.py", "balance_preserve"
         )
+        release_migration = load_migration(
+            ROOT / "migrations/20260826_0022_reservation_release.py", "release_preserve"
+        )
+        release_migration.downgrade(db.connection)
         balance_migration.downgrade(db.connection)
         MIGRATION.downgrade(db.connection)
         before = {
@@ -296,6 +300,7 @@ def test_up_down_preserves_preexisting_rows(project_db):
         MIGRATION.downgrade(db.connection)
         MIGRATION.upgrade(db.connection)
         balance_migration.upgrade(db.connection)
+        release_migration.upgrade(db.connection)
 
 
 def entry_without_create(db):
@@ -375,6 +380,11 @@ def test_python_rules_equal_parsed_sql_and_database(ledger_db):
             continue
         allowed = bucket in BUCKET_FOR_TYPE[kind] and expected_sign(kind) in (None, sign)
         values_to_insert = {**base, "entry_type": kind, "bucket": bucket, "amount": Decimal(sign)}
+        if kind == LedgerType.RELEASE:
+            original = insert(
+                ledger_db, {**base, "entry_type": "reservation", "bucket": "reserved"}
+            )
+            values_to_insert["releases_entry_id"] = original
         if allowed:
             insert(ledger_db, values_to_insert)
         else:

@@ -34,6 +34,7 @@ PAYLOAD_FIELDS = (
     "effective_date",
     "transfer_group_id",
     "reverses_entry_id",
+    "releases_entry_id",
     "reason",
     "department_code",
     "ledger_account_code",
@@ -164,8 +165,6 @@ def post_entry(
     skip_period_check: bool = False,
 ) -> LedgerEntry:
     """Savepoint preserves atomicity while the caller owns the outer transaction."""
-    if releases_entry_id is not None:
-        raise NotImplementedError("release linkage arrives in E07-S04")
     caller_bucket = bucket
     with tenant_transaction(cast(RlsSession, conn), scope):
         repo = LedgerRepository(conn, scope)
@@ -194,6 +193,7 @@ def post_entry(
             "effective_date": effective_date,
             "transfer_group_id": transfer_group_id,
             "reverses_entry_id": reverses_entry_id,
+            "releases_entry_id": releases_entry_id,
             "reason": reason,
             "department_code": department_code,
             "ledger_account_code": ledger_account_code,

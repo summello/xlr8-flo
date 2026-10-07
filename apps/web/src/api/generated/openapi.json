@@ -620,6 +620,17 @@
             ],
             "title": "Reason"
           },
+          "releases_entry_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Releases Entry Id"
+          },
           "reverses_entry_id": {
             "anyOf": [
               {
@@ -679,6 +690,7 @@
           "posted_at",
           "actor_id",
           "reason",
+          "releases_entry_id",
           "idempotency_key"
         ],
         "title": "LedgerEntryRead",

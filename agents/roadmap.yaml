@@ -716,7 +716,7 @@ epics:
           - ACC-006
         dep:
           - E07-S02
-        st: todo
+        st: done
       - id: E07-S05
         t: Commitment, actual and reversal primitives with source-document lineage
         k: ledger

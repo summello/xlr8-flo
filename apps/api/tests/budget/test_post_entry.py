@@ -227,6 +227,7 @@ def test_mixed_200_posts_reconcile(posting_db, project):
     db = posting_db
     rng = random.Random(702)
     reversible_allocations = []
+    held_entries = []
     for _ in range(200):
         kind = rng.choice(
             [
@@ -246,19 +247,24 @@ def test_mixed_200_posts_reconcile(posting_db, project):
             args["reason"] = "reconciliation test"
             args["transfer_group_id"] = uuid4()
         elif kind == LedgerType.RELEASE:
-            value = balance(db, project)
-            bucket = rng.choice([LedgerBucket.RESERVED, LedgerBucket.COMMITTED])
-            held = getattr(value, bucket)
-            if held == 0:
+            if not held_entries:
                 args["entry_type"] = LedgerType.ALLOCATION
             else:
-                args.update(bucket=bucket, amount=-min(args["amount"], held))
+                held_entry, held = held_entries.pop()
+                released = min(args["amount"], held)
+                args.update(
+                    bucket=held_entry.bucket, amount=-released, releases_entry_id=held_entry.id
+                )
+                if held > released:
+                    held_entries.append((held_entry, held - released))
         elif kind == LedgerType.REVERSAL:
             if reversible_allocations:
                 args["reverses_entry_id"] = reversible_allocations.pop().id
             else:
                 args["entry_type"] = LedgerType.ALLOCATION
         entry = post(db, project, **args)
+        if entry.entry_type in (LedgerType.RESERVATION, LedgerType.COMMITMENT):
+            held_entries.append((entry, entry.amount))
         if entry.entry_type == LedgerType.ALLOCATION:
             reversible_allocations.append(entry)
     assert db.connection.execute("SELECT count(*) FROM ledger_entry").fetchone() == (200,)
@@ -339,26 +345,20 @@ def test_missing_balance_created_under_lock(posting_db, project):
     assert balance(db, project).allocated == Decimal(100)
 
 
-def test_future_release_linkage_rejects_before_io():
-    with pytest.raises(NotImplementedError, match="release linkage arrives in E07-S04"):
-        post_entry(
-            None,
-            Scope(uuid4()),
-            **dict(
-                project_id=uuid4(),
-                entry_type=LedgerType.RELEASE,
-                amount=Decimal(-1),
-                currency="USD",
-                source_type="system",
-                source_id=None,
-                effective_date=date.today(),
-                actor_id=uuid4(),
-                department_code="D",
-                ledger_account_code="L",
-                idempotency_key="future",
-                releases_entry_id=1,
-            ),
-        )
+def test_release_linkage_is_persisted(posting_db, project):
+    db = posting_db
+    post(db, project)
+    reserved = post(db, project, entry_type=LedgerType.RESERVATION)
+    released = post(
+        db,
+        project,
+        entry_type=LedgerType.RELEASE,
+        bucket=LedgerBucket.RESERVED,
+        amount=Decimal(-1),
+        releases_entry_id=reserved.id,
+    )
+    assert released.releases_entry_id == reserved.id
+    assert balance(db, project).reserved == Decimal(99)
 
 
 def test_balance_migration_preserves_data_and_rebuilds(posting_db, project):
@@ -434,15 +434,16 @@ def test_posting_guards_reject_real_violations(posting_db, project, change):
 def test_release_and_reversal_of_release_check_availability(posting_db, project):
     db = posting_db
     post(db, project)
-    post(db, project, entry_type=LedgerType.RESERVATION, amount=Decimal("100"))
+    original = post(db, project, entry_type=LedgerType.RESERVATION, amount=Decimal("100"))
     released = post(
         db,
         project,
         entry_type=LedgerType.RELEASE,
         bucket=LedgerBucket.RESERVED,
         amount=Decimal("-100"),
+        releases_entry_id=original.id,
     )
-    post(db, project, entry_type=LedgerType.RESERVATION, amount=Decimal("100"))
+    original = post(db, project, entry_type=LedgerType.RESERVATION, amount=Decimal("100"))
     with pytest.raises(InsufficientBudget):
         post(db, project, entry_type=LedgerType.REVERSAL, reverses_entry_id=released.id)
     assert balance(db, project).reserved == Decimal("100")
@@ -453,6 +454,7 @@ def test_release_and_reversal_of_release_check_availability(posting_db, project)
         entry_type=LedgerType.RELEASE,
         bucket=LedgerBucket.RESERVED,
         amount=Decimal("-100"),
+        releases_entry_id=original.id,
         skip_period_check=True,
     )
     assert balance(db, project).reserved == Decimal(0)

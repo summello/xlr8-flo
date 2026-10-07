@@ -481,7 +481,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E04-S05** StatusPill primitive: closed per-document-type tone map, icon always, never author-coloured | E04 | ui | M | TAG-001, TAG-002, TAG-003, A11Y-004 | ~~E04-S01~~ |
 | ✅ | **E04-S06** Material layer: tinted shadows, lit edge, grain, honest glass, glow focus ring | E04 | ui | M | UX-006, A11Y-005 | ~~E04-S01~~ |
 
-#### M1 — Budget spine · 9/29 done
+#### M1 — Budget spine · 10/29 done
 
 > The trustworthy system of record. Projects, hierarchy and the complete budget ledger.
 
@@ -506,8 +506,8 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E07-S01** Ledger schema, append-only triggers, entry types, partitioning, source linkage | E07 | migration | L | FIN-004, FIN-007, BUD-005, BUD-006, ARCH-003 | ~~E03-S01~~, ~~E03-S04~~ |
 | ✅ | **E07-S02** project_balance rollup maintained in-transaction with the ledger write | E07 | ledger | L | FIN-005, FIN-006, BUD-011, D-11 | ~~E07-S01~~ |
 | ✅ | **E07-S03** Allocation command with authorization, reason, effective date and audit | E07 | ledger | M | BUD-001, BUD-006, BUD-007 | ~~E07-S02~~ |
-| ⬜ | **E07-S04** Reservation and release primitives, exactly-once release guarantee | E07 | ledger | L | FIN-011, FIN-012, BUD-008, ACC-001, ACC-006 | ~~E07-S02~~ |
-| ⬜ | **E07-S05** Commitment, actual and reversal primitives with source-document lineage | E07 | ledger | L | FIN-004, FIN-011, AUD-007 | E07-S04 |
+| ✅ | **E07-S04** Reservation and release primitives, exactly-once release guarantee | E07 | ledger | L | FIN-011, FIN-012, BUD-008, ACC-001, ACC-006 | ~~E07-S02~~ |
+| ⬜ | **E07-S05** Commitment, actual and reversal primitives with source-document lineage | E07 | ledger | L | FIN-004, FIN-011, AUD-007 | ~~E07-S04~~ |
 | ⬜ | **E07-S06** Balance query API: MTD/QTD/YTD/fiscal/life-to-date/range, reconcile to entries | E07 | api | M | BUD-009, BUD-011, ACC-003 | E07-S05 |
 | ⬜ | **E07-S07** Same-level transfer, atomic, one transfer_group_id | E07 | ledger | M | BUD-002, BUD-004 | E07-S05 |
 | ⬜ | **E07-S08** Cross-hierarchy transfer up-then-down through both ancestries, one transaction | E07 | ledger | L | BUD-003, BUD-004, WF-003 | E07-S07, ~~E06-S02~~ |
@@ -528,7 +528,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E09-S03** Catalogue: BU/OU-scoped suggestions from prior requested, sourced and purchased items | E09 | engine | M | REQ-007, REQ-008, XFN-009 | E09-S02 |
 | ⬜ | **E09-S04** Submission validation: fields, active master data, eligibility, funds, routing | E09 | engine | L | REQ-011, WF-002, WF-006 | E09-S02, E07-S06 |
 | ⬜ | **E09-S05** Requisition lifecycle state machine | E09 | engine | L | REQ-005, REQ-016, WF-002 | E09-S04 |
-| ⬜ | **E09-S06** Approval reserves budget and generates the sub-project, one transaction | E09 | ledger | L | REQ-002, REQ-003, REQ-004, PROJ-003, ACC-001, WF-003 | E09-S05, E07-S04, E10-S05 |
+| ⬜ | **E09-S06** Approval reserves budget and generates the sub-project, one transaction | E09 | ledger | L | REQ-002, REQ-003, REQ-004, PROJ-003, ACC-001, WF-003 | E09-S05, ~~E07-S04~~, E10-S05 |
 | ⬜ | **E09-S07** Release on reject, withdraw, cancel, expire or reduce — exactly once | E09 | ledger | M | REQ-013, FIN-011, ACC-006 | E09-S06 |
 | ⬜ | **E09-S08** Controlled return, amendment and resubmission preserving prior values | E09 | engine | M | REQ-012, APR-015, DATA-002 | E09-S05 |
 | ⬜ | **E09-S09** Linked-record graph: RFQs, bids, awards, POs, approvals, notes, ledger entries | E09 | api | M | REQ-009, WF-001 | E09-S06 |
@@ -568,7 +568,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E12-S05** Bid confidentiality and late-bid block with audited override | E12 | security | M | SRC-007, SRC-008 | E12-S04 |
 | ⬜ | **E12-S06** Comparison engine: normalized total and unit cost, tax, freight, lead time, vendor score | E12 | engine | L | SRC-009, SRC-010 | E12-S04, E05-S05 |
 | ⬜ | **E12-S07** Evaluation scoring with comments and conflict-of-interest declarations | E12 | crud | M | SRC-011 | E12-S06 |
-| ⬜ | **E12-S08** Award: split by line/quantity, scope and reserved-funds guard, non-lowest justification | E12 | ledger | L | SRC-012, SRC-013, SRC-014, SRC-016, REQ-014 | E12-S07, E07-S04 |
+| ⬜ | **E12-S08** Award: split by line/quantity, scope and reserved-funds guard, non-lowest justification | E12 | ledger | L | SRC-012, SRC-013, SRC-014, SRC-016, REQ-014 | E12-S07, ~~E07-S04~~ |
 | ⬜ | **E12-S09** Cancel or supersede RFQ/award, preserve history, reconcile budget effect | E12 | ledger | M | SRC-017, SRC-015, WF-005 | E12-S08 |
 | ⬜ | **E12-S10** Comparison dashboard screen with accessible table equivalent | E12 | ui | L | SRC-009, A11Y-009, RPT-013 | E12-S06, ~~E04-S03~~ |
 | ⬜ | **E13-S01** PO from awarded requisition lines or authorized project items, scoped numbering | E13 | crud | L | PO-001, PO-002, PO-006, SEQ-001 | E12-S08 |

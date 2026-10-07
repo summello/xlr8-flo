@@ -45,4 +45,5 @@ class LedgerEntry:
     posted_at: datetime
     actor_id: UUID
     reason: str | None
+    releases_entry_id: int | None
     idempotency_key: str | None

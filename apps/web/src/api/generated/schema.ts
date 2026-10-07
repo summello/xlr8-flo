@@ -957,6 +957,8 @@ export interface components {
             project_id: string;
             /** Reason */
             reason: string | null;
+            /** Releases Entry Id */
+            releases_entry_id: number | null;
             /** Reverses Entry Id */
             reverses_entry_id: number | null;
             /** Source Id */

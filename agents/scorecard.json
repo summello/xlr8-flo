@@ -1402,6 +1402,43 @@
       },
       "recap": "Implemented direct allocation and signed adjustment commands using existing ledger posting and project status reader. Parent funding hook remains a no-op per packet; approval and transfers remain out of scope. Registered default-false evidence policy and append-only RLS evidence table in revision 0021. Checks use the worktree venv, a temporary uv cache and explicit MIGRATIONS_DIR=../../migrations. No dependency added. Submit, gate, done, push and merge not run. Final checks: full pytest 771 passed, 1 pre-existing DATABASE_URL-dependent money round-trip skipped; story tests 39 passed on real PostgreSQL; ruff and strict mypy green; migration chain check green; four import contracts kept; web lint/typecheck green and 59 vitest tests passed. Commit: 025bbdd.",
       "title": "Allocation command with authorization, reason, effective date and audit"
+    },
+    {
+      "story": "E07-S04",
+      "kind": "ledger",
+      "size": "L",
+      "tags": [
+        "money",
+        "concurrency"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a11717-8e0d-78f3-a746-660e790266e9",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "f145f7ca-a28e-4b66-bc45-fd4e8ea242d4",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented service-only reserve/release primitives, revision 20260826_0022, linked release payload, remaining view, and generated API client. Full pytest: 782 passed, 1 skipped (money DB round-trip requires DATABASE_URL); final release tests: 12 passed. Ruff, strict mypy, migration chain, import contracts, web lint/typecheck and 59 web tests pass. No dependencies or endpoints added. Pre-existing design/conventions edits preserved and excluded from implementation commit.",
+      "title": "Reservation and release primitives, exactly-once release guarantee"
     }
   ]
 }
