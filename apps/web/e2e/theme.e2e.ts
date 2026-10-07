@@ -49,6 +49,21 @@ test("the token baseline is accessible and paints its own background", async ({ 
   expect(results.violations).toEqual([]);
 });
 
+test("the axe harness reports seeded image and input violations", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => {
+    const fragment = document.createElement("div");
+    fragment.id = "seeded-a11y-violation";
+    fragment.innerHTML = '<img src="/favicon.svg"><input type="text">';
+    document.body.append(fragment);
+  });
+
+  const results = await new AxeBuilder({ page }).include("#seeded-a11y-violation").analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual(
+    expect.arrayContaining(["image-alt", "label"]),
+  );
+});
+
 for (const width of [375, 768, 1024, 1440]) {
   test(`does not create horizontal page scroll at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ height: 900, width });
