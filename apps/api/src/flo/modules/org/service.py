@@ -606,3 +606,20 @@ def range_for(
     as_of: date,
 ) -> tuple[date, date]:
     return FiscalService(connection, scope).range_for(kind, as_of)
+
+
+def create_organization(
+    conn: psycopg.Connection[tuple[object, ...]], *, name: str, base_currency: str | None = None
+) -> UUID:
+    """Create the organization under its own RLS context; defaults remain in code."""
+    if not name.strip():
+        raise ValueError("Organization name must be non-empty.")
+    if base_currency is not None and base_currency not in {c.code for c in list_currencies()}:
+        raise ValueError("Choose a valid ISO 4217 base currency.")
+    org_id = uuid4()
+    with tenant_transaction(cast(RlsSession, conn), Scope(org_id)):
+        conn.execute(
+            "INSERT INTO organization (id, name, base_currency) VALUES (%s, %s, %s)",
+            (org_id, name.strip(), base_currency),
+        )
+    return org_id

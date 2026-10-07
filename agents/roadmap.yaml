@@ -510,7 +510,7 @@ epics:
           - TEN-010
         dep:
           - E05-S01
-        st: todo
+        st: done
       - id: E05-S10
         t: 'Sign-in screen: CSRF bootstrap, login, MFA challenge, logout, error and locked states'
         k: ui

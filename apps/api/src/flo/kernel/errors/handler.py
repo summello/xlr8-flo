@@ -21,6 +21,7 @@ from flo.kernel.logging import (
     current_correlation_id,
     install_correlation_logging,
 )
+from flo.kernel.tenancy.context import TenantScopeMissing
 
 PROBLEM_MEDIA_TYPE = "application/problem+json"
 _logger = logging.getLogger(__name__)
@@ -133,6 +134,8 @@ async def problem_exception_handler(request: Request, exc: Exception) -> Respons
     """Serialize every handled and unhandled exception through one safe path."""
 
     correlation_id = _correlation_id()
+    if isinstance(exc, TenantScopeMissing):
+        exc = ProblemError(ErrorCode.UNAUTHORIZED)
     if not isinstance(exc, (ProblemError, RequestValidationError, HTTPException)):
         taxonomy = ERROR_TAXONOMY[ErrorCode.INTERNAL_ERROR]
         if current_correlation_id() is None:

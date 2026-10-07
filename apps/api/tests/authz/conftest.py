@@ -72,6 +72,7 @@ def drop_objects(connection: psycopg.Connection[tuple[object, ...]]) -> None:
     # so a failing assertion used to leak it — and because it carries a foreign key to identity,
     # the leak broke the NEXT test's setup rather than its own. Teardown owns it now.
     connection.execute("DROP TABLE IF EXISTS historical_record")
+    connection.execute("DROP TABLE IF EXISTS identity_membership")
     connection.execute("DROP TABLE IF EXISTS identity")
 
 
@@ -96,6 +97,10 @@ def authorization_database() -> Iterator[AuthorizationDatabase]:
     access_migration = load_migration(ACCESS_MIGRATION, "authz_test_access")
     drop_objects(connection)
     identity_migration.upgrade(connection)
+    connection.execute(
+        "CREATE TABLE identity_membership (identity_id uuid PRIMARY KEY REFERENCES identity(id), "
+        "org_id uuid NOT NULL)"
+    )
     session_migration.upgrade(connection)
     audit_migration.upgrade(connection)
     rbac_migration.upgrade(connection)

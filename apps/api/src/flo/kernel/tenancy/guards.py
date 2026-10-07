@@ -6,6 +6,13 @@ import ast
 import re
 from collections.abc import Iterator, Mapping
 
+# D-M1-24/26: global links are read before tenant resolution. These exact
+# tables carry no business data and must not require an existing app.org_id.
+GLOBAL_TENANT_LINK_TABLES = {
+    "identity_membership": "Session store resolves an identity's organization before scope exists",
+    "organization_code": "Operator bootstrap resolves a global code before scope exists",
+}
+
 HTTP_METHODS = {"delete", "get", "head", "options", "patch", "post", "put", "trace"}
 
 
@@ -166,6 +173,8 @@ def unprotected_tenant_tables(source: str) -> list[str]:
     normalized = re.sub(r"[\"']", "", source)
     missing: list[str] = []
     for table in sorted(set(_created_tenant_tables(source))):
+        if table in GLOBAL_TENANT_LINK_TABLES:
+            continue
         escaped = re.escape(table)
         requirements = (
             rf"ALTER\s+TABLE\s+(?:[A-Za-z_][A-Za-z0-9_]*\.)?{escaped}\s+"

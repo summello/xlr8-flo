@@ -112,3 +112,17 @@ def test_repository_without_scope_fails_mypy_strict(tmp_path: Path) -> None:
 
     assert result.returncode == 1
     assert 'Missing positional argument "scope"' in result.stdout
+
+
+def test_global_membership_registry_exceptions_are_exact_and_documented() -> None:
+    from flo.kernel.tenancy.guards import GLOBAL_TENANT_LINK_TABLES
+
+    assert set(GLOBAL_TENANT_LINK_TABLES) == {"identity_membership", "organization_code"}
+    for table, reason in GLOBAL_TENANT_LINK_TABLES.items():
+        assert "before" in reason
+        assert unprotected_tenant_tables(f"CREATE TABLE {table} (org_id uuid)") == []
+        # Plant a business table with an almost-identical name: exemption must
+        # not turn into a prefix/substring escape hatch.
+        assert unprotected_tenant_tables(f"CREATE TABLE {table}_business (org_id uuid)") == [
+            f"{table}_business"
+        ]

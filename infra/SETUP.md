@@ -497,3 +497,24 @@ The workflow uses `gcloud run jobs execute flo-migrate --wait` before `gcloud ru
 non-zero migration therefore skips the new service revision and leaves existing traffic unchanged.
 Inspect the job execution, correct the migration in a new commit, and redeploy. Never bypass the job
 or manually point traffic at the unserved image.
+
+### Bootstrap the first tenant
+
+After applying migrations, run the operator command against the disposable local
+stack, or execute it as the command of a Cloud Run job using the API image:
+
+```sh
+python -m flo.modules.org.bootstrap --org-name "Example" --org-code EXAMPLE --admin-email admin@example.com
+```
+
+The job command/args are `python`, `-m`, `flo.modules.org.bootstrap`, followed by
+those organization and email options. Bind `DATABASE_URL` and the one-time
+`FLO_BOOTSTRAP_PASSWORD` through the job's existing secret bindings; never put the
+password in job arguments. Locally, omit `FLO_BOOTSTRAP_PASSWORD` to use the
+no-echo prompt. Optional `--base-currency` accepts an ISO 4217 code.
+
+The command commits the organization, code registry, identity, membership,
+administrator grant and audit evidence together. The administrator must sign in
+and enroll MFA before using tenant routes. A repeated code with the original
+administrator is a no-op (exit 0); another administrator exits 3. Invalid code,
+currency or password exits 2. A database failure exits 1 without partial state.

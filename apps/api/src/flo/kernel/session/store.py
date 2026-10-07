@@ -55,6 +55,7 @@ class SessionRecord:
     absolute_expires_at: datetime
     ip_prefix: str | None
     user_agent: str
+    org_id: UUID | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -190,6 +191,7 @@ def _record(row: Sequence[object]) -> SessionRecord:
         absolute_expires_at=_as_datetime(row[7]),
         ip_prefix=None if row[8] is None else str(row[8]),
         user_agent=cast(str, row[9]),
+        org_id=cast(UUID | None, row[10]) if len(row) > 10 else None,
     )
 
 
@@ -276,6 +278,7 @@ class SessionStore:
         with self._connection.transaction():
             row = self._connection.execute(
                 f"""
+                WITH refreshed AS (
                 UPDATE auth_session
                    SET last_seen_at = %s,
                        idle_expires_at = LEAST(
@@ -293,6 +296,10 @@ class SessionStore:
                           AND identity.status = 'active'
                    )
                 RETURNING {_RETURNING_COLUMNS}
+                )
+                SELECT refreshed.*, membership.org_id
+                  FROM refreshed LEFT JOIN identity_membership AS membership
+                    ON membership.identity_id = refreshed.identity_id
                 """,
                 (now, now, token_hash, now, now),
             ).fetchone()

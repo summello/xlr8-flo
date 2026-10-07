@@ -20,14 +20,20 @@ from flo.modules.identity.models import (
     BASELINE_ROLE_PERMISSIONS,
     BASELINE_ROLES,
     MFA_REQUIRED_ROLE_CODES,
-    AuthorizationTarget,
     PermissionCode,
     Role,
     RoleCode,
-    ScopeType,
     UserRole,
     permission_code,
-    role_code,
+)
+from flo.modules.identity.models import (
+    AuthorizationTarget as AuthorizationTarget,
+)
+from flo.modules.identity.models import (
+    ScopeType as ScopeType,
+)
+from flo.modules.identity.models import (
+    role_code as role_code,
 )
 
 type DatabaseRow = Sequence[object] | Mapping[str, object]
@@ -686,4 +692,25 @@ def user_exists(connection: IdentityAuthorizationConnection, scope: Scope, user_
             repository.scoped_params({"user_id": user_id}),
         ).fetchone()
         is not None
+    )
+
+
+def identity_organization(connection: IdentityAuthorizationConnection, email: str) -> UUID | None:
+    """Resolve global membership before tenant context exists."""
+    row = connection.execute(
+        """SELECT membership.org_id FROM identity
+        JOIN identity_membership membership ON membership.identity_id = identity.id
+        WHERE identity.email = %(email)s""",
+        {"email": email.casefold()},
+    ).fetchone()
+    return None if row is None else cast(UUID, _value(row, 0, "org_id"))
+
+
+def add_identity_membership(
+    connection: IdentityAuthorizationConnection, identity_id: IdentityId, org_id: UUID
+) -> None:
+    """Assign exactly one organization; the database rejects duplicate membership."""
+    connection.execute(
+        "INSERT INTO identity_membership (identity_id, org_id) VALUES (%(identity)s, %(org)s)",
+        {"identity": identity_id, "org": org_id},
     )

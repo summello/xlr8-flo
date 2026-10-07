@@ -88,6 +88,7 @@ def drop_mfa_objects(connection: psycopg.Connection[tuple[object, ...]]) -> None
     connection.execute("DROP TABLE IF EXISTS session_security_event")
     connection.execute("DROP TABLE IF EXISTS auth_session")
     connection.execute("DROP FUNCTION IF EXISTS reject_session_security_event_mutation()")
+    connection.execute("DROP TABLE IF EXISTS identity_membership")
     connection.execute("DROP TABLE IF EXISTS identity")
 
 
@@ -126,6 +127,10 @@ def mfa_database() -> Iterator[MfaDatabase]:
     access_migration = load_migration(ACCESS_MIGRATION, "mfa_test_access")
     drop_mfa_objects(connection)
     identity_migration.upgrade(connection)
+    connection.execute(
+        "CREATE TABLE identity_membership (identity_id uuid PRIMARY KEY REFERENCES identity(id), "
+        "org_id uuid NOT NULL)"
+    )
     session_migration.upgrade(connection)
     mfa_migration.upgrade(connection)
     connection.execute("CREATE TABLE role (id uuid, org_id uuid, PRIMARY KEY (org_id, id))")
