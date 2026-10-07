@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;560;600;640&amp;family=JetBrains+Mono:wght@400;460;620&amp;display=swap" rel="stylesheet">
 <style>body{margin:0}</style>
 </helmet>
-<div class="xf" data-theme="{{theme}}" style="width:100%;padding:32px;display:flex;flex-direction:column;gap:32px;min-height:2600px">
+<div class="xf" data-theme="{{theme}}" style="width:100%;padding:32px;display:flex;flex-direction:column;gap:32px">
   <header><h2 class="t-title">{{title}}</h2><p class="t-caption">Tokens transcribed from design-system/MASTER.md. No amendments.</p></header>
 
   <section aria-labelledby="s-chrome" style="display:flex;flex-direction:column;gap:12px">
@@ -110,6 +110,85 @@
       <div class="card" style="height:72px;display:grid;place-items:center;box-shadow:var(--shadow-lg),var(--lit)"><span class="t-caption">shadow-lg</span></div>
     </div>
   </section>
+
+  <section aria-labelledby="s-states" style="display:flex;flex-direction:column;gap:14px">
+    <h3 class="t-label" id="s-states">Interaction states (hover, pressed, focus, selected, disabled)</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:12px 16px;align-items:flex-end">
+      <div style="display:flex;flex-direction:column;gap:4px"><span class="t-caption">Default</span><button class="btn" type="button">Button</button></div>
+      <div style="display:flex;flex-direction:column;gap:4px"><span class="t-caption">Hover</span><button class="btn is-hover" type="button">Button</button></div>
+      <div style="display:flex;flex-direction:column;gap:4px"><span class="t-caption">Pressed, scale 0.97</span><button class="btn is-active" type="button">Button</button></div>
+      <div style="display:flex;flex-direction:column;gap:4px"><span class="t-caption">Focus</span><button class="btn is-focus" type="button">Button</button></div>
+      <div style="display:flex;flex-direction:column;gap:4px"><span class="t-caption">Disabled</span><button class="btn" type="button" disabled>Button</button></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px 16px;align-items:flex-end">
+      <div style="display:flex;flex-direction:column;gap:4px"><span class="t-caption">Primary</span><button class="btn primary" type="button">Approve</button></div>
+      <div style="display:flex;flex-direction:column;gap:4px"><span class="t-caption">Primary hover</span><button class="btn primary is-hover" type="button">Approve</button></div>
+      <div style="display:flex;flex-direction:column;gap:4px"><span class="t-caption">Icon button hover</span><button class="iconbtn is-hover" type="button" aria-label="Notifications"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 17V11a6 6 0 1112 0v6l2 2H4zM10 21h4"></path></svg></button></div>
+      <div style="display:flex;flex-direction:column;gap:4px"><span class="t-caption">Link hover</span><a href="#" class="t-dense secondary is-hover">Open approval inbox</a></div>
+      <div style="display:flex;flex-direction:column;gap:4px"><span class="t-caption">Tab, default / hover / selected</span><div style="display:flex;gap:4px"><button class="tab" type="button" style="width:88px">Chart</button><button class="tab is-hover" type="button" style="width:88px">Table</button><button class="tab" type="button" aria-selected="true" style="width:88px;box-shadow:inset 0 -2px 0 0 var(--phase-plan)">Chart</button></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns: repeat(2, minmax(0,1fr));gap:12px">
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <span class="t-caption">Nav item: default, hover, pressed, selected</span>
+        <a href="#" class="nav-i p-plan" aria-label="Projects"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path></svg><span>Projects</span></a>
+        <a href="#" class="nav-i p-plan is-hover" aria-label="Budget"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 012-2h13v4M3 7v11a2 2 0 002 2h15V9H5a2 2 0 01-2-2zM16 14.5h.01"></path></svg><span>Budget</span></a>
+        <a href="#" class="nav-i p-plan is-active" aria-label="Reporting"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M2 20h20"></path></svg><span>Reporting</span></a>
+        <a href="#" class="nav-i p-plan on" aria-label="Home"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h14V10M10 20v-6h4v6"></path></svg><span>Selected</span></a>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <span class="t-caption">Row: default, hover, selected (2px phase rule)</span>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div class="row" style="grid-template-columns: minmax(0,1fr) auto"><span>REQ-00421</span><span class="pill info">Pending</span></div>
+          <div class="row is-hover" style="grid-template-columns: minmax(0,1fr) auto"><span>REQ-00409</span><span class="pill warning">Returned</span></div>
+          <div class="row is-selected" style="grid-template-columns: minmax(0,1fr) auto"><span>REQ-00418</span><span class="pill success">Approved</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-motion" style="display:flex;flex-direction:column;gap:14px">
+    <h3 class="t-label" id="s-motion">Motion (6): budget is inversely proportional to frequency</h3>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="row head" style="grid-template-columns: 150px minmax(0,1fr)"><span>Frequency</span><span>Budget</span></div>
+      <div class="row" style="grid-template-columns: 150px minmax(0,1fr);padding-top:8px;padding-bottom:8px"><span>100+ a day</span><span>Zero, instant. Command menu, row hover, nav hover, shortcuts.</span></div>
+      <div class="row" style="grid-template-columns: 150px minmax(0,1fr);padding-top:8px;padding-bottom:8px"><span>Daily</span><span>160ms or less. Tabs, filters, toggles, button hover and press.</span></div>
+      <div class="row" style="grid-template-columns: 150px minmax(0,1fr);padding-top:8px;padding-bottom:8px"><span>Occasional</span><span>200 to 280ms. Sheets, dialogs, popovers, toasts, drawers.</span></div>
+      <div class="row" style="grid-template-columns: 150px minmax(0,1fr);padding-top:8px;padding-bottom:8px"><span>Rare</span><span>Full expression. First paint, waterfall settle, transfer, PO issue. Once per session.</span></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:center;gap:12px"><span class="t-dense secondary">Easing curves, 800ms</span><button class="btn" type="button" onClick="{{toggleGo}}">Replay</button></div>
+      <sc-for list="{{curves}}" as="c" hint-placeholder-count="5">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span class="t-dense" style="width:150px">{{c.name}}</span><div class="{{goCls}}"><div class="track" style="{{c.style}}"><span class="dot"></span></div></div></div>
+      </sc-for>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="row head" style="grid-template-columns: 120px minmax(0,1fr) 120px"><span>Element</span><span>Spec</span><span>Seen on</span></div>
+      <sc-for list="{{motions}}" as="m" hint-placeholder-count="10">
+        <div class="row" style="grid-template-columns: 120px minmax(0,1fr) 120px;padding-top:8px;padding-bottom:8px"><span style="font-weight:520">{{m.el}}</span><span>{{m.spec}}</span><span class="t-caption">{{m.seen}}</span></div>
+      </sc-for>
+    </div>
+    <p class="t-dense secondary">Signature moments 1 (first paint) and 2 (waterfall settle) are built on the Executive dashboard; use Replay intro. Moments 3, 4 and 5 are specified in MASTER 6.2 and ship with the transfer, approval and purchase order screens. Reduced motion drops transforms, staggers, count-ups and traces and keeps the end state.</p>
+  </section>
+
+  <section aria-labelledby="s-load" style="display:flex;flex-direction:column;gap:12px">
+    <h3 class="t-label" id="s-load">Loading, empty and error (UX-004, UX-005)</h3>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="row head" style="grid-template-columns: minmax(0,1fr)"><span>Loading: skeleton rows at exact final height</span></div>
+      <div class="row" style="grid-template-columns: 1fr 120px 100px"><span class="skel" style="height:12px;width:70%"></span><span class="skel" style="height:12px"></span><span class="skel" style="height:22px"></span></div>
+      <div class="row" style="grid-template-columns: 1fr 120px 100px"><span class="skel" style="height:12px;width:55%"></span><span class="skel" style="height:12px"></span><span class="skel" style="height:22px"></span></div>
+    </div>
+    <div class="card state">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="color:var(--phase-plan)" aria-hidden="true"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path></svg>
+      <div class="t-heading">No projects yet</div>
+      <div class="t-dense secondary">Add your first project and its budget shows up here.</div>
+      <button class="btn primary" type="button">New project</button>
+    </div>
+    <div class="card state" role="alert">
+      <span class="pill danger"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>Could not load projects</span>
+      <div class="t-dense secondary">The request timed out. Your filters are kept. Nothing was changed.</div>
+      <button class="btn" type="button">Try again</button>
+    </div>
+  </section>
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"light","options":["light","dark"]},"$preview":{"width":700,"height":2600}}'>
@@ -151,7 +230,26 @@ class Component extends DCLogic {
     const L = ['#5063D9','#128283','#9249C0','#9E7112','#C64060','#298646','#007FAC','#6A7586'];
     const Dk = ['#879EF9','#3BCFD0','#C484F1','#D8BD51','#FD9FAD','#7CD591','#65CBFD','#8B93A0'];
     const series = L.map((c, i) => ({ n: i + 1, color: dark ? Dk[i] : c, dash: D[i] || 'none' }));
-    return { theme: this.props.theme ?? 'light', title: dark ? 'Dark theme' : 'Light theme', chrome, phases, statuses, tags, series };
+    const on = !!(this.state || {}).go;
+    const curves = [
+      ['ease-out, enter', 'var(--ease-out)'], ['ease-in, exit', 'var(--ease-in)'], ['ease-inout, slide', 'var(--ease-inout)'],
+      ['spring, drag only', 'var(--ease-spring)'], ['linear, for comparison', 'linear']
+    ].map(c => ({ name: c[0], style: '--e:' + c[1] }));
+    const m = (el, spec, seen) => ({ el, spec, seen });
+    const motions = [
+      m('Button', 'Hover shifts background only, 120ms. Press scale 0.97, 120ms.', 'Home, Exec'),
+      m('Row, nav item', 'Hover is instant, no movement. Selected adds a 2px phase rule.', 'Home, Exec'),
+      m('Popover', 'Scale 0.97 to 1 and fade, 150ms ease-out, origin at the trigger.', 'Home bell'),
+      m('Command menu', 'None. Opens instantly on glass.', 'Home search'),
+      m('Sheet', 'Slides in from the right 260ms ease-out; originating row stays highlighted; scrim fades 150ms.', 'Home task'),
+      m('Toast', 'Rises 16px and fades 220ms; closes itself after 4s; Undo while it shows.', 'Home, Exec'),
+      m('Tabs', 'Indicator slides between tabs, 180ms ease-in-out. Arrow keys, Home, End.', 'Exec charts'),
+      m('Drawer, overlay', 'Phone drawer slides 260ms in, 160ms out. Tablet overlay reveals left to right.', '375, 768'),
+      m('Route change', 'Content fades up 6px, 200ms. No overlay wipe.', 'Every page'),
+      m('Skeleton', 'Shimmer sweep 1.4s linear over the sunken surface.', 'States below'),
+      m('Sidebar collapse', 'Width snaps; layout properties never animate. Labels simply drop out.', 'Home, Exec')
+    ];
+    return { theme: this.props.theme ?? 'light', title: dark ? 'Dark theme' : 'Light theme', chrome, phases, statuses, tags, series, curves, motions, goCls: on ? 'go' : '', toggleGo: () => this.setState({ go: !on }) };
   }
 }
 </script>

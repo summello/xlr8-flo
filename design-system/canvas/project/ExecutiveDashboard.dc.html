@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;560;600;640&amp;family=JetBrains+Mono:wght@400;460;620&amp;display=swap" rel="stylesheet">
 <style>body{margin:0}</style>
 </helmet>
-<div class="xf" data-theme="{{theme}}" style="min-height: 100vh">
+<div class="{{rootCls}}" data-theme="{{theme}}" style="min-height: 100vh">
 <div class="{{appCls}}">
   <nav class="side" aria-label="Primary">
     <div class="brand"><span class="brand-mark">FL</span><span class="brand-name">XLR8 FLO</span></div>
@@ -47,13 +47,14 @@
           <select id="fy" class="btn" style="padding-right:8px"><option>FY27</option><option>FY26</option></select>
           <label class="t-caption" for="bu">Business unit</label>
           <select id="bu" class="btn" style="padding-right:8px"><option>All business units</option><option>Operations</option><option>Facilities</option><option>IT</option><option>Manufacturing</option><option>Corporate</option></select>
-          <button class="btn" type="button">Export</button>
+          <button class="btn" type="button" onClick="{{doExport}}">Export</button>
+          <button class="btn" type="button" onClick="{{replay}}">Replay intro</button>
         </div>
       </div>
 
       <section aria-label="Portfolio key figures" class="kpis">
         <sc-for list="{{kpis}}" as="k" hint-placeholder-count="5">
-          <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:8px">
+          <div class="card" style="{{k.style}};padding:16px;display:flex;flex-direction:column;gap:8px">
             <div class="t-label" style="display:flex;align-items:center;gap:8px"><i class="sw" style="{{k.swatch}}"></i>{{k.label}}</div>
             <div title="{{k.full}}"><span class="metric">{{k.value}}</span><span class="t-caption" style="margin-left:6px">USD</span></div>
             <div class="t-dense secondary">{{k.line}}</div>
@@ -65,30 +66,46 @@
       <div class="cols-2-1">
         <section class="card" aria-labelledby="h-wf">
           <div class="card-h"><h2 class="t-heading" id="h-wf">Budget waterfall</h2><span class="t-caption">USD millions</span></div>
-          <div class="card-b" style="display:flex;flex-direction:column;gap:8px">
+          <div class="card-b" style="display:flex;flex-direction:column;gap:12px">
             <p class="t-dense secondary">Of 48.25M allocated, 38.44M is spoken for. 9.81M remains available.</p>
-            <div class="chart-scroll" tabindex="0" role="region" aria-label="Budget waterfall chart"><svg class="chart-t" viewBox="0 0 680 275" role="img" aria-label="Waterfall from 48.25 million allocated, minus 6.12 reserved, minus 14.38 committed, minus 17.94 actual, leaving 9.81 available.">
-              <defs><pattern id="hz" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2.5" height="6" fill="#fff" fill-opacity="0.45"></rect></pattern></defs>
-              <line class="grid-l" x1="50" x2="660" y1="196" y2="196"></line><line class="grid-l" x1="50" x2="660" y1="152" y2="152"></line><line class="grid-l" x1="50" x2="660" y1="108" y2="108"></line><line class="grid-l" x1="50" x2="660" y1="64" y2="64"></line><line class="grid-l" x1="50" x2="660" y1="20" y2="20"></line>
-              <line class="axis" x1="50" x2="660" y1="240" y2="240"></line>
-              <text x="42" y="244" text-anchor="end">0</text><text x="42" y="200" text-anchor="end">10</text><text x="42" y="156" text-anchor="end">20</text><text x="42" y="112" text-anchor="end">30</text><text x="42" y="68" text-anchor="end">40</text><text x="42" y="24" text-anchor="end">50</text>
-              <rect x="70" y="27.7" width="80" height="212.3" rx="3" fill="var(--c1)"></rect>
-              <rect x="190" y="27.7" width="80" height="26.9" rx="3" fill="var(--c3)"></rect><rect x="190" y="27.7" width="80" height="26.9" rx="3" fill="url(#hz)"></rect>
-              <rect x="310" y="54.6" width="80" height="63.3" rx="3" fill="var(--c2)"></rect><rect x="310" y="54.6" width="80" height="63.3" rx="3" fill="url(#hz)"></rect>
-              <rect x="430" y="117.9" width="80" height="78.9" rx="3" fill="var(--c4)"></rect><rect x="430" y="117.9" width="80" height="78.9" rx="3" fill="url(#hz)"></rect>
-              <rect x="550" y="196.8" width="80" height="43.2" rx="3" fill="var(--c6)"></rect>
-              <line x1="150" x2="190" y1="27.7" y2="27.7" stroke="var(--fg-muted)" stroke-dasharray="3 3"></line><line x1="270" x2="310" y1="54.6" y2="54.6" stroke="var(--fg-muted)" stroke-dasharray="3 3"></line><line x1="390" x2="430" y1="117.9" y2="117.9" stroke="var(--fg-muted)" stroke-dasharray="3 3"></line><line x1="510" x2="550" y1="196.8" y2="196.8" stroke="var(--fg-muted)" stroke-dasharray="3 3"></line>
-              <text class="mono" x="110" y="20" text-anchor="middle">48.25</text>
-              <text class="mono" x="230" y="20" text-anchor="middle">▼ −6.12</text>
-              <text class="mono" x="350" y="47" text-anchor="middle">▼ −14.38</text>
-              <text class="mono" x="470" y="110" text-anchor="middle">▼ −17.94</text>
-              <text class="mono" x="590" y="189" text-anchor="middle">9.81</text>
-              <text x="110" y="260" text-anchor="middle">Allocated</text><text x="230" y="260" text-anchor="middle">Reserved</text><text x="350" y="260" text-anchor="middle">Committed</text><text x="470" y="260" text-anchor="middle">Actual</text><text x="590" y="260" text-anchor="middle">Available</text>
-            </svg></div>
-            <details class="tbl"><summary>Show data table</summary>
-              <table><thead><tr><th scope="col">Stage</th><th scope="col">Change (USD)</th><th scope="col">Running total (USD)</th></tr></thead>
-              <tbody><tr><td>Allocated</td><td>48,250,000.00</td><td>48,250,000.00</td></tr><tr><td>Reserved</td><td>(6,120,000.00)</td><td>42,130,000.00</td></tr><tr><td>Committed</td><td>(14,380,000.00)</td><td>27,750,000.00</td></tr><tr><td>Actual</td><td>(17,940,000.00)</td><td>9,810,000.00</td></tr><tr><td>Available</td><td>9,810,000.00</td><td>9,810,000.00</td></tr></tbody></table>
-            </details>
+            <div class="tabs" role="tablist" aria-label="Waterfall view" onKeyDown="{{wf.key}}">
+              <button class="tab" role="tab" id="wf-t0" aria-selected="{{wf.s0}}" aria-controls="wf-p" tabindex="{{wf.i0}}" type="button" onClick="{{wf.go0}}">Chart</button>
+              <button class="tab" role="tab" id="wf-t1" aria-selected="{{wf.s1}}" aria-controls="wf-p" tabindex="{{wf.i1}}" type="button" onClick="{{wf.go1}}">Table</button>
+              <span class="tab-ind" style="{{wf.ind}}"></span>
+            </div>
+            <div role="tabpanel" id="wf-p" aria-labelledby="{{wf.lab}}" class="panel-in">
+              <sc-if value="{{wf.isChart}}" hint-placeholder-val="{{ true }}">
+                <div class="chart-wrap">
+                  <div class="chart-scroll" tabindex="0" role="region" aria-label="Budget waterfall chart">
+                    <svg class="chart-t" viewBox="0 0 680 275" role="group" aria-label="Waterfall from 48.25 million allocated, minus 6.12 reserved, minus 14.38 committed, minus 17.94 actual, leaving 9.81 available.">
+                      <defs><pattern id="hz" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2.5" height="6" fill="var(--surface)" fill-opacity="0.45"></rect></pattern></defs>
+                      <line class="grid-l" x1="50" x2="660" y1="196" y2="196"></line><line class="grid-l" x1="50" x2="660" y1="152" y2="152"></line><line class="grid-l" x1="50" x2="660" y1="108" y2="108"></line><line class="grid-l" x1="50" x2="660" y1="64" y2="64"></line><line class="grid-l" x1="50" x2="660" y1="20" y2="20"></line>
+                      <line class="axis" x1="50" x2="660" y1="240" y2="240"></line>
+                      <text x="42" y="244" text-anchor="end">0</text><text x="42" y="200" text-anchor="end">10</text><text x="42" y="156" text-anchor="end">20</text><text x="42" y="112" text-anchor="end">30</text><text x="42" y="68" text-anchor="end">40</text><text x="42" y="24" text-anchor="end">50</text>
+                      <rect class="wf-bar" style="--i:0" x="70" y="27.7" width="80" height="212.3" rx="3" fill="var(--c1)" tabindex="0" role="img" aria-label="Allocated 48,250,000.00 USD" data-tip="Allocated 48,250,000.00 USD" onMouseEnter="{{showTip}}" onFocus="{{showTip}}" onMouseLeave="{{hideTip}}" onBlur="{{hideTip}}"></rect>
+                      <rect class="wf-bar" style="--i:1" x="190" y="27.7" width="80" height="26.9" rx="3" fill="var(--c3)" tabindex="0" role="img" aria-label="Reserved minus 6,120,000.00 USD" data-tip="Reserved (6,120,000.00) USD · 12.7% of allocated" onMouseEnter="{{showTip}}" onFocus="{{showTip}}" onMouseLeave="{{hideTip}}" onBlur="{{hideTip}}"></rect><rect class="wf-bar" style="--i:1;pointer-events:none" x="190" y="27.7" width="80" height="26.9" rx="3" fill="url(#hz)"></rect>
+                      <rect class="wf-bar" style="--i:2" x="310" y="54.6" width="80" height="63.3" rx="3" fill="var(--c2)" tabindex="0" role="img" aria-label="Committed minus 14,380,000.00 USD" data-tip="Committed (14,380,000.00) USD · 29.8% of allocated" onMouseEnter="{{showTip}}" onFocus="{{showTip}}" onMouseLeave="{{hideTip}}" onBlur="{{hideTip}}"></rect><rect class="wf-bar" style="--i:2;pointer-events:none" x="310" y="54.6" width="80" height="63.3" rx="3" fill="url(#hz)"></rect>
+                      <rect class="wf-bar" style="--i:3" x="430" y="117.9" width="80" height="78.9" rx="3" fill="var(--c4)" tabindex="0" role="img" aria-label="Actual minus 17,940,000.00 USD" data-tip="Actual (17,940,000.00) USD · 37.2% of allocated" onMouseEnter="{{showTip}}" onFocus="{{showTip}}" onMouseLeave="{{hideTip}}" onBlur="{{hideTip}}"></rect><rect class="wf-bar" style="--i:3;pointer-events:none" x="430" y="117.9" width="80" height="78.9" rx="3" fill="url(#hz)"></rect>
+                      <rect class="wf-bar" style="--i:4" x="550" y="196.8" width="80" height="43.2" rx="3" fill="var(--c6)" tabindex="0" role="img" aria-label="Available 9,810,000.00 USD" data-tip="Available 9,810,000.00 USD · 20.3% of allocated" onMouseEnter="{{showTip}}" onFocus="{{showTip}}" onMouseLeave="{{hideTip}}" onBlur="{{hideTip}}"></rect>
+                      <line class="wf-conn" style="--i:1" x1="150" x2="190" y1="27.7" y2="27.7" stroke="var(--fg-muted)" stroke-dasharray="3 3"></line><line class="wf-conn" style="--i:2" x1="270" x2="310" y1="54.6" y2="54.6" stroke="var(--fg-muted)" stroke-dasharray="3 3"></line><line class="wf-conn" style="--i:3" x1="390" x2="430" y1="117.9" y2="117.9" stroke="var(--fg-muted)" stroke-dasharray="3 3"></line><line class="wf-conn" style="--i:4" x1="510" x2="550" y1="196.8" y2="196.8" stroke="var(--fg-muted)" stroke-dasharray="3 3"></line>
+                      <text class="mono wf-lbl" style="--i:0" x="110" y="20" text-anchor="middle">48.25</text>
+                      <text class="mono wf-lbl" style="--i:1" x="230" y="20" text-anchor="middle">▼ −6.12</text>
+                      <text class="mono wf-lbl" style="--i:2" x="350" y="47" text-anchor="middle">▼ −14.38</text>
+                      <text class="mono wf-lbl" style="--i:3" x="470" y="110" text-anchor="middle">▼ −17.94</text>
+                      <text class="mono wf-lbl" style="--i:4" x="590" y="189" text-anchor="middle">9.81</text>
+                      <text x="110" y="260" text-anchor="middle">Allocated</text><text x="230" y="260" text-anchor="middle">Reserved</text><text x="350" y="260" text-anchor="middle">Committed</text><text x="470" y="260" text-anchor="middle">Actual</text><text x="590" y="260" text-anchor="middle">Available</text>
+                    </svg>
+                  </div>
+                  <sc-if value="{{wf.tip}}" hint-placeholder-val="{{ false }}"><div class="tt" style="{{wf.tipStyle}}">{{wf.tipText}}</div></sc-if>
+                </div>
+              </sc-if>
+              <sc-if value="{{wf.isTable}}" hint-placeholder-val="{{ false }}">
+                <div class="tbl">
+                  <table><thead><tr><th scope="col">Stage</th><th scope="col">Change (USD)</th><th scope="col">Running total (USD)</th></tr></thead>
+                  <tbody><tr><td>Allocated</td><td>48,250,000.00</td><td>48,250,000.00</td></tr><tr><td>Reserved</td><td>(6,120,000.00)</td><td>42,130,000.00</td></tr><tr><td>Committed</td><td>(14,380,000.00)</td><td>27,750,000.00</td></tr><tr><td>Actual</td><td>(17,940,000.00)</td><td>9,810,000.00</td></tr><tr><td>Available</td><td>9,810,000.00</td><td>9,810,000.00</td></tr></tbody></table>
+                </div>
+              </sc-if>
+            </div>
           </div>
         </section>
 
@@ -97,7 +114,7 @@
           <div class="card-b" style="display:flex;flex-direction:column;gap:14px">
             <sc-for list="{{bus}}" as="b" hint-placeholder-count="5">
               <div>
-                <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:4px"><a href="#" style="font-weight:520">{{b.name}}</a><span class="num">{{b.pct}}</span></div>
+                <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:4px"><a href="#" style="font-weight:520" class="u">{{b.name}}</a><span class="num">{{b.pct}}</span></div>
                 <div class="bar" style="{{b.track}};background:var(--sunken)" role="img" aria-label="{{b.aria}}"><span style="{{b.fill}}"></span></div>
                 <div class="t-caption" style="margin-top:4px">{{b.actual}}M of {{b.alloc}}M USD</div>
               </div>
@@ -110,28 +127,53 @@
       <div class="cols-2-1">
         <section class="card" aria-labelledby="h-line">
           <div class="card-h"><h2 class="t-heading" id="h-line">Cumulative spend over time</h2><span class="t-caption">USD millions · FY27</span></div>
-          <div class="card-b" style="display:flex;flex-direction:column;gap:8px">
+          <div class="card-b" style="display:flex;flex-direction:column;gap:12px">
             <p class="t-dense secondary">Actual spend is 4.6M under plan. Actual plus committed is 9.8M over plan.</p>
-            <div class="chart-scroll" tabindex="0" role="region" aria-label="Cumulative spend chart"><svg class="chart-t" viewBox="0 0 700 255" role="img" aria-label="Cumulative spend April to September. Actual reaches 17.94 million, actual plus committed 32.32 million, plan 22.5 million.">
-              <line class="grid-l" x1="50" x2="600" y1="162.9" y2="162.9"></line><line class="grid-l" x1="50" x2="600" y1="105.7" y2="105.7"></line><line class="grid-l" x1="50" x2="600" y1="48.6" y2="48.6"></line>
-              <line class="axis" x1="50" x2="600" y1="220" y2="220"></line>
-              <text x="42" y="224" text-anchor="end">0</text><text x="42" y="167" text-anchor="end">10</text><text x="42" y="110" text-anchor="end">20</text><text x="42" y="53" text-anchor="end">30</text>
-              <polyline fill="none" stroke="var(--c3)" stroke-width="2.5" stroke-dasharray="2 3" stroke-linecap="round" points="70,202.9 175,182.9 280,160 385,137.1 490,114.3 595,91.4"></polyline>
-              <polyline fill="none" stroke="var(--c2)" stroke-width="2.5" stroke-dasharray="6 3" points="70,201.7 175,180 280,150.3 385,113.7 490,74.9 595,35.4"></polyline>
-              <polyline fill="none" stroke="var(--c1)" stroke-width="2.5" points="70,209.7 175,196.6 280,180 385,159.4 490,138.9 595,117.7"></polyline>
-              <circle cx="70" cy="209.7" r="3.5" fill="var(--c1)"></circle><circle cx="175" cy="196.6" r="3.5" fill="var(--c1)"></circle><circle cx="280" cy="180" r="3.5" fill="var(--c1)"></circle><circle cx="385" cy="159.4" r="3.5" fill="var(--c1)"></circle><circle cx="490" cy="138.9" r="3.5" fill="var(--c1)"></circle><circle cx="595" cy="117.7" r="3.5" fill="var(--c1)"></circle>
-              <text class="mono" x="606" y="39">32.32</text><text class="mono" x="606" y="95">22.50</text><text class="mono" x="606" y="121">17.94</text>
-              <text x="70" y="240" text-anchor="middle">Apr</text><text x="175" y="240" text-anchor="middle">May</text><text x="280" y="240" text-anchor="middle">Jun</text><text x="385" y="240" text-anchor="middle">Jul</text><text x="490" y="240" text-anchor="middle">Aug</text><text x="595" y="240" text-anchor="middle">Sep</text>
-            </svg></div>
-            <div class="legend">
-              <span><svg width="28" height="8" aria-hidden="true"><line x1="0" x2="28" y1="4" y2="4" stroke="var(--c1)" stroke-width="2.5"></line></svg>Actual</span>
-              <span><svg width="28" height="8" aria-hidden="true"><line x1="0" x2="28" y1="4" y2="4" stroke="var(--c2)" stroke-width="2.5" stroke-dasharray="6 3"></line></svg>Actual plus committed</span>
-              <span><svg width="28" height="8" aria-hidden="true"><line x1="0" x2="28" y1="4" y2="4" stroke="var(--c3)" stroke-width="2.5" stroke-dasharray="2 3"></line></svg>Plan</span>
+            <div class="tabs" role="tablist" aria-label="Spend view" onKeyDown="{{ln.key}}">
+              <button class="tab" role="tab" id="ln-t0" aria-selected="{{ln.s0}}" aria-controls="ln-p" tabindex="{{ln.i0}}" type="button" onClick="{{ln.go0}}">Chart</button>
+              <button class="tab" role="tab" id="ln-t1" aria-selected="{{ln.s1}}" aria-controls="ln-p" tabindex="{{ln.i1}}" type="button" onClick="{{ln.go1}}">Table</button>
+              <span class="tab-ind" style="{{ln.ind}}"></span>
             </div>
-            <details class="tbl"><summary>Show data table</summary>
-              <table><thead><tr><th scope="col">Month</th><th scope="col">Actual</th><th scope="col">Actual + committed</th><th scope="col">Plan</th></tr></thead>
-              <tbody><tr><td>Apr</td><td>1.80</td><td>3.20</td><td>3.00</td></tr><tr><td>May</td><td>4.10</td><td>7.00</td><td>6.50</td></tr><tr><td>Jun</td><td>7.00</td><td>12.20</td><td>10.50</td></tr><tr><td>Jul</td><td>10.60</td><td>18.60</td><td>14.50</td></tr><tr><td>Aug</td><td>14.20</td><td>25.40</td><td>18.50</td></tr><tr><td>Sep</td><td>17.94</td><td>32.32</td><td>22.50</td></tr></tbody></table>
-            </details>
+            <div role="tabpanel" id="ln-p" aria-labelledby="{{ln.lab}}" class="panel-in">
+              <sc-if value="{{ln.isChart}}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <div class="chart-wrap">
+                    <div class="chart-scroll" tabindex="0" role="region" aria-label="Cumulative spend chart">
+                      <svg class="chart-t" viewBox="0 0 700 255" role="group" aria-label="Cumulative spend April to September. Actual reaches 17.94 million, actual plus committed 32.32 million, plan 22.5 million.">
+                        <line class="grid-l" x1="50" x2="600" y1="162.9" y2="162.9"></line><line class="grid-l" x1="50" x2="600" y1="105.7" y2="105.7"></line><line class="grid-l" x1="50" x2="600" y1="48.6" y2="48.6"></line>
+                        <line class="axis" x1="50" x2="600" y1="220" y2="220"></line>
+                        <text x="42" y="224" text-anchor="end">0</text><text x="42" y="167" text-anchor="end">10</text><text x="42" y="110" text-anchor="end">20</text><text x="42" y="53" text-anchor="end">30</text>
+                        <g class="ln-g">
+                          <polyline fill="none" stroke="var(--c3)" stroke-width="2.5" stroke-dasharray="2 3" stroke-linecap="round" points="70,202.9 175,182.9 280,160 385,137.1 490,114.3 595,91.4"></polyline>
+                          <polyline fill="none" stroke="var(--c2)" stroke-width="2.5" stroke-dasharray="6 3" points="70,201.7 175,180 280,150.3 385,113.7 490,74.9 595,35.4"></polyline>
+                          <polyline fill="none" stroke="var(--c1)" stroke-width="2.5" points="70,209.7 175,196.6 280,180 385,159.4 490,138.9 595,117.7"></polyline>
+                          <circle cx="70" cy="209.7" r="4" fill="var(--c1)" tabindex="0" role="img" aria-label="April" data-tip="Apr: actual 1.80M, actual plus committed 3.20M, plan 3.00M" onMouseEnter="{{showTip}}" onFocus="{{showTip}}" onMouseLeave="{{hideTip}}" onBlur="{{hideTip}}"></circle>
+                          <circle cx="175" cy="196.6" r="4" fill="var(--c1)" tabindex="0" role="img" aria-label="May" data-tip="May: actual 4.10M, actual plus committed 7.00M, plan 6.50M" onMouseEnter="{{showTip}}" onFocus="{{showTip}}" onMouseLeave="{{hideTip}}" onBlur="{{hideTip}}"></circle>
+                          <circle cx="280" cy="180" r="4" fill="var(--c1)" tabindex="0" role="img" aria-label="June" data-tip="Jun: actual 7.00M, actual plus committed 12.20M, plan 10.50M" onMouseEnter="{{showTip}}" onFocus="{{showTip}}" onMouseLeave="{{hideTip}}" onBlur="{{hideTip}}"></circle>
+                          <circle cx="385" cy="159.4" r="4" fill="var(--c1)" tabindex="0" role="img" aria-label="July" data-tip="Jul: actual 10.60M, actual plus committed 18.60M, plan 14.50M" onMouseEnter="{{showTip}}" onFocus="{{showTip}}" onMouseLeave="{{hideTip}}" onBlur="{{hideTip}}"></circle>
+                          <circle cx="490" cy="138.9" r="4" fill="var(--c1)" tabindex="0" role="img" aria-label="August" data-tip="Aug: actual 14.20M, actual plus committed 25.40M, plan 18.50M" onMouseEnter="{{showTip}}" onFocus="{{showTip}}" onMouseLeave="{{hideTip}}" onBlur="{{hideTip}}"></circle>
+                          <circle cx="595" cy="117.7" r="4" fill="var(--c1)" tabindex="0" role="img" aria-label="September" data-tip="Sep: actual 17.94M, actual plus committed 32.32M, plan 22.50M" onMouseEnter="{{showTip}}" onFocus="{{showTip}}" onMouseLeave="{{hideTip}}" onBlur="{{hideTip}}"></circle>
+                        </g>
+                        <text class="mono" x="606" y="39">32.32</text><text class="mono" x="606" y="95">22.50</text><text class="mono" x="606" y="121">17.94</text>
+                        <text x="70" y="240" text-anchor="middle">Apr</text><text x="175" y="240" text-anchor="middle">May</text><text x="280" y="240" text-anchor="middle">Jun</text><text x="385" y="240" text-anchor="middle">Jul</text><text x="490" y="240" text-anchor="middle">Aug</text><text x="595" y="240" text-anchor="middle">Sep</text>
+                      </svg>
+                    </div>
+                    <sc-if value="{{ln.tip}}" hint-placeholder-val="{{ false }}"><div class="tt" style="{{ln.tipStyle}}">{{ln.tipText}}</div></sc-if>
+                  </div>
+                  <div class="legend">
+                    <span><svg width="28" height="8" aria-hidden="true"><line x1="0" x2="28" y1="4" y2="4" stroke="var(--c1)" stroke-width="2.5"></line></svg>Actual</span>
+                    <span><svg width="28" height="8" aria-hidden="true"><line x1="0" x2="28" y1="4" y2="4" stroke="var(--c2)" stroke-width="2.5" stroke-dasharray="6 3"></line></svg>Actual plus committed</span>
+                    <span><svg width="28" height="8" aria-hidden="true"><line x1="0" x2="28" y1="4" y2="4" stroke="var(--c3)" stroke-width="2.5" stroke-dasharray="2 3"></line></svg>Plan</span>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ln.isTable}}" hint-placeholder-val="{{ false }}">
+                <div class="tbl">
+                  <table><thead><tr><th scope="col">Month</th><th scope="col">Actual</th><th scope="col">Actual + committed</th><th scope="col">Plan</th></tr></thead>
+                  <tbody><tr><td>Apr</td><td>1.80</td><td>3.20</td><td>3.00</td></tr><tr><td>May</td><td>4.10</td><td>7.00</td><td>6.50</td></tr><tr><td>Jun</td><td>7.00</td><td>12.20</td><td>10.50</td></tr><tr><td>Jul</td><td>10.60</td><td>18.60</td><td>14.50</td></tr><tr><td>Aug</td><td>14.20</td><td>25.40</td><td>18.50</td></tr><tr><td>Sep</td><td>17.94</td><td>32.32</td><td>22.50</td></tr></tbody></table>
+                </div>
+              </sc-if>
+            </div>
           </div>
         </section>
 
@@ -141,7 +183,7 @@
             <sc-for list="{{funnel}}" as="f" hint-placeholder-count="5">
               <div style="display:grid;grid-template-columns: 120px minmax(0,1fr) 28px;align-items:center;gap:8px">
                 <span class="t-dense">{{f.label}}</span>
-                <div class="bar" style="height:12px" role="img" aria-label="{{f.aria}}"><span style="{{f.fill}}"></span></div>
+                <div class="bar" style="{{f.style}};height:12px" role="img" aria-label="{{f.aria}}"><span style="{{f.fill}}"></span></div>
                 <span class="num">{{f.n}}</span>
               </div>
             </sc-for>
@@ -169,6 +211,9 @@
     </main>
   </div>
 </div>
+<div class="toasts" role="status" aria-live="polite">
+  <sc-if value="{{toast}}" hint-placeholder-val="{{ false }}"><div class="toast"><span>{{toast.msg}}</span></div></sc-if>
+</div>
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"dark","options":["light","dark"]},"collapsed":{"editor":"enum","default":"auto","options":["auto","yes","no"]},"navOpen":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1560}}'>
@@ -177,11 +222,30 @@ class Component extends DCLogic {
     if ((this.props.collapsed ?? 'auto') === 'auto') {
       try { if (localStorage.getItem('xf.sidebar') === 'collapsed') this.setState({ collapsed: true }); } catch (e) {}
     }
+    this.startIntro();
+  }
+  componentWillUnmount() { cancelAnimationFrame(this._raf); clearTimeout(this._it); clearTimeout(this._tt); }
+  // Signature moments 1 and 2 (MASTER 6.2): KPI rise + count-up, waterfall settle. Once; static end state.
+  startIntro() {
+    cancelAnimationFrame(this._raf); clearTimeout(this._it);
+    const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) { this.setState({ intro: false, p: 1 }); return; }
+    this.setState({ intro: true, p: 0 });
+    const t0 = performance.now();
+    const tick = (now) => {
+      const x = Math.min((now - t0) / 600, 1);
+      this.setState({ p: 1 - Math.pow(1 - x, 3) });
+      if (x < 1) this._raf = requestAnimationFrame(tick);
+    };
+    this._raf = requestAnimationFrame(tick);
+    this._it = setTimeout(() => this.setState({ intro: false }), 1800);
   }
   renderVals() {
     const st = this.state || {};
     const collapsed = st.collapsed ?? (this.props.collapsed === 'yes');
     const navOpen = st.navOpen ?? (this.props.navOpen === true);
+    const p = st.p ?? 1;
+    const back = (el) => setTimeout(() => { if (el && el.focus) el.focus(); }, 0);
     const I = {
       home: "M3 11l9-8 9 8M5 10v10h14V10M10 20v-6h4v6",
       org: "M4 21V5l8-2v18M12 9h8v12M7 8h2M7 12h2M7 16h2M15 13h2M15 17h2",
@@ -209,23 +273,24 @@ class Component extends DCLogic {
     ];
     const P = { warn: "M12 3l10 18H2zM12 10v5M12 18h.01", x: "M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6" };
     const sw = (c) => 'background:var(' + c + ')';
+    const kp = (label, c, n, full, line, i) => ({ label, swatch: sw(c), value: (n * p).toFixed(2) + 'M', full, line, style: '--i:' + i });
     const kpis = [
-      { label: 'Allocated', swatch: sw('--c1'), value: '48.25M', full: '48,250,000.00 USD', line: 'Across 5 business units' },
-      { label: 'Reserved', swatch: sw('--c3'), value: '6.12M', full: '6,120,000.00 USD', line: '12.7% of allocated' },
-      { label: 'Committed', swatch: sw('--c2'), value: '14.38M', full: '14,380,000.00 USD', line: '29.8% of allocated' },
-      { label: 'Actual', swatch: sw('--c4'), value: '17.94M', full: '17,940,000.00 USD', line: '37.2% of allocated' },
-      { label: 'Available', swatch: sw('--c6'), value: '9.81M', full: '9,810,000.00 USD', line: '20.3% of allocated remains' }
+      kp('Allocated', '--c1', 48.25, '48,250,000.00 USD', 'Across 5 business units', 0),
+      kp('Reserved', '--c3', 6.12, '6,120,000.00 USD', '12.7% of allocated', 1),
+      kp('Committed', '--c2', 14.38, '14,380,000.00 USD', '29.8% of allocated', 2),
+      kp('Actual', '--c4', 17.94, '17,940,000.00 USD', '37.2% of allocated', 3),
+      kp('Available', '--c6', 9.81, '9,810,000.00 USD', '20.3% of allocated remains', 4)
     ];
-    const bu = (name, alloc, actual, pct, w, f) => ({ name, alloc, actual, pct, track: 'width:' + w + '%', fill: 'width:' + f + '%;background:var(--c1)', aria: name + ': ' + actual + ' million of ' + alloc + ' million, ' + pct });
+    const bu = (name, alloc, actual, pct, w, f, i) => ({ name, alloc, actual, pct, track: 'width:' + w + '%;--i:' + i, fill: 'width:' + f + '%;background:var(--c1)', aria: name + ': ' + actual + ' million of ' + alloc + ' million, ' + pct });
     const bus = [
-      bu('Operations', '16.40', '6.55', '39.9%', 100, 39.9),
-      bu('Facilities', '11.85', '4.12', '34.8%', 72.3, 34.8),
-      bu('IT', '9.60', '3.90', '40.6%', 58.5, 40.6),
-      bu('Manufacturing', '7.40', '2.60', '35.1%', 45.1, 35.1),
-      bu('Corporate', '3.00', '0.77', '25.7%', 18.3, 25.7)
+      bu('Operations', '16.40', '6.55', '39.9%', 100, 39.9, 0),
+      bu('Facilities', '11.85', '4.12', '34.8%', 72.3, 34.8, 1),
+      bu('IT', '9.60', '3.90', '40.6%', 58.5, 40.6, 2),
+      bu('Manufacturing', '7.40', '2.60', '35.1%', 45.1, 35.1, 3),
+      bu('Corporate', '3.00', '0.77', '25.7%', 18.3, 25.7, 4)
     ];
-    const fn = (label, n, max) => ({ label, n, fill: 'width:' + (n / max * 100) + '%;background:var(--c3)', aria: label + ': ' + n });
-    const funnel = [fn('Draft', 12, 12), fn('Approval pending', 9, 12), fn('Sourcing', 7, 12), fn('Awarded', 4, 12), fn('PO issued', 3, 12)];
+    const fn = (label, n, max, i) => ({ label, n, style: '--i:' + i, fill: 'width:' + (n / max * 100) + '%;background:var(--c3)', aria: label + ': ' + n });
+    const funnel = [fn('Draft', 12, 12, 0), fn('Approval pending', 9, 12, 1), fn('Sourcing', 7, 12, 2), fn('Awarded', 4, 12, 3), fn('PO issued', 3, 12, 4)];
     const att = (name, bu, alloc, used, rem, neg, tone, pd, pill) => ({ name, bu, alloc, used, rem, remCls: 'num r' + (neg ? ' neg' : ''), pillCls: 'pill ' + tone, pd, pill });
     const attention = [
       att('Fleet charging depots', 'Operations', '2,600,000.00', '2,704,000.00', '(104,000.00)', true, 'danger', P.x, 'Over budget'),
@@ -233,17 +298,49 @@ class Component extends DCLogic {
       att('Data centre cooling', 'IT', '1,900,000.00', '1,748,000.00', '152,000.00', false, 'warning', P.warn, 'Nearing limit'),
       att('Plant 4 line retrofit', 'Manufacturing', '4,200,000.00', '3,654,000.00', '546,000.00', false, 'warning', P.warn, 'Nearing limit')
     ];
+
+    // tabs with a sliding indicator (MASTER 6.3): roving tabindex, arrows, Home, End
+    const tip = st.tip || null;
+    const mk = (key) => {
+      const sel = st[key + 'Tab'] ?? 0;
+      const set = (n) => { this.setState({ [key + 'Tab']: n, tip: null }); back(document.getElementById(key + '-t' + n)); };
+      return {
+        isChart: sel === 0, isTable: sel === 1, s0: sel === 0, s1: sel === 1, i0: sel === 0 ? 0 : -1, i1: sel === 1 ? 0 : -1,
+        ind: 'transform:translateX(' + sel * 88 + 'px)', lab: key + '-t' + sel,
+        go0: () => this.setState({ [key + 'Tab']: 0, tip: null }), go1: () => this.setState({ [key + 'Tab']: 1, tip: null }),
+        key: (e) => {
+          if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); set(sel === 0 ? 1 : 0); }
+          else if (e.key === 'Home') { e.preventDefault(); set(0); }
+          else if (e.key === 'End') { e.preventDefault(); set(1); }
+        },
+        tip: !!tip && tip.key === key, tipText: tip ? tip.text : '', tipStyle: tip ? 'left:' + tip.x + 'px;top:' + tip.y + 'px' : ''
+      };
+    };
     return {
-      theme: this.props.theme ?? 'light', nav, kpis, bus, funnel, attention,
+      theme: this.props.theme ?? 'light', nav, kpis, bus, funnel, attention, wf: mk('wf'), ln: mk('ln'),
+      rootCls: 'xf' + (st.intro ? ' intro' : ''),
       appCls: 'app' + (collapsed ? ' collapsed' : '') + (navOpen ? ' nav-open' : ''),
       navOpen, expanded: !collapsed, collapseLabel: collapsed ? 'Expand sidebar' : 'Collapse sidebar',
+      navLabel: navOpen ? 'Close navigation' : 'Open navigation',
       toggleCollapse: () => {
         this.setState({ collapsed: !collapsed });
         try { localStorage.setItem('xf.sidebar', collapsed ? 'expanded' : 'collapsed'); } catch (e) {}
       },
       toggleNav: () => this.setState({ navOpen: !navOpen }),
-      navLabel: navOpen ? 'Close navigation' : 'Open navigation',
-      closeNav: () => this.setState({ navOpen: false })
+      closeNav: () => this.setState({ navOpen: false }),
+      replay: () => { this.setState({ intro: false }); setTimeout(() => this.startIntro(), 60); },
+      showTip: (e) => {
+        const el = e.currentTarget, wrap = el.closest('.chart-wrap'); if (!wrap) return;
+        const r = el.getBoundingClientRect(), w = wrap.getBoundingClientRect();
+        this.setState({ tip: { key: wrap.closest('[role=tabpanel]').id === 'wf-p' ? 'wf' : 'ln', text: el.getAttribute('data-tip'), x: r.left - w.left + r.width / 2, y: r.top - w.top } });
+      },
+      hideTip: () => this.setState({ tip: null }),
+      toast: st.toast || null,
+      doExport: () => {
+        clearTimeout(this._tt);
+        this.setState({ toast: { msg: 'Export queued. You will get an email when it is ready.' } });
+        this._tt = setTimeout(() => this.setState({ toast: null }), 4000);
+      }
     };
   }
 }

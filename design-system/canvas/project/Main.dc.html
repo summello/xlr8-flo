@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;560;600;640&amp;family=JetBrains+Mono:wght@400;460;620&amp;display=swap" rel="stylesheet">
 <style>body{margin:0}</style>
 </helmet>
-<div class="xf" data-theme="{{theme}}" style="min-height: 100vh">
+<div class="xf intro" data-theme="{{theme}}" style="min-height: 100vh">
 <div class="{{appCls}}">
   <nav class="side" aria-label="Primary">
     <div class="brand"><span class="brand-mark">FL</span><span class="brand-name">XLR8 FLO</span></div>
@@ -31,8 +31,19 @@
     <header class="top">
       <button class="iconbtn menu-btn" type="button" onClick="{{toggleNav}}" aria-label="Open navigation" aria-expanded="{{navOpen}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
       <div class="crumbs"><b>Home</b></div>
-      <button class="cmdk" type="button" aria-label="Open command menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4"></path></svg><span class="txt">Search or run a command</span><kbd>⌘K</kbd></button>
-      <button class="iconbtn" type="button" aria-label="Notifications"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 17V11a6 6 0 1112 0v6l2 2H4zM10 21h4"></path></svg></button>
+      <button class="cmdk" type="button" aria-label="Open command menu" aria-haspopup="dialog" onClick="{{openCmd}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4"></path></svg><span class="txt">Search or run a command</span><kbd>⌘K</kbd></button>
+      <div class="pop-wrap" onKeyDown="{{popKey}}">
+        <button class="iconbtn" type="button" aria-label="Notifications, 2 unread" aria-haspopup="dialog" aria-expanded="{{popOpen}}" onClick="{{togglePop}}" style="position:relative"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 17V11a6 6 0 1112 0v6l2 2H4zM10 21h4"></path></svg><span aria-hidden="true" style="position:absolute;top:2px;right:2px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--fg);color:var(--surface);font-size:10px;line-height:16px;font-weight:600;text-align:center">2</span></button>
+        <sc-if value="{{popOpen}}" hint-placeholder-val="{{ false }}">
+          <div class="pop-bg" onClick="{{closePop}}"></div>
+          <div class="pop" role="dialog" aria-label="Notifications">
+            <div class="pop-h"><h2 class="t-heading" style="font-size:14px">Notifications</h2><button class="btn" type="button" onClick="{{closePop}}">Mark all read</button></div>
+            <sc-for list="{{notes}}" as="n" hint-placeholder-count="3">
+              <a href="#" class="pop-i"><div style="flex:1;min-width:0"><div class="t-dense">{{n.text}}</div><div class="t-caption">{{n.when}}</div></div><sc-if value="{{n.unread}}" hint-placeholder-val="{{ true }}"><span class="pill info">New</span></sc-if></a>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
       <span class="avatar" aria-label="Signed in as Sonam">SM</span>
     </header>
 
@@ -43,8 +54,8 @@
           <p class="secondary">4 items need you. 1 project is over budget.</p>
         </div>
         <div style="display:flex;gap:8px">
-          <button class="btn" type="button">New requisition</button>
-          <button class="btn primary" type="button">New project</button>
+          <button class="btn" type="button" onClick="{{newReq}}">New requisition</button>
+          <button class="btn primary" type="button" onClick="{{newProj}}">New project</button>
         </div>
       </div>
 
@@ -59,9 +70,9 @@
             <div class="card-b" style="padding:12px 0 0">
               <div class="row head cols-tasks stack"><span></span><span>Task</span><span class="r">Amount</span><span>Status</span></div>
               <sc-for list="{{tasks}}" as="t" hint-placeholder-count="4">
-                <div class="row cols-tasks stack" style="min-height:48px">
+                <div class="{{t.rowCls}}" style="min-height:48px">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="ico" style="color: var(--phase-demand)" aria-hidden="true"><path d="{{t.d}}"></path></svg>
-                  <a href="#" class="stack-main" style="min-width:0"><div style="font-weight:520;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{t.title}}</div><div class="t-caption num" style="text-align:left">{{t.ref}}</div></a>
+                  <button type="button" class="row-link stack-main" aria-haspopup="dialog" onClick="{{t.open}}"><div style="font-weight:520;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{t.title}}</div><div class="t-caption num" style="text-align:left">{{t.ref}}</div></button>
                   <span class="num r" data-label="Amount">{{t.amt}}<span class="cur">USD</span></span>
                   <span data-label="Status"><span class="{{t.pillCls}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.pd}}"></path></svg>{{t.pill}}</span></span>
                 </div>
@@ -117,6 +128,66 @@
     </main>
   </div>
 </div>
+
+<sc-if value="{{cmdOpen}}" hint-placeholder-val="{{ false }}">
+  <div class="cmd-scrim" onClick="{{closeCmd}}">
+    <div class="cmd" role="dialog" aria-modal="true" aria-label="Command menu" onClick="{{stop}}" onKeyDown="{{cmdKey}}">
+      <div class="cmd-in">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4"></path></svg>
+        <input type="text" role="combobox" aria-expanded="true" aria-controls="cmd-list" aria-activedescendant="{{cmdActive}}" aria-label="Search records, actions and navigation" placeholder="Search or run a command" value="{{cmdQuery}}" onChange="{{cmdInput}}" autoFocus="{{yes}}">
+      </div>
+      <div id="cmd-list" role="listbox" aria-label="Results" style="padding-bottom:6px">
+        <sc-for list="{{cmdRows}}" as="o" hint-placeholder-count="9">
+          <sc-if value="{{o.isGroup}}" hint-placeholder-val="{{ false }}"><div class="cmd-g t-label" role="presentation">{{o.label}}</div></sc-if>
+          <sc-if value="{{o.isOpt}}" hint-placeholder-val="{{ true }}">
+            <div role="option" id="{{o.id}}" class="cmd-o" aria-selected="{{o.sel}}" onClick="{{o.run}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="{{o.ico}}" aria-hidden="true"><path d="{{o.d}}"></path></svg><span>{{o.before}}<mark>{{o.hit}}</mark>{{o.after}}</span><kbd>{{o.hint}}</kbd></div>
+          </sc-if>
+        </sc-for>
+        <sc-if value="{{cmdEmpty}}" hint-placeholder-val="{{ false }}"><div class="state t-dense secondary" role="presentation">No results for “{{cmdQuery}}”. Try a project, a requisition number or an action.</div></sc-if>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{sheetOpen}}" hint-placeholder-val="{{ false }}">
+  <div class="sheet-scrim" onClick="{{closeSheet}}"></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" onKeyDown="{{sheetKey}}">
+    <div class="sheet-h">
+      <div style="min-width:0;display:flex;flex-direction:column;gap:6px">
+        <div class="t-caption num" style="text-align:left">{{sheet.ref}}</div>
+        <h2 class="t-title" id="sheet-title">{{sheet.title}}</h2>
+        <div><span class="{{sheet.pillCls}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{sheet.pd}}"></path></svg>{{sheet.pill}}</span></div>
+      </div>
+      <button class="iconbtn" type="button" aria-label="Close" onClick="{{closeSheet}}" autoFocus="{{yes}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+    </div>
+    <div class="sheet-b">
+      <dl class="kv" style="margin:0">
+        <dt class="t-label">Amount</dt><dd class="num" style="margin:0;text-align:left">{{sheet.amt}}<span class="cur">USD</span></dd>
+        <dt class="t-label">Project</dt><dd style="margin:0">{{sheet.proj}}</dd>
+        <dt class="t-label">Requested by</dt><dd style="margin:0">{{sheet.by}}</dd>
+        <dt class="t-label">Needed by</dt><dd style="margin:0">{{sheet.need}}</dd>
+      </dl>
+      <div>
+        <h3 class="t-label" style="margin-bottom:8px">Timeline</h3>
+        <ol style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px">
+          <li class="t-dense">Submitted<div class="t-caption">Wed 7 Oct, 16:12</div></li>
+          <li class="t-dense">Budget check passed, 9,810,000.00 USD available<div class="t-caption">Wed 7 Oct, 16:12</div></li>
+          <li class="t-dense">Routed to you<div class="t-caption">Thu 8 Oct, 08:30</div></li>
+        </ol>
+      </div>
+    </div>
+    <div class="sheet-f">
+      <button class="btn" type="button" onClick="{{closeSheet}}">Close</button>
+      <button class="btn primary" type="button" onClick="{{sheetAct}}">{{sheet.action}}</button>
+    </div>
+  </div>
+</sc-if>
+
+<div class="toasts" role="status" aria-live="polite">
+  <sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+    <div class="toast"><span>{{toast.msg}}</span><sc-if value="{{toast.undo}}" hint-placeholder-val="{{ false }}"><button class="btn" type="button" onClick="{{undo}}">Undo</button></sc-if></div>
+  </sc-if>
+</div>
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"light","options":["light","dark"]},"collapsed":{"editor":"enum","default":"auto","options":["auto","yes","no"]},"navOpen":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1040}}'>
@@ -126,10 +197,17 @@ class Component extends DCLogic {
       try { if (localStorage.getItem('xf.sidebar') === 'collapsed') this.setState({ collapsed: true }); } catch (e) {}
     }
   }
+  componentWillUnmount() { clearTimeout(this._tt); }
+  toast(msg, undoRef) {
+    clearTimeout(this._tt);
+    this.setState({ toast: { msg, undo: !!undoRef, ref: undoRef } });
+    this._tt = setTimeout(() => this.setState({ toast: null }), 4000);
+  }
   renderVals() {
     const st = this.state || {};
     const collapsed = st.collapsed ?? (this.props.collapsed === 'yes');
     const navOpen = st.navOpen ?? (this.props.navOpen === true);
+    const back = (el) => setTimeout(() => { if (el && el.focus) el.focus(); }, 0);
     const I = {
       home: "M3 11l9-8 9 8M5 10v10h14V10M10 20v-6h4v6",
       org: "M4 21V5l8-2v18M12 9h8v12M7 8h2M7 12h2M7 16h2M15 13h2M15 17h2",
@@ -156,11 +234,54 @@ class Component extends DCLogic {
       head('Support'), link('Help', I.help, '')
     ];
     const P = { warn: "M12 3l10 18H2zM12 10v5M12 18h.01", ok: "M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6", x: "M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6", sync: "M20 11a8 8 0 00-14-4M4 4v4h4M4 13a8 8 0 0014 4M20 20v-4h-4" };
-    const tasks = [
-      { d: I.appr, title: 'Approve: Forklift fleet renewal', ref: 'REQ-00418', amt: '184,500.00', pillCls: 'pill warning', pd: P.warn, pill: 'Due today' },
-      { d: I.appr, title: 'Approve: Dock leveller replacement', ref: 'REQ-00421', amt: '62,300.00', pillCls: 'pill info', pd: P.sync, pill: 'Approval pending' },
-      { d: I.req, title: 'Resubmit: Racking anchors, returned by Finance', ref: 'REQ-00409', amt: '38,900.00', pillCls: 'pill warning', pd: P.warn, pill: 'Returned' },
-      { d: I.po, title: 'Review change order: Charger hardware', ref: 'PO-00233', amt: '12,450.00', pillCls: 'pill info', pd: P.sync, pill: 'Approval pending' }
+
+    // tasks and the record sheet
+    const approved = st.approved || {};
+    const defs = [
+      { ref: 'REQ-00418', title: 'Approve: Forklift fleet renewal', amt: '184,500.00', tone: 'warning', pill: 'Due today', pd: P.warn, d: I.appr, proj: 'Plant 4 line retrofit', by: 'Warehouse team', need: '15 Oct 2026', action: 'Approve', after: { tone: 'success', pill: 'Approved', pd: P.ok }, done: 'Approved REQ-00418. 184,500.00 USD reserved against Plant 4 line retrofit.' },
+      { ref: 'REQ-00421', title: 'Approve: Dock leveller replacement', amt: '62,300.00', tone: 'info', pill: 'Approval pending', pd: P.sync, d: I.appr, proj: 'Warehouse racking phase 2', by: 'Facilities', need: '30 Oct 2026', action: 'Approve', after: { tone: 'success', pill: 'Approved', pd: P.ok }, done: 'Approved REQ-00421. 62,300.00 USD reserved against Warehouse racking phase 2.' },
+      { ref: 'REQ-00409', title: 'Resubmit: Racking anchors, returned by Finance', amt: '38,900.00', tone: 'warning', pill: 'Returned', pd: P.warn, d: I.req, proj: 'Warehouse racking phase 2', by: 'Facilities', need: '22 Oct 2026', action: 'Resubmit', after: { tone: 'info', pill: 'Approval pending', pd: P.sync }, done: 'Resubmitted REQ-00409 for approval.' },
+      { ref: 'PO-00233', title: 'Review change order: Charger hardware', amt: '12,450.00', tone: 'info', pill: 'Approval pending', pd: P.sync, d: I.po, proj: 'Fleet charging depots', by: 'Procurement', need: '12 Oct 2026', action: 'Approve change', after: { tone: 'success', pill: 'Approved', pd: P.ok }, done: 'Approved the change order on PO-00233.' }
+    ];
+    const view = (t) => { const a = approved[t.ref] ? t.after : t; return { pillCls: 'pill ' + (a.tone), pill: a.pill, pd: a.pd }; };
+    const tasks = defs.map(t => ({
+      ...t, ...view(t),
+      rowCls: 'row cols-tasks stack' + (st.sheet === t.ref ? ' is-selected' : ''),
+      open: (e) => { this._opener = e.currentTarget; this.setState({ sheet: t.ref }); }
+    }));
+    const cur = defs.find(t => t.ref === st.sheet);
+    const sheet = cur ? { ...cur, ...view(cur) } : {};
+
+    // command menu: zero open animation (MASTER 6.1)
+    const q = (st.cmdQuery || '').trim().toLowerCase();
+    const closeCmd = () => { this.setState({ cmdOpen: false, cmdQuery: '', cmdIdx: 0 }); back(this._cmdOpener); };
+    const cmdAll = [
+      { g: 'Records', label: 'Fleet charging depots', hint: 'Project', d: I.proj, ph: 'plan' },
+      { g: 'Records', label: 'REQ-00418 Forklift fleet renewal', hint: 'Requisition', d: I.req, ph: 'demand' },
+      { g: 'Actions', label: 'New requisition', hint: 'C', d: I.req, ph: 'demand', act: 'Opening a new requisition' },
+      { g: 'Actions', label: 'New project', hint: 'P', d: I.proj, ph: 'plan', act: 'Opening a new project' },
+      { g: 'Navigation', label: 'Go to Budget', hint: 'G B', d: I.budget, ph: 'plan' },
+      { g: 'Navigation', label: 'Go to Reporting', hint: 'G R', d: I.rep, ph: 'plan' }
+    ];
+    const hits = cmdAll.filter(o => !q || o.label.toLowerCase().includes(q));
+    const idx = Math.min(st.cmdIdx ?? 0, Math.max(hits.length - 1, 0));
+    const run = (o) => { closeCmd(); if (o && o.act) this.toast(o.act); };
+    const cmdRows = [];
+    let lastG = null;
+    hits.forEach((o, i) => {
+      if (o.g !== lastG) { cmdRows.push({ isGroup: true, isOpt: false, label: o.g }); lastG = o.g; }
+      const at = q ? o.label.toLowerCase().indexOf(q) : -1;
+      cmdRows.push({
+        isGroup: false, isOpt: true, id: 'cmd-o-' + i, sel: i === idx, hint: o.hint, d: o.d, ico: 'color:var(--phase-' + o.ph + ')',
+        before: at < 0 ? o.label : o.label.slice(0, at), hit: at < 0 ? '' : o.label.slice(at, at + q.length), after: at < 0 ? '' : o.label.slice(at + q.length),
+        run: () => run(o)
+      });
+    });
+
+    const notes = [
+      { text: 'REQ-00409 was returned by Finance', when: 'Today, 13:40', unread: true },
+      { text: 'REQ-00421 was delegated to you', when: 'Today, 11:12', unread: true },
+      { text: 'PO-00233 change order submitted', when: 'Yesterday, 09:20', unread: false }
     ];
     const projects = [
       { name: 'Plant 4 line retrofit', bu: 'Manufacturing', alloc: '4,200,000.00', used: '3,654,000.00', pct: '87%', fill: 'width:87%;background:var(--c1)', aria: '87 percent of budget used', rem: '546,000.00', remCls: 'num r', pillCls: 'pill warning', pd: P.warn, pill: 'Nearing limit' },
@@ -173,17 +294,64 @@ class Component extends DCLogic {
       { who: 'SM', text: 'You reserved 184,500.00 USD against Plant 4 line retrofit', when: 'Yesterday, 16:55' },
       { who: 'PR', text: 'Purchase order PO-00233 change order submitted', when: 'Yesterday, 09:20' }
     ];
+    const closeSheet = () => { this.setState({ sheet: null }); back(this._opener); };
+    const focusables = 'button, [href], input, select, [tabindex]:not([tabindex="-1"])';
     return {
-      theme: this.props.theme ?? 'light', nav, tasks, projects, activity,
+      theme: this.props.theme ?? 'light', nav, tasks, projects, activity, notes, cmdRows, sheet, yes: true,
       appCls: 'app' + (collapsed ? ' collapsed' : '') + (navOpen ? ' nav-open' : ''),
       navOpen, expanded: !collapsed, collapseLabel: collapsed ? 'Expand sidebar' : 'Collapse sidebar',
+      navLabel: navOpen ? 'Close navigation' : 'Open navigation',
       toggleCollapse: () => {
         this.setState({ collapsed: !collapsed });
         try { localStorage.setItem('xf.sidebar', collapsed ? 'expanded' : 'collapsed'); } catch (e) {}
       },
       toggleNav: () => this.setState({ navOpen: !navOpen }),
-      navLabel: navOpen ? 'Close navigation' : 'Open navigation',
-      closeNav: () => this.setState({ navOpen: false })
+      closeNav: () => this.setState({ navOpen: false }),
+
+      popOpen: !!st.popOpen,
+      togglePop: () => this.setState({ popOpen: !st.popOpen }),
+      closePop: () => this.setState({ popOpen: false }),
+      popKey: (e) => { if (e.key === 'Escape' && st.popOpen) { this.setState({ popOpen: false }); back(e.currentTarget.querySelector('button')); } },
+
+      cmdOpen: !!st.cmdOpen, cmdQuery: st.cmdQuery || '', cmdEmpty: !!st.cmdOpen && hits.length === 0,
+      cmdActive: hits.length ? 'cmd-o-' + idx : '',
+      openCmd: (e) => { this._cmdOpener = e.currentTarget; this.setState({ cmdOpen: true, cmdQuery: '', cmdIdx: 0 }); },
+      closeCmd, stop: (e) => e.stopPropagation(),
+      cmdInput: (e) => this.setState({ cmdQuery: e.target.value, cmdIdx: 0 }),
+      cmdKey: (e) => {
+        const n = Math.max(hits.length, 1);
+        if (e.key === 'Escape') { e.preventDefault(); closeCmd(); }
+        else if (e.key === 'ArrowDown') { e.preventDefault(); this.setState({ cmdIdx: (idx + 1) % n }); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); this.setState({ cmdIdx: (idx + n - 1) % n }); }
+        else if (e.key === 'Enter') { e.preventDefault(); run(hits[idx]); }
+      },
+
+      sheetOpen: !!cur, closeSheet,
+      sheetKey: (e) => {
+        if (e.key === 'Escape') { e.preventDefault(); closeSheet(); return; }
+        if (e.key !== 'Tab') return;
+        const f = Array.from(e.currentTarget.querySelectorAll(focusables));
+        if (!f.length) return;
+        const first = f[0], last = f[f.length - 1], at = document.activeElement;
+        if (e.shiftKey && at === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && at === last) { e.preventDefault(); first.focus(); }
+      },
+      sheetAct: () => {
+        const t = cur; if (!t) return;
+        this.setState({ approved: { ...approved, [t.ref]: true }, sheet: null });
+        back(this._opener);
+        this.toast(t.done, t.ref);
+      },
+
+      toast: st.toast || null,
+      undo: () => {
+        const t = st.toast; if (!t) return;
+        const next = { ...approved }; delete next[t.ref];
+        clearTimeout(this._tt);
+        this.setState({ approved: next, toast: null });
+      },
+      newReq: () => this.toast('Opening a new requisition'),
+      newProj: () => this.toast('Opening a new project')
     };
   }
 }
