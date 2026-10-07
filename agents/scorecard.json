@@ -1366,6 +1366,42 @@
       },
       "recap": "Implemented migration 20260826_0020, transactional posting/rollup and balance reads, project creation initialization, and real PostgreSQL invariant/concurrency tests. Currency amounts use kernel HALF_UP quantization. No endpoint, dependency, or web changes; existing operator amendments in design/E07-S02.md are left untouched. Final verification: full API pytest 733 passed, zero skipped; ruff, mypy --strict (93 source files), import-linter (4 contracts), money-float lint, and migration-chain validation green.",
       "title": "project_balance rollup maintained in-transaction with the ledger write"
+    },
+    {
+      "story": "E07-S03",
+      "kind": "ledger",
+      "size": "M",
+      "tags": [
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a10eff-31ac-7901-a38d-270eb0748312",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "dbfe4938-296f-4d21-81ae-13d6551bb13d",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented direct allocation and signed adjustment commands using existing ledger posting and project status reader. Parent funding hook remains a no-op per packet; approval and transfers remain out of scope. Registered default-false evidence policy and append-only RLS evidence table in revision 0021. Checks use the worktree venv, a temporary uv cache and explicit MIGRATIONS_DIR=../../migrations. No dependency added. Submit, gate, done, push and merge not run. Final checks: full pytest 771 passed, 1 pre-existing DATABASE_URL-dependent money round-trip skipped; story tests 39 passed on real PostgreSQL; ruff and strict mypy green; migration chain check green; four import contracts kept; web lint/typecheck green and 59 vitest tests passed. Commit: 025bbdd.",
+      "title": "Allocation command with authorization, reason, effective date and audit"
     }
   ]
 }

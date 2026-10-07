@@ -641,6 +641,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/budget/adjustments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Adjust Budget */
+        post: operations["adjust_budget_api_v1_projects__project_id__budget_adjustments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/budget/allocations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Allocate Budget */
+        post: operations["allocate_budget_api_v1_projects__project_id__budget_allocations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -691,6 +725,81 @@ export interface components {
             id: string;
             /** Status */
             status: string;
+        };
+        /** AdjustmentCreate */
+        AdjustmentCreate: {
+            /** Amount */
+            amount: string;
+            /** Currency */
+            currency: string;
+            /**
+             * Effective Date
+             * Format: date
+             */
+            effective_date: string;
+            /** Evidence Ref */
+            evidence_ref?: string | null;
+            /** Reason */
+            reason: string;
+        };
+        /** AllocationCreate */
+        AllocationCreate: {
+            /** Amount */
+            amount: string;
+            /** Currency */
+            currency: string;
+            /**
+             * Effective Date
+             * Format: date
+             */
+            effective_date: string;
+            /** Evidence Ref */
+            evidence_ref?: string | null;
+            /** Reason */
+            reason: string;
+        };
+        /** AllocationResult */
+        AllocationResult: {
+            balance: components["schemas"]["BalanceRead"];
+            /** Entries */
+            entries: components["schemas"]["LedgerEntryRead"][];
+        };
+        /** BalanceRead */
+        BalanceRead: {
+            /** Actual */
+            actual: string;
+            /** Allocated */
+            allocated: string;
+            /** Available */
+            available: string;
+            /**
+             * Bu Id
+             * Format: uuid
+             */
+            bu_id: string;
+            /** Committed */
+            committed: string;
+            /** Currency */
+            currency: string;
+            /**
+             * Org Id
+             * Format: uuid
+             */
+            org_id: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Reserved */
+            reserved: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Version */
+            version: number;
         };
         /** CalendarPut */
         CalendarPut: {
@@ -792,6 +901,76 @@ export interface components {
             detail?: components["schemas"]["ValidationError"][];
         };
         JsonValue: unknown;
+        /**
+         * LedgerBucket
+         * @enum {string}
+         */
+        LedgerBucket: "allocated" | "reserved" | "committed" | "actual";
+        /**
+         * LedgerEntryRead
+         * @description Wire view of the immutable ledger row.
+         */
+        LedgerEntryRead: {
+            /**
+             * Actor Id
+             * Format: uuid
+             */
+            actor_id: string;
+            /** Amount */
+            amount: string;
+            /**
+             * Bu Id
+             * Format: uuid
+             */
+            bu_id: string;
+            bucket: components["schemas"]["LedgerBucket"];
+            /** Currency */
+            currency: string;
+            /** Department Code */
+            department_code: string;
+            /**
+             * Effective Date
+             * Format: date
+             */
+            effective_date: string;
+            entry_type: components["schemas"]["LedgerType"];
+            /** Id */
+            id: number;
+            /** Idempotency Key */
+            idempotency_key: string | null;
+            /** Ledger Account Code */
+            ledger_account_code: string;
+            /**
+             * Org Id
+             * Format: uuid
+             */
+            org_id: string;
+            /**
+             * Posted At
+             * Format: date-time
+             */
+            posted_at: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Reason */
+            reason: string | null;
+            /** Reverses Entry Id */
+            reverses_entry_id: number | null;
+            /** Source Id */
+            source_id: string | null;
+            /** Source Type */
+            source_type: string;
+            /** Transfer Group Id */
+            transfer_group_id: string | null;
+        };
+        /**
+         * LedgerType
+         * @enum {string}
+         */
+        LedgerType: "allocation" | "reservation" | "commitment" | "actual" | "release" | "reversal" | "transfer" | "adjustment";
         /**
          * LoginRequest
          * @description Credentials accepted by the local identity-provider boundary.
@@ -3188,6 +3367,100 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TreeRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    adjust_budget_api_v1_projects__project_id__budget_adjustments_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdjustmentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllocationResult"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    allocate_budget_api_v1_projects__project_id__budget_allocations_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AllocationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllocationResult"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

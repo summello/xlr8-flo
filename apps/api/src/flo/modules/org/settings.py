@@ -6,6 +6,7 @@ from pydantic import JsonValue
 
 SETTING_DEFAULTS: dict[str, JsonValue] = {
     "allow_negative_budget": False,
+    "budget.evidence_required": False,
     "funding_mode": "roll_down",
 }
 
@@ -17,5 +18,6 @@ def _is_bool(value: JsonValue) -> bool:
 # Money policy reads these values, so a truthy string such as "false" must never be storable.
 SETTING_VALIDATORS: dict[str, Callable[[JsonValue], bool]] = {
     "allow_negative_budget": _is_bool,
+    "budget.evidence_required": _is_bool,
     "funding_mode": lambda value: value in ("roll_down", "roll_up"),
 }

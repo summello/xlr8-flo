@@ -97,6 +97,186 @@
         "title": "AccessUserResponse",
         "type": "object"
       },
+      "AdjustmentCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "string"
+          },
+          "currency": {
+            "pattern": "^[A-Z]{3}$",
+            "title": "Currency",
+            "type": "string"
+          },
+          "effective_date": {
+            "format": "date",
+            "title": "Effective Date",
+            "type": "string"
+          },
+          "evidence_ref": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Ref"
+          },
+          "reason": {
+            "minLength": 10,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "currency",
+          "effective_date",
+          "reason"
+        ],
+        "title": "AdjustmentCreate",
+        "type": "object"
+      },
+      "AllocationCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "string"
+          },
+          "currency": {
+            "pattern": "^[A-Z]{3}$",
+            "title": "Currency",
+            "type": "string"
+          },
+          "effective_date": {
+            "format": "date",
+            "title": "Effective Date",
+            "type": "string"
+          },
+          "evidence_ref": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Ref"
+          },
+          "reason": {
+            "minLength": 10,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "currency",
+          "effective_date",
+          "reason"
+        ],
+        "title": "AllocationCreate",
+        "type": "object"
+      },
+      "AllocationResult": {
+        "properties": {
+          "balance": {
+            "$ref": "#/components/schemas/BalanceRead"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/LedgerEntryRead"
+            },
+            "title": "Entries",
+            "type": "array"
+          }
+        },
+        "required": [
+          "entries",
+          "balance"
+        ],
+        "title": "AllocationResult",
+        "type": "object"
+      },
+      "BalanceRead": {
+        "properties": {
+          "actual": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Actual",
+            "type": "string"
+          },
+          "allocated": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Allocated",
+            "type": "string"
+          },
+          "available": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Available",
+            "type": "string"
+          },
+          "bu_id": {
+            "format": "uuid",
+            "title": "Bu Id",
+            "type": "string"
+          },
+          "committed": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Committed",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "org_id": {
+            "format": "uuid",
+            "title": "Org Id",
+            "type": "string"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "reserved": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Reserved",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "project_id",
+          "org_id",
+          "bu_id",
+          "currency",
+          "allocated",
+          "reserved",
+          "committed",
+          "actual",
+          "available",
+          "version",
+          "updated_at"
+        ],
+        "title": "BalanceRead",
+        "type": "object"
+      },
       "CalendarPut": {
         "additionalProperties": false,
         "properties": {
@@ -348,6 +528,176 @@
         "type": "object"
       },
       "JsonValue": {},
+      "LedgerBucket": {
+        "enum": [
+          "allocated",
+          "reserved",
+          "committed",
+          "actual"
+        ],
+        "title": "LedgerBucket",
+        "type": "string"
+      },
+      "LedgerEntryRead": {
+        "description": "Wire view of the immutable ledger row.",
+        "properties": {
+          "actor_id": {
+            "format": "uuid",
+            "title": "Actor Id",
+            "type": "string"
+          },
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "bu_id": {
+            "format": "uuid",
+            "title": "Bu Id",
+            "type": "string"
+          },
+          "bucket": {
+            "$ref": "#/components/schemas/LedgerBucket"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "department_code": {
+            "title": "Department Code",
+            "type": "string"
+          },
+          "effective_date": {
+            "format": "date",
+            "title": "Effective Date",
+            "type": "string"
+          },
+          "entry_type": {
+            "$ref": "#/components/schemas/LedgerType"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotency Key"
+          },
+          "ledger_account_code": {
+            "title": "Ledger Account Code",
+            "type": "string"
+          },
+          "org_id": {
+            "format": "uuid",
+            "title": "Org Id",
+            "type": "string"
+          },
+          "posted_at": {
+            "format": "date-time",
+            "title": "Posted At",
+            "type": "string"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "reverses_entry_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reverses Entry Id"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          },
+          "source_type": {
+            "title": "Source Type",
+            "type": "string"
+          },
+          "transfer_group_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transfer Group Id"
+          }
+        },
+        "required": [
+          "id",
+          "org_id",
+          "bu_id",
+          "project_id",
+          "entry_type",
+          "bucket",
+          "amount",
+          "currency",
+          "source_type",
+          "source_id",
+          "transfer_group_id",
+          "reverses_entry_id",
+          "department_code",
+          "ledger_account_code",
+          "effective_date",
+          "posted_at",
+          "actor_id",
+          "reason",
+          "idempotency_key"
+        ],
+        "title": "LedgerEntryRead",
+        "type": "object"
+      },
+      "LedgerType": {
+        "enum": [
+          "allocation",
+          "reservation",
+          "commitment",
+          "actual",
+          "release",
+          "reversal",
+          "transfer",
+          "adjustment"
+        ],
+        "title": "LedgerType",
+        "type": "string"
+      },
       "LoginRequest": {
         "additionalProperties": false,
         "description": "Credentials accepted by the local identity-provider boundary.",
@@ -5302,6 +5652,184 @@
         "summary": "Project Tree",
         "tags": [
           "projects"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/budget/adjustments": {
+      "post": {
+        "operationId": "adjust_budget_api_v1_projects__project_id__budget_adjustments_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdjustmentCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllocationResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Adjust Budget",
+        "tags": [
+          "budget"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/budget/allocations": {
+      "post": {
+        "operationId": "allocate_budget_api_v1_projects__project_id__budget_allocations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllocationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllocationResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Allocate Budget",
+        "tags": [
+          "budget"
         ]
       }
     }

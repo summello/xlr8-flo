@@ -9,6 +9,7 @@ from fastapi import APIRouter
 
 from flo.api.admin_users import router as admin_users_router
 from flo.api.auth import router as auth_router
+from flo.api.budget import router as budget_router
 from flo.api.fiscal import router as fiscal_router
 from flo.api.master import router as master_router
 from flo.api.org import router as org_router
@@ -18,6 +19,14 @@ TESTS = Path(__file__).resolve().parents[1]
 
 # (method, path) -> "file::test" that proves a foreign id returns 404.
 COVERED = {
+    (
+        "POST",
+        "/api/v1/projects/{project_id}/budget/allocations",
+    ): "budget/test_allocation.py::test_foreign_allocation",
+    (
+        "POST",
+        "/api/v1/projects/{project_id}/budget/adjustments",
+    ): "budget/test_allocation.py::test_foreign_adjustment",
     (
         "GET",
         "/api/v1/projects/{id}/children",
@@ -110,6 +119,7 @@ def test_every_id_route_has_a_named_foreign_tenant_case() -> None:
                 master_router,
                 fiscal_router,
                 projects_router,
+                budget_router,
             ),
             COVERED,
         )
@@ -129,6 +139,7 @@ def test_gate_fails_on_an_uncovered_route_and_on_a_dangling_reference() -> None:
             master_router,
             fiscal_router,
             projects_router,
+            budget_router,
         )
         | widget
     )
