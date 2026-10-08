@@ -31,7 +31,7 @@ test.describe('the page on the canvas', () => {
   test('Common Screens holds the access boards and nothing overlaps', () => {
     const mine = Object.entries(canvas.boards).filter(([, b]) => b.page === 'common-screens');
     expect(canvas.pages.find((p) => p.id === 'common-screens').name).toBe('Common Screens');
-    expect(mine.length).toBe(25);
+    expect(mine.length).toBe(27);
     for (const w of [1920, 1024, 768, 375]) expect(canvas.boards[`SignInW${w}.dc.html`].w).toBe(w);
   });
 });
@@ -175,7 +175,7 @@ test.describe('invitation acceptance', () => {
   test('the invitation sets the organization and role, the email is read-only, nothing is taken from the URL', async ({ page }) => {
     await open(page, '/SignInInvite.dc.html');
     const aside = page.locator('.auth-aside');
-    await expect(aside).toContainText('Join Northwind Capital on XLR8 FLO');
+    await expect(aside).toContainText('Join Northwind Capital, EMEA on XLR8 FLO');
     await expect(aside).toContainText('Project Manager');
     await expect(aside).toContainText('Manufacturing business unit');
     await expect(aside).toContainText('not from the link you opened');
@@ -222,6 +222,36 @@ test.describe('invitation acceptance', () => {
   });
 });
 
+test.describe('more than one organization', () => {
+  test('the chooser lists each tenant with a label that tells two of the same name apart', async ({ page }) => {
+    await open(page, '/SignInOrgs.dc.html');
+    await expect(page.getByRole('heading', { name: 'Choose an Organization' })).toBeVisible();
+    const rows = page.getByRole('list', { name: 'Your organizations' }).getByRole('button');
+    await expect(rows).toHaveCount(2);
+    const names = await rows.evaluateAll((els) => els.map((e) => e.querySelector('span').textContent.trim()));
+    expect(new Set(names).size).toBe(2);                                                       // same organization, two tenants, two distinct labels
+    expect(names.every((n) => n.startsWith('Northwind Capital, '))).toBe(true);
+    await expect(page.locator('.auth-main')).toContainText('separate tenant with its own data');
+    await rows.first().press('Enter');
+    await expect(page.locator('.toast')).toContainText('Opening Northwind Capital, EMEA');
+  });
+
+  test('an existing account signs in first, then joins; the other organizations are untouched', async ({ page }) => {
+    await open(page, '/SignInInvite.dc.html');
+    await page.getByRole('link', { name: 'Sign in to accept' }).click();
+    await page.getByLabel('Email').fill('m.lee@northwind.example');
+    await page.getByLabel('Password').fill('correct horse battery');
+    await page.getByRole('button', { name: 'Sign in' }).click();
+    await page.getByLabel('Verification code').fill('123456');
+    await page.getByRole('button', { name: 'Verify' }).click();
+    await expect(page.getByRole('heading', { name: 'Join Northwind Capital', exact: true })).toBeVisible();
+    await expect(page.locator('.auth-main')).toContainText('Your other organizations are not affected');
+    await expect(page.locator('.auth-aside')).toContainText('Northwind Capital, EMEA');
+    await page.getByRole('button', { name: 'Accept and join' }).click();
+    await expect(page.locator('.toast')).toContainText('Joined Northwind Capital, EMEA');
+  });
+});
+
 test.describe('the backdrop obeys the motion rules', () => {
   test('transform and opacity only, loops no faster than 6s, hidden from assistive tech and the pointer', async ({ page }) => {
     await open(page);
@@ -261,7 +291,7 @@ test.describe('the backdrop obeys the motion rules', () => {
 
 for (const theme of ['light', 'dark']) {
   test.describe(`axe, ${theme}`, () => {
-    const files = ['', 'W1920', 'W1024', 'W768', 'W375', 'Error', 'Network', 'Busy', 'Ended', 'Fields', 'Mfa', 'MfaInvalid', 'Enrol', 'Recovery', 'Signup', 'SignupErrors', 'Verify', 'Invite', 'InviteErrors', 'InviteNetwork', 'InviteChecking', 'InviteExpired', 'InviteGone', 'InviteDone', 'InviteW375'];
+    const files = ['', 'W1920', 'W1024', 'W768', 'W375', 'Error', 'Network', 'Busy', 'Ended', 'Fields', 'Orgs', 'Mfa', 'MfaInvalid', 'Enrol', 'Recovery', 'Signup', 'SignupErrors', 'Verify', 'Invite', 'InviteErrors', 'InviteNetwork', 'InviteChecking', 'InviteExpired', 'InviteGone', 'InviteDone', 'InviteJoin', 'InviteW375'];
     for (const f of files) {
       test(f || 'sign in', async ({ page }) => {
         const w = /W(\d+)/.exec(f);

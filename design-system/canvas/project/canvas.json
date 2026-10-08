@@ -640,6 +640,16 @@
       "page": "common-screens",
       "is_interactive": true
     },
+    "SignInOrgs.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Sign-In, Choose Organization",
+      "w": 1440,
+      "x": 7600,
+      "y": 1240,
+      "page": "common-screens",
+      "is_interactive": true
+    },
     "SignInMfa.dc.html": {
       "expand": "fill",
       "h": 900,
@@ -780,12 +790,22 @@
       "page": "common-screens",
       "is_interactive": true
     },
+    "SignInInviteJoin.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Invitation, Existing Account",
+      "w": 1440,
+      "x": 10640,
+      "y": 4960,
+      "page": "common-screens",
+      "is_interactive": true
+    },
     "SignInInviteW375.dc.html": {
       "expand": "fill",
       "h": 900,
       "title": "Invitation, 375",
       "w": 375,
-      "x": 10640,
+      "x": 12160,
       "y": 4960,
       "page": "common-screens",
       "is_interactive": true
@@ -1018,6 +1038,7 @@
     "SignInBusy.dc.html",
     "SignInEnded.dc.html",
     "SignInFields.dc.html",
+    "SignInOrgs.dc.html",
     "SignInMfa.dc.html",
     "SignInMfaInvalid.dc.html",
     "SignInEnrol.dc.html",
@@ -1032,6 +1053,7 @@
     "SignInInviteExpired.dc.html",
     "SignInInviteGone.dc.html",
     "SignInInviteDone.dc.html",
+    "SignInInviteJoin.dc.html",
     "SignInInviteW375.dc.html",
     "DesignSystem.dc.html",
     "ThemePanel.dc.html"

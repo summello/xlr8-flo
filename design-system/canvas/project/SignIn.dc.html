@@ -32,11 +32,12 @@
       <sc-if value="{{isInvite}}" hint-placeholder-val="{{ false }}"><aside class="auth-aside" aria-label="About your invitation">
         <div style="display:flex;align-items:center;gap:10px"><span class="brand-mark" style="width:36px;height:36px;font-size:14px">FL</span><span style="font-weight:640;font-size:18px">XLR8 FLO</span></div>
         <div style="display:flex;flex-direction:column;gap:10px">
-          <h2 class="t-title" style="font-size:26px;line-height:32px">Join Northwind Capital on XLR8 FLO</h2>
+          <h2 class="t-title" style="font-size:26px;line-height:32px">Join Northwind Capital, EMEA on XLR8 FLO</h2>
           <p class="t-dense secondary">Amara Okafor invited you to plan and track capital projects together.</p>
         </div>
         <dl class="kv" style="margin:0;grid-template-columns:110px minmax(0,1fr)">
           <dt class="t-label">Invited By</dt><dd style="margin:0">Amara Okafor, Finance Director</dd>
+          <dt class="t-label">Tenant</dt><dd style="margin:0">Northwind Capital, EMEA</dd>
           <dt class="t-label">Your Role</dt><dd style="margin:0">Project Manager</dd>
           <dt class="t-label">Access</dt><dd style="margin:0">Manufacturing business unit</dd>
           <dt class="t-label">Expires</dt><dd style="margin:0">14 Oct 2026, in 6 days</dd>
@@ -139,7 +140,7 @@
             <div><label style="display:flex;gap:10px;align-items:flex-start;min-height:24px" class="t-dense"><input id="su-terms" type="checkbox" checked="{{terms}}" onChange="{{toggleTerms}}" style="width:18px;height:18px;margin-top:1px" aria-invalid="{{termsBad}}" aria-describedby="su-terms-e">I agree to the terms of service and privacy notice.</label><sc-if value="{{termsErr}}" hint-placeholder-val="{{ false }}"><div class="field-err" id="su-terms-e" style="margin-top:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg><span>{{termsErr}}</span></div></sc-if></div>
             <button class="btn primary block" type="submit">Accept and create account</button>
           </form>
-          <p class="t-dense secondary" style="text-align:center">Already have an account? <a href="#" class="u" onClick="{{goSignin}}">Sign in to accept</a></p>
+          <p class="t-dense secondary" style="text-align:center">Already have an account? <a href="#" class="u" onClick="{{signinToAccept}}">Sign in to accept</a></p>
         </div>
       </sc-if>
 
@@ -167,9 +168,28 @@
 
       <sc-if value="{{isInviteDone}}" hint-placeholder-val="{{ false }}">
         <div class="panel-in" style="display:flex;flex-direction:column;gap:20px">
-          <div style="display:flex;flex-direction:column;gap:6px"><h1 class="t-display" style="font-size:28px;line-height:34px">Welcome to Northwind Capital</h1><p class="secondary">Your account is ready. One more step: your role needs two-step verification.</p></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><h1 class="t-display" style="font-size:28px;line-height:34px">Welcome to Northwind Capital, EMEA</h1><p class="secondary">Your account is ready. One more step: your role needs two-step verification.</p></div>
           <div class="summary info" role="status"><div style="display:flex;gap:8px;align-items:center;font-weight:560"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6"></path></svg>Account created</div><div class="t-dense">You can sign in with m.lee@northwind.example.</div></div>
           <button class="btn primary block" type="button" onClick="{{goEnrol}}">Set up two-step verification</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{isOrgs}}" hint-placeholder-val="{{ false }}">
+        <div class="panel-in" style="display:flex;flex-direction:column;gap:20px">
+          <div style="display:flex;flex-direction:column;gap:6px"><h1 class="t-display" style="font-size:28px;line-height:34px">Choose an Organization</h1><p class="secondary">Your account belongs to more than one. Pick where to work. You can switch later from the menu.</p></div>
+          <ul class="org-pick" aria-label="Your organizations">
+            <sc-for list="{{orgs}}" as="o" hint-placeholder-count="2"><li><button type="button" class="org-btn" onClick="{{o.pick}}"><span style="min-width:0"><span style="display:block;font-weight:560">{{o.name}}</span><span class="t-caption" style="display:block;color:var(--fg-secondary)">{{o.meta}}</span></span><span class="t-caption" style="color:var(--fg-secondary)">{{o.when}}</span></button></li></sc-for>
+          </ul>
+          <p class="t-dense secondary">Each organization is a separate tenant with its own data. Nothing is shared between them.</p>
+          <div style="display:flex;justify-content:flex-end"><a href="#" class="u t-dense" onClick="{{goSignin}}">Sign out</a></div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{isInviteJoin}}" hint-placeholder-val="{{ false }}">
+        <div class="panel-in" style="display:flex;flex-direction:column;gap:20px">
+          <div style="display:flex;flex-direction:column;gap:6px"><h1 class="t-display" style="font-size:28px;line-height:34px">Join Northwind Capital</h1><p class="secondary">You are signed in as m.lee@northwind.example.</p></div>
+          <div class="summary info" role="status"><div style="display:flex;gap:8px;align-items:center;font-weight:560"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6"></path></svg>Your other organizations are not affected</div><div class="t-dense">Accepting adds Northwind Capital, EMEA to your account as a separate tenant. Its data stays separate from the others.</div></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="button" onClick="{{joinNow}}" style="flex:1 1 200px;height:44px">Accept and join</button><button class="btn" type="button" onClick="{{goSignin}}" style="flex:1 1 120px;height:44px">Not now</button></div>
         </div>
       </sc-if>
 
@@ -190,7 +210,7 @@
 </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"dark","options":["light","dark"]},"view":{"editor":"enum","default":"signin","options":["invite","invite-errors","invite-network","invite-checking","invite-expired","invite-gone","invite-done","signin","error","network","busy","ended","fields","mfa","mfa-invalid","enrol","recovery","signup","signup-errors","verify"]},"$preview":{"width":1440,"height":900}}'>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"dark","options":["light","dark"]},"view":{"editor":"enum","default":"signin","options":["orgs","invite-join","invite","invite-errors","invite-network","invite-checking","invite-expired","invite-gone","invite-done","signin","error","network","busy","ended","fields","mfa","mfa-invalid","enrol","recovery","signup","signup-errors","verify"]},"$preview":{"width":1440,"height":900}}'>
 class Component extends DCLogic {
   componentWillUnmount() { clearTimeout(this._tt); clearTimeout(this._bt); }
   // a failure moves focus to its summary, so a keyboard or screen reader user lands on what went wrong
@@ -217,8 +237,8 @@ class Component extends DCLogic {
     const show = !!st.show, terms = !!st.terms, saved = !!st.saved;
     const set = (k) => (e) => this.setState({ [k]: e.target.value });
     const go = (v) => (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ view: v, code: '' }); };
-    const isInviteView = view.startsWith('invite');
-    const inviteAside = ['invite', 'invite-errors', 'invite-network', 'invite-done'].includes(view);   // an unusable link shows nothing about the organization
+    const isInviteView = view.startsWith('invite') && view !== 'invite-join';
+    const inviteAside = ['invite-join', 'invite', 'invite-errors', 'invite-network', 'invite-done'].includes(view);   // an unusable link shows nothing about the organization
     const isSignin = ['signin', 'error', 'network', 'busy', 'ended', 'fields'].includes(view), isSignup = view === 'signup' || view === 'signup-errors';
     const fields = view === 'fields';
     const busy = view === 'busy';
@@ -229,6 +249,9 @@ class Component extends DCLogic {
     return {
       theme: this.props.theme ?? 'light', rootCls: 'xf', yes: true, toast: st.toast || null,
       isInvite: inviteAside, notInvite: !inviteAside, isInviteForm: view === 'invite' || view === 'invite-errors' || view === 'invite-network', inviteNetwork: view === 'invite-network', isInviteChecking: view === 'invite-checking', isInviteExpired: view === 'invite-expired', isInviteGone: view === 'invite-gone', isInviteDone: view === 'invite-done',
+      isOrgs: view === 'orgs', isInviteJoin: view === 'invite-join',
+      orgs: [{ name: 'Northwind Capital, EMEA', meta: 'Tenant 1 of 2 · Project Manager', when: 'Last used 6 Oct' }, { name: 'Northwind Capital, North America', meta: 'Tenant 2 of 2 · Administrator', when: 'Last used today' }].map((o) => ({ ...o, pick: () => this.toast('Opening ' + o.name + '.') })),
+      joinNow: () => this.toast('Joined Northwind Capital, EMEA. Opening it now.'),
       isSignin, isMfa: view === 'mfa' || view === 'mfa-invalid', isEnrol: view === 'enrol', isRecovery: view === 'recovery', isSignup, isVerify: view === 'verify',
       ended: view === 'ended', failed: view === 'error', network: view === 'network', fieldErrors: fields, busy,
       email, pw, name, company, code, show, terms, saved, notSaved: !saved, emailShown: email || 'your email',
@@ -249,10 +272,10 @@ class Component extends DCLogic {
         this.setState({ view: 'busy' });
         clearTimeout(this._bt); this._bt = setTimeout(() => this.setState({ view: 'mfa' }), 900);
       },
-      submitMfa: (e) => { e.preventDefault(); if (code === '123456') { this.toast('Signed in. Taking you to Home.'); } else this.setState({ view: 'mfa-invalid' }); },
+      submitMfa: (e) => { e.preventDefault(); if (code === '123456') { if (st.inviting) this.setState({ view: 'invite-join', inviting: false }); else this.toast('Signed in. Taking you to Home.'); } else this.setState({ view: 'mfa-invalid' }); },
       submitEnrol: (e) => { e.preventDefault(); this.setState({ view: 'recovery', code: '' }); },
       submitInvite: (e) => { e.preventDefault(); const bad = !name.trim() || pw.length < 15 || COMMON.includes(pw.toLowerCase()) || !terms; if (bad) this.setState({ view: 'invite-errors', suErr: true }); else this.setState({ view: 'invite-done' }); },
-      goEnrol: go('enrol'),
+      goEnrol: go('enrol'), signinToAccept: (e) => { e.preventDefault(); this.setState({ view: 'signin', inviting: true, code: '' }); },
       submitSignup: (e) => { e.preventDefault(); const bad = !name.trim() || !company.trim() || !email.includes('@') || pw.length < 15 || COMMON.includes(pw.toLowerCase()) || !terms; if (bad) this.setState({ view: 'signup-errors', suErr: true }); else this.setState({ view: 'verify' }); },
       copyKey: () => this.toast('Copied.'), resend: () => this.toast('A new link is on its way. You can resend again in a minute.'),
       finish: () => this.toast('Signed in. Taking you to Home.')

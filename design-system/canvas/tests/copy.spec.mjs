@@ -62,7 +62,7 @@ test('ledger sheet and detail tabs keep title case once opened', async ({ page }
 });
 
 test('every access view keeps title case', async ({ page }) => {
-  for (const f of ['Error', 'Mfa', 'MfaInvalid', 'Enrol', 'Recovery', 'Signup', 'SignupErrors', 'Verify', 'Invite', 'InviteErrors', 'InviteChecking', 'InviteExpired', 'InviteGone', 'InviteDone']) {
+  for (const f of ['Error', 'Mfa', 'MfaInvalid', 'Enrol', 'Recovery', 'Signup', 'SignupErrors', 'Verify', 'Invite', 'InviteErrors', 'InviteChecking', 'InviteExpired', 'InviteGone', 'InviteDone', 'InviteJoin', 'Orgs']) {
     await page.goto(`/SignIn${f}.dc.html`);
     await page.locator('h1').waitFor();
     for (const t of await heads(page, 'h1, h2, h3')) expect(titleCaseViolations(t), `${f}: "${t}"`).toEqual([]);

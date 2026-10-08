@@ -460,6 +460,9 @@ button.sort:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px;
 .code-in { font-family: var(--font-mono); font-size: 24px; letter-spacing: 0.5em; text-align: center; padding-left: 0.5em; }
 .qr { width: 148px; height: 148px; padding: 8px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-control); color: var(--fg); }
 .codes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; padding: 14px; border-radius: var(--radius-control); background: var(--sunken); border: 1px solid var(--border); font-family: var(--font-mono); font-size: 14px; }
+.org-pick { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.org-btn { width: 100%; min-height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; text-align: left; font: inherit; font-size: 14px; color: var(--fg); background: var(--surface); border: 1px solid var(--border-control); border-radius: var(--radius-control); cursor: pointer; transition: background-color var(--dur-fast) var(--ease-out); }
+.org-btn:is(:hover, .is-hover) { background: var(--sunken); }
 .spin { animation: spin 900ms linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 /* ambient scene: transform and opacity only, slow, and the un-animated state is the finished picture */

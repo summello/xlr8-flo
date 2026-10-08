@@ -75,7 +75,8 @@ Page `Common Screens`. **Built:** sign in with its states (wrong password, serve
 4. 403, 404 and 500 with a correlation id and a copy button; tenant-foreign records always show 404, never 403.
 5. Suspended tenant notice (read-only grace period) and demo-tenant banner.
 6. Empty and error patterns as a reference board, then the role-based onboarding tour.
-7. ~~Invitation acceptance~~ designed 9 Oct 2026 (see 38 to 40); still needs a roadmap story.
+7. ~~Invitation acceptance~~ designed 9 Oct 2026 (see 38 to 44); still needs a roadmap story, and a prerequisite multi-organization story (see the conflicts above).
+8. Organization switcher in the app shell menu (decision 41), after the chooser.
 
 Decisions:
 34. Sign in and sign up share one card: **two panels side by side at the centre** (product promise left, form right), stacked below 768 with the promise shrunk to a brand strip. The card is opaque and above the scene, so the backdrop never sits behind text.
@@ -83,7 +84,16 @@ Decisions:
 36. Failure behaviour from E05-S10 and E05-S11 kept exactly: a wrong password, an unknown email, a locked account **and a throttled attempt** all show one uniform message (D-M1-27, D-M1-29: the throttle must reveal nothing about the account); the email is kept, the password cleared, focus moves to the error summary. No distinct "too many attempts" screen exists, by design. A network error says nothing was submitted and the email is kept. (An earlier draft of this page had a distinct throttled state; it was removed on 9 Oct 2026 after re-reading E05-S11.)
 38. **Passwords follow the requirements, not convention** (AUTH-003, AUTH-004): minimum 15 characters, paste allowed, no composition rules, no scolding strength meter, common and breached values refused. Sign-up and invitation both say so in the hint.
 39. **No account enumeration anywhere** (AUTH-007): the verify-your-email copy is conditional ("If this address can create an account...") and identical for a new and an existing address; every unusable invitation link renders one message, `Invitation Unavailable`, with no organization shown. Expiry is the only distinct case.
-40. **Invitation: the organization, role and scope come from the invitation record, not the URL** (tenancy rule). The left panel shows who invited you, the role, the access and the expiry; the email is read-only. Lifetime 7 days, shown in the copy. Four open questions are for the operator (STORY-NOTES.md, section 1): one person in two organizations, who may invite, resend and withdraw, forced MFA for privileged roles.
+40. **Invitation: the organization, role and scope come from the invitation record, not the URL** (tenancy rule). The left panel shows who invited you, the tenant, the role, the access and the expiry; the email is read-only. Lifetime 7 days, shown in the copy.
+41. **Decided 9 Oct 2026 (operator): one person may belong to more than one organization, and the same organization may exist as separate tenants** (for example two portfolios on different continents under different data laws). Each tenant is fully separate; nothing is shared. A tenant is identified by organization name plus a **tenant label** chosen by its administrator (`Northwind Capital, EMEA`), so two of the same name can be told apart in the chooser, the invitation and the shell menu. The page set gains a **Choose an Organization** screen after sign-in (shown only with two or more memberships) and the invitation gains an **existing account** path (sign in, then `Accept and join`; other organizations are untouched).
+42. **Decided: only users with an administrator role can invite**, for now.
+43. **Decided: resend is required, and an invitation expires 7 days after it was sent without being accepted.** A resend issues a new link and invalidates the previous one. *Assumption, confirm:* a resend restarts the 7 days (otherwise a resent invitation could be born nearly expired).
+44. **Decided: privileged roles must enrol in two-step verification before first use** (AUTH-006), so the invitation's accepted state hands straight to enrolment for those roles.
+
+### Conflicts this created with existing decisions (not resolved here; Opus and the operator decide)
+
+- **E05-S09 D-M1-23** says one identity belongs to exactly one organization in Phase 1 and lists multi-organization membership as out of scope. Decision 41 reverses that. It needs a `docs/claude-plan.md` section 1 entry and a story that changes `identity_membership` (primary key becomes `(identity_id, org_id)`), makes the session carry the **chosen** organization, and adds the chooser and a switcher. The invitation story depends on it for the existing-account path.
+- **Data residency is not a requirement today.** Nothing in `docs/requirements.md` mentions data location, and the architecture is one pooled database in one region (D-06, D-01 to D-04). Separate tenants make legal separation possible but do **not** by themselves put data in a chosen country. The canvas therefore shows a tenant *label* and makes no residency claim. If clients need data kept in a region, that is a new requirement and an architecture decision (a database per region), to be raised before any sales conversation promises it.
 37. Inputs on access screens are 44px; password has a Show/Hide toggle (`aria-pressed`); the code field is one input with `autocomplete="one-time-code"`; the QR code has the key as text for people who cannot scan it.
 
 ### Registered exceptions from the access screens (also in `design-system/pages/sign-in.md`)

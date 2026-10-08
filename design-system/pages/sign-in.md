@@ -15,6 +15,7 @@ Decisions this page records: DECISIONS.md 6c, items 34 to 37. Requirements: AUTH
 | `/sign-in` | Sign in | The only public entry. An unauthenticated visit to any other route redirects here with `return` (same-origin relative path only; reject any scheme or `//`). |
 | `/sign-in/mfa` | Code challenge | Reached after a correct password for a user with MFA. |
 | `/sign-in/mfa/enroll` | Enrolment, then recovery codes | Reached when the role requires MFA and none is set up. The recovery-codes step is the second half of this route. |
+| `/sign-in/organization` | Choose an organization | Shown after a successful sign in **only when the identity belongs to two or more organizations** (section 3b). Needs multi-organization membership, which E05-S09 D-M1-23 excludes; see DECISIONS.md 6c. |
 | (shell menu) | Sign out | Not a page. Calls logout and returns to `/sign-in`. |
 
 These screens live **outside the app shell**: no sidebar, no top bar.
@@ -55,6 +56,16 @@ Tab order: email, password, Show, Forgot, Sign in, Create an account.
 | Session ended | `Your session ended` (info) | `Sign in again to pick up where you left off.` | Shown after any 401; preserves `return`. |
 
 **The four credential failures are one state.** E05-S10 D-M1-27 and E05-S11 D-M1-29 require the UI never to branch on which of them happened, and the server answers all four with the same 401 problem body. There is no "too many attempts" screen and no countdown. A test must assert that a throttled attempt renders the same alert, with no text matching `too many`, `attempts` or `wait`.
+
+## 3b. Choose an organization (`/sign-in/organization`)
+
+Heading `Choose an Organization`, subline `Your account belongs to more than one. Pick where to work. You can switch later from the menu.`
+
+- A vertical list of buttons (`.org-btn`, 56px minimum, `--border-control` boundary, `--sunken` on hover). Each shows the **tenant name and label** in 14px/560 (`Northwind Capital, EMEA`), a caption in `--fg-secondary` (`Tenant 1 of 2 · Project Manager`) and, right-aligned, `Last used 6 Oct`. Two tenants of the same organization must always be distinguishable by label.
+- Under the list: `Each organization is a separate tenant with its own data. Nothing is shared between them.` and a `Sign out` link.
+- Choosing a row creates the session for **that** organization only (`org_id` on the session is the chosen one, never taken from the URL or body). Every tenant route stays scoped to it.
+- Keyboard: the buttons are in the tab order, Enter or Space picks. The whole list is `aria-label="Your organizations"`.
+- With exactly one membership this screen is skipped. With none, the existing no-membership 401 behaviour applies.
 
 ## 4. Code challenge (`/sign-in/mfa`)
 
