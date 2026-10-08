@@ -268,6 +268,19 @@
     <p class="t-dense secondary">Signature moments 1 (first paint) and 2 (waterfall settle) are built on the Executive dashboard; use Replay intro. Moments 3, 4 and 5 are specified in MASTER 6.2 and ship with the transfer, approval and purchase order screens. Reduced motion drops transforms, staggers, count-ups and traces and keeps the end state.</p>
   </section>
 
+  <section aria-labelledby="s-access" style="display:flex;flex-direction:column;gap:12px">
+    <h3 class="t-label" id="s-access">Access Forms and Ambient Motion</h3>
+    <p class="t-dense secondary">Added with the sign in and sign up screens. Inputs on access screens are 44px. An error summary takes focus on failure and links to each field; a field error carries an icon and text, never colour alone; typed input is kept and a password field is cleared. The backdrop is outline art in tokens: transform and opacity only, 7 to 22 second loops, never behind text it could fight, and the un-animated state is the finished picture. Reduced motion stops it; the spinner is replaced by the word.</p>
+    <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:14px" id="a-sample">
+      <div class="summary" role="group" aria-label="Error summary sample"><div style="display:flex;gap:8px;align-items:center;font-weight:560"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>Fix 2 things to continue</div><ul class="t-dense"><li><a href="#">Enter your email address</a></li><li><a href="#">Enter your password</a></li></ul></div>
+      <div class="summary warning" role="group" aria-label="Warning sample"><div style="display:flex;gap:8px;align-items:center;font-weight:560"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2zM12 10v5M12 18h.01"></path></svg>Too many attempts</div><div class="t-dense">Sign-in is paused for 5 minutes. Your email is kept.</div></div>
+      <div class="field"><label class="t-label" for="a-email">Email</label><input id="a-email" class="inp lg" type="email" value="dev.patel@northwind" aria-invalid="true" aria-describedby="a-email-e"><div class="field-err" id="a-email-e"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg><span>Enter a valid work email.</span></div></div>
+      <div class="field"><label class="t-label" for="a-pw">Password</label><div class="inp-wrap"><input id="a-pw" class="inp lg" type="password" value="passphrase"><button class="reveal" type="button" aria-pressed="false">Show</button></div></div>
+      <div class="field"><label class="t-label" for="a-code">Verification code</label><input id="a-code" class="inp lg code-in" type="text" inputmode="numeric" maxlength="6" value="482913"></div>
+      <button class="btn primary block" type="button" aria-busy="true" disabled><svg class="spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 3a9 9 0 019 9"></path></svg><span style="margin-left:8px">Signing in</span></button>
+    </div>
+  </section>
+
   <section aria-labelledby="s-tables" style="display:flex;flex-direction:column;gap:12px">
     <h3 class="t-label" id="s-tables">Tables, Trees and Lineage</h3>
     <p class="t-dense secondary">Added with the project screens. Tables stack to cards below 660 card width; below 900 the lower-priority columns drop out of the row (they return in the stacked card). A sortable head is a button that carries aria-sort. Rows that open a record use a row button.</p>
@@ -392,7 +405,8 @@ class Component extends DCLogic {
       m('Tabs', 'Indicator slides between tabs, 180ms ease-in-out. Arrow keys, Home, End.', 'Exec charts'),
       m('Drawer, overlay', 'Phone drawer slides 260ms in, 160ms out. Tablet overlay reveals left to right.', '375, 768'),
       m('Route change', 'Content fades up 6px, 200ms. No overlay wipe.', 'Every page'),
-      m('Skeleton', 'Shimmer sweep 1.4s linear over the sunken surface.', 'States below'),
+      m('Access backdrop', 'Quiet outline scene (crane, building going up, excavator, skyline). Floors fade up in turn over 22s, jib sways 16s, load bobs 7s. Transform and opacity only. Reduced motion shows the finished picture.', 'Sign in, sign up'),
+      m('Skeleton','Shimmer sweep 1.4s linear over the sunken surface.', 'States below'),
       m('Sidebar collapse', 'Width snaps; layout properties never animate. Labels simply drop out.', 'Home, Exec')
     ];
     // icons: the whole set the screens use. Placeholders for Phosphor regular; keep names stable so the swap is mechanical.
