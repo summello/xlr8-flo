@@ -709,6 +709,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/balance/aggregate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Aggregate */
+        get: operations["read_aggregate_api_v1_projects__project_id__balance_aggregate_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/balance/reconcile": {
         parameters: {
             query?: never;
@@ -844,6 +861,31 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** AggregateBuckets */
+        AggregateBuckets: {
+            /** Actual */
+            actual: string;
+            /** Allocated */
+            allocated: string;
+            /** Available */
+            available: string;
+            /** Committed */
+            committed: string;
+            /** Reserved */
+            reserved: string;
+        };
+        /** AggregateRead */
+        AggregateRead: {
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "roll_down" | "roll_up";
+            /** Node Count */
+            node_count: number;
+            /** Totals */
+            totals: components["schemas"]["CurrencyAggregate"][];
+        };
         /** AllocationCreate */
         AllocationCreate: {
             /** Amount */
@@ -863,7 +905,10 @@ export interface components {
         /** AllocationResult */
         AllocationResult: {
             balance: components["schemas"]["BalanceRead"];
-            /** Entries */
+            /**
+             * Entries
+             * @description One direct allocation, or the parent debit and child credit in roll-down mode.
+             */
             entries: components["schemas"]["LedgerEntryRead"][];
         };
         /** BalanceQueryRead */
@@ -956,6 +1001,14 @@ export interface components {
             next_cursor: string | null;
             /** Rows */
             rows: components["schemas"]["ProjectRef"][];
+        };
+        /** CurrencyAggregate */
+        CurrencyAggregate: {
+            /** Currency */
+            currency: string;
+            descendants: components["schemas"]["AggregateBuckets"];
+            own: components["schemas"]["AggregateBuckets"];
+            total: components["schemas"]["AggregateBuckets"];
         };
         /** CurrencyRead */
         CurrencyRead: {
@@ -3767,6 +3820,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BalanceQueryRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    read_aggregate_api_v1_projects__project_id__balance_aggregate_get: {
+        parameters: {
+            query?: {
+                period?: "mtd" | "qtd" | "ytd" | "fiscal_year" | "life" | "range";
+                as_of?: string | null;
+                from?: string | null;
+                to?: string | null;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AggregateRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

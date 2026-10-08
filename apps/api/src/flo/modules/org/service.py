@@ -8,6 +8,7 @@ import psycopg
 from psycopg.types.json import Jsonb
 from pydantic import JsonValue
 
+from flo.kernel import setting_guards
 from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError
@@ -238,6 +239,8 @@ class OrgService:
                 AND key = %(key)s""",
                 {"unit_id": body.unit_id, "key": key},
             ).fetchone()
+            if before is None or before[1] != body.value:
+                setting_guards.check(key, self.connection, self.scope, body.unit_id, body.value)
             result = self.repo.execute(
                 """
                 INSERT INTO org_setting (id, org_id, unit_id, key, value, updated_by)
@@ -269,6 +272,13 @@ class OrgService:
             self.repo.lock_organization()
             if unit_id is not None:
                 self._unit(unit_id)
+            present = self.repo.execute(
+                "SELECT 1 FROM org_setting WHERE org_id=%(org_id)s "
+                "AND unit_id IS NOT DISTINCT FROM %(unit_id)s::uuid AND key=%(key)s",
+                {"unit_id": unit_id, "key": key},
+            ).fetchone()
+            if present:
+                setting_guards.check(key, self.connection, self.scope, unit_id, None)
             row = self.repo.execute(
                 """DELETE FROM org_setting
                 WHERE org_id = %(org_id)s AND unit_id IS NOT DISTINCT FROM %(unit_id)s::uuid

@@ -1618,6 +1618,42 @@
       },
       "recap": "Implemented lifecycle routes, scoped dynamic authorization, balance-first transitions, closure overrides, append-only/RLS status events, and signed posting guard. Migration 20261008_0025 preserves existing project.approve permission and grants. Backend full suite: 1049 passed, 1 skipped; skipped DATABASE_URL-dependent money round-trip verified separately: 1 passed. Lifecycle targeted regression: 169 passed. Web: 59 passed; lint/typecheck green. Ruff, strict mypy, migration chain, import contracts, and staged gitleaks scan green. Planted always-true permits, ignored transfer sign, and status-read-before-balance-lock each caused the named test to fail; originals restored. No submit, gate, done, push, or merge.",
       "title": "Project lifecycle state machine with permission and budget-effect enforcement"
+    },
+    {
+      "story": "E06-S04",
+      "kind": "ledger",
+      "size": "L",
+      "tags": [
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a1192c-038f-75b3-9d48-33a508706853",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "f145f7ca-a28e-4b66-bc45-fd4e8ea242d4",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented the amended single allocation command, two-sided parent authorization, currency-grouped aggregates, and registry-based funding-mode guard. No schema migration or dependency required. Local task.json is intentionally excluded from commits. Validation: ruff and strict mypy passed; full pytest 1127 passed, 1 skipped; the skipped DATABASE_URL-dependent money round-trip passed separately using an in-memory local URL. Web lint/typecheck passed, vitest 59 passed; migration chain check and all 4 import contracts passed.",
+      "title": "Roll-down and roll-up funding modes, set per BU/OU and inherited"
     }
   ]
 }

@@ -4,15 +4,16 @@ from datetime import date
 from typing import Annotated, Literal, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, Query
+from fastapi import APIRouter, Depends, Header, Query, Request
 
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
-from flo.kernel.authz import require
+from flo.kernel.authz import permits, require
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.budget.models import LedgerBucket, LedgerType
 from flo.modules.budget.schemas import (
     AdjustmentCreate,
+    AggregateRead,
     AllocationCreate,
     AllocationResult,
     BalanceQueryRead,
@@ -21,7 +22,14 @@ from flo.modules.budget.schemas import (
     TransferCreate,
     TransferRead,
 )
-from flo.modules.budget.service import adjust, allocate, balance_query, ledger_query, transfer
+from flo.modules.budget.service import (
+    adjust,
+    aggregate_balance,
+    allocate,
+    balance_query,
+    ledger_query,
+    transfer,
+)
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.projects.service import ProjectService
 
@@ -49,13 +57,24 @@ Key = Annotated[str, Header(alias="Idempotency-Key", min_length=1)]
     response_model=AllocationResult,
 )
 def allocate_budget(
+    request: Request,
     project_id: UUID,
     body: AllocationCreate,
     context: AllocateContext,
     connection: Connection,
     idempotency_key: Key,
 ) -> AllocationResult:
-    return allocate(connection, current_scope(), project_id, body, context.user_id, idempotency_key)
+    return allocate(
+        connection,
+        current_scope(),
+        project_id,
+        body,
+        context.user_id,
+        idempotency_key,
+        permitted_at=lambda node_id: permits(
+            request, "budget.allocate", project_target(node_id, connection)
+        ),
+    )
 
 
 @router.post(
@@ -167,3 +186,21 @@ def transfer_budget(
     idempotency_key: Key,
 ) -> TransferRead:
     return transfer(connection, current_scope(), body, context.user_id, idempotency_key)
+
+
+@router.get("/api/v1/projects/{project_id}/balance/aggregate", response_model=AggregateRead)
+def read_aggregate(
+    project_id: UUID,
+    context: ReadContext,
+    connection: Connection,
+    params: Annotated[BalanceParameters, Depends()],
+) -> AggregateRead:
+    return aggregate_balance(
+        connection,
+        current_scope(),
+        project_id,
+        params.period,
+        params.as_of,
+        params.start,
+        params.end,
+    )

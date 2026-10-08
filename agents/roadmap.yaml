@@ -598,7 +598,7 @@ epics:
         dep:
           - E06-S02
           - E07-S02
-        st: todo
+        st: done
       - id: E06-S05
         t: Phases, milestones, planned vs actual dates, owner, sponsor, health, percent
           complete

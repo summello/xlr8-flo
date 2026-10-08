@@ -141,6 +141,69 @@
         "title": "AdjustmentCreate",
         "type": "object"
       },
+      "AggregateBuckets": {
+        "properties": {
+          "actual": {
+            "title": "Actual",
+            "type": "string"
+          },
+          "allocated": {
+            "title": "Allocated",
+            "type": "string"
+          },
+          "available": {
+            "title": "Available",
+            "type": "string"
+          },
+          "committed": {
+            "title": "Committed",
+            "type": "string"
+          },
+          "reserved": {
+            "title": "Reserved",
+            "type": "string"
+          }
+        },
+        "required": [
+          "allocated",
+          "reserved",
+          "committed",
+          "actual",
+          "available"
+        ],
+        "title": "AggregateBuckets",
+        "type": "object"
+      },
+      "AggregateRead": {
+        "properties": {
+          "mode": {
+            "enum": [
+              "roll_down",
+              "roll_up"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "node_count": {
+            "title": "Node Count",
+            "type": "integer"
+          },
+          "totals": {
+            "items": {
+              "$ref": "#/components/schemas/CurrencyAggregate"
+            },
+            "title": "Totals",
+            "type": "array"
+          }
+        },
+        "required": [
+          "mode",
+          "totals",
+          "node_count"
+        ],
+        "title": "AggregateRead",
+        "type": "object"
+      },
       "AllocationCreate": {
         "additionalProperties": false,
         "properties": {
@@ -191,6 +254,7 @@
             "$ref": "#/components/schemas/BalanceRead"
           },
           "entries": {
+            "description": "One direct allocation, or the parent debit and child credit in roll-down mode.",
             "items": {
               "$ref": "#/components/schemas/LedgerEntryRead"
             },
@@ -437,6 +501,31 @@
           "next_cursor"
         ],
         "title": "ChildrenPage",
+        "type": "object"
+      },
+      "CurrencyAggregate": {
+        "properties": {
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "descendants": {
+            "$ref": "#/components/schemas/AggregateBuckets"
+          },
+          "own": {
+            "$ref": "#/components/schemas/AggregateBuckets"
+          },
+          "total": {
+            "$ref": "#/components/schemas/AggregateBuckets"
+          }
+        },
+        "required": [
+          "currency",
+          "own",
+          "descendants",
+          "total"
+        ],
+        "title": "CurrencyAggregate",
         "type": "object"
       },
       "CurrencyRead": {
@@ -6363,6 +6452,144 @@
           }
         },
         "summary": "Read Balance",
+        "tags": [
+          "budget"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/balance/aggregate": {
+      "get": {
+        "operationId": "read_aggregate_api_v1_projects__project_id__balance_aggregate_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "period",
+            "required": false,
+            "schema": {
+              "default": "life",
+              "enum": [
+                "mtd",
+                "qtd",
+                "ytd",
+                "fiscal_year",
+                "life",
+                "range"
+              ],
+              "title": "Period",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "as_of",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "As Of"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AggregateRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Read Aggregate",
         "tags": [
           "budget"
         ]

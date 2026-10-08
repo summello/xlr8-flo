@@ -412,11 +412,11 @@ def test_funding_hook_receives_project_and_decimal(allocation_db, monkeypatch):
     row = project(db)
     observed = []
 
-    def reject(project, amount):
+    def reject(project, amount, mode):
         observed.append((project.id, amount))
         raise ProblemError(ErrorCode.CONFLICT, checks={"problem": "parent_insufficient"})
 
-    monkeypatch.setattr(funding_policy, "check_allocation", reject)
+    monkeypatch.setattr(funding_policy, "plan_allocation", reject)
     result = request(db, row)
     assert result.status_code == 409
     assert observed == [(row.id, Decimal("100.0000"))]

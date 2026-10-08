@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -70,7 +71,9 @@ class LedgerEntryRead(LedgerEntry):
 
 
 class AllocationResult(BaseModel):
-    entries: list[LedgerEntryRead]
+    entries: list[LedgerEntryRead] = Field(
+        description="One direct allocation, or the parent debit and child credit in roll-down mode."
+    )
     balance: BalanceRead
 
 
@@ -114,3 +117,24 @@ class TransferCreate(AllocationCreate):
 class TransferRead(BaseModel):
     transfer_group_id: UUID
     entries: list[LedgerEntryRead]
+
+
+class AggregateBuckets(BaseModel):
+    allocated: str
+    reserved: str
+    committed: str
+    actual: str
+    available: str
+
+
+class CurrencyAggregate(BaseModel):
+    currency: str
+    own: AggregateBuckets
+    descendants: AggregateBuckets
+    total: AggregateBuckets
+
+
+class AggregateRead(BaseModel):
+    mode: Literal["roll_down", "roll_up"]
+    totals: list[CurrencyAggregate]
+    node_count: int
