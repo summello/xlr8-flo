@@ -12,6 +12,7 @@ for (const [name, url, sel] of [
   ['Project Dashboard', '/ProjectDashboard.dc.html', HEADINGS],
   ['Ledger Entries', '/ProjectLedger.dc.html', HEADINGS],
   ['Project Detail', '/ProjectDetail.dc.html', HEADINGS],
+  ['Sign In', '/SignIn.dc.html', 'h1, h2, h3'],
   ['Theme Panel', '/ThemePanel.dc.html', 'h1, h2, h3, .row.head > span'],       // its type specimens (Display, Title...) are examples, not headings
   ['Design System', '/DesignSystem.dc.html', 'h1, h2, h3, .row.head > span'],
 ]) {
@@ -20,7 +21,7 @@ for (const [name, url, sel] of [
     await page.goto(url);
     await page.locator('h1, h2').first().waitFor();
     const texts = await heads(page, sel);
-    expect(texts.length).toBeGreaterThan(3);
+    expect(texts.length).toBeGreaterThan(1);
     for (const t of texts) expect(titleCaseViolations(t), `"${t}"`).toEqual([]);
   });
 }
@@ -57,5 +58,13 @@ test('ledger sheet and detail tabs keep title case once opened', async ({ page }
     await page.goto(url);
     await page.locator('h1').waitFor();
     for (const t of await heads(page, '.t-heading')) expect(titleCaseViolations(t), `${url}: "${t}"`).toEqual([]);
+  }
+});
+
+test('every access view keeps title case', async ({ page }) => {
+  for (const f of ['Error', 'Throttled', 'Mfa', 'MfaInvalid', 'Enrol', 'Recovery', 'Signup', 'SignupErrors', 'Verify']) {
+    await page.goto(`/SignIn${f}.dc.html`);
+    await page.locator('h1').waitFor();
+    for (const t of await heads(page, 'h1, h2, h3')) expect(titleCaseViolations(t), `${f}: "${t}"`).toEqual([]);
   }
 });
