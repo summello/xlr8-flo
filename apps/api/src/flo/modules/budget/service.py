@@ -48,6 +48,26 @@ from flo.modules.budget.transfers import transfer as transfer
 from flo.modules.org.service import OrgService
 from flo.modules.projects.service import ProjectService
 
+# The module boundary (AGENTS.md 3.3): other modules import these from here, never from
+# ledger, postings, reservations, transfers or queries directly.
+__all__ = [
+    "InsufficientBudget",
+    "adjust",
+    "aggregate_balance",
+    "allocate",
+    "balance_query",
+    "commit",
+    "get_balance",
+    "ledger_query",
+    "post_entry",
+    "record_actual",
+    "release_commitment",
+    "release_reservation",
+    "reserve",
+    "reverse_entry",
+    "transfer",
+]
+
 
 def _manual_entry(
     conn: psycopg.Connection[tuple[object, ...]],

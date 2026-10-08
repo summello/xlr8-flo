@@ -43,6 +43,26 @@ from flo.modules.org.schemas import (
 )
 from flo.modules.org.settings import SETTING_DEFAULTS, SETTING_VALIDATORS
 
+# The module boundary (AGENTS.md 3.3): other modules import these from here, never from
+# fiscal, numbering, models or repo directly.
+__all__ = [
+    "FiscalService",
+    "MasterCodeUnusable",
+    "NumberingService",
+    "OrgService",
+    "PeriodClosed",
+    "assert_postable",
+    "assert_usable",
+    "create_organization",
+    "known_key",
+    "list_currencies",
+    "period_for",
+    "range_for",
+    "today",
+    "valid_value",
+    "validate_master_dates",
+]
+
 
 def known_key(key: str) -> None:
     if key not in SETTING_DEFAULTS:
