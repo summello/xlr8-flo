@@ -20,6 +20,22 @@ TESTS = Path(__file__).resolve().parents[1]
 
 # (method, path) -> "file::test" that proves a foreign id returns 404.
 COVERED = {
+    (
+        "GET",
+        "/api/v1/fx/rates",
+    ): "org/test_fx.py::test_fx_reads_foreign_org_inputs_do_not_change_reference_data",
+    (
+        "GET",
+        "/api/v1/fx/status",
+    ): "org/test_fx.py::test_fx_reads_foreign_org_inputs_do_not_change_reference_data",
+    (
+        "PUT",
+        "/api/v1/org/base-currency",
+    ): "org/test_fx.py::test_base_currency_set_repeat_lock_and_foreign_org",
+    (
+        "POST",
+        "/internal/jobs/fx-ingest",
+    ): "org/test_fx.py::test_internal_fx_production_stack_repeats_failures_and_guards",
     ("GET", "/api/v1/auth/csrf"): "session/test_http.py::test_csrf_bootstrap_ignores_foreign_org",
     (
         "GET",

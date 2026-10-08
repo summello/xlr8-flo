@@ -495,7 +495,7 @@ epics:
           - FIN-003
         dep:
           - E03-S06
-        st: todo
+        st: done
       - id: E05-S09
         t: 'Identity belongs to an organization: membership, org_id on the session, seeded first tenant and bootstrap command'
         k: security

@@ -24,6 +24,18 @@ class Settings(BaseSettings):
     )
 
     port: int = Field(default=8080, ge=1, le=65535, validation_alias="PORT")
+    fx_feed_url: str = Field(
+        default="https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml",
+        validation_alias="FX_FEED_URL",
+    )
+
+    @field_validator("fx_feed_url")
+    @classmethod
+    def https_fx_feed(cls, value: str) -> str:
+        if not value.startswith("https://"):
+            raise ValueError("FX feed must use HTTPS")
+        return value
+
     database_url: SecretStr | None = Field(default=None, validation_alias="DATABASE_URL")
     migrations_dir: Path = Field(
         default=Path("/app/migrations"),

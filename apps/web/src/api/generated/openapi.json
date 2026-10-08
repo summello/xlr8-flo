@@ -458,6 +458,21 @@
         "title": "BalanceRead",
         "type": "object"
       },
+      "BaseCurrencyPut": {
+        "additionalProperties": false,
+        "properties": {
+          "currency": {
+            "pattern": "^[A-Z]{3}$",
+            "title": "Currency",
+            "type": "string"
+          }
+        },
+        "required": [
+          "currency"
+        ],
+        "title": "BaseCurrencyPut",
+        "type": "object"
+      },
       "CalendarPut": {
         "additionalProperties": false,
         "properties": {
@@ -803,6 +818,112 @@
           "closed_at"
         ],
         "title": "FiscalPeriod",
+        "type": "object"
+      },
+      "FxLastRun": {
+        "properties": {
+          "error_class": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Class"
+          },
+          "finished_at": {
+            "format": "date-time",
+            "title": "Finished At",
+            "type": "string"
+          },
+          "rows_inserted": {
+            "title": "Rows Inserted",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "ok",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "finished_at",
+          "rows_inserted",
+          "error_class"
+        ],
+        "title": "FxLastRun",
+        "type": "object"
+      },
+      "FxRateRead": {
+        "properties": {
+          "base": {
+            "title": "Base",
+            "type": "string"
+          },
+          "effective_date": {
+            "format": "date",
+            "title": "Effective Date",
+            "type": "string"
+          },
+          "quote": {
+            "title": "Quote",
+            "type": "string"
+          },
+          "rate": {
+            "title": "Rate",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "base",
+          "quote",
+          "rate",
+          "source",
+          "effective_date"
+        ],
+        "title": "FxRateRead",
+        "type": "object"
+      },
+      "FxStatus": {
+        "properties": {
+          "last_run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FxLastRun"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "newest_rate_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Newest Rate Date"
+          }
+        },
+        "required": [
+          "last_run",
+          "newest_rate_date"
+        ],
+        "title": "FxStatus",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -4838,6 +4959,154 @@
         ]
       }
     },
+    "/api/v1/fx/rates": {
+      "get": {
+        "operationId": "rates_api_v1_fx_rates_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "base",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Z]{3}$",
+              "title": "Base",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "quote",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Z]{3}$",
+              "title": "Quote",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "on",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "On",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FxRateRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Rates",
+        "tags": [
+          "fx"
+        ]
+      }
+    },
+    "/api/v1/fx/status": {
+      "get": {
+        "operationId": "status_api_v1_fx_status_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FxStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Status",
+        "tags": [
+          "fx"
+        ]
+      }
+    },
     "/api/v1/imports": {
       "post": {
         "description": "Every upload creates a new batch; Idempotency-Key is accepted and ignored (D-M1-19).",
@@ -5664,6 +5933,75 @@
         "summary": "Deactivate",
         "tags": [
           "master"
+        ]
+      }
+    },
+    "/api/v1/org/base-currency": {
+      "put": {
+        "operationId": "set_base_currency_api_v1_org_base_currency_put",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BaseCurrencyPut"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseCurrencyPut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Set Base Currency",
+        "tags": [
+          "organization"
         ]
       }
     },

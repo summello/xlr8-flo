@@ -13,6 +13,7 @@ from flo.kernel.authz import require
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.org.schemas import (
+    BaseCurrencyPut,
     EffectiveSetting,
     OrgAddressClose,
     OrgAddressCreate,
@@ -169,3 +170,14 @@ def close_address(
     connection: Connection,
 ) -> OrgAddressRead:
     return OrgService(connection, current_scope(), context.user_id).close_address(unit_id, id, body)
+
+
+@router.put("/base-currency", response_model=BaseCurrencyPut)
+def set_base_currency(
+    body: BaseCurrencyPut,
+    context: Annotated[
+        AuthorizationContext, Depends(require("org.setting.manage", organization_target))
+    ],
+    connection: Connection,
+) -> BaseCurrencyPut:
+    return OrgService(connection, current_scope(), context.user_id).set_base_currency(body)

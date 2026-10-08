@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 import random
+import urllib.error
 import urllib.parse
 import urllib.request
 from collections.abc import Awaitable, Callable, Mapping
@@ -28,6 +29,8 @@ from flo.kernel.outbox import OutboxDispatcher, email_handler
 from flo.kernel.outbox.dispatcher import DispatcherConnection
 from flo.kernel.storage import create_storage
 from flo.modules.budget.reconcile import job_handler, reconcile_all
+from flo.modules.org.fx import MAX_BYTES, FeedFailure, Fetcher, ingest
+from flo.modules.org.schemas import FxIngestReport
 
 _logger = logging.getLogger(__name__)
 _METADATA_TOKEN_URL = (
@@ -458,3 +461,50 @@ async def budget_reconcile(
 ) -> ReconcileTriggerReport:
     """Require origin secret and Idempotency-Key; no replay, repeats only append reports."""
     return await asyncio.to_thread(_run_budget_reconcile, settings)
+
+
+def fetch_fx(url: str) -> bytes:
+    if urllib.parse.urlsplit(url).scheme != "https":
+        raise FeedFailure("network")
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url), timeout=10) as response:  # noqa: S310
+            if urllib.parse.urlsplit(response.geturl()).scheme != "https":
+                raise FeedFailure("network")
+            if response.status != 200:
+                raise FeedFailure("http_status")
+            payload = response.read(MAX_BYTES + 1)
+    except FeedFailure:
+        raise
+    except urllib.error.HTTPError:
+        raise FeedFailure("http_status") from None
+    except (urllib.error.URLError, OSError, ValueError):
+        raise FeedFailure("network") from None
+    if len(payload) > MAX_BYTES:
+        raise FeedFailure("too_large")
+    return cast(bytes, payload)
+
+
+def get_fx_fetcher() -> Fetcher:
+    return fetch_fx
+
+
+def _run_fx_ingest(settings: Settings, fetcher: Fetcher) -> FxIngestReport:
+    if settings.database_url is None:
+        raise RuntimeError("DATABASE_URL is not configured")
+    with psycopg.connect(settings.database_url.get_secret_value(), autocommit=True) as connection:
+        try:
+            return ingest(connection, settings.fx_feed_url, fetcher=fetcher)
+        except FeedFailure:
+            raise ProblemError(
+                ErrorCode.SERVICE_UNAVAILABLE, checks={"problem": "fx_feed_unavailable"}
+            ) from None
+
+
+@router.post("/internal/jobs/fx-ingest", response_model=FxIngestReport, include_in_schema=False)
+@public_route
+async def fx_ingest(
+    settings: Annotated[Settings, Depends(get_internal_settings)],
+    fetcher: Annotated[Fetcher, Depends(get_fx_fetcher)],
+) -> FxIngestReport:
+    """Require origin secret and Idempotency-Key, no replay; repeats retain existing rates."""
+    return await asyncio.to_thread(_run_fx_ingest, settings, fetcher)

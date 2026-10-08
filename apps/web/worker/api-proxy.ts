@@ -1,4 +1,4 @@
-import { tickJobs } from "../../../infra/cron-worker/jobs-tick";
+import { internalJobRequest, tickJobs } from "../../../infra/cron-worker/jobs-tick";
 
 const API_PREFIX = "/api";
 const ORIGIN_SECRET_HEADER = "X-FLO-Origin-Secret";
@@ -71,11 +71,23 @@ async function checkQuota(environment: WorkerEnvironment): Promise<void> {
   }
 }
 
-async function runScheduledWork(environment: WorkerEnvironment): Promise<void> {
-  await Promise.all([
-    checkQuota(environment),
-    tickJobs(parseCloudRunOrigin(environment.CLOUD_RUN_ORIGIN), environment),
-  ]);
+async function runScheduledWork(environment: WorkerEnvironment, scheduledTime: number): Promise<void> {
+  const origin = parseCloudRunOrigin(environment.CLOUD_RUN_ORIGIN);
+  const time = new Date(scheduledTime);
+  const work = [checkQuota(environment), tickJobs(origin, environment)];
+  const hour = time.getUTCHours();
+  if (time.getUTCMinutes() === 30) {
+    const path = hour === 16 || hour === 18 ? "/internal/jobs/fx-ingest"
+      : hour === 2 ? "/internal/jobs/budget-reconcile" : null;
+    if (path) {
+      work.push(fetch(internalJobRequest(path, origin, environment)).then(response => {
+        if (!response.ok) throw new Error(`internal job failed with HTTP ${response.status}`);
+      }));
+    }
+  }
+  const results = await Promise.allSettled(work);
+  const failure = results.find(result => result.status === "rejected");
+  if (failure?.status === "rejected") throw failure.reason;
 }
 
 export default {
@@ -90,10 +102,10 @@ export default {
     }
   },
   scheduled(
-    _controller: unknown,
+    controller: { scheduledTime: number },
     environment: WorkerEnvironment,
     context: WorkerExecutionContext,
   ): void {
-    context.waitUntil(runScheduledWork(environment));
+    context.waitUntil(runScheduledWork(environment, controller.scheduledTime));
   },
 };

@@ -5,7 +5,8 @@ export interface JobsTickEnvironment {
   ORIGIN_SHARED_SECRET: string;
 }
 
-export function jobsTickRequest(
+export function internalJobRequest(
+  path: string,
   origin: URL,
   environment: JobsTickEnvironment,
 ): Request {
@@ -14,7 +15,7 @@ export function jobsTickRequest(
   // fresh key per tick is correct). The cron is not a browser, but it takes part in the
   // same protocol with a one-request pair instead of asking the API to exempt it.
   const csrf = crypto.randomUUID();
-  return new Request(new URL("/internal/jobs/tick", origin), {
+  return new Request(new URL(path, origin), {
     method: "POST",
     headers: {
       [ORIGIN_SECRET_HEADER]: environment.ORIGIN_SHARED_SECRET,
@@ -24,6 +25,10 @@ export function jobsTickRequest(
     },
     redirect: "manual",
   });
+}
+
+export function jobsTickRequest(origin: URL, environment: JobsTickEnvironment): Request {
+  return internalJobRequest("/internal/jobs/tick", origin, environment);
 }
 
 export async function tickJobs(

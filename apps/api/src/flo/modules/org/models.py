@@ -5,6 +5,7 @@ from collections.abc import Mapping
 import psycopg
 
 from flo.kernel.db.repo import ScopedRepo
+from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.tenancy.context import Scope
 
 
@@ -21,6 +22,20 @@ class OrgRepository(ScopedRepo[object]):
     def lock_organization(self) -> None:
         # Serialize structure and override mutations, including absent setting rows.
         self.execute("SELECT id FROM organization WHERE org_id = %(org_id)s FOR UPDATE")
+
+    def base_currency(self) -> str | None:
+        row = self.execute(
+            "SELECT base_currency FROM organization WHERE org_id = %(org_id)s FOR UPDATE"
+        ).fetchone()
+        if row is None:
+            raise ProblemError(ErrorCode.NOT_FOUND)
+        return str(row[0]) if row[0] is not None else None
+
+    def set_base_currency(self, currency: str) -> None:
+        self.execute(
+            "UPDATE organization SET base_currency = %(currency)s WHERE org_id = %(org_id)s",
+            {"currency": currency},
+        )
 
     def unit(self, unit_id: object) -> dict[str, object] | None:
         row = self.execute(

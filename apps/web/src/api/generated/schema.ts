@@ -461,6 +461,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/fx/rates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Rates */
+        get: operations["rates_api_v1_fx_rates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/fx/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Status */
+        get: operations["status_api_v1_fx_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/imports": {
         parameters: {
             query?: never;
@@ -612,6 +646,23 @@ export interface paths {
         put?: never;
         /** Deactivate */
         post: operations["deactivate_api_v1_master__kind___id__deactivate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/org/base-currency": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set Base Currency */
+        put: operations["set_base_currency_api_v1_org_base_currency_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1131,6 +1182,11 @@ export interface components {
             /** Version */
             version: number;
         };
+        /** BaseCurrencyPut */
+        BaseCurrencyPut: {
+            /** Currency */
+            currency: string;
+        };
         /** CalendarPut */
         CalendarPut: {
             /**
@@ -1271,6 +1327,45 @@ export interface components {
              * @enum {string}
              */
             status: "open" | "closed";
+        };
+        /** FxLastRun */
+        FxLastRun: {
+            /** Error Class */
+            error_class: string | null;
+            /**
+             * Finished At
+             * Format: date-time
+             */
+            finished_at: string;
+            /** Rows Inserted */
+            rows_inserted: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "failed";
+        };
+        /** FxRateRead */
+        FxRateRead: {
+            /** Base */
+            base: string;
+            /**
+             * Effective Date
+             * Format: date
+             */
+            effective_date: string;
+            /** Quote */
+            quote: string;
+            /** Rate */
+            rate: string;
+            /** Source */
+            source: string;
+        };
+        /** FxStatus */
+        FxStatus: {
+            last_run: components["schemas"]["FxLastRun"] | null;
+            /** Newest Rate Date */
+            newest_rate_date: string | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -3159,6 +3254,90 @@ export interface operations {
             };
         };
     };
+    rates_api_v1_fx_rates_get: {
+        parameters: {
+            query: {
+                base: string;
+                quote: string;
+                on: string;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FxRateRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    status_api_v1_fx_status_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FxStatus"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     upload_api_v1_imports_post: {
         parameters: {
             query?: never;
@@ -3583,6 +3762,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MasterRef"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    set_base_currency_api_v1_org_base_currency_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BaseCurrencyPut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BaseCurrencyPut"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

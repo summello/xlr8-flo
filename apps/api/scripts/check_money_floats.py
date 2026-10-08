@@ -9,6 +9,7 @@ import sys
 from collections.abc import Iterable
 from pathlib import Path
 
+MONEY_FILES = ("org/fx.py",)
 MONEY_MODULES = ("budget", "purchasing", "sourcing", "requisitions")
 
 
@@ -97,6 +98,7 @@ def default_money_modules() -> list[Path]:
             existing.append(path)
         else:
             print(f"notice: module {name} not built yet")
+    existing.extend(modules / name for name in MONEY_FILES)
     return existing
 
 

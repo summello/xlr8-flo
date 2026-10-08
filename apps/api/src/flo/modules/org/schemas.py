@@ -154,6 +154,37 @@ class MasterPage(BaseModel):
     next_cursor: UUID | None
 
 
+class BaseCurrencyPut(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    currency: str = Field(pattern=r"^[A-Z]{3}$")
+
+
+class FxRateRead(BaseModel):
+    base: str
+    quote: str
+    rate: str
+    source: str
+    effective_date: date
+
+
+class FxLastRun(BaseModel):
+    status: Literal["ok", "failed"]
+    finished_at: datetime
+    rows_inserted: int
+    error_class: str | None
+
+
+class FxStatus(BaseModel):
+    last_run: FxLastRun | None
+    newest_rate_date: date | None
+
+
+class FxIngestReport(BaseModel):
+    status: Literal["ok"]
+    rows_inserted: int
+    newest_effective_date: date | None
+
+
 class CurrencyRead(BaseModel):
     code: str
     exponent: int

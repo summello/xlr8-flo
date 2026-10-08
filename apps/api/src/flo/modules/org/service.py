@@ -21,10 +21,18 @@ from flo.modules.identity.service import (
 from flo.modules.org.fiscal import FiscalPeriod
 from flo.modules.org.fiscal import FiscalService as FiscalService
 from flo.modules.org.fiscal import PeriodClosed as PeriodClosed
+from flo.modules.org.fx import Conversion as Conversion
+from flo.modules.org.fx import FxRateMissing as FxRateMissing
+from flo.modules.org.fx import assert_single_currency as assert_single_currency
+from flo.modules.org.fx import convert as convert
+from flo.modules.org.fx import rate_for as rate_for
+from flo.modules.org.fx import status as fx_status
+from flo.modules.org.fx import validate_currency
 from flo.modules.org.master_kinds import known_kind, validate_attributes
 from flo.modules.org.models import OrgRepository
 from flo.modules.org.numbering import NumberingService as NumberingService
 from flo.modules.org.schemas import (
+    BaseCurrencyPut,
     CurrencyRead,
     EffectiveSetting,
     MasterCreate,
@@ -46,6 +54,12 @@ from flo.modules.org.settings import SETTING_DEFAULTS, SETTING_VALIDATORS
 # The module boundary (AGENTS.md 3.3): other modules import these from here, never from
 # fiscal, numbering, models or repo directly.
 __all__ = [
+    "Conversion",
+    "FxRateMissing",
+    "assert_single_currency",
+    "convert",
+    "rate_for",
+    "fx_status",
     "FiscalService",
     "MasterCodeUnusable",
     "NumberingService",
@@ -100,6 +114,27 @@ class OrgService:
         self.scope = scope
         self.repo = OrgRepository(connection, scope)
         self.actor_id = actor_id
+
+    def set_base_currency(self, body: BaseCurrencyPut) -> BaseCurrencyPut:
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            before = self.repo.base_currency()
+            validate_currency(body.currency, "currency")
+            if before == body.currency:
+                return body
+            if before is not None:
+                raise ProblemError(
+                    ErrorCode.CONFLICT,
+                    detail="Base currency is already set. It cannot be changed in M1.",
+                    checks={"problem": "base_currency_locked"},
+                )
+            self.repo.set_base_currency(body.currency)
+            self._audit(
+                "org.base_currency.set",
+                self.scope.org_id,
+                {"base_currency": before},
+                {"base_currency": body.currency},
+            )
+            return body
 
     def _audit(
         self,

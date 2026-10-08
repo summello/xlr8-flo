@@ -482,7 +482,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E04-S05** StatusPill primitive: closed per-document-type tone map, icon always, never author-coloured | E04 | ui | M | TAG-001, TAG-002, TAG-003, A11Y-004 | ~~E04-S01~~ |
 | ✅ | **E04-S06** Material layer: tinted shadows, lit edge, grain, honest glass, glow focus ring | E04 | ui | M | UX-006, A11Y-005 | ~~E04-S01~~ |
 
-#### M1 — Budget spine · 20/32 done
+#### M1 — Budget spine · 21/32 done
 
 > The trustworthy system of record. Projects, hierarchy and the complete budget ledger.
 
@@ -492,7 +492,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E05-S02** Bill To / Ship To addresses with effective dates | E05 | crud | S | ORG-005 | ~~E05-S01~~ |
 | ✅ | **E05-S03** Master data: departments, ledger accounts, UoM, tax codes, payment terms, categories | E05 | crud | L | ORG-010, ORG-011, ORG-009, XFN-009 | ~~E05-S01~~ |
 | ✅ | **E05-S04** Fiscal calendar and period open/close with authorization and audit | E05 | engine | M | BUD-010, FIN-010 | ~~E05-S01~~ |
-| ⬜ | **E05-S05** FX: ECB daily rate ingest, rate table, effective dating, missing-rate block | E05 | engine | M | FX-001, FX-002, FX-003, FX-004, FIN-003 | ~~E03-S06~~ |
+| ✅ | **E05-S05** FX: ECB daily rate ingest, rate table, effective dating, missing-rate block | E05 | engine | M | FX-001, FX-002, FX-003, FX-004, FIN-003 | ~~E03-S06~~ |
 | ✅ | **E05-S09** Identity belongs to an organization: membership, org_id on the session, seeded first tenant and bootstrap command | E05 | security | L | AUTH-001, AUTH-005, ORG-001, TEN-010 | ~~E05-S01~~ |
 | ✅ | **E05-S10** Sign-in screen: CSRF bootstrap, login, MFA challenge, logout, error and locked states | E05 | ui | L | AUTH-001, AUTH-007, AUTH-010 | ~~E05-S09~~ |
 | ⬜ | **E05-S11** Login throttling: per-identity and per-client failure limits, trusted client IP behind Cloudflare | E05 | security | M | AUTH-004, AUTH-007, SEC-001 | ~~E05-S09~~ |
@@ -570,7 +570,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E12-S03** RFQ lifecycle and post-publication versioning communicated to invitees | E12 | engine | M | SRC-004, SRC-005 | E12-S02 |
 | ⬜ | **E12-S04** Bid capture: line prices, currency, tax, freight, lead time, validity, exceptions | E12 | crud | M | SRC-006 | E12-S03 |
 | ⬜ | **E12-S05** Bid confidentiality and late-bid block with audited override | E12 | security | M | SRC-007, SRC-008 | E12-S04 |
-| ⬜ | **E12-S06** Comparison engine: normalized total and unit cost, tax, freight, lead time, vendor score | E12 | engine | L | SRC-009, SRC-010 | E12-S04, E05-S05 |
+| ⬜ | **E12-S06** Comparison engine: normalized total and unit cost, tax, freight, lead time, vendor score | E12 | engine | L | SRC-009, SRC-010 | E12-S04, ~~E05-S05~~ |
 | ⬜ | **E12-S07** Evaluation scoring with comments and conflict-of-interest declarations | E12 | crud | M | SRC-011 | E12-S06 |
 | ⬜ | **E12-S08** Award: split by line/quantity, scope and reserved-funds guard, non-lowest justification | E12 | ledger | L | SRC-012, SRC-013, SRC-014, SRC-016, REQ-014 | E12-S07, ~~E07-S04~~ |
 | ⬜ | **E12-S09** Cancel or supersede RFQ/award, preserve history, reconcile budget effect | E12 | ledger | M | SRC-017, SRC-015, WF-005 | E12-S08 |
