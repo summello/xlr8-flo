@@ -29,6 +29,23 @@ test('the axe harness itself fails on a planted violation', async ({ page }) => 
   expect(found.join('\n')).toContain('image-alt');
 });
 
+test.describe('axe, design system sheet', () => {
+  test('both panels at 1440 (light and dark side by side)', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/DesignSystem.dc.html');
+    await page.locator('#s-rules').first().waitFor();
+    await page.waitForTimeout(500);
+    expect(await axe(page)).toEqual([]);
+  });
+  test('the panel on its own at 700, where the phone rules apply', async ({ page }) => {
+    await page.setViewportSize({ width: 700, height: 900 });
+    await page.goto('/ThemePanel.dc.html');
+    await page.locator('#s-rules').waitFor();
+    await page.waitForTimeout(500);
+    expect(await axe(page)).toEqual([]);
+  });
+});
+
 for (const theme of ['light', 'dark']) {
   test.describe(`axe, ${theme}`, () => {
     const prep = async (page) => { if (theme === 'dark') await dark(page); };

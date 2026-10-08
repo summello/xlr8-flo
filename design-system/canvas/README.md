@@ -2,6 +2,8 @@
 
 Source of the Claude Design canvas `xlr8flo-design-system` (https://claude.ai/artifact/95sB8BhSTJnNetSkmmNCNn, private).
 
+- Start with `DECISIONS.md` (everything decided) and `HANDOFF.md` (the plan for the remaining screens).
+- Two canvas pages: Playground (Home, Executive Dashboard, width variants) and Design System (the sheet and the theme panel).
 - Files under `project/` mirror the published canvas paths.
 - `project/xlr8flo.css` transcribes the tokens in `../MASTER.md` and adds the motion, state and overlay classes. It does not amend MASTER.md; MASTER.md stays the source of truth.
 - Boards: `Main` (Home), `ExecutiveDashboard`, `DesignSystem` (+ `ThemePanel`), and width variants `HomeW*`, `ExecW*`, `HomeCollapsed`.
@@ -33,5 +35,7 @@ DC_RUNTIME=<dc-runtime.js> AXE_CORE=<axe.min.js> npx playwright test
 - `lint.spec.mjs`: no layout property animated, no colour literal in an artboard, every `var(--token)` resolves, a reduced-motion block exists. Each gate is also run against a planted violation.
 - `shell.spec.mjs`: responsive overflow, sidebar modes, toggle placement, touch targets, stacked cards, popover, command menu, record sheet, toast.
 - `layout.spec.mjs`: no content cap at 1920 and 2560, layout tiers per width, equal card heights in every row, money format (whole amount first, lighter smaller decimals and currency).
+- `designsystem.spec.mjs`: canvas pages, no overlapping boards, every sheet section present in both themes, shell samples, the full icon set, overlay samples; every icon used on the screens must be in the set.
+- `copy.spec.mjs`: title case on every rendered heading and column head; the rules and exception E-1 are on the sheet.
 - `motion.spec.mjs`: duration budget per element, reduced motion, intro count-up, tabs, tooltips.
 - `a11y.spec.mjs`: axe in light and dark across the default, collapsed, popover, command menu, sheet, drawer and tab states. Includes a planted violation to prove the harness fails.

@@ -48,6 +48,16 @@ export function titleCaseViolations(text) {
   return bad;
 }
 
+// Boards on one canvas page must not overlap; returns the offending pairs.
+export function boardOverlaps(boards) {
+  const out = [], e = Object.entries(boards);
+  for (const [a, A] of e) for (const [b, B] of e) {
+    if (a >= b || A.page !== B.page) continue;
+    if (!(A.x + A.w <= B.x || B.x + B.w <= A.x || A.y + A.h <= B.y || B.y + B.h <= A.y)) out.push(a + ' / ' + b);
+  }
+  return out;
+}
+
 // MASTER 6.4: a reduced-motion block that collapses animation and transition duration.
 export function hasReducedMotionBlock(css) {
   const m = css.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?)\n\}/);
