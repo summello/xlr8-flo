@@ -231,6 +231,14 @@ PATH="<worktree>/.venv/bin:$PATH" <worktree>/.venv/bin/python agents/scripts/flo
 
 ---
 
+## Staging database (8 Oct 2026)
+
+Rehearse migrations and the first-tenant bootstrap on a Neon branch named `staging` (copy-on-write
+from production) before touching production; secrets `FLO_STAGING_DATABASE_URL` (keychain) and
+`flo-database-url-staging` (Secret Manager), never the production names. Procedure in
+`infra/SETUP.md` ("Rehearse on a staging branch first"). A full second environment waits for the
+graduation trigger. Agents never run against Neon from a worktree, staging branch included.
+
 ## Branch protection
 
 Live on `main`: PR required, merge-commit only, `detect`/`governance`/`security` required.
