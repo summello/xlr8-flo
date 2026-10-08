@@ -381,7 +381,7 @@ class Component extends DCLogic {
     const m = (el, spec, seen) => ({ el, spec, seen });
     const motions = [
       m('KPI card', 'Lifts 3px with a spring (320ms) and takes a 1px outline in its series colour. Decorative; the swatch and label carry the meaning. An explicit exception to MASTER 6.2 (springs for drag only), requested by the operator.', 'Exec'),
-      m('Other cards', 'Outline only, 120ms, in the next series colour by position. No movement.', 'Home, Exec'),
+      m('Other cards', 'Outline only, 120ms, in the next series colour by position. No movement. Chart and summary cards only: a card holding a table or grid stays still.', 'Home, Exec'),
       m('Chart tooltip', 'Instant. A rounded box with a title, a swatch and measured rows (amount, share, running total). Hover and keyboard focus. Flips below a mark near the top.', 'Exec charts'),
       m('Button', 'Hover shifts background only, 120ms. Press scale 0.97, 120ms.', 'Home, Exec'),
       m('Row, nav item', 'Hover is instant, no movement. Selected adds a 2px phase rule.', 'Home, Exec'),

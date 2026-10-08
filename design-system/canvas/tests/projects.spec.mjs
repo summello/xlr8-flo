@@ -355,6 +355,26 @@ test.describe('project detail', () => {
   });
 });
 
+test('table and grid cards take no hover outline; chart cards still do', async ({ page }) => {
+  await open(page, DASH);
+  const rest = (sel) => page.locator(sel).evaluate((e) => getComputedStyle(e).borderTopColor);
+  for (const sel of ['.a-wf', '.a-att', '.a-bu']) {
+    const before = await rest('.dash > ' + sel);
+    await page.locator('.dash > ' + sel).hover({ position: { x: 6, y: 6 } });
+    await page.waitForTimeout(250);
+    const after = await rest('.dash > ' + sel);
+    if (sel === '.a-bu') expect(after, sel).not.toBe(before); else expect(after, sel).toBe(before);
+    await page.mouse.move(2, 2);
+  }
+  for (const url of [LIST, LEDGER]) {
+    await open(page, url);
+    const before = await rest('.dash > .card');
+    await page.locator('.dash > .card').hover({ position: { x: 6, y: 6 } });
+    await page.waitForTimeout(250);
+    expect(await rest('.dash > .card'), url).toBe(before);
+  }
+});
+
 test.describe('gates prove themselves on a planted violation', () => {
   test('the equal-height check fails when a card is shorter', async ({ page }) => {
     await open(page, DASH);

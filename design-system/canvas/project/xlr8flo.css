@@ -129,7 +129,7 @@ button.row-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 
 .kpi:is(:hover, .is-hover) { transform: translateY(-3px); border-color: var(--hue); box-shadow: var(--shadow-lg), var(--lit); }
 /* every other card: outline only, in the next colour of the chart series (assigned by position in the page, see the component script) */
 .dash > .card { transition: border-color var(--dur-fast) var(--ease-out); }
-.dash > .card:is(:hover, .is-hover) { border-color: var(--hue, var(--border-strong)); }
+.dash > .card:not(:has(.row, [role=table], [role=treegrid])):is(:hover, .is-hover) { border-color: var(--hue, var(--border-strong)); }   /* chart and summary cards only; tables and grids stay still */
 .card-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 16px 0; }
 .card-b { padding: 16px; }
 .grid { display: grid; gap: 16px; }

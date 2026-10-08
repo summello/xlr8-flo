@@ -211,14 +211,17 @@ test.describe('executive dashboard', () => {
         await c.hover({ position: { x: 6, y: 6 } });
         await page.waitForTimeout(250);
         const hot = await c.evaluate((e) => { const s = getComputedStyle(e); return { b: s.borderTopColor, shadow: s.boxShadow, t: s.transform, hue: e.style.getPropertyValue('--hue') }; });
-        expect(hot.b).not.toBe(rest.b);                                    // the outline appears
+        const data = await c.evaluate((e) => !!e.querySelector('.row, [role=table], [role=treegrid]'));
+        if (data) { expect(hot.b, 'a table or grid card keeps its border').toBe(rest.b); await page.mouse.move(2, 2); continue; }
+        expect(hot.b).not.toBe(rest.b);                                    // the outline appears on chart and summary cards only
         expect(hot.shadow).toBe(rest.shadow);                              // nothing else changes
         expect(hot.t).toBe('none');                                        // and nothing moves
         expect(hot.hue).toMatch(/^var\(--c[1-8]\)$/);
         seen.push(hot.b);
         await page.mouse.move(2, 2);
       }
-      expect(new Set(seen).size).toBe(n);                                  // distinct on one screen
+      expect(seen.length).toBeGreaterThan(0);
+      expect(new Set(seen).size).toBe(seen.length);                        // distinct on one screen
     });
   }
 
