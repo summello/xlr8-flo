@@ -4,6 +4,8 @@ Read `DECISIONS.md` first (everything decided so far), then `README.md` (how to 
 
 ## State
 
+**Next session: Budget Transfer. Screen list and open questions are ready in `HANDOFF-budget-transfer.md`; nothing is built. Read that file first.**
+
 **Approval Inbox and Approval Workflow Builder pages built (DECISIONS 6d). Next: Budget Transfer, Comparison Dashboard, then the rest of Common Screens (6c). Requisition Create is 6b.**
 
 **Common Screens page started: sign in, two-step verification and sign up are built (DECISIONS 6c); the remaining common screens are planned there. Requisition Create is decided and waits (6b).**
