@@ -510,8 +510,19 @@ disposable Neon branch before running them against production:
    Manager secret `flo-database-url-staging`, created exactly like `flo-database-url`
    (see the secrets section above). Never reuse the production names.
 3. Run the pending migrations and the bootstrap command (next section) as a Cloud Run job or
-   locally with `DATABASE_URL` read from the staging keychain item at the point of use. Check
-   the exit code, then sign in against it if a staging deploy exists.
+   locally with `DATABASE_URL` read from the staging keychain item at the point of use. Locally
+   the migration runner defaults to the container path `/app/migrations`, so set
+   `MIGRATIONS_DIR` to the repository's `migrations` folder first:
+
+   ```sh
+   cd apps/api
+   export MIGRATIONS_DIR="$PWD/../../migrations"
+   uv run python -m flo.kernel.migrate --check
+   DATABASE_URL="$(security find-generic-password -a "$USER" -s FLO_STAGING_DATABASE_URL -w)" \
+     uv run python -m flo.kernel.migrate
+   ```
+
+   Check the exit code, then sign in against it if a staging deploy exists.
 4. Only when the rehearsal is clean, repeat against production. If the rehearsal fails or
    leaves the branch in a bad state, delete the branch and recreate it from production.
 
