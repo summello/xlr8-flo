@@ -268,6 +268,17 @@
     <p class="t-dense secondary">Signature moments 1 (first paint) and 2 (waterfall settle) are built on the Executive dashboard; use Replay intro. Moments 3, 4 and 5 are specified in MASTER 6.2 and ship with the transfer, approval and purchase order screens. Reduced motion drops transforms, staggers, count-ups and traces and keeps the end state.</p>
   </section>
 
+  <section aria-labelledby="s-forms" style="display:flex;flex-direction:column;gap:12px">
+    <h3 class="t-label" id="s-forms">Forms, Steppers and Action Bars</h3>
+    <p class="t-dense secondary">Added with the requisition screens. A long form keeps its Save and Submit in a sticky action bar. Money in an editable line is a right-aligned mono input held in whole cents; the line total is computed, never typed. A failed submit lists what failed and where in a summary whose links focus the field. A lifecycle stepper is an ordered list: the current step carries <code>aria-current</code> and the done steps say so in words and with a tick, never colour alone.</p>
+    <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:16px" id="f-sample">
+      <fieldset class="choice"><legend class="t-label">Requisition for</legend><label><input type="radio" name="fs-for" checked>An existing project</label><label><input type="radio" name="fs-for">A standalone capital request</label></fieldset>
+      <div class="field"><label class="t-label" for="fs-why">Justification</label><textarea id="fs-why" class="inp ta">Replace drives before the winter shutdown.</textarea></div>
+      <ol class="stepper" aria-label="Lifecycle sample"><li class="done">&#10003; Draft<span class="sr-only">, done</span></li><li class="now" aria-current="step">Approval Pending<span class="sr-only">, current</span></li><li>Sourcing in Progress<span class="sr-only">, not yet</span></li></ol>
+      <div class="card" style="padding:0;overflow:hidden"><ul class="suggest"><li><div><div style="font-weight:520">Servo drive, 7.5 kW</div><div class="t-caption">Item · bought 12 Mar 2026 from Voltek Drives</div></div><button class="btn" type="button">Add</button></li></ul><div class="total-bar"><span style="font-weight:560">Estimated total</span><span class="amt"><span class="w">196,000</span><span class="d">.00</span><span class="cur">USD</span></span></div><div class="action-bar" style="position:static;margin:0"><span class="t-caption">Draft saved 14:06</span><span style="display:flex;gap:8px"><button class="btn" type="button">Save draft</button><button class="btn primary" type="button">Submit for approval</button></span></div></div>
+    </div>
+  </section>
+
   <section aria-labelledby="s-access" style="display:flex;flex-direction:column;gap:12px">
     <h3 class="t-label" id="s-access">Access Forms and Ambient Motion</h3>
     <p class="t-dense secondary">Added with the sign in and sign up screens. Inputs on access screens are 44px. An error summary takes focus on failure and links to each field; a field error carries an icon and text, never colour alone; typed input is kept and a password field is cleared. The backdrop is outline art in tokens: transform and opacity only, 7 to 22 second loops, never behind text it could fight, and the un-animated state is the finished picture. Reduced motion stops it; the spinner is replaced by the word.</p>

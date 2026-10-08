@@ -13,6 +13,9 @@ for (const [name, url, sel] of [
   ['Ledger Entries', '/ProjectLedger.dc.html', HEADINGS],
   ['Project Detail', '/ProjectDetail.dc.html', HEADINGS],
   ['Sign In', '/SignIn.dc.html', 'h1, h2, h3'],
+  ['Requisition Create', '/RequisitionCreate.dc.html', HEADINGS],
+  ['Requisition List', '/RequisitionList.dc.html', HEADINGS],
+  ['Requisition Detail', '/RequisitionDetail.dc.html', HEADINGS],
   ['Theme Panel', '/ThemePanel.dc.html', 'h1, h2, h3, .row.head > span'],       // its type specimens (Display, Title...) are examples, not headings
   ['Design System', '/DesignSystem.dc.html', 'h1, h2, h3, .row.head > span'],
 ]) {
@@ -66,5 +69,13 @@ test('every access view keeps title case', async ({ page }) => {
     await page.goto(`/SignIn${f}.dc.html`);
     await page.locator('h1').waitFor();
     for (const t of await heads(page, 'h1, h2, h3')) expect(titleCaseViolations(t), `${f}: "${t}"`).toEqual([]);
+  }
+});
+
+test('requisition states keep title case', async ({ page }) => {
+  for (const f of ['ReqCreateNew', 'ReqCreateErrors', 'ReqCreateSubmitted', 'ReqListEmpty', 'ReqDetailDraft', 'ReqDetailAwarded', 'ReqDetailEmpty']) {
+    await page.goto(`/${f}.dc.html`);
+    await page.locator('h1').waitFor();
+    for (const t of await heads(page, 'h1, h2, h3, .t-heading')) expect(titleCaseViolations(t), `${f}: "${t}"`).toEqual([]);
   }
 });

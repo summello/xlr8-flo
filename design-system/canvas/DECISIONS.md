@@ -59,11 +59,20 @@ Screens (all in the inventory, none a gap): project list, project dashboard, led
 31. Detail: tabs Overview, Hierarchy, Milestones, Attachments (inventory gaps for phases, risks and notes left out). Attachments show a scan state as icon plus text (clean, scanning, quarantined) and a blocked file says why it cannot be opened. `New project`, `Add milestone` and `Upload file` only show a toast: their forms belong to other screens.
 32. Design system sheet gains one section, **Tables, Trees and Lineage**, and one icon, `chevron` (rotates for open, up and down; transform only). New classes in `xlr8flo.css`: `.field .inp .toolbar .pager .notice .row.group .row.total button.sort .chev .tree-btn .tree-name .meter .lineage .file-ico .hide-md` and the `cols-*` grids. Tokens only.
 
-## 6b. Requisition Create (decided 9 Oct 2026, **not started**)
+## 6b. Requisition Create (built 9 Oct 2026)
 
-Screens: 1) requisition create and edit (header, item lines, service lines, catalogue suggestions, attachment panel using the project detail scan states), 2) submission validation summary, 3) requisition list, 4) requisition detail (linked records as a list; the graph is a gap, E09-S09). Return, amend and resubmit with a diff (E09-S08) waits for the Approval Inbox page.
+Page `Requisition Create` holds three screens, each with 1440, 1920, 1024, 768 and 375 and its states (34 boards): **create and edit** (with the validation summary), **list**, **detail**. Page specs for the coding agents: `design-system/pages/requisition-create.md` and `requisitions.md`. Return, amend and resubmit with a diff (E09-S08) waits for the Approval Inbox page; the linked-record graph (E09-S09) is a gap and is shown as a list.
 
-33. **A requisition that exceeds the funding available blocks submit** (operator, 9 Oct 2026). The validation summary names the shortfall and shows "available after this requisition". It never offers a submit-anyway path. Build after the access screens.
+33. **A requisition that exceeds the funding available blocks submit** (operator, 9 Oct 2026). The Funding Check card shows the shortfall as the lines change; submitting still returns a `Funds` entry in the summary; there is no override, no "submit anyway" and no bypass on this screen. The server enforces it independently under the `FOR UPDATE` lock (FIN-006), so the UI figure is advisory.
+45. **The submit button is never disabled to signal an error.** It stays enabled, and a failure produces a summary at the top (`role=alert`, focus moves to it) listing each problem as `Category: link`, each link focusing its field or line. Categories: Required field, Master data, Project, Lines, Funds, Routing (REQ-011). Typed input is always kept.
+46. **Money in editable lines is held in whole cents** (a test proves `3 x 0.10 = 0.30`); the line total and the estimate are computed, never typed; on the server `Decimal`/`NUMERIC(18,4)` as always.
+47. **Lines are one table with an explicit Item/Service tag per line** (REQ-006), editable in place; below 660px a line becomes a stacked card whose cells keep their column names. Catalogue suggestions add a tagged line with quantity 1 and the last price (REQ-007, REQ-008).
+48. **A requisition-generated sub-project is listed but disabled in the Project select** (REQ-003); the server refuses it too. A standalone request shows no funds figure, only that funding is assigned at approval (REQ-004).
+49. **Status is always an icon plus words** across the lifecycle of REQ-005 (Draft, Approval Pending, Sourcing in Progress, Sourced, Awarded, Open for Purchase, Completed, Rejected). The detail page shows the lifecycle as an ordered list with `aria-current="step"` and "done" in words, not colour.
+50. **Per-line quantities show requested, sourced, awarded, ordered, cancelled and remaining** (REQ-015); remaining is requested less ordered and cancelled; a split award is visible as awarded above ordered. The detail grid follows the dashboard layout rule; the Lines table card takes no hover outline.
+51. The Design System sheet gains a section **Forms, Steppers and Action Bars** (radio group, textarea, lifecycle stepper, suggestion list, total bar, sticky action bar). New classes: `.req-grid .req-stack .form-grid .inp.ta fieldset.choice .cols-line .cols-req .cols-qty .total-bar .action-bar .stepper .suggest .sr-only`.
+
+Open questions are in the two page files (routing rule, standalone funding source, needed-by in the past, autosave, fractional units, currency, who may withdraw).
 
 ## 6c. Common Screens (in progress; sign in first because the coding agents depend on it)
 
@@ -113,7 +122,7 @@ Decisions:
 
 ## 8. Open
 
-- Remaining pages: Requisition Create (screens decided, 6b), Approval Inbox, Budget Transfer, Comparison Dashboard, and the rest of Common Screens (6c).
+- Remaining pages: Approval Inbox, Budget Transfer, Comparison Dashboard, and the rest of Common Screens (6c).
 - Project Dashboard page: only signature moment 1 (KPI count-up) is used. The budget overview screen waits for a story.
 - Home needs more cards and KPIs as screens are added (then retire E-1).
 - Sample data only; amounts are internally consistent but invented.

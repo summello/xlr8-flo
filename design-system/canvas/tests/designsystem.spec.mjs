@@ -8,8 +8,8 @@ const dir = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'project');
 const canvas = JSON.parse(readFileSync(join(dir, 'canvas.json'), 'utf8'));
 
 test.describe('canvas pages', () => {
-  test('four pages: Playground, Project Dashboard, Common Screens, then Design System, which holds only the sheet and the theme panel', () => {
-    expect(canvas.pages.map((p) => p.name)).toEqual(['Playground', 'Project Dashboard', 'Common Screens', 'Design System']);
+  test('five pages: Playground, Project Dashboard, Requisition Create, Common Screens, then Design System, which holds only the sheet and the theme panel', () => {
+    expect(canvas.pages.map((p) => p.name)).toEqual(['Playground', 'Project Dashboard', 'Requisition Create', 'Common Screens', 'Design System']);
     expect(canvas.launch.page).toBe('playground');
     const onPage = (id) => Object.entries(canvas.boards).filter(([, b]) => b.page === id).map(([f]) => f).sort();
     expect(onPage('design-system')).toEqual(['DesignSystem.dc.html', 'ThemePanel.dc.html']);
@@ -31,7 +31,7 @@ test.describe('canvas pages', () => {
 });
 
 test.describe('design system sheet is complete and in step with the screens', () => {
-  const SECTIONS = ['s-chrome', 's-phase', 's-status', 's-tags', 's-chart', 's-type', 's-comp', 's-shell', 's-icons', 's-over', 's-access', 's-tables', 's-states', 's-motion', 's-load', 's-rules'];
+  const SECTIONS = ['s-chrome', 's-phase', 's-status', 's-tags', 's-chart', 's-type', 's-comp', 's-shell', 's-icons', 's-over', 's-forms', 's-access', 's-tables', 's-states', 's-motion', 's-load', 's-rules'];
 
   test('every section is present, in both themes', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -97,7 +97,7 @@ test.describe('design system sheet is complete and in step with the screens', ()
     await page.goto('/ThemePanel.dc.html');
     await page.locator('#s-icons').waitFor();
     for (const d of await page.locator('.icon-cell path').evaluateAll((els) => els.map((e) => e.getAttribute('d')))) set.add(d);
-    for (const url of ['/Main.dc.html', '/ExecutiveDashboard.dc.html', '/ProjectList.dc.html', '/ProjectDashboard.dc.html', '/ProjectLedger.dc.html', '/ProjectDetail.dc.html', '/SignIn.dc.html']) {
+    for (const url of ['/Main.dc.html', '/ExecutiveDashboard.dc.html', '/ProjectList.dc.html', '/ProjectDashboard.dc.html', '/ProjectLedger.dc.html', '/ProjectDetail.dc.html', '/SignIn.dc.html', '/RequisitionCreate.dc.html', '/RequisitionList.dc.html', '/RequisitionDetail.dc.html']) {
       await page.goto(url);
       await page.locator('.page, .auth-card').waitFor();
       const strays = await page.evaluate((known) => [...document.querySelectorAll('.side svg path, .top svg path, .pill svg path, .ico path')]
@@ -138,4 +138,19 @@ test('tables, trees and lineage are on the sheet and built from the real classes
   await expect(sec.locator('.lineage > li')).toHaveCount(3);
   const rot = await sec.locator('.chev.open').evaluate((e) => new DOMMatrix(getComputedStyle(e).transform).b);
   expect(rot).toBeGreaterThan(0.9);                                                         // open is a quarter turn
+});
+
+test('forms, steppers and action bars are on the sheet and built from the real classes', async ({ page }) => {
+  await page.setViewportSize({ width: 700, height: 900 });
+  await page.goto('/ThemePanel.dc.html');
+  await page.locator('#s-forms').waitFor();
+  const sec = page.locator('#s-forms').locator('xpath=..');
+  await expect(sec.locator('fieldset.choice input[type=radio]')).toHaveCount(2);
+  await expect(sec.locator('textarea.inp.ta')).toHaveCount(1);
+  await expect(sec.locator('.stepper > li')).toHaveCount(3);
+  await expect(sec.locator('.stepper [aria-current=step]')).toHaveCount(1);
+  await expect(sec.locator('.stepper li.done .sr-only')).toContainText('done');
+  await expect(sec.locator('.suggest li')).toHaveCount(1);
+  await expect(sec.locator('.total-bar')).toContainText('196,000.00');
+  await expect(sec.locator('.action-bar .btn.primary')).toHaveText('Submit for approval');
 });

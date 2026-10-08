@@ -4,6 +4,8 @@ Read `DECISIONS.md` first (everything decided so far), then `README.md` (how to 
 
 ## State
 
+**Requisition Create page built (DECISIONS 6b). Next: Approval Inbox, Budget Transfer, Comparison Dashboard.**
+
 **Common Screens page started: sign in, two-step verification and sign up are built (DECISIONS 6c); the remaining common screens are planned there. Requisition Create is decided and waits (6b).**
 
 **Done: Project Dashboard page** (see DECISIONS 6a). Next: Requisition Create, then Approval Inbox, Budget Transfer, Comparison Dashboard, Common Screens. Variants are wrappers (`ListW1024`, `DashLoading`...) over the four main boards; edit the `.dc.html` files directly.

@@ -53,6 +53,6 @@ Request a `ui/S` story: `/sign-up` and `/sign-up/verify` per `design-system/page
 
 Password reset (request, set, expired link; E02-S03 is back end only), recovery-code sign-in, email verified, logout and session expired, 403/404/500 with correlation id, suspended tenant notice, demo banner, empty and error patterns, onboarding tour. Each will get its own page file when drawn.
 
-## 4. Requisition create (decided, not started)
+## 4. Requisitions: E09-S11 should cite the page files
 
-Screens and the block-on-short-funds rule are in DECISIONS 6b. No story request yet; it follows the access screens.
+E09-S11 (create and edit, validation summary, list, detail) should carry, under Conventions: `Read design-system/pages/requisition-create.md and design-system/pages/requisitions.md. They are the layout, copy, states, validation messages and tests for these screens.` The operator decision that **a requisition over its funding cannot be submitted** (DECISIONS 33) must appear as an acceptance criterion with the two-concurrent-submissions test in real Postgres. Open questions are listed at the end of each page file; copy them into `notes.blocked` unchanged. The linked-record graph (E09-S09) and return/amend/resubmit (E09-S08) remain gaps with no UI.

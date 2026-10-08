@@ -809,6 +809,346 @@
       "y": 4960,
       "page": "common-screens",
       "is_interactive": true
+    },
+    "RequisitionCreate.dc.html": {
+      "expand": "fill",
+      "h": 1240,
+      "title": "Requisition Create, 1440",
+      "w": 1440,
+      "x": 0,
+      "y": 0,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqCreateW1920.dc.html": {
+      "expand": "fill",
+      "h": 1200,
+      "title": "Requisition Create, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 0,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqCreateW1024.dc.html": {
+      "expand": "fill",
+      "h": 2227,
+      "title": "Requisition Create, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 0,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqCreateW768.dc.html": {
+      "expand": "fill",
+      "h": 2309,
+      "title": "Requisition Create, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 0,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqCreateW375.dc.html": {
+      "expand": "fill",
+      "h": 3551,
+      "title": "Requisition Create, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 0,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqCreateNew.dc.html": {
+      "expand": "fill",
+      "h": 1218,
+      "title": "Requisition Create, New",
+      "w": 1440,
+      "x": 0,
+      "y": 3891,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqCreateErrors.dc.html": {
+      "expand": "fill",
+      "h": 1577,
+      "title": "Requisition Create, Validation Summary",
+      "w": 1440,
+      "x": 1520,
+      "y": 3891,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqCreateShort.dc.html": {
+      "expand": "fill",
+      "h": 1407,
+      "title": "Requisition Create, Short on Funds",
+      "w": 1440,
+      "x": 3040,
+      "y": 3891,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqCreateBusy.dc.html": {
+      "expand": "fill",
+      "h": 1240,
+      "title": "Requisition Create, Submitting",
+      "w": 1440,
+      "x": 4560,
+      "y": 3891,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqCreateSubmitted.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Requisition Create, Submitted",
+      "w": 1440,
+      "x": 6080,
+      "y": 3891,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqCreateLoading.dc.html": {
+      "expand": "fill",
+      "h": 1033,
+      "title": "Requisition Create, Loading",
+      "w": 1440,
+      "x": 7600,
+      "y": 3891,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqCreateError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Requisition Create, Error",
+      "w": 1440,
+      "x": 9120,
+      "y": 3891,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqCreatePartial.dc.html": {
+      "expand": "fill",
+      "h": 1240,
+      "title": "Requisition Create, Partial, Catalogue Failed",
+      "w": 1440,
+      "x": 10640,
+      "y": 3891,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "RequisitionList.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Requisition List, 1440",
+      "w": 1440,
+      "x": 0,
+      "y": 5808,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqListW1920.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Requisition List, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 5808,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqListW1024.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Requisition List, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 5808,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqListW768.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Requisition List, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 5808,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqListW375.dc.html": {
+      "expand": "fill",
+      "h": 1934,
+      "title": "Requisition List, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 5808,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqListLoading.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Requisition List, Loading",
+      "w": 1440,
+      "x": 0,
+      "y": 8082,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqListEmpty.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Requisition List, Empty",
+      "w": 1440,
+      "x": 1520,
+      "y": 8082,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqListError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Requisition List, Error",
+      "w": 1440,
+      "x": 3040,
+      "y": 8082,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqListPartial.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Requisition List, Partial, Status Delayed",
+      "w": 1440,
+      "x": 4560,
+      "y": 8082,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "RequisitionDetail.dc.html": {
+      "expand": "fill",
+      "h": 1390,
+      "title": "Requisition Detail, 1440",
+      "w": 1440,
+      "x": 0,
+      "y": 9322,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqDetailW1920.dc.html": {
+      "expand": "fill",
+      "h": 1110,
+      "title": "Requisition Detail, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 9322,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqDetailW1024.dc.html": {
+      "expand": "fill",
+      "h": 1452,
+      "title": "Requisition Detail, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 9322,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqDetailW768.dc.html": {
+      "expand": "fill",
+      "h": 1950,
+      "title": "Requisition Detail, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 9322,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqDetailW375.dc.html": {
+      "expand": "fill",
+      "h": 2864,
+      "title": "Requisition Detail, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 9322,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqDetailDraft.dc.html": {
+      "expand": "fill",
+      "h": 1234,
+      "title": "Requisition Detail, Draft",
+      "w": 1440,
+      "x": 0,
+      "y": 12526,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqDetailSourcing.dc.html": {
+      "expand": "fill",
+      "h": 1444,
+      "title": "Requisition Detail, Sourcing",
+      "w": 1440,
+      "x": 1520,
+      "y": 12526,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqDetailAwarded.dc.html": {
+      "expand": "fill",
+      "h": 1499,
+      "title": "Requisition Detail, Awarded",
+      "w": 1440,
+      "x": 3040,
+      "y": 12526,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqDetailLoading.dc.html": {
+      "expand": "fill",
+      "h": 1312,
+      "title": "Requisition Detail, Loading",
+      "w": 1440,
+      "x": 4560,
+      "y": 12526,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqDetailError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Requisition Detail, Error",
+      "w": 1440,
+      "x": 6080,
+      "y": 12526,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqDetailPartial.dc.html": {
+      "expand": "fill",
+      "h": 1390,
+      "title": "Requisition Detail, Partial, Linked Records Failed",
+      "w": 1440,
+      "x": 7600,
+      "y": 12526,
+      "page": "requisition-create",
+      "is_interactive": true
+    },
+    "ReqDetailEmpty.dc.html": {
+      "expand": "fill",
+      "h": 1234,
+      "title": "Requisition Detail, Empty, Nothing Linked",
+      "w": 1440,
+      "x": 9120,
+      "y": 12526,
+      "page": "requisition-create",
+      "is_interactive": true
     }
   },
   "createdOnFiles": {
@@ -973,6 +1313,60 @@
       "x": 0,
       "y": 4700,
       "page": "common-screens"
+    },
+    "r1": {
+      "kind": "title1",
+      "maxW": 8000,
+      "text": "Requisition Create: Responsive Widths",
+      "w": 240,
+      "x": 0,
+      "y": -260,
+      "page": "requisition-create"
+    },
+    "r2": {
+      "kind": "title1",
+      "maxW": 8000,
+      "text": "Requisition Create: States",
+      "w": 240,
+      "x": 0,
+      "y": 3631,
+      "page": "requisition-create"
+    },
+    "r3": {
+      "kind": "title1",
+      "maxW": 8000,
+      "text": "Requisition List: Responsive Widths",
+      "w": 240,
+      "x": 0,
+      "y": 5548,
+      "page": "requisition-create"
+    },
+    "r4": {
+      "kind": "title1",
+      "maxW": 8000,
+      "text": "Requisition List: States",
+      "w": 240,
+      "x": 0,
+      "y": 7822,
+      "page": "requisition-create"
+    },
+    "r5": {
+      "kind": "title1",
+      "maxW": 8000,
+      "text": "Requisition Detail: Responsive Widths",
+      "w": 240,
+      "x": 0,
+      "y": 9062,
+      "page": "requisition-create"
+    },
+    "r6": {
+      "kind": "title1",
+      "maxW": 8000,
+      "text": "Requisition Detail: Stages and States",
+      "w": 240,
+      "x": 0,
+      "y": 12266,
+      "page": "requisition-create"
     }
   },
   "order": [
@@ -1028,6 +1422,40 @@
     "DetailHierarchy.dc.html",
     "DetailMilestones.dc.html",
     "DetailFiles.dc.html",
+    "RequisitionCreate.dc.html",
+    "ReqCreateW1920.dc.html",
+    "ReqCreateW1024.dc.html",
+    "ReqCreateW768.dc.html",
+    "ReqCreateW375.dc.html",
+    "ReqCreateNew.dc.html",
+    "ReqCreateErrors.dc.html",
+    "ReqCreateShort.dc.html",
+    "ReqCreateBusy.dc.html",
+    "ReqCreateSubmitted.dc.html",
+    "ReqCreateLoading.dc.html",
+    "ReqCreateError.dc.html",
+    "ReqCreatePartial.dc.html",
+    "RequisitionList.dc.html",
+    "ReqListW1920.dc.html",
+    "ReqListW1024.dc.html",
+    "ReqListW768.dc.html",
+    "ReqListW375.dc.html",
+    "ReqListLoading.dc.html",
+    "ReqListEmpty.dc.html",
+    "ReqListError.dc.html",
+    "ReqListPartial.dc.html",
+    "RequisitionDetail.dc.html",
+    "ReqDetailW1920.dc.html",
+    "ReqDetailW1024.dc.html",
+    "ReqDetailW768.dc.html",
+    "ReqDetailW375.dc.html",
+    "ReqDetailDraft.dc.html",
+    "ReqDetailSourcing.dc.html",
+    "ReqDetailAwarded.dc.html",
+    "ReqDetailLoading.dc.html",
+    "ReqDetailError.dc.html",
+    "ReqDetailPartial.dc.html",
+    "ReqDetailEmpty.dc.html",
     "SignIn.dc.html",
     "SignInW1920.dc.html",
     "SignInW1024.dc.html",
@@ -1066,6 +1494,10 @@
     {
       "id": "project-dashboard",
       "name": "Project Dashboard"
+    },
+    {
+      "id": "requisition-create",
+      "name": "Requisition Create"
     },
     {
       "id": "common-screens",
