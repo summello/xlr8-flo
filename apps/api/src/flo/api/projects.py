@@ -9,7 +9,7 @@ from flo.api.admin_users import organization_target
 from flo.api.auth import get_auth_settings
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
-from flo.kernel.authz import require
+from flo.kernel.authz import permits, require
 from flo.kernel.config import Settings
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
@@ -23,6 +23,8 @@ from flo.modules.projects.schemas import (
     ProjectRead,
     ProjectSort,
     ProjectStatus,
+    TransitionAvailable,
+    TransitionCreate,
     TreeRead,
 )
 from flo.modules.projects.service import ProjectService
@@ -136,3 +138,31 @@ def project_tree(
     max_depth: Annotated[int, Query(ge=1, le=5)] = 5,
 ) -> TreeRead:
     return ProjectService(connection, current_scope(), context.user_id).tree(id, max_depth)
+
+
+@router.post("/{id}/transitions", response_model=ProjectRead)
+def transition_project(
+    id: UUID,
+    body: TransitionCreate,
+    request: Request,
+    context: ReadContext,
+    connection: Connection,
+    version: Annotated[str | None, Header(alias="If-Match")] = None,
+) -> ProjectRead:
+    target = project_target(id, connection)
+    return ProjectService(connection, current_scope(), context.user_id).transition(
+        id, body, version, lambda permission: permits(request, permission, target)
+    )
+
+
+@router.get("/{id}/transitions/available", response_model=list[TransitionAvailable])
+def available_project_transitions(
+    id: UUID,
+    request: Request,
+    context: ReadContext,
+    connection: Connection,
+) -> list[TransitionAvailable]:
+    target = project_target(id, connection)
+    return ProjectService(connection, current_scope(), context.user_id).available_transitions(
+        id, lambda permission: permits(request, permission, target)
+    )

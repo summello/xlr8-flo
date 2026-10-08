@@ -34,10 +34,12 @@ def project_db(org_database) -> Iterator:
             "20260826_0020_project_balance.py",
             "20260826_0022_reservation_release.py",
             "20260826_0023_ledger_lineage.py",
+            "20261008_0025_project_lifecycle.py",
         ]
     ]
-    for migration in migrations:
-        migration.upgrade(db.connection)
+    with db.connection.transaction():
+        for migration in migrations:
+            migration.upgrade(db.connection)
     try:
         for org in (db.org_a, db.org_b):
             svc = OrgService(db.connection, Scope(org), db.actor_id)

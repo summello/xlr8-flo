@@ -20,6 +20,7 @@ from flo.modules.budget.ledger_rules import BUCKET_FOR_TYPE, expected_sign
 from flo.modules.budget.models import LedgerBucket, LedgerEntry, LedgerType
 from flo.modules.budget.schemas import BalanceRead
 from flo.modules.org.service import OrgService, assert_postable
+from flo.modules.projects.service import assert_posting_allowed
 
 ENTRY_FIELDS = tuple(field.name for field in fields(LedgerEntry))
 BALANCE_FIELDS = tuple(field.name for field in fields(BalanceRead))
@@ -259,6 +260,7 @@ def post_entry(
                 "The amount has the wrong sign or rounds to zero. Correct the amount.",
                 field="amount",
             )
+        assert_posting_allowed(conn, scope, project_id, entry_type, bucket, amount)
         projected = (
             balance.available + amount
             if bucket == LedgerBucket.ALLOCATED

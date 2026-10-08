@@ -224,7 +224,11 @@ def test_migration_preserves_existing_identity_organization_and_guards(bootstrap
         conn.execute(
             "INSERT INTO organization_code(code, org_id) VALUES (%s, %s)", ("bad", result.org_id)
         )
-    migration = discover_migrations(ROOT / "migrations")[-1]
+    migration = next(
+        item
+        for item in discover_migrations(ROOT / "migrations")
+        if item.revision == "20261008_0024"
+    )
     with conn.transaction():
         migration.downgrade(conn)
         assert (

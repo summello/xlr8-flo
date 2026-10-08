@@ -41,7 +41,9 @@ def posting_db(project_db):
 
 @pytest.fixture
 def project(posting_db):
-    return service(posting_db).create(body(unit(posting_db)))
+    row = service(posting_db).create(body(unit(posting_db)))
+    posting_db.connection.execute("UPDATE project SET status = 'active' WHERE id = %s", (row.id,))
+    return row
 
 
 def payload(db, project, **changes):

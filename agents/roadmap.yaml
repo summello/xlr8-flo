@@ -584,7 +584,7 @@ epics:
           - WF-006
         dep:
           - E06-S01
-        st: todo
+        st: done
       - id: E06-S04
         t: Roll-down and roll-up funding modes, set per BU/OU and inherited
         k: ledger

@@ -120,3 +120,16 @@ class TreeNode(BaseModel):
 class TreeRead(BaseModel):
     tree: TreeNode
     truncated: bool
+
+
+class TransitionCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    to: ProjectStatus
+    reason: str | None = None
+    override: bool = False
+
+
+class TransitionAvailable(BaseModel):
+    to: ProjectStatus
+    allowed: bool
+    blocked_reasons: list[str]

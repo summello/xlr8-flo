@@ -1584,6 +1584,40 @@
       },
       "recap": "Implemented packet including round-5 central 401 mapping. Final full pytest: 920 passed, one existing money round-trip test skipped for missing DATABASE_URL (run separately against fixture URL). Ruff, strict mypy, migration chain and 4 import contracts green. Removed 401 mapping physically: named regression failed with 500, restored. No new endpoints, dependencies or OpenAPI schema changes.",
       "title": "Identity belongs to an organization: membership, org_id on the session, seeded first tenant and bootstrap command"
+    },
+    {
+      "story": "E06-S03",
+      "kind": "engine",
+      "size": "L",
+      "tags": [],
+      "author": "opencode-nemotron",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E06-S03 and model~nvidia/nemotron-3-ultra-550b-a55b:free"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "f145f7ca-a28e-4b66-bc45-fd4e8ea242d4",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented lifecycle routes, scoped dynamic authorization, balance-first transitions, closure overrides, append-only/RLS status events, and signed posting guard. Migration 20261008_0025 preserves existing project.approve permission and grants. Backend full suite: 1049 passed, 1 skipped; skipped DATABASE_URL-dependent money round-trip verified separately: 1 passed. Lifecycle targeted regression: 169 passed. Web: 59 passed; lint/typecheck green. Ruff, strict mypy, migration chain, import contracts, and staged gitleaks scan green. Planted always-true permits, ignored transfer sign, and status-read-before-balance-lock each caused the named test to fail; originals restored. No submit, gate, done, push, or merge.",
+      "title": "Project lifecycle state machine with permission and budget-effect enforcement"
     }
   ]
 }

@@ -21,6 +21,14 @@ TESTS = Path(__file__).resolve().parents[1]
 COVERED = {
     (
         "POST",
+        "/api/v1/projects/{id}/transitions",
+    ): "projects/test_lifecycle.py::test_transition_foreign_project",
+    (
+        "GET",
+        "/api/v1/projects/{id}/transitions/available",
+    ): "projects/test_lifecycle.py::test_available_foreign_project",
+    (
+        "POST",
         "/api/v1/budget/transfers",
     ): "budget/test_transfer_same_level.py::test_foreign_transfer",
     (

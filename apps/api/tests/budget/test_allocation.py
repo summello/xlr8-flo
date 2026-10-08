@@ -99,7 +99,9 @@ def request(db, project, kind="allocations", data=None, viewer=None, key=None):
 
 
 def project(db):
-    return service(db).create(body(unit(db)))
+    row = service(db).create(body(unit(db)))
+    db.connection.execute("UPDATE project SET status = 'active' WHERE id = %s", (row.id,))
+    return row
 
 
 def test_allocation_adjustment_and_manual_audit(allocation_db):
@@ -229,9 +231,11 @@ def test_project_funding_status_guard(allocation_db, status):
     row = project(db)
     db.connection.execute("UPDATE project SET status = %s WHERE id = %s", (status, row.id))
     result = request(db, row)
-    assert result.status_code == (201 if status in ("draft", "active") else 409), result.text
+    assert result.status_code == (201 if status in ("draft", "active") else 409), (
+        result.text
+    )
     if result.status_code == 409:
-        assert result.json()["checks"]["problem"] == "project_not_funding"
+        assert result.json()["checks"]["problem"] == "posting_not_allowed"
         assert db.connection.execute("SELECT count(*) FROM ledger_entry").fetchone() == (0,)
 
 

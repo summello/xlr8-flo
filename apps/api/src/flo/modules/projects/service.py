@@ -2,7 +2,9 @@
 
 import base64
 import json
+from collections.abc import Callable
 from datetime import UTC, date, datetime
+from decimal import Decimal
 from typing import cast
 from uuid import UUID, uuid4
 
@@ -27,6 +29,7 @@ from flo.modules.org.service import (
     list_currencies,
 )
 from flo.modules.projects.hierarchy import Hierarchy
+from flo.modules.projects.lifecycle import Lifecycle, conflict
 from flo.modules.projects.models import COLUMNS, FIELDS, ProjectRepository
 from flo.modules.projects.schemas import (
     ChildrenPage,
@@ -39,6 +42,8 @@ from flo.modules.projects.schemas import (
     ProjectRef,
     ProjectSort,
     ProjectStatus,
+    TransitionAvailable,
+    TransitionCreate,
     TreeNode,
     TreeRead,
 )
@@ -76,6 +81,51 @@ class ProjectService:
     def get(self, project_id: UUID) -> ProjectRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             return ProjectRead.model_validate(self._get(project_id))
+
+    def transition(
+        self,
+        project_id: UUID,
+        body: TransitionCreate,
+        version: str | None,
+        permitted: Callable[[str], bool],
+    ) -> ProjectRead:
+        if version is None:
+            raise ProblemError(
+                ErrorCode.BAD_REQUEST, detail="Supply If-Match with the project version."
+            )
+        try:
+            expected = int(version)
+        except ValueError as exc:
+            raise ProblemError(
+                ErrorCode.BAD_REQUEST, detail="If-Match must contain an integer version."
+            ) from exc
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            lifecycle = Lifecycle(self.repo, self.actor_id)
+            before, blocked = lifecycle.snapshot(project_id, for_update=True)
+            if before["version"] != expected:
+                raise conflict(
+                    "stale_version", "The project changed. Reload it and retry the transition."
+                )
+            problems = lifecycle.evaluate(before, blocked, body, permitted)
+            if problems:
+                raise problems[0]
+            lifecycle.write(before, blocked, body)
+            after = self._get(project_id)
+            self._audit(
+                "project.transition",
+                project_id,
+                before,
+                after | {"override": body.override, "blocked_by": blocked, "reason": body.reason},
+            )
+            return ProjectRead.model_validate(after)
+
+    def available_transitions(
+        self, project_id: UUID, permitted: Callable[[str], bool]
+    ) -> list[TransitionAvailable]:
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            lifecycle = Lifecycle(self.repo, self.actor_id)
+            project, blocked = lifecycle.snapshot(project_id, for_update=False)
+            return lifecycle.available(project, blocked, permitted)
 
     def get_status(self, project_id: UUID) -> str:
         return self.get(project_id).status
@@ -475,3 +525,30 @@ def depth_of(
     connection: psycopg.Connection[tuple[object, ...]], scope: Scope, project_id: UUID
 ) -> int:
     return ProjectService(connection, scope).depth_of(project_id)
+
+
+def assert_posting_allowed(
+    connection: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    project_id: UUID,
+    entry_type: str,
+    bucket: str,
+    amount: Decimal,
+) -> None:
+    """Caller holds the balance lock; releases/reversals and outgoing funds remain usable."""
+    status = get_status(connection, scope, project_id)
+    if entry_type in {"release", "reversal"}:
+        return
+    allowed = (
+        (bucket == "allocated" and (amount < 0 or status in {"draft", "active"}))
+        or (bucket in {"reserved", "committed"} and status == "active")
+        or (bucket == "actual" and status in {"active", "deferred"})
+    )
+    if not allowed:
+        raise conflict(
+            "posting_not_allowed",
+            (
+                f"A {entry_type} posting to {bucket} is not allowed while the project is {status}. "
+                "Use an eligible project or release/reverse an existing entry."
+            ),
+        )

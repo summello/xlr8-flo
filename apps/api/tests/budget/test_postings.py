@@ -466,6 +466,7 @@ def test_views_enforce_tenant_scope_and_plant_definer_violation(
     post(db, project)
     consume(db, project)
     other = service(db, db.org_b).create(body(unit(db, "FOREIGN", db.org_b)))
+    db.connection.execute("UPDATE project SET status = 'active' WHERE id = %s", (other.id,))
     foreign_args = payload(db, other, amount=Decimal(10))
     with tenant_transaction(db.connection, Scope(db.org_b)):
         post_entry(db.connection, Scope(db.org_b), **foreign_args)

@@ -2,14 +2,14 @@
 
 # Agent scorecard
 
-**40 merged stories.** Scores appear once an agent has 3+ samples in that role —
+**41 merged stories.** Scores appear once an agent has 3+ samples in that role —
 before that the number would be noise, so it reads `—`.
 
 ## As author
 
 | Agent | Stories | Clean merge | Mean rounds | Escapes/story | Score |
 |---|---:|---:|---:|---:|---:|
-| `opencode-nemotron` | 5 | 100% | 1.00 | 0.00 | **100.0** |
+| `opencode-nemotron` | 6 | 100% | 1.00 | 0.00 | **100.0** |
 | `codex` | 35 | 97% | 1.06 | 0.00 | **97.7** |
 
 ## As reviewer

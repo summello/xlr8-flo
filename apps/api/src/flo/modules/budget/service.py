@@ -41,7 +41,7 @@ from flo.modules.budget.schemas import (
 )
 from flo.modules.budget.transfers import transfer as transfer
 from flo.modules.org.service import OrgService
-from flo.modules.projects.service import ProjectService, get_status
+from flo.modules.projects.service import ProjectService
 
 
 def _manual_entry(
@@ -59,15 +59,6 @@ def _manual_entry(
         repo.balance(project_id, lock=True)
         prior_entry = repo.entry("idempotency_key = %(key)s", {"key": idempotency_key})
         if prior_entry is None and entry_type == LedgerType.ALLOCATION:
-            if get_status(conn, scope, project_id) not in {"draft", "active"}:
-                raise ProblemError(
-                    ErrorCode.CONFLICT,
-                    detail=(
-                        "The project is not open for funding. "
-                        "Allocate to a Draft or Active project."
-                    ),
-                    checks={"problem": "project_not_funding"},
-                )
             funding_policy.check_allocation(project, body.amount)
         if (
             prior_entry is None
