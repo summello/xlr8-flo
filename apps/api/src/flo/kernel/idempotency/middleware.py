@@ -219,6 +219,12 @@ class IdempotencyMiddleware:
             await self._app(scope, receive, send)
             return
 
+        # D-M1-19: imports stream with a counted cap. Each upload is a new batch,
+        # even with an Idempotency-Key; record deduplication belongs to E08-S03.
+        if str(scope.get("path", "")).rstrip("/") == "/api/v1/imports":
+            await self._app(scope, receive, send)
+            return
+
         headers = Headers(scope=scope)
         key = (headers.get(IDEMPOTENCY_HEADER) or "").strip()
         if not key:

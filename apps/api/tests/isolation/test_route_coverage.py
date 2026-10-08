@@ -11,6 +11,7 @@ from flo.api.admin_users import router as admin_users_router
 from flo.api.auth import router as auth_router
 from flo.api.budget import router as budget_router
 from flo.api.fiscal import router as fiscal_router
+from flo.api.imports import router as imports_router
 from flo.api.master import router as master_router
 from flo.api.org import router as org_router
 from flo.api.projects import router as projects_router
@@ -19,6 +20,17 @@ TESTS = Path(__file__).resolve().parents[1]
 
 # (method, path) -> "file::test" that proves a foreign id returns 404.
 COVERED = {
+    (
+        "GET",
+        "/api/v1/imports/templates",
+    ): "imports/test_upload.py::test_template_collection_and_download_are_guarded",
+    (
+        "GET",
+        "/api/v1/imports/templates/{name}/file",
+    ): "imports/test_upload.py::test_template_collection_and_download_are_guarded",
+    ("POST", "/api/v1/imports"): "imports/test_upload.py::test_upload_uses_session_tenant",
+    ("GET", "/api/v1/imports/{id}"): "imports/test_upload.py::test_get_foreign_batch",
+    ("PUT", "/api/v1/imports/{id}/mapping"): "imports/test_upload.py::test_put_foreign_batch",
     (
         "GET",
         "/api/v1/budget/reconciliation/status",
@@ -159,6 +171,7 @@ def test_every_id_route_has_a_named_foreign_tenant_case() -> None:
                 fiscal_router,
                 projects_router,
                 budget_router,
+                imports_router,
             ),
             COVERED,
         )
@@ -179,6 +192,7 @@ def test_gate_fails_on_an_uncovered_route_and_on_a_dangling_reference() -> None:
             fiscal_router,
             projects_router,
             budget_router,
+            imports_router,
         )
         | widget
     )

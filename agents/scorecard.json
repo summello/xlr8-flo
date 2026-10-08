@@ -1727,6 +1727,42 @@
       },
       "recap": "Completed reconciliation reports, queue registration, scoped reads and origin-only trigger requiring Idempotency-Key without replay; no kernel or conventions change. Full real-Postgres pytest: 1200 passed, 1 skipped; story tests: 24 passed. Ruff, strict mypy (104 files), import boundaries, migration-chain check, generated client, web lint/typecheck and 59 web tests green. Recurring nightly enqueue remains the packet-authorized followup.",
       "title": "Nightly reconciliation job: recompute from ledger, report drift, never correct"
+    },
+    {
+      "story": "E08-S01",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a119ec-f594-7a82-80b7-1eafcf6e12ab",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "f145f7ca-a28e-4b66-bc45-fd4e8ea242d4",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented E08-S01 authoritative amendments: structural upload and mapping only; upload keys are ignored, each upload creates a distinct batch; UUID-only storage keys; test_fixture registered only by pytest. CSV version metadata uses a pre-header comment; XLSX version metadata uses core description. Headers and row count are persisted in counts JSONB. No dependency added, no production templates or UI introduced. Verification: flo check green (ruff, strict mypy, boundaries, full pytest with coverage, eslint, tsc, vitest, Playwright/axe and redacted gitleaks). Full API: 1289 passed, zero skipped, 93% coverage; focused story/isolation: 88 passed; web unit: 59 passed. Migration chain check green. Commit: 675ea71. No submit, gate, done, push or merge run.",
+      "title": "Import framework: template versioning, column mapping, type and reference validation"
     }
   ]
 }

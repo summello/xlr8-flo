@@ -84,6 +84,7 @@ def _http_error_code(exc: HTTPException) -> ErrorCode | None:
         404: ErrorCode.NOT_FOUND,
         405: ErrorCode.METHOD_NOT_ALLOWED,
         409: ErrorCode.CONFLICT,
+        413: ErrorCode.PAYLOAD_TOO_LARGE,
         415: ErrorCode.UNSUPPORTED_MEDIA_TYPE,
         422: ErrorCode.VALIDATION_FAILED,
         429: ErrorCode.TOO_MANY_REQUESTS,

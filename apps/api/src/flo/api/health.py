@@ -23,6 +23,7 @@ from flo.api.auth import (
 from flo.api.auth import router as auth_router
 from flo.api.budget import router as budget_router
 from flo.api.fiscal import router as fiscal_router
+from flo.api.imports import router as imports_router
 from flo.api.internal import router as internal_router
 from flo.api.master import router as master_router
 from flo.api.org import router as org_router
@@ -102,6 +103,7 @@ app.include_router(master_router)
 app.include_router(fiscal_router)
 app.include_router(projects_router)
 app.include_router(budget_router)
+app.include_router(imports_router)
 
 
 @contextmanager
