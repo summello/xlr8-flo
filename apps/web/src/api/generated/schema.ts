@@ -288,6 +288,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/budget/reconciliation/drift": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Reconciliation Drift */
+        get: operations["read_reconciliation_drift_api_v1_budget_reconciliation_drift_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/budget/reconciliation/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Reconciliation Status */
+        get: operations["read_reconciliation_status_api_v1_budget_reconciliation_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/budget/transfers": {
         parameters: {
             query?: never;
@@ -1027,6 +1061,45 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** DriftPage */
+        DriftPage: {
+            /** Entries */
+            entries: components["schemas"]["DriftRead"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /** DriftRead */
+        DriftRead: {
+            /** Balance Total */
+            balance_total: string;
+            bucket: components["schemas"]["LedgerBucket"];
+            /** Currency */
+            currency: string;
+            /**
+             * Detected At
+             * Format: date-time
+             */
+            detected_at: string;
+            /** Difference */
+            difference: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Ledger Total */
+            ledger_total: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /**
+             * Run Id
+             * Format: uuid
+             */
+            run_id: string;
+        };
         /**
          * EffectiveAccessResponse
          * @description Serialized effective-access contract.
@@ -1706,6 +1779,15 @@ export interface components {
         };
         /** @enum {string} */
         ProjectStatus: "draft" | "approval_pending" | "active" | "deferred" | "completed" | "abandoned";
+        /** ReconcileStatus */
+        ReconcileStatus: {
+            /** Drift Rows */
+            drift_rows: number;
+            /** Last Run At */
+            last_run_at: string | null;
+            /** Status */
+            status: ("ok" | "drift" | "failed") | null;
+        };
         /** ReconciliationRead */
         ReconciliationRead: {
             balance: components["schemas"]["BalanceQueryRead"];
@@ -2482,6 +2564,90 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    read_reconciliation_drift_api_v1_budget_reconciliation_drift_get: {
+        parameters: {
+            query: {
+                run_id: string;
+                cursor?: string | null;
+                page_size?: number;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriftPage"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    read_reconciliation_status_api_v1_budget_reconciliation_status_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReconcileStatus"];
+                };
             };
             /** @description Client error expressed as RFC 9457 problem details. */
             "4XX": {

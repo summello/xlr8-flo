@@ -785,7 +785,7 @@ epics:
         dep:
           - E07-S06
           - E03-S06
-        st: todo
+        st: done
 
   - id: E08
     name: Import & export framework

@@ -27,6 +27,7 @@ from flo.kernel.jobs.runner import RunnerConnection
 from flo.kernel.outbox import OutboxDispatcher, email_handler
 from flo.kernel.outbox.dispatcher import DispatcherConnection
 from flo.kernel.storage import create_storage
+from flo.modules.budget.reconcile import job_handler, reconcile_all
 
 _logger = logging.getLogger(__name__)
 _METADATA_TOKEN_URL = (
@@ -297,11 +298,12 @@ def get_quota_collectors(
 def _run_jobs_tick(settings: Settings) -> TickReport:
     if settings.database_url is None:
         raise RuntimeError("DATABASE_URL is not configured")
-    connection = psycopg.connect(settings.database_url.get_secret_value())
+    database_url = settings.database_url.get_secret_value()
+    connection = psycopg.connect(database_url)
     try:
         jobs = JobRunner(
             cast(RunnerConnection, connection),
-            {},
+            {"budget-reconcile": job_handler(lambda: psycopg.connect(database_url))},
             random_fraction=random.random,
         ).run(25.0)
         outbox = OutboxDispatcher(
@@ -432,3 +434,27 @@ async def jobs_tick(
     """Drain durable asynchronous work for one bounded cron invocation."""
 
     return await process()
+
+
+class ReconcileTriggerReport(BaseModel):
+    organizations: int
+
+
+def _run_budget_reconcile(settings: Settings) -> ReconcileTriggerReport:
+    if settings.database_url is None:
+        raise RuntimeError("DATABASE_URL is not configured")
+    with psycopg.connect(settings.database_url.get_secret_value()) as connection:
+        return ReconcileTriggerReport(organizations=reconcile_all(connection))
+
+
+@router.post(
+    "/internal/jobs/budget-reconcile",
+    response_model=ReconcileTriggerReport,
+    include_in_schema=False,
+)
+@public_route
+async def budget_reconcile(
+    settings: Annotated[Settings, Depends(get_internal_settings)],
+) -> ReconcileTriggerReport:
+    """Require origin secret and Idempotency-Key; no replay, repeats only append reports."""
+    return await asyncio.to_thread(_run_budget_reconcile, settings)

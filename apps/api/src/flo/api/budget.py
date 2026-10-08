@@ -6,11 +6,18 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Query, Request
 
+from flo.api.admin_users import organization_target
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
 from flo.kernel.authz import permits, require
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.budget.models import LedgerBucket, LedgerType
+from flo.modules.budget.reconcile import (
+    DriftPage,
+    ReconcileStatus,
+    reconciliation_drift,
+    reconciliation_status,
+)
 from flo.modules.budget.schemas import (
     AdjustmentCreate,
     AggregateRead,
@@ -204,3 +211,27 @@ def read_aggregate(
         params.start,
         params.end,
     )
+
+
+OrganizationLedgerContext = Annotated[
+    AuthorizationContext, Depends(require("ledger.read", organization_target))
+]
+
+
+@router.get("/api/v1/budget/reconciliation/status", response_model=ReconcileStatus)
+def read_reconciliation_status(
+    context: OrganizationLedgerContext,
+    connection: Connection,
+) -> ReconcileStatus:
+    return reconciliation_status(connection, current_scope())
+
+
+@router.get("/api/v1/budget/reconciliation/drift", response_model=DriftPage)
+def read_reconciliation_drift(
+    context: OrganizationLedgerContext,
+    connection: Connection,
+    run_id: UUID,
+    cursor: UUID | None = None,
+    page_size: Annotated[int, Query(ge=1, le=50)] = 50,
+) -> DriftPage:
+    return reconciliation_drift(connection, current_scope(), run_id, cursor, page_size)

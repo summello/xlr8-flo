@@ -19,6 +19,18 @@ TESTS = Path(__file__).resolve().parents[1]
 
 # (method, path) -> "file::test" that proves a foreign id returns 404.
 COVERED = {
+    (
+        "GET",
+        "/api/v1/budget/reconciliation/status",
+    ): "budget/test_reconcile.py::test_reconciliation_status_tenant_isolation",
+    (
+        "GET",
+        "/api/v1/budget/reconciliation/drift",
+    ): "budget/test_reconcile.py::test_foreign_reconciliation_drift",
+    (
+        "POST",
+        "/internal/jobs/budget-reconcile",
+    ): "budget/test_reconcile.py::test_internal_trigger_rejects_tenant_session",
     ("GET", "/api/v1/projects/{project_id}/balance/aggregate"): (
         "budget/test_funding_modes.py::test_foreign_aggregate"
     ),

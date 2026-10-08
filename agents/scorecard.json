@@ -1691,6 +1691,42 @@
       },
       "recap": "Implemented root-policy cross-hierarchy transfers and shared leg posting for sibling transfers and roll-down allocations. Existing funding_policy.mode_for already resolves the root BU/OU policy and is reused unchanged. Shared replay-check removal was plant-verified: existing sibling replay, existing roll-down allocation replay, and cross-hierarchy replay tests all failed (3 failed), then the check was restored. No migration, dependency, route or schema change. Validation: full pytest 1176 passed, 1 skipped (including 48 new cases); unchanged sibling/funding regression 62 passed; ruff and mypy --strict green (103 source files); import-linter 4 contracts kept; real tracked migration chain validated with MIGRATIONS_DIR=../../migrations; staged gitleaks scan clean. No UI changes; web checks not run. No submit, gate, done, push or merge run.",
       "title": "Cross-hierarchy transfer up-then-down through both ancestries, one transaction"
+    },
+    {
+      "story": "E07-S09",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a119a2-1e69-7d21-8c45-ff95c00bcecb",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "f145f7ca-a28e-4b66-bc45-fd4e8ea242d4",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Completed reconciliation reports, queue registration, scoped reads and origin-only trigger requiring Idempotency-Key without replay; no kernel or conventions change. Full real-Postgres pytest: 1200 passed, 1 skipped; story tests: 24 passed. Ruff, strict mypy (104 files), import boundaries, migration-chain check, generated client, web lint/typecheck and 59 web tests green. Recurring nightly enqueue remains the packet-authorized followup.",
+      "title": "Nightly reconciliation job: recompute from ledger, report drift, never correct"
     }
   ]
 }
