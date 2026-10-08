@@ -1,0 +1,86 @@
+# DRAFT — Multi-organization membership: `(identity_id, org_id)` membership, chosen organization on the session, chooser, switcher, tenant label
+
+**STATUS: story request, not a packet.** No roadmap entry exists and no id is assigned (roadmap is the operator's). Opus must amend D-M1-23 in `docs/claude-plan.md` §1 and author the real packet from this draft before any coding agent touches it.
+
+**Epic** E05 · **M1** (proposed) · **security/L** · after **E05-S09**, **E05-S10** · tags: `auth`, `security`, `tenancy`
+**Needed by** DRAFT-invitation (existing-account path only)
+
+> **Conventions:** read `docs/m1-conventions.md` and `design-system/MASTER.md` (binding), then `design-system/pages/sign-in.md` §3b (on branch `worktree-canvas-project-dashboard`; copy it into the worktree before the UI part is authored).
+
+## notes.blocked
+
+- **D-M1-23 must be amended before this is authored.** E05-S09 D-M1-23 says one identity belongs to exactly one organization and lists multi-organization membership as out of scope. The operator reversed that on 9 Oct 2026 (design/canvas DECISIONS 6c, item 41). Opus adds a `docs/claude-plan.md` §1 decision-log entry superseding D-M1-23 (and the matching clause of D-M1-24). Until then this story is blocked.
+- Open for Opus, not decided here: see "Design decisions to confirm" D-draft-1 to D-draft-4.
+
+## Why this story exists
+
+A person may belong to several tenants, and one organization may exist as several tenants (for example two portfolios under different data laws). Today `identity_membership.identity_id` is the primary key, so an identity has at most one organization, and `SessionStore` resolves `org_id` with `LEFT JOIN identity_membership ON identity_id` (`kernel/session/store.py`, around line 300), which would **return one row per membership** and silently pick or duplicate sessions once two exist. The invitation story's existing-account path cannot work without this.
+
+## Requirements
+
+- **AUTH-001** — User profiles link users to BU/OUs, roles, projects, locale, timezone, and notification preferences.
+- **SEC-008** — Authorization must prevent cross-organization, cross-BU/OU, cross-project, and object-identifier access.
+- **TEN-010** (AGENTS.md §3.2) — `org_id` resolves from the session, never from a URL, body or header; another tenant's record is 404; every endpoint is in the isolation suite.
+
+## E05-S09 decisions this story supersedes (exact list)
+
+| E05-S09 text | Becomes |
+|---|---|
+| D-M1-23 "One identity belongs to exactly one organization … primary key on `identity_id` enforces one organization per identity" | Primary key is `(identity_id, org_id)`; an identity may hold any number of memberships |
+| D-M1-23 "multi-organization membership is a later migration (drop the primary key, add a selected-organization claim to the session)" | This is that migration |
+| Contract, Session: "`SessionRecord` gains `org_id`. The store loads it with the session in one query (a join on `identity_membership`)" | `org_id` is the **chosen** organization, stored on the session row; the join is gone. Session resolution is still one query |
+| Contract, Session: "an identity with no membership gets `org_id None`" | Unchanged for zero memberships. New case: two or more memberships and none chosen also gives `org_id None` and **pending organization** state (below) |
+| Acceptance: "`SessionRecord.org_id` is populated by one query (query count did not increase)" | Still true; re-assert |
+| D-M1-24 (no RLS on `identity_membership`) | Stands. Row still reveals only membership and is read only through the identity service and session store |
+
+Not superseded: bootstrap (`flo.modules.org.bootstrap`) creates one membership per run and stays idempotent by organization code; D-M1-25 stands. "Never trust a client for the organization" stands and gets a stronger test.
+
+## Design decisions to confirm on review
+
+- **D-draft-1 Selection endpoint.** `POST /api/v1/auth/organization` with body `{"membership": "<org_id>"}` (the one place a client names an organization, and only to choose among memberships it already holds). Server verifies `(session.identity_id, org_id)` exists in `identity_membership`; if not, **404** (existence concealed). Sets `auth_session.org_id`. Takes `Idempotency-Key`; since no tenant scope is active before choice, it follows the `/auth` family treatment already used by login (state in the packet that authors this; do not invent a new middleware path). Same endpoint serves the shell switcher.
+- **D-draft-2 Switching mutates the session row; it does not mint a new token.** `auth_session` gains nullable `org_id`. Switching keeps the cookie, MFA-completed state and idle clock, and writes a `session_security_event` of type `organization_switched`. Alternative (new session per switch) rejected as heavier: it would need re-running MFA state transfer.
+- **D-draft-3 Single-membership auto-select.** At login: exactly one membership sets `auth_session.org_id` immediately (today's behaviour, no chooser). Zero memberships: `org_id None`, tenant routes 401 as today. Two or more: `org_id None` plus pending-organization; every tenant route answers **401 with the existing `TenantScopeMissing` mapping** until `POST /auth/organization` succeeds. The chooser shows only when `GET /api/v1/auth/organizations` lists two or more.
+- **D-draft-4 Tenant label.** `organization.tenant_label text NULL`, 1 to 60 chars, trimmed, no control characters, set by an administrator with an existing org-settings permission (find it; do not invent one). A tenant is displayed as `name` or `name, label`. Uniqueness of `(name, label)` is **not** enforced here (not decided; record in `notes.followup`).
+
+## Contract
+
+**Migration** (next revision after head, `20261008_NNNN` with the head's date prefix; reversible):
+1. `identity_membership`: drop the primary key on `identity_id`, add primary key `(identity_id, org_id)`; keep the index on `org_id`; add `last_used_at timestamptz NULL` (drives "Last used" in the chooser). Existing rows preserved.
+2. `auth_session` add `org_id uuid NULL REFERENCES organization(id)`. Backfill from `identity_membership` for sessions whose identity has exactly one membership; leave NULL otherwise.
+3. `organization` add `tenant_label text NULL`.
+Downgrade: refuse with a clear error if any identity has more than one membership (state the `# irreversible:`-style reason in the file); otherwise restore the old primary key and drop the new columns. Test both outcomes.
+
+**Session.** `SessionRecord.org_id` is read from `auth_session.org_id`; the `LEFT JOIN identity_membership` in `SessionStore` is removed. Login sets it per D-draft-3. The idle/absolute expiry, revocation and token-reuse logic are untouched.
+
+**Routes.** `GET /api/v1/auth/organizations` (authenticated, no tenant scope): the caller's memberships as `[{org_id, name, tenant_label, role_summary, last_used_at}]`, ordered by `last_used_at desc` then name. `POST /api/v1/auth/organization` per D-draft-1; updates `identity_membership.last_used_at`. The org id in a response is the caller's own membership only. No endpoint lists organizations the caller does not belong to.
+
+**UI** (own `ui/M` story if Opus prefers; list the split in the real packet): `/sign-in/organization` exactly per `sign-in.md` §3b (copy verbatim, 56px `.org-btn`, `aria-label="Your organizations"`, skipped with one membership); a switcher in the shell menu listing the same memberships, current one marked with icon and text (A11Y-004), switching reloads tenant data (clear client caches keyed by tenant); the tenant label shown wherever the organization name is shown in the shell. Types from the generated client.
+
+**Never trust the client.** Unchanged rule, stronger test: a request carrying another membership's `org_id` in header, query or body is ignored by every tenant route; only the selection endpoint reads a body `org_id`, and only as a choice among the caller's own memberships.
+
+## Acceptance criteria
+
+- [ ] Migration up, down, data-preservation (a pre-existing single membership and its backfilled session survive); downgrade with a two-membership identity refuses and changes nothing
+- [ ] Identity with memberships in tenants A and B logs in: `GET /auth/organizations` lists both; a tenant route before choosing returns 401; after `POST /auth/organization` choosing A it returns A's data
+- [ ] **TEN-010 isolation:** a session chosen for A requesting B's project, org unit or any id-bearing route family gets **404** (one case per existing family, real sessions, in `tests/isolation/`); after switching to B the same ids resolve and A's now 404; no cached A data is returned after a switch
+- [ ] Choosing an organization the identity does not belong to returns **404** and leaves the session unchanged; same response for a nonexistent id (byte-identical apart from `correlation_id`)
+- [ ] Foreign `org_id` in header, query and JSON body on a tenant route changes nothing
+- [ ] Session resolution is still one query (assert the count did not increase); no duplicate session record when two memberships exist (the regression this story removes)
+- [ ] A role granted in tenant A gives no permission in tenant B (explicit authz case)
+- [ ] `POST /auth/organization` replays with the same `Idempotency-Key`; switch writes `organization_switched`; audit row (AUTH-011) carries from/to org ids, never tokens
+- [ ] Two tenants of one organization name are distinguishable by label in the list, the switcher and the shell; no-label case renders the name alone
+- [ ] Every new endpoint added to `tests/isolation/test_route_coverage.py::COVERED`
+- [ ] UI: Playwright happy path (two memberships: chooser, pick, switch from menu); `@axe-core/playwright` clean in both themes on `/sign-in/organization`; keyboard-only path; MASTER.md §8 checklist; tokens only
+- [ ] Plant: restore the `LEFT JOIN identity_membership` in the session query and the two-membership test fails; make the selection endpoint skip the membership check and the 404 test fails; drop the cache clear on switch and the no-stale-data test fails
+
+## Files
+
+`migrations/<head-date>_<next>_multi_org_membership.py`, `apps/api/tests/kernel/test_migrate.py` (revision list), `kernel/session/store.py`, `kernel/session/` login hook where `org_id` is set, `modules/identity/service.py` (membership wrappers: list, verify, touch `last_used_at`), `modules/org/` (tenant label column and setter only), `api/auth.py` (two routes), `apps/web/src/routes/sign-in.organization.tsx`, `apps/web/src/features/auth/**`, the shell menu, regenerated OpenAPI client, tests under `apps/api/tests/identity/`, `tests/session/`, `tests/isolation/`, `apps/web/e2e/`.
+
+## Out of scope
+
+Data residency or per-region databases (not a requirement; DECISIONS 6c) · merging or moving data between tenants · cross-tenant reporting · platform-operator console · SSO · who may add a membership other than via invitation and bootstrap · editing the tenant label UI beyond the existing settings surface.
+
+## Dependencies
+
+Needs an Opus decision (D-M1-23 amendment). After E05-S09, E05-S10. Required by DRAFT-invitation (existing-account path) and DRAFT-invitation-ui (existing-account screen).
