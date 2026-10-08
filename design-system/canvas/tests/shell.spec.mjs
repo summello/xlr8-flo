@@ -2,7 +2,7 @@ import { test, expect } from 'playwright/test';
 
 const HOME = '/Main.dc.html';
 const EXEC = '/ExecutiveDashboard.dc.html';
-const WIDTHS = [1440, 1024, 768, 375];
+const WIDTHS = [2560, 1920, 1440, 1024, 768, 375];
 
 // sc-for renders a placeholder path before the first real render; that console noise is not a defect.
 const noise = /Expected moveto/;
@@ -223,7 +223,7 @@ test.describe('home interactions', () => {
     await page.clock.runFor(10);
     const row = page.locator('.row.stack', { hasText: 'REQ-00418' });
     await expect(row).toContainText('Approved');
-    await expect(page.locator('.toast')).toContainText('184,500.00 USD reserved');
+    await expect(page.locator('.toast')).toContainText(/184,500\.00\s?USD reserved/);
     await page.getByRole('button', { name: 'Undo' }).click();
     await expect(row).toContainText('Due today');
     await expect(page.locator('.toast')).toHaveCount(0);

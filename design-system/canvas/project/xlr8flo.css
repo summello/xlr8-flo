@@ -104,7 +104,7 @@
 .iconbtn:is(:hover, .is-hover) { background: var(--sunken); }
 .iconbtn:is(:active, .is-active) { transform: scale(0.97); }
 .avatar { width: 28px; height: 28px; border-radius: 999px; background: var(--sunken); border: 1px solid var(--border-strong); display: grid; place-items: center; font-size: 11px; font-weight: 600; color: var(--fg-secondary); }
-.page { padding: 24px 32px 48px; display: flex; flex-direction: column; gap: 24px; max-width: 1280px; width: 100%; }
+.page { padding: 24px 32px 48px; display: flex; flex-direction: column; gap: 24px; width: 100%; }
 .phead { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; padding-bottom: 16px; position: relative; }
 .phead::after { content: ''; position: absolute; left: 0; bottom: 0; width: 100%; height: 0; border-bottom: 1px solid var(--border); }
 .phead::before { content: ''; position: absolute; left: 0; bottom: 0; width: 64px; height: 2px; background: var(--phase-plan); z-index: 1; }
@@ -121,7 +121,10 @@ button.row-link { all: unset; display: block; min-width: 0; cursor: pointer; bor
 button.row-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; box-shadow: 0 0 0 6px color-mix(in oklab, var(--ring) 18%, transparent); }
 
 /* material */
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); box-shadow: var(--shadow-md), var(--lit); }
+.card { container: card / inline-size; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); box-shadow: var(--shadow-md), var(--lit); }
+/* KPI cards: spring lift and a thin outline in the colour of the series they carry (--hue) */
+.kpi { transition: transform 320ms var(--ease-spring), box-shadow var(--dur-base) var(--ease-out), border-color var(--dur-fast) var(--ease-out); }
+.kpi:is(:hover, .is-hover) { transform: translateY(-4px); border-color: var(--hue); box-shadow: var(--shadow-lg), var(--lit); }
 .card-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 16px 0; }
 .card-b { padding: 16px; }
 .grid { display: grid; gap: 16px; }
@@ -143,7 +146,7 @@ button.row-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 
 .row:is(:hover, :focus-within, .is-hover) { background: var(--sunken); }
 .row[aria-selected="true"], .row.is-selected { background: var(--sunken); box-shadow: inset 2px 0 0 0 var(--phase-plan); }
 /* --fg-muted clears 4.5:1 on canvas and surface but only 4.3:1 on --sunken, so muted text steps up on a sunken ground. */
-:is(.row:is(:hover, :focus-within, .is-hover, .is-selected), .cmd-o[aria-selected="true"], .pop-i:is(:hover, :focus-within, .is-hover)) :is(.t-caption, .cur, .muted) { color: var(--fg-secondary); }
+:is(.row:is(:hover, :focus-within, .is-hover, .is-selected), .cmd-o[aria-selected="true"], .pop-i:is(:hover, :focus-within, .is-hover)) :is(.t-caption, .cur, .muted, .d):not(.neg *) { color: var(--fg-secondary); }
 .row.head { min-height: 32px; border-top: 0; background: var(--sunken); }
 .row.head > * { font-size: 12px; font-weight: 560; letter-spacing: 0.045em; text-transform: uppercase; color: var(--fg-secondary); }
 .row .r { text-align: right; justify-self: end; }
@@ -151,10 +154,10 @@ button.row-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 
 .hatch { background-image: repeating-linear-gradient(45deg, transparent 0 3px, oklch(1 0 0 / 0.5) 3px 5px); }
 .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; flex: none; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--fg-secondary); }
-.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend > span { display: inline-flex; align-items: center; gap: 6px; }
 .chart-t { width: 100%; height: auto; display: block; }
-.chart-t text { font-family: var(--font-ui); fill: var(--fg-secondary); font-size: 11px; }
-.chart-t .mono { font-family: var(--font-mono); fill: var(--fg); font-weight: 560; font-size: 11px; }
+.chart-t text { font-family: var(--font-ui); fill: var(--fg-secondary); font-size: 13px; }
+.chart-t .mono { font-family: var(--font-mono); fill: var(--fg); font-weight: 560; font-size: 13px; }
 .chart-t line.grid-l { stroke: var(--border); stroke-width: 1; }
 .chart-t .axis { stroke: var(--border-strong); }
 .tbl table { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -164,18 +167,58 @@ button.row-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 
 .tbl td { font-family: var(--font-mono); }
 .tbl td:first-child { font-family: var(--font-ui); }
 /* layout primitives that react to the content width, so a collapsed sidebar reflows too */
-.kpis { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); }
-.cols-2-1 { display: grid; gap: 16px; align-items: start; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
-.cols-2-1 > * { min-width: 0; }
+.kpis { display: grid; gap: 16px; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.kpis > * { min-width: 0; }
+/* card grid: 12 columns, rows stretch so every card in a row is as tall as the tallest */
+.dash { display: grid; gap: 16px; grid-template-columns: repeat(12, minmax(0, 1fr)); }
+.dash > * { grid-column: 1 / -1; min-width: 0; }
+.dash > .card { display: flex; flex-direction: column; }
+.dash > .card > .card-b { flex: 1; }
+.spread { justify-content: space-between; }
+/* decimals and currency: lighter (a step down the text ramp) and smaller, never below 11px */
+.amt .d, .amt .cur { color: var(--fg-secondary); font-weight: 400; }
+.t-caption .amt .d, .t-caption .amt .cur { color: var(--fg-muted); }
+.amt .d { font-size: max(11px, 0.85em); }
+.amt .cur { font-size: max(11px, 0.8em); margin-left: 0.3em; letter-spacing: 0.02em; }
+.neg .amt .d, .neg .amt .cur, .num.neg .d { color: inherit; }
+.num .d { font-size: 11px; color: var(--fg-secondary); font-weight: 400; }
+.num.neg .d { color: inherit; }
+.amt .metric .d { font-size: 0.58em; letter-spacing: 0; }
+.amt.mamt > .cur { font-size: 12px; margin-left: 6px; letter-spacing: 0; }
 .cols-tasks { grid-template-columns: 20px minmax(0, 1fr) 150px 150px; }
 .cols-proj { grid-template-columns: minmax(0, 1.4fr) minmax(120px, 1fr) 150px 150px; }
 .cols-att { grid-template-columns: minmax(0, 1.6fr) 150px 150px 150px 150px; }
 .chart-scroll { overflow-x: auto; }
-@container main (max-width: 900px) { .cols-2-1 { grid-template-columns: minmax(0, 1fr); } }
-/* grids become stacked cards, never a sideways-scrolling table (MASTER 5) */
+/* Executive: a-wf waterfall, a-bu business units, a-ln spend line, a-fn funnel, a-att table. Home: h-* */
+@container main (min-width: 760px) {
+  .kpis { grid-template-columns: repeat(6, minmax(0, 1fr)); }   /* 3 + 2, the last two wider, so no row ends ragged */
+  .kpis > * { grid-column: span 2; }
+  .kpis > :nth-child(n + 4) { grid-column: span 3; }
+  .a-wf, .a-ln, .h-tasks, .h-proj { grid-column: span 7; }
+  .a-bu, .a-fn, .h-spend, .h-act { grid-column: span 5; }
+}
+@container main (min-width: 1100px) {
+  .kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .kpis > *, .kpis > :nth-child(n + 4) { grid-column: auto; }
+  .a-wf, .a-ln, .h-tasks, .h-proj { grid-column: span 8; }
+  .a-bu, .a-fn, .h-spend, .h-act { grid-column: span 4; }
+}
+@container main (min-width: 1600px) {
+  .a-wf { grid-column: span 5; } .a-bu, .a-fn { grid-column: span 3; } .a-ln { grid-column: span 4; }
+  .a-att { grid-column: span 9; }
+}
+@container card (max-width: 540px) { .chart-scroll .chart-t { min-width: 480px; } }
+@container main (max-width: 759px) {
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpis > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+@container main (max-width: 439px) { .kpis { grid-template-columns: minmax(0, 1fr); } }
 @container main (max-width: 720px) {
   .page { padding: 16px; }
   .phead .t-display { font-size: 24px; line-height: 30px; }
+}
+/* grids become stacked cards, never a sideways-scrolling table (MASTER 5); decided by the card's own width */
+@container card (max-width: 660px) {
   .row.head.stack { display: none; }
   .row.stack { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 16px; padding: 12px 16px; }
   .row.stack .ico { display: none; }
@@ -183,7 +226,6 @@ button.row-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 
   .row.stack > [data-label] { flex: 1 1 120px; min-width: 0; }
   .row.stack > [data-label]::before { content: attr(data-label); display: block; margin-bottom: 2px; font-size: 11px; font-weight: 560; letter-spacing: 0.045em; text-transform: uppercase; color: var(--fg-muted); }
   .row.stack .r { justify-self: auto; text-align: left; }
-  .chart-scroll .chart-t { min-width: 560px; }
 }
 
 /* shell modes. >=1024 sidebar 240 or collapsed 56; 768-1023 rail 56 + overlay; <768 drawer */
@@ -286,7 +328,12 @@ button.row-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 
 .tab-ind { position: absolute; left: 0; bottom: -1px; width: 88px; height: 2px; background: var(--phase-plan); transition: transform var(--dur-base) var(--ease-inout); }
 .panel-in { animation: fadeIn var(--dur-fast) var(--ease-out); }
 .chart-wrap { position: relative; }
-.tt { position: absolute; z-index: 60; pointer-events: none; transform: translate(-50%, calc(-100% - 8px)); padding: 4px 8px; border-radius: 6px; background: var(--fg); color: var(--surface); font-size: 12px; line-height: 16px; white-space: nowrap; box-shadow: var(--shadow-md); }
+/* chart tooltip: a real box with measured values, rounded like a card (MASTER 7.9) */
+.tt { position: absolute; z-index: 60; pointer-events: none; transform: translate(-50%, calc(-100% - 10px)); min-width: 210px; max-width: 280px; padding: 10px 12px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--raised); color: var(--fg); box-shadow: var(--shadow-lg), var(--lit); font-size: 12px; line-height: 16px; }
+.tt.below { transform: translate(-50%, 10px); }
+.tt-h { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; padding-bottom: 6px; margin-bottom: 6px; border-bottom: 1px solid var(--border); }
+.tt-r { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 2px 0; }
+.tt-l { display: inline-flex; align-items: center; gap: 6px; color: var(--fg-secondary); }
 .chart-t rect[data-tip]:hover { opacity: 0.88; }
 .chart-t circle[data-tip] { cursor: default; }
 .skel { background: linear-gradient(90deg, var(--sunken) 25%, var(--border) 50%, var(--sunken) 75%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; border-radius: 6px; }

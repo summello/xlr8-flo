@@ -59,70 +59,68 @@
         </div>
       </div>
 
-      <div class="cols-2-1">
-        <div style="display:flex; flex-direction:column; gap:16px; min-width:0">
+      <div class="dash">
+        <section class="card h-tasks" aria-labelledby="h-tasks">
+          <div class="card-h">
+            <h2 class="t-heading" id="h-tasks">My tasks</h2>
+            <a href="#" class="t-dense secondary">Open approval inbox</a>
+          </div>
+          <div class="card-b" style="padding:12px 0 0">
+            <div class="row head cols-tasks stack"><span></span><span>Task</span><span class="r">Amount</span><span>Status</span></div>
+            <sc-for list="{{tasks}}" as="t" hint-placeholder-count="4">
+              <div class="{{t.rowCls}}" style="min-height:48px">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="ico" style="color: var(--phase-demand)" aria-hidden="true"><path d="{{t.d}}"></path></svg>
+                <button type="button" class="row-link stack-main" aria-haspopup="dialog" onClick="{{t.open}}"><div style="font-weight:520;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{t.title}}</div><div class="t-caption num" style="text-align:left">{{t.ref}}</div></button>
+                <span class="num r" data-label="Amount"><span class="w">{{t.aw}}</span><span class="d">{{t.ad}}</span><span class="cur">USD</span></span>
+                <span data-label="Status"><span class="{{t.pillCls}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.pd}}"></path></svg>{{t.pill}}</span></span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
 
-          <section class="card" aria-labelledby="h-tasks">
-            <div class="card-h">
-              <h2 class="t-heading" id="h-tasks">My tasks</h2>
-              <a href="#" class="t-dense secondary">Open approval inbox</a>
+        <section class="card h-spend" aria-labelledby="h-spend">
+          <div class="card-h"><h2 class="t-heading" id="h-spend">Spend vs budget</h2></div>
+          <div class="card-b spread" style="display:flex;flex-direction:column;gap:12px">
+            <div class="t-label">My projects, FY27</div>
+            <div>
+              <div class="amt mamt"><span class="metric"><span class="w">7,060,000</span><span class="d">.00</span></span><span class="cur">USD</span></div>
+              <div class="t-caption" style="margin-top:2px">used of <span class="amt"><span class="w">8,650,000</span><span class="d">.00</span><span class="cur">USD</span></span> allocated</div>
             </div>
-            <div class="card-b" style="padding:12px 0 0">
-              <div class="row head cols-tasks stack"><span></span><span>Task</span><span class="r">Amount</span><span>Status</span></div>
-              <sc-for list="{{tasks}}" as="t" hint-placeholder-count="4">
-                <div class="{{t.rowCls}}" style="min-height:48px">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="ico" style="color: var(--phase-demand)" aria-hidden="true"><path d="{{t.d}}"></path></svg>
-                  <button type="button" class="row-link stack-main" aria-haspopup="dialog" onClick="{{t.open}}"><div style="font-weight:520;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{t.title}}</div><div class="t-caption num" style="text-align:left">{{t.ref}}</div></button>
-                  <span class="num r" data-label="Amount">{{t.amt}}<span class="cur">USD</span></span>
-                  <span data-label="Status"><span class="{{t.pillCls}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.pd}}"></path></svg>{{t.pill}}</span></span>
-                </div>
-              </sc-for>
-            </div>
-          </section>
+            <div class="bar" role="img" aria-label="81.6 percent of allocated budget used"><span style="width:81.6%;background:var(--c1)"></span></div>
+            <div class="legend"><span><i class="sw" style="background:var(--c1)"></i>Used 81.6%</span><span><i class="sw" style="background:var(--sunken);border:1px solid var(--border-strong)"></i>Remaining <span class="amt"><span class="w">1,590,000</span><span class="d">.00</span><span class="cur">USD</span></span></span></div>
+            <div class="t-caption" style="margin-top:auto">as of 8 Oct 2026 14:02</div>
+          </div>
+        </section>
 
-          <section class="card" aria-labelledby="h-proj">
-            <div class="card-h">
-              <h2 class="t-heading" id="h-proj">My projects</h2>
-              <a href="#" class="t-dense secondary">All projects</a>
-            </div>
-            <div class="card-b" style="padding:12px 0 0">
-              <div class="row head cols-proj stack"><span>Project</span><span>Used of allocated</span><span class="r">Remaining</span><span>Budget</span></div>
-              <sc-for list="{{projects}}" as="p" hint-placeholder-count="3">
-                <div class="row cols-proj stack" style="min-height:56px">
-                  <a href="#" class="stack-main" style="min-width:0"><div style="font-weight:520;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{p.name}}</div><div class="t-caption">{{p.bu}}</div></a>
-                  <div data-label="Used of allocated"><div class="bar" role="img" aria-label="{{p.aria}}"><span style="{{p.fill}}"></span></div><div class="t-caption" style="margin-top:4px">{{p.used}} of {{p.alloc}} USD · {{p.pct}}</div></div>
-                  <span class="{{p.remCls}}" data-label="Remaining">{{p.rem}}<span class="cur">USD</span></span>
-                  <span data-label="Budget"><span class="{{p.pillCls}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{p.pd}}"></path></svg>{{p.pill}}</span></span>
-                </div>
-              </sc-for>
-            </div>
-          </section>
-        </div>
+        <section class="card h-proj" aria-labelledby="h-proj">
+          <div class="card-h">
+            <h2 class="t-heading" id="h-proj">My projects</h2>
+            <a href="#" class="t-dense secondary">All projects</a>
+          </div>
+          <div class="card-b" style="padding:12px 0 0">
+            <div class="row head cols-proj stack"><span>Project</span><span>Used of allocated</span><span class="r">Remaining</span><span>Budget</span></div>
+            <sc-for list="{{projects}}" as="p" hint-placeholder-count="3">
+              <div class="row cols-proj stack" style="min-height:56px">
+                <a href="#" class="stack-main" style="min-width:0"><div style="font-weight:520;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{p.name}}</div><div class="t-caption">{{p.bu}}</div></a>
+                <div data-label="Used of allocated"><div class="bar" role="img" aria-label="{{p.aria}}"><span style="{{p.fill}}"></span></div><div class="t-caption" style="margin-top:4px"><span class="amt"><span class="w">{{p.uw}}</span><span class="d">{{p.ud}}</span><span class="cur">USD</span></span><span style="margin:0 0.35em">of</span><span class="amt"><span class="w">{{p.aw}}</span><span class="d">{{p.ad}}</span><span class="cur">USD</span></span> · {{p.pct}}</div></div>
+                <span class="{{p.remCls}}" data-label="Remaining"><span class="w">{{p.rw}}</span><span class="d">{{p.rd}}</span><span class="cur">USD</span></span>
+                <span data-label="Budget"><span class="{{p.pillCls}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{p.pd}}"></path></svg>{{p.pill}}</span></span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
 
-        <div style="display:flex; flex-direction:column; gap:16px; min-width:0">
-          <section class="card" aria-labelledby="h-spend">
-            <div class="card-h"><h2 class="t-heading" id="h-spend">Spend vs budget</h2></div>
-            <div class="card-b" style="display:flex;flex-direction:column;gap:12px">
-              <div class="t-label">My projects, FY27</div>
-              <div><div class="metric">7,060,000.00</div><div class="t-caption">USD used of 8,650,000.00 allocated</div></div>
-              <div class="bar" role="img" aria-label="81.6 percent of allocated budget used"><span style="width:81.6%;background:var(--c1)"></span></div>
-              <div class="legend"><span><i class="sw" style="background:var(--c1)"></i>Used 81.6%</span><span><i class="sw" style="background:var(--sunken);border:1px solid var(--border-strong)"></i>Remaining 1,590,000.00 USD</span></div>
-              <div class="t-caption">as of 8 Oct 2026 14:02</div>
-            </div>
-          </section>
-
-          <section class="card" aria-labelledby="h-act">
-            <div class="card-h"><h2 class="t-heading" id="h-act">Recent activity</h2></div>
-            <div class="card-b" style="display:flex;flex-direction:column;gap:14px">
-              <sc-for list="{{activity}}" as="a" hint-placeholder-count="4">
-                <div style="display:flex;gap:10px">
-                  <span class="avatar" style="flex:none" aria-hidden="true">{{a.who}}</span>
-                  <div style="min-width:0"><div class="t-dense">{{a.text}}</div><div class="t-caption">{{a.when}}</div></div>
-                </div>
-              </sc-for>
-            </div>
-          </section>
-        </div>
+        <section class="card h-act" aria-labelledby="h-act">
+          <div class="card-h"><h2 class="t-heading" id="h-act">Recent activity</h2></div>
+          <div class="card-b spread" style="display:flex;flex-direction:column;gap:14px">
+            <sc-for list="{{activity}}" as="a" hint-placeholder-count="4">
+              <div style="display:flex;gap:10px">
+                <span class="avatar" style="flex:none" aria-hidden="true">{{a.who}}</span>
+                <div style="min-width:0"><div class="t-dense"><sc-for list="{{a.parts}}" as="s" hint-placeholder-count="2"><sc-if value="{{s.isText}}" hint-placeholder-val="{{ true }}"><span>{{s.t}}</span></sc-if><sc-if value="{{s.isMoney}}" hint-placeholder-val="{{ false }}"><span class="amt"><span class="w">{{s.w}}</span><span class="d">{{s.d}}</span><sc-if value="{{s.hasCur}}" hint-placeholder-val="{{ true }}"><span class="cur">{{s.cur}}</span></sc-if></span></sc-if></sc-for></div><div class="t-caption">{{a.when}}</div></div>
+              </div>
+            </sc-for>
+          </div>
+        </section>
       </div>
       <p class="t-caption">Sample data for layout review.</p>
     </main>
@@ -162,7 +160,7 @@
     </div>
     <div class="sheet-b">
       <dl class="kv" style="margin:0">
-        <dt class="t-label">Amount</dt><dd class="num" style="margin:0;text-align:left">{{sheet.amt}}<span class="cur">USD</span></dd>
+        <dt class="t-label">Amount</dt><dd class="amt mamt" style="margin:0"><span class="metric" style="font-size:22px;line-height:28px"><span class="w">{{sheet.aw}}</span><span class="d">{{sheet.ad}}</span></span><span class="cur">USD</span></dd>
         <dt class="t-label">Project</dt><dd style="margin:0">{{sheet.proj}}</dd>
         <dt class="t-label">Requested by</dt><dd style="margin:0">{{sheet.by}}</dd>
         <dt class="t-label">Needed by</dt><dd style="margin:0">{{sheet.need}}</dd>
@@ -171,7 +169,7 @@
         <h3 class="t-label" style="margin-bottom:8px">Timeline</h3>
         <ol style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px">
           <li class="t-dense">Submitted<div class="t-caption">Wed 7 Oct, 16:12</div></li>
-          <li class="t-dense">Budget check passed, 9,810,000.00 USD available<div class="t-caption">Wed 7 Oct, 16:12</div></li>
+          <li class="t-dense">Budget check passed, <span class="amt"><span class="w">9,810,000</span><span class="d">.00</span><span class="cur">USD</span></span> available<div class="t-caption">Wed 7 Oct, 16:12</div></li>
           <li class="t-dense">Routed to you<div class="t-caption">Thu 8 Oct, 08:30</div></li>
         </ol>
       </div>
@@ -185,12 +183,12 @@
 
 <div class="toasts" role="status" aria-live="polite">
   <sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
-    <div class="toast"><span>{{toast.msg}}</span><sc-if value="{{toast.undo}}" hint-placeholder-val="{{ false }}"><button class="btn" type="button" onClick="{{undo}}">Undo</button></sc-if></div>
+    <div class="toast"><span><sc-for list="{{toast.parts}}" as="s" hint-placeholder-count="2"><sc-if value="{{s.isText}}" hint-placeholder-val="{{ true }}"><span>{{s.t}}</span></sc-if><sc-if value="{{s.isMoney}}" hint-placeholder-val="{{ false }}"><span class="amt"><span class="w">{{s.w}}</span><span class="d">{{s.d}}</span><sc-if value="{{s.hasCur}}" hint-placeholder-val="{{ true }}"><span class="cur">{{s.cur}}</span></sc-if></span></sc-if></sc-for></span><sc-if value="{{toast.undo}}" hint-placeholder-val="{{ false }}"><button class="btn" type="button" onClick="{{undo}}">Undo</button></sc-if></div>
   </sc-if>
 </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"light","options":["light","dark"]},"collapsed":{"editor":"enum","default":"auto","options":["auto","yes","no"]},"navOpen":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1040}}'>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"light","options":["light","dark"]},"collapsed":{"editor":"enum","default":"auto","options":["auto","yes","no"]},"navOpen":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":900}}'>
 class Component extends DCLogic {
   componentDidMount() {
     if ((this.props.collapsed ?? 'auto') === 'auto') {
@@ -208,6 +206,19 @@ class Component extends DCLogic {
     const collapsed = st.collapsed ?? (this.props.collapsed === 'yes');
     const navOpen = st.navOpen ?? (this.props.navOpen === true);
     const back = (el) => setTimeout(() => { if (el && el.focus) el.focus(); }, 0);
+    // money: whole amount first, decimals and currency lighter and smaller (see .amt in xlr8flo.css)
+    const split = (s) => { const i = s.lastIndexOf('.'); return i < 0 ? [s, ''] : [s.slice(0, i), s.slice(i)]; };
+    const parts = (s) => {
+      const out = [], re = /(\(?\d{1,3}(?:,\d{3})+)(\.\d{2}\)?)(?: (USD))?/g;
+      let last = 0, m;
+      while ((m = re.exec(s))) {
+        if (m.index > last) out.push({ isText: true, isMoney: false, t: s.slice(last, m.index) });
+        out.push({ isText: false, isMoney: true, w: m[1], d: m[2], hasCur: !!m[3], cur: m[3] || '' });
+        last = m.index + m[0].length;
+      }
+      if (last < s.length) out.push({ isText: true, isMoney: false, t: s.slice(last) });
+      return out;
+    };
     const I = {
       home: "M3 11l9-8 9 8M5 10v10h14V10M10 20v-6h4v6",
       org: "M4 21V5l8-2v18M12 9h8v12M7 8h2M7 12h2M7 16h2M15 13h2M15 17h2",
@@ -244,13 +255,13 @@ class Component extends DCLogic {
       { ref: 'PO-00233', title: 'Review change order: Charger hardware', amt: '12,450.00', tone: 'info', pill: 'Approval pending', pd: P.sync, d: I.po, proj: 'Fleet charging depots', by: 'Procurement', need: '12 Oct 2026', action: 'Approve change', after: { tone: 'success', pill: 'Approved', pd: P.ok }, done: 'Approved the change order on PO-00233.' }
     ];
     const view = (t) => { const a = approved[t.ref] ? t.after : t; return { pillCls: 'pill ' + (a.tone), pill: a.pill, pd: a.pd }; };
-    const tasks = defs.map(t => ({
-      ...t, ...view(t),
+    const tasks = defs.map(t => { const [aw, ad] = split(t.amt); return {
+      ...t, aw, ad, ...view(t),
       rowCls: 'row cols-tasks stack' + (st.sheet === t.ref ? ' is-selected' : ''),
       open: (e) => { this._opener = e.currentTarget; this.setState({ sheet: t.ref }); }
-    }));
+    }; });
     const cur = defs.find(t => t.ref === st.sheet);
-    const sheet = cur ? { ...cur, ...view(cur) } : {};
+    const sheet = cur ? { ...cur, ...view(cur), aw: split(cur.amt)[0], ad: split(cur.amt)[1] } : {};
 
     // command menu: zero open animation (MASTER 6.1)
     const q = (st.cmdQuery || '').trim().toLowerCase();
@@ -283,19 +294,24 @@ class Component extends DCLogic {
       { text: 'REQ-00421 was delegated to you', when: 'Today, 11:12', unread: true },
       { text: 'PO-00233 change order submitted', when: 'Yesterday, 09:20', unread: false }
     ];
+    const pr = (name, bu, alloc, used, pct, fill, aria, rem, neg, tone, pd, pill) => {
+      const [aw, ad] = split(alloc), [uw, ud] = split(used), [rw, rd] = split(rem);
+      return { name, bu, aw, ad, uw, ud, rw, rd, pct, fill, aria, remCls: 'num r' + (neg ? ' neg' : ''), pillCls: 'pill ' + tone, pd, pill };
+    };
     const projects = [
-      { name: 'Plant 4 line retrofit', bu: 'Manufacturing', alloc: '4,200,000.00', used: '3,654,000.00', pct: '87%', fill: 'width:87%;background:var(--c1)', aria: '87 percent of budget used', rem: '546,000.00', remCls: 'num r', pillCls: 'pill warning', pd: P.warn, pill: 'Nearing limit' },
-      { name: 'Warehouse racking phase 2', bu: 'Facilities', alloc: '1,850,000.00', used: '702,000.00', pct: '38%', fill: 'width:38%;background:var(--c1)', aria: '38 percent of budget used', rem: '1,148,000.00', remCls: 'num r', pillCls: 'pill success', pd: P.ok, pill: 'Within budget' },
-      { name: 'Fleet charging depots', bu: 'Operations', alloc: '2,600,000.00', used: '2,704,000.00', pct: '104%', fill: 'width:100%;background:var(--st-danger-fg)', aria: '104 percent of budget used, over budget', rem: '(104,000.00)', remCls: 'num r neg', pillCls: 'pill danger', pd: P.x, pill: 'Over budget' }
+      pr('Plant 4 line retrofit', 'Manufacturing', '4,200,000.00', '3,654,000.00', '87%', 'width:87%;background:var(--c1)', '87 percent of budget used', '546,000.00', false, 'warning', P.warn, 'Nearing limit'),
+      pr('Warehouse racking phase 2', 'Facilities', '1,850,000.00', '702,000.00', '38%', 'width:38%;background:var(--c1)', '38 percent of budget used', '1,148,000.00', false, 'success', P.ok, 'Within budget'),
+      pr('Fleet charging depots', 'Operations', '2,600,000.00', '2,704,000.00', '104%', 'width:100%;background:var(--st-danger-fg)', '104 percent of budget used, over budget', '(104,000.00)', true, 'danger', P.x, 'Over budget')
     ];
     const activity = [
       { who: 'FN', text: 'Finance returned REQ-00409 with a comment', when: 'Today, 13:40' },
       { who: 'AR', text: 'Approver delegated REQ-00421 to you', when: 'Today, 11:12' },
       { who: 'SM', text: 'You reserved 184,500.00 USD against Plant 4 line retrofit', when: 'Yesterday, 16:55' },
       { who: 'PR', text: 'Purchase order PO-00233 change order submitted', when: 'Yesterday, 09:20' }
-    ];
+    ].map(a => ({ ...a, parts: parts(a.text) }));
     const closeSheet = () => { this.setState({ sheet: null }); back(this._opener); };
     const focusables = 'button, [href], input, select, [tabindex]:not([tabindex="-1"])';
+    const tst = st.toast ? { ...st.toast, parts: parts(st.toast.msg) } : null;
     return {
       theme: this.props.theme ?? 'light', nav, tasks, projects, activity, notes, cmdRows, sheet, yes: true,
       appCls: 'app' + (collapsed ? ' collapsed' : '') + (navOpen ? ' nav-open' : ''),
@@ -343,7 +359,7 @@ class Component extends DCLogic {
         this.toast(t.done, t.ref);
       },
 
-      toast: st.toast || null,
+      toast: tst,
       undo: () => {
         const t = st.toast; if (!t) return;
         const next = { ...approved }; delete next[t.ref];

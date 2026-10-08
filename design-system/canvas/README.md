@@ -22,5 +22,6 @@ DC_RUNTIME=<dc-runtime.js> AXE_CORE=<axe.min.js> npx playwright test
 - `AXE_CORE`: defaults to `apps/web/node_modules/axe-core/axe.min.js` in a full checkout.
 - `lint.spec.mjs`: no layout property animated, no colour literal in an artboard, every `var(--token)` resolves, a reduced-motion block exists. Each gate is also run against a planted violation.
 - `shell.spec.mjs`: responsive overflow, sidebar modes, toggle placement, touch targets, stacked cards, popover, command menu, record sheet, toast.
+- `layout.spec.mjs`: no content cap at 1920 and 2560, layout tiers per width, equal card heights in every row, money format (whole amount first, lighter smaller decimals and currency).
 - `motion.spec.mjs`: duration budget per element, reduced motion, intro count-up, tabs, tooltips.
 - `a11y.spec.mjs`: axe in light and dark across the default, collapsed, popover, command menu, sheet, drawer and tab states. Includes a planted violation to prove the harness fails.

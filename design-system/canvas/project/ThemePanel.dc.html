@@ -76,7 +76,7 @@
     <div class="t-dense">Body dense 13 / 18 for grid rows and lists.</div>
     <div class="t-label">Label 12 / 16</div>
     <div class="t-caption">Caption 12 / 16 for timestamps and helper text.</div>
-    <div class="metric">1,284,500.00</div>
+    <div class="amt mamt"><span class="metric"><span class="w">1,284,500</span><span class="d">.00</span></span><span class="cur">USD</span></div>
   </section>
 
   <section aria-labelledby="s-comp" style="display:flex;flex-direction:column;gap:16px">
@@ -89,14 +89,14 @@
     </div>
     <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:8px;max-width:320px">
       <div class="t-label">Available</div>
-      <div><span class="metric">9,810,000.00</span><span class="t-caption" style="margin-left:6px">USD</span></div>
+      <div class="amt mamt"><span class="metric"><span class="w">9,810,000</span><span class="d">.00</span></span><span class="cur">USD</span></div>
       <div class="t-dense secondary">20.3% of allocated remains</div>
       <div class="t-caption">as of 8 Oct 2026 14:02</div>
     </div>
     <div class="card" style="padding:0;overflow:hidden">
-      <div class="row head" style="grid-template-columns: minmax(0,1fr) 170px"><span>Money (7.4)</span><span class="r">Amount</span></div>
-      <div class="row" style="grid-template-columns: minmax(0,1fr) 170px"><span>Inflow</span><span class="num r">1,250,000.00<span class="cur">USD</span></span></div>
-      <div class="row" style="grid-template-columns: minmax(0,1fr) 170px"><span>Outflow</span><span class="num r neg">(1,250,000.00)<span class="cur">USD</span></span></div>
+      <div class="row head" style="grid-template-columns: minmax(0,1fr) 170px"><span>Money (7.4): whole amount first, decimals and currency lighter and smaller</span><span class="r">Amount</span></div>
+      <div class="row" style="grid-template-columns: minmax(0,1fr) 170px"><span>Inflow</span><span class="num r"><span class="w">1,250,000</span><span class="d">.00</span><span class="cur">USD</span></span></div>
+      <div class="row" style="grid-template-columns: minmax(0,1fr) 170px"><span>Outflow</span><span class="num r neg"><span class="w">(1,250,000</span><span class="d">.00)</span><span class="cur">USD</span></span></div>
       <div class="row" style="grid-template-columns: minmax(0,1fr) 170px"><span>Zero</span><span class="num r muted">—</span></div>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
@@ -237,6 +237,8 @@ class Component extends DCLogic {
     ].map(c => ({ name: c[0], style: '--e:' + c[1] }));
     const m = (el, spec, seen) => ({ el, spec, seen });
     const motions = [
+      m('KPI card', 'Lifts 4px with a spring (320ms) and takes a 1px outline in its series colour. Decorative; the swatch and label carry the meaning. An explicit exception to MASTER 6.2 (springs for drag only), requested by the operator.', 'Exec'),
+      m('Chart tooltip', 'Instant. A rounded box with a title, a swatch and measured rows (amount, share, running total). Hover and keyboard focus. Flips below a mark near the top.', 'Exec charts'),
       m('Button', 'Hover shifts background only, 120ms. Press scale 0.97, 120ms.', 'Home, Exec'),
       m('Row, nav item', 'Hover is instant, no movement. Selected adds a 2px phase rule.', 'Home, Exec'),
       m('Popover', 'Scale 0.97 to 1 and fade, 150ms ease-out, origin at the trigger.', 'Home bell'),

@@ -2,28 +2,30 @@
   "v": 3,
   "attachments": {},
   "boards": {
-    "DesignSystem.dc.html": {"expand": "fill", "h": 4700, "title": "Design system (from MASTER.md)", "w": 1440, "x": 3040, "y": 0},
+    "DesignSystem.dc.html": {"expand": "fill", "h": 4900, "title": "Design system (from MASTER.md)", "w": 1440, "x": 3040, "y": 0},
     "ExecutiveDashboard.dc.html": {"expand": "fill", "h": 1700, "title": "Executive dashboard, 1440", "w": 1440, "x": 1520, "y": 0, "is_interactive": true},
     "Main.dc.html": {"expand": "fill", "h": 900, "title": "Home, 1440", "w": 1440, "x": 0, "y": 0, "is_interactive": true},
-    "ThemePanel.dc.html": {"h": 4500, "title": "Theme panel (used by design system)", "w": 700, "x": 4560, "y": 0, "is_interactive": true},
-    "HomeCollapsed.dc.html": {"expand": "fill", "h": 900, "title": "Home, 1440, sidebar collapsed", "w": 1440, "x": 0, "y": 5100, "is_interactive": true},
-    "HomeW1024.dc.html": {"expand": "fill", "h": 1400, "title": "Home, 1024 (rail + overlay)", "w": 1024, "x": 1520, "y": 5100, "is_interactive": true},
-    "HomeW768.dc.html": {"expand": "fill", "h": 1850, "title": "Home, 768", "w": 768, "x": 2624, "y": 5100, "is_interactive": true},
-    "HomeW375.dc.html": {"expand": "fill", "h": 2150, "title": "Home, 375", "w": 375, "x": 3472, "y": 5100, "is_interactive": true},
-    "HomeW375Open.dc.html": {"expand": "fill", "h": 2150, "title": "Home, 375, drawer open", "w": 375, "x": 3927, "y": 5100, "is_interactive": true},
-    "ExecW1024.dc.html": {"expand": "fill", "h": 2650, "title": "Executive dashboard, 1024", "w": 1024, "x": 0, "y": 7540, "is_interactive": true},
-    "ExecW768.dc.html": {"expand": "fill", "h": 2950, "title": "Executive dashboard, 768", "w": 768, "x": 1104, "y": 7540, "is_interactive": true},
-    "ExecW375.dc.html": {"expand": "fill", "h": 3650, "title": "Executive dashboard, 375", "w": 375, "x": 1952, "y": 7540, "is_interactive": true}
+    "ThemePanel.dc.html": {"h": 4700, "title": "Theme panel (used by design system)", "w": 700, "x": 4560, "y": 0, "is_interactive": true},
+    "HomeCollapsed.dc.html": {"expand": "fill", "h": 900, "title": "Home, 1440, sidebar collapsed", "w": 1440, "x": 0, "y": 5200, "is_interactive": true},
+    "HomeW1024.dc.html": {"expand": "fill", "h": 1450, "title": "Home, 1024 (rail + overlay)", "w": 1024, "x": 1520, "y": 5200, "is_interactive": true},
+    "HomeW768.dc.html": {"expand": "fill", "h": 1400, "title": "Home, 768", "w": 768, "x": 2624, "y": 5200, "is_interactive": true},
+    "HomeW375.dc.html": {"expand": "fill", "h": 2100, "title": "Home, 375", "w": 375, "x": 3472, "y": 5200, "is_interactive": true},
+    "HomeW375Open.dc.html": {"expand": "fill", "h": 2100, "title": "Home, 375, drawer open", "w": 375, "x": 3927, "y": 5200, "is_interactive": true},
+    "HomeW1920.dc.html": {"expand": "fill", "h": 900, "title": "Home, 1920", "w": 1920, "x": 4382, "y": 5200, "is_interactive": true},
+    "ExecW1024.dc.html": {"expand": "fill", "h": 1950, "title": "Executive dashboard, 1024", "w": 1024, "x": 0, "y": 7680, "is_interactive": true},
+    "ExecW768.dc.html": {"expand": "fill", "h": 3100, "title": "Executive dashboard, 768", "w": 768, "x": 1104, "y": 7680, "is_interactive": true},
+    "ExecW375.dc.html": {"expand": "fill", "h": 3750, "title": "Executive dashboard, 375", "w": 375, "x": 1952, "y": 7680, "is_interactive": true},
+    "ExecW1920.dc.html": {"expand": "fill", "h": 1350, "title": "Executive dashboard, 1920", "w": 1920, "x": 2407, "y": 7680, "is_interactive": true}
   },
   "createdOnFiles": {"at": "2026-10-08T12:00:00Z", "v": 1},
   "designSystems": [],
   "launch": {"view": "canvas"},
   "notes": {
-    "t1": {"kind": "title1", "maxW": 5260, "text": "XLR8 FLO: Home, Executive dashboard, tokens from MASTER.md (round 3: motion and interactions)", "w": 240, "x": 0, "y": -260},
-    "t2": {"kind": "title1", "maxW": 4400, "text": "Responsive: Home", "w": 240, "x": 0, "y": 4840},
-    "t3": {"kind": "title1", "maxW": 2400, "text": "Responsive: Executive dashboard", "w": 240, "x": 0, "y": 7280}
+    "t1": {"kind": "title1", "maxW": 5260, "text": "XLR8 FLO: Home, Executive dashboard, tokens from MASTER.md (round 4: full-width layout, hover and money)", "w": 240, "x": 0, "y": -260},
+    "t2": {"kind": "title1", "maxW": 6300, "text": "Responsive: Home", "w": 240, "x": 0, "y": 4940},
+    "t3": {"kind": "title1", "maxW": 4300, "text": "Responsive: Executive dashboard", "w": 240, "x": 0, "y": 7420}
   },
-  "order": ["Main.dc.html", "ExecutiveDashboard.dc.html", "DesignSystem.dc.html", "ThemePanel.dc.html", "HomeCollapsed.dc.html", "HomeW1024.dc.html", "HomeW768.dc.html", "HomeW375.dc.html", "HomeW375Open.dc.html", "ExecW1024.dc.html", "ExecW768.dc.html", "ExecW375.dc.html"],
+  "order": ["Main.dc.html", "ExecutiveDashboard.dc.html", "DesignSystem.dc.html", "ThemePanel.dc.html", "HomeCollapsed.dc.html", "HomeW1024.dc.html", "HomeW768.dc.html", "HomeW375.dc.html", "HomeW375Open.dc.html", "HomeW1920.dc.html", "ExecW1024.dc.html", "ExecW768.dc.html", "ExecW375.dc.html", "ExecW1920.dc.html"],
   "pages": [],
   "title": "xlr8flo-design-system"
 }

@@ -14,6 +14,8 @@ async function open(page, url, w = 1440, h = 900) {
   await page.goto(url);
   await page.locator('.page').waitFor();
 }
+// the dashboard plays its intro once and then drops the .intro class; wait for that, not for a fixed time
+const settled = (page) => expect(page.locator('.xf').first()).not.toHaveClass(/intro/, { timeout: 8000 });
 const secs = (s) => Math.max(...s.split(',').map((x) => parseFloat(x)));
 const css = (loc, prop) => loc.evaluate((el, p) => getComputedStyle(el)[p], prop);
 
@@ -93,10 +95,19 @@ test.describe('reduced motion keeps the information and drops the movement', () 
 test.describe('executive dashboard', () => {
   test('first paint counts up once, settles, and can be replayed', async ({ page }) => {
     const errs = watch(page);
+    await page.addInitScript(() => {                         // record every value the first KPI ever shows
+      window.__seen = new Set();
+      new MutationObserver(() => { const m = document.querySelector('.kpis .metric'); if (m) window.__seen.add(m.textContent); })
+        .observe(document, { subtree: true, childList: true, characterData: true });
+    });
     await open(page, EXEC);
     const first = page.locator('.kpis .metric').first();
-    await expect.poll(async () => (await first.innerText()) !== '48.25M', { timeout: 400 }).toBe(true);   // mid count-up
-    await expect(page.locator('.xf').first()).toHaveClass(/intro/);
+    await expect(page.locator('.xf').first()).toHaveClass(/intro/, { timeout: 2000 });
+    await expect(first).toHaveText('48.25M', { timeout: 3000 });
+    const seen = await page.evaluate(() => [...window.__seen]);
+    expect(seen.length).toBeGreaterThan(5);                  // it counted up through intermediate values
+    expect(seen).toContain('48.25M');
+    expect(seen.some((v) => parseFloat(v) < 40)).toBe(true);
     await expect(first).toHaveText('48.25M', { timeout: 3000 });
     await expect(page.locator('.xf').first()).not.toHaveClass(/intro/, { timeout: 3000 });     // static forever after
     await page.getByRole('button', { name: 'Replay intro' }).click();
@@ -107,7 +118,7 @@ test.describe('executive dashboard', () => {
 
   test('waterfall bars grow from the baseline with a stagger, using transform only', async ({ page }) => {
     await open(page, EXEC);
-    const bars = page.locator('.wf-bar[data-tip]');
+    const bars = page.locator('.wf-bar[data-k]');
     await expect(page.locator('.xf').first()).toHaveClass(/intro/);
     const names = await bars.evaluateAll((els) => els.map((e) => { const s = getComputedStyle(e); return [s.animationName, s.animationDelay]; }));
     expect(names.map((n) => n[0])).toEqual(Array(5).fill('growY'));
@@ -117,7 +128,7 @@ test.describe('executive dashboard', () => {
 
   test('tabs: arrow keys move selection, indicator slides 180ms, table replaces chart', async ({ page }) => {
     await open(page, EXEC);
-    await page.waitForTimeout(1900);
+    await settled(page);
     const tabs = page.getByRole('tab', { name: 'Chart' }).first();
     await tabs.focus();
     await expect(tabs).toHaveAttribute('aria-selected', 'true');
@@ -136,15 +147,78 @@ test.describe('executive dashboard', () => {
     await expect(page.locator('#wf-p svg')).toBeVisible();
   });
 
-  test('chart tooltips show on hover and on keyboard focus', async ({ page }) => {
+  test('chart tooltips are a rounded box with measured values, on hover and on keyboard focus', async ({ page }) => {
     await open(page, EXEC);
-    await page.waitForTimeout(1900);
-    const reserved = page.locator('.wf-bar[data-tip^="Reserved"]');
-    await reserved.hover();
-    await expect(page.locator('.tt')).toHaveText('Reserved (6,120,000.00) USD · 12.7% of allocated');
+    await settled(page);
+    await page.locator('.wf-bar[data-k="wf1"]').hover();
+    const tt = page.locator('.tt');
+    await expect(tt).toBeVisible();
+    await expect(tt.locator('.tt-h')).toContainText('Reserved');
+    await expect(tt).toContainText('Running total');
+    await expect(tt).toContainText('42,130,000');
+    await expect(tt).toContainText('12.7%');
+    const look = await tt.evaluate((el) => { const s = getComputedStyle(el); return { radius: parseFloat(s.borderTopLeftRadius), border: s.borderTopWidth, shadow: s.boxShadow !== 'none', bg: s.backgroundColor }; });
+    expect(look.radius).toBeGreaterThanOrEqual(10);
+    expect(look.border).toBe('1px');
+    expect(look.shadow).toBe(true);
+    expect(look.bg).not.toBe('rgba(0, 0, 0, 0)');
+    // decimals and currency are lighter and smaller inside the box too
+    const money = await tt.locator('.tt-r .num').nth(0).evaluate((el) => ({ w: parseFloat(getComputedStyle(el.querySelector('.w')).fontSize), d: parseFloat(getComputedStyle(el.querySelector('.d')).fontSize), cur: el.querySelector('.cur')?.textContent }));
+    expect(money.d).toBeLessThan(money.w);
+    expect(money.cur).toBe('USD');
     await page.mouse.move(5, 5);
     await expect(page.locator('.tt')).toHaveCount(0);
-    await page.locator('.wf-bar[data-tip^="Available"]').focus();
-    await expect(page.locator('.tt')).toContainText('Available 9,810,000.00 USD');
+    await page.locator('.wf-bar[data-k="wf4"]').focus();
+    await expect(page.locator('.tt .tt-h')).toContainText('Available');
+  });
+
+  test('every chart has the same tooltip: line, business-unit bars and funnel', async ({ page }) => {
+    await open(page, EXEC);
+    await settled(page);
+    await page.locator('circle[data-k="ln5"]').focus();
+    await expect(page.locator('.tt .tt-h')).toContainText('September');
+    await expect(page.locator('.tt')).toContainText('Actual vs plan');
+    await expect(page.locator('.tt')).toContainText('(4.56M');
+    await page.locator('.bar[data-k="bu0"]').hover();
+    await expect(page.locator('.tt .tt-h')).toContainText('Operations');
+    await expect(page.locator('.tt')).toContainText('Remaining');
+    await page.locator('.bar[data-k="fn1"]').hover();
+    await expect(page.locator('.tt .tt-h')).toContainText('Approval pending');
+    await expect(page.locator('.tt')).toContainText('25.7%');
+  });
+
+  test('a tooltip near the top flips below the mark and stays inside the card', async ({ page }) => {
+    await open(page, EXEC);
+    await settled(page);
+    await page.locator('.wf-bar[data-k="wf0"]').hover();
+    const tt = page.locator('.tt');
+    await expect(tt).toHaveClass(/below/);
+    const [t, wrap] = await Promise.all([tt.boundingBox(), page.locator('.chart-wrap[data-w="wf"]').boundingBox()]);
+    expect(t.x).toBeGreaterThanOrEqual(wrap.x - 1);
+    expect(t.x + t.width).toBeLessThanOrEqual(wrap.x + wrap.width + 1);
+  });
+
+  test('KPI cards lift with a spring and outline in their own series colour', async ({ page }) => {
+    await open(page, EXEC);
+    await settled(page);
+    const cards = page.locator('.kpis > .kpi');
+    const series = await cards.evaluateAll((els) => els.map((e) => getComputedStyle(e.querySelector('.sw')).backgroundColor));
+    expect(new Set(series).size).toBe(5);
+    for (const [i, name] of [[3, 'Actual'], [4, 'Available']]) {
+      const c = cards.nth(i);
+      await expect(c).toContainText(name);
+      const rest = await c.evaluate((e) => { const s = getComputedStyle(e); return { t: s.transform, b: s.borderTopColor }; });
+      expect(rest.t).toBe('none');
+      expect(rest.b).not.toBe(series[i]);
+      expect(await css(c, 'transitionTimingFunction')).toContain('linear(');   // spring, MASTER --ease-spring
+      await c.hover();
+      await page.waitForTimeout(450);
+      const hot = await c.evaluate((e) => { const s = getComputedStyle(e); return { ty: new DOMMatrix(s.transform).m42, b: s.borderTopColor }; });
+      expect(hot.ty).toBeLessThan(-2);
+      expect(hot.b).toBe(series[i]);                                       // outline matches the swatch beside the label
+      await page.mouse.move(5, 5);
+      await page.waitForTimeout(450);
+      expect(await css(c, 'transform')).toBe('none');
+    }
   });
 });
