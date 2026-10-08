@@ -1,4 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+import Screens from "./sign-in";
+import { destination, probe, safeReturn } from "../features/auth/api";
+import { apiClient } from "../api/client";
 
 import AppShell, { type ShellRoute } from "../components/shell/AppShell";
 import type { Phase } from "../components/command/registry";
@@ -15,6 +19,8 @@ type RouteDefinition = {
   phase: Phase;
   title: string;
 };
+
+const AUTH_PATHS: readonly string[] = ["/sign-in", "/sign-in/mfa", "/sign-in/mfa/enroll"];
 
 const ORGANIZATION = ["/organization", "Northstar Capital"] as const;
 const BUSINESS_UNIT = ["/organization/infrastructure", "Infrastructure BU"] as const;
@@ -190,25 +196,79 @@ function activateRoute(path: string): ShellRoute {
 }
 
 export default function RootRoute() {
+  const verified = useRef(false);
+  const [allowed, setAllowed] = useState(false);
+  const [approvedRoute, setApprovedRoute] = useState<ShellRoute | null>(null);
+  const [failed, setFailed] = useState(false);
   const [route, setRoute] = useState(() => activateRoute(window.location.pathname));
 
   useEffect(() => {
-    const onPopState = () => setRoute(activateRoute(window.location.pathname));
+    const onPopState = () => { setAllowed(false); setFailed(false); setRoute(activateRoute(window.location.pathname)); };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
   const navigate = useCallback((href: string) => {
+    setAllowed(false);
+    if (AUTH_PATHS.includes(new URL(href, window.location.origin).pathname)) { verified.current = false; setApprovedRoute(null); }
+    setFailed(false);
     if (window.location.pathname !== href) window.history.pushState(null, "", href);
-    setRoute(activateRoute(href));
+    setRoute(activateRoute(new URL(href, window.location.origin).pathname));
   }, []);
-  const adminUserId = route.path.match(ADMIN_USER_PATH)?.[1];
+  useEffect(() => {
+    let active = true;
+    void probe().then(access => {
+      if (!active) return;
+      const auth = AUTH_PATHS.includes(route.path);
+      if (access === 'error') { setFailed(true); return; }
+      if (!auth) {
+        if (access === 'verified') { verified.current = true; setApprovedRoute(route); setAllowed(true); }
+        else navigate(`${destination(access, '/')}?return=${encodeURIComponent(safeReturn(window.location.pathname + window.location.search + window.location.hash))}`);
+      } else if (route.path !== '/sign-in' && access === 'signin') {
+        navigate(`/sign-in?return=${encodeURIComponent(safeReturn(new URLSearchParams(window.location.search).get('return')))}`);
+      } else if (route.path === '/sign-in' && access !== 'signin') {
+        const back = safeReturn(new URLSearchParams(window.location.search).get('return'));
+        navigate(destination(access, back) + (access === 'verified' ? '' : `?return=${encodeURIComponent(back)}`));
+      }
+    });
+    return () => { active = false; };
+  }, [route, navigate]);
+  useEffect(() => {
+    const ended = (response: Response) => {
+      if (verified.current && response.status === 401 && !AUTH_PATHS.includes(window.location.pathname)) {
+        navigate(`/sign-in?ended=1&return=${encodeURIComponent(safeReturn(window.location.pathname + window.location.search + window.location.hash))}`);
+      }
+    };
+    const middleware = { onResponse({ response }: { response: Response }) { ended(response); } };
+    apiClient.use(middleware);
+    // Existing features use native fetch as well as the generated client. Observe
+    // same-origin API responses from both without changing their request contracts.
+    const original = window.fetch;
+    const observed: typeof window.fetch = async (...args) => {
+      const response = await original(...args);
+      const input = args[0];
+      const url = new URL(input instanceof Request ? input.url : String(input), window.location.href);
+      if (url.origin === window.location.origin && url.pathname.startsWith('/api/')) ended(response);
+      return response;
+    };
+    window.fetch = observed;
+    return () => {
+      apiClient.eject(middleware);
+      if (window.fetch === observed) window.fetch = original;
+    };
+  }, [navigate]);
+  if (AUTH_PATHS.includes(route.path)) return <Screens key={route.path} path={route.path} navigate={navigate} probeFailed={failed} />;
+  if (failed) return <main><h1>We could not reach the server</h1><p>Your page is kept. Check your connection and try again.</p><button onClick={() => window.location.reload()}>Try again</button></main>;
+  if (!allowed && !approvedRoute) return <main role="status">Checking your session</main>;
+  // Keep the last authorized shell mounted during the probe; no new route is rendered early.
+  const shellRoute = allowed ? route : approvedRoute!;
+  const adminUserId = shellRoute.path.match(ADMIN_USER_PATH)?.[1];
 
   return (
-    <AppShell navigate={navigate} route={route}>
-      {route.path === "/_dev/status-gallery" ? <StatusGallery /> : undefined}
-      {route.path === "/_dev/grid" ? <GridGallery /> : undefined}
-      {route.path === "/_dev/forms" ? <FormGallery /> : undefined}
+    <AppShell navigate={navigate} route={shellRoute}>
+      {shellRoute.path === "/_dev/status-gallery" ? <StatusGallery /> : undefined}
+      {shellRoute.path === "/_dev/grid" ? <GridGallery /> : undefined}
+      {shellRoute.path === "/_dev/forms" ? <FormGallery /> : undefined}
       {adminUserId === undefined ? undefined : <EffectiveAccessExplorer userId={adminUserId} />}
     </AppShell>
   );

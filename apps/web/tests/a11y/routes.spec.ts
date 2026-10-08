@@ -14,6 +14,7 @@ for (const theme of ["light", "dark"] as const) {
         localStorage.setItem("xlr8flo.theme", selectedTheme);
       }, theme);
       await page.goto(route);
+      await page.locator(".app-shell").waitFor();
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
       if (route === "/_dev/grid") {
@@ -31,6 +32,7 @@ test("reduced motion preserves the form's information and complete keyboard outc
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/_dev/forms");
+  await page.locator(".app-shell").waitFor();
 
   expect(await page.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches)).toBe(
     true,
@@ -59,4 +61,9 @@ test("reduced motion preserves the form's information and complete keyboard outc
   await page.keyboard.press("Enter");
 
   await expect(page.getByRole("status")).toContainText("Form submitted");
+});
+
+// These pre-auth-story fixtures represent a signed-in operator.
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/v1/auth/sessions", route => route.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
 });

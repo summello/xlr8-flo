@@ -482,7 +482,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E04-S05** StatusPill primitive: closed per-document-type tone map, icon always, never author-coloured | E04 | ui | M | TAG-001, TAG-002, TAG-003, A11Y-004 | ~~E04-S01~~ |
 | ✅ | **E04-S06** Material layer: tinted shadows, lit edge, grain, honest glass, glow focus ring | E04 | ui | M | UX-006, A11Y-005 | ~~E04-S01~~ |
 
-#### M1 — Budget spine · 19/32 done
+#### M1 — Budget spine · 20/32 done
 
 > The trustworthy system of record. Projects, hierarchy and the complete budget ledger.
 
@@ -494,9 +494,9 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E05-S04** Fiscal calendar and period open/close with authorization and audit | E05 | engine | M | BUD-010, FIN-010 | ~~E05-S01~~ |
 | ⬜ | **E05-S05** FX: ECB daily rate ingest, rate table, effective dating, missing-rate block | E05 | engine | M | FX-001, FX-002, FX-003, FX-004, FIN-003 | ~~E03-S06~~ |
 | ✅ | **E05-S09** Identity belongs to an organization: membership, org_id on the session, seeded first tenant and bootstrap command | E05 | security | L | AUTH-001, AUTH-005, ORG-001, TEN-010 | ~~E05-S01~~ |
-| ⬜ | **E05-S10** Sign-in screen: CSRF bootstrap, login, MFA challenge, logout, error and locked states | E05 | ui | L | AUTH-001, AUTH-007, AUTH-010 | ~~E05-S09~~ |
+| ✅ | **E05-S10** Sign-in screen: CSRF bootstrap, login, MFA challenge, logout, error and locked states | E05 | ui | L | AUTH-001, AUTH-007, AUTH-010 | ~~E05-S09~~ |
 | ⬜ | **E05-S11** Login throttling: per-identity and per-client failure limits, trusted client IP behind Cloudflare | E05 | security | M | AUTH-004, AUTH-007, SEC-001 | ~~E05-S09~~ |
-| ⬜ | **E05-S12** Multi-organization membership: (identity_id, org_id) key, chosen organization on the session, chooser, switcher, tenant label | E05 | security | L | AUTH-001, SEC-008, TEN-010 | ~~E05-S09~~, E05-S10 |
+| ⬜ | **E05-S12** Multi-organization membership: (identity_id, org_id) key, chosen organization on the session, chooser, switcher, tenant label | E05 | security | L | AUTH-001, SEC-008, TEN-010 | ~~E05-S09~~, ~~E05-S10~~ |
 | ⬜ | **E05-S13** Invitation acceptance: issue, validate, accept, withdraw and resend with a hashed single-use token | E05 | security | M | AUTH-001, AUTH-003, AUTH-004, AUTH-005, AUTH-006, AUTH-007, AUTH-008, AUTH-011, SEC-006, SEC-008, TEN-010 | E05-S11, E05-S12 |
 | ⬜ | **E05-S14** Invitation acceptance screen: /invite/:token, uniform unavailable state, MFA handoff | E05 | ui | S | AUTH-003, AUTH-004, AUTH-006, AUTH-007, A11Y-006, UX-004, UX-005 | E05-S13 |
 | ✅ | **E06-S01** Project entity, scoped numbering sequence, department and ledger account | E06 | crud | M | PROJ-001, PROJ-014, PROJ-019, SEQ-001, SEQ-002, SEQ-003, SEQ-004 | ~~E05-S03~~ |

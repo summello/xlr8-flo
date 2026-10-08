@@ -524,7 +524,7 @@ epics:
           - AUTH-010
         dep:
           - E05-S09
-        st: todo
+        st: done
       - id: E05-S11
         t: 'Login throttling: per-identity and per-client failure limits, trusted client IP behind Cloudflare'
         k: security

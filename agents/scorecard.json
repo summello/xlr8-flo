@@ -1763,6 +1763,43 @@
       },
       "recap": "Implemented E08-S01 authoritative amendments: structural upload and mapping only; upload keys are ignored, each upload creates a distinct batch; UUID-only storage keys; test_fixture registered only by pytest. CSV version metadata uses a pre-header comment; XLSX version metadata uses core description. Headers and row count are persisted in counts JSONB. No dependency added, no production templates or UI introduced. Verification: flo check green (ruff, strict mypy, boundaries, full pytest with coverage, eslint, tsc, vitest, Playwright/axe and redacted gitleaks). Full API: 1289 passed, zero skipped, 93% coverage; focused story/isolation: 88 passed; web unit: 59 passed. Migration chain check green. Commit: 675ea71. No submit, gate, done, push or merge run.",
       "title": "Import framework: template versioning, column mapping, type and reference validation"
+    },
+    {
+      "story": "E05-S10",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "auth",
+        "ui"
+      ],
+      "author": "opencode-nemotron",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E05-S10 and model~nvidia/nemotron-3-ultra-550b-a55b:free"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "0ab077c4-d7d7-482d-85e6-9ceeeaf74311",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented auth routes, existing-session probe guard, CSRF first-response seeding and bootstrap, MFA enrollment with memory-only QR/secret/codes, logout and Sessions panel. Backend: 1312 passed, 1 existing skip; ruff/mypy and real migration-chain validation green. Web lint/typecheck/vitest: 69 passed. Final full Playwright regression: 148 passed, including axe in both themes, keyboard enrollment, native-fetch expiry, and planted violations. Import contracts: 4 kept. No migration or backend authorization change. Review round 1 fixes: only login 401 uses uniform credential copy; service failures preserve email with distinct copy. Deterministic reduced-motion axe coverage plus motion-enabled finished-card case. Added rotated CSRF cookie preservation and both requested plants. Ruff, strict mypy (112 files), web lint/typecheck green; pytest 1314 passed, 1 skipped; vitest 69 passed. Full Playwright: 151 passed, frame-budget failed under concurrent Postgres load; isolated frame-budget rerun passed (1/1).",
+      "title": "Sign-in screen: CSRF bootstrap, login, MFA challenge, logout, error and locked states"
     }
   ]
 }

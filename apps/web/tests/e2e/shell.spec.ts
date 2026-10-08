@@ -8,6 +8,7 @@ async function openCommandMenu(page: Page) {
 
 test("skip link is first, keyboard-visible, and jumps to main", async ({ page }) => {
   await page.goto("/");
+  await page.locator(".app-shell").waitFor();
   await page.keyboard.press("Tab");
 
   const skipLink = page.getByRole("link", { name: "Skip to main content" });
@@ -20,6 +21,7 @@ test("skip link is first, keyboard-visible, and jumps to main", async ({ page })
 
 test("command menu is interactive within one frame and has no open animation", async ({ page }) => {
   await page.goto("/");
+  await page.locator(".app-shell").waitFor();
   await page.keyboard.press("Control+k");
 
   const state = await page.evaluate(
@@ -43,6 +45,7 @@ test("palette filters permissions, fuzzy-highlights, navigates with arrows, and 
   page,
 }) => {
   await page.goto("/");
+  await page.locator(".app-shell").waitFor();
   const dialog = await openCommandMenu(page);
 
   await expect(dialog.getByText("Manage organization", { exact: true })).toHaveCount(0);
@@ -67,6 +70,7 @@ test("palette filters permissions, fuzzy-highlights, navigates with arrows, and 
 
 test("the shortcut displayed by the registry performs that same action", async ({ page }) => {
   await page.goto("/");
+  await page.locator(".app-shell").waitFor();
   const dialog = await openCommandMenu(page);
   const createProject = dialog.getByRole("option", { name: /Create project/ });
   await expect(createProject.getByText("C", { exact: true })).toBeVisible();
@@ -81,6 +85,7 @@ test("the shortcut displayed by the registry performs that same action", async (
 
 test("route navigation focuses main, announces the title, and keeps every breadcrumb a link", async ({ page }) => {
   await page.goto("/");
+  await page.locator(".app-shell").waitFor();
   await page.getByRole("link", { name: "Purchase orders", exact: true }).click();
 
   await expect(page).toHaveTitle("Purchase orders");
@@ -103,6 +108,7 @@ test("route navigation focuses main, announces the title, and keeps every breadc
 test("mobile drawer navigation leaves route-change focus on main", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 900 });
   await page.goto("/");
+  await page.locator(".app-shell").waitFor();
 
   await page.getByRole("button", { name: "Open navigation" }).click();
   const drawer = page.getByRole("dialog", { name: "Navigation" });
@@ -115,6 +121,7 @@ test("mobile drawer navigation leaves route-change focus on main", async ({ page
 
 test("breadcrumb focus glow is not clipped by its focusable anchor", async ({ page }) => {
   await page.goto("/purchase-orders");
+  await page.locator(".app-shell").waitFor();
   const breadcrumb = page.getByRole("navigation", { name: "Breadcrumb" });
   const project = breadcrumb.getByRole("link", { name: "North plant renewal" });
   await project.focus();
@@ -136,6 +143,7 @@ test("breadcrumb focus glow is not clipped by its focusable anchor", async ({ pa
 test("Escape closes only the topmost layer and restores focus at each level", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 900 });
   await page.goto("/");
+  await page.locator(".app-shell").waitFor();
 
   const navigationTrigger = page.getByRole("button", { name: "Open navigation" });
   await navigationTrigger.click();
@@ -157,6 +165,7 @@ for (const width of [375, 768, 1024, 1440]) {
   test(`shell is responsive without horizontal page scroll at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/");
+    await page.locator(".app-shell").waitFor();
 
     const dimensions = await page.evaluate(() => ({
       clientWidth: document.documentElement.clientWidth,
@@ -182,6 +191,7 @@ for (const theme of ["light", "dark"] as const) {
       localStorage.setItem("xlr8flo.theme", selectedTheme);
     }, theme);
     await page.goto("/");
+    await page.locator(".app-shell").waitFor();
 
     const results = await new AxeBuilder({ page }).analyze();
     expect(results.violations).toEqual([]);
@@ -190,6 +200,7 @@ for (const theme of ["light", "dark"] as const) {
 
 test("greyscale leaves active navigation text and a non-colour indicator", async ({ page }) => {
   await page.goto("/");
+  await page.locator(".app-shell").waitFor();
   await page.locator("html").evaluate((root) => {
     root.style.filter = "grayscale(1)";
   });
@@ -202,6 +213,7 @@ test("greyscale leaves active navigation text and a non-colour indicator", async
 
 test("all shell landmarks are labelled", async ({ page }) => {
   await page.goto("/");
+  await page.locator(".app-shell").waitFor();
   await expect(page.getByRole("complementary", { name: "Primary sidebar" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Lifecycle modules" })).toBeVisible();
   await expect(page.getByRole("banner", { name: "Application header" })).toBeVisible();
@@ -210,4 +222,9 @@ test("all shell landmarks are labelled", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 900 });
   await page.getByRole("button", { name: "Open navigation" }).click();
   await expect(page.getByRole("complementary", { name: "Mobile primary sidebar" })).toBeVisible();
+});
+
+// These pre-auth-story fixtures represent a signed-in operator.
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/v1/auth/sessions", route => route.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
 });

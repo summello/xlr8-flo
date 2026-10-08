@@ -9,6 +9,7 @@ from typing import cast
 import httpx
 import pytest
 from fastapi import FastAPI
+from starlette.responses import Response
 
 from flo.api.auth import (
     get_identity_provider,
@@ -381,3 +382,105 @@ def test_unknown_or_foreign_session_id_is_not_found_and_logout_clears_cookies(
     assert f'{SESSION_COOKIE_NAME}="";' in expired
     assert f'{CSRF_COOKIE_NAME}="";' in expired
     assert "Max-Age=0" in expired
+
+
+def test_csrf_bootstrap_ignores_foreign_org(session_database: SessionDatabase) -> None:
+    app = build_app(
+        store(session_database, MutableClock(START)),
+        cast(IdentityProvider, SuccessfulProvider(session_database.identity_id)),
+    )
+
+    async def requests() -> None:
+        async with await client_for(app) as client:
+            response = await client.get(
+                "/api/v1/auth/csrf?org_id=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                headers={"org_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"},
+            )
+            assert response.status_code == 204
+            assert response.content == b""
+            csrf = client.cookies[CSRF_COOKIE_NAME]
+            assert SESSION_COOKIE_NAME not in client.cookies
+            login = await client.post(
+                "/api/v1/auth/login",
+                json={"email": "person@example.test", "password": "correct safe passphrase"},
+                headers=csrf_headers(client),
+            )
+            assert login.status_code == 204
+            assert csrf != client.cookies[SESSION_COOKIE_NAME]
+            assert client.cookies[CSRF_COOKIE_NAME] != client.cookies[SESSION_COOKIE_NAME]
+    run(requests())
+
+
+@pytest.mark.parametrize("path,method,status", [
+    ("/api/v1/auth/sessions", "GET", 401),
+    ("/unsafe/post", "POST", 403),
+    ("/missing", "GET", 404),
+    ("/explode", "GET", 500),
+])
+def test_first_error_response_arms_csrf(
+    session_database: SessionDatabase, path: str, method: str, status: int,
+) -> None:
+    app = build_app(
+        store(session_database, MutableClock(START)),
+        cast(IdentityProvider, SuccessfulProvider(session_database.identity_id)),
+    )
+
+    async def request() -> None:
+        async with await client_for(app) as client:
+            response = await client.request(method, path)
+            assert response.status_code == status
+            assert client.cookies[CSRF_COOKIE_NAME]
+            assert SESSION_COOKIE_NAME not in client.cookies
+    run(request())
+
+
+def test_planted_missing_csrf_arming_breaks_cold_login(
+    session_database: SessionDatabase, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from flo.kernel.session import csrf
+
+    monkeypatch.setattr(
+        csrf, "_csrf_cookie_header", lambda token: (b"x-planted", b"missing-cookie")
+    )
+    with pytest.raises(KeyError):
+        test_csrf_bootstrap_ignores_foreign_org(session_database)
+
+
+def test_first_response_preserves_route_rotated_csrf_cookie(
+    session_database: SessionDatabase,
+) -> None:
+    app = build_app(
+        store(session_database, MutableClock(START)),
+        cast(IdentityProvider, SuccessfulProvider(session_database.identity_id)),
+    )
+
+    @app.get("/rotate-csrf")
+    async def rotate() -> Response:
+        response = Response(status_code=204)
+        response.set_cookie(CSRF_COOKIE_NAME, "route-rotated-fixture", secure=True)
+        return response
+
+    async def request() -> None:
+        async with await client_for(app) as client:
+            assert CSRF_COOKIE_NAME not in client.cookies
+            response = await client.get("/rotate-csrf")
+            assert response.status_code == 204
+            cookies = [
+                value for value in response.headers.get_list("set-cookie")
+                if value.startswith(f"{CSRF_COOKIE_NAME}=")
+            ]
+            assert len(cookies) == 1
+            assert cookies[0].startswith(f"{CSRF_COOKIE_NAME}=route-rotated-fixture;")
+            assert client.cookies[CSRF_COOKIE_NAME] == "route-rotated-fixture"
+    run(request())
+
+
+def test_planted_dropped_csrf_preserve_branch_fails(
+    session_database: SessionDatabase, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from flo.kernel.session import csrf
+
+    # Force the existing-cookie guard false, so middleware appends a second cookie.
+    monkeypatch.setattr(csrf, "any", lambda headers: False, raising=False)
+    with pytest.raises(AssertionError):
+        test_first_response_preserves_route_rotated_csrf_cookie(session_database)

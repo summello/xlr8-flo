@@ -20,6 +20,7 @@ TESTS = Path(__file__).resolve().parents[1]
 
 # (method, path) -> "file::test" that proves a foreign id returns 404.
 COVERED = {
+    ("GET", "/api/v1/auth/csrf"): "session/test_http.py::test_csrf_bootstrap_ignores_foreign_org",
     (
         "GET",
         "/api/v1/imports/templates",

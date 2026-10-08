@@ -131,6 +131,7 @@ test("grain, focus, and component shadow guards are explicit", () => {
 
 test("grain stacks below sticky chrome", async ({ page }) => {
   await page.goto("/");
+  await page.locator(".app-shell").waitFor();
 
   const stacking = await page.evaluate(() => ({
     grain: Number(getComputedStyle(document.body, "::before").zIndex),
@@ -146,6 +147,7 @@ for (const theme of ["light", "dark"] as const) {
   }) => {
     await selectTheme(page, theme);
     await page.goto("/_dev/grid?fixture=empty");
+    await page.locator(".app-shell").waitFor();
 
     const defaultSurface = page.locator(".grid-empty-state");
     await expect(defaultSurface).toHaveClass(/\bmaterial-surface\b/);
@@ -184,6 +186,7 @@ for (const theme of ["light", "dark"] as const) {
   test(`glass text clears 4.5:1 on the lightest and darkest ${theme} content`, async ({ page }) => {
     await selectTheme(page, theme);
     await page.goto("/");
+    await page.locator(".app-shell").waitFor();
 
     const ratios = await page.evaluate(() => {
       type Pixel = [number, number, number, number];
@@ -273,6 +276,7 @@ test("reduced transparency removes grain and makes every glass role opaque", asy
     features: [{ name: "prefers-reduced-transparency", value: "reduce" }],
   });
   await page.goto("/");
+  await page.locator(".app-shell").waitFor();
 
   const result = await page.evaluate((roles) => {
     const resolveBackground = (value: string) => {
@@ -317,6 +321,7 @@ for (const theme of ["light", "dark"] as const) {
   test(`keyboard focus remains visible and unclipped in ${theme} material`, async ({ page }) => {
     await selectTheme(page, theme);
     await page.goto("/");
+    await page.locator(".app-shell").waitFor();
 
     const assertKeyboardFocus = async (label: string) => {
       const focus = await page.evaluate(() => {
@@ -355,6 +360,7 @@ for (const theme of ["light", "dark"] as const) {
       expect(focus.clippingAncestor, `${theme}: ${label} is clipped`).toBeNull();
     };
 
+    await expect(page.getByRole("link", { name: "Skip to main content" })).toBeVisible();
     await page.keyboard.press("Tab");
     await expect(page.getByRole("link", { name: "Skip to main content" })).toBeFocused();
     await assertKeyboardFocus("skip link");
@@ -388,6 +394,7 @@ for (const theme of ["light", "dark"] as const) {
   }) => {
     await selectTheme(page, theme);
     await page.goto("/");
+    await page.locator(".app-shell").waitFor();
     await page.addStyleTag({
       content: `
         body::before { display: none !important; }
@@ -399,6 +406,7 @@ for (const theme of ["light", "dark"] as const) {
       `,
     });
 
+    await expect(page.getByRole("link", { name: "Skip to main content" })).toBeVisible();
     await page.keyboard.press("Tab");
     const skipLink = page.getByRole("link", { name: "Skip to main content" });
     await expect(skipLink).toBeFocused();
@@ -416,3 +424,8 @@ for (const theme of ["light", "dark"] as const) {
     expect(results.violations).toEqual([]);
   });
 }
+
+// These pre-auth-story fixtures represent a signed-in operator.
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/v1/auth/sessions", route => route.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
+});

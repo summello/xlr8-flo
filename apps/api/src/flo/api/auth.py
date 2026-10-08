@@ -335,6 +335,17 @@ async def reset_password(
     return Response(status_code=204)
 
 
+@router.get("/csrf", status_code=204)
+@public_route
+def csrf_bootstrap() -> Response:
+    """Intentionally public bootstrap, marked public for the uniform-404 guard.
+
+    No identity or tenant data is read. Middleware arms a distinct readable token.
+    """
+
+    return Response(status_code=204)
+
+
 @router.post("/login", status_code=204)
 @public_route
 async def login(
