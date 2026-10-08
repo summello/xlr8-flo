@@ -23,7 +23,7 @@ States: loading (skeleton rows at final height), empty (`No Requisitions Yet`), 
 
 ## 2. Requisition detail (`/requisitions/:id`)
 
-Heading is the requisition title; subline `REQ-00418 · Plant 4 Line Retrofit · requested by Dev Patel`; below it the status pill. Header actions: `Edit draft` (drafts only), `Withdraw requisition` (pending) or `Discard draft` (draft). Withdrawing releases the reservation **exactly once** (REQ-013); the confirmation step is designed with the Approval Inbox page. Return, amend and resubmit with a diff (REQ-012, E09-S08) are not on this screen yet.
+Heading is the requisition title; subline `REQ-00418 · Plant 4 Line Retrofit · requested by Dev Patel`; below it the status pill. Header actions: `Edit draft` (drafts only), `Withdraw requisition` (pending) or `Discard draft` (draft). Withdrawing releases the reservation **exactly once** (REQ-013); the confirmation dialog is specified in `design-system/pages/approval-inbox.md` section 3 (canvas boards `WdDialog*`). A returned requisition shows its banner and `Edit and Resubmit`, and the diff screen is section 4 of the same file (REQ-012, E09-S08); `Withdrawn` and `Returned for Changes` are statuses with icon and words.
 
 **Where It Is.** A full-width card with the lifecycle as an ordered list (`aria-label="Requisition lifecycle"`): seven steps, the current one `aria-current="step"`, done steps with a tick and `, done` in screen-reader text, not-yet steps `, not yet`. Under it one sentence in words saying where the request is and what happens next.
 

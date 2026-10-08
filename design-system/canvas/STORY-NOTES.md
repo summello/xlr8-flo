@@ -56,3 +56,16 @@ Password reset (request, set, expired link; E02-S03 is back end only), recovery-
 ## 4. Requisitions: E09-S11 should cite the page files
 
 E09-S11 (create and edit, validation summary, list, detail) should carry, under Conventions: `Read design-system/pages/requisition-create.md and design-system/pages/requisitions.md. They are the layout, copy, states, validation messages and tests for these screens.` The operator decision that **a requisition over its funding cannot be submitted** (DECISIONS 33) must appear as an acceptance criterion with the two-concurrent-submissions test in real Postgres. Open questions are listed at the end of each page file; copy them into `notes.blocked` unchanged. The linked-record graph (E09-S09) and return/amend/resubmit (E09-S08) remain gaps with no UI.
+
+---
+
+## 3. Approvals: stories the canvas needs
+
+Written 9 Oct 2026. Page specs: `design-system/pages/approval-inbox.md`, `approval-workflow-builder.md`. The engine stories exist (E10-S01 to S09, E09-S08); several screens have **no UI story**. Requests, in order:
+
+1. **E10-S10 gains scope.** It lists inbox views only. Add: the decision panel with the routing explanation (reads E10-S09), the result state and `Next`, and the stale-version and reason refusals (reads E10-S06, E10-S07). Cite `approval-inbox.md` sections 1 and 2.
+2. **Approval delegation UI** (new, after E10-S08): availability screen, eligible-delegate picker, revoke, organization tab for administrators, attribution list. Cite section 5. Needs an operator answer on revoke behaviour and re-delegation first.
+3. **Withdraw, return and resubmit UI** (new, after E09-S08 and E10-S06): the withdraw dialog, the returned banner, the resubmit diff with the funding check. Cite sections 3 and 4. Needs the material-change rule decided.
+4. **E10-S11 gains scope.** The packet should require the outline (APR-002) in the same story, cycle prevention on connect, the problems tab, publish dialog and Route Preview, and add a list and version-history screen (`approval-workflow-builder.md` sections 1 and 5). Route Preview needs a read endpoint that evaluates a draft against sample attributes and returns the matched rules; that is not in E10-S09 today.
+
+**Operator decisions needed (the canvas shows each as an assumption):** who may withdraw and until when; what is a material change; revoke returns undecided tasks or leaves them; re-delegation; duplicate approvals allowed with intent; conditions beyond the estimate before Phase 2.

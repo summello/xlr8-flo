@@ -162,7 +162,7 @@
       </sc-if>
 
       <section aria-labelledby="sh-why">
-        <h3 class="t-label" id="sh-why" style="margin-bottom:8px">Why This Is Yours</h3>
+        <h3 class="t-label" id="sh-why" style="margin-bottom:8px">Why It Reached You</h3>
         <sc-if value="{{sheet.whyOk}}" hint-placeholder-val="{{ true }}">
           <div class="sticky-note" style="display:flex;flex-direction:column;gap:10px">
             <ol class="route" aria-label="Routing steps">
@@ -177,7 +177,7 @@
             </dl>
           </div>
         </sc-if>
-        <sc-if value="{{sheet.whyErr}}" hint-placeholder-val="{{ false }}"><div class="state" role="alert" style="padding:16px"><span class="pill danger"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>Could not load why this is yours</span><div class="t-dense secondary">You can still decide. Nothing was changed.</div><button class="btn" type="button" onClick="{{retry}}">Try again</button></div></sc-if>
+        <sc-if value="{{sheet.whyErr}}" hint-placeholder-val="{{ false }}"><div class="state" role="alert" style="padding:16px"><span class="pill danger"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>Could not load why it reached you</span><div class="t-dense secondary">You can still decide. Nothing was changed.</div><button class="btn" type="button" onClick="{{retry}}">Try again</button></div></sc-if>
       </section>
 
       <section aria-labelledby="sh-trail">
@@ -430,7 +430,7 @@ class Component extends DCLogic {
     const finish = (out, title, text, audit, tone, d, cls) => {
       const nx = next(cur.id);
       this.setState({ decided: { ...decided, [cur.id]: { out, note: st.comment || '' } }, err: '', comment: '',
-        result: { title, text, audit, style: tone, d, cls, hasNext: !!nx, nextLabel: nx ? 'Next: ' + nx.id : '', next: () => this.setState({ open: nx.id, result: null, comment: '', err: '' }) } });
+        result: { title, text, audit, style: tone, d, cls, hasNext: !!nx, nextLabel: nx ? 'Next: ' + nx.id : '', next: () => { this.setState({ open: nx.id, result: null, comment: '', err: '' }); setTimeout(() => { const c = document.querySelector('.sheet .iconbtn'); if (c) c.focus(); }, 0); } } });
     };
     const needReason = () => { if (!(st.comment || '').trim()) { this.setState({ err: 'reason' }); focusErr(); return true; } return false; };
     const errObj = errKey === 'stale' ? { title: 'Not decided. This requisition changed.', item: 'Version 3 replaced the version you opened, and approving an old version is not allowed. Your comment is kept.', hasFix: true, fixLabel: 'Load Version 3', fix: () => this.setState({ loaded: { ...(st.loaded || {}), [openId]: true }, err: '' }) }

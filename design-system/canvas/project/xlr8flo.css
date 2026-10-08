@@ -611,3 +611,5 @@ fieldset.choice input { width: 18px; height: 18px; margin: 0; }
 .chk { display: flex; align-items: center; gap: 8px; min-height: 28px; font-size: 13px; }
 .chk input { width: 18px; height: 18px; margin: 0; }
 @media (max-width: 1023px) { .chk { min-height: 44px; } .wf-port { width: 28px; height: 28px; } }
+.sticky-note .t-caption, .sticky-note .secondary { color: var(--fg-secondary); }   /* --fg-muted measures 4.31:1 on --sunken (DECISIONS section 7) */
+.total-bar .t-caption { color: var(--fg-secondary); }   /* same finding: --fg-muted is 4.31:1 on --sunken */

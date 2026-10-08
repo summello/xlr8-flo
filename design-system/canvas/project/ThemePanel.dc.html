@@ -315,6 +315,35 @@
       <ol class="lineage"><li><div class="t-dense"><a href="#" class="u" style="font-weight:520">LE-0262</a><span style="margin-left:0.5em">Ledger entry</span></div><div class="t-caption">Each step points back to the document that caused it</div></li><li><div class="t-dense"><a href="#" class="u" style="font-weight:520">PO-00224</a><span style="margin-left:0.5em">Purchase order</span></div></li><li><div class="t-dense"><a href="#" class="u" style="font-weight:520">REQ-00362</a><span style="margin-left:0.5em">Requisition</span></div></li></ol>
     </div>
   </section>
+  <section aria-labelledby="s-approvals" style="display:flex;flex-direction:column;gap:12px">
+    <h3 class="t-label" id="s-approvals">Diffs, Dialogs and Workflow Graphs</h3>
+    <p class="t-dense secondary">Added with the approval screens. A diff states what a document was and what it is now in words, with a struck-through was and a change pill; colour never carries it. A confirmation dialog traps focus, puts focus on the safe button and says what will happen, to what, and whether it can be undone. A workflow node is a button with a kind word, a name and a summary; a problem is a word and an icon on the node, never colour alone.</p>
+    <div class="card" style="padding:0;overflow:hidden" id="d-sample">
+      <div class="diff" role="table" aria-label="Sample diff">
+        <div class="diff-row head" role="row"><span role="columnheader">Field</span><span role="columnheader">Was</span><span role="columnheader">Now</span><span role="columnheader">Change</span></div>
+        <div class="diff-row" role="row"><span role="cell">Quantity</span><span role="cell" class="was">40 ea</span><span role="cell" class="now">30 ea<span class="delta">10 fewer</span></span><span role="cell"><span class="pill info"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 00-14-4M4 4v4h4M4 13a8 8 0 0014 4M20 20v-4h-4"></path></svg>Changed</span></span></div>
+        <div class="diff-row" role="row"><span role="cell">Attachment</span><span role="cell" class="secondary">None</span><span role="cell" class="now">Quote.pdf</span><span role="cell"><span class="pill success"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Added</span></span></div>
+        <div class="diff-row" role="row"><span role="cell">Attachment</span><span role="cell" class="was">Old.pdf</span><span role="cell" class="secondary">None</span><span role="cell"><span class="pill neutral"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>Removed</span></span></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
+      <div class="dialog" role="group" aria-label="Sample confirmation" id="dlg-sample" style="animation:none">
+        <div class="dialog-h"><h4 class="t-title">Withdraw This Requisition?</h4></div>
+        <div class="dialog-b"><p class="t-dense" style="margin:0">Stops the approval and releases the reservation once. You cannot undo it.</p></div>
+        <div class="dialog-f"><button class="btn" type="button">Keep Requisition</button><button class="btn primary" type="button">Withdraw Requisition</button></div>
+      </div>
+      <div class="card" style="padding:16px;flex:1 1 280px;min-width:0" id="rt-sample"><h4 class="t-label" style="margin-bottom:8px">Route</h4>
+        <ol class="route"><li><div class="t-dense"><b>Department Head</b> <span class="secondary">Any one of 1</span></div><div class="t-caption" style="grid-column:2">Sana Qureshi</div></li><li class="me"><div class="t-dense"><b>Plant Manager</b> <span class="secondary">Any one of 2</span></div><div class="t-caption" style="grid-column:2">Amara Okafor (you), Luis Moreno</div></li></ol>
+      </div>
+    </div>
+    <div class="wf-scroll" id="wf-sample" style="border:1px solid var(--border);border-radius:var(--radius-card)"><div style="position:relative;height:150px;min-width:700px;background-image:radial-gradient(circle, var(--border-strong) 1px, transparent 1.2px);background-size:20px 20px">
+      <button class="wf-node term" type="button" style="left:16px;top:20px;height:48px" aria-label="Sample start node"><span class="k"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18z"></path></svg>Start</span><span class="n">Requisition Submitted</span></button>
+      <button class="wf-node cond" type="button" style="left:236px;top:20px;height:64px" aria-label="Sample condition node"><span class="k"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v12M6 15a3 3 0 100 6 3 3 0 000-6zM18 9a3 3 0 100-6 3 3 0 000 6zM18 9c0 6-12 2-12 6"></path></svg>Condition</span><span class="n">Over 50,000.00 USD?</span></button>
+      <button class="wf-node step" type="button" aria-pressed="true" style="left:456px;top:20px;height:76px" aria-label="Sample selected step node"><span class="k"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 12a4 4 0 100-8 4 4 0 000 8zM4 21a8 8 0 0116 0"></path></svg>Approval Step</span><span class="n">Plant Manager</span><span class="s">Any one of 2 · due 3 days</span></button>
+      <span class="wf-elabel" style="left:340px;top:112px">Yes</span>
+    </div></div>
+  </section>
+
 
   <section aria-labelledby="s-load" style="display:flex;flex-direction:column;gap:12px">
     <h3 class="t-label" id="s-load">Loading, Empty and Error (UX-004, UX-005)</h3>
@@ -427,7 +456,7 @@ class Component extends DCLogic {
         ['requisitions', 'M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6', 'demand'], ['approvals', 'M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6', 'demand'],
         ['vendors', 'M4 9l1-5h14l1 5M4 9a2.5 2.5 0 005 0 2.5 2.5 0 006 0 2.5 2.5 0 005 0M5 11v9h14v-9M10 20v-5h4v5', 'commit'], ['sourcing', 'M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4', 'commit'],
         ['purchase-orders', 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6', 'commit'], ['assets', 'M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10', 'commit'], ['help', 'M12 21a9 9 0 100-18 9 9 0 000 18zM9.5 9.5a2.5 2.5 0 115 .5c0 1.5-2.5 2-2.5 3.5M12 17h.01', '']],
-      ui: [['search', 'M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4'], ['bell', 'M6 17V11a6 6 0 1112 0v6l2 2H4zM10 21h4'], ['close', 'M6 6l12 12M18 6L6 18'], ['sidebar-toggle', 'M4 5h16v14H4zM9 5v14'], ['menu', 'M4 7h16M4 12h16M4 17h16'], ['chevron', 'M9 6l6 6-6 6']],
+      ui: [['search', 'M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4'], ['bell', 'M6 17V11a6 6 0 1112 0v6l2 2H4zM10 21h4'], ['close', 'M6 6l12 12M18 6L6 18'], ['sidebar-toggle', 'M4 5h16v14H4zM9 5v14'], ['menu', 'M4 7h16M4 12h16M4 17h16'], ['chevron', 'M9 6l6 6-6 6'], ['clock', 'M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3 2'], ['return', 'M9 14L4 9l5-5M4 9h10a6 6 0 016 6v2'], ['user', 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21a8 8 0 0116 0'], ['swap', 'M7 7h12l-3-3M17 17H5l3 3'], ['plus', 'M12 5v14M5 12h14'], ['branch', 'M6 3v12M6 15a3 3 0 100 6 3 3 0 000-6zM18 9a3 3 0 100-6 3 3 0 000 6zM18 9c0 6-12 2-12 6']],
       status: [['neutral', 'M12 21a9 9 0 100-18 9 9 0 000 18z'], ['info', 'M20 11a8 8 0 00-14-4M4 4v4h4M4 13a8 8 0 0014 4M20 20v-4h-4'], ['success', 'M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6'], ['warning', 'M12 3l10 18H2zM12 10v5M12 18h.01'], ['danger', 'M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6']]
     };
     const icons = [

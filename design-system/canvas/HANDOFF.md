@@ -4,7 +4,7 @@ Read `DECISIONS.md` first (everything decided so far), then `README.md` (how to 
 
 ## State
 
-**Requisition Create page built (DECISIONS 6b). Next: Approval Inbox, Budget Transfer, Comparison Dashboard.**
+**Approval Inbox and Approval Workflow Builder pages built (DECISIONS 6d). Next: Budget Transfer, Comparison Dashboard, then the rest of Common Screens (6c). Requisition Create is 6b.**
 
 **Common Screens page started: sign in, two-step verification and sign up are built (DECISIONS 6c); the remaining common screens are planned there. Requisition Create is decided and waits (6b).**
 
@@ -22,7 +22,8 @@ Add one canvas page per key flow, in this order, plus one page for common screen
 |---|---|
 | Project Dashboard | project dashboard with hierarchy visual, drill to ledger entries; project list and detail as needed |
 | Requisition Create | header, item and service lines, catalogue suggestions, submission validation summary |
-| Approval Inbox | pending, overdue, completed, delegated; decision panel with routing explanation |
+| ~~Approval Inbox~~ | built: inbox, decision panel, withdraw, resubmit diff, delegation (DECISIONS 6d) |
+| ~~Approval Workflow Builder~~ | built: list, version history, builder canvas and outline, problems, route preview, publish (DECISIONS 6d) |
 | Budget Transfer | same level and cross-hierarchy, preview of both ancestries (signature moment 3) |
 | Comparison Dashboard | RFQ bid comparison with the accessible table equivalent |
 | Common Screens | sign in, MFA (challenge, enrol, recovery), password reset, sign up and verify, suspended tenant notice, session expired, logout, 403/404/500 with correlation id, demo banner, empty and error patterns, role-based onboarding tour |
@@ -47,6 +48,9 @@ Sign in belongs to Common Screens, not the flows (the inventory's "sign in" flow
 - `container-type: inline-size` is not a stacking context; a sticky element with a z-index is. Mind the layering of popover layers.
 - Publishing: files edited on the canvas (including theme defaults set in the Tweaks panel) make a publish refuse. Read the file, merge, republish. Never resend an old copy. Heights in `canvas.json` should come from a measured run, not a guess.
 - Playwright: `test.use({reducedMotion})` did not apply; use `page.emulateMedia`. Wait for the dashboard's `.intro` class to clear instead of sleeping. Compare `-0` carefully.
+- Tests: set `PORT` (and run your own `node serve.mjs` with the same `PORT`) when another checkout already serves 4173, or the suite silently tests the other checkout. Env vars must be exported in the same shell call that runs `npx playwright test`.
+- Boards that share the app shell are copies. `.dc.html` parsing: `<sc-for>` works inside `<select>`, `<svg>` and `<ol>`; a duplicated `<head>` or `<x-dc>` makes the board render blank with no error.
+- Date inputs and SVG `d` attributes log harmless console warnings before the template fills them.
 - The canvas runtime is not committed. Read `artifact-type/dc-runtime.js` from the artifact and pass it as `DC_RUNTIME`.
 
 ## Operator preferences

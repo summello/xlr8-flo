@@ -215,7 +215,7 @@ class Component extends DCLogic {
     const st = this.state || {};
     const view = st.view ?? this.props.view ?? 'ready';
     const cs = st.case ?? this.props.case ?? 'material';
-    const P = { x: 'M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6', ok: 'M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6', ref: 'M20 11a8 8 0 00-14-4M4 4v4h4M4 13a8 8 0 0014 4M20 20v-4h-4', w: 'M12 3l10 18H2zM12 10v5M12 18h.01', add: 'M12 5v14M5 12h14', rem: 'M5 12h14', info: 'M12 21a9 9 0 100-18 9 9 0 000 18zM12 11v6M12 7.5h.01' };
+    const P = { x: 'M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6', ok: 'M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6', ref: 'M20 11a8 8 0 00-14-4M4 4v4h4M4 13a8 8 0 0014 4M20 20v-4h-4', w: 'M12 3l10 18H2zM12 10v5M12 18h.01', add: 'M12 5v14M5 12h14', rem: 'M6 6l12 12M18 6L6 18', info: 'M12 21a9 9 0 100-18 9 9 0 000 18zM12 11v6M12 7.5h.01' };
     const money = (n) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const sp = (n) => { const s = money(n); const i = s.lastIndexOf('.'); return [s.slice(0, i), s.slice(i)]; };
     const KIND = { Changed: ['pill info', P.ref], Added: ['pill success', P.add], Removed: ['pill neutral', P.rem] };

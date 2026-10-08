@@ -1,6 +1,6 @@
 # Design canvas: decisions
 
-Status at 9 Oct 2026 (second round: Project Dashboard page added). Canvas: https://claude.ai/artifact/95sB8BhSTJnNetSkmmNCNn (private). Source of truth in the repo: `design-system/canvas/project/`. Branch `worktree-design-canvas-xlr8flo`, no PR opened (only a human opens a PR to `main`; `milestone/M1-budget-spine` is not on origin).
+Status at 9 Oct 2026 (Project Dashboard, Requisition Create, Common Screens, Approval Inbox and Approval Workflow Builder pages added). Canvas: https://claude.ai/artifact/95sB8BhSTJnNetSkmmNCNn (private). Source of truth in the repo: `design-system/canvas/project/`. Branch `worktree-design-canvas-xlr8flo`, no PR opened (only a human opens a PR to `main`; `milestone/M1-budget-spine` is not on origin).
 
 Decided by the operator unless marked *(Claude)*. Where a decision departs from `design-system/MASTER.md`, it says so. **MASTER.md was not amended**; the canvas transcribes it and extends it. The amendments are listed at the end.
 
@@ -113,6 +113,29 @@ Decisions:
 | E-3 | Access screens | Inputs and buttons are 44px at every width. |
 | E-4 | Access screens | No app shell (sidebar, top bar). |
 
+## 6d. Approval Inbox and Approval Workflow Builder (built 9 Oct 2026; screen list confirmed with the operator first)
+
+Two canvas pages. **Approval Inbox** (about 55 boards) holds: the inbox (pending, overdue, completed, delegated), the decision panel with its routing explanation, the withdraw confirmation, the returned requisition and the resubmit diff, and delegation with out-of-office. **Approval Workflow Builder** (about 25 boards) holds the workflow list with version history, and the builder with canvas, outline, inspector, problems, route preview and publish. Page specs for the coding agents: `design-system/pages/approval-inbox.md` and `approval-workflow-builder.md`. Story requests: `STORY-NOTES.md` section 3. Each screen has 1440, 1920, 1024, 768, 375 and its states; variants are wrappers over the main boards, driven by `view`, `tab`, `open`, `err`, `case`, `dialog`, `mode`, `sel` props.
+
+52. **A decision is never undone and its panel never offers a disabled button.** Approve, Reject, Return and Post Comment stay enabled; a refused attempt gives a `role=alert` with focus (reason missing, stale version). Where an action is not allowed at all (own request, already decided, read-only), the buttons are absent and a notice says why (WF-006).
+53. **The decision panel explains routing in a fixed order:** the numbered route with your step marked, the rule that matched, why you, the group rule, when the group was fixed (APR-018), separation of duty. Route Preview in the builder uses the same words, so an administrator sees what an approver will see (APR-021).
+54. **A decision ends in a result, not a toast.** The panel body becomes a `role=status` with a tick that draws in 260 ms (end state under reduced motion), the outcome, what happens next and an audit line; `Next: <number>` keeps a run of approvals to two clicks each and moves focus. This is signature moment 4, as quiet as moment 2. *(Claude; operator confirm.)*
+55. **A stale version is refused, not warned about** (APR-016): the notice appears on open, the decision is refused with the reason, `Load Version 3` shows what changed, and a comment typed so far is kept.
+56. **A diff is words plus a struck-through was.** Columns Field, Was, Now, Change; the change is a pill with an icon (Changed, Added, Removed); money shows a computed delta. One `.diff` component serves the decision panel, the resubmit screen and the workflow version history. The `Removed` icon is the close cross because a flat minus fails the icon-set height gate.
+57. **Material or not is shown, never decided on screen.** Resubmit states whether routing restarts, and what happens to the reservation (released once, or checked under the lock for an increase). A short-of-funds resubmit is blocked like a requisition (decision 33). The material-change rule is an open question; the sample uses amount, project, ledger account, catalogue item or line count.
+58. **Withdraw asks first, with the safe button focused,** says what stops, what is released and that it happens once, and offers no way back; a failure keeps everything and the reason; an already-approved requisition releases nothing. Semantic button colours (red for destructive) wait for the MASTER amendment in section 7, so the confirm button is the primary style.
+59. **Delegation never rewrites history** (APR-017). Decisions made as a delegate are shown as the delegate acting for the owner, forever; a revoke returns only undecided tasks (assumption); ended rows say `Kept in the record`. The delegate picker lists eligible people only and the server re-checks.
+60. **The builder has a drag canvas and an outline with the same operations in the same story** (APR-001, APR-002, A11Y-003): add, connect, move, delete; keyboard on a canvas node (arrows, Delete) and `Goes To` selects in both the outline and the inspector. The canvas scrolls inside its own box; below 768 the outline is the default.
+61. **Cycles are prevented when connecting** (the connect is refused with the graph unchanged) and still detected when validating (APR-007). Publish never opens its dialog while a problem exists; the Problems tab and a focused summary take over.
+62. **A published workflow version is immutable** and says how many documents in flight keep it (ACC-007); the publish dialog and version history both say so.
+63. **No graph library.** The graph is HTML node buttons over per-edge SVG paths; the canvas runtime has no library and the rule is the simplest thing that works. Revisit when a workflow routinely has more than about 30 nodes. `ponytail:` ceiling: all nodes re-render on every drag step.
+
+New classes in `xlr8flo.css` (tokens only): `.sheet.wide .dialog-scrim .dialog .dialog-h .dialog-b .dialog-f .tick .diff .diff-row .cols-appr .cols-deleg .cols-wfl .cols-out .row.due-late .who-list .route .sticky-note .vers .wf-shell .wf-bar .wf-scroll .wf-board .wf-edges .wf-elabel .wf-node .wf-badge .wf-port .wf-hint .problems .chk`. The sheet gains one section, **Diffs, Dialogs and Workflow Graphs**, and six icons (clock, return, user, swap, plus, branch; Removed reuses the close cross). Two test findings fixed in the stylesheet, both the known `--fg-muted` on `--sunken` problem (section 7): `.sticky-note` and `.total-bar` captions step up to `--fg-secondary`. The latter also existed on the requisition detail page.
+
+Tests: `approvals.spec.mjs` (76 tests, including planted violations: a removed approver, an unconnected step, a loop, a non-title-case heading) plus the sheet and icon tests. `playwright.config.mjs` now takes `PORT` so a run never talks to another checkout's server on 4173.
+
+Open questions are in the two page files (withdraw rights, material change, revoke behaviour, re-delegation, duplicate approvals, conditions beyond the estimate).
+
 ## 7. Findings to feed back into MASTER.md (not yet amended)
 
 - `--fg-muted` clears 4.5:1 on canvas and surface but measures 4.31:1 on `--sunken`; the canvas steps muted text up to `--fg-secondary` on sunken grounds (hover and selected rows).
@@ -122,7 +145,7 @@ Decisions:
 
 ## 8. Open
 
-- Remaining pages: Approval Inbox, Budget Transfer, Comparison Dashboard, and the rest of Common Screens (6c).
+- Remaining pages: Budget Transfer, Comparison Dashboard, and the rest of Common Screens (6c).
 - Project Dashboard page: only signature moment 1 (KPI count-up) is used. The budget overview screen waits for a story.
 - Home needs more cards and KPIs as screens are added (then retire E-1).
 - Sample data only; amounts are internally consistent but invented.
