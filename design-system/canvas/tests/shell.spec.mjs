@@ -52,9 +52,15 @@ test.describe('sidebar, 1024 and up', () => {
     const divider = await toggle.evaluate((el) => { const s = getComputedStyle(el, '::after'); return { h: s.height, c: s.content }; });
     expect(divider).toEqual({ h: '1px', c: '""' });
 
-    await page.locator('.nav-i[data-tip="Projects"]').hover();
-    const tip = await page.locator('.nav-i[data-tip="Projects"]').evaluate((el) => getComputedStyle(el, '::after').content);
-    expect(tip).toBe('"Projects"');
+    const projects = page.locator('.nav-i[data-tip="Projects"]');
+    await projects.hover();
+    await expect(page.locator('.nav-tip')).toHaveText('Projects');
+    const [tipBox, itemBox] = [await box(page.locator('.nav-tip')), await box(projects)];
+    expect(tipBox.x).toBeGreaterThanOrEqual(itemBox.x + itemBox.width);    // beside the rail, not over it
+    await page.mouse.move(700, 400);
+    await expect(page.locator('.nav-tip')).toHaveCount(0);
+    await page.locator('.nav-i[data-tip="Budget"]').focus();               // keyboard users get it too
+    await expect(page.locator('.nav-tip')).toHaveText('Budget');
 
     await page.reload();
     await page.locator('.page').waitFor();
@@ -159,7 +165,7 @@ test.describe('the top bar stays put while the page scrolls', () => {
           await page.evaluate((v) => window.scrollTo(0, v), y);
           await page.waitForTimeout(100);
           const bar = await box(page.locator('.top'));
-          expect(Math.round(bar.y)).toBe(0);                                         // pinned to the top of the window
+          expect((Math.round(bar.y) + 0)).toBe(0);                                         // pinned to the top of the window
           expect(Math.round(bar.height)).toBe(52);
           for (const el of [page.locator('.crumbs'), page.locator('.top .avatar')]) {
             const b = await box(el);
@@ -175,6 +181,64 @@ test.describe('the top bar stays put while the page scrolls', () => {
       });
     }
   }
+  for (const [name, url] of [['home', HOME], ['exec', EXEC]]) {
+    test(`${name}: the sidebar is pinned too and scrolls inside itself on a short window`, async ({ page }) => {
+      await open(page, url, 1440, 450);
+      await page.waitForTimeout(1900);
+      const side = page.locator('.side');
+      const scrollable = await side.evaluate((e) => ({ inner: e.scrollHeight, outer: e.clientHeight }));
+      expect(scrollable.inner, 'a 450px window cannot show the whole nav').toBeGreaterThan(scrollable.outer);
+      const itemH = await page.locator('.nav-i').evaluateAll((els) => Math.min(...els.map((e) => e.getBoundingClientRect().height)));
+      expect(itemH).toBe(36);                                                // the nav scrolls; its items are never squeezed to fit
+      for (const y of [250, 99999]) {
+        await page.evaluate((v) => window.scrollTo(0, v), y);
+        await page.waitForTimeout(100);
+        const b = await box(side);
+        expect((Math.round(b.y) + 0)).toBe(0);
+        expect(Math.round(b.height)).toBe(450);                              // exactly the window, never taller
+        await expect(page.locator('.toggle-collapse')).toBeInViewport();
+      }
+      await side.evaluate((e) => { e.scrollTop = e.scrollHeight; });         // the last link is reachable by scrolling the sidebar
+      await expect(page.locator('.nav-i[data-tip="Help"]')).toBeInViewport();
+      await page.locator('.toggle-collapse').scrollIntoViewIfNeeded();
+      await page.locator('.toggle-collapse').click();                        // and it still works after the page scrolled
+      await expect(page.locator('.app')).toHaveClass(/collapsed/);
+    });
+  }
+
+  test('rail tooltips are not clipped by the scrolling sidebar', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('xf.sidebar', 'collapsed'));
+    await open(page, HOME, 1440, 450);
+    await expect(page.locator('.app')).toHaveClass(/collapsed/);
+    await page.locator('.nav-i[data-tip="Reporting"]').hover();
+    const tip = page.locator('.nav-tip');
+    await expect(tip).toBeInViewport({ ratio: 1 });                          // fully visible outside the 56px rail
+    const side = await box(page.locator('.side'));
+    expect((await box(tip)).x).toBeGreaterThan(side.x + side.width);
+  });
+
+  test('tablet rail and phone drawer stay pinned after the page scrolled', async ({ page }) => {
+    await open(page, EXEC, 768, 450);
+    await page.waitForTimeout(1900);
+    await page.evaluate(() => window.scrollTo(0, 400));
+    let b = await box(page.locator('.side'));
+    expect([(Math.round(b.y) + 0), Math.round(b.height), Math.round(b.width)]).toEqual([0, 450, 56]);
+    await page.locator('.toggle-nav').click();
+    await expect(page.locator('.app')).toHaveClass(/nav-open/);
+    await page.waitForTimeout(450);
+    b = await box(page.locator('.side'));
+    expect([(Math.round(b.y) + 0), Math.round(b.height), Math.round(b.width)]).toEqual([0, 450, 240]);
+    const scrim = await box(page.locator('.scrim'));
+    expect([(Math.round(scrim.y) + 0), Math.round(scrim.height)]).toEqual([0, 450]);   // dims the window, not the page
+    await open(page, EXEC, 375, 450);
+    await page.waitForTimeout(1900);
+    await page.evaluate(() => window.scrollTo(0, 600));
+    await page.locator('.menu-btn').click();
+    await page.waitForTimeout(450);
+    b = await box(page.locator('.side'));
+    expect([(Math.round(b.y) + 0), Math.round(b.height)]).toEqual([0, 450]);
+  });
+
   test('the notification popover still opens from the pinned bar, in view', async ({ page }) => {
     await open(page, HOME, 1440, 500);
     await page.evaluate(() => window.scrollTo(0, 400));

@@ -283,7 +283,7 @@ class Component extends DCLogic {
     const conventions = [
       { name: 'Card hover', rule: 'KPI cards lift 3px with a spring and outline in their own series colour. Every other card takes a 1px outline only, in the next series colour by position on the page (assigned automatically, so a new card needs no colour decision). Decorative; never carries meaning.' },
       { name: 'Headings', rule: 'Title case. Capitalise every word of four letters or more and the first and last word. Keep a, an, the, and, but, or, for, nor, so, yet, at, by, in, of, on, to, up, as, vs, via, per and helping verbs (is, are, was, be, do, has, will, can, may, and the like) lower case. Acronyms and codes keep their form. Record titles typed by users are data and are not changed.' },
-      { name: 'Top Bar', rule: 'Pinned to the top of the window at every width. Breadcrumbs, search, notifications and the profile never scroll away; page content scrolls underneath it.' },
+      { name: 'Pinned Chrome', rule: 'The top bar and the sidebar (or rail, or open drawer) stay in the window at every width. Breadcrumbs, search, notifications, the profile and navigation never scroll away; page content scrolls beside and underneath them. On a short window the sidebar scrolls inside itself and its items keep their size. Rail tooltips are one fixed element so that scrolling cannot clip them.' },
       { name: 'Money', rule: 'Whole amount first. Decimals and currency follow, lighter and smaller, never below 11px. Currency is always present.' }
     ];
     return { theme: this.props.theme ?? 'light', title: dark ? 'Dark Theme' : 'Light Theme', tiers, conventions, chrome, phases, statuses, tags, series, curves, motions, goCls: on ? 'go' : '', toggleGo: () => this.setState({ go: !on }) };

@@ -72,7 +72,10 @@
 .app { display: flex; position: relative; min-height: 100vh; }
 .side { width: 240px; flex: none; background: var(--surface); border-right: 1px solid var(--border); padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; }   /* z-index only while it is an overlay, so the pinned top bar's popover layer can cover it */
 .iconbtn.menu-btn, .iconbtn.toggle-nav, .scrim { display: none; }
-.side { position: relative; }
+/* pinned: the sidebar stays in the window while the page scrolls; it scrolls inside itself on a short window */
+.side { position: sticky; top: 0; height: 100vh; align-self: flex-start; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.side > * { flex-shrink: 0; }                 /* scroll, never squash the items */
+.nav-tip { position: fixed; z-index: 60; transform: translateY(-50%); background: var(--fg); color: var(--surface); font-size: 12px; font-weight: 520; line-height: 16px; padding: 4px 8px; border-radius: 6px; white-space: nowrap; pointer-events: none; }
 .side-toggle { position: absolute; top: 14px; right: 8px; }
 .app.collapsed .side-toggle { position: relative; top: auto; right: auto; align-self: center; margin: 0 0 17px; }
 .app.collapsed .side-toggle::after { content: ''; position: absolute; left: 50%; top: calc(100% + 8px); width: 40px; margin-left: -20px; height: 1px; background: var(--border); }
@@ -81,8 +84,6 @@
 .app.collapsed .side .lbl, .app.collapsed .side .brand-name { display: none; }
 .app.collapsed .side .nav-h { height: 1px; padding: 0; margin: 8px 10px; background: var(--border); font-size: 0; }
 .app.collapsed .side .nav-i, .app.collapsed .side .brand { justify-content: center; padding: 0; }
-.app:not(.nav-open) .side .nav-i:is(:hover, :focus-visible)::after { content: none; }
-.app.collapsed:not(.nav-open) .side .nav-i:is(:hover, :focus-visible)::after { content: attr(data-tip); position: absolute; left: calc(100% + 12px); top: 50%; transform: translateY(-50%); background: var(--fg); color: var(--surface); font-size: 12px; font-weight: 520; padding: 4px 8px; border-radius: 6px; white-space: nowrap; z-index: 60; pointer-events: none; }
 .brand { display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; margin-bottom: 8px; font-weight: 640; letter-spacing: -0.011em; }
 .brand-mark { width: 24px; height: 24px; border-radius: 6px; background: var(--fg); color: var(--surface); display: grid; place-items: center; font-size: 11px; font-weight: 700; }
 .nav-h { padding: 14px 10px 4px; font-size: 11px; line-height: 16px; font-weight: 560; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-muted); }
@@ -249,11 +250,11 @@ button.row-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 
   .app.nav-open .side .lbl, .app.nav-open .side .brand-name { display: inline; }
   .app.nav-open .side .nav-h { height: auto; padding: 14px 10px 4px; margin: 0; background: none; font-size: 11px; }
   .app.nav-open .side .nav-i, .app.nav-open .side .brand { justify-content: flex-start; padding: 0 10px; }
-  .scrim { display: block; position: absolute; inset: 0; background: var(--scrim); z-index: 20; opacity: 0; visibility: hidden; transition: opacity 150ms var(--ease-out), visibility 0s linear 150ms; }
+  .scrim { display: block; position: fixed; inset: 0; background: var(--scrim); z-index: 20; opacity: 0; visibility: hidden; transition: opacity 150ms var(--ease-out), visibility 0s linear 150ms; }
   .app.nav-open .scrim { opacity: 1; visibility: visible; transition: opacity 150ms var(--ease-out), visibility 0s; }
 }
 @media (min-width: 768px) and (max-width: 1023px) {
-  .side { position: absolute; left: 0; top: 0; bottom: 0; width: 56px; }
+  .side { position: fixed; left: 0; top: 0; bottom: 0; height: auto; align-self: auto; width: 56px; }
   .main { margin-left: 56px; }
   .app:not(.nav-open) .side { padding-inline: 5px; }
   .app:not(.nav-open) .side .nav-i.on::before { left: -5px; }
@@ -262,7 +263,6 @@ button.row-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 
   .app .side .lbl, .app .side .brand-name { display: none; }
   .app .side .nav-h { height: 1px; padding: 0; margin: 8px 10px; background: var(--border); font-size: 0; }
   .app .side .nav-i, .app .side .brand { justify-content: center; padding: 0; }
-  .app:not(.nav-open) .side .nav-i:is(:hover, :focus-visible)::after { content: attr(data-tip); position: absolute; left: calc(100% + 12px); top: 50%; transform: translateY(-50%); background: var(--fg); color: var(--surface); font-size: 12px; font-weight: 520; padding: 4px 8px; border-radius: 6px; white-space: nowrap; z-index: 60; pointer-events: none; }
   .app.nav-open .side { width: 240px; box-shadow: var(--shadow-lg); animation: sideReveal var(--dur-slow) var(--ease-out); }
   .app.nav-open .side .lbl, .app.nav-open .side .brand-name { display: inline; }
   .app.nav-open .side .nav-h { height: auto; padding: 14px 10px 4px; margin: 0; background: none; font-size: 11px; }
@@ -270,7 +270,7 @@ button.row-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 
 }
 @media (max-width: 767px) {
   .iconbtn.menu-btn { display: grid; }
-  .side { position: absolute; left: 0; top: 0; bottom: 0; width: min(280px, 86%); transform: translateX(-100%); visibility: hidden; transition: transform 160ms var(--ease-in), visibility 0s linear 160ms; }
+  .side { position: fixed; left: 0; top: 0; bottom: 0; height: auto; align-self: auto; width: min(280px, 86%); transform: translateX(-100%); visibility: hidden; transition: transform 160ms var(--ease-in), visibility 0s linear 160ms; }
   .app.nav-open .side { width: min(280px, 86%); transform: none; visibility: visible; box-shadow: var(--shadow-lg); transition: transform var(--dur-slow) var(--ease-out), visibility 0s; }
   .top { padding: 0 8px; gap: 8px; }
   .crumbs .crumb-parent, .crumbs .sep { display: none; }
