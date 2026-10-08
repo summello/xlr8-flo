@@ -478,7 +478,7 @@ button.sort:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px;
 @media (max-width: 767px) {
   .auth { padding: 16px 0; place-items: start center; }
   .auth-card { grid-template-columns: minmax(0, 1fr); border-radius: 0; border-left: 0; border-right: 0; box-shadow: none; }
-  .auth-aside { padding: 20px 16px; gap: 0; border-right: 0; border-bottom: 1px solid var(--border); }
+  .auth-aside { padding: 20px 16px; gap: 14px; border-right: 0; border-bottom: 1px solid var(--border); }
   .auth-aside ul, .auth-aside .t-dense { display: none; }
   .auth-main { padding: 24px 16px; }
 }

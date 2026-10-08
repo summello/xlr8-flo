@@ -59,6 +59,41 @@ Screens (all in the inventory, none a gap): project list, project dashboard, led
 31. Detail: tabs Overview, Hierarchy, Milestones, Attachments (inventory gaps for phases, risks and notes left out). Attachments show a scan state as icon plus text (clean, scanning, quarantined) and a blocked file says why it cannot be opened. `New project`, `Add milestone` and `Upload file` only show a toast: their forms belong to other screens.
 32. Design system sheet gains one section, **Tables, Trees and Lineage**, and one icon, `chevron` (rotates for open, up and down; transform only). New classes in `xlr8flo.css`: `.field .inp .toolbar .pager .notice .row.group .row.total button.sort .chev .tree-btn .tree-name .meter .lineage .file-ico .hide-md` and the `cols-*` grids. Tokens only.
 
+## 6b. Requisition Create (decided 9 Oct 2026, **not started**)
+
+Screens: 1) requisition create and edit (header, item lines, service lines, catalogue suggestions, attachment panel using the project detail scan states), 2) submission validation summary, 3) requisition list, 4) requisition detail (linked records as a list; the graph is a gap, E09-S09). Return, amend and resubmit with a diff (E09-S08) waits for the Approval Inbox page.
+
+33. **A requisition that exceeds the funding available blocks submit** (operator, 9 Oct 2026). The validation summary names the shortfall and shows "available after this requisition". It never offers a submit-anyway path. Build after the access screens.
+
+## 6c. Common Screens (in progress; sign in first because the coding agents depend on it)
+
+Page `Common Screens`. **Built:** sign in with its states (wrong password, server unreachable, signing in, session ended, field errors), two-step verification (challenge, invalid code, enrolment, recovery codes), sign up (form, errors), verify-your-email, and **invitation acceptance** (form, field errors, server unreachable, checking, expired, unavailable, accepted, phone). One board family (`SignIn*`), driven by a `view` prop. Page specs for the coding agents: `design-system/pages/sign-in.md`, `sign-up.md`, `invitation.md`. Story requests and the paste-ready prompt for the invitation story: `STORY-NOTES.md`. **Planned, in this order:**
+
+1. Password reset: request (the same message whether or not the address exists), set a new password, expired link.
+2. Recovery-code entry (the "use a recovery code" link), email verified and verification link expired.
+3. Logout and session expired (as a screen, not only the sign-in notice).
+4. 403, 404 and 500 with a correlation id and a copy button; tenant-foreign records always show 404, never 403.
+5. Suspended tenant notice (read-only grace period) and demo-tenant banner.
+6. Empty and error patterns as a reference board, then the role-based onboarding tour.
+7. ~~Invitation acceptance~~ designed 9 Oct 2026 (see 38 to 40); still needs a roadmap story.
+
+Decisions:
+34. Sign in and sign up share one card: **two panels side by side at the centre** (product promise left, form right), stacked below 768 with the promise shrunk to a brand strip. The card is opaque and above the scene, so the backdrop never sits behind text.
+35. **Backdrop: a quiet outline scene of a capital project** (tower crane, building going up floor by floor, excavator, skyline) in tokens at low opacity, masked to fade upward. The crane stands at the left edge and the building at the right so the card does not hide them. Motion follows the motion skill's rules for this surface: CSS only (the canvas has no library), transform and opacity only, loops of 7 to 22 seconds, no spring or overshoot (this is a ledger product), and the un-animated state is the finished picture, so reduced motion stops everything and loses nothing. Tests read the real animations and fail on a layout property or a loop under 6 seconds (planted violations included).
+36. Failure behaviour from E05-S10 and E05-S11 kept exactly: a wrong password, an unknown email, a locked account **and a throttled attempt** all show one uniform message (D-M1-27, D-M1-29: the throttle must reveal nothing about the account); the email is kept, the password cleared, focus moves to the error summary. No distinct "too many attempts" screen exists, by design. A network error says nothing was submitted and the email is kept. (An earlier draft of this page had a distinct throttled state; it was removed on 9 Oct 2026 after re-reading E05-S11.)
+38. **Passwords follow the requirements, not convention** (AUTH-003, AUTH-004): minimum 15 characters, paste allowed, no composition rules, no scolding strength meter, common and breached values refused. Sign-up and invitation both say so in the hint.
+39. **No account enumeration anywhere** (AUTH-007): the verify-your-email copy is conditional ("If this address can create an account...") and identical for a new and an existing address; every unusable invitation link renders one message, `Invitation Unavailable`, with no organization shown. Expiry is the only distinct case.
+40. **Invitation: the organization, role and scope come from the invitation record, not the URL** (tenancy rule). The left panel shows who invited you, the role, the access and the expiry; the email is read-only. Lifetime 7 days, shown in the copy. Four open questions are for the operator (STORY-NOTES.md, section 1): one person in two organizations, who may invite, resend and withdraw, forced MFA for privileged roles.
+37. Inputs on access screens are 44px; password has a Show/Hide toggle (`aria-pressed`); the code field is one input with `autocomplete="one-time-code"`; the QR code has the key as text for people who cannot scan it.
+
+### Registered exceptions from the access screens (also in `design-system/pages/sign-in.md`)
+
+| Id | Where | Exception |
+|---|---|---|
+| E-2 | Access backdrop | The 300ms transition cap does not apply to the ambient loops (7 to 22s). They are not transitions; transform and opacity only, loops of at least 6s, reduced motion shows the finished picture, enforced by `auth.spec.mjs`. |
+| E-3 | Access screens | Inputs and buttons are 44px at every width. |
+| E-4 | Access screens | No app shell (sidebar, top bar). |
+
 ## 7. Findings to feed back into MASTER.md (not yet amended)
 
 - `--fg-muted` clears 4.5:1 on canvas and surface but measures 4.31:1 on `--sunken`; the canvas steps muted text up to `--fg-secondary` on sunken grounds (hover and selected rows).
@@ -68,7 +103,7 @@ Screens (all in the inventory, none a gap): project list, project dashboard, led
 
 ## 8. Open
 
-- Remaining pages: Requisition Create, Approval Inbox, Budget Transfer, Comparison Dashboard, Common Screens (see `HANDOFF.md`).
+- Remaining pages: Requisition Create (screens decided, 6b), Approval Inbox, Budget Transfer, Comparison Dashboard, and the rest of Common Screens (6c).
 - Project Dashboard page: only signature moment 1 (KPI count-up) is used. The budget overview screen waits for a story.
 - Home needs more cards and KPIs as screens are added (then retire E-1).
 - Sample data only; amounts are internally consistent but invented.

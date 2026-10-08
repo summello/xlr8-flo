@@ -31,7 +31,7 @@ test.describe('the page on the canvas', () => {
   test('Common Screens holds the access boards and nothing overlaps', () => {
     const mine = Object.entries(canvas.boards).filter(([, b]) => b.page === 'common-screens');
     expect(canvas.pages.find((p) => p.id === 'common-screens').name).toBe('Common Screens');
-    expect(mine.length).toBe(18);
+    expect(mine.length).toBe(25);
     for (const w of [1920, 1024, 768, 375]) expect(canvas.boards[`SignInW${w}.dc.html`].w).toBe(w);
   });
 });
@@ -70,11 +70,9 @@ test.describe('sign in', () => {
     await expect(sum).toBeFocused();
     await expect(page.getByLabel('Email')).toHaveValue('dev.patel@northwind.example');
     await expect(page.getByLabel('Password')).toHaveValue('');
-    await open(page, '/SignInThrottled.dc.html');                                              // a locked account reads exactly like a wrong password
-    await expect(page.getByRole('alert')).toContainText('paused for 5 minutes');
-    await expect(page.getByLabel('Email')).toHaveValue('dev.patel@northwind.example');
-    await open(page, '/SignInError.dc.html');
+    await open(page, '/SignInError.dc.html');                                                  // a locked or throttled account reads exactly like a wrong password (E05-S10, E05-S11)
     await expect(page.getByRole('alert')).toContainText(UNIFORM);
+    await expect(page.getByRole('alert')).not.toContainText(/too many|attempts|locked out|wait/i);
   });
 
   test('success path: busy, then the code step, a bad code keeps input, the right one signs in', async ({ page }) => {
@@ -173,6 +171,57 @@ test.describe('sign up', () => {
   });
 });
 
+test.describe('invitation acceptance', () => {
+  test('the invitation sets the organization and role, the email is read-only, nothing is taken from the URL', async ({ page }) => {
+    await open(page, '/SignInInvite.dc.html');
+    const aside = page.locator('.auth-aside');
+    await expect(aside).toContainText('Join Northwind Capital on XLR8 FLO');
+    await expect(aside).toContainText('Project Manager');
+    await expect(aside).toContainText('Manufacturing business unit');
+    await expect(aside).toContainText('not from the link you opened');
+    await expect(page.getByLabel('Email, from the invitation')).toHaveAttribute('readonly', '');
+    await expect(page.getByLabel('Email, from the invitation')).toHaveAttribute('aria-readonly', 'true');
+  });
+
+  test('errors list each problem with a link, input is kept, a weak password is refused', async ({ page }) => {
+    await open(page, '/SignInInvite.dc.html');
+    await page.getByLabel('Full name').fill('Marcus Lee');
+    await page.getByLabel('Password').fill('password1234567');
+    await page.getByLabel('I agree to the terms of service and privacy notice.').check();
+    await page.getByRole('button', { name: 'Accept and create account' }).click();
+    const sum = page.getByRole('alert');
+    await expect(sum).toContainText('Fix 1 things to continue');
+    await expect(page.locator('#iv-pw-e')).toContainText('too common or has appeared in a breach');
+    await expect(sum).toBeFocused();
+    await expect(page.getByLabel('Full name')).toHaveValue('Marcus Lee');
+    await page.getByLabel('Password').fill('a long passphrase here');
+    await page.getByRole('button', { name: 'Accept and create account' }).click();
+    await expect(page.getByRole('heading', { name: 'Welcome to Northwind Capital' })).toBeVisible();
+    await page.getByRole('button', { name: 'Set up two-step verification' }).click();
+    await expect(page.getByRole('heading', { name: 'Secure Your Account' })).toBeVisible();
+  });
+
+  test('every state: checking, expired, unavailable (one message for used, withdrawn and invalid), server unreachable', async ({ page }) => {
+    await open(page, '/SignInInviteChecking.dc.html');
+    await expect(page.getByRole('status', { name: 'Checking your invitation' })).toBeVisible();
+    expect(await page.locator('.skel').count()).toBeGreaterThanOrEqual(4);
+    await open(page, '/SignInInviteExpired.dc.html');
+    await expect(page.getByRole('heading', { name: 'Invitation Expired' })).toBeVisible();
+    await expect(page.locator('.auth-main')).toContainText('No account was created');
+    await open(page, '/SignInInviteGone.dc.html');
+    await expect(page.locator('.auth-main')).toContainText('already been used, was withdrawn, or is not valid');
+    await expect(page.locator('.auth-aside')).not.toContainText('Northwind');                   // an unusable link shows nothing about the organization
+    await open(page, '/SignInInviteNetwork.dc.html');
+    await expect(page.getByRole('alert')).toContainText('What you typed is kept');
+  });
+
+  test('phone: stacked, 44px controls, no sideways scroll', async ({ page }) => {
+    await open(page, '/SignInInviteW375.dc.html', 375);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+    expect((await page.getByRole('button', { name: 'Accept and create account' }).boundingBox()).height).toBeGreaterThanOrEqual(43.5);
+  });
+});
+
 test.describe('the backdrop obeys the motion rules', () => {
   test('transform and opacity only, loops no faster than 6s, hidden from assistive tech and the pointer', async ({ page }) => {
     await open(page);
@@ -212,7 +261,7 @@ test.describe('the backdrop obeys the motion rules', () => {
 
 for (const theme of ['light', 'dark']) {
   test.describe(`axe, ${theme}`, () => {
-    const files = ['', 'W1920', 'W1024', 'W768', 'W375', 'Error', 'Throttled', 'Network', 'Busy', 'Ended', 'Fields', 'Mfa', 'MfaInvalid', 'Enrol', 'Recovery', 'Signup', 'SignupErrors', 'Verify'];
+    const files = ['', 'W1920', 'W1024', 'W768', 'W375', 'Error', 'Network', 'Busy', 'Ended', 'Fields', 'Mfa', 'MfaInvalid', 'Enrol', 'Recovery', 'Signup', 'SignupErrors', 'Verify', 'Invite', 'InviteErrors', 'InviteNetwork', 'InviteChecking', 'InviteExpired', 'InviteGone', 'InviteDone', 'InviteW375'];
     for (const f of files) {
       test(f || 'sign in', async ({ page }) => {
         const w = /W(\d+)/.exec(f);

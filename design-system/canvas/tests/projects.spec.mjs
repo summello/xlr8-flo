@@ -14,6 +14,7 @@ async function open(page, url, w = 1440) {
   await page.goto(url);
   await page.locator('.page').waitFor();
   await expect(page.locator('.xf').first()).not.toHaveClass(/intro/, { timeout: 8000 });
+  await page.waitForTimeout(350);                  // the page's own fade-in must finish before colour is measured
 }
 async function axe(page) {
   if (!existsSync(AXE)) throw new Error(`axe-core not found at ${AXE}; set AXE_CORE`);

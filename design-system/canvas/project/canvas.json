@@ -600,22 +600,12 @@
       "page": "common-screens",
       "is_interactive": true
     },
-    "SignInThrottled.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Sign-In, Too Many Attempts",
-      "w": 1440,
-      "x": 1520,
-      "y": 1240,
-      "page": "common-screens",
-      "is_interactive": true
-    },
     "SignInNetwork.dc.html": {
       "expand": "fill",
       "h": 900,
       "title": "Sign-In, Server Unreachable",
       "w": 1440,
-      "x": 3040,
+      "x": 1520,
       "y": 1240,
       "page": "common-screens",
       "is_interactive": true
@@ -625,7 +615,7 @@
       "h": 900,
       "title": "Sign-In, Signing In",
       "w": 1440,
-      "x": 4560,
+      "x": 3040,
       "y": 1240,
       "page": "common-screens",
       "is_interactive": true
@@ -635,7 +625,7 @@
       "h": 900,
       "title": "Sign-In, Session Ended",
       "w": 1440,
-      "x": 6080,
+      "x": 4560,
       "y": 1240,
       "page": "common-screens",
       "is_interactive": true
@@ -645,7 +635,7 @@
       "h": 900,
       "title": "Sign-In, Field Errors",
       "w": 1440,
-      "x": 7600,
+      "x": 6080,
       "y": 1240,
       "page": "common-screens",
       "is_interactive": true
@@ -717,6 +707,86 @@
       "w": 1440,
       "x": 3040,
       "y": 3720,
+      "page": "common-screens",
+      "is_interactive": true
+    },
+    "SignInInvite.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Invitation, Form",
+      "w": 1440,
+      "x": 0,
+      "y": 4960,
+      "page": "common-screens",
+      "is_interactive": true
+    },
+    "SignInInviteErrors.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Invitation, Field Errors",
+      "w": 1440,
+      "x": 1520,
+      "y": 4960,
+      "page": "common-screens",
+      "is_interactive": true
+    },
+    "SignInInviteNetwork.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Invitation, Server Unreachable",
+      "w": 1440,
+      "x": 3040,
+      "y": 4960,
+      "page": "common-screens",
+      "is_interactive": true
+    },
+    "SignInInviteChecking.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Invitation, Checking",
+      "w": 1440,
+      "x": 4560,
+      "y": 4960,
+      "page": "common-screens",
+      "is_interactive": true
+    },
+    "SignInInviteExpired.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Invitation, Expired",
+      "w": 1440,
+      "x": 6080,
+      "y": 4960,
+      "page": "common-screens",
+      "is_interactive": true
+    },
+    "SignInInviteGone.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Invitation, Unavailable",
+      "w": 1440,
+      "x": 7600,
+      "y": 4960,
+      "page": "common-screens",
+      "is_interactive": true
+    },
+    "SignInInviteDone.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Invitation, Accepted",
+      "w": 1440,
+      "x": 9120,
+      "y": 4960,
+      "page": "common-screens",
+      "is_interactive": true
+    },
+    "SignInInviteW375.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Invitation, 375",
+      "w": 375,
+      "x": 10640,
+      "y": 4960,
       "page": "common-screens",
       "is_interactive": true
     }
@@ -874,6 +944,15 @@
       "x": 0,
       "y": 3460,
       "page": "common-screens"
+    },
+    "c5": {
+      "kind": "title1",
+      "maxW": 8000,
+      "text": "Invitation Acceptance: Form, States and Phone",
+      "w": 240,
+      "x": 0,
+      "y": 4700,
+      "page": "common-screens"
     }
   },
   "order": [
@@ -935,7 +1014,6 @@
     "SignInW768.dc.html",
     "SignInW375.dc.html",
     "SignInError.dc.html",
-    "SignInThrottled.dc.html",
     "SignInNetwork.dc.html",
     "SignInBusy.dc.html",
     "SignInEnded.dc.html",
@@ -947,6 +1025,14 @@
     "SignInSignup.dc.html",
     "SignInSignupErrors.dc.html",
     "SignInVerify.dc.html",
+    "SignInInvite.dc.html",
+    "SignInInviteErrors.dc.html",
+    "SignInInviteNetwork.dc.html",
+    "SignInInviteChecking.dc.html",
+    "SignInInviteExpired.dc.html",
+    "SignInInviteGone.dc.html",
+    "SignInInviteDone.dc.html",
+    "SignInInviteW375.dc.html",
     "DesignSystem.dc.html",
     "ThemePanel.dc.html"
   ],

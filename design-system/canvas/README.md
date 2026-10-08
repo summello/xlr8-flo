@@ -3,7 +3,7 @@
 Source of the Claude Design canvas `xlr8flo-design-system` (https://claude.ai/artifact/95sB8BhSTJnNetSkmmNCNn, private).
 
 - Start with `DECISIONS.md` (everything decided) and `HANDOFF.md` (the plan for the remaining screens).
-- Three canvas pages: Playground (Home, Executive Dashboard, width variants), Project Dashboard (project list, dashboard, ledger entries, detail, with widths and states) and Design System (the sheet and the theme panel).
+- Four canvas pages (Common Screens holds the access screens, `SignIn*`): Playground (Home, Executive Dashboard, width variants), Project Dashboard (project list, dashboard, ledger entries, detail, with widths and states) and Design System (the sheet and the theme panel).
 - Files under `project/` mirror the published canvas paths.
 - `project/xlr8flo.css` transcribes the tokens in `../MASTER.md` and adds the motion, state and overlay classes. It does not amend MASTER.md; MASTER.md stays the source of truth.
 - Boards: `ProjectList`, `ProjectDashboard`, `ProjectLedger`, `ProjectDetail` (variants `List*`, `Dash*`, `Ledger*`, `Detail*`), `Main` (Home), `ExecutiveDashboard`, `DesignSystem` (+ `ThemePanel`), and width variants `HomeW*`, `ExecW*`, `HomeCollapsed`.
@@ -17,6 +17,9 @@ The Executive Dashboard is the reference for how a dashboard page lays out (tier
 | Id | Page | Exception | Revisit |
 |---|---|---|---|
 | E-1 | Home | Keeps the 8/4 two-row layout from 1100 up, no 3-up row at 1600, no KPI row. Four cards today. Registered 8 Oct 2026. | When Home gains cards or KPIs; then follow the dashboard rule. `layout.spec.mjs` pins the current state. |
+| E-2 | Access backdrop | Ambient scene loops (7 to 22s) are exempt from the 300ms transition cap: transform and opacity only, loops of at least 6s, reduced motion shows the finished picture. | Never; enforced by `auth.spec.mjs`. |
+| E-3 | Access screens | 44px inputs and buttons at every width. | If a dense access variant is ever needed. |
+| E-4 | Access screens | No app shell. | Never (pre-authentication). |
 
 Conventions: headings are Title Case (`tests/lint.mjs`, `copy.spec.mjs`); amounts are whole figure first with lighter, smaller decimals and currency; KPI cards lift 3px with a spring and outline in their series colour; every other card takes a 1px outline only, in the next series colour by position (assigned in script, so new cards need no colour decision).
 
@@ -39,4 +42,5 @@ DC_RUNTIME=<dc-runtime.js> AXE_CORE=<axe.min.js> npx playwright test
 - `copy.spec.mjs`: title case on every rendered heading and column head; the rules and exception E-1 are on the sheet.
 - `motion.spec.mjs`: duration budget per element, reduced motion, intro count-up, tabs, tooltips.
 - `projects.spec.mjs`: the Project Dashboard page: happy and keyboard paths, every state, figures that must agree across screens, sheet focus trap, phone targets, axe in light and dark on 26 boards, planted violations.
+- `auth.spec.mjs`: the access screens: sign in, two-step verification, sign up, the backdrop's motion rules (with planted violations), reduced motion, axe in light and dark on 18 boards.
 - `a11y.spec.mjs`: axe in light and dark across the default, collapsed, popover, command menu, sheet, drawer and tab states. Includes a planted violation to prove the harness fails.
