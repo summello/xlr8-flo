@@ -135,6 +135,10 @@ also confirms the four E01-S05 failures were the review packet's fault, not the 
 instruction to space them out so the repository does not read as bot-driven. Outside M0 the
 standing rule holds: push, never merge.
 
+## Latest handoff
+
+`docs/handoff-2026-10-09.md` (9 Oct 2026): where M1 stands, the E05-S05 dispatch steps, the packet pre-flight technique, and what is open for the operator. Read it before dispatching any story.
+
 ## Open questions for the human
 
 _(none — add here rather than guessing)_
