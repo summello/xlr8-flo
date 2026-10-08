@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Workflow Builder, Problems in the Outline</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="xlr8flo.css">
+</head>
+<body>
+<x-dc>
+<helmet><style>body{margin:0}</style></helmet>
+<dc-import name="WorkflowBuilder" theme="{{theme}}" collapsed="no" view="problems" mode="outline" hint-size="100%,1082px"></dc-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"dark","options":["light","dark"]},"$preview":{"width":1440,"height":1082}}'>
+class Component extends DCLogic {
+  renderVals() { return { theme: this.props.theme ?? 'light' }; }
+}
+</script>
+</body>
+</html>

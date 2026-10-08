@@ -1149,6 +1149,796 @@
       "y": 12526,
       "page": "requisition-create",
       "is_interactive": true
+    },
+    "ApprovalInbox.dc.html": {
+      "expand": "fill",
+      "h": 1010,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Inbox",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "ApprW1920.dc.html": {
+      "expand": "fill",
+      "h": 1010,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Inbox, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 0
+    },
+    "ApprW1024.dc.html": {
+      "expand": "fill",
+      "h": 1010,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Inbox, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 0
+    },
+    "ApprW768.dc.html": {
+      "expand": "fill",
+      "h": 1097,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Inbox, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 0
+    },
+    "ApprW375.dc.html": {
+      "expand": "fill",
+      "h": 2687,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Inbox, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 0
+    },
+    "ApprLoading.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Inbox, Loading",
+      "w": 1440,
+      "x": 0,
+      "y": 2947
+    },
+    "ApprEmpty.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Inbox, Empty",
+      "w": 1440,
+      "x": 1520,
+      "y": 2947
+    },
+    "ApprError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Inbox, Error",
+      "w": 1440,
+      "x": 3040,
+      "y": 2947
+    },
+    "ApprPartial.dc.html": {
+      "expand": "fill",
+      "h": 1053,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Inbox, Partial, Due Dates Delayed",
+      "w": 1440,
+      "x": 4560,
+      "y": 2947
+    },
+    "ApprOverdue.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Inbox, Overdue Tab",
+      "w": 1440,
+      "x": 6080,
+      "y": 2947
+    },
+    "ApprCompleted.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Inbox, Completed Tab",
+      "w": 1440,
+      "x": 7600,
+      "y": 2947
+    },
+    "ApprDelegated.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Inbox, Delegated Tab, Out of Office",
+      "w": 1440,
+      "x": 9120,
+      "y": 2947
+    },
+    "ApprSheet.dc.html": {
+      "expand": "fill",
+      "h": 1010,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Your Turn",
+      "w": 1440,
+      "x": 0,
+      "y": 4260
+    },
+    "ApprSheetReason.dc.html": {
+      "expand": "fill",
+      "h": 1010,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Reason Missing",
+      "w": 1440,
+      "x": 1520,
+      "y": 4260
+    },
+    "ApprSheetStale.dc.html": {
+      "expand": "fill",
+      "h": 1010,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Changed While Open",
+      "w": 1440,
+      "x": 3040,
+      "y": 4260
+    },
+    "ApprSheetStaleErr.dc.html": {
+      "expand": "fill",
+      "h": 1010,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Stale Version Refused",
+      "w": 1440,
+      "x": 4560,
+      "y": 4260
+    },
+    "ApprSheetChanges.dc.html": {
+      "expand": "fill",
+      "h": 1010,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Resubmitted With Diff",
+      "w": 1440,
+      "x": 6080,
+      "y": 4260
+    },
+    "ApprSheetDecided.dc.html": {
+      "expand": "fill",
+      "h": 1010,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Already Decided",
+      "w": 1440,
+      "x": 7600,
+      "y": 4260
+    },
+    "ApprSheetPartial.dc.html": {
+      "expand": "fill",
+      "h": 1053,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Routing Unavailable",
+      "w": 1440,
+      "x": 9120,
+      "y": 4260
+    },
+    "ApprSheetDone.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Your Past Decision",
+      "w": 1440,
+      "x": 10640,
+      "y": 4260
+    },
+    "ApprSheetCover.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Covering for Someone",
+      "w": 1440,
+      "x": 12160,
+      "y": 4260
+    },
+    "ApprSheetSod.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Your Own Request",
+      "w": 1440,
+      "x": 13680,
+      "y": 4260
+    },
+    "ApprSheet375.dc.html": {
+      "expand": "fill",
+      "h": 2687,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, 375",
+      "w": 375,
+      "x": 15200,
+      "y": 4260
+    },
+    "ReqDetailReturned.dc.html": {
+      "expand": "fill",
+      "h": 1496,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Requisition Detail, Returned for Changes",
+      "w": 1440,
+      "x": 0,
+      "y": 7207
+    },
+    "ReqDetailWithdrawn.dc.html": {
+      "expand": "fill",
+      "h": 1442,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Requisition Detail, Withdrawn",
+      "w": 1440,
+      "x": 1520,
+      "y": 7207
+    },
+    "WdDialog.dc.html": {
+      "expand": "fill",
+      "h": 1390,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Withdraw Confirmation",
+      "w": 1440,
+      "x": 3040,
+      "y": 7207
+    },
+    "WdBusy.dc.html": {
+      "expand": "fill",
+      "h": 1390,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Withdraw Confirmation, Withdrawing",
+      "w": 1440,
+      "x": 4560,
+      "y": 7207
+    },
+    "WdError.dc.html": {
+      "expand": "fill",
+      "h": 1390,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Withdraw Confirmation, Failed",
+      "w": 1440,
+      "x": 6080,
+      "y": 7207
+    },
+    "WdDecided.dc.html": {
+      "expand": "fill",
+      "h": 1390,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Withdraw Confirmation, Already Approved",
+      "w": 1440,
+      "x": 7600,
+      "y": 7207
+    },
+    "WdDialog375.dc.html": {
+      "expand": "fill",
+      "h": 2864,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Withdraw Confirmation, 375",
+      "w": 375,
+      "x": 9120,
+      "y": 7207
+    },
+    "RequisitionResubmit.dc.html": {
+      "expand": "fill",
+      "h": 1240,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Resubmit, Material Change",
+      "w": 1440,
+      "x": 0,
+      "y": 10331
+    },
+    "ResubW1920.dc.html": {
+      "expand": "fill",
+      "h": 1198,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Resubmit, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 10331
+    },
+    "ResubW1024.dc.html": {
+      "expand": "fill",
+      "h": 1814,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Resubmit, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 10331
+    },
+    "ResubW768.dc.html": {
+      "expand": "fill",
+      "h": 1808,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Resubmit, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 10331
+    },
+    "ResubW375.dc.html": {
+      "expand": "fill",
+      "h": 2318,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Resubmit, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 10331
+    },
+    "ResubMinor.dc.html": {
+      "expand": "fill",
+      "h": 1053,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Resubmit, Not a Material Change",
+      "w": 1440,
+      "x": 0,
+      "y": 12909
+    },
+    "ResubNone.dc.html": {
+      "expand": "fill",
+      "h": 1027,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Resubmit, No Changes",
+      "w": 1440,
+      "x": 1520,
+      "y": 12909
+    },
+    "ResubFunds.dc.html": {
+      "expand": "fill",
+      "h": 1097,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Resubmit, Funds Short",
+      "w": 1440,
+      "x": 3040,
+      "y": 12909
+    },
+    "ResubBusy.dc.html": {
+      "expand": "fill",
+      "h": 1240,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Resubmit, Sending",
+      "w": 1440,
+      "x": 4560,
+      "y": 12909
+    },
+    "ResubDone.dc.html": {
+      "expand": "fill",
+      "h": 1330,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Resubmit, Sent",
+      "w": 1440,
+      "x": 6080,
+      "y": 12909
+    },
+    "ResubLoading.dc.html": {
+      "expand": "fill",
+      "h": 1031,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Resubmit, Loading",
+      "w": 1440,
+      "x": 7600,
+      "y": 12909
+    },
+    "ResubError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Resubmit, Error",
+      "w": 1440,
+      "x": 9120,
+      "y": 12909
+    },
+    "ApprovalDelegation.dc.html": {
+      "expand": "fill",
+      "h": 1175,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Availability",
+      "w": 1440,
+      "x": 0,
+      "y": 14499
+    },
+    "DelegW1920.dc.html": {
+      "expand": "fill",
+      "h": 1159,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Availability, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 14499
+    },
+    "DelegW1024.dc.html": {
+      "expand": "fill",
+      "h": 1675,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Availability, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 14499
+    },
+    "DelegW768.dc.html": {
+      "expand": "fill",
+      "h": 1767,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Availability, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 14499
+    },
+    "DelegW375.dc.html": {
+      "expand": "fill",
+      "h": 2406,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Availability, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 14499
+    },
+    "DelegLoading.dc.html": {
+      "expand": "fill",
+      "h": 997,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Availability, Loading",
+      "w": 1440,
+      "x": 0,
+      "y": 17165
+    },
+    "DelegEmpty.dc.html": {
+      "expand": "fill",
+      "h": 1073,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Availability, No Delegations",
+      "w": 1440,
+      "x": 1520,
+      "y": 17165
+    },
+    "DelegError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Availability, Error",
+      "w": 1440,
+      "x": 3040,
+      "y": 17165
+    },
+    "DelegErrors.dc.html": {
+      "expand": "fill",
+      "h": 1325,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Availability, Form Errors",
+      "w": 1440,
+      "x": 4560,
+      "y": 17165
+    },
+    "DelegRevoke.dc.html": {
+      "expand": "fill",
+      "h": 1175,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Availability, Revoke Confirmation",
+      "w": 1440,
+      "x": 6080,
+      "y": 17165
+    },
+    "DelegOrg.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Availability, Organization Tab",
+      "w": 1440,
+      "x": 7600,
+      "y": 17165
+    },
+    "ApprovalWorkflows.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Approval Workflows",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "WfListW1920.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Approval Workflows, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 0
+    },
+    "WfListW1024.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Approval Workflows, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 0
+    },
+    "WfListW768.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Approval Workflows, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 0
+    },
+    "WfListW375.dc.html": {
+      "expand": "fill",
+      "h": 1933,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Approval Workflows, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 0
+    },
+    "WfListLoading.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflows, Loading",
+      "w": 1440,
+      "x": 0,
+      "y": 2193
+    },
+    "WfListEmpty.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflows, Empty",
+      "w": 1440,
+      "x": 1520,
+      "y": 2193
+    },
+    "WfListError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflows, Error",
+      "w": 1440,
+      "x": 3040,
+      "y": 2193
+    },
+    "WfListPartial.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflows, Partial, Counts Delayed",
+      "w": 1440,
+      "x": 4560,
+      "y": 2193
+    },
+    "WfListVersions.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflows, Version History",
+      "w": 1440,
+      "x": 6080,
+      "y": 2193
+    },
+    "WorkflowBuilder.dc.html": {
+      "expand": "fill",
+      "h": 1365,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, Canvas",
+      "w": 1440,
+      "x": 0,
+      "y": 3353
+    },
+    "BuildW1920.dc.html": {
+      "expand": "fill",
+      "h": 1365,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 3353
+    },
+    "BuildW1024.dc.html": {
+      "expand": "fill",
+      "h": 2051,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 3353
+    },
+    "BuildW768.dc.html": {
+      "expand": "fill",
+      "h": 2029,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, 768, Outline",
+      "w": 768,
+      "x": 4624,
+      "y": 3353
+    },
+    "BuildW375.dc.html": {
+      "expand": "fill",
+      "h": 3326,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, 375, Outline",
+      "w": 375,
+      "x": 5472,
+      "y": 3353
+    },
+    "BuildOutline.dc.html": {
+      "expand": "fill",
+      "h": 1365,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, Outline (Non-Drag)",
+      "w": 1440,
+      "x": 0,
+      "y": 6939
+    },
+    "BuildCond.dc.html": {
+      "expand": "fill",
+      "h": 1136,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, Condition Selected",
+      "w": 1440,
+      "x": 1520,
+      "y": 6939
+    },
+    "BuildGroup.dc.html": {
+      "expand": "fill",
+      "h": 1467,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, Quorum Group Selected",
+      "w": 1440,
+      "x": 3040,
+      "y": 6939
+    },
+    "BuildProblems.dc.html": {
+      "expand": "fill",
+      "h": 1136,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, Problems Block Publishing",
+      "w": 1440,
+      "x": 4560,
+      "y": 6939
+    },
+    "BuildProblemsOutline.dc.html": {
+      "expand": "fill",
+      "h": 1082,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, Problems in the Outline",
+      "w": 1440,
+      "x": 6080,
+      "y": 6939
+    },
+    "BuildPreview.dc.html": {
+      "expand": "fill",
+      "h": 1365,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, Route Preview",
+      "w": 1440,
+      "x": 0,
+      "y": 8666
+    },
+    "BuildPublish.dc.html": {
+      "expand": "fill",
+      "h": 1365,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, Publish",
+      "w": 1440,
+      "x": 1520,
+      "y": 8666
+    },
+    "BuildLoading.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, Loading",
+      "w": 1440,
+      "x": 3040,
+      "y": 8666
+    },
+    "BuildEmpty.dc.html": {
+      "expand": "fill",
+      "h": 1048,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, Empty",
+      "w": 1440,
+      "x": 4560,
+      "y": 8666
+    },
+    "BuildError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, Error",
+      "w": 1440,
+      "x": 6080,
+      "y": 8666
+    },
+    "BuildPartial.dc.html": {
+      "expand": "fill",
+      "h": 1241,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, Partial, Approvers Unavailable",
+      "w": 1440,
+      "x": 7600,
+      "y": 8666
     }
   },
   "createdOnFiles": {
@@ -1367,6 +2157,123 @@
       "x": 0,
       "y": 12266,
       "page": "requisition-create"
+    },
+    "ap1": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-inbox",
+      "text": "Approval Inbox: Widths",
+      "w": 240,
+      "x": 0,
+      "y": -120
+    },
+    "ap2": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-inbox",
+      "text": "Approval Inbox: States and Tabs",
+      "w": 240,
+      "x": 0,
+      "y": 2827
+    },
+    "ap3": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-inbox",
+      "text": "Decision Panel: Routing, Blocked Decisions and Errors",
+      "w": 240,
+      "x": 0,
+      "y": 4140
+    },
+    "ap4": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-inbox",
+      "text": "Withdraw Confirmation and Returned Requisition",
+      "w": 240,
+      "x": 0,
+      "y": 7087
+    },
+    "ap5": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-inbox",
+      "text": "Return, Amend and Resubmit With a Diff",
+      "w": 240,
+      "x": 0,
+      "y": 10211
+    },
+    "ap6": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-inbox",
+      "text": "Resubmit: Cases and States",
+      "w": 240,
+      "x": 0,
+      "y": 12789
+    },
+    "ap7": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-inbox",
+      "text": "Delegation and Out-of-Office",
+      "w": 240,
+      "x": 0,
+      "y": 14379
+    },
+    "ap8": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-inbox",
+      "text": "Delegation: States",
+      "w": 240,
+      "x": 0,
+      "y": 17045
+    },
+    "ap9": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-builder",
+      "text": "Approval Workflows: List",
+      "w": 240,
+      "x": 0,
+      "y": -120
+    },
+    "ap10": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-builder",
+      "text": "Approval Workflows: States and Version History",
+      "w": 240,
+      "x": 0,
+      "y": 2073
+    },
+    "ap11": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-builder",
+      "text": "Workflow Builder: Widths",
+      "w": 240,
+      "x": 0,
+      "y": 3233
+    },
+    "ap12": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-builder",
+      "text": "Workflow Builder: Non-Drag Outline, Inspector Views, Problems",
+      "w": 240,
+      "x": 0,
+      "y": 6819
+    },
+    "ap13": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-builder",
+      "text": "Workflow Builder: Preview, Publish and States",
+      "w": 240,
+      "x": 0,
+      "y": 8546
     }
   },
   "order": [
@@ -1484,7 +2391,86 @@
     "SignInInviteJoin.dc.html",
     "SignInInviteW375.dc.html",
     "DesignSystem.dc.html",
-    "ThemePanel.dc.html"
+    "ThemePanel.dc.html",
+    "ApprovalInbox.dc.html",
+    "ApprW1920.dc.html",
+    "ApprW1024.dc.html",
+    "ApprW768.dc.html",
+    "ApprW375.dc.html",
+    "ApprLoading.dc.html",
+    "ApprEmpty.dc.html",
+    "ApprError.dc.html",
+    "ApprPartial.dc.html",
+    "ApprOverdue.dc.html",
+    "ApprCompleted.dc.html",
+    "ApprDelegated.dc.html",
+    "ApprSheet.dc.html",
+    "ApprSheetReason.dc.html",
+    "ApprSheetStale.dc.html",
+    "ApprSheetStaleErr.dc.html",
+    "ApprSheetChanges.dc.html",
+    "ApprSheetDecided.dc.html",
+    "ApprSheetPartial.dc.html",
+    "ApprSheetDone.dc.html",
+    "ApprSheetCover.dc.html",
+    "ApprSheetSod.dc.html",
+    "ApprSheet375.dc.html",
+    "ReqDetailReturned.dc.html",
+    "ReqDetailWithdrawn.dc.html",
+    "WdDialog.dc.html",
+    "WdBusy.dc.html",
+    "WdError.dc.html",
+    "WdDecided.dc.html",
+    "WdDialog375.dc.html",
+    "RequisitionResubmit.dc.html",
+    "ResubW1920.dc.html",
+    "ResubW1024.dc.html",
+    "ResubW768.dc.html",
+    "ResubW375.dc.html",
+    "ResubMinor.dc.html",
+    "ResubNone.dc.html",
+    "ResubFunds.dc.html",
+    "ResubBusy.dc.html",
+    "ResubDone.dc.html",
+    "ResubLoading.dc.html",
+    "ResubError.dc.html",
+    "ApprovalDelegation.dc.html",
+    "DelegW1920.dc.html",
+    "DelegW1024.dc.html",
+    "DelegW768.dc.html",
+    "DelegW375.dc.html",
+    "DelegLoading.dc.html",
+    "DelegEmpty.dc.html",
+    "DelegError.dc.html",
+    "DelegErrors.dc.html",
+    "DelegRevoke.dc.html",
+    "DelegOrg.dc.html",
+    "ApprovalWorkflows.dc.html",
+    "WfListW1920.dc.html",
+    "WfListW1024.dc.html",
+    "WfListW768.dc.html",
+    "WfListW375.dc.html",
+    "WfListLoading.dc.html",
+    "WfListEmpty.dc.html",
+    "WfListError.dc.html",
+    "WfListPartial.dc.html",
+    "WfListVersions.dc.html",
+    "WorkflowBuilder.dc.html",
+    "BuildW1920.dc.html",
+    "BuildW1024.dc.html",
+    "BuildW768.dc.html",
+    "BuildW375.dc.html",
+    "BuildOutline.dc.html",
+    "BuildCond.dc.html",
+    "BuildGroup.dc.html",
+    "BuildProblems.dc.html",
+    "BuildProblemsOutline.dc.html",
+    "BuildPreview.dc.html",
+    "BuildPublish.dc.html",
+    "BuildLoading.dc.html",
+    "BuildEmpty.dc.html",
+    "BuildError.dc.html",
+    "BuildPartial.dc.html"
   ],
   "pages": [
     {
@@ -1502,6 +2488,14 @@
     {
       "id": "common-screens",
       "name": "Common Screens"
+    },
+    {
+      "id": "approval-inbox",
+      "name": "Approval Inbox"
+    },
+    {
+      "id": "approval-builder",
+      "name": "Approval Workflow Builder"
     },
     {
       "id": "design-system",

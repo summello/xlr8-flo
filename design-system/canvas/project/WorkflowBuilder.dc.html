@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Workflow Builder</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="xlr8flo.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;560;600;640&amp;family=JetBrains+Mono:wght@400;460;620&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{rootCls}}" data-theme="{{theme}}" style="min-height: 100vh">
+<div class="{{appCls}}">
+  <nav class="side" aria-label="Primary" onScroll="{{navTipHide}}">
+    <div class="brand"><span class="brand-mark">FL</span><span class="brand-name">XLR8 FLO</span></div>
+    <button class="iconbtn side-toggle toggle-collapse" type="button" onClick="{{toggleCollapse}}" aria-label="{{collapseLabel}}" aria-expanded="{{expanded}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4zM9 5v14"></path></svg></button>
+    <button class="iconbtn side-toggle toggle-nav" type="button" onClick="{{toggleNav}}" aria-label="{{navLabel}}" aria-expanded="{{navOpen}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4zM9 5v14"></path></svg></button>
+    <sc-for list="{{nav}}" as="n" hint-placeholder-count="18">
+      <sc-if value="{{n.isHead}}" hint-placeholder-val="{{ false }}"><div class="nav-h">{{n.label}}</div></sc-if>
+      <sc-if value="{{n.isLink}}" hint-placeholder-val="{{ true }}">
+        <a href="#" class="{{n.cls}}" aria-label="{{n.label}}" data-tip="{{n.label}}" onMouseEnter="{{navTipShow}}" onFocus="{{navTipShow}}" onMouseLeave="{{navTipHide}}" onBlur="{{navTipHide}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{n.d}}"></path></svg><span class="lbl">{{n.label}}</span></a>
+      </sc-if>
+    </sc-for>
+  </nav>
+  <div class="scrim" onClick="{{closeNav}}"></div>
+  <div class="main">
+    <header class="top">
+      <button class="iconbtn menu-btn" type="button" onClick="{{toggleNav}}" aria-label="Open navigation" aria-expanded="{{navOpen}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
+      <div class="crumbs"><span class="crumb-parent"><a href="#" class="secondary">Approval Workflows</a></span><span class="sep" aria-hidden="true">/</span><b>Capital Requisition Approval</b></div>
+      <button class="cmdk" type="button" aria-label="Open command menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4"></path></svg><span class="txt">Search or run a command</span><kbd>⌘K</kbd></button>
+      <button class="iconbtn" type="button" aria-label="Notifications"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 17V11a6 6 0 1112 0v6l2 2H4zM10 21h4"></path></svg></button>
+      <span class="avatar" aria-label="Signed in as Priya Raman">PR</span>
+    </header>
+
+
+    <main class="page">
+      <div class="phead">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <h1 class="t-display">Capital Requisition Approval</h1>
+          <p class="secondary">{{subline}}</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="{{status.cls}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{status.d}}"></path></svg>{{status.text}}</span><span class="pill neutral"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 12a4 4 0 100-8 4 4 0 000 8zM4 21a8 8 0 0116 0"></path></svg>23 in flight on version 3</span></div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+          <button class="btn" type="button" onClick="{{openPreview}}" aria-haspopup="dialog">Route Preview</button>
+          <button class="btn" type="button" onClick="{{check}}">Check</button>
+          <button class="btn primary" type="button" onClick="{{publish}}" aria-haspopup="dialog">Publish</button>
+        </div>
+      </div>
+
+      <sc-if value="{{summary}}" hint-placeholder-val="{{ false }}">
+        <div class="{{summary.cls}}" role="alert" id="wf-sum" tabindex="-1"><div style="display:flex;gap:8px;align-items:flex-start"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:1px"><path d="{{summary.d}}"></path></svg><div><b class="t-dense">{{summary.title}}</b><div class="t-dense">{{summary.text}}</div></div></div></div>
+      </sc-if>
+      <p class="sr-only" role="status" aria-live="polite">{{live}}</p>
+
+      <sc-if value="{{pageError}}" hint-placeholder-val="{{ false }}"><div class="card state" role="alert" style="padding:48px 16px"><span class="pill danger"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>Could not load this workflow</span><div class="t-dense secondary">The request timed out. Nothing was changed, and your draft is safe. Reference 8e03-1f6a.</div><button class="btn" type="button" onClick="{{retry}}">Try again</button></div></sc-if>
+
+      <sc-if value="{{pageOk}}" hint-placeholder-val="{{ true }}">
+      <div class="wf-shell">
+        <section class="card" aria-labelledby="wf-h1" style="min-width:0">
+          <div class="card-h" style="flex-wrap:wrap;gap:8px"><h2 class="t-heading" id="wf-h1" tabindex="-1">Workflow</h2>
+            <div class="tabs" role="tablist" aria-label="Workflow view" style="grid-auto-columns:96px" onKeyDown="{{modeKey}}">
+              <sc-for list="{{modes}}" as="t" hint-placeholder-count="2"><button class="tab" role="tab" id="{{t.id}}" aria-selected="{{t.sel}}" aria-controls="wf-p" tabindex="{{t.ti}}" type="button" onClick="{{t.go}}" style="width:96px">{{t.label}}</button></sc-for>
+              <span class="tab-ind" style="{{modeInd}}"></span>
+            </div>
+          </div>
+          <div class="wf-bar" role="toolbar" aria-label="Edit the workflow">
+            <span style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn" type="button" onClick="{{addCond}}">Add Condition</button>
+              <button class="btn" type="button" onClick="{{addStep}}">Add Approval Step</button>
+              <button class="btn" type="button" onClick="{{delSel}}">Delete Selected</button>
+            </span>
+            <span class="t-caption">{{hint}}</span>
+          </div>
+          <div id="wf-p" role="tabpanel" aria-labelledby="{{modeLab}}">
+            <sc-if value="{{loading}}" hint-placeholder-val="{{ false }}"><div role="status" aria-label="Loading the workflow" class="wf-scroll" style="padding:24px;display:flex;flex-direction:column;gap:16px;align-items:center"><span class="skel" style="height:48px;width:200px"></span><span class="skel" style="height:72px;width:200px"></span><span class="skel" style="height:64px;width:200px"></span><span class="skel" style="height:72px;width:200px"></span><span class="skel" style="height:48px;width:200px"></span></div></sc-if>
+
+            <sc-if value="{{canvasOn}}" hint-placeholder-val="{{ true }}">
+              <div class="wf-scroll" tabindex="0" aria-label="Workflow canvas. Scroll to see all of it."><div class="wf-board" id="wf-board" style="height:{{boardH}}px">
+                <sc-for list="{{edges}}" as="e" hint-placeholder-count="8"><svg class="wf-edges" aria-hidden="true"><path d="{{e.d}}" class="{{e.cls}}"></path><path d="{{e.a}}" class="{{e.cls}}"></path></svg></sc-for>
+                <sc-for list="{{drafts}}" as="e" hint-placeholder-count="0"><svg class="wf-edges" aria-hidden="true"><path d="{{e.d}}" class="draft"></path></svg></sc-for>
+                <sc-for list="{{labels}}" as="l" hint-placeholder-count="4"><span class="wf-elabel" style="{{l.style}}">{{l.text}}</span></sc-for>
+                <sc-for list="{{nodes}}" as="n" hint-placeholder-count="8">
+                  <button class="{{n.cls}}" type="button" id="{{n.domId}}" style="{{n.style}}" aria-pressed="{{n.sel}}" aria-label="{{n.aria}}" onPointerDown="{{n.down}}" onKeyDown="{{n.key}}" onClick="{{n.click}}">
+                    <span class="k"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{n.d}}"></path></svg>{{n.kind}}</span>
+                    <span class="n">{{n.name}}</span>
+                    <sc-if value="{{n.hasSub}}" hint-placeholder-val="{{ true }}"><span class="s">{{n.sub}}</span></sc-if>
+                    <sc-if value="{{n.hasBad}}" hint-placeholder-val="{{ false }}"><span class="bad"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2zM12 10v5M12 18h.01"></path></svg>{{n.bad}}</span></sc-if>
+                  </button>
+                </sc-for>
+                <sc-for list="{{badges}}" as="b" hint-placeholder-count="0"><span class="wf-badge" style="{{b.style}}" aria-hidden="true">{{b.n}}</span></sc-for>
+                <sc-for list="{{ports}}" as="p" hint-placeholder-count="8"><button class="wf-port" type="button" tabindex="-1" aria-hidden="true" style="{{p.style}}" onPointerDown="{{p.down}}"></button></sc-for>
+                <span class="wf-hint t-caption">Drag a node to move it, or drag from its circle to connect. Keyboard: arrows move, Delete removes.</span>
+              </div></div>
+            </sc-if>
+
+            <sc-if value="{{outlineOn}}" hint-placeholder-val="{{ false }}">
+              <div role="table" aria-label="Workflow outline">
+                <div class="row head cols-out stack" role="row"><span role="columnheader">Node</span><span role="columnheader" class="hide-md">Type</span><span role="columnheader" class="hide-md">Summary</span><span role="columnheader">Goes To</span><span role="columnheader" class="r">Actions</span></div>
+                <sc-for list="{{outline}}" as="o" hint-placeholder-count="8">
+                  <div class="{{o.rowCls}}" role="row" style="min-height:64px">
+                    <div role="cell" class="stack-main" style="min-width:0"><span style="font-weight:520">{{o.name}}</span><span class="t-caption" style="display:block">{{o.step}}</span><sc-if value="{{o.hasBad}}" hint-placeholder-val="{{ false }}"><span class="t-caption" style="display:block;color:var(--st-danger-fg)">{{o.bad}}</span></sc-if></div>
+                    <span role="cell" class="hide-md" data-label="Type"><span class="pill neutral"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{o.d}}"></path></svg>{{o.kind}}</span></span>
+                    <span role="cell" class="hide-md" data-label="Summary">{{o.sub}}</span>
+                    <span role="cell" data-label="Goes To" style="display:flex;flex-direction:column;gap:6px;min-width:0">
+                      <sc-for list="{{o.gos}}" as="g" hint-placeholder-count="1"><label class="t-caption" style="display:flex;flex-direction:column;gap:2px;min-width:0"><span>{{g.label}}</span><select class="btn" style="padding-right:8px;max-width:100%" value="{{g.value}}" onChange="{{g.set}}" aria-label="{{g.aria}}"><option value="">Not connected</option><sc-for list="{{g.opts}}" as="t" hint-placeholder-count="6"><option value="{{t.v}}">{{t.l}}</option></sc-for></select></label></sc-for>
+                      <sc-if value="{{o.isEnd}}" hint-placeholder-val="{{ false }}"><span class="t-caption">Nothing, the workflow ends here</span></sc-if>
+                    </span>
+                    <span role="cell" class="r" data-label="Actions" style="display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap"><button class="btn" type="button" aria-label="{{o.editLabel}}" onClick="{{o.edit}}">Edit</button><sc-if value="{{o.canDel}}" hint-placeholder-val="{{ true }}"><button class="btn" type="button" aria-label="{{o.delLabel}}" onClick="{{o.del}}">Delete</button></sc-if></span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{emptyOn}}" hint-placeholder-val="{{ false }}"><div class="state" style="padding:16px 16px 24px"><div class="t-heading">Nothing Between Start and End</div><div class="t-dense secondary">A document with no steps is approved the moment it is submitted. Add an approval step, then connect it.</div></div></sc-if>
+          </div>
+        </section>
+
+        <aside class="card" aria-label="Inspector and problems" style="min-width:0">
+          <div class="card-h"><h2 class="sr-only">Inspector and Problems</h2>
+            <div class="tabs" role="tablist" aria-label="Side panel" style="grid-auto-columns:minmax(0,1fr);width:100%" onKeyDown="{{panelKey}}">
+              <sc-for list="{{panels}}" as="t" hint-placeholder-count="2"><button class="tab" role="tab" id="{{t.id}}" aria-selected="{{t.sel}}" aria-controls="wf-side" tabindex="{{t.ti}}" type="button" onClick="{{t.go}}">{{t.label}} <span class="t-caption">{{t.n}}</span></button></sc-for>
+              <span class="tab-ind" style="{{panelInd}}"></span>
+            </div>
+          </div>
+          <div id="wf-side" role="tabpanel" aria-labelledby="{{panelLab}}" class="card-b" style="padding:0">
+            <sc-if value="{{loading}}" hint-placeholder-val="{{ false }}"><div role="status" aria-label="Loading" style="display:flex;flex-direction:column;gap:12px;padding:16px"><span class="skel" style="height:12px;width:50%"></span><span class="skel" style="height:160px"></span></div></sc-if>
+
+            <sc-if value="{{inspectorOn}}" hint-placeholder-val="{{ true }}">
+              <sc-if value="{{noSel}}" hint-placeholder-val="{{ false }}"><div class="state"><div class="t-heading">Nothing Selected</div><div class="t-dense secondary">Select a node on the canvas, or choose Edit in the outline, to change it.</div></div></sc-if>
+              <sc-if value="{{sel}}" hint-placeholder-val="{{ true }}">
+                <div style="padding:16px;display:flex;flex-direction:column;gap:14px">
+                  <div><div class="t-caption">{{sel.kind}}</div><h3 class="t-heading" id="insp-t">{{sel.name}}</h3></div>
+                  <sc-if value="{{sel.isStart}}" hint-placeholder-val="{{ false }}"><p class="t-dense secondary" style="margin:0">A Capital Requisition enters this workflow when it is submitted. Funds are reserved first (REQ-011); this workflow only decides who approves.</p></sc-if>
+                  <sc-if value="{{sel.isEnd}}" hint-placeholder-val="{{ false }}"><p class="t-dense secondary" style="margin:0">Every route ends here. The requisition becomes approved and moves to sourcing.</p></sc-if>
+
+                  <sc-if value="{{sel.isCond}}" hint-placeholder-val="{{ false }}">
+                    <div class="field"><label class="t-label" for="in-n">Name</label><input id="in-n" class="inp" value="{{sel.name}}" onChange="{{sel.setName}}"></div>
+                    <div class="field"><label class="t-label" for="in-a">Attribute</label><select id="in-a" class="btn" style="padding-right:8px" value="{{sel.attr}}" onChange="{{sel.setAttr}}" aria-invalid="{{sel.attrBad}}" aria-describedby="in-a-h"><option>Estimate</option><option>Department</option><option>Ledger Account</option><option>Category</option><option>Risk</option><option>Currency</option><option>Project</option><option>Cost Centre</option><option>Risk Score</option></select><span class="t-caption" id="in-a-h">Any attribute of the document, including custom fields. {{sel.attrNote}}</span></div>
+                    <div class="form-grid"><div class="field"><label class="t-label" for="in-o">Test</label><select id="in-o" class="btn" style="padding-right:8px" value="{{sel.op}}" onChange="{{sel.setOp}}"><option value="over">is over</option><option value="atmost">is at most</option><option value="is">is</option></select></div>
+                    <div class="field"><label class="t-label" for="in-v">Value</label><input id="in-v" class="inp n" inputmode="decimal" value="{{sel.val}}" onChange="{{sel.setVal}}" aria-invalid="{{sel.valBad}}" aria-describedby="in-v-e"><sc-if value="{{sel.valBad}}" hint-placeholder-val="{{ false }}"><span class="field-err" id="in-v-e"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>Enter an amount, such as 50000.00.</span></sc-if></div></div>
+                    <p class="t-caption" style="margin:0">Amount bands (several ranges in one condition) arrive in Phase 2. Today, chain two conditions as this workflow does.</p>
+                  </sc-if>
+
+                  <sc-if value="{{sel.isStep}}" hint-placeholder-val="{{ false }}">
+                    <div class="field"><label class="t-label" for="in-n2">Name</label><input id="in-n2" class="inp" value="{{sel.name}}" onChange="{{sel.setName}}"></div>
+                    <sc-if value="{{sel.peopleOk}}" hint-placeholder-val="{{ true }}">
+                    <fieldset class="choice" style="flex-direction:column;gap:0" aria-describedby="in-ap-h"><legend class="t-label">Approvers</legend>
+                      <sc-for list="{{sel.people}}" as="p" hint-placeholder-count="7"><label class="chk"><input type="checkbox" checked="{{p.on}}" onChange="{{p.toggle}}"> <span>{{p.name}} <span class="t-caption">{{p.role}}</span></span></label></sc-for>
+                    </fieldset>
+                    <span class="t-caption" id="in-ap-h">Only people allowed to approve Capital Requisitions in Manufacturing are listed (APR-004). Requesters never approve their own request.</span>
+                    </sc-if>
+                    <sc-if value="{{sel.peopleErr}}" hint-placeholder-val="{{ false }}"><div class="state" role="alert" style="padding:12px;align-items:flex-start;text-align:left"><span class="pill danger"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>Could not load eligible approvers</span><div class="t-dense secondary">Current approvers are kept: {{sel.current}}. Nothing was changed.</div><button class="btn" type="button" onClick="{{retry}}">Try again</button></div></sc-if>
+                    <fieldset class="choice" style="flex-direction:column;gap:0"><legend class="t-label">Group Rule</legend>
+                      <label class="chk"><input type="radio" name="in-r" checked="{{sel.rAny}}" onChange="{{sel.setAny}}"> Any one approves</label>
+                      <label class="chk"><input type="radio" name="in-r" checked="{{sel.rAll}}" onChange="{{sel.setAll}}"> All approve</label>
+                      <label class="chk"><input type="radio" name="in-r" checked="{{sel.rQuo}}" onChange="{{sel.setQuo}}"> Quorum</label>
+                    </fieldset>
+                    <sc-if value="{{sel.rQuo}}" hint-placeholder-val="{{ false }}"><div class="field"><label class="t-label" for="in-q">Approvals Needed</label><input id="in-q" class="inp n" inputmode="numeric" value="{{sel.quorum}}" onChange="{{sel.setQuorum}}"><span class="t-caption">Out of {{sel.count}} approvers. The group is fixed when each task is created (APR-018).</span></div></sc-if>
+                    <label class="chk" style="align-items:flex-start"><input type="checkbox" checked="{{sel.dupOk}}" onChange="{{sel.toggleDup}}"> <span>An approver here may also approve at an earlier step. <span class="t-caption" style="display:block">Leave off unless it is intended; duplicates block publishing otherwise (APR-008).</span></span></label>
+                    <div class="form-grid">
+                      <div class="field"><label class="t-label" for="in-d">Due After (Days)</label><input id="in-d" class="inp n" inputmode="numeric" value="{{sel.due}}" onChange="{{sel.setDue}}"></div>
+                      <div class="field"><label class="t-label" for="in-rm">Remind After</label><input id="in-rm" class="inp n" inputmode="numeric" value="{{sel.remind}}" onChange="{{sel.setRemind}}"></div>
+                      <div class="field"><label class="t-label" for="in-es">Escalate After</label><input id="in-es" class="inp n" inputmode="numeric" value="{{sel.escal}}" onChange="{{sel.setEscal}}"></div>
+                      <div class="field"><label class="t-label" for="in-et">Escalate To</label><select id="in-et" class="btn" style="padding-right:8px" value="{{sel.escTo}}" onChange="{{sel.setEscTo}}"><option value="">Nobody</option><option>Sana Qureshi</option><option>Priya Raman</option><option>Elena Ruiz</option><option>Mina Cho</option></select></div>
+                    </div>
+                    <p class="t-caption" style="margin:0">Days count from when the task is created. Escalation adds the person; it never removes the approvers.</p>
+                  </sc-if>
+
+                  <sc-for list="{{sel.gos}}" as="g" hint-placeholder-count="1"><div class="field"><label class="t-label" for="{{g.id}}">{{g.label}}</label><select id="{{g.id}}" class="btn" style="padding-right:8px" value="{{g.value}}" onChange="{{g.set}}" aria-describedby="{{g.id}}-h"><option value="">Not connected</option><sc-for list="{{g.opts}}" as="t" hint-placeholder-count="6"><option value="{{t.v}}">{{t.l}}</option></sc-for></select><span class="t-caption" id="{{g.id}}-h">This is the keyboard way to connect, the same as dragging a line.</span></div></sc-for>
+                  <sc-if value="{{sel.hasProblems}}" hint-placeholder-val="{{ false }}"><div class="summary warning" role="status"><div style="display:flex;gap:8px;align-items:flex-start"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:1px"><path d="M12 3l10 18H2zM12 10v5M12 18h.01"></path></svg><div class="t-dense">{{sel.problemText}}</div></div></div></sc-if>
+                </div>
+              </sc-if>
+            </sc-if>
+
+            <sc-if value="{{problemsOn}}" hint-placeholder-val="{{ false }}">
+              <sc-if value="{{noProblems}}" hint-placeholder-val="{{ false }}"><div class="state"><span class="pill success"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6"></path></svg>Ready to Publish</span><div class="t-dense secondary">No cycles, unreachable steps, missing approvers, invalid fields or incomplete branches.</div></div></sc-if>
+              <sc-if value="{{hasProblems}}" hint-placeholder-val="{{ false }}"><ul class="problems"><sc-for list="{{problems}}" as="p" hint-placeholder-count="5"><li><span class="pill danger" style="flex:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2zM12 10v5M12 18h.01"></path></svg>Blocks</span><div style="min-width:0"><div class="t-dense" style="font-weight:520">{{p.kind}}</div><div class="t-dense secondary">{{p.text}}</div><button class="btn" type="button" style="margin-top:6px" onClick="{{p.go}}" aria-label="{{p.goLabel}}">Go to Node</button></div></li></sc-for></ul></sc-if>
+            </sc-if>
+          </div>
+        </aside>
+      </div>
+      </sc-if>
+      <p class="t-caption">Sample data for layout review. Signed in as Priya Raman, workflow administrator.</p>
+    </main>
+  </div>
+</div>
+
+<sc-if value="{{previewOpen}}" hint-placeholder-val="{{ false }}">
+  <div class="sheet-scrim" onClick="{{closePreview}}"></div>
+  <div class="sheet wide" role="dialog" aria-modal="true" aria-labelledby="pv-t" onKeyDown="{{trapKey}}">
+    <div class="sheet-h"><div style="display:flex;flex-direction:column;gap:6px"><div class="t-caption">Capital Requisition Approval, draft version 4</div><h2 class="t-title" id="pv-t">Route Preview</h2></div><button class="iconbtn" type="button" aria-label="Close" onClick="{{closePreview}}" autoFocus="{{yes}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+    <div class="sheet-b">
+      <p class="t-dense" style="margin:0">Try a sample document against this draft. The path is numbered on the canvas, and each step says which rule matched, the same words an approver sees in the inbox (APR-021).</p>
+      <div class="field"><label class="t-label" for="pv-a">Estimate</label><div class="inp-wrap"><input id="pv-a" class="inp n" inputmode="decimal" value="{{pvAmt}}" onChange="{{setPv}}" aria-invalid="{{pvBad}}" aria-describedby="pv-h"></div><span class="t-caption" id="pv-h">USD. Try 40,000.00, 196,000.00 and 310,000.00.</span><sc-if value="{{pvBad}}" hint-placeholder-val="{{ false }}"><span class="field-err"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>Enter an amount, such as 196000.00.</span></sc-if></div>
+      <section aria-labelledby="pv-r"><h3 class="t-label" id="pv-r" style="margin-bottom:8px">Route</h3>
+        <ol class="route"><sc-for list="{{pvRoute}}" as="s" hint-placeholder-count="4"><li class="{{s.cls}}"><div class="t-dense"><b>{{s.name}}</b> <span class="secondary">{{s.rule}}</span></div><div class="t-caption" style="grid-column:2">{{s.why}}</div></li></sc-for></ol>
+      </section>
+      <p class="t-dense" style="margin:0">{{pvResult}}</p>
+    </div>
+    <div class="sheet-f"><button class="btn" type="button" onClick="{{closePreview}}">Close</button></div>
+  </div>
+</sc-if>
+
+<sc-if value="{{pubOpen}}" hint-placeholder-val="{{ false }}">
+  <div class="dialog-scrim" onClick="{{closePub}}">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="pb-t" aria-describedby="pb-d" onClick="{{stop}}" onKeyDown="{{trapKey}}">
+      <div class="dialog-h"><h2 class="t-title" id="pb-t">Publish Version 4?</h2></div>
+      <div class="dialog-b" id="pb-d">
+        <p class="t-dense" style="margin:0">Version 4 becomes the workflow for every Capital Requisition submitted from now on. A published version cannot be edited; later changes become version 5.</p>
+        <dl class="kv" style="margin:0;grid-template-columns:104px minmax(0,1fr)"><dt class="t-label">In Flight</dt><dd style="margin:0">23 documents keep version 3, with the same routing and history (ACC-007).</dd><dt class="t-label">Checked</dt><dd style="margin:0">No cycles, unreachable steps, missing approvers, duplicates or incomplete branches.</dd><dt class="t-label">Recorded</dt><dd style="margin:0">Your name, the time and the diff against version 3.</dd></dl>
+        <div class="field"><label class="t-label" for="pb-n">What changed (optional)</label><textarea id="pb-n" class="inp ta" rows="2" placeholder="Shown in the version history"></textarea></div>
+      </div>
+      <div class="dialog-f"><button class="btn" type="button" onClick="{{closePub}}" autoFocus="{{yes}}">Keep Editing</button><button class="btn primary" type="button" onClick="{{confirmPub}}">Publish Version 4</button></div>
+    </div>
+  </div>
+</sc-if>
+<sc-if value="{{navTip}}" hint-placeholder-val="{{ false }}"><div class="nav-tip" style="{{navTip.style}}">{{navTip.text}}</div></sc-if>
+<div class="toasts" role="status" aria-live="polite">
+  <sc-if value="{{toast}}" hint-placeholder-val="{{ false }}"><div class="toast"><span>{{toast.msg}}</span></div></sc-if>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"dark","options":["light","dark"]},"collapsed":{"editor":"enum","default":"auto","options":["auto","yes","no"]},"navOpen":{"editor":"boolean","default":false},"view":{"editor":"enum","default":"ready","options":["ready","loading","error","empty","problems","partial"]},"mode":{"editor":"enum","default":"canvas","options":["canvas","outline"]},"panel":{"editor":"enum","default":"","options":["","inspector","problems"]},"sel":{"editor":"string","default":""},"dialog":{"editor":"enum","default":"","options":["","publish","preview"]},"amount":{"editor":"string","default":"196000.00"},"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  componentDidMount() {
+    if ((this.props.collapsed ?? 'auto') === 'auto') {
+      try { if (localStorage.getItem('xf.sidebar') === 'collapsed') this.setState({ collapsed: true }); } catch (e) {}
+    }
+    this.mounted && this.mounted();
+    this.applyHues();
+  }
+  componentDidUpdate() { this.applyHues(); }
+  // Card hover outline colour: the next colour of the chart series by position, so a new card needs no colour decision.
+  applyHues() {
+    const H = ['--c5', '--c7', '--c8', '--c1', '--c3', '--c2', '--c4', '--c6'];
+    document.querySelectorAll('.dash > .card').forEach((el, i) => el.style.setProperty('--hue', 'var(' + H[i % H.length] + ')'));
+  }
+  componentWillUnmount() { cancelAnimationFrame(this._raf); clearTimeout(this._it); clearTimeout(this._tt); }
+  split(s) { const i = s.lastIndexOf('.'); return i < 0 ? [s, ''] : [s.slice(0, i), s.slice(i)]; }
+  back(el) { setTimeout(() => { if (el && el.focus) el.focus(); }, 0); }
+  toast(msg) {
+    clearTimeout(this._tt);
+    this.setState({ toast: { msg } });
+    this._tt = setTimeout(() => this.setState({ toast: null }), 4000);
+  }
+  shellVals(st) {
+    const collapsed = st.collapsed ?? (this.props.collapsed === 'yes');
+    const navOpen = st.navOpen ?? (this.props.navOpen === true);
+    const act = this.activeNav || 'Projects';
+    const I = {
+      home: "M3 11l9-8 9 8M5 10v10h14V10M10 20v-6h4v6",
+      org: "M4 21V5l8-2v18M12 9h8v12M7 8h2M7 12h2M7 16h2M15 13h2M15 17h2",
+      admin: "M4 7h10M18 7h2M4 17h2M10 17h10M16 4v6M8 14v6",
+      proj: "M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z",
+      budget: "M3 7a2 2 0 012-2h13v4M3 7v11a2 2 0 002 2h15V9H5a2 2 0 01-2-2zM16 14.5h.01",
+      rep: "M4 20V10M10 20V4M16 20v-7M2 20h20",
+      req: "M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6",
+      appr: "M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6",
+      vend: "M4 9l1-5h14l1 5M4 9a2.5 2.5 0 005 0 2.5 2.5 0 006 0 2.5 2.5 0 005 0M5 11v9h14v-9M10 20v-5h4v5",
+      src: "M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4",
+      po: "M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6",
+      asset: "M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10",
+      help: "M12 21a9 9 0 100-18 9 9 0 000 18zM9.5 9.5a2.5 2.5 0 115 .5c0 1.5-2.5 2-2.5 3.5M12 17h.01"
+    };
+    const link = (label, d, ph, on) => ({ isLink: true, isHead: false, label, d, cls: 'nav-i ' + ph + (on ? ' on' : '') });
+    const hd = (label) => ({ isHead: true, isLink: false, label });
+    const nav = [
+      link('Home', I.home, '', false),
+      hd('Foundation'), link('Organization', I.org, 'p-foundation'), link('Administration', I.admin, 'p-foundation', act === 'Administration'),
+      hd('Plan'), link('Projects', I.proj, 'p-plan', act === 'Projects'), link('Budget', I.budget, 'p-plan'), link('Reporting', I.rep, 'p-plan'),
+      hd('Demand'), link('Requisitions', I.req, 'p-demand', act === 'Requisitions'), link('Approvals', I.appr, 'p-demand', act === 'Approvals'),
+      hd('Commit'), link('Vendors', I.vend, 'p-commit'), link('Sourcing', I.src, 'p-commit'), link('Purchase orders', I.po, 'p-commit'), link('Assets', I.asset, 'p-commit'),
+      hd('Support'), link('Help', I.help, '')
+    ];
+    return {
+      theme: this.props.theme ?? 'light', nav,
+      rootCls: 'xf' + (st.intro ? ' intro' : ''),
+      appCls: 'app' + (collapsed ? ' collapsed' : '') + (navOpen ? ' nav-open' : ''),
+      navOpen, expanded: !collapsed, collapseLabel: collapsed ? 'Expand sidebar' : 'Collapse sidebar',
+      navLabel: navOpen ? 'Close navigation' : 'Open navigation',
+      // rail tooltips are one fixed-position element, so the scrolling sidebar cannot clip them
+      navTip: st.navTip || null,
+      navTipShow: (e) => {
+        const a = e.currentTarget, lbl = a.querySelector('.lbl');
+        if (!lbl || getComputedStyle(lbl).display !== 'none') return;
+        const r = a.getBoundingClientRect();
+        this.setState({ navTip: { text: a.getAttribute('data-tip'), style: 'left:' + (r.right + 12) + 'px;top:' + (r.top + r.height / 2) + 'px' } });
+      },
+      navTipHide: () => { if (st.navTip) this.setState({ navTip: null }); },
+      toggleCollapse: () => {
+        this.setState({ collapsed: !collapsed });
+        try { localStorage.setItem('xf.sidebar', collapsed ? 'expanded' : 'collapsed'); } catch (e) {}
+      },
+      toggleNav: () => this.setState({ navOpen: !navOpen }),
+      closeNav: () => this.setState({ navOpen: false }),
+      toast: st.toast || null
+    };
+  }
+  get activeNav() { return "Administration"; }
+
+  componentWillUnmount() { clearTimeout(this._tt); this.dropDrag && this.dropDrag(); }
+  graph(view) {
+    const N = (id, type, x, y, name, o = {}) => ({ id, type, x, y, name, attr: 'Estimate', op: 'over', val: '', approvers: [], rule: 'any', quorum: 2, due: 3, remind: 2, escal: 5, escTo: '', dupOk: false, ...o });
+    let nodes = [
+      N('start', 'start', 280, 16, 'Requisition Submitted'),
+      N('s0', 'step', 280, 100, 'Department Head', { approvers: ['Sana Qureshi'], due: 3, remind: 2, escal: 5, escTo: 'Mina Cho' }),
+      N('c1', 'cond', 280, 208, 'Over 50,000.00 USD?', { val: '50000.00' }),
+      N('s1', 'step', 80, 320, 'Plant Manager', { approvers: ['Amara Okafor', 'Luis Moreno'], due: 3, remind: 2, escal: 5, escTo: 'Mina Cho' }),
+      N('c2', 'cond', 80, 428, 'Over 250,000.00 USD?', { val: '250000.00' }),
+      N('g1', 'step', 80, 540, 'Finance Committee', { approvers: ['Elena Ruiz', 'Tomas Berg', 'Mina Cho'], rule: 'quorum', quorum: 2, due: 5, remind: 3, escal: 7, escTo: 'Priya Raman' }),
+      N('end', 'end', 280, 650, 'Approved')
+    ];
+    let edges = [
+      { from: 'start', to: 's0', label: '' }, { from: 's0', to: 'c1', label: '' }, { from: 'c1', to: 's1', label: 'yes' }, { from: 'c1', to: 'end', label: 'no' },
+      { from: 's1', to: 'c2', label: '' }, { from: 'c2', to: 'g1', label: 'yes' }, { from: 'c2', to: 'end', label: 'no' }, { from: 'g1', to: 'end', label: '' }
+    ];
+    if (view === 'empty') { nodes = [nodes[0], nodes[6]]; edges = []; nodes[1].y = 200; }
+    if (view === 'problems') {
+      edges = edges.filter((e) => !(e.from === 'c1' && e.label === 'no'));
+      nodes.find((n) => n.id === 'g1').approvers = ['Amara Okafor', 'Elena Ruiz', 'Tomas Berg'];
+      nodes.find((n) => n.id === 'c2').attr = 'Risk Score';
+      nodes.push(N('s9', 'step', 520, 320, 'Legal Review', { approvers: [], due: 5, remind: 3, escal: 7 }));
+      edges.push({ from: 's9', to: 'end', label: '' });
+    }
+    return { nodes, edges };
+  }
+  renderVals() {
+    const st = this.state || {};
+    const view = st.view ?? this.props.view ?? 'ready';
+    const G = st.g || this.graph(view === 'loading' || view === 'error' || view === 'partial' ? 'ready' : view);
+    const nodes = G.nodes, edges = G.edges;
+    const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
+    const mode = st.mode ?? this.props.mode ?? 'canvas';
+    const selId = st.sel !== undefined ? st.sel : (this.props.sel || (view === 'ready' || view === 'partial' ? 's1' : ''));
+    const panel = st.panel ?? (this.props.panel || (view === 'problems' ? 'problems' : 'inspector'));
+    const pubKey = st.dlg !== undefined ? st.dlg : (this.props.dialog || '');
+    const pvAmt = st.pv ?? this.props.amount ?? '196000.00';
+    const published = !!st.published;
+    const P = { x: 'M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6', ok: 'M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6', w: 'M12 3l10 18H2zM12 10v5M12 18h.01', usr: 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21a8 8 0 0116 0', br: 'M6 3v12M6 15a3 3 0 100 6 3 3 0 000-6zM18 9a3 3 0 100-6 3 3 0 000 6zM18 9c0 6-12 2-12 6', n: 'M12 21a9 9 0 100-18 9 9 0 000 18z', clk: 'M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3 2' };
+    const H = { start: 48, step: 76, cond: 64, end: 48 }, W = 200;
+    const KIND = { start: ['Start', P.n], step: ['Approval Step', P.usr], cond: ['Condition', P.br], end: ['End', P.ok] };
+    const PEOPLE = [['Sana Qureshi', 'Department Head'], ['Amara Okafor', 'Plant Manager'], ['Luis Moreno', 'Plant Manager'], ['Priya Raman', 'Procurement Lead'], ['Elena Ruiz', 'Finance Director'], ['Tomas Berg', 'Controller'], ['Mina Cho', 'VP Operations']];
+    const cents = (s) => { const m = String(s).trim().replace(/,/g, '').match(/^(\d+)(?:\.(\d{1,2}))?$/); return m ? Number(m[1]) * 100 + Number(((m[2] || '') + '00').slice(0, 2)) : null; };
+    const money = (c) => (c / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const OPT = { over: 'over', atmost: 'at most', is: 'is' };
+    const ATTRS = ['Estimate', 'Department', 'Ledger Account', 'Category', 'Risk', 'Currency', 'Project', 'Cost Centre'];   // attributes of a Capital Requisition; Risk Score is not one
+    const out = (id) => edges.filter((e) => e.from === id);
+    const reach = (from) => { const seen = new Set(); const q = [from]; while (q.length) { const x = q.pop(); for (const e of edges) if (e.from === x && !seen.has(e.to)) { seen.add(e.to); q.push(e.to); } } return seen; };
+    const reachable = reach('start'); reachable.add('start');
+    const nm = (n) => n.name;
+    const sub = (n) => n.type === 'step' ? (n.rule === 'any' ? 'Any one of ' + n.approvers.length : n.rule === 'all' ? 'All ' + n.approvers.length : n.quorum + ' of ' + n.approvers.length) + ' · due ' + n.due + ' days'
+      : n.type === 'cond' ? n.attr + ' ' + OPT[n.op] + ' ' + (cents(n.val) != null && n.attr === 'Estimate' ? money(cents(n.val)) + ' USD' : n.val || '?') : n.type === 'start' ? 'Capital Requisition' : 'Approved';
+
+    // ---- validation: cycles, unreachable steps, missing approvers, invalid fields, incomplete branches, duplicates, depth (APR-006 to 008, 012) ----
+    const problems = [];
+    const add = (id, kind, text) => problems.push({ id, kind, text, go: () => this.setState({ sel: id, panel: 'inspector' }), goLabel: 'Go to node ' + (byId[id] ? byId[id].name : '') });
+    const visit = {}; let cyc = null;
+    const dfs = (id, path) => { visit[id] = 1; for (const e of out(id)) { if (visit[e.to] === 1 && !cyc) cyc = path.concat(e.to); else if (!visit[e.to]) dfs(e.to, path.concat(e.to)); } visit[id] = 2; };
+    if (byId.start) dfs('start', ['start']);
+    if (cyc) add(cyc[cyc.length - 1], 'Cycle', 'The route loops back on itself through ' + cyc.map((i) => byId[i].name).join(', ') + '. A document could never finish.');
+    nodes.forEach((n) => {
+      if (n.type !== 'start' && !reachable.has(n.id)) add(n.id, 'Unreachable Step', n.name + ' cannot be reached from Start, so it would never run.');
+      if (n.type === 'step' && n.approvers.length === 0) add(n.id, 'Missing Approver', n.name + ' has nobody to approve it.');
+      if (n.type === 'cond') {
+        if (!out(n.id).find((e) => e.label === 'yes') || !out(n.id).find((e) => e.label === 'no')) add(n.id, 'Incomplete Branch', n.name + ' needs both a Yes and a No route; ' + (out(n.id).find((e) => e.label === 'yes') ? 'No' : 'Yes') + ' goes nowhere.');
+        if (!ATTRS.includes(n.attr)) add(n.id, 'Invalid Field', n.attr + ' is not an attribute of a Capital Requisition. Choose another attribute.');
+        else if (n.attr === 'Estimate' && cents(n.val) == null) add(n.id, 'Invalid Field', n.name + ' has no valid amount to compare with.');
+      }
+      if ((n.type === 'step' || n.type === 'start') && out(n.id).length === 0) add(n.id, 'Incomplete Branch', n.name + ' does not lead anywhere.');
+    });
+    const up = (id) => { const seen = new Set(); const q = [id]; while (q.length) { const x = q.pop(); for (const e of edges) if (e.to === x && !seen.has(e.from)) { seen.add(e.from); q.push(e.from); } } return seen; };
+    nodes.filter((n) => n.type === 'step' && reachable.has(n.id)).forEach((n) => {
+      const before = up(n.id);
+      nodes.filter((m) => m.type === 'step' && before.has(m.id)).forEach((m) => {
+        const dup = n.approvers.filter((a) => m.approvers.includes(a));
+        if (dup.length && !n.dupOk && !m.dupOk) add(n.id, 'Duplicate Approval', dup.join(', ') + ' approves at ' + m.name + ' and again at ' + n.name + ' on the same route. Remove one, or mark it intended.');
+      });
+    });
+    const depth = (id, d, seen) => (seen.has(id) ? d : Math.max(d, ...out(id).map((e) => depth(e.to, d + 1, new Set([...seen, id]))), d));
+    if (!cyc && byId.start && depth('start', 1, new Set()) > 25) add('start', 'Too Deep', 'A route has more than 25 steps. Shorten it (APR-006).');
+    const badBy = {}; problems.forEach((p) => { (badBy[p.id] ||= []).push(p); });
+
+    // ---- the graph on the canvas ----
+    const portX = (n, label) => n.x + (n.type === 'cond' ? (label === 'yes' ? 56 : 144) : W / 2);
+    const path = (x1, y1, x2, y2) => 'M' + x1 + ' ' + y1 + ' C' + x1 + ' ' + (y1 + 50) + ' ' + x2 + ' ' + (y2 - 50) + ' ' + x2 + ' ' + y2;
+    const arrow = (x, y) => 'M' + (x - 5) + ' ' + (y - 9) + ' L' + x + ' ' + y + ' L' + (x + 5) + ' ' + (y - 9);
+    // preview route
+    const pvC = cents(pvAmt), pvBad = pvC == null;
+    const pvRoute = [], onPath = new Set(), pathEdges = new Set();
+    if (!pvBad && byId.start) {
+      let cur = 'start', guard = 0; onPath.add('start');
+      while (cur && guard++ < 40) {
+        const n = byId[cur]; if (!n) break;
+        let nextE = null;
+        if (n.type === 'cond') {
+          let yes = false;
+          if (n.attr === 'Estimate' && cents(n.val) != null) { const v = cents(n.val); yes = n.op === 'over' ? pvC > v : n.op === 'atmost' ? pvC <= v : pvC === v; pvRoute.push({ cls: '', name: n.name, rule: yes ? 'Yes' : 'No', why: 'Estimate ' + money(pvC) + ' USD is ' + (yes ? '' : 'not ') + OPT[n.op] + ' ' + money(v) + ' USD.' }); }
+          else pvRoute.push({ cls: '', name: n.name, rule: 'No', why: n.attr + ' is not part of this sample, so the No route is taken.' });
+          nextE = out(n.id).find((e) => e.label === (yes ? 'yes' : 'no'));
+        } else {
+          if (n.type === 'step') pvRoute.push({ cls: 'me', name: n.name, rule: (n.rule === 'any' ? 'Any one of ' + n.approvers.length : n.rule === 'all' ? 'All ' + n.approvers.length : n.quorum + ' of ' + n.approvers.length), why: n.approvers.join(', ') + '. Due after ' + n.due + ' days.' });
+          nextE = out(n.id)[0];
+        }
+        if (!nextE) break; pathEdges.add(nextE.from + '>' + nextE.to + nextE.label); cur = nextE.to; onPath.add(cur);
+        if (byId[cur] && byId[cur].type === 'end') break;
+      }
+    }
+    const previewOn = pubKey === 'preview' || st.pvOpen;
+    const stepNo = {}; let k = 0; pvRoute.forEach(() => {}); nodes.forEach(() => {});
+    if (previewOn) { let c2 = 'start', g2 = 0; while (c2 && g2++ < 40) { const nn = byId[c2]; if (nn && nn.type === 'step') stepNo[c2] = ++k; const e2 = out(c2).find((e) => pathEdges.has(e.from + '>' + e.to + e.label)); c2 = e2 ? e2.to : null; } }
+    const gridSnap = (v) => Math.max(0, Math.round(v / 20) * 20);
+    const setG = (patch) => this.setState({ g: { nodes, edges, ...patch } });
+    const refuse = (title, text) => { this.setState({ refuse: { cls: 'summary', d: P.x, title, text } }); setTimeout(() => { const e = document.getElementById('wf-sum'); if (e) e.focus(); }, 0); };
+    const connect = (from, label, to) => {
+      const rest = edges.filter((e) => !(e.from === from && e.label === label));
+      if (!to) { setG({ edges: rest }); this.setState({ live: 'Disconnected ' + byId[from].name + (label ? ' ' + label : '') + '.', refuse: null }); return; }
+      if (to === from || reach(to).has(from)) { refuse('Not connected. That would make a loop.', byId[to].name + ' already leads back to ' + byId[from].name + ', so a document could circle forever. Choose a node further along.'); return; }
+      setG({ edges: [...rest, { from, to, label }] }); this.setState({ refuse: null, live: 'Connected ' + byId[from].name + (label ? ' ' + label : '') + ' to ' + byId[to].name + '.' });
+    };
+    const setNode = (id, patch) => setG({ nodes: nodes.map((n) => (n.id === id ? { ...n, ...patch } : n)) });
+    const removeNode = (id) => {
+      if (id === 'start' || id === 'end') { refuse('Start and End stay.', 'Every workflow has one Start and one End. Delete a step or a condition instead.'); return; }
+      setG({ nodes: nodes.filter((n) => n.id !== id), edges: edges.filter((e) => e.from !== id && e.to !== id) });
+      this.setState({ sel: '', refuse: null, live: 'Deleted ' + byId[id].name + '. Lines to and from it were removed.' });
+      setTimeout(() => { const h = document.getElementById('wf-h1'); if (h) h.focus(); }, 0);
+    };
+    const addNode = (type) => {
+      const i = nodes.filter((n) => n.type === type).length + 1, id = type[0] + 'n' + Date.now().toString(36);
+      const free = (x, y) => nodes.some((n) => Math.abs(n.x - x) < 120 && Math.abs(n.y - y) < 60);
+      let x = 540, y = 100; while (free(x, y) && y < 560) y += 100;
+      const nn = { id, type, x, y, name: type === 'step' ? 'New Approval Step ' + i : 'New Condition ' + i, attr: 'Estimate', op: 'over', val: '', approvers: [], rule: 'any', quorum: 2, due: 3, remind: 2, escal: 5, escTo: '', dupOk: false };
+      setG({ nodes: [...nodes, nn] }); this.setState({ sel: id, panel: 'inspector', live: 'Added ' + nn.name + '. It is not connected yet; use Goes To or drag from its circle.' });
+      setTimeout(() => { const el = document.getElementById('n-' + id); if (el) el.focus(); }, 0);
+    };
+    // drag: pointer events on the document while a drag runs; the key and Goes To routes do the same work without a pointer
+    const board = () => document.getElementById('wf-board');
+    this.dropDrag = () => { if (this._mv) { document.removeEventListener('pointermove', this._mv); document.removeEventListener('pointerup', this._up); this._mv = this._up = null; } };
+    const pt = (e) => { const r = board().getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+    const startMove = (n) => (e) => {
+      if (e.button) return; const p0 = pt(e), o = { x: n.x, y: n.y }; let moved = false;
+      this.setState({ sel: n.id });
+      this._mv = (m) => { const p = pt(m); if (!moved && Math.hypot(p.x - p0.x, p.y - p0.y) < 4) return; moved = true; this.setState({ g: { edges, nodes: nodes.map((q) => (q.id === n.id ? { ...q, x: gridSnap(o.x + p.x - p0.x), y: gridSnap(o.y + p.y - p0.y) } : q)) } }); };
+      this._up = () => { this.dropDrag(); if (moved) this.setState({ live: 'Moved ' + n.name + '.' }); };
+      document.addEventListener('pointermove', this._mv); document.addEventListener('pointerup', this._up);
+    };
+    const startLink = (n, label) => (e) => {
+      if (e.button) return; e.stopPropagation(); e.preventDefault();
+      this._mv = (m) => { const p = pt(m); this.setState({ draft: { x1: portX(n, label), y1: n.y + H[n.type], x2: p.x, y2: p.y } }); };
+      this._up = (m) => {
+        const p = pt(m); this.dropDrag(); this.setState({ draft: null });
+        const hit = nodes.find((q) => q.id !== n.id && q.type !== 'start' && p.x >= q.x && p.x <= q.x + W && p.y >= q.y && p.y <= q.y + H[q.type]);
+        if (hit) connect(n.id, label, hit.id);
+      };
+      document.addEventListener('pointermove', this._mv); document.addEventListener('pointerup', this._up);
+    };
+    const nodeKey = (n) => (e) => {
+      const step = e.shiftKey ? 100 : 20;
+      const mv = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
+      if (mv) { e.preventDefault(); setG({ nodes: nodes.map((q) => (q.id === n.id ? { ...q, x: Math.max(0, q.x + mv[0]), y: Math.max(0, q.y + mv[1]) } : q)) }); this.setState({ live: 'Moved ' + n.name + '.' }); return; }
+      if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); removeNode(n.id); }
+    };
+    const edgeList = edges.filter((e) => byId[e.from] && byId[e.to]).map((e) => {
+      const a = byId[e.from], b = byId[e.to], x1 = portX(a, e.label), y1 = a.y + H[a.type], x2 = b.x + W / 2, y2 = b.y;
+      return { d: path(x1, y1, x2, y2), a: arrow(x2, y2), cls: pathEdges.has(e.from + '>' + e.to + e.label) && previewOn ? 'live' : '' };
+    });
+    const labels = edges.filter((e) => e.label && byId[e.from]).map((e) => { const a = byId[e.from]; return { text: e.label === 'yes' ? 'Yes' : 'No', style: 'left:' + (portX(a, e.label) + (e.label === 'yes' ? -30 : 30)) + 'px;top:' + (a.y + H[a.type] + 22) + 'px' }; });
+    const nodeList = nodes.map((n) => {
+      const bad = badBy[n.id] || [];
+      return { domId: 'n-' + n.id, cls: 'wf-node ' + ({ start: 'term', end: 'term', step: 'step', cond: 'cond' })[n.type] + (st.moving === n.id ? ' dragging' : ''), style: 'left:' + n.x + 'px;top:' + n.y + 'px;height:' + H[n.type] + 'px', sel: n.id === selId,
+        aria: KIND[n.type][0] + ': ' + n.name + (sub(n) ? '. ' + sub(n) : '') + (bad.length ? '. Problem: ' + bad[0].kind : ''), d: KIND[n.type][1], kind: KIND[n.type][0], name: n.name, sub: sub(n), hasSub: n.type === 'step',
+        hasBad: bad.length > 0, bad: bad.length ? bad[0].kind : '', down: startMove(n), key: nodeKey(n), click: () => this.setState({ sel: n.id, panel: 'inspector' }) };
+    });
+    const badges = previewOn ? nodes.filter((n) => stepNo[n.id]).map((n) => ({ n: stepNo[n.id], style: 'left:' + (n.x + W - 11) + 'px;top:' + (n.y - 11) + 'px' })) : [];
+    const ports = [];
+    nodes.forEach((n) => { if (n.type === 'end') return; (n.type === 'cond' ? ['yes', 'no'] : ['']).forEach((l) => ports.push({ style: 'left:' + portX(n, l) + 'px;top:' + (n.y + H[n.type]) + 'px', down: startLink(n, l) })); });
+    const d = st.draft;
+    const drafts = d ? [{ d: path(d.x1, d.y1, d.x2, d.y2) }] : [];
+    const boardH = Math.max(560, ...nodes.map((n) => n.y + H[n.type] + 40));
+
+    // ---- selected node, inspector ----
+    const cur = byId[selId];
+    const optsFor = (n) => nodes.filter((t) => t.id !== n.id && t.type !== 'start').map((t) => ({ v: t.id, l: t.name + ' (' + KIND[t.type][0] + ')' }));
+    const gosFor = (n, idp) => (n.type === 'end' ? [] : n.type === 'cond' ? ['yes', 'no'] : ['']).map((l) => {
+      const e = out(n.id).find((x) => x.label === l);
+      return { id: idp + (l || 'next'), label: l === 'yes' ? 'Yes Goes To' : l === 'no' ? 'No Goes To' : 'Goes To', value: e ? e.to : '', opts: optsFor(n), set: (ev) => connect(n.id, l, ev.target.value), aria: (l === 'yes' ? 'Yes' : l === 'no' ? 'No' : 'Next') + ' goes to, for ' + n.name };
+    });
+    let selV = null;
+    if (cur) {
+      const n = cur, bad = badBy[n.id] || [];
+      selV = { kind: KIND[n.type][0], name: n.name, isStart: n.type === 'start', isEnd: n.type === 'end', isCond: n.type === 'cond', isStep: n.type === 'step',
+        setName: (e) => setNode(n.id, { name: e.target.value }), attr: n.attr, attrBad: !ATTRS.includes(n.attr), attrNote: ATTRS.includes(n.attr) ? '' : n.attr + ' is not on this document type.', op: n.op, val: n.val, valBad: n.attr === 'Estimate' && n.val !== '' && cents(n.val) == null,
+        setAttr: (e) => setNode(n.id, { attr: e.target.value }), setOp: (e) => setNode(n.id, { op: e.target.value }), setVal: (e) => setNode(n.id, { val: e.target.value }),
+        peopleOk: view !== 'partial', peopleErr: view === 'partial', current: n.approvers.join(', ') || 'nobody',
+        people: PEOPLE.map(([name, role]) => ({ name, role, on: n.approvers.includes(name), toggle: () => setNode(n.id, { approvers: n.approvers.includes(name) ? n.approvers.filter((a) => a !== name) : [...n.approvers, name] }) })),
+        rAny: n.rule === 'any', rAll: n.rule === 'all', rQuo: n.rule === 'quorum', setAny: () => setNode(n.id, { rule: 'any' }), setAll: () => setNode(n.id, { rule: 'all' }), setQuo: () => setNode(n.id, { rule: 'quorum' }),
+        quorum: n.quorum, count: n.approvers.length, setQuorum: (e) => setNode(n.id, { quorum: Math.max(1, Math.min(n.approvers.length || 1, parseInt(e.target.value, 10) || 1)) }),
+        dupOk: n.dupOk, toggleDup: () => setNode(n.id, { dupOk: !n.dupOk }),
+        due: n.due, remind: n.remind, escal: n.escal, escTo: n.escTo,
+        setDue: (e) => setNode(n.id, { due: parseInt(e.target.value, 10) || 0 }), setRemind: (e) => setNode(n.id, { remind: parseInt(e.target.value, 10) || 0 }), setEscal: (e) => setNode(n.id, { escal: parseInt(e.target.value, 10) || 0 }), setEscTo: (e) => setNode(n.id, { escTo: e.target.value }),
+        gos: gosFor(n, 'go-'), hasProblems: bad.length > 0, problemText: bad.map((b) => b.kind + ': ' + b.text).join(' ') };
+    }
+    const outline = nodes.map((n) => { const bad = badBy[n.id] || []; return { name: n.name, step: KIND[n.type][0], kind: KIND[n.type][0], d: KIND[n.type][1], sub: sub(n), hasBad: bad.length > 0, bad: bad.length ? bad[0].kind + ': ' + bad[0].text : '',
+      rowCls: 'row cols-out stack' + (n.id === selId ? ' is-selected' : ''), gos: gosFor(n, 'ol-' + n.id + '-'), isEnd: n.type === 'end', canDel: n.type !== 'start' && n.type !== 'end',
+      editLabel: 'Edit ' + n.name, delLabel: 'Delete ' + n.name, edit: () => { this.setState({ sel: n.id, panel: 'inspector' }); setTimeout(() => { const t = document.getElementById('insp-t'); if (t) t.focus(); }, 0); }, del: () => removeNode(n.id) }; });
+    const MODES = [['canvas', 'Canvas'], ['outline', 'Outline']], mi = mode === 'outline' ? 1 : 0;
+    const PANELS = [['inspector', 'Inspector', ''], ['problems', 'Problems', problems.length]], pi = panel === 'problems' ? 1 : 0;
+    const loading = view === 'loading';
+    const trap = (close) => (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+      if (e.key !== 'Tab') return;
+      const f = Array.from(e.currentTarget.querySelectorAll('button, input, select, textarea')).filter((x) => !x.disabled);
+      if (!f.length) return; const first = f[0], last = f[f.length - 1], at = document.activeElement;
+      if (e.shiftKey && at === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && at === last) { e.preventDefault(); first.focus(); }
+    };
+    const closePreview = () => { this.setState({ dlg: '', pvOpen: false }); this.back(this._opener); };
+    const closePub = () => { this.setState({ dlg: '' }); this.back(this._opener); };
+    const summary = st.refuse || (st.checked && problems.length ? { cls: 'summary', d: P.x, title: 'Not ready to publish. ' + problems.length + (problems.length === 1 ? ' problem.' : ' problems.'), text: 'Publishing is blocked until each one is fixed. They are listed on the Problems tab.' } : st.checked ? { cls: 'summary info', d: P.ok, title: 'Ready to publish.', text: 'No cycles, unreachable steps, missing approvers, invalid fields or incomplete branches.' } : null);
+    return {
+      ...this.shellVals(st), rootCls: 'xf', yes: true,
+      subline: published ? 'Applies to Capital Requisitions · Published version 4, effective now · version 3 stays on 23 documents in flight' : 'Applies to Capital Requisitions · Draft version 4, based on published version 3 · last edited 8 Oct 2026, 09:21',
+      status: published ? { cls: 'pill success', d: P.ok, text: 'Published Version 4' } : { cls: 'pill info', d: 'M20 11a8 8 0 00-14-4M4 4v4h4M4 13a8 8 0 0014 4M20 20v-4h-4', text: 'Draft Version 4' },
+      summary, live: st.live ?? '', pageError: view === 'error', pageOk: view !== 'error', loading, retry: () => this.setState({ view: 'ready' }),
+      modes: MODES.map(([k, label], i) => ({ id: 'wf-m' + i, label, sel: i === mi, ti: i === mi ? 0 : -1, go: () => this.setState({ mode: k }) })), modeInd: 'width:96px;transform:translateX(' + mi * 96 + 'px)', modeLab: 'wf-m' + mi,
+      modeKey: (e) => { if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(e.key)) return; e.preventDefault(); const to = e.key === 'Home' ? 0 : e.key === 'End' ? 1 : 1 - mi; this.setState({ mode: MODES[to][0] }); this.back(document.getElementById('wf-m' + to)); },
+      canvasOn: !loading && mode === 'canvas' && view !== 'empty' || (view === 'empty' && mode === 'canvas'), outlineOn: !loading && mode === 'outline', emptyOn: !loading && view === 'empty' && nodes.length <= 2,
+      hint: mode === 'canvas' ? 'Select a node, then edit it on the right.' : 'Same operations as the canvas, with no dragging.',
+      edges: edgeList, labels, nodes: nodeList, badges, ports, drafts, boardH, outline,
+      addCond: () => addNode('cond'), addStep: () => addNode('step'), delSel: () => { if (!cur) { refuse('Nothing selected.', 'Select a node first, then choose Delete Selected.'); return; } removeNode(cur.id); },
+      panels: PANELS.map(([k, label, n], i) => ({ id: 'wf-s' + i, label, n, sel: i === pi, ti: i === pi ? 0 : -1, go: () => this.setState({ panel: k }) })), panelInd: 'width:50%;transform:translateX(' + pi * 100 + '%)', panelLab: 'wf-s' + pi,
+      panelKey: (e) => { if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(e.key)) return; e.preventDefault(); const to = e.key === 'Home' ? 0 : e.key === 'End' ? 1 : 1 - pi; this.setState({ panel: PANELS[to][0] }); this.back(document.getElementById('wf-s' + to)); },
+      inspectorOn: !loading && panel !== 'problems', problemsOn: !loading && panel === 'problems', noSel: !selV, sel: selV, problems, hasProblems: problems.length > 0, noProblems: problems.length === 0,
+      check: () => { this.setState({ checked: true, panel: 'problems', refuse: null }); setTimeout(() => { const e = document.getElementById('wf-sum'); if (e) e.focus(); }, 0); },
+      publish: (ev) => { this._opener = ev.currentTarget; if (problems.length) { this.setState({ checked: true, panel: 'problems', refuse: null }); setTimeout(() => { const e = document.getElementById('wf-sum'); if (e) e.focus(); }, 0); } else this.setState({ dlg: 'publish', refuse: null }); },
+      pubOpen: pubKey === 'publish', closePub, stop: (e) => e.stopPropagation(), trapKey: trap(pubKey === 'preview' || st.pvOpen ? closePreview : closePub),
+      confirmPub: () => { this.setState({ dlg: '', published: true, checked: false }); this.toast('Version 4 published. 23 documents in flight keep version 3.'); this.back(document.getElementById('wf-h1')); },
+      openPreview: (ev) => { this._opener = ev.currentTarget; this.setState({ pvOpen: true }); }, previewOpen: previewOn, closePreview,
+      pvAmt, pvBad, setPv: (e) => this.setState({ pv: e.target.value }), pvRoute,
+      pvResult: pvBad ? 'Enter an estimate to see the route.' : pvRoute.filter((s) => s.cls === 'me').length === 0 ? 'No approval is needed.' : 'Routes through ' + pvRoute.filter((s) => s.cls === 'me').map((s) => s.name).join(', then ') + '. The document is approved when the last step finishes.'
+    };
+  }
+}
+</script>
+</body>
+</html>
