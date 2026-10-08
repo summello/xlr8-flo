@@ -771,7 +771,7 @@ epics:
         dep:
           - E07-S07
           - E06-S02
-        st: todo
+        st: done
       - id: E07-S09
         t: 'Nightly reconciliation job: recompute from ledger, report drift, never
           correct'

@@ -3,7 +3,7 @@
 from collections.abc import Callable
 from dataclasses import asdict
 from typing import cast
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import psycopg
 from pydantic import JsonValue
@@ -43,6 +43,7 @@ from flo.modules.budget.schemas import (
     AllocationResult,
     LedgerEntryRead,
 )
+from flo.modules.budget.transfers import post_legs
 from flo.modules.budget.transfers import transfer as transfer
 from flo.modules.org.service import OrgService
 from flo.modules.projects.service import ProjectService
@@ -162,45 +163,19 @@ def allocate(
                     "Supporting evidence is required. Supply an evidence reference.",
                     field="evidence_ref",
                 )
-        group_id = (prior.transfer_group_id if prior else None) or uuid4()
-        entries = []
-        for node, amount, suffix in ((parent, -body.amount, ":out"), (project, body.amount, ":in")):
-            entry = post_entry(
-                conn,
-                scope,
-                project_id=node.id,
-                entry_type=LedgerType.TRANSFER,
-                amount=amount,
-                currency=body.currency,
-                source_type="transfer",
-                source_id=group_id,
-                transfer_group_id=group_id,
-                effective_date=body.effective_date,
-                actor_id=actor_id,
-                department_code=node.department_code,
-                ledger_account_code=node.ledger_account_code,
-                idempotency_key=idempotency_key + suffix,
-                reason=body.reason,
-                allow_negative=False,
-            )
-            existing = repo.execute(
-                "SELECT ref FROM ledger_evidence WHERE org_id=%(org_id)s AND entry_id=%(id)s",
-                {"id": entry.id},
-            ).fetchone()
-            if prior is not None and (existing[0] if existing else None) != body.evidence_ref:
-                raise ProblemError(
-                    ErrorCode.IDEMPOTENCY_KEY_REUSED,
-                    detail="This key carries other evidence. Use a new key.",
-                    checks={"problem": "idempotency_conflict"},
-                )
-            if existing is None and body.evidence_ref is not None:
-                repo.execute(
-                    "INSERT INTO ledger_evidence(entry_id,org_id,ref) "
-                    "VALUES (%(id)s,%(org_id)s,%(ref)s)",
-                    {"id": entry.id, "ref": body.evidence_ref},
-                )
-            entries.append(LedgerEntryRead(**asdict(entry)))
-        return AllocationResult(entries=entries, balance=get_balance(conn, scope, project_id))
+        result = post_legs(
+            conn,
+            scope,
+            body,
+            actor_id,
+            idempotency_key,
+            [(parent, -body.amount, ":out"), (project, body.amount, ":in")],
+            allow_negative=False,
+            poster=post_entry,
+        )
+        return AllocationResult(
+            entries=result.entries, balance=get_balance(conn, scope, project_id)
+        )
 
 
 def adjust(

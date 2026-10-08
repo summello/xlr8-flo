@@ -1654,6 +1654,43 @@
       },
       "recap": "Implemented the amended single allocation command, two-sided parent authorization, currency-grouped aggregates, and registry-based funding-mode guard. No schema migration or dependency required. Local task.json is intentionally excluded from commits. Validation: ruff and strict mypy passed; full pytest 1127 passed, 1 skipped; the skipped DATABASE_URL-dependent money round-trip passed separately using an in-memory local URL. Web lint/typecheck passed, vitest 59 passed; migration chain check and all 4 import contracts passed.",
       "title": "Roll-down and roll-up funding modes, set per BU/OU and inherited"
+    },
+    {
+      "story": "E07-S08",
+      "kind": "ledger",
+      "size": "L",
+      "tags": [
+        "money",
+        "concurrency"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a11953-cd81-72f0-b1fc-d4af22146da9",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "f145f7ca-a28e-4b66-bc45-fd4e8ea242d4",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented root-policy cross-hierarchy transfers and shared leg posting for sibling transfers and roll-down allocations. Existing funding_policy.mode_for already resolves the root BU/OU policy and is reused unchanged. Shared replay-check removal was plant-verified: existing sibling replay, existing roll-down allocation replay, and cross-hierarchy replay tests all failed (3 failed), then the check was restored. No migration, dependency, route or schema change. Validation: full pytest 1176 passed, 1 skipped (including 48 new cases); unchanged sibling/funding regression 62 passed; ruff and mypy --strict green (103 source files); import-linter 4 contracts kept; real tracked migration chain validated with MIGRATIONS_DIR=../../migrations; staged gitleaks scan clean. No UI changes; web checks not run. No submit, gate, done, push or merge run.",
+      "title": "Cross-hierarchy transfer up-then-down through both ancestries, one transaction"
     }
   ]
 }
