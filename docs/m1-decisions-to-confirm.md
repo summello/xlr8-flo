@@ -30,6 +30,26 @@ by opening a follow-up story after it merges.
 Not decided (kept out of scope on purpose): derived percent complete on projects, planned items
 per phase, cross-currency posting, approval of manual adjustments (M2).
 
+## Confirmed 9 Oct 2026
+
+Confirmed by the operator on 9 Oct 2026; nothing here needs asking again.
+
+| ID | Decision | Packet |
+|---|---|---|
+| D-M1-26 | Organization codes live in a global registry table (`organization_code`), not on `organization` | E05-S09 |
+| none | Same-level transfers are sibling-only | E07 |
+| none | Funding goes only into draft or active projects | E07 |
+| none | Roll-down needs `budget.allocate` on the parent | E07 |
+| none | Uploads never deduplicate by checksum | E08 |
+| none | No operator console for MVP | M1 |
+| none | FX Worker schedule: ingest at 16:30 and 18:30 UTC, budget reconcile at 02:30 UTC | E05-S05 |
+| none | FX lookup falls back only from a weekend to the preceding Friday; any other missing date blocks | E05-S05 |
+| none | Trusted client address is `X-FLO-Client-IP`, set by the Worker (not `CF-Connecting-IP`) | E05-S11 |
+| none | Login-throttle evidence is kept 24 hours only; a durable lockout audit is a follow-up (AUTH-011) | E05-S11 |
+| none | Organization-selection gate, its error code, and a chooser with no per-role caption; `organization_code` carries `display_name` and `tenant_label`; switching reloads the page | E05-S12 |
+| none | Resending an invitation restarts the 7 days | E05-S13 |
+| none | Accepting a new-account invitation signs the person in; the public accept route has no replay | E05-S13 |
+
 ## Open topic: commercial terms (explore separately, requested by the operator)
 
 E05-S03 stores `tax_code.rate`, `payment_term.net_days` and the optional early-payment discount as
