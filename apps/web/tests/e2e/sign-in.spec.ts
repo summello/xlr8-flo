@@ -181,7 +181,6 @@ for (const theme of ['light', 'dark']) for (const [path, state] of [['/sign-in',
     await stub(page, state); await page.goto(path); await page.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
     await expect(page.locator('.auth-card')).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-    if (path === '/sign-in') await page.screenshot({ path: `/private/tmp/flo-sign-in-${theme}.png` });
     if (state === 'enroll') { await enroll(page); expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]); }
   });
 }
