@@ -155,6 +155,21 @@ describe("Cloudflare API proxy", () => {
     ).toBe(environment.ORIGIN_SHARED_SECRET);
   });
 
+  it("sends the CSRF pair and a fresh Idempotency-Key the API requires on every tick", () => {
+    // apps/api/tests/test_internal.py pins the API side of this exact shape. Without it
+    // the production API answers the cron with 403, then 400, and no job ever runs.
+    const origin = new URL(environment.CLOUD_RUN_ORIGIN);
+    const first = jobsTickRequest(origin, environment);
+    const second = jobsTickRequest(origin, environment);
+    const token = first.headers.get("x-csrf-token");
+
+    expect(token).toBeTruthy();
+    expect(first.headers.get("cookie")).toBe(`flo_csrf=${token}`);
+    expect(first.headers.get("idempotency-key")).toBeTruthy();
+    expect(second.headers.get("idempotency-key")).not.toBe(first.headers.get("idempotency-key"));
+    expect(second.headers.get("x-csrf-token")).not.toBe(token);
+  });
+
   it("still starts the job tick when the independent quota call fails", async () => {
     const fetchMock = vi
       .fn()

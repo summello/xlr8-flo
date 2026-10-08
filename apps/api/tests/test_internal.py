@@ -330,6 +330,64 @@ def test_jobs_tick_rejects_unauthenticated_calls_before_building_worker() -> Non
     assert built == 1
 
 
+def test_cron_worker_request_shape_reaches_the_tick_handler_through_the_production_stack() -> None:
+    """The private-app test above never exercises CSRF or idempotency; this one does.
+
+    The shape below is exactly what infra/cron-worker/jobs-tick.ts sends, pinned on the
+    TypeScript side by apps/web/src/api-proxy.test.ts. Before this test existed the cron
+    request got a CSRF 403 (and, past that, a 400 for the missing Idempotency-Key) in
+    production while every test stayed green.
+    """
+
+    built = 0
+
+    def processor_factory() -> internal.TickProcessor:
+        nonlocal built
+        built += 1
+
+        async def process() -> TickReport:
+            return TickReport(
+                jobs=TickComponentSummary(claimed=0, done=0, retried=0, dead=0),
+                outbox=TickComponentSummary(claimed=0, done=0, retried=0, dead=0),
+            )
+
+        return process
+
+    app.dependency_overrides[get_origin_settings] = lambda: Settings(
+        origin_shared_secret=_TEST_ORIGIN_SECRET
+    )
+    app.dependency_overrides[get_tick_processor] = processor_factory
+    pair = "cron-csrf-pair-0123456789abcdef"
+    cron = {
+        ORIGIN_SECRET_HEADER: _TEST_ORIGIN_SECRET,
+        "Idempotency-Key": "cron-tick-1",
+        "Cookie": f"flo_csrf={pair}",
+        "X-CSRF-Token": pair,
+    }
+
+    async def request() -> tuple[httpx.Response, httpx.Response, httpx.Response]:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            accepted = await client.post("/internal/jobs/tick", headers=cron)
+            without_pair = await client.post(
+                "/internal/jobs/tick",
+                headers={k: v for k, v in cron.items() if k not in {"Cookie", "X-CSRF-Token"}},
+            )
+            without_key = await client.post(
+                "/internal/jobs/tick",
+                headers={k: v for k, v in cron.items() if k != "Idempotency-Key"},
+            )
+            return accepted, without_pair, without_key
+
+    accepted, without_pair, without_key = asyncio.run(request())
+
+    assert accepted.status_code == 200, accepted.text
+    assert built == 1
+    # Removing either half of the contract fails closed instead of silently skipping jobs.
+    assert without_pair.status_code == 403
+    assert without_key.status_code == 400
+
+
 def test_jobs_tick_is_absent_from_public_openapi_even_when_router_is_mounted() -> None:
     documented_app = FastAPI()
     documented_app.include_router(internal.router)
