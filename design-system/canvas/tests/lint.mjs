@@ -30,6 +30,24 @@ export function undefinedVars(css, htmls) {
   return [...used].filter((v) => !defined.has(v));
 }
 
+// Headings are Title Case: first, last and post-colon words and every word of four letters or more are capitalised;
+// short articles, conjunctions, prepositions and helping verbs stay lower case. Acronyms, codes and numbers are left alone.
+const MINOR = new Set('a an the and but or for nor so yet at by in of on to up as vs via per is are was were be been am do does did has have had will would can could shall should may might must if off out'.split(' '));
+export function titleCaseViolations(text) {
+  const words = text.split(/\s+/).filter(Boolean);
+  const bad = [];
+  words.forEach((raw, i) => {
+    const w = raw.replace(/^[("“]+|[)"”,.:;]+$/g, '');
+    if (!/^[A-Za-z][a-z'’-]*$/.test(w)) return;
+    const pinned = i === 0 || i === words.length - 1 || (i > 0 && /:$/.test(words[i - 1]));
+    const upper = /^[A-Z]/.test(w);
+    const minor = MINOR.has(w.toLowerCase());
+    if ((pinned || !minor) && !upper) bad.push(w);
+    if (minor && !pinned && upper) bad.push(w);
+  });
+  return bad;
+}
+
 // MASTER 6.4: a reduced-motion block that collapses animation and transition duration.
 export function hasReducedMotionBlock(css) {
   const m = css.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?)\n\}/);

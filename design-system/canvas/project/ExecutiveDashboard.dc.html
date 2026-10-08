@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Executive dashboard</title>
+<title>Executive Dashboard</title>
 <script src="./support.js"></script>
 <link rel="stylesheet" href="xlr8flo.css">
 </head>
@@ -30,7 +30,7 @@
   <div class="main">
     <header class="top">
       <button class="iconbtn menu-btn" type="button" onClick="{{toggleNav}}" aria-label="Open navigation" aria-expanded="{{navOpen}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
-      <div class="crumbs"><span class="crumb-parent">Reporting</span><span class="sep" aria-hidden="true">/</span><b>Executive dashboard</b></div>
+      <div class="crumbs"><span class="crumb-parent">Reporting</span><span class="sep" aria-hidden="true">/</span><b>Executive Dashboard</b></div>
       <button class="cmdk" type="button" aria-label="Open command menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4"></path></svg><span class="txt">Search or run a command</span><kbd>⌘K</kbd></button>
       <button class="iconbtn" type="button" aria-label="Notifications"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 17V11a6 6 0 1112 0v6l2 2H4zM10 21h4"></path></svg></button>
       <span class="avatar" aria-label="Signed in as Sonam">SM</span>
@@ -39,7 +39,7 @@
     <main class="page">
       <div class="phead">
         <div style="display:flex;flex-direction:column;gap:4px">
-          <h1 class="t-display">Executive dashboard</h1>
+          <h1 class="t-display">Executive Dashboard</h1>
           <p class="secondary">Portfolio FY27 · 5 business units · amounts in USD</p>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
@@ -65,7 +65,7 @@
 
       <div class="dash">
         <section class="card a-wf" aria-labelledby="h-wf">
-          <div class="card-h"><h2 class="t-heading" id="h-wf">Budget waterfall</h2><span class="t-caption">USD millions</span></div>
+          <div class="card-h"><h2 class="t-heading" id="h-wf">Budget Waterfall</h2><span class="t-caption">USD millions</span></div>
           <div class="card-b" style="display:flex;flex-direction:column;gap:12px">
             <p class="t-dense secondary">Of 48.25M allocated, 38.44M is spoken for. 9.81M remains available.</p>
             <div class="tabs" role="tablist" aria-label="Waterfall view" onKeyDown="{{wf.key}}">
@@ -101,7 +101,7 @@
               </sc-if>
               <sc-if value="{{wf.isTable}}" hint-placeholder-val="{{ false }}">
                 <div class="tbl">
-                  <table><thead><tr><th scope="col">Stage</th><th scope="col">Change (USD)</th><th scope="col">Running total (USD)</th></tr></thead>
+                  <table><thead><tr><th scope="col">Stage</th><th scope="col">Change (USD)</th><th scope="col">Running Total (USD)</th></tr></thead>
                   <tbody><sc-for list="{{wfRows}}" as="r" hint-placeholder-count="5"><tr><td>{{r.stage}}</td><td class="{{r.cls}}"><span class="amt"><span class="w">{{r.cw}}</span><span class="d">{{r.cd}}</span></span></td><td><span class="amt"><span class="w">{{r.tw}}</span><span class="d">{{r.td}}</span></span></td></tr></sc-for></tbody></table>
                 </div>
               </sc-if>
@@ -110,7 +110,7 @@
         </section>
 
         <section class="card a-bu" aria-labelledby="h-bu">
-          <div class="card-h"><h2 class="t-heading" id="h-bu">Actual vs allocated by business unit</h2></div>
+          <div class="card-h"><h2 class="t-heading" id="h-bu">Actual vs Allocated by Business Unit</h2></div>
           <div class="card-b chart-wrap" data-w="bu" style="display:flex;flex-direction:column;justify-content:space-between;gap:14px">
             <sc-for list="{{bus}}" as="b" hint-placeholder-count="5">
               <div>
@@ -125,7 +125,7 @@
         </section>
 
         <section class="card a-ln" aria-labelledby="h-line">
-          <div class="card-h"><h2 class="t-heading" id="h-line">Cumulative spend over time</h2><span class="t-caption">USD millions · FY27</span></div>
+          <div class="card-h"><h2 class="t-heading" id="h-line">Cumulative Spend Over Time</h2><span class="t-caption">USD millions · FY27</span></div>
           <div class="card-b" style="display:flex;flex-direction:column;gap:12px">
             <p class="t-dense secondary">Actual spend is 4.6M under plan. Actual plus committed is 9.8M over plan.</p>
             <div class="tabs" role="tablist" aria-label="Spend view" onKeyDown="{{ln.key}}">
@@ -168,7 +168,7 @@
               </sc-if>
               <sc-if value="{{ln.isTable}}" hint-placeholder-val="{{ false }}">
                 <div class="tbl">
-                  <table><thead><tr><th scope="col">Month</th><th scope="col">Actual</th><th scope="col">Actual + committed</th><th scope="col">Plan</th></tr></thead>
+                  <table><thead><tr><th scope="col">Month</th><th scope="col">Actual</th><th scope="col">Actual + Committed</th><th scope="col">Plan</th></tr></thead>
                   <tbody><tr><td>Apr</td><td>1.80</td><td>3.20</td><td>3.00</td></tr><tr><td>May</td><td>4.10</td><td>7.00</td><td>6.50</td></tr><tr><td>Jun</td><td>7.00</td><td>12.20</td><td>10.50</td></tr><tr><td>Jul</td><td>10.60</td><td>18.60</td><td>14.50</td></tr><tr><td>Aug</td><td>14.20</td><td>25.40</td><td>18.50</td></tr><tr><td>Sep</td><td>17.94</td><td>32.32</td><td>22.50</td></tr></tbody></table>
                 </div>
               </sc-if>
@@ -177,7 +177,7 @@
         </section>
 
         <section class="card a-fn" aria-labelledby="h-fn">
-          <div class="card-h"><h2 class="t-heading" id="h-fn">Requisition funnel</h2></div>
+          <div class="card-h"><h2 class="t-heading" id="h-fn">Requisition Funnel</h2></div>
           <div class="card-b chart-wrap" data-w="fn" style="display:flex;flex-direction:column;justify-content:space-between;gap:12px">
             <sc-for list="{{funnel}}" as="f" hint-placeholder-count="5">
               <div>
@@ -192,7 +192,7 @@
         </section>
 
         <section class="card a-att" aria-labelledby="h-att">
-          <div class="card-h"><h2 class="t-heading" id="h-att">Projects needing attention</h2><a href="#" class="t-dense secondary">All projects</a></div>
+          <div class="card-h"><h2 class="t-heading" id="h-att">Projects Needing Attention</h2><a href="#" class="t-dense secondary">All projects</a></div>
           <div class="card-b" style="padding:12px 0 0">
             <div class="row head cols-att stack"><span>Project</span><span class="r">Allocated</span><span class="r">Used</span><span class="r">Remaining</span><span>Budget</span></div>
             <sc-for list="{{attention}}" as="p" hint-placeholder-count="4">
@@ -219,10 +219,18 @@
 <script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"dark","options":["light","dark"]},"collapsed":{"editor":"enum","default":"auto","options":["auto","yes","no"]},"navOpen":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1700}}'>
 class Component extends DCLogic {
   componentDidMount() {
+    this.applyHues();
     if ((this.props.collapsed ?? 'auto') === 'auto') {
       try { if (localStorage.getItem('xf.sidebar') === 'collapsed') this.setState({ collapsed: true }); } catch (e) {}
     }
     this.startIntro();
+  }
+  componentDidUpdate() { this.applyHues(); }
+  // Card hover outline colour: the next colour of the chart series by position, so a new card needs no colour decision.
+  // Starts at the series the KPI cards do not use, then wraps. Decorative only; never carries meaning.
+  applyHues() {
+    const H = ['--c5', '--c7', '--c8', '--c1', '--c3', '--c2', '--c4', '--c6'];
+    document.querySelectorAll('.dash > .card').forEach((el, i) => el.style.setProperty('--hue', 'var(' + H[i % H.length] + ')'));
   }
   componentWillUnmount() { cancelAnimationFrame(this._raf); clearTimeout(this._it); clearTimeout(this._tt); }
   // Signature moments 1 and 2 (MASTER 6.2): KPI rise + count-up, waterfall settle. Once; static end state.

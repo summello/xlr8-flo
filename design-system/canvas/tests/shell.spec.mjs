@@ -147,6 +147,44 @@ test.describe('tables become stacked cards at 375', () => {
   });
 });
 
+test.describe('the top bar stays put while the page scrolls', () => {
+  for (const [name, url] of [['home', HOME], ['exec', EXEC]]) {
+    for (const w of [1440, 768, 375]) {
+      test(`${name} at ${w}`, async ({ page }) => {
+        await open(page, url, w, 450);
+        await page.waitForTimeout(1900);
+        const total = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+        expect(total, 'the page must be taller than the window for this to mean anything').toBeGreaterThan(200);
+        for (const y of [300, total]) {
+          await page.evaluate((v) => window.scrollTo(0, v), y);
+          await page.waitForTimeout(100);
+          const bar = await box(page.locator('.top'));
+          expect(Math.round(bar.y)).toBe(0);                                         // pinned to the top of the window
+          expect(Math.round(bar.height)).toBe(52);
+          for (const el of [page.locator('.crumbs'), page.locator('.top .avatar')]) {
+            const b = await box(el);
+            expect(b.y).toBeGreaterThanOrEqual(0);
+            expect(b.y + b.height).toBeLessThanOrEqual(52);
+          }
+          // content scrolls underneath it, not through it: the bar is opaque
+          const bg = await page.locator('.top').evaluate((e) => getComputedStyle(e).backgroundColor);
+          expect(bg).not.toBe('rgba(0, 0, 0, 0)');
+          const hit = await page.evaluate(() => document.elementFromPoint(innerWidth / 2, 26)?.closest('.top') !== null);
+          expect(hit).toBe(true);
+        }
+      });
+    }
+  }
+  test('the notification popover still opens from the pinned bar, in view', async ({ page }) => {
+    await open(page, HOME, 1440, 500);
+    await page.evaluate(() => window.scrollTo(0, 400));
+    await page.getByRole('button', { name: /Notifications/ }).click();
+    const pop = await box(page.locator('.pop'));
+    expect(pop.y).toBeGreaterThan(0);
+    expect(pop.y + pop.height).toBeLessThanOrEqual(500);
+  });
+});
+
 test('focus is a visible ring on keyboard focus', async ({ page }) => {
   await open(page, HOME);
   await page.keyboard.press('Tab');

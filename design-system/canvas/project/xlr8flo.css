@@ -21,6 +21,7 @@
   --font-ui: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
   --shadow-xl: 0 8px 16px hsl(var(--shadow-color) / 0.08), 0 32px 72px hsl(var(--shadow-color) / 0.18);
+  --z-sticky: 10;
   --dur-instant: 0ms; --dur-fast: 120ms; --dur-base: 180ms; --dur-slow: 260ms; --dur-page: 320ms;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1); --ease-in: cubic-bezier(0.4, 0, 1, 1); --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
   --ease-spring: linear(0, .009, .035, .078, .141, .285, .605, .867, .98, 1.03, 1.04, 1.02, 1);
@@ -69,7 +70,7 @@
 
 /* shell */
 .app { display: flex; position: relative; min-height: 100vh; }
-.side { width: 240px; flex: none; background: var(--surface); border-right: 1px solid var(--border); padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; z-index: 30; }
+.side { width: 240px; flex: none; background: var(--surface); border-right: 1px solid var(--border); padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; }   /* z-index only while it is an overlay, so the pinned top bar's popover layer can cover it */
 .iconbtn.menu-btn, .iconbtn.toggle-nav, .scrim { display: none; }
 .side { position: relative; }
 .side-toggle { position: absolute; top: 14px; right: 8px; }
@@ -94,7 +95,7 @@
 .p-foundation { --ph: var(--phase-foundation); } .p-plan { --ph: var(--phase-plan); }
 .p-demand { --ph: var(--phase-demand); } .p-commit { --ph: var(--phase-commit); }
 .main { flex: 999 1 0; min-width: 0; display: flex; flex-direction: column; container: main / inline-size; }
-.top { height: 52px; flex: none; display: flex; align-items: center; gap: 16px; padding: 0 24px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.top { position: sticky; top: 0; z-index: var(--z-sticky); height: 52px; flex: none; display: flex; align-items: center; gap: 16px; padding: 0 24px; background: var(--surface); border-bottom: 1px solid var(--border); }
 .crumbs { display: flex; align-items: center; gap: 8px; color: var(--fg-secondary); font-size: 13px; }
 .crumbs b { color: var(--fg); font-weight: 560; }
 .cmdk { margin-left: auto; display: flex; align-items: center; gap: 8px; height: 32px; width: 300px; max-width: 100%; padding: 0 10px; border: 1px solid var(--border-control); border-radius: var(--radius-control); background: var(--surface); color: var(--fg-muted); font: inherit; font-size: 13px; cursor: pointer; }
@@ -124,7 +125,10 @@ button.row-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 
 .card { container: card / inline-size; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); box-shadow: var(--shadow-md), var(--lit); }
 /* KPI cards: spring lift and a thin outline in the colour of the series they carry (--hue) */
 .kpi { transition: transform 320ms var(--ease-spring), box-shadow var(--dur-base) var(--ease-out), border-color var(--dur-fast) var(--ease-out); }
-.kpi:is(:hover, .is-hover) { transform: translateY(-4px); border-color: var(--hue); box-shadow: var(--shadow-lg), var(--lit); }
+.kpi:is(:hover, .is-hover) { transform: translateY(-3px); border-color: var(--hue); box-shadow: var(--shadow-lg), var(--lit); }
+/* every other card: outline only, in the next colour of the chart series (assigned by position in the page, see the component script) */
+.dash > .card { transition: border-color var(--dur-fast) var(--ease-out); }
+.dash > .card:is(:hover, .is-hover) { border-color: var(--hue, var(--border-strong)); }
 .card-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 16px 0; }
 .card-b { padding: 16px; }
 .grid { display: grid; gap: 16px; }
@@ -236,6 +240,7 @@ button.row-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 
   .iconbtn { width: 44px; height: 44px; }
   .nav-i { height: 44px; }
   .brand { height: 44px; }
+  .app.nav-open .side { z-index: 30; }
   .xf a.secondary, .xf a.u { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; }
   .row.stack > a.stack-main, button.row-link { display: flex; flex-direction: column; justify-content: center; min-height: 44px; }
   .cmd-o, .pop-i { min-height: 44px; }

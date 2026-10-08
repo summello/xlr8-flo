@@ -2,7 +2,7 @@ import { test, expect } from 'playwright/test';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { layoutTransitions, rawColours, undefinedVars, hasReducedMotionBlock } from './lint.mjs';
+import { layoutTransitions, rawColours, undefinedVars, hasReducedMotionBlock, titleCaseViolations } from './lint.mjs';
 
 const dir = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'project');
 const css = readFileSync(join(dir, 'xlr8flo.css'), 'utf8');
@@ -28,6 +28,23 @@ test.describe('static gates, each proven against a planted violation', () => {
   test('every var(--token) resolves', () => {
     expect(undefinedVars(css, Object.values(html))).toEqual([]);
     expect(undefinedVars('.a { color: var(--nope); }', [])).toEqual(['--nope']);
+  });
+
+  test('title case: the checker, then every static title in the sources', () => {
+    for (const ok of ['Spend vs Budget', 'Actual vs Allocated by Business Unit', 'Cumulative Spend Over Time', 'Budget is Inversely Proportional to Frequency',
+      'Tags (2.4, 7.2): Outline, Pill Radius, Dot, Never an Icon', 'Seen On', 'XLR8 FLO Design System', 'Good Afternoon, Sonam', 'Used of Allocated', 'Loading: Skeleton Rows at Exact Final Height'])
+      expect(titleCaseViolations(ok), ok).toEqual([]);
+    expect(titleCaseViolations('Spend vs budget')).toEqual(['budget']);
+    expect(titleCaseViolations('cumulative Spend Over Time')).toEqual(['cumulative']);
+    expect(titleCaseViolations('Budget Is Inversely Proportional')).toEqual(['Is']);
+    expect(titleCaseViolations('Used Of Allocated')).toEqual(['Of']);
+    expect(titleCaseViolations('Status: closed Vocabulary')).toEqual(['closed']);
+    const titles = [
+      ...boards.map((f) => html[f].match(/<title>([^<]+)<\/title>/)[1]),
+      ...Object.values(JSON.parse(readFileSync(join(dir, 'canvas.json'), 'utf8')).boards).map((b) => b.title),
+      ...Object.values(JSON.parse(readFileSync(join(dir, 'canvas.json'), 'utf8')).notes).map((n) => n.text),
+    ];
+    for (const t of titles) expect(titleCaseViolations(t), t).toEqual([]);
   });
 
   test('a reduced-motion block collapses animation and transition duration', () => {

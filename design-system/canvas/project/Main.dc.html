@@ -50,7 +50,7 @@
     <main class="page">
       <div class="phead" style="--phase: var(--phase-plan)">
         <div style="display:flex;flex-direction:column;gap:4px">
-          <h1 class="t-display">Good afternoon, Sonam</h1>
+          <h1 class="t-display">Good Afternoon, Sonam</h1>
           <p class="secondary">4 items need you. 1 project is over budget.</p>
         </div>
         <div style="display:flex;gap:8px">
@@ -62,7 +62,7 @@
       <div class="dash">
         <section class="card h-tasks" aria-labelledby="h-tasks">
           <div class="card-h">
-            <h2 class="t-heading" id="h-tasks">My tasks</h2>
+            <h2 class="t-heading" id="h-tasks">My Tasks</h2>
             <a href="#" class="t-dense secondary">Open approval inbox</a>
           </div>
           <div class="card-b" style="padding:12px 0 0">
@@ -79,9 +79,9 @@
         </section>
 
         <section class="card h-spend" aria-labelledby="h-spend">
-          <div class="card-h"><h2 class="t-heading" id="h-spend">Spend vs budget</h2></div>
+          <div class="card-h"><h2 class="t-heading" id="h-spend">Spend vs Budget</h2></div>
           <div class="card-b spread" style="display:flex;flex-direction:column;gap:12px">
-            <div class="t-label">My projects, FY27</div>
+            <div class="t-label">My Projects, FY27</div>
             <div>
               <div class="amt mamt"><span class="metric"><span class="w">7,060,000</span><span class="d">.00</span></span><span class="cur">USD</span></div>
               <div class="t-caption" style="margin-top:2px">used of <span class="amt"><span class="w">8,650,000</span><span class="d">.00</span><span class="cur">USD</span></span> allocated</div>
@@ -94,15 +94,15 @@
 
         <section class="card h-proj" aria-labelledby="h-proj">
           <div class="card-h">
-            <h2 class="t-heading" id="h-proj">My projects</h2>
+            <h2 class="t-heading" id="h-proj">My Projects</h2>
             <a href="#" class="t-dense secondary">All projects</a>
           </div>
           <div class="card-b" style="padding:12px 0 0">
-            <div class="row head cols-proj stack"><span>Project</span><span>Used of allocated</span><span class="r">Remaining</span><span>Budget</span></div>
+            <div class="row head cols-proj stack"><span>Project</span><span>Used of Allocated</span><span class="r">Remaining</span><span>Budget</span></div>
             <sc-for list="{{projects}}" as="p" hint-placeholder-count="3">
               <div class="row cols-proj stack" style="min-height:56px">
                 <a href="#" class="stack-main" style="min-width:0"><div style="font-weight:520;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{p.name}}</div><div class="t-caption">{{p.bu}}</div></a>
-                <div data-label="Used of allocated"><div class="bar" role="img" aria-label="{{p.aria}}"><span style="{{p.fill}}"></span></div><div class="t-caption" style="margin-top:4px"><span class="amt"><span class="w">{{p.uw}}</span><span class="d">{{p.ud}}</span><span class="cur">USD</span></span><span style="margin:0 0.35em">of</span><span class="amt"><span class="w">{{p.aw}}</span><span class="d">{{p.ad}}</span><span class="cur">USD</span></span> · {{p.pct}}</div></div>
+                <div data-label="Used of Allocated"><div class="bar" role="img" aria-label="{{p.aria}}"><span style="{{p.fill}}"></span></div><div class="t-caption" style="margin-top:4px"><span class="amt"><span class="w">{{p.uw}}</span><span class="d">{{p.ud}}</span><span class="cur">USD</span></span><span style="margin:0 0.35em">of</span><span class="amt"><span class="w">{{p.aw}}</span><span class="d">{{p.ad}}</span><span class="cur">USD</span></span> · {{p.pct}}</div></div>
                 <span class="{{p.remCls}}" data-label="Remaining"><span class="w">{{p.rw}}</span><span class="d">{{p.rd}}</span><span class="cur">USD</span></span>
                 <span data-label="Budget"><span class="{{p.pillCls}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{p.pd}}"></path></svg>{{p.pill}}</span></span>
               </div>
@@ -111,7 +111,7 @@
         </section>
 
         <section class="card h-act" aria-labelledby="h-act">
-          <div class="card-h"><h2 class="t-heading" id="h-act">Recent activity</h2></div>
+          <div class="card-h"><h2 class="t-heading" id="h-act">Recent Activity</h2></div>
           <div class="card-b spread" style="display:flex;flex-direction:column;gap:14px">
             <sc-for list="{{activity}}" as="a" hint-placeholder-count="4">
               <div style="display:flex;gap:10px">
@@ -191,11 +191,19 @@
 <script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"light","options":["light","dark"]},"collapsed":{"editor":"enum","default":"auto","options":["auto","yes","no"]},"navOpen":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":900}}'>
 class Component extends DCLogic {
   componentDidMount() {
+    this.applyHues();
     if ((this.props.collapsed ?? 'auto') === 'auto') {
       try { if (localStorage.getItem('xf.sidebar') === 'collapsed') this.setState({ collapsed: true }); } catch (e) {}
     }
   }
+  componentDidUpdate() { this.applyHues(); }
   componentWillUnmount() { clearTimeout(this._tt); }
+  // Card hover outline colour: the next colour of the chart series by position, so a new card needs no colour decision.
+  // Starts at the series the KPI cards do not use, then wraps. Decorative only; never carries meaning.
+  applyHues() {
+    const H = ['--c5', '--c7', '--c8', '--c1', '--c3', '--c2', '--c4', '--c6'];
+    document.querySelectorAll('.dash > .card').forEach((el, i) => el.style.setProperty('--hue', 'var(' + H[i % H.length] + ')'));
+  }
   toast(msg, undoRef) {
     clearTimeout(this._tt);
     this.setState({ toast: { msg, undo: !!undoRef, ref: undoRef } });

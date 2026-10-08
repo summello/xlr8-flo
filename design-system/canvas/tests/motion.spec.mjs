@@ -198,6 +198,41 @@ test.describe('executive dashboard', () => {
     expect(t.x + t.width).toBeLessThanOrEqual(wrap.x + wrap.width + 1);
   });
 
+  for (const [name, url, n] of [['executive', EXEC, 5], ['home', HOME, 4]]) {
+    test(`${name}: other cards take an outline only, a different colour each, with no movement`, async ({ page }) => {
+      await open(page, url);
+      if (url === EXEC) await settled(page);                               // Home keeps its .intro class
+      const cards = page.locator('.dash > .card');
+      await expect(cards).toHaveCount(n);
+      const seen = [];
+      for (let i = 0; i < n; i++) {
+        const c = cards.nth(i);
+        const rest = await c.evaluate((e) => { const s = getComputedStyle(e); return { b: s.borderTopColor, shadow: s.boxShadow, t: s.transform }; });
+        await c.hover({ position: { x: 6, y: 6 } });
+        await page.waitForTimeout(250);
+        const hot = await c.evaluate((e) => { const s = getComputedStyle(e); return { b: s.borderTopColor, shadow: s.boxShadow, t: s.transform, hue: e.style.getPropertyValue('--hue') }; });
+        expect(hot.b).not.toBe(rest.b);                                    // the outline appears
+        expect(hot.shadow).toBe(rest.shadow);                              // nothing else changes
+        expect(hot.t).toBe('none');                                        // and nothing moves
+        expect(hot.hue).toMatch(/^var\(--c[1-8]\)$/);
+        seen.push(hot.b);
+        await page.mouse.move(2, 2);
+      }
+      expect(new Set(seen).size).toBe(n);                                  // distinct on one screen
+    });
+  }
+
+  test('a card added later gets its colour with no colour decision', async ({ page }) => {
+    await open(page, EXEC);
+    await settled(page);
+    await page.evaluate(() => { const s = document.createElement('section'); s.className = 'card'; s.id = 'late'; s.innerHTML = '<div class="card-b">New card</div>'; document.querySelector('.dash').appendChild(s); });
+    await page.getByRole('tab', { name: 'Table' }).first().click();       // any re-render re-applies the hues
+    const hues = await page.locator('.dash > .card').evaluateAll((els) => els.map((e) => e.style.getPropertyValue('--hue')));
+    expect(hues).toHaveLength(6);
+    expect(hues.every((h) => /^var\(--c[1-8]\)$/.test(h))).toBe(true);
+    expect(new Set(hues).size).toBe(6);
+  });
+
   test('KPI cards lift with a spring and outline in their own series colour', async ({ page }) => {
     await open(page, EXEC);
     await settled(page);
@@ -214,7 +249,8 @@ test.describe('executive dashboard', () => {
       await c.hover();
       await page.waitForTimeout(450);
       const hot = await c.evaluate((e) => { const s = getComputedStyle(e); return { ty: new DOMMatrix(s.transform).m42, b: s.borderTopColor }; });
-      expect(hot.ty).toBeLessThan(-2);
+      expect(hot.ty).toBeLessThan(-2.5);                                   // 3px, not more
+      expect(hot.ty).toBeGreaterThan(-3.5);
       expect(hot.b).toBe(series[i]);                                       // outline matches the swatch beside the label
       await page.mouse.move(5, 5);
       await page.waitForTimeout(450);

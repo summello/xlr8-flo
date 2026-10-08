@@ -8,6 +8,16 @@ Source of the Claude Design canvas `xlr8flo-design-system` (https://claude.ai/ar
 - Sample data only. Layout and interaction review, not a build spec.
 - The canvas on claude.ai is the working copy; refresh these files from it when a round is approved.
 
+## Rules and Exceptions
+
+The Executive Dashboard is the reference for how a dashboard page lays out (tiers by content width: under 760 one column; 760 to 1099 cards 7/5; 1100 to 1599 cards 8/4 with five KPI cards; 1600 and up waterfall, business units and spend line at 5/3/4 with funnel and table below at 3/9). Cards in a row share the tallest card's height. The same table is on the design system sheet.
+
+| Id | Page | Exception | Revisit |
+|---|---|---|---|
+| E-1 | Home | Keeps the 8/4 two-row layout from 1100 up, no 3-up row at 1600, no KPI row. Four cards today. Registered 8 Oct 2026. | When Home gains cards or KPIs; then follow the dashboard rule. `layout.spec.mjs` pins the current state. |
+
+Conventions: headings are Title Case (`tests/lint.mjs`, `copy.spec.mjs`); amounts are whole figure first with lighter, smaller decimals and currency; KPI cards lift 3px with a spring and outline in their series colour; every other card takes a 1px outline only, in the next series colour by position (assigned in script, so new cards need no colour decision).
+
 ## Tests
 
 Playwright runs the real boards locally, with the canvas runtime served as `support.js`.

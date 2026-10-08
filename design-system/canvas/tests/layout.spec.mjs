@@ -6,7 +6,8 @@ async function open(page, url, w = 1440, h = 1000) {
   await page.setViewportSize({ width: w, height: h });
   await page.goto(url);
   await page.locator('.page').waitFor();
-  await page.waitForTimeout(250);
+  await settled(page);                                   // measuring mid-intro moves the KPI cards by a few pixels
+  await page.waitForTimeout(100);
 }
 // the dashboard plays its intro once and then drops the .intro class (Home keeps it); wait for that, not for a fixed time
 const settled = async (page) => { if (page.url().includes('Executive')) await expect(page.locator('.xf').first()).not.toHaveClass(/intro/, { timeout: 8000 }); };
@@ -60,6 +61,15 @@ test.describe('layout uses the width it has', () => {
     expect((await rows(page)).map(cls)).toEqual([['h-tasks', 'h-spend'], ['h-proj', 'h-act']]);
     await open(page, HOME, 1024);
     expect((await rows(page)).map(cls)).toEqual([['h-tasks', 'h-spend'], ['h-proj', 'h-act']]);
+    // EXCEPTION E-1 (registered 8 Oct 2026, see the sheet): Home stays 8/4 at 1600 and up instead of following the dashboard's
+    // 3-up rule, until it has more cards or KPIs. If this test starts failing because Home was extended, retire E-1 deliberately.
+    await open(page, HOME, 1920);
+    const wide = await rows(page);
+    expect(wide.map(cls)).toEqual([['h-tasks', 'h-spend'], ['h-proj', 'h-act']]);
+    expect(Math.abs(wide[0][0].w / wide[0][1].w - 2)).toBeLessThan(0.2);
+    // and the dashboard keeps the rule it is the reference for
+    await open(page, EXEC, 1920);
+    expect((await rows(page)).map(cls)[1]).toEqual(['a-wf', 'a-bu', 'a-ln']);
     await open(page, HOME, 768);
     expect((await rows(page)).map(cls)).toEqual([['h-tasks'], ['h-spend'], ['h-proj'], ['h-act']]);
   });
@@ -134,7 +144,7 @@ test.describe('money: whole amount first, decimals and currency lighter and smal
 
   test('words sit apart from the amounts around them, and legend spans do not split an amount', async ({ page }) => {
     await open(page, HOME, 1440);
-    const cap = page.locator('.h-proj [data-label="Used of allocated"] .t-caption').first();
+    const cap = page.locator('.h-proj [data-label="Used of Allocated"] .t-caption').first();
     const gap = await cap.evaluate((el) => {                                  // gap between "USD" and "of", and "of" and the next amount
       const spans = [...el.children];
       const of = spans.find((s) => s.textContent === 'of'), a = spans[spans.indexOf(of) - 1], b = spans[spans.indexOf(of) + 1];

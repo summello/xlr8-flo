@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Executive dashboard, 1024</title>
+<title>Executive Dashboard, 1024</title>
 <script src="./support.js"></script>
 <link rel="stylesheet" href="xlr8flo.css">
 </head>
@@ -11,7 +11,7 @@
 <helmet><style>body{margin:0}</style></helmet>
 <dc-import name="ExecutiveDashboard" theme="{{theme}}" collapsed="no" hint-size="100%,1900px"></dc-import>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"light","options":["light","dark"]},"$preview":{"width":1024,"height":1900}}'>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"dark","options":["light","dark"]},"$preview":{"width":1024,"height":1900}}'>
 class Component extends DCLogic {
   renderVals() { return { theme: this.props.theme ?? 'light' }; }
 }
