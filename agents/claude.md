@@ -46,7 +46,7 @@ UI/UX pass — measured against `design-system/MASTER.md` §8, not taste:
 - Errors say what happened, what was preserved, how to recover (UX-005).
 - Loading, empty, partial and error states all exist (UX-004).
 - Locale-correct dates, numbers, currency, with canonical values preserved (UX-007).
-- Tokens only — a hardcoded colour, spacing, radius or duration is a `blocker`, because it is how a design system dies.
+- Tokens only — a hardcoded colour, spacing, radius or duration is a `blocker`, because it is how a design system dies. So is a value traced to `design-system/canvas/` (a board or `xlr8flo.css`) instead of MASTER or `tokens.css`: the canvas is a drawing, and where it disagrees with MASTER it is stale (AGENTS.md, "Authority for UI values"). Check the diff against MASTER, not against the board.
 - Contrast measured in **both** themes. Borders and interaction states are the usual dark-mode casualties.
 - Two clicks to common work; progressive disclosure held (tables summarize, side sheets reveal, pages commit).
 

@@ -9,6 +9,11 @@ Your packet is in your worktree at `design/<STORY_ID>.md` — packets are tracke
 
 **Before any UI story, additionally:** `design-system/MASTER.md`, then `design-system/pages/<page>.md` if one exists for the page you are touching — the page file overrides the master where it says so.
 
+**Authority for UI values, in this order — a lower one never overrides a higher one:**
+1. `design-system/MASTER.md` and `apps/web/src/styles/tokens.css` — binding. Every colour, spacing, radius, duration, type size and component spec.
+2. `design-system/pages/<page>.md` — overrides MASTER **only** where it registers an exception (E-1, E-2 ...) or states a value MASTER has no token for.
+3. `design-system/canvas/` — a drawing for layout, composition, copy and interaction **only**. It is never a source of values. If a board or `xlr8flo.css` disagrees with 1 or 2 — a colour, a size, a duration, a radius, a token name — **ignore the canvas**; it was drawn before the change and is stale. Do not copy a value out of it, do not edit MASTER to match it, and do not reintroduce a value MASTER has since replaced. Record the stale board in `notes.followup` so the design session refreshes it. Where a page file says to port geometry from a board (the sign-in backdrop SVG), port the geometry only and use tokens for everything else.
+
 ---
 
 ## 0. Non-negotiables
@@ -183,7 +188,7 @@ milestone review. Their verdicts live in `reviews/<MILESTONE>.<agent>.json` and 
 
 ### 3.4 Frontend
 
-**`design-system/MASTER.md` is binding.** Tokens, type scale, density, motion curves, component specs and the UI definition of done all live there. Do not invent a colour, a spacing value, a duration, or a radius — if the token you need is missing, say so in `notes.blocked` rather than hardcoding one.
+**`design-system/MASTER.md` is binding.** Tokens, type scale, density, motion curves, component specs and the UI definition of done all live there. Do not invent a colour, a spacing value, a duration, or a radius — if the token you need is missing, say so in `notes.blocked` rather than hardcoding one. A value copied from `design-system/canvas/` instead of a token is a rejection (see "Authority for UI values" above).
 
 - Every interaction is keyboard-reachable with visible focus. Drag-and-drop always ships its non-drag equivalent **in the same story** (A11Y-003, APR-002).
 - Colour never carries meaning alone (A11Y-004). Status needs an icon or text too.

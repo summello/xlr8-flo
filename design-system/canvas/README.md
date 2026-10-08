@@ -2,6 +2,8 @@
 
 Source of the Claude Design canvas `xlr8flo-design-system` (https://claude.ai/artifact/95sB8BhSTJnNetSkmmNCNn, private).
 
+> **Authority: this folder is a drawing, not a specification of values.** `../MASTER.md` and `apps/web/src/styles/tokens.css` win over everything here, then `../pages/*.md`. If a board or `project/xlr8flo.css` disagrees with them, the canvas is stale: ignore it, do not copy its value, and record the stale board in `notes.followup`. Use it for layout, composition, copy and interaction. See AGENTS.md, "Authority for UI values". This folder is excluded from CodeQL (`.github/codeql/config.yml`) and its specs are not run by CI.
+
 - Start with `DECISIONS.md` (everything decided) and `HANDOFF.md` (the plan for the remaining screens).
 - Five canvas pages (Requisition Create holds `Requisition*`, `ReqCreate*`, `ReqList*`, `ReqDetail*`; Common Screens holds the access screens, `SignIn*`): Playground (Home, Executive Dashboard, width variants), Project Dashboard (project list, dashboard, ledger entries, detail, with widths and states) and Design System (the sheet and the theme panel).
 - Files under `project/` mirror the published canvas paths.
