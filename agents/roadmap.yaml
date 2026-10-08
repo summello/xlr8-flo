@@ -539,6 +539,68 @@ epics:
         dep:
           - E05-S09
         st: todo
+      - id: E05-S12
+        t: 'Multi-organization membership: (identity_id, org_id) key, chosen organization
+          on the session, chooser, switcher, tenant label'
+        k: security
+        s: L
+        tags:
+          - auth
+          - security
+          - migration
+          - ui
+        reqs:
+          - AUTH-001
+          - SEC-008
+          - TEN-010
+        dep:
+          - E05-S09
+          - E05-S10
+        st: todo
+      - id: E05-S13
+        t: 'Invitation acceptance: issue, validate, accept, withdraw and resend with a
+          hashed single-use token'
+        k: security
+        s: M
+        tags:
+          - auth
+          - security
+          - migration
+        reqs:
+          - AUTH-001
+          - AUTH-003
+          - AUTH-004
+          - AUTH-005
+          - AUTH-006
+          - AUTH-007
+          - AUTH-008
+          - AUTH-011
+          - SEC-006
+          - SEC-008
+          - TEN-010
+        dep:
+          - E05-S11
+          - E05-S12
+        st: todo
+      - id: E05-S14
+        t: 'Invitation acceptance screen: /invite/:token, uniform unavailable state, MFA
+          handoff'
+        k: ui
+        s: S
+        tags:
+          - auth
+          - ui
+        reqs:
+          - AUTH-003
+          - AUTH-004
+          - AUTH-006
+          - AUTH-007
+          - A11Y-006
+          - UX-004
+          - UX-005
+        dep:
+          - E05-S13
+        st: todo
 
   - id: E06
     name: Projects
