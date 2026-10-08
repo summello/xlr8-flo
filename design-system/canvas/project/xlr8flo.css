@@ -613,3 +613,45 @@ fieldset.choice input { width: 18px; height: 18px; margin: 0; }
 @media (max-width: 1023px) { .chk { min-height: 44px; } .wf-port { width: 28px; height: 28px; } }
 .sticky-note .t-caption, .sticky-note .secondary { color: var(--fg-secondary); }   /* --fg-muted measures 4.31:1 on --sunken (DECISIONS section 7) */
 .total-bar .t-caption { color: var(--fg-secondary); }   /* same finding: --fg-muted is 4.31:1 on --sunken */
+
+/* ---- hyperlink, fold, trail "now" dot, required-field indicator (DECISIONS 64 to 66). Tokens only. ---- */
+.xf a.link { display: inline; color: var(--ring); font-weight: 520; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; text-decoration-color: color-mix(in oklab, var(--ring) 45%, transparent); transition: text-decoration-color var(--dur-fast) var(--ease-out), text-underline-offset var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out); }
+.xf a.link svg { display: inline-block; vertical-align: -2px; margin-left: 6px; transition: transform var(--dur-fast) var(--ease-out); }
+.xf a.link:is(:hover, .is-hover) { text-decoration-thickness: 2px; text-underline-offset: 5px; text-decoration-color: currentColor; }
+.xf a.link:is(:hover, .is-hover) svg { transform: translateX(3px); }
+.xf a.link:is(:active, .is-active) { color: var(--fg); }
+.xf a.link:is(:active, .is-active) svg { transform: translateX(1px); }
+@media (max-width: 1023px) { .xf a.link { display: inline-block; padding: 12px 0; } }
+
+.fold { border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--surface); }
+.fold > summary { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px; cursor: pointer; list-style: none; font-size: 13px; font-weight: 560; color: var(--fg-secondary); border-radius: var(--radius-control); }
+.fold > summary::-webkit-details-marker { display: none; }
+.fold > summary:is(:hover, .is-hover) { background: var(--sunken); color: var(--fg); }
+.fold > summary .chev { transition: transform var(--dur-fast) var(--ease-out); }
+.fold[open] > summary .chev { transform: rotate(90deg); }
+.fold > .fold-b { padding: 4px 12px 12px; }
+@media (max-width: 1023px) { .fold > summary { min-height: 44px; } }
+.lineage > li.now::before { background: var(--phase-plan); border-color: var(--phase-plan); }
+
+/* required fields: the tag, the notch and the count all come from the control's own state (:required and :valid),
+   so a new field needs only the `required` attribute and a tag in its label, and no script keeps them honest. */
+.req-tag { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; height: 18px; padding: 0 7px; border: 1px solid var(--border-strong); border-radius: var(--radius-pill); font-size: 11px; line-height: 16px; font-weight: 560; letter-spacing: 0; text-transform: none; color: var(--fg-secondary); vertical-align: middle; white-space: nowrap; }
+.req-tag .rq-done { display: none; align-items: center; gap: 4px; color: var(--st-success-fg); animation: rqIn var(--dur-base) var(--ease-out); }
+.req-tag .rq-done::before { content: ''; width: 4px; height: 8px; margin: -2px 2px 0 1px; border: solid currentColor; border-width: 0 1.6px 1.6px 0; transform: rotate(45deg); }
+@keyframes rqIn { from { opacity: 0; transform: scale(0.85); } }
+*:has(> label .req-tag):has(:is(input, select, textarea):required:valid) .req-tag,
+*:has(> label .req-tag):has([data-req]:not(:placeholder-shown)) .req-tag,
+label:has(input:required:checked) .req-tag { border-color: transparent; background: var(--st-success-bg); }
+*:has(> label .req-tag):has(:is(input, select, textarea):required:valid) .req-tag .rq-need,
+*:has(> label .req-tag):has([data-req]:not(:placeholder-shown)) .req-tag .rq-need,
+label:has(input:required:checked) .req-tag .rq-need { display: none; }
+*:has(> label .req-tag):has(:is(input, select, textarea):required:valid) .req-tag .rq-done,
+*:has(> label .req-tag):has([data-req]:not(:placeholder-shown)) .req-tag .rq-done,
+label:has(input:required:checked) .req-tag .rq-done { display: inline-flex; }
+/* the notch: an empty required control has a rail on its start edge; it goes away the moment there is a value */
+.inp:required:invalid:not(:focus-visible), select.btn:required:invalid:not(:focus-visible), textarea.inp[data-req]:placeholder-shown:not(:focus-visible) { box-shadow: inset 3px 0 0 0 var(--phase-plan); }
+/* the summary: the action bar says whether any required control on the page is still empty (:has sees across cards; a counter cannot, because .card is a style-containment boundary) */
+.req-left { font-size: 12px; line-height: 16px; color: var(--fg-secondary); }
+.req-left .rq-allset { display: none; color: var(--st-success-fg); font-weight: 560; }
+:is(.page, .req-scope):not(:has(:is(input, select, textarea):required:invalid)) .req-left .rq-count { display: none; }
+:is(.page, .req-scope):not(:has(:is(input, select, textarea):required:invalid)) .req-left .rq-allset { display: inline; }

@@ -31,7 +31,7 @@ test.describe('canvas pages', () => {
 });
 
 test.describe('design system sheet is complete and in step with the screens', () => {
-  const SECTIONS = ['s-chrome', 's-phase', 's-status', 's-tags', 's-chart', 's-type', 's-comp', 's-shell', 's-icons', 's-over', 's-forms', 's-access', 's-tables', 's-approvals', 's-states', 's-motion', 's-load', 's-rules'];
+  const SECTIONS = ['s-chrome', 's-phase', 's-status', 's-tags', 's-chart', 's-type', 's-comp', 's-shell', 's-icons', 's-over', 's-forms', 's-access', 's-tables', 's-approvals', 's-required', 's-states', 's-motion', 's-load', 's-rules'];
 
   test('every section is present, in both themes', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -79,7 +79,7 @@ test.describe('design system sheet is complete and in step with the screens', ()
       const svg = e.querySelector('svg'), path = svg.querySelector('path'), r = path.getBoundingClientRect();
       return { name: e.querySelector('.t-dense').textContent, group: e.querySelector('.t-caption').textContent, d: path.getAttribute('d'), w: r.width, h: r.height, stroke: svg.getAttribute('stroke-width'), hidden: svg.getAttribute('aria-hidden') };
     }));
-    expect(cells.length).toBe(30);                                                            // 13 navigation, 12 interface, 5 status
+    expect(cells.length).toBe(31);                                                            // 13 navigation, 13 interface, 5 status
     expect(new Set(cells.map((c) => c.name)).size).toBe(cells.length);
     expect(cells.filter((c) => c.group === 'navigation').length).toBe(13);
     expect(cells.filter((c) => c.group === 'status').map((c) => c.name)).toEqual(['neutral', 'info', 'success', 'warning', 'danger']);

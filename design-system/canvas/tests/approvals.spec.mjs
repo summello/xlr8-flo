@@ -118,7 +118,8 @@ test.describe('decision panel', () => {
   test('routing is explained: the rule that matched, why you, the group rule, when the group was fixed, separation of duty', async ({ page }) => {
     await open(page, INBOX);
     await openRow(page, 'REQ-00418');
-    const why = page.locator('section', { has: page.getByRole('heading', { name: 'Why It Reached You' }) });
+    await page.locator('.fold > summary').click();                                    // folded by default, it is for audit
+    const why = page.locator('.fold');
     for (const t of ['Rule Matched', 'Why You', 'Group Rule', 'Group Fixed', 'Separation']) await expect(why).toContainText(t);
     await expect(why).toContainText('Capital Requisition, 50,000.00 to 250,000.00 USD');
     await expect(why).toContainText('Members fixed when the task was created');
@@ -468,7 +469,7 @@ test.describe('workflow builder', () => {
   });
 });
 
-const AXE_BOARDS = ['ApprovalInbox', 'ApprCompleted', 'ApprDelegated', 'ApprEmpty', 'ApprError', 'ApprSheet', 'ApprSheetReason', 'ApprSheetStaleErr', 'ApprSheetChanges', 'ApprSheetSod', 'ReqDetailReturned', 'ReqDetailWithdrawn', 'WdDialog', 'WdError', 'WdDecided',
+const AXE_BOARDS = ['ApprovalInbox', 'ApprCompleted', 'ApprDelegated', 'ApprEmpty', 'ApprError', 'ApprSheet', 'ApprSheetPartial', 'ApprSheetReason', 'ApprSheetStaleErr', 'ApprSheetChanges', 'ApprSheetSod', 'ReqDetailReturned', 'ReqDetailWithdrawn', 'WdDialog', 'WdError', 'WdDecided',
   'RequisitionResubmit', 'ResubFunds', 'ResubDone', 'ApprovalDelegation', 'DelegErrors', 'DelegRevoke', 'DelegOrg', 'ApprovalWorkflows', 'WfListVersions', 'WorkflowBuilder', 'BuildOutline', 'BuildGroup', 'BuildProblems', 'BuildPreview', 'BuildPublish', 'BuildPartial'];
 test.describe('axe, light and dark', () => {
   for (const b of AXE_BOARDS) {

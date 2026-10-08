@@ -60,3 +60,9 @@ E18-S02 lists "anti-abuse controls" without naming one. **No challenge widget is
 ## 5. Tests
 
 Happy path to the verify screen; each validation message above; the error summary takes focus and links work; input preserved after failure; the verify copy is identical for a new and an existing address (assert the same HTML); resend toast; axe in light and dark on `/sign-up` and `/sign-up/verify`; keyboard-only path; phone (375) no sideways scroll and 44px targets.
+
+---
+
+## Required fields (DECISIONS 66)
+
+Every field this page spec calls required carries the `required` attribute and a `Required` tag in its label, which turns to `Done` with a tick when it has a value; an empty required control has a rail on its start edge. Submit stays enabled: an incomplete form gets the error summary, and the server enforces the same rules. Markup: `<label class="t-label" for="x">Title<span class="req-tag" aria-hidden="true"><span class="rq-need">Required</span><span class="rq-done">Done</span></span></label><input required id="x">`. `tests/lint.mjs` `requiredMarkViolations` fails a mismatch.

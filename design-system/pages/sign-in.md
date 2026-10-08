@@ -143,3 +143,9 @@ Rules, all enforced by `tests/auth.spec.mjs` in the canvas (copy the tests):
 - axe on `/sign-in`, `/sign-in/mfa`, `/sign-in/mfa/enroll` in light and dark.
 - Backdrop: the animation audit in §8 (properties, minimum loop, hidden from assistive tech, reduced motion), with a planted violation proving it fails.
 - Phone (375): no horizontal scroll, 44px targets.
+
+---
+
+## Required fields (DECISIONS 66)
+
+Every field this page spec calls required carries the `required` attribute and a `Required` tag in its label, which turns to `Done` with a tick when it has a value; an empty required control has a rail on its start edge. Submit stays enabled: an incomplete form gets the error summary, and the server enforces the same rules. Markup: `<label class="t-label" for="x">Title<span class="req-tag" aria-hidden="true"><span class="rq-need">Required</span><span class="rq-done">Done</span></span></label><input required id="x">`. `tests/lint.mjs` `requiredMarkViolations` fails a mismatch.

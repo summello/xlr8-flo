@@ -36,6 +36,7 @@ A connection that would make a loop is refused: `Not connected. That would make 
 Tabs `Inspector` and `Problems <count>`.
 
 - **Start:** explains that funds are reserved at submission (REQ-011) and this workflow only chooses approvers.
+- **Required (DECISIONS 66):** a step or condition `Name`, a condition `Value`, and Route Preview `Estimate` carry the `Required` tag. At least one approver per step is enforced by validation (Missing Approver), not by the tag.
 - **Condition:** `Name`, `Attribute` (any attribute of the document type, including custom fields, APR-005), `Test` (`is over`, `is at most`, `is`), `Value`, and `Yes Goes To` / `No Goes To`. Amount bands (several ranges in one condition, APR-010) are Phase 2; the text says to chain two conditions.
 - **Approval Step:** `Name`; `Approvers` as a checkbox group of eligible people only (organization, business unit and role scope, APR-004; requesters never approve their own request, APR-019); `Group Rule` radios `Any one approves`, `All approve`, `Quorum` (with `Approvals Needed` out of N; membership is snapshotted when each task is created, APR-018); a checkbox `An approver here may also approve at an earlier step` (intended duplicates); `Due After (Days)`, `Remind After`, `Escalate After`, `Escalate To` (APR-017; delegation and the due date are described on the availability page); `Goes To`.
 - If the eligible-approver list fails to load, only that field fails: the current approvers are shown in the error, `Try again`, nothing else is blocked.

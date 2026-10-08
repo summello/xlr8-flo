@@ -63,3 +63,30 @@ export function hasReducedMotionBlock(css) {
   const m = css.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?)\n\}/);
   return !!m && /animation-duration/.test(m[1]) && /transition-duration/.test(m[1]);
 }
+
+// Required fields (DECISIONS 64 to 66): a label that carries a Required tag must point at a control that is `required` (or `data-req`
+// for a conditional rule), and a `required` control must be tagged in its label, or be a line cell with its own aria-label.
+export function requiredMarkViolations(html) {
+  const body = html.replace(/<script[\s\S]*?<\/script>/g, '');
+  const out = [];
+  const control = (id) => body.match(new RegExp(`<(?:input|select|textarea)\\b[^>]*\\bid="${id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"[^>]*>`));
+  const tagged = new Set();
+  for (const m of body.matchAll(/<label\b[^>]*\bfor="([^"]+)"[^>]*>[\s\S]*?<\/label>/g)) {
+    if (!m[0].includes('req-tag')) continue;
+    tagged.add(m[1]);
+    const c = control(m[1]);
+    if (!c) { out.push(`label for ${m[1]} has a Required tag but no control`); continue; }
+    if (!/\srequired[\s>]|\sdata-req[\s>]/.test(c[0])) out.push(`${m[1]} is tagged Required but the control is not required`);
+  }
+  for (const m of body.matchAll(/<(?:input|select|textarea)\b[^>]*>/g)) {
+    if (!/\srequired[\s>]/.test(m[0]) || /\sdata-req[\s>]/.test(m[0])) continue;
+    const id = (m[0].match(/\bid="([^"]+)"/) || [])[1];
+    if (id && tagged.has(id)) continue;
+    if (/\saria-label="/.test(m[0])) continue;                                   // a line cell, named by its aria-label
+    const at = body.indexOf(m[0]);
+    const after = body.slice(at + m[0].length, at + m[0].length + 700);
+    if (/type="(?:checkbox|radio)"/.test(m[0]) && /^[^<]*(?:<[^>]*>[^<]*){0,3}?<span class="req-tag"/.test(after)) continue;
+    out.push(`required control ${id || m[0].slice(0, 40)} has no Required tag`);
+  }
+  return out;
+}

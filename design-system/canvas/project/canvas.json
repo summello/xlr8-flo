@@ -1572,7 +1572,7 @@
     },
     "ApprovalDelegation.dc.html": {
       "expand": "fill",
-      "h": 1175,
+      "h": 1179,
       "is_interactive": true,
       "page": "approval-inbox",
       "title": "Approval Availability",
@@ -1582,7 +1582,7 @@
     },
     "DelegW1920.dc.html": {
       "expand": "fill",
-      "h": 1159,
+      "h": 1163,
       "is_interactive": true,
       "page": "approval-inbox",
       "title": "Approval Availability, 1920",
@@ -1592,7 +1592,7 @@
     },
     "DelegW1024.dc.html": {
       "expand": "fill",
-      "h": 1675,
+      "h": 1679,
       "is_interactive": true,
       "page": "approval-inbox",
       "title": "Approval Availability, 1024",
@@ -1602,7 +1602,7 @@
     },
     "DelegW768.dc.html": {
       "expand": "fill",
-      "h": 1767,
+      "h": 1771,
       "is_interactive": true,
       "page": "approval-inbox",
       "title": "Approval Availability, 768",
@@ -1612,7 +1612,7 @@
     },
     "DelegW375.dc.html": {
       "expand": "fill",
-      "h": 2406,
+      "h": 2436,
       "is_interactive": true,
       "page": "approval-inbox",
       "title": "Approval Availability, 375",
@@ -1628,17 +1628,17 @@
       "title": "Availability, Loading",
       "w": 1440,
       "x": 0,
-      "y": 17165
+      "y": 17195
     },
     "DelegEmpty.dc.html": {
       "expand": "fill",
-      "h": 1073,
+      "h": 1077,
       "is_interactive": true,
       "page": "approval-inbox",
       "title": "Availability, No Delegations",
       "w": 1440,
       "x": 1520,
-      "y": 17165
+      "y": 17195
     },
     "DelegError.dc.html": {
       "expand": "fill",
@@ -1648,27 +1648,27 @@
       "title": "Availability, Error",
       "w": 1440,
       "x": 3040,
-      "y": 17165
+      "y": 17195
     },
     "DelegErrors.dc.html": {
       "expand": "fill",
-      "h": 1325,
+      "h": 1329,
       "is_interactive": true,
       "page": "approval-inbox",
       "title": "Availability, Form Errors",
       "w": 1440,
       "x": 4560,
-      "y": 17165
+      "y": 17195
     },
     "DelegRevoke.dc.html": {
       "expand": "fill",
-      "h": 1175,
+      "h": 1179,
       "is_interactive": true,
       "page": "approval-inbox",
       "title": "Availability, Revoke Confirmation",
       "w": 1440,
       "x": 6080,
-      "y": 17165
+      "y": 17195
     },
     "DelegOrg.dc.html": {
       "expand": "fill",
@@ -1678,7 +1678,7 @@
       "title": "Availability, Organization Tab",
       "w": 1440,
       "x": 7600,
-      "y": 17165
+      "y": 17195
     },
     "ApprovalWorkflows.dc.html": {
       "expand": "fill",
@@ -1782,7 +1782,7 @@
     },
     "WorkflowBuilder.dc.html": {
       "expand": "fill",
-      "h": 1365,
+      "h": 1367,
       "is_interactive": true,
       "page": "approval-builder",
       "title": "Workflow Builder, Canvas",
@@ -1792,7 +1792,7 @@
     },
     "BuildW1920.dc.html": {
       "expand": "fill",
-      "h": 1365,
+      "h": 1367,
       "is_interactive": true,
       "page": "approval-builder",
       "title": "Workflow Builder, 1920",
@@ -1802,7 +1802,7 @@
     },
     "BuildW1024.dc.html": {
       "expand": "fill",
-      "h": 2051,
+      "h": 2053,
       "is_interactive": true,
       "page": "approval-builder",
       "title": "Workflow Builder, 1024",
@@ -1812,7 +1812,7 @@
     },
     "BuildW768.dc.html": {
       "expand": "fill",
-      "h": 2029,
+      "h": 2031,
       "is_interactive": true,
       "page": "approval-builder",
       "title": "Workflow Builder, 768, Outline",
@@ -1822,7 +1822,7 @@
     },
     "BuildW375.dc.html": {
       "expand": "fill",
-      "h": 3326,
+      "h": 3328,
       "is_interactive": true,
       "page": "approval-builder",
       "title": "Workflow Builder, 375, Outline",
@@ -1832,13 +1832,13 @@
     },
     "BuildOutline.dc.html": {
       "expand": "fill",
-      "h": 1365,
+      "h": 1367,
       "is_interactive": true,
       "page": "approval-builder",
       "title": "Workflow Builder, Outline (Non-Drag)",
       "w": 1440,
       "x": 0,
-      "y": 6939
+      "y": 6941
     },
     "BuildCond.dc.html": {
       "expand": "fill",
@@ -1848,17 +1848,17 @@
       "title": "Workflow Builder, Condition Selected",
       "w": 1440,
       "x": 1520,
-      "y": 6939
+      "y": 6941
     },
     "BuildGroup.dc.html": {
       "expand": "fill",
-      "h": 1467,
+      "h": 1469,
       "is_interactive": true,
       "page": "approval-builder",
       "title": "Workflow Builder, Quorum Group Selected",
       "w": 1440,
       "x": 3040,
-      "y": 6939
+      "y": 6941
     },
     "BuildProblems.dc.html": {
       "expand": "fill",
@@ -1868,7 +1868,7 @@
       "title": "Workflow Builder, Problems Block Publishing",
       "w": 1440,
       "x": 4560,
-      "y": 6939
+      "y": 6941
     },
     "BuildProblemsOutline.dc.html": {
       "expand": "fill",
@@ -1878,27 +1878,27 @@
       "title": "Workflow Builder, Problems in the Outline",
       "w": 1440,
       "x": 6080,
-      "y": 6939
+      "y": 6941
     },
     "BuildPreview.dc.html": {
       "expand": "fill",
-      "h": 1365,
+      "h": 1367,
       "is_interactive": true,
       "page": "approval-builder",
       "title": "Workflow Builder, Route Preview",
       "w": 1440,
       "x": 0,
-      "y": 8666
+      "y": 8670
     },
     "BuildPublish.dc.html": {
       "expand": "fill",
-      "h": 1365,
+      "h": 1367,
       "is_interactive": true,
       "page": "approval-builder",
       "title": "Workflow Builder, Publish",
       "w": 1440,
       "x": 1520,
-      "y": 8666
+      "y": 8670
     },
     "BuildLoading.dc.html": {
       "expand": "fill",
@@ -1908,7 +1908,7 @@
       "title": "Workflow Builder, Loading",
       "w": 1440,
       "x": 3040,
-      "y": 8666
+      "y": 8670
     },
     "BuildEmpty.dc.html": {
       "expand": "fill",
@@ -1918,7 +1918,7 @@
       "title": "Workflow Builder, Empty",
       "w": 1440,
       "x": 4560,
-      "y": 8666
+      "y": 8670
     },
     "BuildError.dc.html": {
       "expand": "fill",
@@ -1928,17 +1928,17 @@
       "title": "Workflow Builder, Error",
       "w": 1440,
       "x": 6080,
-      "y": 8666
+      "y": 8670
     },
     "BuildPartial.dc.html": {
       "expand": "fill",
-      "h": 1241,
+      "h": 1243,
       "is_interactive": true,
       "page": "approval-builder",
       "title": "Workflow Builder, Partial, Approvers Unavailable",
       "w": 1440,
       "x": 7600,
-      "y": 8666
+      "y": 8670
     }
   },
   "createdOnFiles": {
@@ -2228,7 +2228,7 @@
       "text": "Delegation: States",
       "w": 240,
       "x": 0,
-      "y": 17045
+      "y": 17075
     },
     "ap9": {
       "kind": "title1",
@@ -2264,7 +2264,7 @@
       "text": "Workflow Builder: Non-Drag Outline, Inspector Views, Problems",
       "w": 240,
       "x": 0,
-      "y": 6819
+      "y": 6821
     },
     "ap13": {
       "kind": "title1",
@@ -2273,7 +2273,7 @@
       "text": "Workflow Builder: Preview, Publish and States",
       "w": 240,
       "x": 0,
-      "y": 8546
+      "y": 8550
     }
   },
   "order": [

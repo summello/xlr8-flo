@@ -30,12 +30,14 @@ Opens from a row as a `role=dialog`, `aria-modal`, 640px (`.sheet.wide`), full w
 
 Header: `REQ-00418 · Capital Requisition · v1`, the title, the status pill. Body, in order:
 
+**Order (operator, 9 Oct 2026):** notices, key facts, the link, **Decision Trail**, the comment, then **Why It Reached You** folded. Details follow in the order they are listed here only where the order is unchanged.
+
 1. **Notices** (`.summary`, icon and words), only when they apply: `This Changed While You Had It Open`, `Already Decided`, `You Cannot Decide Your Own Request`, `With <name>`, `You Are Covering For <name>`, `You Decided This`.
-2. **Key facts:** requested by, project, amount (large, whole figure first), needed by, version.
+2. **Key facts:** requested by, project, amount (large, whole figure first), needed by, version, then the hyperlink `Open the full requisition` (`a.link`: coloured, underlined, underline thickens and the arrow moves 3px on hover).
 3. **Changes Since Your Last Decision** (only on a resubmitted or reloaded document): the diff of section 4, then one sentence saying whether the change was material (APR-015).
-4. **Why It Reached You** (APR-021): the numbered route with your step marked, then `Rule Matched`, `Why You`, `Group Rule`, `Group Fixed` (membership is snapshotted when the task is created, APR-018) and `Separation` (APR-019). If this card fails to load it shows its own error and `Try again`; decisions stay possible.
-5. **Decision Trail:** earlier steps and comments, newest first, each with who, when and the note.
-6. **Comment or Reason** (textarea). Required to reject or return; `aria-invalid` and a field error when missing. The hint says it is recorded with your name, the delegation you act under, and the version you decided.
+4. **Why It Reached You** (APR-021), **a collapsed `<details class="fold">` after the comment, labelled `for audit`**, open by default only when it failed to load: the numbered route with your step marked, then `Rule Matched`, `Why You`, `Group Rule`, `Group Fixed` (membership is snapshotted when the task is created, APR-018) and `Separation` (APR-019). If this card fails to load it shows its own error and `Try again`; decisions stay possible.
+5. **Decision Trail** (placed before the audit fold, and the most prominent block after the facts; `t-heading` with an event count): first a `Waiting for you, step 1 of 1, due <date>` entry with a filled dot, then earlier steps and comments, newest first, each with who, when and the note.
+6. **Comment or Reason** (textarea) with the tag `Needed to reject or return` that becomes `Done` once there is text (`data-req`, DECISIONS 66). Required to reject or return; `aria-invalid` and a field error when missing. The hint says it is recorded with your name, the delegation you act under, and the version you decided.
 
 Footer buttons: `Close`, `Post Comment`, `Return for Changes`, `Reject`, `Approve` (primary, last). They are never disabled to signal an error (the same rule as requisition submit, DECISIONS item 45); a refused attempt produces the alert below. For a document you cannot decide, the decision buttons are absent, not disabled, and a notice says why (WF-006).
 
@@ -69,7 +71,7 @@ The approver sees the same diff in the decision panel, labelled `Changes Since Y
 
 ## 5. Delegation and out-of-office (`/approvals/availability`)
 
-Heading `Approval Availability`. Tabs `My Delegations` and `Organization` (administrators only; they can revoke but not create for someone else).
+Heading `Approval Availability`. Starts, Ends and Pass Approvals To are required: each has the `Required` tag and rail, and the form says whether required fields are still empty (DECISIONS 66). Tabs `My Delegations` and `Organization` (administrators only; they can revoke but not create for someone else).
 
 - **Out-of-Office** form: `Starts`, `Ends` (native date inputs), `Pass Approvals To` (a select of eligible people only, APR-004, re-checked on the server), `Covers` (`All my approvals` or `Purchase orders only`). `Save Out-of-Office` is never disabled. Errors: a summary at the top (`Not saved. 3 problems.`, `role=alert`, focus), each item `Category: link` that focuses its field (`Required field`, `Dates`, `Overlap`); inline field errors with `aria-invalid="true"`. Typed values are kept.
 - **Your Delegations** table (`.cols-deleg`): delegate, period, covers, status (`Active`, `Upcoming`, `Ended`, `Revoked`), `Revoke`. Ended and revoked rows say `Kept in the record`.

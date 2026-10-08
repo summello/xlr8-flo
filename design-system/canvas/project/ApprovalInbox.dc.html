@@ -148,7 +148,7 @@
         <dt class="t-label">Needed By</dt><dd style="margin:0">{{sheet.needed}}</dd>
         <dt class="t-label">Version</dt><dd style="margin:0">{{sheet.verText}}</dd>
       </dl>
-      <p class="t-dense" style="margin:0"><a href="#" class="u">Open the full {{sheet.kind}}</a></p>
+      <p class="t-dense" style="margin:0"><a href="#" class="link">Open the full {{sheet.kind}}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a></p>
 
       <sc-if value="{{sheet.hasDiff}}" hint-placeholder-val="{{ false }}">
         <section aria-labelledby="sh-diff">
@@ -161,8 +161,21 @@
         </section>
       </sc-if>
 
-      <section aria-labelledby="sh-why">
-        <h3 class="t-label" id="sh-why" style="margin-bottom:8px">Why It Reached You</h3>
+      <section aria-labelledby="sh-trail">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:12px"><h3 class="t-heading" id="sh-trail">Decision Trail</h3><span class="t-caption">{{sheet.trailCount}}</span></div>
+        <ol class="lineage"><sc-for list="{{sheet.trail}}" as="t" hint-placeholder-count="3"><li class="{{t.cls}}"><div class="t-dense" style="font-weight:560;font-size:14px;line-height:20px">{{t.what}}</div><div class="t-caption">{{t.when}} · {{t.who}}</div><sc-if value="{{t.hasNote}}" hint-placeholder-val="{{ false }}"><div class="t-dense secondary" style="margin-top:2px">{{t.note}}</div></sc-if></li></sc-for></ol>
+      </section>
+
+      <sc-if value="{{sheet.canDecide}}" hint-placeholder-val="{{ true }}">
+        <div class="field">
+          <label for="sh-c" class="t-label">Comment or Reason<span class="req-tag" aria-hidden="true"><span class="rq-need">Needed to reject or return</span><span class="rq-done">Done</span></span></label><textarea id="sh-c" data-req class="inp ta" rows="3" aria-describedby="sh-c-h" aria-invalid="{{commentBad}}" value="{{comment}}" onChange="{{setComment}}" placeholder="Visible to the requester and recorded with your decision"></textarea>
+          <span id="sh-c-h" class="t-caption">A reason is required to reject or return. It is recorded with your name{{sheet.actingFor}} and the version you decided.</span>
+          <sc-if value="{{commentBad}}" hint-placeholder-val="{{ false }}"><span class="field-err"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>Enter a reason before you reject or return this.</span></sc-if>
+        </div>
+      </sc-if>
+      <details class="fold" open="{{sheet.whyOpen}}">
+        <summary id="sh-why"><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>Why It Reached You <span class="t-caption" style="font-weight:400">for audit</span></summary>
+        <div class="fold-b">
         <sc-if value="{{sheet.whyOk}}" hint-placeholder-val="{{ true }}">
           <div class="sticky-note" style="display:flex;flex-direction:column;gap:10px">
             <ol class="route" aria-label="Routing steps">
@@ -178,21 +191,8 @@
           </div>
         </sc-if>
         <sc-if value="{{sheet.whyErr}}" hint-placeholder-val="{{ false }}"><div class="state" role="alert" style="padding:16px"><span class="pill danger"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>Could not load why it reached you</span><div class="t-dense secondary">You can still decide. Nothing was changed.</div><button class="btn" type="button" onClick="{{retry}}">Try again</button></div></sc-if>
-      </section>
-
-      <section aria-labelledby="sh-trail">
-        <h3 class="t-label" id="sh-trail" style="margin-bottom:12px">Decision Trail</h3>
-        <ol class="lineage"><sc-for list="{{sheet.trail}}" as="t" hint-placeholder-count="3"><li><div class="t-dense" style="font-weight:520">{{t.what}}</div><div class="t-caption">{{t.when}} · {{t.who}}</div><sc-if value="{{t.hasNote}}" hint-placeholder-val="{{ false }}"><div class="t-dense secondary">{{t.note}}</div></sc-if></li></sc-for></ol>
-      </section>
-
-      <sc-if value="{{sheet.canDecide}}" hint-placeholder-val="{{ true }}">
-        <div class="field">
-          <label for="sh-c" class="t-label">Comment or Reason</label>
-          <textarea id="sh-c" class="inp ta" rows="3" aria-describedby="sh-c-h" aria-invalid="{{commentBad}}" value="{{comment}}" onChange="{{setComment}}" placeholder="Visible to the requester and recorded with your decision"></textarea>
-          <span id="sh-c-h" class="t-caption">A reason is required to reject or return. It is recorded with your name{{sheet.actingFor}} and the version you decided.</span>
-          <sc-if value="{{commentBad}}" hint-placeholder-val="{{ false }}"><span class="field-err"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>Enter a reason before you reject or return this.</span></sc-if>
         </div>
-      </sc-if>
+      </details>
     </div>
     <div class="sheet-f" style="flex-wrap:wrap">
       <button class="btn" type="button" onClick="{{closeSheet}}">Close</button>
@@ -417,7 +417,7 @@ class Component extends DCLogic {
         groupRule: multi ? 'Step 2: any one of ' + group.length + ' approves' : 'Any one of ' + group.length + ' approves',
         snap: 'Members fixed when the task was created, 6 Oct 2026, 09:12. Later role changes do not move this task.',
         sod: cur.sod ? 'Blocked: the requester cannot decide their own request.' : 'Clear: you did not request or edit this.',
-        trail, canDecide, actingFor: cur.grp === 'cover' ? ', acting for Luis Moreno,' : ''
+        trail: ((cur.tab === 'pending' || cur.tab === 'delegated') && !cur.sod && !cur.away && !isDecided ? [{ what: 'Waiting for you, step ' + cur.step, when: 'Due ' + cur.due, who: 'Amara Okafor' + (cur.grp === 'cover' ? ', for Luis Moreno' : ''), hasNote: false, note: '', cls: 'now' }, ...trail] : trail).map((t) => ({ cls: '', ...t })), trailCount: trail.length + (trail.length === 1 ? ' event' : ' events'), whyOpen: partial, canDecide, actingFor: cur.grp === 'cover' ? ', acting for Luis Moreno,' : ''
       };
     }
     const next = (excludeId) => { const nx = T.find((t) => t.tab === 'pending' && t.id !== excludeId && !decided[t.id] && !t.race && !t.stale); return nx || null; };

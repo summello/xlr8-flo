@@ -82,3 +82,9 @@ Still open:
 ## 7. Tests
 
 Valid token happy path to the accepted screen; the organization, role and scope on the screen come from the server fixture and change when it changes; the email field rejects edits; expired, used, withdrawn and unknown tokens (the last three assert byte-identical HTML and no organization text); a replayed `Idempotency-Key`; a resend invalidates the previous link; an invitation unaccepted after 7 days renders Expired; only an administrator can issue one (a non-admin gets 404, never 403); the existing-account path rejects a signed-in address that differs from the invited one; token never in a log line or referrer; every validation message; input preserved; axe in light and dark on every state; keyboard-only path; phone (375).
+
+---
+
+## Required fields (DECISIONS 66)
+
+Every field this page spec calls required carries the `required` attribute and a `Required` tag in its label, which turns to `Done` with a tick when it has a value; an empty required control has a rail on its start edge. Submit stays enabled: an incomplete form gets the error summary, and the server enforces the same rules. Markup: `<label class="t-label" for="x">Title<span class="req-tag" aria-hidden="true"><span class="rq-need">Required</span><span class="rq-done">Done</span></span></label><input required id="x">`. `tests/lint.mjs` `requiredMarkViolations` fails a mismatch.
