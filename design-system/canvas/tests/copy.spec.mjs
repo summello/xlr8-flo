@@ -8,6 +8,10 @@ const heads = (page, sel) => page.evaluate((s) => [...document.querySelectorAll(
 for (const [name, url, sel] of [
   ['Home', '/Main.dc.html', HEADINGS],
   ['Executive Dashboard', '/ExecutiveDashboard.dc.html', HEADINGS],
+  ['Project List', '/ProjectList.dc.html', HEADINGS],
+  ['Project Dashboard', '/ProjectDashboard.dc.html', HEADINGS],
+  ['Ledger Entries', '/ProjectLedger.dc.html', HEADINGS],
+  ['Project Detail', '/ProjectDetail.dc.html', HEADINGS],
   ['Theme Panel', '/ThemePanel.dc.html', 'h1, h2, h3, .row.head > span'],       // its type specimens (Display, Title...) are examples, not headings
   ['Design System', '/DesignSystem.dc.html', 'h1, h2, h3, .row.head > span'],
 ]) {
@@ -38,4 +42,20 @@ test('the rules and the Home exception are registered on the sheet', async ({ pa
   expect(text).toMatch(/E-1\s+Home/);
   expect(text).toContain('Revisit when Home gains cards or KPIs');
   expect(text).toContain('Title case');
+});
+
+test('ledger sheet and detail tabs keep title case once opened', async ({ page }) => {
+  await page.goto('/LedgerSheet.dc.html');
+  await page.getByRole('dialog').waitFor();
+  for (const t of await heads(page, 'h1, h2, h3')) expect(titleCaseViolations(t), `"${t}"`).toEqual([]);
+  for (const tab of ['hierarchy', 'milestones', 'attachments']) {
+    await page.goto(`/Detail${tab === 'attachments' ? 'Files' : tab[0].toUpperCase() + tab.slice(1)}.dc.html`);
+    await page.locator('h2').first().waitFor();
+    for (const t of await heads(page, HEADINGS)) expect(titleCaseViolations(t), `${tab}: "${t}"`).toEqual([]);
+  }
+  for (const url of ['/DashEmpty.dc.html', '/DetailEmpty.dc.html', '/ListEmpty.dc.html', '/LedgerEmpty.dc.html']) {
+    await page.goto(url);
+    await page.locator('h1').waitFor();
+    for (const t of await heads(page, '.t-heading')) expect(titleCaseViolations(t), `${url}: "${t}"`).toEqual([]);
+  }
 });

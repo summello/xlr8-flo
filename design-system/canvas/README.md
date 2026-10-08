@@ -3,10 +3,10 @@
 Source of the Claude Design canvas `xlr8flo-design-system` (https://claude.ai/artifact/95sB8BhSTJnNetSkmmNCNn, private).
 
 - Start with `DECISIONS.md` (everything decided) and `HANDOFF.md` (the plan for the remaining screens).
-- Two canvas pages: Playground (Home, Executive Dashboard, width variants) and Design System (the sheet and the theme panel).
+- Three canvas pages: Playground (Home, Executive Dashboard, width variants), Project Dashboard (project list, dashboard, ledger entries, detail, with widths and states) and Design System (the sheet and the theme panel).
 - Files under `project/` mirror the published canvas paths.
 - `project/xlr8flo.css` transcribes the tokens in `../MASTER.md` and adds the motion, state and overlay classes. It does not amend MASTER.md; MASTER.md stays the source of truth.
-- Boards: `Main` (Home), `ExecutiveDashboard`, `DesignSystem` (+ `ThemePanel`), and width variants `HomeW*`, `ExecW*`, `HomeCollapsed`.
+- Boards: `ProjectList`, `ProjectDashboard`, `ProjectLedger`, `ProjectDetail` (variants `List*`, `Dash*`, `Ledger*`, `Detail*`), `Main` (Home), `ExecutiveDashboard`, `DesignSystem` (+ `ThemePanel`), and width variants `HomeW*`, `ExecW*`, `HomeCollapsed`.
 - Sample data only. Layout and interaction review, not a build spec.
 - The canvas on claude.ai is the working copy; refresh these files from it when a round is approved.
 
@@ -38,4 +38,5 @@ DC_RUNTIME=<dc-runtime.js> AXE_CORE=<axe.min.js> npx playwright test
 - `designsystem.spec.mjs`: canvas pages, no overlapping boards, every sheet section present in both themes, shell samples, the full icon set, overlay samples; every icon used on the screens must be in the set.
 - `copy.spec.mjs`: title case on every rendered heading and column head; the rules and exception E-1 are on the sheet.
 - `motion.spec.mjs`: duration budget per element, reduced motion, intro count-up, tabs, tooltips.
+- `projects.spec.mjs`: the Project Dashboard page: happy and keyboard paths, every state, figures that must agree across screens, sheet focus trap, phone targets, axe in light and dark on 26 boards, planted violations.
 - `a11y.spec.mjs`: axe in light and dark across the default, collapsed, popover, command menu, sheet, drawer and tab states. Includes a planted violation to prove the harness fails.

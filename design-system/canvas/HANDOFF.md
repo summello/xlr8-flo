@@ -4,7 +4,9 @@ Read `DECISIONS.md` first (everything decided so far), then `README.md` (how to 
 
 ## State
 
-- Canvas https://claude.ai/artifact/95sB8BhSTJnNetSkmmNCNn, two pages: **Playground** (Home, Executive Dashboard and their width variants) and **Design System** (the sheet and the theme panel). Source: `design-system/canvas/project/`; branch `worktree-design-canvas-xlr8flo`; work in a worktree, commit as `docs(design): ...`, push, never merge, no PR to `main`.
+**Done: Project Dashboard page** (see DECISIONS 6a). Next: Requisition Create, then Approval Inbox, Budget Transfer, Comparison Dashboard, Common Screens. Variants are wrappers (`ListW1024`, `DashLoading`...) over the four main boards; edit the `.dc.html` files directly.
+
+- Canvas https://claude.ai/artifact/95sB8BhSTJnNetSkmmNCNn, three pages: **Playground**, **Project Dashboard** (Home, Executive Dashboard and their width variants) and **Design System** (the sheet and the theme panel). Source: `design-system/canvas/project/`; branch `worktree-design-canvas-xlr8flo`; work in a worktree, commit as `docs(design): ...`, push, never merge, no PR to `main`.
 - The Executive Dashboard is the layout reference. Home is registered exception E-1.
 - Inputs: `docs/ui-screen-inventory.md` (screens, roles, gaps), `design-system/MASTER.md` (binding), the sheet on the Design System page.
 

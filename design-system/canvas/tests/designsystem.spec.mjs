@@ -8,8 +8,8 @@ const dir = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'project');
 const canvas = JSON.parse(readFileSync(join(dir, 'canvas.json'), 'utf8'));
 
 test.describe('canvas pages', () => {
-  test('two pages: Playground first, Design System holds only the design system and the theme panel', () => {
-    expect(canvas.pages.map((p) => p.name)).toEqual(['Playground', 'Design System']);
+  test('three pages: Playground, Project Dashboard, then Design System, which holds only the sheet and the theme panel', () => {
+    expect(canvas.pages.map((p) => p.name)).toEqual(['Playground', 'Project Dashboard', 'Design System']);
     expect(canvas.launch.page).toBe('playground');
     const onPage = (id) => Object.entries(canvas.boards).filter(([, b]) => b.page === id).map(([f]) => f).sort();
     expect(onPage('design-system')).toEqual(['DesignSystem.dc.html', 'ThemePanel.dc.html']);
@@ -31,7 +31,7 @@ test.describe('canvas pages', () => {
 });
 
 test.describe('design system sheet is complete and in step with the screens', () => {
-  const SECTIONS = ['s-chrome', 's-phase', 's-status', 's-tags', 's-chart', 's-type', 's-comp', 's-shell', 's-icons', 's-over', 's-states', 's-motion', 's-load', 's-rules'];
+  const SECTIONS = ['s-chrome', 's-phase', 's-status', 's-tags', 's-chart', 's-type', 's-comp', 's-shell', 's-icons', 's-over', 's-tables', 's-states', 's-motion', 's-load', 's-rules'];
 
   test('every section is present, in both themes', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -79,7 +79,7 @@ test.describe('design system sheet is complete and in step with the screens', ()
       const svg = e.querySelector('svg'), path = svg.querySelector('path'), r = path.getBoundingClientRect();
       return { name: e.querySelector('.t-dense').textContent, group: e.querySelector('.t-caption').textContent, d: path.getAttribute('d'), w: r.width, h: r.height, stroke: svg.getAttribute('stroke-width'), hidden: svg.getAttribute('aria-hidden') };
     }));
-    expect(cells.length).toBe(23);                                                            // 13 navigation, 5 interface, 5 status
+    expect(cells.length).toBe(24);                                                            // 13 navigation, 6 interface, 5 status
     expect(new Set(cells.map((c) => c.name)).size).toBe(cells.length);
     expect(cells.filter((c) => c.group === 'navigation').length).toBe(13);
     expect(cells.filter((c) => c.group === 'status').map((c) => c.name)).toEqual(['neutral', 'info', 'success', 'warning', 'danger']);
@@ -97,7 +97,7 @@ test.describe('design system sheet is complete and in step with the screens', ()
     await page.goto('/ThemePanel.dc.html');
     await page.locator('#s-icons').waitFor();
     for (const d of await page.locator('.icon-cell path').evaluateAll((els) => els.map((e) => e.getAttribute('d')))) set.add(d);
-    for (const url of ['/Main.dc.html', '/ExecutiveDashboard.dc.html']) {
+    for (const url of ['/Main.dc.html', '/ExecutiveDashboard.dc.html', '/ProjectList.dc.html', '/ProjectDashboard.dc.html', '/ProjectLedger.dc.html', '/ProjectDetail.dc.html']) {
       await page.goto(url);
       await page.locator('.page').waitFor();
       const strays = await page.evaluate((known) => [...document.querySelectorAll('.side svg path, .top svg path, .pill svg path, .ico path')]
@@ -121,4 +121,21 @@ test.describe('design system sheet is complete and in step with the screens', ()
     const lift = await sec.locator('.kpi.is-hover').evaluate((e) => new DOMMatrix(getComputedStyle(e).transform).m42);
     expect(lift).toBeLessThan(-2.5);                                                          // the hover state, drawn
   });
+});
+
+test('tables, trees and lineage are on the sheet and built from the real classes', async ({ page }) => {
+  await page.setViewportSize({ width: 700, height: 900 });
+  await page.goto('/ThemePanel.dc.html');
+  await page.locator('#s-tables').waitFor();
+  const sec = page.locator('#s-tables').locator('xpath=..');
+  await expect(sec.locator('.toolbar .inp')).toHaveCount(1);
+  await expect(sec.locator('.notice .pill.warning svg')).toHaveCount(1);
+  await expect(sec.locator('button.sort')).toHaveCount(1);
+  await expect(sec.locator('[aria-sort=ascending]')).toHaveCount(1);
+  await expect(sec.locator('.tree-btn .chev.open')).toHaveCount(1);
+  await expect(sec.locator('.row.group')).toHaveCount(1);
+  await expect(sec.locator('.meter')).toHaveCount(1);
+  await expect(sec.locator('.lineage > li')).toHaveCount(3);
+  const rot = await sec.locator('.chev.open').evaluate((e) => new DOMMatrix(getComputedStyle(e).transform).b);
+  expect(rot).toBeGreaterThan(0.9);                                                         // open is a quarter turn
 });

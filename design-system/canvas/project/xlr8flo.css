@@ -374,3 +374,54 @@ button.row-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 
 .xf .demo-static .cmd { width: 100%; }
 .cmd-o.is-sel { background: var(--sunken); }
 .tab.is-sel { color: var(--fg); box-shadow: inset 0 -2px 0 0 var(--phase-plan); }
+
+/* ---- project screens: list, dashboard, ledger, detail. Tokens only. ---- */
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.inp { height: 32px; min-width: 0; padding: 0 10px; border: 1px solid var(--border-control); border-radius: var(--radius-control); background: var(--surface); color: var(--fg); font: inherit; font-size: 13px; }
+.inp::placeholder { color: var(--fg-muted); }
+.toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.toolbar .grow { flex: 1 1 220px; }
+.pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 16px; border-top: 1px solid var(--border); }
+.cols-plist { grid-template-columns: minmax(0, 1.6fr) 100px 128px 128px 128px 124px; }
+.cols-hier { grid-template-columns: minmax(0, 1.6fr) 132px 132px 132px; }
+.cols-led { grid-template-columns: 132px 172px minmax(0, 1fr) 120px 140px 140px; }
+.cols-ms { grid-template-columns: minmax(0, 1.6fr) 110px 150px 140px; }
+.cols-file { grid-template-columns: minmax(0, 1.6fr) 90px 80px 140px 140px; }
+@container card (max-width: 899px) {
+  .hide-md { display: none; }
+  .cols-plist { grid-template-columns: minmax(0, 1fr) 128px 128px 124px; }
+  .cols-led { grid-template-columns: 132px 172px minmax(0, 1fr) 140px; }
+  .cols-ms { grid-template-columns: minmax(0, 1.6fr) 110px 140px; }
+  .cols-file { grid-template-columns: minmax(0, 1.6fr) 140px 140px; }
+}
+@container card (max-width: 660px) { .row.stack .hide-md { display: block; } }
+.row.group { background: var(--sunken); min-height: 36px; font-weight: 560; }
+.row.total { font-weight: 560; }
+button.sort { all: unset; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; border-radius: var(--radius-control); }
+button.sort:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; box-shadow: 0 0 0 6px color-mix(in oklab, var(--ring) 18%, transparent); }
+.chev { flex: none; transition: transform var(--dur-fast) var(--ease-out); }
+.chev.open, .chev.down { transform: rotate(90deg); }
+.chev.up { transform: rotate(-90deg); }
+.tree-btn { all: unset; flex: none; width: 24px; height: 24px; display: grid; place-items: center; cursor: pointer; border-radius: var(--radius-control); color: var(--fg-secondary); }
+.tree-btn:is(:hover, .is-hover) { background: var(--sunken); }
+.tree-btn:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.tree-gap { flex: none; width: 24px; }
+.tree-name { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.meter { height: 6px; border-radius: 3px; background: var(--sunken); border: 1px solid var(--border); overflow: hidden; display: flex; margin-top: 6px; }
+.meter > span { display: block; height: 100%; background: var(--c1); }
+.seg { display: flex; height: 14px; border-radius: 7px; overflow: hidden; border: 1px solid var(--border); background: var(--sunken); }
+.seg > span { display: block; height: 100%; }
+.notice { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--sunken); }
+.lineage { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.lineage > li { position: relative; padding: 0 0 18px 24px; }
+.lineage > li::before { content: ''; position: absolute; left: 2px; top: 5px; width: 9px; height: 9px; border-radius: 999px; background: var(--surface); border: 2px solid var(--phase-plan); }
+.lineage > li::after { content: ''; position: absolute; left: 6px; top: 17px; bottom: 0; width: 1px; background: var(--border-strong); }
+.lineage > li:last-child { padding-bottom: 0; }
+.lineage > li:last-child::after { display: none; }
+.file-ico { flex: none; width: 32px; height: 32px; display: grid; place-items: center; border-radius: var(--radius-control); background: var(--sunken); color: var(--fg-secondary); }
+@media (max-width: 1023px) {
+  .inp { min-height: 44px; }
+  button.sort { min-height: 44px; }
+  .tree-btn { width: 44px; height: 44px; }
+  .tree-gap { width: 44px; }
+}

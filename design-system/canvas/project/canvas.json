@@ -2,31 +2,733 @@
   "v": 3,
   "attachments": {},
   "boards": {
-    "Main.dc.html": {"expand": "fill", "h": 900, "title": "Home, 1440", "w": 1440, "x": 0, "y": 0, "page": "playground", "is_interactive": true},
-    "ExecutiveDashboard.dc.html": {"expand": "fill", "h": 1700, "title": "Executive Dashboard, 1440", "w": 1440, "x": 1520, "y": 0, "page": "playground", "is_interactive": true},
-    "HomeCollapsed.dc.html": {"expand": "fill", "h": 900, "title": "Home, 1440, Sidebar Collapsed", "w": 1440, "x": 0, "y": 2300, "page": "playground", "is_interactive": true},
-    "HomeW1024.dc.html": {"expand": "fill", "h": 1450, "title": "Home, 1024 (Rail + Overlay)", "w": 1024, "x": 1520, "y": 2300, "page": "playground", "is_interactive": true},
-    "HomeW768.dc.html": {"expand": "fill", "h": 1400, "title": "Home, 768", "w": 768, "x": 2624, "y": 2300, "page": "playground", "is_interactive": true},
-    "HomeW375.dc.html": {"expand": "fill", "h": 2100, "title": "Home, 375", "w": 375, "x": 3472, "y": 2300, "page": "playground", "is_interactive": true},
-    "HomeW375Open.dc.html": {"expand": "fill", "h": 2100, "title": "Home, 375, Drawer Open", "w": 375, "x": 3927, "y": 2300, "page": "playground", "is_interactive": true},
-    "HomeW1920.dc.html": {"expand": "fill", "h": 900, "title": "Home, 1920", "w": 1920, "x": 4382, "y": 2300, "page": "playground", "is_interactive": true},
-    "ExecW1024.dc.html": {"expand": "fill", "h": 1950, "title": "Executive Dashboard, 1024", "w": 1024, "x": 0, "y": 4800, "page": "playground", "is_interactive": true},
-    "ExecW768.dc.html": {"expand": "fill", "h": 3100, "title": "Executive Dashboard, 768", "w": 768, "x": 1104, "y": 4800, "page": "playground", "is_interactive": true},
-    "ExecW375.dc.html": {"expand": "fill", "h": 3750, "title": "Executive Dashboard, 375", "w": 375, "x": 1952, "y": 4800, "page": "playground", "is_interactive": true},
-    "ExecW1920.dc.html": {"expand": "fill", "h": 1350, "title": "Executive Dashboard, 1920", "w": 1920, "x": 2407, "y": 4800, "page": "playground", "is_interactive": true},
-    "DesignSystem.dc.html": {"expand": "fill", "h": 8900, "title": "Design System, Light and Dark", "w": 1440, "x": 0, "y": 0, "page": "design-system"},
-    "ThemePanel.dc.html": {"h": 8400, "title": "Theme Panel (Used by Design System)", "w": 700, "x": 1520, "y": 0, "page": "design-system", "is_interactive": true}
+    "Main.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Home, 1440",
+      "w": 1440,
+      "x": 0,
+      "y": 0,
+      "page": "playground",
+      "is_interactive": true
+    },
+    "ExecutiveDashboard.dc.html": {
+      "expand": "fill",
+      "h": 1700,
+      "title": "Executive Dashboard, 1440",
+      "w": 1440,
+      "x": 1520,
+      "y": 0,
+      "page": "playground",
+      "is_interactive": true
+    },
+    "HomeCollapsed.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Home, 1440, Sidebar Collapsed",
+      "w": 1440,
+      "x": 0,
+      "y": 2300,
+      "page": "playground",
+      "is_interactive": true
+    },
+    "HomeW1024.dc.html": {
+      "expand": "fill",
+      "h": 1450,
+      "title": "Home, 1024 (Rail + Overlay)",
+      "w": 1024,
+      "x": 1520,
+      "y": 2300,
+      "page": "playground",
+      "is_interactive": true
+    },
+    "HomeW768.dc.html": {
+      "expand": "fill",
+      "h": 1400,
+      "title": "Home, 768",
+      "w": 768,
+      "x": 2624,
+      "y": 2300,
+      "page": "playground",
+      "is_interactive": true
+    },
+    "HomeW375.dc.html": {
+      "expand": "fill",
+      "h": 2100,
+      "title": "Home, 375",
+      "w": 375,
+      "x": 3472,
+      "y": 2300,
+      "page": "playground",
+      "is_interactive": true
+    },
+    "HomeW375Open.dc.html": {
+      "expand": "fill",
+      "h": 2100,
+      "title": "Home, 375, Drawer Open",
+      "w": 375,
+      "x": 3927,
+      "y": 2300,
+      "page": "playground",
+      "is_interactive": true
+    },
+    "HomeW1920.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Home, 1920",
+      "w": 1920,
+      "x": 4382,
+      "y": 2300,
+      "page": "playground",
+      "is_interactive": true
+    },
+    "ExecW1024.dc.html": {
+      "expand": "fill",
+      "h": 1950,
+      "title": "Executive Dashboard, 1024",
+      "w": 1024,
+      "x": 0,
+      "y": 4800,
+      "page": "playground",
+      "is_interactive": true
+    },
+    "ExecW768.dc.html": {
+      "expand": "fill",
+      "h": 3100,
+      "title": "Executive Dashboard, 768",
+      "w": 768,
+      "x": 1104,
+      "y": 4800,
+      "page": "playground",
+      "is_interactive": true
+    },
+    "ExecW375.dc.html": {
+      "expand": "fill",
+      "h": 3750,
+      "title": "Executive Dashboard, 375",
+      "w": 375,
+      "x": 1952,
+      "y": 4800,
+      "page": "playground",
+      "is_interactive": true
+    },
+    "ExecW1920.dc.html": {
+      "expand": "fill",
+      "h": 1350,
+      "title": "Executive Dashboard, 1920",
+      "w": 1920,
+      "x": 2407,
+      "y": 4800,
+      "page": "playground",
+      "is_interactive": true
+    },
+    "DesignSystem.dc.html": {
+      "expand": "fill",
+      "h": 9500,
+      "title": "Design System, Light and Dark",
+      "w": 1440,
+      "x": 0,
+      "y": 0,
+      "page": "design-system"
+    },
+    "ThemePanel.dc.html": {
+      "h": 9150,
+      "title": "Theme Panel (Used by Design System)",
+      "w": 700,
+      "x": 1520,
+      "y": 0,
+      "page": "design-system",
+      "is_interactive": true
+    },
+    "ProjectList.dc.html": {
+      "expand": "fill",
+      "h": 992,
+      "title": "Project List, 1440",
+      "w": 1440,
+      "x": 0,
+      "y": 0,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "ListW1920.dc.html": {
+      "expand": "fill",
+      "h": 992,
+      "title": "Project List, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 0,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "ListW1024.dc.html": {
+      "expand": "fill",
+      "h": 992,
+      "title": "Project List, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 0,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "ListW768.dc.html": {
+      "expand": "fill",
+      "h": 1188,
+      "title": "Project List, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 0,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "ListW375.dc.html": {
+      "expand": "fill",
+      "h": 3107,
+      "title": "Project List, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 0,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "ListLoading.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Project List, Loading",
+      "w": 1440,
+      "x": 0,
+      "y": 3447,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "ListEmpty.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Project List, Empty",
+      "w": 1440,
+      "x": 1520,
+      "y": 3447,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "ListError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Project List, Error",
+      "w": 1440,
+      "x": 3040,
+      "y": 3447,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "ListPartial.dc.html": {
+      "expand": "fill",
+      "h": 1045,
+      "title": "Project List, Partial, Spend Delayed",
+      "w": 1440,
+      "x": 4560,
+      "y": 3447,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "ProjectDashboard.dc.html": {
+      "expand": "fill",
+      "h": 1737,
+      "title": "Project Dashboard, 1440",
+      "w": 1440,
+      "x": 0,
+      "y": 4832,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "DashW1920.dc.html": {
+      "expand": "fill",
+      "h": 1415,
+      "title": "Project Dashboard, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 4832,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "DashW1024.dc.html": {
+      "expand": "fill",
+      "h": 2661,
+      "title": "Project Dashboard, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 4832,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "DashW768.dc.html": {
+      "expand": "fill",
+      "h": 3223,
+      "title": "Project Dashboard, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 4832,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "DashW375.dc.html": {
+      "expand": "fill",
+      "h": 5334,
+      "title": "Project Dashboard, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 4832,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "DashLoading.dc.html": {
+      "expand": "fill",
+      "h": 1392,
+      "title": "Project Dashboard, Loading",
+      "w": 1440,
+      "x": 0,
+      "y": 10506,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "DashEmpty.dc.html": {
+      "expand": "fill",
+      "h": 996,
+      "title": "Project Dashboard, Empty",
+      "w": 1440,
+      "x": 1520,
+      "y": 10506,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "DashError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Project Dashboard, Error",
+      "w": 1440,
+      "x": 3040,
+      "y": 10506,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "DashPartial.dc.html": {
+      "expand": "fill",
+      "h": 1708,
+      "title": "Project Dashboard, Partial, Spend Chart Failed",
+      "w": 1440,
+      "x": 4560,
+      "y": 10506,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "ProjectLedger.dc.html": {
+      "expand": "fill",
+      "h": 988,
+      "title": "Ledger Entries, 1440",
+      "w": 1440,
+      "x": 0,
+      "y": 12554,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "LedgerW1920.dc.html": {
+      "expand": "fill",
+      "h": 988,
+      "title": "Ledger Entries, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 12554,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "LedgerW1024.dc.html": {
+      "expand": "fill",
+      "h": 1052,
+      "title": "Ledger Entries, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 12554,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "LedgerW768.dc.html": {
+      "expand": "fill",
+      "h": 1160,
+      "title": "Ledger Entries, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 12554,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "LedgerW375.dc.html": {
+      "expand": "fill",
+      "h": 3248,
+      "title": "Ledger Entries, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 12554,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "LedgerLoading.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Ledger Entries, Loading",
+      "w": 1440,
+      "x": 0,
+      "y": 16142,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "LedgerEmpty.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Ledger Entries, Empty",
+      "w": 1440,
+      "x": 1520,
+      "y": 16142,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "LedgerError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Ledger Entries, Error",
+      "w": 1440,
+      "x": 3040,
+      "y": 16142,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "LedgerPartial.dc.html": {
+      "expand": "fill",
+      "h": 1041,
+      "title": "Ledger Entries, Partial, Balances Delayed",
+      "w": 1440,
+      "x": 4560,
+      "y": 16142,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "LedgerSheet.dc.html": {
+      "expand": "fill",
+      "h": 988,
+      "title": "Ledger Entries, Entry Open",
+      "w": 1440,
+      "x": 6080,
+      "y": 16142,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "ProjectDetail.dc.html": {
+      "expand": "fill",
+      "h": 1013,
+      "title": "Project Detail, 1440",
+      "w": 1440,
+      "x": 0,
+      "y": 17523,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "DetailW1920.dc.html": {
+      "expand": "fill",
+      "h": 1013,
+      "title": "Project Detail, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 17523,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "DetailW1024.dc.html": {
+      "expand": "fill",
+      "h": 1230,
+      "title": "Project Detail, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 17523,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "DetailW768.dc.html": {
+      "expand": "fill",
+      "h": 1541,
+      "title": "Project Detail, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 17523,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "DetailW375.dc.html": {
+      "expand": "fill",
+      "h": 1946,
+      "title": "Project Detail, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 17523,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "DetailLoading.dc.html": {
+      "expand": "fill",
+      "h": 1005,
+      "title": "Project Detail, Loading",
+      "w": 1440,
+      "x": 0,
+      "y": 19809,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "DetailEmpty.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Project Detail, Empty, Attachments",
+      "w": 1440,
+      "x": 1520,
+      "y": 19809,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "DetailError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Project Detail, Error",
+      "w": 1440,
+      "x": 3040,
+      "y": 19809,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "DetailPartial.dc.html": {
+      "expand": "fill",
+      "h": 1013,
+      "title": "Project Detail, Partial, Summary Failed",
+      "w": 1440,
+      "x": 4560,
+      "y": 19809,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "DetailHierarchy.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Project Detail, Hierarchy Tab",
+      "w": 1440,
+      "x": 6080,
+      "y": 19809,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "DetailMilestones.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Project Detail, Milestones Tab",
+      "w": 1440,
+      "x": 7600,
+      "y": 19809,
+      "page": "project-dashboard",
+      "is_interactive": true
+    },
+    "DetailFiles.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Project Detail, Attachments Tab",
+      "w": 1440,
+      "x": 9120,
+      "y": 19809,
+      "page": "project-dashboard",
+      "is_interactive": true
+    }
   },
-  "createdOnFiles": {"at": "2026-10-08T12:00:00Z", "v": 1},
+  "createdOnFiles": {
+    "at": "2026-10-08T12:00:00Z",
+    "v": 1
+  },
   "designSystems": [],
-  "launch": {"view": "canvas", "page": "playground"},
-  "notes": {
-    "t1": {"kind": "title1", "maxW": 3000, "text": "Playground: Where We Refined Home and the Executive Dashboard", "w": 240, "x": 0, "y": -260, "page": "playground"},
-    "t2": {"kind": "title1", "maxW": 6300, "text": "Responsive: Home", "w": 240, "x": 0, "y": 2040, "page": "playground"},
-    "t3": {"kind": "title1", "maxW": 4300, "text": "Responsive: Executive Dashboard", "w": 240, "x": 0, "y": 4540, "page": "playground"},
-    "t4": {"kind": "title1", "maxW": 2200, "text": "Design System: Tokens, Shell, Icons, Overlays and Rules", "w": 240, "x": 0, "y": -260, "page": "design-system"}
+  "launch": {
+    "view": "canvas",
+    "page": "playground"
   },
-  "order": ["Main.dc.html", "ExecutiveDashboard.dc.html", "HomeCollapsed.dc.html", "HomeW1024.dc.html", "HomeW768.dc.html", "HomeW375.dc.html", "HomeW375Open.dc.html", "HomeW1920.dc.html", "ExecW1024.dc.html", "ExecW768.dc.html", "ExecW375.dc.html", "ExecW1920.dc.html", "DesignSystem.dc.html", "ThemePanel.dc.html"],
-  "pages": [{"id": "playground", "name": "Playground"}, {"id": "design-system", "name": "Design System"}],
+  "notes": {
+    "t1": {
+      "kind": "title1",
+      "maxW": 3000,
+      "text": "Playground: Where We Refined Home and the Executive Dashboard",
+      "w": 240,
+      "x": 0,
+      "y": -260,
+      "page": "playground"
+    },
+    "t2": {
+      "kind": "title1",
+      "maxW": 6300,
+      "text": "Responsive: Home",
+      "w": 240,
+      "x": 0,
+      "y": 2040,
+      "page": "playground"
+    },
+    "t3": {
+      "kind": "title1",
+      "maxW": 4300,
+      "text": "Responsive: Executive Dashboard",
+      "w": 240,
+      "x": 0,
+      "y": 4540,
+      "page": "playground"
+    },
+    "t4": {
+      "kind": "title1",
+      "maxW": 2200,
+      "text": "Design System: Tokens, Shell, Icons, Overlays and Rules",
+      "w": 240,
+      "x": 0,
+      "y": -260,
+      "page": "design-system"
+    },
+    "p1": {
+      "kind": "title1",
+      "maxW": 8000,
+      "text": "Project List: Responsive Widths",
+      "w": 240,
+      "x": 0,
+      "y": -260,
+      "page": "project-dashboard"
+    },
+    "p2": {
+      "kind": "title1",
+      "maxW": 8000,
+      "text": "Project List: States and Variants",
+      "w": 240,
+      "x": 0,
+      "y": 3187,
+      "page": "project-dashboard"
+    },
+    "p3": {
+      "kind": "title1",
+      "maxW": 8000,
+      "text": "Project Dashboard: Responsive Widths",
+      "w": 240,
+      "x": 0,
+      "y": 4572,
+      "page": "project-dashboard"
+    },
+    "p4": {
+      "kind": "title1",
+      "maxW": 8000,
+      "text": "Project Dashboard: States and Variants",
+      "w": 240,
+      "x": 0,
+      "y": 10246,
+      "page": "project-dashboard"
+    },
+    "p5": {
+      "kind": "title1",
+      "maxW": 8000,
+      "text": "Ledger Entries: Responsive Widths",
+      "w": 240,
+      "x": 0,
+      "y": 12294,
+      "page": "project-dashboard"
+    },
+    "p6": {
+      "kind": "title1",
+      "maxW": 8000,
+      "text": "Ledger Entries: States and Variants",
+      "w": 240,
+      "x": 0,
+      "y": 15882,
+      "page": "project-dashboard"
+    },
+    "p7": {
+      "kind": "title1",
+      "maxW": 8000,
+      "text": "Project Detail: Responsive Widths",
+      "w": 240,
+      "x": 0,
+      "y": 17263,
+      "page": "project-dashboard"
+    },
+    "p8": {
+      "kind": "title1",
+      "maxW": 8000,
+      "text": "Project Detail: States and Variants",
+      "w": 240,
+      "x": 0,
+      "y": 19549,
+      "page": "project-dashboard"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "ExecutiveDashboard.dc.html",
+    "HomeCollapsed.dc.html",
+    "HomeW1024.dc.html",
+    "HomeW768.dc.html",
+    "HomeW375.dc.html",
+    "HomeW375Open.dc.html",
+    "HomeW1920.dc.html",
+    "ExecW1024.dc.html",
+    "ExecW768.dc.html",
+    "ExecW375.dc.html",
+    "ExecW1920.dc.html",
+    "ProjectList.dc.html",
+    "ListW1920.dc.html",
+    "ListW1024.dc.html",
+    "ListW768.dc.html",
+    "ListW375.dc.html",
+    "ListLoading.dc.html",
+    "ListEmpty.dc.html",
+    "ListError.dc.html",
+    "ListPartial.dc.html",
+    "ProjectDashboard.dc.html",
+    "DashW1920.dc.html",
+    "DashW1024.dc.html",
+    "DashW768.dc.html",
+    "DashW375.dc.html",
+    "DashLoading.dc.html",
+    "DashEmpty.dc.html",
+    "DashError.dc.html",
+    "DashPartial.dc.html",
+    "ProjectLedger.dc.html",
+    "LedgerW1920.dc.html",
+    "LedgerW1024.dc.html",
+    "LedgerW768.dc.html",
+    "LedgerW375.dc.html",
+    "LedgerLoading.dc.html",
+    "LedgerEmpty.dc.html",
+    "LedgerError.dc.html",
+    "LedgerPartial.dc.html",
+    "LedgerSheet.dc.html",
+    "ProjectDetail.dc.html",
+    "DetailW1920.dc.html",
+    "DetailW1024.dc.html",
+    "DetailW768.dc.html",
+    "DetailW375.dc.html",
+    "DetailLoading.dc.html",
+    "DetailEmpty.dc.html",
+    "DetailError.dc.html",
+    "DetailPartial.dc.html",
+    "DetailHierarchy.dc.html",
+    "DetailMilestones.dc.html",
+    "DetailFiles.dc.html",
+    "DesignSystem.dc.html",
+    "ThemePanel.dc.html"
+  ],
+  "pages": [
+    {
+      "id": "playground",
+      "name": "Playground"
+    },
+    {
+      "id": "project-dashboard",
+      "name": "Project Dashboard"
+    },
+    {
+      "id": "design-system",
+      "name": "Design System"
+    }
+  ],
   "title": "xlr8flo-design-system"
 }

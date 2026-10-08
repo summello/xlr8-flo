@@ -1,6 +1,6 @@
 # Design canvas: decisions
 
-Status at 9 Oct 2026. Canvas: https://claude.ai/artifact/95sB8BhSTJnNetSkmmNCNn (private). Source of truth in the repo: `design-system/canvas/project/`. Branch `worktree-design-canvas-xlr8flo`, no PR opened (only a human opens a PR to `main`; `milestone/M1-budget-spine` is not on origin).
+Status at 9 Oct 2026 (second round: Project Dashboard page added). Canvas: https://claude.ai/artifact/95sB8BhSTJnNetSkmmNCNn (private). Source of truth in the repo: `design-system/canvas/project/`. Branch `worktree-design-canvas-xlr8flo`, no PR opened (only a human opens a PR to `main`; `milestone/M1-budget-spine` is not on origin).
 
 Decided by the operator unless marked *(Claude)*. Where a decision departs from `design-system/MASTER.md`, it says so. **MASTER.md was not amended**; the canvas transcribes it and extends it. The amendments are listed at the end.
 
@@ -44,7 +44,20 @@ Decided by the operator unless marked *(Claude)*. Where a decision departs from 
 
 ## 6. Quality gates
 
-24. Playwright runs the real boards locally (runtime served as `support.js`). 119 tests: static gates each proven against a planted violation (no animated layout property, no colour literal, every token defined, reduced-motion block, title case, board overlap), responsive, shell, layout, motion budgets, reduced motion, interactions, copy, design-system completeness, and axe in light and dark across the overlay states and the sheet. See `README.md` for how to run.
+24. Playwright runs the real boards locally (runtime served as `support.js`). 202 tests: static gates each proven against a planted violation (no animated layout property, no colour literal, every token defined, reduced-motion block, title case, board overlap), responsive, shell, layout, motion budgets, reduced motion, interactions, copy, design-system completeness, and axe in light and dark across the overlay states and the sheet. See `README.md` for how to run.
+
+## 6a. Project Dashboard page (screen list confirmed with the operator before building)
+
+Screens (all in the inventory, none a gap): project list, project dashboard, ledger entries with source-document lineage, project detail. The budget overview (a gap, E07-S06 is API only) was **not** built; propose it as a story first.
+
+25. Page `Project Dashboard` holds four main boards at 1440 plus 1920, 1024, 768 and 375 variants and a row of state boards each (loading, empty, error, partial; the ledger adds an open sheet, the detail adds one board per tab). 40 boards, all driven by `view`, `tab` and `open` props on the main board, so a variant is a tiny wrapper.
+26. **Hierarchy is an indented tree grid** (organization, business unit, project, phases), not a treemap: `role=treegrid`, `aria-level`, `aria-expanded`, a toggle button per parent that also answers ArrowLeft and ArrowRight, and a used-share meter under each name with the percentage as text. A phase links on to its ledger entries. The same markup serves the dashboard card and the detail tab.
+27. Dashboard cards follow the Executive Dashboard rule exactly (hierarchy as the wide card, budget status as the narrow one, spend line, requisitions and orders, recent ledger entries). The spend chart has Chart/Table tabs; every chart has its tooltip.
+28. **Tables stay tables down to 660 card width.** Between 660 and 899 the low-priority columns (status, allocated, phase, available after) drop out of the row via `.hide-md` and return in the stacked card below 660. A row of six money columns does not fit 660 to 900, and sideways scrolling is not an option.
+29. **Ledger rows are bucket movements.** Each entry moves one bucket (allocated, reserved, committed, actual) and the screen shows "Available After" computed from them, so the figures cannot drift from the KPIs (a test checks they agree). Entries are never edited: a correction is a reversal row, shown with the entry it reverses. The sheet says so and offers no edit or delete.
+30. List: saved views (all, mine, needs attention), search, business unit and status filters, group by business unit, sort on every money column, 10 per page, a total row. Filters and typed input survive an error. In the partial state spend figures show "Not available" while allocated stays current.
+31. Detail: tabs Overview, Hierarchy, Milestones, Attachments (inventory gaps for phases, risks and notes left out). Attachments show a scan state as icon plus text (clean, scanning, quarantined) and a blocked file says why it cannot be opened. `New project`, `Add milestone` and `Upload file` only show a toast: their forms belong to other screens.
+32. Design system sheet gains one section, **Tables, Trees and Lineage**, and one icon, `chevron` (rotates for open, up and down; transform only). New classes in `xlr8flo.css`: `.field .inp .toolbar .pager .notice .row.group .row.total button.sort .chev .tree-btn .tree-name .meter .lineage .file-ico .hide-md` and the `cols-*` grids. Tokens only.
 
 ## 7. Findings to feed back into MASTER.md (not yet amended)
 
@@ -55,6 +68,7 @@ Decided by the operator unless marked *(Claude)*. Where a decision departs from 
 
 ## 8. Open
 
-- Remaining screens: see `HANDOFF.md`.
+- Remaining pages: Requisition Create, Approval Inbox, Budget Transfer, Comparison Dashboard, Common Screens (see `HANDOFF.md`).
+- Project Dashboard page: only signature moment 1 (KPI count-up) is used. The budget overview screen waits for a story.
 - Home needs more cards and KPIs as screens are added (then retire E-1).
 - Sample data only; amounts are internally consistent but invented.
