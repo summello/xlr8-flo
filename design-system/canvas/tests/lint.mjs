@@ -19,7 +19,13 @@ export function layoutTransitions(css) {
 
 // No colour literal outside the token file (MASTER 2.7). Pass an artboard's html.
 export function rawColours(html) {
-  const body = html.replace(/<script[\s\S]*?<\/script>/g, '');
+  // Repeat until stable so a nested "<scr<script></script>ipt>" cannot survive one pass;
+  // case-insensitive and tolerant of "</script >". This only decides which text to scan.
+  let body = html;
+  for (let previous = ''; previous !== body; ) {
+    previous = body;
+    body = body.replace(/<script\b[\s\S]*?<\/script\s*>/gi, '');
+  }
   return [...body.matchAll(/#[0-9a-fA-F]{3,8}\b|\b(?:oklch|rgba?|hsla?)\(/g)].map((m) => m[0]);
 }
 
