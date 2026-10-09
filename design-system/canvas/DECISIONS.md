@@ -216,6 +216,15 @@ Operator answers to the open Budget Transfer questions, then the screen list con
 110. **The cost chart is one stacked bar per vendor** *(Claude)* in a fixed order (price, tax and duty, freight) with the total beside it and a dashed approved-scope line; the Chart/Table tabs make the table the accessible equivalent. No radar chart and no weighted-score gauge.
 111. **New classes in `xlr8flo.css` (tokens only):** `.cmp-strip .cmp-facts .cmp-opts .cmp-opt .cmp-toggle .cmp-pick .cmp-matrix .cmp-row .cmp-group .cmp-vend .cmp-legend .cmp-bars .cmp-bar-row .cmp-bar .cmp-scope .cols-cmp .cols-bl`. The Design System sheet gains **Comparison Matrix, Award Basis and Cost Bars** (`s-compare`). A `--fg-muted` on `--sunken` fix is repeated for the selected option card, a hovered row, the lit ancestry row and the totals bar (DECISIONS section 7).
 
+112. **MASTER 7.13 (semantic buttons) approved as drafted** (operator, 10 Oct 2026). Primary is the one filled action; Secondary is the default; Destructive is danger text plus icon plus verb, with a danger fill only on a confirmation dialog's confirm button; Undo uses the info colour; there is no green "positive" button. **Still owed:** the dark-mode values must be contrast-measured in a tokens story before any code; `tokens.css` follows MASTER, never the reverse.
+113. **Approval threshold resolution: the most specific scope wins** (operator): user over entity over tenant. A user-based threshold is a personal approval limit, and the routing explanation names the scope that matched. Settles the assumption in decision 100.
+114. **Best Average Cost is the lowest total landed cost among vendors that quoted every line** (operator). A partial bid cannot win it. Settles the assumption in decision 104.
+115. **Only an Organization Administrator changes `Allow Cross-Level Transfers` and the evidence-required setting** (operator). Every change is audited.
+116. **Freight is shared across lines pro rata by line value** (operator), for per-line comparison.
+117. **A rate older than 7 days shows a warning, and any sourcing role may refresh it** (operator). The rate, its source and its date are stored with the comparison; the vendor's bid never changes.
+118. **A sealed round is hidden from everyone until the deadline** (operator), including evaluators and the RFQ owner; it opens on its own.
+119. **Ties on a line read `Tied` and the earlier submission takes the line; the buyer may override with a reason** (operator). **Compliance requirements belong to the RFQ** (copied from a template); **waiving one needs a reason and the sourcing lead** (operator), and is audited. **Still open:** how a split award interacts with vendor minimum order values.
+
 Tests: `comparison.spec.mjs` (74 tests, including planted violations: an altered landed total, `Lowest` on a partial bid, a figure on a sealed page, an unlabelled input), with figures checked against values computed outside the page, and axe in light and dark on 19 boards. `transfers.spec.mjs` now has 141 tests.
 
 ## 7. Findings to feed back into MASTER.md (amended 9 Oct 2026, see 97)
@@ -229,6 +238,7 @@ Tests: `comparison.spec.mjs` (74 tests, including planted violations: an altered
 
 ## 8. Open
 
+- MASTER 7.13 is approved (112); only its dark-mode contrast measurement is owed.
 - Remaining pages: the rest of Common Screens (6c). Budget Transfer (6f) and Bid Comparison (6g) are built.
 - Project Dashboard page: only signature moment 1 (KPI count-up) is used. The budget overview screen waits for a story.
 - Home needs more cards and KPIs as screens are added (then retire E-1).

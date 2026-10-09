@@ -21,7 +21,7 @@ Every figure is a server figure computed by the comparison engine (E12-S06) in `
 ## 2. Rules
 
 - **At most 5 vendors per RFQ** (decision 106, a uniformity limit of the UI; enforced on invitation, shown as `Up to 5 vendors per RFQ`). So the matrix never needs more than five columns.
-- **Landed cost** is price plus tax and duty plus freight, in the organization's currency (USD in the sample), normalized at the stated rate. A foreign bid shows its original currency and `Converted at <rate>` in the matrix and, in its sheet, the rate, the source and the effective date; **the vendor's original bid is never altered** (SRC-010). A rate older than a threshold (sample: 7 days) shows a warning with `Refresh Rate`. Freight is shared across lines by line value (a `ponytail:` choice; the engine may offer others).
+- **Landed cost** is price plus tax and duty plus freight, in the organization's currency (USD in the sample), normalized at the stated rate. A foreign bid shows its original currency and `Converted at <rate>` in the matrix and, in its sheet, the rate, the source and the effective date; **the vendor's original bid is never altered** (SRC-010). A rate older than 7 days shows a warning with `Refresh Rate`, which any sourcing role may use (decision 117). Freight is shared across lines pro rata by line value (decision 116).
 - **Markers** (`Lowest`, `Fastest`, `Highest Score`) come from the data, one per measure, ties read `Tied`. Each is an icon plus words, in a neutral pill. **`Lowest` is awarded only among bids that quoted every line**; a partial bid carries a `Partial` pill and `Not comparable` in the difference row. A partial bid can still win a **line**.
 - **Compliance is pass or fail per requirement**, counted `n of N Met`; each requirement is `Met` or `Not Met` with an icon (decision 106). Exceptions are free text, counted in the matrix and listed in the sheet. Scoring is separate.
 - **Sealed until the deadline** (SRC-007): before it, **no price, term, score or count of requirements is on the page for anyone**, only which invited vendors have submitted. The comparison opens by itself at the deadline. Not an error: a state.
@@ -59,12 +59,9 @@ Loading (skeletons at final height), error (`Could not load the comparison`, not
 
 ## 8. Open questions (put in `notes.blocked`; the canvas shows each assumption)
 
-1. How the engine allocates freight across lines (the sample shares it by line value).
-2. The stale-rate threshold and who may refresh a rate.
-3. Whether evaluators see a sealed round before the deadline (the sample hides figures from everyone).
-4. The compliance requirement list's source (per RFQ template or per category) and who may waive one.
-5. Ties on a line under Lowest Cost Supplier (the sample takes the earlier submission).
-6. How a split award interacts with the vendor minimum order values.
+Answered 10 Oct 2026 (DECISIONS 112 to 119): freight is shared pro rata by line value; a rate older than 7 days warns and any sourcing role may refresh it; a sealed round is hidden from everyone, evaluators and the RFQ owner included; ties read `Tied` and the earlier submission wins, with a buyer override that needs a reason; compliance requirements belong to the RFQ (copied from a template) and waiving one needs a reason and the sourcing lead; Best Average Cost is the lowest total landed cost among full bids. Still open:
+
+1. **How a split award interacts with vendor minimum order values.** A line awarded to a vendor may fall under that vendor's minimum; the engine must say so, and the page has no place for it yet.
 
 ## 9. Tests the stories must leave behind
 

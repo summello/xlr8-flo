@@ -99,8 +99,8 @@ The existing panel (DECISIONS 52 to 55, 65) gains **What Posts If You Approve** 
 Answered 9 Oct 2026 (DECISIONS 98 to 103): thresholds are configurable by tenant, entity and user; the policy flag is `Allow Cross-Level Transfers`, administrator only; only a Finance Administrator reverses; one `BT-` prefix; an allocation draws on available budget; allocation and adjustment reuse the transfer workflow. Still open:
 
 1. **BUD-003 / 7.3 wording** versus decisions 68 and 96 (ancestors recounted, no entries of their own): needs the Opus decision-log entry proposed in `STORY-NOTES.md` section 5.
-2. **Threshold resolution order** across user, entity and tenant (assumed most specific wins) and what a user-based threshold means exactly (an approval limit per person, assumed).
-3. **Which administrator role** changes `Allow Cross-Level Transfers` and the evidence setting.
+2. ~~Threshold resolution order~~ answered 10 Oct 2026 (decision 113): the most specific scope wins, user over entity over tenant; a user-based threshold is a personal approval limit.
+3. ~~Which administrator role changes the settings~~ answered 10 Oct 2026 (decision 115): Organization Administrator only, audited.
 
 ## 9. Tests the stories must leave behind
 

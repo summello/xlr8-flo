@@ -1,6 +1,6 @@
 # XLR8 FLO — Design System (Master)
 
-> *Amended 9 Oct 2026: sections 7.11 to 7.13 added (links, folds, required fields, ancestry trace, buttons); 7.13 is a proposal pending sign-off.*
+> *Amended 9 Oct 2026: sections 7.11 to 7.13 added (links, folds, required fields, ancestry trace, buttons); 7.13 was approved on 10 Oct 2026, with its dark-mode values still to be measured.*
 >
 > **Binding on every UI story.** Page-specific deviations live in `design-system/pages/<page>.md` and override this file only where they say so explicitly.
 >
@@ -595,7 +595,7 @@ The cross-hierarchy transfer moment (§6.2 item 3) is a table first and an anima
 
 State is always a word as well as a dot (§2.7). The Chart and Table tabs are the same rows (Table adds a State column in recount order); the table is the accessible equivalent (A11Y-009). A live region reads `Recounting <level>, step N of M.`. The totals strip (Moved Out, Moved In, Net Change) is derived from how many levels are recounted, so a static frame and the table can never disagree. Under reduced motion the finished picture is shown at once and nothing pulses. Text on a `--sunken` row uses `--fg-secondary` for captions and currency codes (`--fg-muted` measures 4.31:1 there).
 
-### 7.13 Buttons and semantic colour (proposed, needs the operator's sign-off before code)
+### 7.13 Buttons and semantic colour (approved 10 Oct 2026; dark-mode values still to be contrast-measured)
 
 Direction from the operator: fixed semantic colours for buttons, each with an icon or text, so the meaning of a button is learned once. Proposal, on existing tokens only:
 
@@ -607,7 +607,7 @@ Direction from the operator: fixed semantic colours for buttons, each with an ic
 | Reversible | `--status-info` text, `ArrowCounterClockwise` icon plus `Undo` | undo in a toast |
 | Positive | not a button colour: approval is the primary action, not a green button | |
 
-The safe button of a destructive dialog takes focus (DECISIONS 58). A semantic colour never replaces the verb. The destructive fill is the one new fill in the system, so it counts against the one-accent-per-region rule inside its dialog only. **Open:** exact dark-mode values must be contrast-measured in a tokens story before this is built.
+The safe button of a destructive dialog takes focus (DECISIONS 58). A semantic colour never replaces the verb. The destructive fill is the one new fill in the system, so it counts against the one-accent-per-region rule inside its dialog only. **Open:** exact dark-mode values must be contrast-measured in a tokens story before this is built (approved by the operator on 10 Oct 2026; `tokens.css` follows this text).
 
 ---
 
