@@ -23,6 +23,10 @@ FIELDS = (
     "currency",
     "planned_start",
     "planned_end",
+    "health",
+    "percent_complete",
+    "actual_start",
+    "actual_end",
     "version",
     "created_at",
 )

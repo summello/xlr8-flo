@@ -672,7 +672,7 @@ epics:
           - PROJ-015
         dep:
           - E06-S01
-        st: todo
+        st: done
       - id: E06-S06
         t: Project risks with likelihood, impact, owner, mitigation, due date, status
         k: crud

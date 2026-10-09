@@ -5,6 +5,7 @@ import subprocess
 import sys
 import textwrap
 from collections.abc import Iterator
+from datetime import date
 from pathlib import Path
 from unittest.mock import MagicMock
 from urllib.parse import urlsplit
@@ -123,6 +124,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261009_0029",
         "20261009_0030",
         "20261009_0031",
+        "20261009_0032",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -343,7 +345,8 @@ def test_runner_disables_server_side_prepared_statements(
 
 
 def test_invitation_migration_preserves_seed_and_database_guards(empty_database):
-    chain = migrate.discover_migrations(MIGRATIONS)
+    chain = tuple(r for r in migrate.discover_migrations(MIGRATIONS)
+                  if r.revision <= "20261009_0031")
     migrate.apply_migrations(chain[:-1], empty_database)
     from psycopg.errors import CheckViolation, UniqueViolation
 
@@ -400,3 +403,57 @@ def test_invitation_migration_preserves_seed_and_database_guards(empty_database)
         ).fetchone() == (None, None)
         chain[-1].upgrade(connection)
         assert connection.execute("SELECT * FROM identity ORDER BY id").fetchall() == before
+
+
+def test_project_schedule_migration_preserves_existing_project(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.org.schemas import MasterCreate, OrgUnitCreate
+    from flo.modules.org.service import OrgService
+    from tests.org.test_bootstrap import admin_id, create
+
+    chain = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(chain[:-1], empty_database)
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        tenant = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(tenant.org_id)
+        with correlation_context("schedule-migration"), tenant_transaction(conn, scope):
+            org = OrgService(conn, scope, actor)
+            bu = org.create_unit(OrgUnitCreate(code="BU", name="BU", kind="bu"))
+            for kind, code in (("department", "D"), ("ledger_account", "L")):
+                org.create_master(
+                    kind,
+                    MasterCreate(
+                        code=code,
+                        name=code,
+                        effective_from=date(2000, 1, 1),
+                        attributes={"account_type": "expense"} if kind == "ledger_account" else {},
+                    ),
+                )
+            project_id = uuid4()
+            conn.execute(
+                "INSERT INTO project (id,org_id,bu_id,number,name,owner_id,department_code,"
+                "ledger_account_code,currency,created_by) VALUES (%s,%s,%s,'P','Seed',%s,"
+                "'D','L','USD',%s)",
+                (project_id, tenant.org_id, bu.id, actor, actor),
+            )
+            before = conn.execute("SELECT * FROM project").fetchall()
+        chain[-1].upgrade(conn)
+        assert conn.execute(
+            "SELECT health,percent_complete,actual_start,actual_end FROM project"
+        ).fetchone() == ("unknown", 0, None, None)
+        assert conn.execute(
+            "SELECT relname,relrowsecurity,relforcerowsecurity FROM pg_class "
+            "WHERE relname IN ('project_phase','project_milestone') ORDER BY relname"
+        ).fetchall() == [("project_milestone", True, True), ("project_phase", True, True)]
+        chain[-1].downgrade(conn)
+        assert conn.execute("SELECT * FROM project").fetchall() == before
+        assert conn.execute(
+            "SELECT to_regclass('project_phase'),to_regclass('project_milestone')"
+        ).fetchone() == (None, None)
+        chain[-1].upgrade(conn)
+        assert conn.execute("SELECT name FROM project WHERE id=%s", (project_id,)).fetchone() == (
+            "Seed",
+        )

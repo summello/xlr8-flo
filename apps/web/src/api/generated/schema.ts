@@ -976,6 +976,76 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{id}/milestones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Milestones */
+        get: operations["list_milestones_api_v1_projects__id__milestones_get"];
+        put?: never;
+        /** Create Milestone */
+        post: operations["create_milestone_api_v1_projects__id__milestones_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{id}/milestones/{mid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Milestone */
+        patch: operations["patch_milestone_api_v1_projects__id__milestones__mid__patch"];
+        trace?: never;
+    };
+    "/api/v1/projects/{id}/phases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Phases */
+        get: operations["list_phases_api_v1_projects__id__phases_get"];
+        put?: never;
+        /** Create Phase */
+        post: operations["create_phase_api_v1_projects__id__phases_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{id}/phases/{phase_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Phase */
+        patch: operations["patch_phase_api_v1_projects__id__phases__phase_id__patch"];
+        trace?: never;
+    };
     "/api/v1/projects/{id}/transitions": {
         parameters: {
             query?: never;
@@ -1914,6 +1984,60 @@ export interface components {
             /** Secret */
             secret: string;
         };
+        /** MilestoneCreate */
+        MilestoneCreate: {
+            /** Completed On */
+            completed_on?: string | null;
+            /**
+             * Due Date
+             * Format: date
+             */
+            due_date: string;
+            /** Name */
+            name: string;
+            /** Phase Id */
+            phase_id?: string | null;
+        };
+        /** MilestonePatch */
+        MilestonePatch: {
+            /** Completed On */
+            completed_on?: string | null;
+            /** Due Date */
+            due_date?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Phase Id */
+            phase_id?: string | null;
+        };
+        /** MilestoneRead */
+        MilestoneRead: {
+            /** Completed On */
+            completed_on?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Due Date
+             * Format: date
+             */
+            due_date: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Phase Id */
+            phase_id?: string | null;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+        };
         /** OrgAddressClose */
         OrgAddressClose: {
             /**
@@ -2154,6 +2278,93 @@ export interface components {
             /** Source */
             source: string;
         };
+        /** PhaseCreate */
+        PhaseCreate: {
+            /** Actual End */
+            actual_end?: string | null;
+            /** Actual Start */
+            actual_start?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Percent Complete
+             * @default 0
+             */
+            percent_complete?: number;
+            /** Planned End */
+            planned_end?: string | null;
+            /** Planned Start */
+            planned_start?: string | null;
+            /** Sequence */
+            sequence?: number | null;
+            /** @default planned */
+            status?: components["schemas"]["PhaseStatus"];
+            /** Sub Project Id */
+            sub_project_id?: string | null;
+        };
+        /** PhasePatch */
+        PhasePatch: {
+            /** Actual End */
+            actual_end?: string | null;
+            /** Actual Start */
+            actual_start?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Percent Complete */
+            percent_complete?: number | null;
+            /** Planned End */
+            planned_end?: string | null;
+            /** Planned Start */
+            planned_start?: string | null;
+            /** Sequence */
+            sequence?: number | null;
+            status?: components["schemas"]["PhaseStatus"] | null;
+            /** Sub Project Id */
+            sub_project_id?: string | null;
+        };
+        /** PhaseRead */
+        PhaseRead: {
+            /** Actual End */
+            actual_end?: string | null;
+            /** Actual Start */
+            actual_start?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Percent Complete
+             * @default 0
+             */
+            percent_complete?: number;
+            /** Planned End */
+            planned_end?: string | null;
+            /** Planned Start */
+            planned_start?: string | null;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Schedule Variance Days */
+            schedule_variance_days: number | null;
+            /** Sequence */
+            sequence: number;
+            /** @default planned */
+            status?: components["schemas"]["PhaseStatus"];
+            /** Sub Project Id */
+            sub_project_id?: string | null;
+        };
+        /** @enum {string} */
+        PhaseStatus: "planned" | "in_progress" | "done" | "skipped";
         /**
          * ProblemDetails
          * @description Problem details, including the support-safe request correlation identifier.
@@ -2242,6 +2453,8 @@ export interface components {
             /** Sponsor Id */
             sponsor_id?: string | null;
         };
+        /** @enum {string} */
+        ProjectHealth: "unknown" | "on_track" | "at_risk" | "off_track";
         /** ProjectPage */
         ProjectPage: {
             /** Next Cursor */
@@ -2251,12 +2464,19 @@ export interface components {
         };
         /** ProjectPatch */
         ProjectPatch: {
+            /** Actual End */
+            actual_end?: string | null;
+            /** Actual Start */
+            actual_start?: string | null;
             /** Description */
             description?: string | null;
+            health?: components["schemas"]["ProjectHealth"] | null;
             /** Name */
             name?: string | null;
             /** Owner Id */
             owner_id?: string | null;
+            /** Percent Complete */
+            percent_complete?: number | null;
             /** Planned End */
             planned_end?: string | null;
             /** Planned Start */
@@ -2266,6 +2486,10 @@ export interface components {
         };
         /** ProjectRead */
         ProjectRead: {
+            /** Actual End */
+            actual_end: string | null;
+            /** Actual Start */
+            actual_start: string | null;
             /**
              * Bu Id
              * Format: uuid
@@ -2282,6 +2506,7 @@ export interface components {
             department_code: string;
             /** Description */
             description: string | null;
+            health: components["schemas"]["ProjectHealth"];
             /**
              * Id
              * Format: uuid
@@ -2300,10 +2525,14 @@ export interface components {
             owner_id: string;
             /** Parent Id */
             parent_id: string | null;
+            /** Percent Complete */
+            percent_complete: number;
             /** Planned End */
             planned_end: string | null;
             /** Planned Start */
             planned_start: string | null;
+            /** Schedule Variance Days */
+            schedule_variance_days: number | null;
             /** Sponsor Id */
             sponsor_id: string | null;
             status: components["schemas"]["ProjectStatus"];
@@ -5155,6 +5384,276 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChildrenPage"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    list_milestones_api_v1_projects__id__milestones_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MilestoneRead"][];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    create_milestone_api_v1_projects__id__milestones_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MilestoneCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MilestoneRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    patch_milestone_api_v1_projects__id__milestones__mid__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                mid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MilestonePatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MilestoneRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    list_phases_api_v1_projects__id__phases_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhaseRead"][];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    create_phase_api_v1_projects__id__phases_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PhaseCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhaseRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    patch_phase_api_v1_projects__id__phases__phase_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                phase_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PhasePatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhaseRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

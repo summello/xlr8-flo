@@ -31,10 +31,17 @@ from flo.modules.org.service import (
 from flo.modules.projects.hierarchy import Hierarchy
 from flo.modules.projects.lifecycle import Lifecycle, conflict
 from flo.modules.projects.models import COLUMNS, FIELDS, ProjectRepository
+from flo.modules.projects.schedule import Schedule, with_variance
 from flo.modules.projects.schemas import (
     ChildrenPage,
     Direction,
+    MilestoneCreate,
+    MilestonePatch,
+    MilestoneRead,
     PathRead,
+    PhaseCreate,
+    PhasePatch,
+    PhaseRead,
     ProjectCreate,
     ProjectPage,
     ProjectPatch,
@@ -80,7 +87,7 @@ class ProjectService:
 
     def get(self, project_id: UUID) -> ProjectRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
-            return ProjectRead.model_validate(self._get(project_id))
+            return ProjectRead.model_validate(with_variance(self._get(project_id)))
 
     def transition(
         self,
@@ -117,7 +124,7 @@ class ProjectService:
                 before,
                 after | {"override": body.override, "blocked_by": blocked, "reason": body.reason},
             )
-            return ProjectRead.model_validate(after)
+            return ProjectRead.model_validate(with_variance(after))
 
     def available_transitions(
         self, project_id: UUID, permitted: Callable[[str], bool]
@@ -126,6 +133,22 @@ class ProjectService:
             lifecycle = Lifecycle(self.repo, self.actor_id)
             project, blocked = lifecycle.snapshot(project_id, for_update=False)
             return lifecycle.available(project, blocked, permitted)
+
+    def phases(self, project_id: UUID) -> list[PhaseRead]:
+        return Schedule(self.repo, self.actor_id).phases(project_id)
+
+    def milestones(self, project_id: UUID) -> list[MilestoneRead]:
+        return Schedule(self.repo, self.actor_id).milestones(project_id)
+
+    def write_phase(
+        self, project_id: UUID, body: PhaseCreate | PhasePatch, phase_id: UUID | None = None
+    ) -> PhaseRead:
+        return cast(PhaseRead, Schedule(self.repo, self.actor_id).write(project_id, body, phase_id))
+
+    def write_milestone(
+        self, project_id: UUID, body: MilestoneCreate | MilestonePatch, mid: UUID | None = None
+    ) -> MilestoneRead:
+        return cast(MilestoneRead, Schedule(self.repo, self.actor_id).write(project_id, body, mid))
 
     def get_status(self, project_id: UUID) -> str:
         return self.get(project_id).status
@@ -256,7 +279,7 @@ class ProjectService:
             )
             row = self._get(project_id)
             self._audit("project.create", project_id, None, row)
-            return ProjectRead.model_validate(row)
+            return ProjectRead.model_validate(with_variance(row))
 
     def ancestors(self, project_id: UUID) -> list[ProjectRef]:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
@@ -385,7 +408,7 @@ class ProjectService:
                     checks={"problem": "stale_version"},
                 )
             changes = body.model_dump(exclude_unset=True)
-            for field in ("name", "owner_id"):
+            for field in ("name", "owner_id", "health", "percent_complete"):
                 if field in changes and changes[field] is None:
                     raise invalid(field, f"{field} cannot be null. Supply a value.")
             for field in ("owner_id", "sponsor_id"):
@@ -395,16 +418,24 @@ class ProjectService:
             self._dates(
                 cast(date | None, after["planned_start"]), cast(date | None, after["planned_end"])
             )
+            if (
+                after["actual_start"] is not None
+                and after["actual_end"] is not None
+                and cast(date, after["actual_end"]) < cast(date, after["actual_start"])
+            ):
+                raise invalid("actual_end", "Actual end precedes start.")
             self.repo.execute(
                 """UPDATE project SET name = %(name)s, description = %(description)s,
                 owner_id = %(owner_id)s, sponsor_id = %(sponsor_id)s,
                 planned_start = %(planned_start)s, planned_end = %(planned_end)s,
+                health = %(health)s, percent_complete = %(percent_complete)s,
+                actual_start = %(actual_start)s, actual_end = %(actual_end)s,
                 version = version + 1 WHERE org_id = %(org_id)s AND id = %(id)s""",
                 after,
             )
             after = self._get(project_id)
             self._audit("project.update", project_id, before, after)
-            return ProjectRead.model_validate(after)
+            return ProjectRead.model_validate(with_variance(after))
 
     def list(
         self,
@@ -468,7 +499,7 @@ class ProjectService:
                 params,
             ).fetchall()
             records = [
-                ProjectRead.model_validate(dict(zip(FIELDS, row, strict=True)))
+                ProjectRead.model_validate(with_variance(dict(zip(FIELDS, row, strict=True))))
                 for row in rows[:page_size]
             ]
             next_cursor = None

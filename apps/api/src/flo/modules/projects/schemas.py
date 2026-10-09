@@ -12,6 +12,8 @@ type ProjectStatus = Literal[
     "draft", "approval_pending", "active", "deferred", "completed", "abandoned"
 ]
 type ProjectSort = Literal["number", "name", "status", "created_at"]
+type ProjectHealth = Literal["unknown", "on_track", "at_risk", "off_track"]
+type PhaseStatus = Literal["planned", "in_progress", "done", "skipped"]
 type Direction = Literal["asc", "desc"]
 
 
@@ -38,6 +40,11 @@ class ProjectPatch(BaseModel):
     sponsor_id: UUID | None = None
     planned_start: date | None = None
     planned_end: date | None = None
+
+    health: ProjectHealth | None = None
+    percent_complete: int | None = Field(default=None, ge=0, le=100)
+    actual_start: date | None = None
+    actual_end: date | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -78,6 +85,11 @@ class ProjectRead(BaseModel):
     currency: str
     planned_start: date | None
     planned_end: date | None
+    health: ProjectHealth
+    percent_complete: int
+    actual_start: date | None
+    actual_end: date | None
+    schedule_variance_days: int | None
     version: int
     created_at: datetime
 
@@ -133,3 +145,59 @@ class TransitionAvailable(BaseModel):
     to: ProjectStatus
     allowed: bool
     blocked_reasons: list[str]
+
+
+class PhaseCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str = Field(min_length=1)
+    sequence: int | None = Field(default=None, ge=-32768, le=32767)
+    sub_project_id: UUID | None = None
+    planned_start: date | None = None
+    planned_end: date | None = None
+    actual_start: date | None = None
+    actual_end: date | None = None
+    percent_complete: int = Field(default=0, ge=0, le=100)
+    status: PhaseStatus = "planned"
+
+
+class PhasePatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str | None = Field(default=None, min_length=1)
+    sequence: int | None = Field(default=None, ge=-32768, le=32767)
+    sub_project_id: UUID | None = None
+    planned_start: date | None = None
+    planned_end: date | None = None
+    actual_start: date | None = None
+    actual_end: date | None = None
+    percent_complete: int | None = Field(default=None, ge=0, le=100)
+    status: PhaseStatus | None = None
+
+
+class PhaseRead(PhaseCreate):
+    id: UUID
+    project_id: UUID
+    sequence: int
+    created_at: datetime
+    schedule_variance_days: int | None
+
+
+class MilestoneCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str = Field(min_length=1)
+    due_date: date
+    phase_id: UUID | None = None
+    completed_on: date | None = None
+
+
+class MilestonePatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str | None = Field(default=None, min_length=1)
+    due_date: date | None = None
+    phase_id: UUID | None = None
+    completed_on: date | None = None
+
+
+class MilestoneRead(MilestoneCreate):
+    id: UUID
+    project_id: UUID
+    created_at: datetime

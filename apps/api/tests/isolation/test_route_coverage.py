@@ -193,6 +193,30 @@ COVERED = {
     ("DELETE", "/api/v1/auth/sessions/{session_id}"): (
         "session/test_http.py::test_unknown_or_foreign_session_id_is_not_found_and_logout_clears_cookies"
     ),
+    (
+        "GET",
+        "/api/v1/projects/{id}/phases",
+    ): "projects/test_schedule.py::test_schedule_foreign_tenant_routes",
+    (
+        "POST",
+        "/api/v1/projects/{id}/phases",
+    ): "projects/test_schedule.py::test_schedule_foreign_tenant_routes",
+    (
+        "PATCH",
+        "/api/v1/projects/{id}/phases/{phase_id}",
+    ): "projects/test_schedule.py::test_schedule_foreign_tenant_routes",
+    (
+        "GET",
+        "/api/v1/projects/{id}/milestones",
+    ): "projects/test_schedule.py::test_schedule_foreign_tenant_routes",
+    (
+        "POST",
+        "/api/v1/projects/{id}/milestones",
+    ): "projects/test_schedule.py::test_schedule_foreign_tenant_routes",
+    (
+        "PATCH",
+        "/api/v1/projects/{id}/milestones/{mid}",
+    ): "projects/test_schedule.py::test_schedule_foreign_tenant_routes",
 }
 
 

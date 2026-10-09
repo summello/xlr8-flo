@@ -35,6 +35,7 @@ def project_db(org_database) -> Iterator:
             "20260826_0022_reservation_release.py",
             "20260826_0023_ledger_lineage.py",
             "20261008_0025_project_lifecycle.py",
+            "20261009_0032_project_schedule.py",
         ]
     ]
     with db.connection.transaction():

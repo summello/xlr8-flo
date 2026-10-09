@@ -17,6 +17,12 @@ from flo.modules.org.service import OrgService
 from flo.modules.projects.schemas import (
     ChildrenPage,
     Direction,
+    MilestoneCreate,
+    MilestonePatch,
+    MilestoneRead,
+    PhaseCreate,
+    PhasePatch,
+    PhaseRead,
     ProjectCreate,
     ProjectPage,
     ProjectPatch,
@@ -165,4 +171,46 @@ def available_project_transitions(
     target = project_target(id, connection)
     return ProjectService(connection, current_scope(), context.user_id).available_transitions(
         id, lambda permission: permits(request, permission, target)
+    )
+
+
+@router.get("/{id}/phases", response_model=list[PhaseRead])
+def list_phases(id: UUID, context: ReadContext, connection: Connection) -> list[PhaseRead]:
+    return ProjectService(connection, current_scope(), context.user_id).phases(id)
+
+
+@router.post("/{id}/phases", status_code=201, response_model=PhaseRead)
+def create_phase(
+    id: UUID, body: PhaseCreate, context: UpdateContext, connection: Connection
+) -> PhaseRead:
+    return ProjectService(connection, current_scope(), context.user_id).write_phase(id, body)
+
+
+@router.patch("/{id}/phases/{phase_id}", response_model=PhaseRead)
+def patch_phase(
+    id: UUID, phase_id: UUID, body: PhasePatch, context: UpdateContext, connection: Connection
+) -> PhaseRead:
+    return ProjectService(connection, current_scope(), context.user_id).write_phase(
+        id, body, phase_id
+    )
+
+
+@router.get("/{id}/milestones", response_model=list[MilestoneRead])
+def list_milestones(id: UUID, context: ReadContext, connection: Connection) -> list[MilestoneRead]:
+    return ProjectService(connection, current_scope(), context.user_id).milestones(id)
+
+
+@router.post("/{id}/milestones", status_code=201, response_model=MilestoneRead)
+def create_milestone(
+    id: UUID, body: MilestoneCreate, context: UpdateContext, connection: Connection
+) -> MilestoneRead:
+    return ProjectService(connection, current_scope(), context.user_id).write_milestone(id, body)
+
+
+@router.patch("/{id}/milestones/{mid}", response_model=MilestoneRead)
+def patch_milestone(
+    id: UUID, mid: UUID, body: MilestonePatch, context: UpdateContext, connection: Connection
+) -> MilestoneRead:
+    return ProjectService(connection, current_scope(), context.user_id).write_milestone(
+        id, body, mid
     )
