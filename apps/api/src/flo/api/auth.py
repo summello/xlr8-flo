@@ -30,6 +30,8 @@ from flo.kernel.identity import (
 )
 from flo.kernel.identity.hashing import build_argon2_hasher
 from flo.kernel.identity.reset import PasswordResetService, ResetConnection
+from flo.kernel.identity.throttle import LoginThrottle
+from flo.kernel.session.client_address import throttle_client_value
 from flo.kernel.session.csrf import CSRF_COOKIE_NAME, rotate_csrf_cookie
 from flo.kernel.session.middleware import clear_session_cookie, set_session_cookie
 from flo.kernel.session.stepup import requires_recent_auth
@@ -178,6 +180,14 @@ def get_session_store(
         idle_timeout=timedelta(seconds=settings.session_idle_timeout_seconds),
         absolute_timeout=timedelta(seconds=settings.session_absolute_timeout_seconds),
     )
+
+
+def get_login_throttle(
+    connection: Annotated[psycopg.Connection[tuple[object, ...]], Depends(get_auth_connection)],
+    settings: Annotated[Settings, Depends(get_auth_settings)],
+) -> LoginThrottle:
+    """Bind global pre-authentication failure windows to the request connection."""
+    return LoginThrottle(cast(ResetConnection, connection), settings)
 
 
 def get_password_reset_service(
@@ -354,13 +364,18 @@ async def login(
     provider: Annotated[IdentityProvider, Depends(get_identity_provider)],
     store: Annotated[SessionStore, Depends(get_session_store)],
     mfa: Annotated[MfaService, Depends(get_mfa_service)],
+    throttle: Annotated[LoginThrottle, Depends(get_login_throttle)],
 ) -> Response:
     """Authenticate credentials and rotate any already authenticated session."""
 
+    client_value = throttle_client_value(request)
+    await throttle.check(body.email, client_value)
     result = await provider.authenticate(body.email, body.password)
     if not result.authenticated or result.identity_id is None:
+        throttle.record_failure(body.email, client_value)
         raise ProblemError(ErrorCode.UNAUTHORIZED)
 
+    throttle.record_success(body.email)
     device = request_device(request)
     requires_mfa = mfa.access_requirement(result.identity_id).value != "none"
     existing = getattr(request.state, "session", None)

@@ -1836,6 +1836,43 @@
       },
       "recap": "Implemented ECB ingest, immutable global rates, exact/weekend conversion, guarded base-currency setter, generated client and UTC cron triggers (including previously unscheduled nightly budget reconciliation). Validation: ruff clean; strict mypy 114 source files; 4 import contracts kept; migration chain and money-float gate clean; full API pytest 1349 passed/1 skipped, with the skipped existing money round-trip separately passing using an in-memory local connection; web lint/typecheck clean, Vitest 77 passed, Playwright 152 passed. No live ECB fetch (offline environment), no dependency, no submission/push/merge. task.json remains ignored per repository policy. Round 2: strict UTF-8/NUL rejection before decoded declaration scan, EUR/ECB defaults, internal exception failed-run recording, module-level error imports. Validation: full API suite 1359 passed/0 skipped; final parser selection 11 passed (including 3 additional undecodable-byte cases); ruff, strict mypy (114 files), 4 import contracts, and migration chain check green. Web unchanged.",
       "title": "FX: ECB daily rate ingest, rate table, effective dating, missing-rate block"
+    },
+    {
+      "story": "E05-S11",
+      "kind": "security",
+      "size": "M",
+      "tags": [
+        "auth",
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a11dd6-1c7a-7b13-97c1-fb9e8b689e7e",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "332a41fa-e50e-41ed-8a9e-4cde6648200f",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented login throttling, trusted Worker visitor addresses, reversible migration 0029, and guard mutation tests. Full real-Postgres pytest: 1390 passed, zero skips (10 existing deprecation warnings). Focused regressions: 28 passed; web: 78 passed. Ruff, strict mypy (116 source files), 4 import contracts, and migration --check pass. OpenAPI regenerated with no diff. No dependency added; no submit, gate, done, push, or merge run. Session metadata now records visitor-derived /24 IPv4 or /48 IPv6 prefixes, unchanged privacy rules.",
+      "title": "Login throttling: per-identity and per-client failure limits, trusted client IP behind Cloudflare"
     }
   ]
 }

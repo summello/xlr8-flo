@@ -55,6 +55,7 @@ def session_database() -> Iterator[SessionDatabase]:
     session_migration = load_migration(SESSION_MIGRATION, "session_test_migration")
     mfa_migration = load_migration(MFA_MIGRATION, "session_test_mfa")
     access_migration = load_migration(ACCESS_MIGRATION, "session_test_access")
+    connection.execute("DROP TABLE IF EXISTS login_attempt")
     connection.execute("DROP TABLE IF EXISTS user_role")
     connection.execute("DROP TABLE IF EXISTS role_permission")
     connection.execute("DROP TABLE IF EXISTS permission")
@@ -100,6 +101,7 @@ def session_database() -> Iterator[SessionDatabase]:
             mfa_migration,
         )
     finally:
+        connection.execute("DROP TABLE IF EXISTS login_attempt")
         connection.execute("DROP TABLE IF EXISTS user_role")
         connection.execute("DROP TABLE IF EXISTS role_permission")
         connection.execute("DROP TABLE IF EXISTS permission")

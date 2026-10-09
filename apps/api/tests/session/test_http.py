@@ -13,6 +13,7 @@ from starlette.responses import Response
 
 from flo.api.auth import (
     get_identity_provider,
+    get_login_throttle,
     get_mfa_service,
     get_session_store,
     router,
@@ -97,9 +98,23 @@ def build_app(
 
     app.dependency_overrides[get_identity_provider] = lambda: provider
     app.dependency_overrides[get_session_store] = lambda: session_store
-    app.dependency_overrides[get_mfa_service] = lambda: cast(
-        MfaService, NoMfaService()
-    )
+
+    from pathlib import Path
+
+    from flo.kernel.config import Settings
+    from flo.kernel.identity.throttle import LoginThrottle
+    from flo.kernel.migrate import discover_migrations
+
+    connection = session_store._connection
+    connection.execute("DROP TABLE IF EXISTS login_attempt")
+    migrations = discover_migrations(Path(__file__).resolve().parents[4] / "migrations")
+    next(
+        revision for revision in migrations
+        if revision.revision == "20261009_0029"
+    ).upgrade(connection)
+    app.dependency_overrides[get_login_throttle] = lambda: LoginThrottle(connection, Settings())
+
+    app.dependency_overrides[get_mfa_service] = lambda: cast(MfaService, NoMfaService())
 
     @contextmanager
     def store_factory() -> Iterator[SessionStore]:

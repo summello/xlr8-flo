@@ -16,6 +16,7 @@ from uuid import UUID, uuid4
 from starlette.requests import Request
 
 from flo.kernel.identity.port import IdentityId
+from flo.kernel.session.client_address import trusted_client_host
 
 SessionId = NewType("SessionId", UUID)
 Clock = Callable[[], datetime]
@@ -167,7 +168,7 @@ def coarse_user_agent(user_agent: str | None) -> str:
 def request_device(request: Request) -> RequestDevice:
     """Derive the deliberately coarse device description for one request."""
 
-    address = request.client.host if request.client is not None else None
+    address = trusted_client_host(request) or (request.client.host if request.client else None)
     return RequestDevice(
         ip_prefix=_ip_prefix(address),
         user_agent=coarse_user_agent(request.headers.get("user-agent")),

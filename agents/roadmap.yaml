@@ -538,7 +538,7 @@ epics:
           - SEC-001
         dep:
           - E05-S09
-        st: todo
+        st: done
       - id: E05-S12
         t: 'Multi-organization membership: (identity_id, org_id) key, chosen organization
           on the session, chooser, switcher, tenant label'

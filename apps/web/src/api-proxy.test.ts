@@ -246,3 +246,14 @@ it("tick delegates to the shared internal request contract (legacy shape plant)"
   expect(delegates(source.replace('return internalJobRequest("/internal/jobs/tick", origin, environment)',
     'return new Request(new URL("/internal/jobs/tick", origin), { method: "POST" })'))).toBe(false);
 });
+
+it("replaces untrusted client IP with the Cloudflare visitor address", () => {
+  const upstream = cloudRunRequest(new Request("https://example.test/api/healthz", {
+    headers: { "X-FLO-Client-IP": "spoof", "CF-Connecting-IP": "203.0.113.8" },
+  }), environment);
+  expect(upstream.headers.get("X-FLO-Client-IP")).toBe("203.0.113.8");
+  const absent = cloudRunRequest(new Request("https://example.test/api/healthz", {
+    headers: { "X-FLO-Client-IP": "spoof" },
+  }), environment);
+  expect(absent.headers.has("X-FLO-Client-IP")).toBe(false);
+});

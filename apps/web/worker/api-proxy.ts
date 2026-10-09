@@ -52,6 +52,9 @@ export function cloudRunRequest(request: Request, environment: WorkerEnvironment
     throw new TypeError("internal routes are unavailable through the public proxy");
   }
   const upstream = new Request(new Request(incoming, request), { redirect: "manual" });
+  upstream.headers.delete("X-FLO-Client-IP");
+  const visitor = request.headers.get("CF-Connecting-IP");
+  if (visitor) upstream.headers.set("X-FLO-Client-IP", visitor);
   upstream.headers.set(ORIGIN_SECRET_HEADER, originSharedSecret(environment));
   return upstream;
 }
