@@ -12,6 +12,7 @@ from flo.api.auth import router as auth_router
 from flo.api.budget import router as budget_router
 from flo.api.fiscal import router as fiscal_router
 from flo.api.imports import router as imports_router
+from flo.api.invitations import router as invitations_router
 from flo.api.master import router as master_router
 from flo.api.org import router as org_router
 from flo.api.projects import router as projects_router
@@ -20,6 +21,33 @@ TESTS = Path(__file__).resolve().parents[1]
 
 # (method, path) -> "file::test" that proves a foreign id returns 404.
 COVERED = {
+    (
+        "POST",
+        "/api/v1/invitations",
+    ): "identity/test_invitations.py::test_admin_tenant_isolation_and_guards",
+    (
+        "GET",
+        "/api/v1/invitations",
+    ): "identity/test_invitations.py::test_admin_tenant_isolation_and_guards",
+    (
+        "POST",
+        "/api/v1/invitations/{id}/resend",
+    ): "identity/test_invitations.py::test_admin_tenant_isolation_and_guards",
+    (
+        "POST",
+        "/api/v1/invitations/{id}/withdraw",
+    ): "identity/test_invitations.py::test_admin_tenant_isolation_and_guards",
+    (
+        "GET",
+        "/api/v1/invitations/by-token",
+    ): "identity/test_invitations.py::test_uniform_bytes_for_all_unavailable_states_on_both_routes",
+    (
+        "POST",
+        "/api/v1/invitations/accept",
+    ): (
+        "identity/test_invitations.py::"
+        "test_existing_account_accept_into_b_preserves_a_and_never_replays"
+    ),
     (
         "GET",
         "/api/v1/auth/organizations",
@@ -201,6 +229,7 @@ def test_every_id_route_has_a_named_foreign_tenant_case() -> None:
                 projects_router,
                 budget_router,
                 imports_router,
+                invitations_router,
             ),
             COVERED,
         )
@@ -222,6 +251,7 @@ def test_gate_fails_on_an_uncovered_route_and_on_a_dangling_reference() -> None:
             projects_router,
             budget_router,
             imports_router,
+            invitations_router,
         )
         | widget
     )

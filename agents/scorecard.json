@@ -1912,6 +1912,44 @@
       },
       "recap": "Implemented packet and amendments 1\u20134; selection bypasses replay, MFA gate remains first, session rotations preserve choice except LOGIN. Real production-app and Postgres plants cover membership checks, duplicate session joins, rotation, MFA ordering and allow-list entries, replay bypass, body exception, label constraints and downgrade guard. UI specs cover chooser keyboard, both-theme axe, responsive sizes, recoverable selection errors, switcher icon/text and hard-reload stale-memory plant. Validation: ruff, mypy --strict (117 source files), import-linter (4 contracts), real migration-chain --check, web lint/typecheck and gitleaks all green. Full pytest: 1413 passed, 1 optional explicit-DATABASE_URL test skipped and then passed separately against disposable Postgres. Final guard rerun: 48 passed. Vitest: 81 passed. Full Playwright: 161 passed. Commits: 1c5d4fe (backend), 4b3f11b (web). Working tree clean; no submit, gate, done, push or merge.",
       "title": "Multi-organization membership: (identity_id, org_id) key, chosen organization on the session, chooser, switcher, tenant label"
+    },
+    {
+      "story": "E05-S13",
+      "kind": "security",
+      "size": "M",
+      "tags": [
+        "auth",
+        "security",
+        "migration"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a11f3e-e705-7ed3-abe3-6ef223ff3544",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "332a41fa-e50e-41ed-8a9e-4cde6648200f",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented E05-S13 invitation issue/list/resend/withdraw/token validation and acceptance with hashed single-use lookup, locked state transitions, tenant memberships, RBAC/MFA/session issuance, audited outbox mail and payload discard. Checks: full pytest 1459 passed, 1 skipped; skipped Postgres money round-trip subsequently passed in the 16-test money suite with local DATABASE_URL configured. Invitation/migration focused suite 46 passed; Vitest 82 passed; Playwright/axe 161 passed. Ruff, strict mypy (120 files), import-linter (4 contracts), migration --check, and staged gitleaks passed. No dependency added. Operator/profile/UI follow-ups are recorded. Ready for review; no submit/gate/done/push/merge performed.",
+      "title": "Invitation acceptance: issue, validate, accept, withdraw and resend with a hashed single-use token"
     }
   ]
 }

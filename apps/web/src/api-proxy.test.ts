@@ -257,3 +257,11 @@ it("replaces untrusted client IP with the Cloudflare visitor address", () => {
   }), environment);
   expect(absent.headers.has("X-FLO-Client-IP")).toBe(false);
 });
+
+it("forwards invitation tokens in headers without placing them in the URL", () => {
+  const upstream = cloudRunRequest(new Request("https://example.test/api/v1/invitations/by-token", {
+    headers: { "X-Invitation-Token": "disposable-test-token" },
+  }), environment);
+  expect(upstream.headers.get("X-Invitation-Token")).toBe("disposable-test-token");
+  expect(upstream.url).not.toContain("disposable-test-token");
+});

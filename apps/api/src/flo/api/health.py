@@ -26,6 +26,7 @@ from flo.api.fiscal import router as fiscal_router
 from flo.api.fx import router as fx_router
 from flo.api.imports import router as imports_router
 from flo.api.internal import router as internal_router
+from flo.api.invitations import router as invitations_router
 from flo.api.master import router as master_router
 from flo.api.org import router as org_router
 from flo.api.origin_auth import require_origin_secret
@@ -107,6 +108,7 @@ app.include_router(fx_router)
 app.include_router(projects_router)
 app.include_router(budget_router)
 app.include_router(imports_router)
+app.include_router(invitations_router)
 
 
 @contextmanager

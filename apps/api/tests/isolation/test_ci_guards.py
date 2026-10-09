@@ -115,7 +115,11 @@ def test_repository_without_scope_fails_mypy_strict(tmp_path: Path) -> None:
 def test_global_membership_registry_exceptions_are_exact_and_documented() -> None:
     from flo.kernel.tenancy.guards import GLOBAL_TENANT_LINK_TABLES
 
-    assert set(GLOBAL_TENANT_LINK_TABLES) == {"identity_membership", "organization_code"}
+    assert set(GLOBAL_TENANT_LINK_TABLES) == {
+        "identity_membership",
+        "organization_code",
+        "invitation_token",
+    }
     for table, reason in GLOBAL_TENANT_LINK_TABLES.items():
         assert "before" in reason
         assert unprotected_tenant_tables(f"CREATE TABLE {table} (org_id uuid)") == []

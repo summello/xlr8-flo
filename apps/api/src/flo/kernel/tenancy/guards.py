@@ -9,6 +9,7 @@ from collections.abc import Iterator, Mapping
 # D-M1-24/26: global links are read before tenant resolution. These exact
 # tables carry no business data and must not require an existing app.org_id.
 GLOBAL_TENANT_LINK_TABLES = {
+    "invitation_token": "public invitation links resolve a token before any tenant scope exists",
     "identity_membership": "Session store resolves an identity's organization before scope exists",
     "organization_code": "Operator bootstrap resolves a global code before scope exists",
 }

@@ -581,7 +581,7 @@ epics:
         dep:
           - E05-S11
           - E05-S12
-        st: todo
+        st: done
       - id: E05-S14
         t: 'Invitation acceptance screen: /invite/:token, uniform unavailable state, MFA
           handoff'

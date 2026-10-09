@@ -78,6 +78,16 @@ class LoginThrottle:
                 (self._clock(),),
             )
 
+    async def jitter(self) -> None:
+        """Apply the shared failed-authentication delay."""
+        await asyncio.sleep(
+            self._rng(
+                self._settings.login_throttle_jitter_min_ms,
+                self._settings.login_throttle_jitter_max_ms,
+            )
+            / 1000
+        )
+
     async def check(self, email: str, client_value: str) -> None:
         """Reject uniformly before expensive verification, with client-only retry metadata."""
         keys = {
@@ -103,13 +113,7 @@ class LoginThrottle:
                     keys[kind][:8],
                     counts[kind],
                 )
-        await asyncio.sleep(
-            self._rng(
-                self._settings.login_throttle_jitter_min_ms,
-                self._settings.login_throttle_jitter_max_ms,
-            )
-            / 1000
-        )
+        await self.jitter()
         headers = (
             {"Retry-After": str(self._settings.login_window_seconds)}
             if ("client" in limited)

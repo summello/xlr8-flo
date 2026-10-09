@@ -137,6 +137,7 @@ class Settings(BaseSettings):
     mfa_lock_duration_seconds: int = Field(default=15 * 60, ge=30, le=86400)
     session_idle_timeout_seconds: int = Field(default=8 * 60 * 60, ge=60)
     session_absolute_timeout_seconds: int = Field(default=12 * 60 * 60, ge=60)
+    invitation_ttl_days: int = Field(default=7, ge=1, le=30)
     password_reset_ttl_seconds: int = Field(default=30 * 60, ge=60, le=24 * 60 * 60)
     password_reset_rate_window_seconds: int = Field(
         default=60 * 60,

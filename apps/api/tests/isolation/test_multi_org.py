@@ -288,7 +288,10 @@ def test_migration_backfill_downgrade_preservation_and_guard(multi):
     from tests.org.test_bootstrap import ROOT
 
     conn, a, b, _, identity = multi
-    migration = discover_migrations(ROOT / "migrations")[-1]
+    migration = next(
+        item for item in discover_migrations(ROOT / "migrations")
+        if item.revision == "20261009_0030"
+    )
     snapshot = conn.execute(
         "SELECT * FROM identity_membership ORDER BY identity_id,org_id"
     ).fetchall()

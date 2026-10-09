@@ -8,6 +8,8 @@ from flo.kernel.session.store import SessionRecord
 
 ORGANIZATION_SELECTION_PATHS = frozenset(
     {
+        "/api/v1/invitations/accept",
+        "/api/v1/invitations/by-token",
         "/api/v1/auth/organizations",
         "/api/v1/auth/organization",
         "/api/v1/auth/logout",

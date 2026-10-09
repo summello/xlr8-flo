@@ -39,7 +39,9 @@ IDEMPOTENCY_KEY_EXEMPT_PATHS = frozenset(
     }
 )
 
-IDEMPOTENCY_BYPASS_PATHS = frozenset({"/api/v1/imports", "/api/v1/auth/organization"})
+IDEMPOTENCY_BYPASS_PATHS = frozenset(
+    {"/api/v1/imports", "/api/v1/auth/organization", "/api/v1/invitations/accept"}
+)
 
 _logger = logging.getLogger(__name__)
 

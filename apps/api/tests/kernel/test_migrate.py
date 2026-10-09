@@ -122,6 +122,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261008_0028",
         "20261009_0029",
         "20261009_0030",
+        "20261009_0031",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -339,3 +340,63 @@ def test_runner_disables_server_side_prepared_statements(
 
     assert migrate.apply_migrations((), "postgresql+psycopg://database.invalid/flo") == ()
     connect.assert_called_once_with("postgresql://database.invalid/flo", prepare_threshold=None)
+
+
+def test_invitation_migration_preserves_seed_and_database_guards(empty_database):
+    chain = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(chain[:-1], empty_database)
+    from psycopg.errors import CheckViolation, UniqueViolation
+
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from tests.org.test_bootstrap import create
+
+    with psycopg.connect(empty_database, autocommit=True) as connection:
+        organization = create(connection)
+        before = connection.execute("SELECT * FROM identity ORDER BY id").fetchall()
+        chain[-1].upgrade(connection)
+        actor = before[0][0]
+        invitation = uuid4()
+        with tenant_transaction(connection, Scope(organization.org_id)):
+            connection.execute(
+                "INSERT INTO "
+                "invitation(id,org_id,email,role_code,scope_type,"
+                "invited_by,sent_at,expires_at) "
+                "VALUES (%s,%s,'person@example.test','executive-viewer','org',%s,"
+                "now(),now()+interval '7 days')",
+                (invitation, organization.org_id, actor),
+            )
+            with pytest.raises(UniqueViolation), connection.transaction():
+                connection.execute(
+                    "INSERT INTO "
+                    "invitation(id,org_id,email,role_code,scope_type,"
+                    "invited_by,sent_at,expires_at) "
+                    "VALUES (%s,%s,'PERSON@example.test','executive-viewer','org',%s,"
+                    "now(),now()+interval '7 days')",
+                    (uuid4(), organization.org_id, actor),
+                )
+            with pytest.raises(CheckViolation), connection.transaction():
+                connection.execute(
+                    "UPDATE invitation SET "
+                    "used_at=now(),used_by=%s,withdrawn_at=now(),withdrawn_by=%s WHERE id=%s",
+                    (actor, actor, invitation),
+                )
+            for assignment in (
+                "scope_type='invalid'", "resend_counter=-1",
+                "used_at=now()", "withdrawn_at=now()",
+            ):
+                with pytest.raises(CheckViolation), connection.transaction():
+                    connection.execute(f"UPDATE invitation SET {assignment} WHERE id=%s",
+                                       (invitation,))
+            with pytest.raises(CheckViolation), connection.transaction():
+                connection.execute(
+                    "INSERT INTO invitation_token VALUES ('plaintext',%s,%s)",
+                    (invitation, organization.org_id),
+                )
+        chain[-1].downgrade(connection)
+        assert connection.execute("SELECT * FROM identity ORDER BY id").fetchall() == before
+        assert connection.execute(
+            "SELECT to_regclass('invitation'), to_regclass('invitation_token')"
+        ).fetchone() == (None, None)
+        chain[-1].upgrade(connection)
+        assert connection.execute("SELECT * FROM identity ORDER BY id").fetchall() == before
