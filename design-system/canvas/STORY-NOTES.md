@@ -69,3 +69,15 @@ Written 9 Oct 2026. Page specs: `design-system/pages/approval-inbox.md`, `approv
 4. **E10-S11 gains scope.** The packet should require the outline (APR-002) in the same story, cycle prevention on connect, the problems tab, publish dialog and Route Preview, and add a list and version-history screen (`approval-workflow-builder.md` sections 1 and 5). Route Preview needs a read endpoint that evaluates a draft against sample attributes and returns the matched rules; that is not in E10-S09 today.
 
 **Operator decisions needed (the canvas shows each as an assumption):** who may withdraw and until when; what is a material change; revoke returns undecided tasks or leaves them; re-delegation; duplicate approvals allowed with intent; conditions beyond the estimate before Phase 2.
+
+## 5. Budget Transfer: stories the canvas needs (DECISIONS 6e and 6f)
+
+Page spec: `design-system/pages/budget-transfer.md`. **E07-S07 and E07-S08 are engine stories; there is no UI story.**
+
+1. **A UI story for the transfer pages** (list, create with the Type switch, detail, reversal) citing the page spec, BUD-001 to 008, 011, APR-003, ACC-002. Depends on E07-S07, E07-S08, E10-S06 (decisions) and the ledger sheet.
+2. **E07-S08 must confirm the reading of BUD-003 and requirements 7.3** before it is built: the operator decided ancestors are **recounted from the two project entries and get no entries of their own** (decision 68). The requirement says "balanced, linked ledger entries for every affected level". Either the requirement text is clarified (Opus, `docs/claude-plan.md` section 1) or the story posts per-level rows. **Do not guess**: write `notes.blocked`.
+3. **Allocation and adjustment (BUD-001) have no story.** They share the transfer form (decision 67). They need the engine (an allocation from the unallocated pool, an adjustment up or down on one project), the approval workflow coverage (APR-003) and the same ledger linkage.
+4. **A reversal story:** a new linked transfer through the same route, refused if the target lacks the funds (decision 76); the original is never touched.
+5. **Organization settings:** evidence required (off, Cross Hierarchy only, always) and the policy flag for transfers across levels. Both need a settings story and an audit entry on change.
+6. **Open before the packets are written:** the approval thresholds, the role names for reversal, the id prefix(es), the unallocated pool, notification copy (page spec section 8).
+

@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>New Transfer</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="xlr8flo.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;560;600;640&amp;family=JetBrains+Mono:wght@400;460;620&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{rootCls}}" data-theme="{{theme}}" style="min-height: 100vh">
+<div class="{{appCls}}">
+  <nav class="side" aria-label="Primary" onScroll="{{navTipHide}}">
+    <div class="brand"><span class="brand-mark">FL</span><span class="brand-name">XLR8 FLO</span></div>
+    <button class="iconbtn side-toggle toggle-collapse" type="button" onClick="{{toggleCollapse}}" aria-label="{{collapseLabel}}" aria-expanded="{{expanded}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4zM9 5v14"></path></svg></button>
+    <button class="iconbtn side-toggle toggle-nav" type="button" onClick="{{toggleNav}}" aria-label="{{navLabel}}" aria-expanded="{{navOpen}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4zM9 5v14"></path></svg></button>
+    <sc-for list="{{nav}}" as="n" hint-placeholder-count="18">
+      <sc-if value="{{n.isHead}}" hint-placeholder-val="{{ false }}"><div class="nav-h">{{n.label}}</div></sc-if>
+      <sc-if value="{{n.isLink}}" hint-placeholder-val="{{ true }}">
+        <a href="#" class="{{n.cls}}" aria-label="{{n.label}}" data-tip="{{n.label}}" onMouseEnter="{{navTipShow}}" onFocus="{{navTipShow}}" onMouseLeave="{{navTipHide}}" onBlur="{{navTipHide}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{n.d}}"></path></svg><span class="lbl">{{n.label}}</span></a>
+      </sc-if>
+    </sc-for>
+  </nav>
+  <div class="scrim" onClick="{{closeNav}}"></div>
+  <div class="main">
+    <header class="top">
+      <button class="iconbtn menu-btn" type="button" onClick="{{toggleNav}}" aria-label="Open navigation" aria-expanded="{{navOpen}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
+      <div class="crumbs"><span class="crumb-parent"><a href="#" class="secondary">Budget</a></span><span class="sep" aria-hidden="true">/</span><span class="crumb-parent"><a href="#" class="secondary">Transfers</a></span><span class="sep" aria-hidden="true">/</span><b>New Transfer</b></div>
+      <button class="cmdk" type="button" aria-label="Open command menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4"></path></svg><span class="txt">Search or run a command</span><kbd>⌘K</kbd></button>
+      <button class="iconbtn" type="button" aria-label="Notifications"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 17V11a6 6 0 1112 0v6l2 2H4zM10 21h4"></path></svg></button>
+      <span class="avatar" aria-label="Signed in as Luis Moreno">LM</span>
+    </header>
+
+    <main class="page">
+      <div class="phead">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <h1 class="t-display">{{title}}</h1>
+          <p class="secondary">{{subline}}</p>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><a href="#" class="btn">Back to transfers</a></div>
+      </div>
+
+      <sc-if value="{{pageError}}" hint-placeholder-val="{{ false }}">
+        <div class="card state" role="alert" style="padding:48px 16px"><span class="pill danger"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>Could not load this transfer</span><div class="t-dense secondary">The request timed out. Nothing was changed. Reference 7d2a-4c18.</div><button class="btn" type="button" onClick="{{retry}}">Try again</button></div>
+      </sc-if>
+
+      <sc-if value="{{submitted}}" hint-placeholder-val="{{ false }}">
+        <div class="card state" role="status" style="padding:48px 16px">
+          <span class="pill success"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6"></path></svg>Submitted</span>
+          <h2 class="t-title">{{number}} Submitted for Approval</h2>
+          <div class="t-dense secondary" style="max-width:560px">{{doneText}} Nothing posts to the ledger until the last step approves. You can withdraw it while it is pending.</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><a href="BudgetTransferDetail.dc.html" class="btn primary">View transfer</a><button class="btn" type="button" onClick="{{again}}">New transfer</button></div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{formOn}}" hint-placeholder-val="{{ true }}">
+      <sc-if value="{{summaryOn}}" hint-placeholder-val="{{ false }}">
+        <div class="summary" role="alert" tabindex="-1" id="tr-summary">
+          <div style="display:flex;gap:8px;align-items:center;font-weight:560"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>{{summaryTitle}}</div>
+          <p class="t-dense" style="margin:0">Nothing was submitted. Everything you entered is kept.</p>
+          <ul class="t-dense"><sc-for list="{{problems}}" as="p" hint-placeholder-count="4"><li><b>{{p.cat}}:</b> <a href="#" onClick="{{p.go}}">{{p.text}}</a></li></sc-for></ul>
+          <sc-if value="{{raceOn}}" hint-placeholder-val="{{ false }}"><div><button class="btn" type="button" onClick="{{editAmount}}">Edit Amount</button></div></sc-if>
+        </div>
+      </sc-if>
+
+      <div class="req-grid">
+        <div class="req-stack">
+          <section class="card" aria-labelledby="h-det">
+            <div class="card-h"><h2 class="t-heading" id="h-det">Transfer Details</h2></div>
+            <div class="card-b" style="display:flex;flex-direction:column;gap:16px">
+              <sc-if value="{{det.loading}}" hint-placeholder-val="{{ false }}"><div role="status" aria-label="Loading details" style="display:flex;flex-direction:column;gap:12px"><span class="skel" style="height:44px"></span><span class="skel" style="height:44px"></span><span class="skel" style="height:88px"></span></div></sc-if>
+              <sc-if value="{{det.ok}}" hint-placeholder-val="{{ true }}">
+                <fieldset class="choice"><legend class="t-label">Type</legend>
+                  <label><input type="radio" name="tr-type" checked="{{isTransfer}}" onChange="{{setTransfer}}">Transfer between projects</label>
+                  <label><input type="radio" name="tr-type" checked="{{isAllocation}}" onChange="{{setAllocation}}">Allocation</label>
+                  <label><input type="radio" name="tr-type" checked="{{isAdjustment}}" onChange="{{setAdjustment}}">Adjustment</label>
+                </fieldset>
+                <sc-if value="{{isAllocation}}" hint-placeholder-val="{{ false }}"><div class="summary info" role="note"><div class="t-dense">An allocation moves funds from the unallocated pool of Northwind Capital, EMEA to one project. It involves one project, so there is no second project and no ancestry to trace.</div></div></sc-if>
+                <sc-if value="{{isAdjustment}}" hint-placeholder-val="{{ false }}"><div class="summary info" role="note"><div class="t-dense">An adjustment raises or lowers one project&rsquo;s allocation by a stated amount and reason. It involves one project, so there is no second project and no ancestry to trace.</div></div></sc-if>
+                <div class="form-grid">
+                  <sc-if value="{{isTransfer}}" hint-placeholder-val="{{ true }}"><div class="field"><label class="t-label" for="tr-src">Source Project<span class="req-tag" aria-hidden="true"><span class="rq-need">Required</span><span class="rq-done">Done</span></span></label><select required id="tr-src" class="btn" style="padding-right:8px" value="{{f.src}}" onChange="{{set.src}}" aria-invalid="{{eb.src}}" aria-describedby="tr-src-e"><option value="">Choose</option><sc-for list="{{projOpts}}" as="o" hint-placeholder-count="6"><option value="{{o.v}}">{{o.t}}</option></sc-for></select><sc-if value="{{e.src}}" hint-placeholder-val="{{ false }}"><div class="field-err" id="tr-src-e"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg><span>{{e.src}}</span></div></sc-if></div></sc-if>
+                  <div class="field"><label class="t-label" for="tr-tgt">{{tgtLabel}}<span class="req-tag" aria-hidden="true"><span class="rq-need">Required</span><span class="rq-done">Done</span></span></label><select required id="tr-tgt" class="btn" style="padding-right:8px" value="{{f.tgt}}" onChange="{{set.tgt}}" aria-invalid="{{eb.tgt}}" aria-describedby="tr-tgt-e"><option value="">Choose</option><sc-for list="{{projOpts}}" as="o" hint-placeholder-count="6"><option value="{{o.v}}">{{o.t}}</option></sc-for></select><sc-if value="{{e.tgt}}" hint-placeholder-val="{{ false }}"><div class="field-err" id="tr-tgt-e"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg><span>{{e.tgt}}</span></div></sc-if></div>
+                  <sc-if value="{{isAdjustment}}" hint-placeholder-val="{{ false }}"><div class="field"><label class="t-label" for="tr-dir">Direction<span class="req-tag" aria-hidden="true"><span class="rq-need">Required</span><span class="rq-done">Done</span></span></label><select required id="tr-dir" class="btn" style="padding-right:8px" value="{{f.dir}}" onChange="{{set.dir}}"><option value="">Choose</option><option value="increase">Increase the allocation</option><option value="decrease">Decrease the allocation</option></select></div></sc-if>
+                  <div class="field"><label class="t-label" for="tr-amt">Amount<span class="req-tag" aria-hidden="true"><span class="rq-need">Required</span><span class="rq-done">Done</span></span></label><input required id="tr-amt" class="inp n" style="text-align:right;font-family:var(--font-mono)" type="text" inputmode="decimal" value="{{f.amt}}" onChange="{{set.amt}}" aria-invalid="{{eb.amt}}" aria-describedby="tr-amt-e" autocomplete="off"><sc-if value="{{e.amt}}" hint-placeholder-val="{{ false }}"><div class="field-err" id="tr-amt-e"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg><span>{{e.amt}}</span></div></sc-if></div>
+                  <div class="field"><label class="t-label" for="tr-date">Effective Date<span class="req-tag" aria-hidden="true"><span class="rq-need">Required</span><span class="rq-done">Done</span></span></label><input required id="tr-date" class="inp" type="date" value="{{f.date}}" onChange="{{set.date}}" aria-invalid="{{eb.date}}" aria-describedby="tr-date-e"><sc-if value="{{e.date}}" hint-placeholder-val="{{ false }}"><div class="field-err" id="tr-date-e"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg><span>{{e.date}}</span></div></sc-if></div>
+                  <div class="field"><label class="t-label" for="tr-cur">Currency</label><input id="tr-cur" class="inp" type="text" value="USD" readonly aria-readonly="true"></div>
+                  <div class="field"><label class="t-label" for="tr-by">Requester</label><input id="tr-by" class="inp" type="text" value="Luis Moreno" readonly aria-readonly="true"></div>
+                  <div class="span2"><div class="field"><label class="t-label" for="tr-why">Reason<span class="req-tag" aria-hidden="true"><span class="rq-need">Required</span><span class="rq-done">Done</span></span></label><textarea required id="tr-why" class="inp ta" value="{{f.why}}" onChange="{{set.why}}" aria-invalid="{{eb.why}}" aria-describedby="tr-why-e"></textarea><sc-if value="{{e.why}}" hint-placeholder-val="{{ false }}"><div class="field-err" id="tr-why-e"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg><span>{{e.why}}</span></div></sc-if></div></div>
+                </div>
+              </sc-if>
+            </div>
+          </section>
+
+          <sc-if value="{{ancOn}}" hint-placeholder-val="{{ true }}">
+          <section class="card" aria-labelledby="h-anc">
+            <div class="card-h"><h2 class="t-heading" id="h-anc">{{ancTitle}}</h2><sc-if value="{{anc.canReplay}}" hint-placeholder-val="{{ false }}"><button class="btn" type="button" onClick="{{anc.replay}}">Replay Posting</button></sc-if></div>
+            <div style="padding:12px 16px 0;border-bottom:1px solid var(--border)">
+              <div class="tabs" role="tablist" aria-label="Ancestry view" style="grid-auto-columns:minmax(0,1fr);width:min(100%,240px)" onKeyDown="{{anc.tabKey}}">
+                <sc-for list="{{anc.tabs}}" as="t" hint-placeholder-count="2"><button class="tab" role="tab" id="{{t.id}}" aria-selected="{{t.sel}}" aria-controls="an-p" tabindex="{{t.ti}}" type="button" onClick="{{t.go}}">{{t.label}}</button></sc-for>
+                <span class="tab-ind" style="{{anc.ind}}"></span>
+              </div>
+            </div>
+            <p class="sr-only" role="status" aria-live="polite">{{anc.live}}</p>
+            <sc-if value="{{anc.reducedNote}}" hint-placeholder-val="{{ false }}"><div class="notice" role="note"><span class="pill info"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM12 8h.01M11 12h1v5h1"></path></svg>Reduced Motion</span><span class="t-dense secondary">The trace is not played. This is the finished picture it ends on: every level recounted, the net change zero.</span></div></sc-if>
+            <div role="tabpanel" id="an-p" aria-labelledby="{{anc.lab}}">
+              <sc-if value="{{anc.isChart}}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;flex-direction:column">
+                  <h3 class="t-label" style="padding:12px 16px 8px">Source, Going Up</h3>
+                  <div role="table" aria-label="Source ancestry, going up">
+                    <div class="row head cols-anc stack" role="row"><span role="columnheader">Level</span><span role="columnheader" class="r">Available Before</span><span role="columnheader" class="r">Change</span><span role="columnheader" class="r">Available After</span></div>
+                    <sc-for list="{{anc.up}}" as="r" hint-placeholder-count="3">
+                      <div class="row cols-anc stack anc-row {{r.cls}}" role="row" style="min-height:56px">
+                        <div role="cell" class="stack-main" style="display:flex;gap:10px;align-items:center;min-width:0"><span class="anc-dot" aria-hidden="true"></span><div style="min-width:0;flex:1"><div style="font-weight:520">{{r.name}}<span class="sr-only"> {{r.state}}</span></div><div class="t-caption">{{r.tier}}</div><sc-if value="{{r.hasMeter}}" hint-placeholder-val="{{ false }}"><div class="meter" role="img" aria-label="{{r.pctText}}"><span style="{{r.meter}}"></span></div></sc-if></div></div>
+                        <span role="cell" class="num r" data-label="Available Before"><span class="w">{{r.bw}}</span><span class="d">{{r.bd}}</span><span class="cur">USD</span></span>
+                        <span role="cell" class="{{r.chCls}}" data-label="Change"><sc-if value="{{r.hasAmt}}" hint-placeholder-val="{{ true }}"><sc-if value="{{r.noChange}}" hint-placeholder-val="{{ false }}"><span class="t-caption">No net change</span></sc-if><sc-if value="{{r.moves}}" hint-placeholder-val="{{ true }}"><span class="w">{{r.cw}}</span><span class="d">{{r.cd}}</span><span class="cur">USD</span></sc-if></sc-if><sc-if value="{{r.hasText}}" hint-placeholder-val="{{ false }}"><span class="t-caption">{{r.text}}</span></sc-if></span>
+                        <span role="cell" class="num r" data-label="Available After"><sc-if value="{{r.hasAmt}}" hint-placeholder-val="{{ true }}"><span class="w">{{r.aw}}</span><span class="d">{{r.ad}}</span><span class="cur">USD</span></sc-if><sc-if value="{{r.hasText}}" hint-placeholder-val="{{ false }}"><span class="t-caption">Pending</span></sc-if></span>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <h3 class="t-label" style="padding:16px 16px 8px;border-top:1px solid var(--border)">Target, Going Down</h3>
+                  <div role="table" aria-label="Target ancestry, going down">
+                    <div class="row head cols-anc stack" role="row"><span role="columnheader">Level</span><span role="columnheader" class="r">Available Before</span><span role="columnheader" class="r">Change</span><span role="columnheader" class="r">Available After</span></div>
+                    <sc-for list="{{anc.down}}" as="r" hint-placeholder-count="3">
+                      <div class="row cols-anc stack anc-row {{r.cls}}" role="row" style="min-height:56px">
+                        <div role="cell" class="stack-main" style="display:flex;gap:10px;align-items:center;min-width:0"><span class="anc-dot" aria-hidden="true"></span><div style="min-width:0;flex:1"><div style="font-weight:520">{{r.name}}<span class="sr-only"> {{r.state}}</span></div><div class="t-caption">{{r.tier}}</div><sc-if value="{{r.hasMeter}}" hint-placeholder-val="{{ false }}"><div class="meter" role="img" aria-label="{{r.pctText}}"><span style="{{r.meter}}"></span></div></sc-if></div></div>
+                        <span role="cell" class="num r" data-label="Available Before"><span class="w">{{r.bw}}</span><span class="d">{{r.bd}}</span><span class="cur">USD</span></span>
+                        <span role="cell" class="{{r.chCls}}" data-label="Change"><sc-if value="{{r.hasAmt}}" hint-placeholder-val="{{ true }}"><sc-if value="{{r.noChange}}" hint-placeholder-val="{{ false }}"><span class="t-caption">No net change</span></sc-if><sc-if value="{{r.moves}}" hint-placeholder-val="{{ true }}"><span class="w">{{r.cw}}</span><span class="d">{{r.cd}}</span><span class="cur">USD</span></sc-if></sc-if><sc-if value="{{r.hasText}}" hint-placeholder-val="{{ false }}"><span class="t-caption">{{r.text}}</span></sc-if></span>
+                        <span role="cell" class="num r" data-label="Available After"><sc-if value="{{r.hasAmt}}" hint-placeholder-val="{{ true }}"><span class="w">{{r.aw}}</span><span class="d">{{r.ad}}</span><span class="cur">USD</span></sc-if><sc-if value="{{r.hasText}}" hint-placeholder-val="{{ false }}"><span class="t-caption">Pending</span></sc-if></span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{anc.isTable}}" hint-placeholder-val="{{ false }}">
+                <div role="table" aria-label="Every level in the order it is recounted">
+                  <div class="row head cols-anct stack" role="row"><span role="columnheader">Level</span><span role="columnheader" class="hide-md">State</span><span role="columnheader" class="r">Available Before</span><span role="columnheader" class="r">Change</span><span role="columnheader" class="r">Available After</span></div>
+                  <sc-for list="{{anc.flat}}" as="r" hint-placeholder-count="6">
+                    <div class="row cols-anct stack anc-row {{r.cls}}" role="row" style="min-height:52px">
+                      <div role="cell" class="stack-main" style="min-width:0"><div style="font-weight:520">{{r.name}}</div><div class="t-caption">{{r.side}}, {{r.tier}}</div></div>
+                      <span role="cell" class="hide-md t-caption" data-label="State">{{r.state}}</span>
+                      <span role="cell" class="num r" data-label="Available Before"><span class="w">{{r.bw}}</span><span class="d">{{r.bd}}</span><span class="cur">USD</span></span>
+                      <span role="cell" class="{{r.chCls}}" data-label="Change"><sc-if value="{{r.hasAmt}}" hint-placeholder-val="{{ true }}"><sc-if value="{{r.noChange}}" hint-placeholder-val="{{ false }}"><span class="t-caption">No net change</span></sc-if><sc-if value="{{r.moves}}" hint-placeholder-val="{{ true }}"><span class="w">{{r.cw}}</span><span class="d">{{r.cd}}</span><span class="cur">USD</span></sc-if></sc-if><sc-if value="{{r.hasText}}" hint-placeholder-val="{{ false }}"><span class="t-caption">{{r.text}}</span></sc-if></span>
+                      <span role="cell" class="num r" data-label="Available After"><sc-if value="{{r.hasAmt}}" hint-placeholder-val="{{ true }}"><span class="w">{{r.aw}}</span><span class="d">{{r.ad}}</span><span class="cur">USD</span></sc-if><sc-if value="{{r.hasText}}" hint-placeholder-val="{{ false }}"><span class="t-caption">Pending</span></sc-if></span>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+            <div class="total-bar" role="group" aria-label="Totals recounted">
+              <span style="display:flex;flex-wrap:wrap;gap:4px 24px;align-items:center">
+                <span><span class="t-caption">Moved Out </span><span class="{{anc.outCls}}"><span class="w">{{anc.outW}}</span><span class="d">{{anc.outD}}</span><span class="cur">USD</span></span></span>
+                <span><span class="t-caption">Moved In </span><span class="num"><span class="w">{{anc.inW}}</span><span class="d">{{anc.inD}}</span><span class="cur">USD</span></span></span>
+              </span>
+              <span><span class="t-caption">Net Change </span><span class="num"><span class="w">{{anc.netW}}</span><span class="d">{{anc.netD}}</span><span class="cur">USD</span></span></span>
+            </div>
+          </section>
+          </sc-if>
+          <sc-if value="{{ancFail}}" hint-placeholder-val="{{ false }}">
+            <section class="card" aria-labelledby="h-ancf"><div class="card-h"><h2 class="t-heading" id="h-ancf">Ancestry Preview</h2></div><div class="state" role="alert"><span class="pill danger"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>Could not load the ancestry preview</span><div class="t-dense secondary">Your transfer is kept. Totals are recounted when it posts, and the server checks funds and eligibility on submit.</div><button class="btn" type="button" onClick="{{retry}}">Try again</button></div></section>
+          </sc-if>
+          <sc-if value="{{ancWait}}" hint-placeholder-val="{{ false }}">
+            <section class="card" aria-labelledby="h-ancw"><div class="card-h"><h2 class="t-heading" id="h-ancw">Ancestry Preview</h2></div><div class="state"><div class="t-heading">{{ancWaitTitle}}</div><div class="t-dense secondary">{{ancWaitText}}</div></div></section>
+          </sc-if>
+
+          <section class="card" aria-labelledby="h-ent">
+            <div class="card-h"><h2 class="t-heading" id="h-ent">Entries That Will Post</h2><span class="t-caption">{{entCount}}</span></div>
+            <sc-if value="{{det.loading}}" hint-placeholder-val="{{ false }}"><div role="status" aria-label="Loading entries" style="display:flex;flex-direction:column;gap:12px;padding:16px"><span class="skel" style="height:40px"></span><span class="skel" style="height:40px"></span></div></sc-if>
+            <sc-if value="{{entOn}}" hint-placeholder-val="{{ true }}">
+              <div role="table" aria-label="Entries that will post">
+                <div class="row head cols-ent stack" role="row"><span role="columnheader">Entry</span><span role="columnheader">Project</span><span role="columnheader" class="hide-md">Bucket</span><span role="columnheader" class="r">Amount</span></div>
+                <sc-for list="{{entries}}" as="en" hint-placeholder-count="2">
+                  <div class="row cols-ent stack" role="row" style="min-height:52px">
+                    <div role="cell" class="stack-main" style="min-width:0"><div style="font-weight:520">{{en.what}}</div><div class="t-caption">Transfer id {{number}}, assigned on submit</div></div>
+                    <span role="cell" data-label="Project">{{en.project}}</span>
+                    <span role="cell" class="hide-md" data-label="Bucket">{{en.bucket}}</span>
+                    <span role="cell" class="{{en.cls}}" data-label="Amount"><span class="w">{{en.w}}</span><span class="d">{{en.d}}</span><span class="cur">USD</span></span>
+                  </div>
+                </sc-for>
+              </div>
+              <div class="total-bar"><span style="font-weight:560">{{netLabel}}</span><span class="num"><span class="w">{{netW}}</span><span class="d">{{netD}}</span><span class="cur">USD</span></span></div>
+              <p class="t-caption" style="padding:12px 16px">{{entNote}}</p>
+            </sc-if>
+            <sc-if value="{{entWait}}" hint-placeholder-val="{{ false }}"><div class="state"><div class="t-dense secondary">Entries appear once the projects and the amount are valid.</div></div></sc-if>
+          </section>
+        </div>
+
+        <aside class="req-stack" aria-label="Checks and evidence">
+          <section class="card" aria-labelledby="h-chk">
+            <div class="card-h"><h2 class="t-heading" id="h-chk">Checks</h2></div>
+            <div class="card-b" style="display:flex;flex-direction:column;gap:12px">
+              <sc-if value="{{fund.loading}}" hint-placeholder-val="{{ false }}"><div role="status" aria-label="Checking funds" style="display:flex;flex-direction:column;gap:10px"><span class="skel" style="height:14px;width:60%"></span><span class="skel" style="height:14px"></span><span class="skel" style="height:14px;width:80%"></span></div></sc-if>
+              <sc-if value="{{fund.ok}}" hint-placeholder-val="{{ true }}">
+                <div class="t-label">{{availLabel}}</div>
+                <dl class="kv" style="margin:0;grid-template-columns:minmax(0,1fr) auto">
+                  <dt class="t-label">Available Now</dt><dd class="amt" style="margin:0;text-align:right"><span class="w">{{avW}}</span><span class="d">{{avD}}</span><span class="cur">USD</span></dd>
+                  <dt class="t-label">This Amount</dt><dd class="amt" style="margin:0;text-align:right"><span class="w">{{amW}}</span><span class="d">{{amD}}</span><span class="cur">USD</span></dd>
+                  <dt class="t-label">Available After</dt><dd class="{{afterCls}}" style="margin:0"><span class="w">{{afW}}</span><span class="d">{{afD}}</span><span class="cur">USD</span></dd>
+                </dl>
+                <div class="bar" role="img" aria-label="{{fundAria}}"><span style="{{fundFill}}"></span></div>
+                <div><span class="{{fundPill}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{fundIcon}}"></path></svg>{{fundText}}</span></div>
+                <sc-if value="{{short}}" hint-placeholder-val="{{ false }}"><p class="t-dense" style="margin:0">This is <b class="amt"><span class="w">{{shortW}}</span><span class="d">{{shortD}}</span><span class="cur">USD</span></b> over what is available. A transfer cannot take funds below zero, and there is no override on this screen. Lower the amount or choose another source.</p></sc-if>
+                <sc-if value="{{isTransfer}}" hint-placeholder-val="{{ true }}">
+                  <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:8px">
+                    <div class="t-label">Eligibility</div>
+                    <div><span class="{{eligPill}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{eligIcon}}"></path></svg>{{eligText}}</span></div>
+                    <div class="t-dense secondary">{{eligNote}}</div>
+                    <div class="t-label" style="margin-top:4px">Kind</div>
+                    <div><span class="{{kindPill}}">{{kindText}}</span></div>
+                    <div class="t-dense secondary">{{kindNote}}</div>
+                  </div>
+                </sc-if>
+                <div style="border-top:1px solid var(--border);padding-top:12px"><div class="t-label" style="margin-bottom:4px">Period</div><div><span class="{{periodPill}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{periodIcon}}"></path></svg>{{periodText}}</span></div></div>
+                <div style="border-top:1px solid var(--border);padding-top:12px"><div class="t-label" style="margin-bottom:4px">Approval Route</div><div class="t-dense">{{routeText}}</div></div>
+              </sc-if>
+              <sc-if value="{{fund.error}}" hint-placeholder-val="{{ false }}"><div class="state" role="alert"><span class="pill danger"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>Could not load the checks</span><div class="t-dense secondary">Your transfer is kept. Nothing was changed.</div><button class="btn" type="button" onClick="{{retry}}">Try again</button></div></sc-if>
+            </div>
+          </section>
+
+          <section class="card" aria-labelledby="h-ev">
+            <div class="card-h"><h2 class="t-heading" id="h-ev">Supporting Evidence</h2><button class="btn" type="button" id="tr-ev" onClick="{{upload}}">Upload file</button></div>
+            <div class="card-b" style="padding:12px 16px 0"><span class="{{evPill}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{evIcon}}"></path></svg>{{evText}}</span><p class="t-caption" style="margin:8px 0 0">{{evNote}}</p></div>
+            <div class="card-b" style="padding:0">
+              <sc-if value="{{noFiles}}" hint-placeholder-val="{{ false }}"><div class="state"><div class="t-dense secondary">No files yet. Each file is scanned before anyone can open it.</div></div></sc-if>
+              <ul class="suggest">
+                <sc-for list="{{files}}" as="fl" hint-placeholder-count="2">
+                  <li><div style="display:flex;gap:10px;align-items:center;min-width:0"><span class="file-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"></path></svg></span><div style="min-width:0"><div style="font-weight:520;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{fl.name}}</div><div class="t-caption">{{fl.note}}</div></div></div><span class="{{fl.pillCls}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{fl.pd}}"></path></svg>{{fl.scan}}</span></li>
+                </sc-for>
+              </ul>
+            </div>
+          </section>
+        </aside>
+      </div>
+
+      <div class="action-bar">
+        <span style="display:flex;gap:4px 16px;flex-wrap:wrap;align-items:center"><span class="t-caption" role="status">{{savedText}}</span><span class="req-left" role="status"><span class="rq-count">Required fields are still empty</span><span class="rq-allset">All required fields complete</span></span></span>
+        <span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" type="button" onClick="{{saveDraft}}">Save draft</button><button class="btn primary" type="submit" aria-busy="{{busy}}" onClick="{{submit}}">{{submitLabel}}</button></span>
+      </div>
+      </sc-if>
+      <p class="t-caption">Sample data for layout review.</p>
+    </main>
+  </div>
+</div>
+<sc-if value="{{navTip}}" hint-placeholder-val="{{ false }}"><div class="nav-tip" style="{{navTip.style}}">{{navTip.text}}</div></sc-if>
+<div class="toasts" role="status" aria-live="polite">
+  <sc-if value="{{toast}}" hint-placeholder-val="{{ false }}"><div class="toast"><span>{{toast.msg}}</span></div></sc-if>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"dark","options":["light","dark"]},"collapsed":{"editor":"enum","default":"auto","options":["auto","yes","no"]},"navOpen":{"editor":"boolean","default":false},"view":{"editor":"enum","default":"draft","options":["new","draft","cross","errors","short","race","policy","allocation","adjustment","busy","loading","error","partial","submitted"]},"$preview":{"width":1440,"height":1607}}'>
+class Component extends DCLogic {
+  componentDidMount() {
+    if ((this.props.collapsed ?? 'auto') === 'auto') {
+      try { if (localStorage.getItem('xf.sidebar') === 'collapsed') this.setState({ collapsed: true }); } catch (e) {}
+    }
+    this.applyHues();
+    this.afterMount && this.afterMount();
+  }
+  componentDidUpdate() { this.applyHues(); this.afterUpdate && this.afterUpdate(); }
+  // Card hover outline colour: the next colour of the chart series by position, so a new card needs no colour decision.
+  applyHues() {
+    const H = ['--c5', '--c7', '--c8', '--c1', '--c3', '--c2', '--c4', '--c6'];
+    document.querySelectorAll('.dash > .card').forEach((el, i) => el.style.setProperty('--hue', 'var(' + H[i % H.length] + ')'));
+  }
+  componentWillUnmount() { clearTimeout(this._tt); clearTimeout(this._bt); clearInterval(this._iv); }
+  split(s) { const i = s.lastIndexOf('.'); return i < 0 ? [s, ''] : [s.slice(0, i), s.slice(i)]; }
+  back(el) { setTimeout(() => { if (el && el.focus) el.focus(); }, 0); }
+  toast(msg) {
+    clearTimeout(this._tt);
+    this.setState({ toast: { msg } });
+    this._tt = setTimeout(() => this.setState({ toast: null }), 4000);
+  }
+  shellVals(st) {
+    const collapsed = st.collapsed ?? (this.props.collapsed === 'yes');
+    const navOpen = st.navOpen ?? (this.props.navOpen === true);
+    const act = this.activeNav || 'Budget';
+    const I = {
+      home: "M3 11l9-8 9 8M5 10v10h14V10M10 20v-6h4v6",
+      org: "M4 21V5l8-2v18M12 9h8v12M7 8h2M7 12h2M7 16h2M15 13h2M15 17h2",
+      admin: "M4 7h10M18 7h2M4 17h2M10 17h10M16 4v6M8 14v6",
+      proj: "M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z",
+      budget: "M3 7a2 2 0 012-2h13v4M3 7v11a2 2 0 002 2h15V9H5a2 2 0 01-2-2zM16 14.5h.01",
+      rep: "M4 20V10M10 20V4M16 20v-7M2 20h20",
+      req: "M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6",
+      appr: "M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6",
+      vend: "M4 9l1-5h14l1 5M4 9a2.5 2.5 0 005 0 2.5 2.5 0 006 0 2.5 2.5 0 005 0M5 11v9h14v-9M10 20v-5h4v5",
+      src: "M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4",
+      po: "M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6",
+      asset: "M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10",
+      help: "M12 21a9 9 0 100-18 9 9 0 000 18zM9.5 9.5a2.5 2.5 0 115 .5c0 1.5-2.5 2-2.5 3.5M12 17h.01"
+    };
+    const link = (label, d, ph, on) => ({ isLink: true, isHead: false, label, d, cls: 'nav-i ' + ph + (on ? ' on' : '') });
+    const hd = (label) => ({ isHead: true, isLink: false, label });
+    const nav = [
+      link('Home', I.home, '', false),
+      hd('Foundation'), link('Organization', I.org, 'p-foundation'), link('Administration', I.admin, 'p-foundation'),
+      hd('Plan'), link('Projects', I.proj, 'p-plan', act === 'Projects'), link('Budget', I.budget, 'p-plan', act === 'Budget'), link('Reporting', I.rep, 'p-plan'),
+      hd('Demand'), link('Requisitions', I.req, 'p-demand'), link('Approvals', I.appr, 'p-demand'),
+      hd('Commit'), link('Vendors', I.vend, 'p-commit'), link('Sourcing', I.src, 'p-commit'), link('Purchase orders', I.po, 'p-commit'), link('Assets', I.asset, 'p-commit'),
+      hd('Support'), link('Help', I.help, '')
+    ];
+    return {
+      theme: this.props.theme ?? 'light', nav,
+      rootCls: 'xf' + (st.intro ? ' intro' : ''),
+      appCls: 'app' + (collapsed ? ' collapsed' : '') + (navOpen ? ' nav-open' : ''),
+      navOpen, expanded: !collapsed, collapseLabel: collapsed ? 'Expand sidebar' : 'Collapse sidebar',
+      navLabel: navOpen ? 'Close navigation' : 'Open navigation',
+      // rail tooltips are one fixed-position element, so the scrolling sidebar cannot clip them
+      navTip: st.navTip || null,
+      navTipShow: (e) => {
+        const a = e.currentTarget, lbl = a.querySelector('.lbl');
+        if (!lbl || getComputedStyle(lbl).display !== 'none') return;
+        const r = a.getBoundingClientRect();
+        this.setState({ navTip: { text: a.getAttribute('data-tip'), style: 'left:' + (r.right + 12) + 'px;top:' + (r.top + r.height / 2) + 'px' } });
+      },
+      navTipHide: () => { if (st.navTip) this.setState({ navTip: null }); },
+      toggleCollapse: () => {
+        this.setState({ collapsed: !collapsed });
+        try { localStorage.setItem('xf.sidebar', collapsed ? 'expanded' : 'collapsed'); } catch (e) {}
+      },
+      toggleNav: () => this.setState({ navOpen: !navOpen }),
+      closeNav: () => this.setState({ navOpen: false }),
+      toast: st.toast || null
+    };
+  }
+
+  get activeNav() { return 'Budget'; }
+
+  // Sample data, internally consistent. Money is held as whole cents so a total can never drift; Decimal in the real app.
+  D() {
+    const fmt = (c) => { const neg = c < 0, a = (Math.abs(c) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); return neg ? '(' + a + ')' : a; };
+    const sgn = (c) => (c > 0 ? '+' + fmt(c) : fmt(c));
+    const cents = (v) => { const n = parseFloat(String(v).replace(/,/g, '')); return Number.isFinite(n) ? Math.round(n * 100) : NaN; };
+    const PRJ = {
+      p4: { name: 'Plant 4 Line Retrofit', code: 'PRJ-0142', lvl: 3, bu: 'Manufacturing', avail: 54600000, owner: 'Dev Patel', cur: 'USD', open: true },
+      pk: { name: 'Packaging Line 2', code: 'PRJ-0151', lvl: 3, bu: 'Manufacturing', avail: 320000000, owner: 'Priya Raman', cur: 'USD', open: true },
+      p2: { name: 'Plant 2 Dock Upgrade', code: 'PRJ-0158', lvl: 3, bu: 'Facilities', avail: 21200000, owner: 'Marcus Lee', cur: 'USD', open: true },
+      dc: { name: 'Data Centre Cooling', code: 'PRJ-0163', lvl: 3, bu: 'Facilities', avail: 15200000, owner: 'Sana Qureshi', cur: 'USD', open: true },
+      cc: { name: 'Corporate Contingency', code: 'PRJ-0010', lvl: 2, bu: '', avail: 120000000, owner: 'Elena Fischer', cur: 'USD', open: true },
+      er: { name: 'ERP Upgrade', code: 'PRJ-0127', lvl: 3, bu: 'Facilities', avail: 8800000, owner: 'Luis Moreno', cur: 'EUR', open: false }
+    };
+    const BU = { Manufacturing: { avail: 391000000 }, Facilities: { avail: 214000000 } };
+    const ORG = { name: 'Northwind Capital, EMEA', avail: 1138000000 };
+    const TIER = { 1: 'Organization', 2: 'Business Unit', 3: 'Project' };
+    // BUD-002: eligible = same organization, same depth, both open, same currency; anything else is Cross Hierarchy and needs the policy flag
+    const kindOf = (s, t) => (s.lvl === t.lvl ? 'Same Level' : 'Cross Hierarchy');
+    // decision 68: ancestors are recounted from the two project entries, they get no entries of their own
+    const anc = (sk, tk, c) => {
+      const s = PRJ[sk], t = PRJ[tk];
+      const row = (name, tier, before, change, shared) => ({ name, tier, before, change, after: before + change, shared });
+      const same = !!s.bu && s.bu === t.bu;
+      const up = [row(s.name, TIER[s.lvl], s.avail, -c, false)];
+      if (s.bu) up.push(row(s.bu, TIER[2], BU[s.bu].avail, same ? 0 : -c, same));
+      up.push(row(ORG.name, TIER[1], ORG.avail, 0, true));
+      const down = [row(ORG.name, TIER[1], ORG.avail, 0, true)];
+      if (t.bu) down.push(row(t.bu, TIER[2], BU[t.bu].avail, same ? 0 : c, same));
+      down.push(row(t.name, TIER[t.lvl], t.avail, c, false));
+      return { up, down };
+    };
+    return { fmt, sgn, cents, PRJ, BU, ORG, TIER, kindOf, anc };
+  }
+
+  // The ancestry card, shared by create, detail and the posting moment (signature moment 3, MASTER 6.2).
+  // mode: 'preview' (before submit), 'posted' (as posted), 'moment' (staged by props.moment: before, trace, after, reduced, table).
+  ancVals(st, sk, tk, c, mode) {
+    const { fmt, sgn, anc, PRJ } = this.D();
+    const split = (s) => this.split(s);
+    const a = anc(sk, tk, c);
+    const n = a.up.length + a.down.length;
+    const mom = this.props.moment || '';
+    const reduce = (() => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } })();
+    let stage = mode === 'preview' ? 'preview' : 'after', step = n;
+    if (mode === 'moment') { stage = mom === 'before' ? 'before' : mom === 'trace' ? 'trace' : 'after'; step = mom === 'trace' ? Math.min(n - 1, parseInt(this.props.step || '3', 10)) : n; }
+    if (st.stage) { stage = st.stage; step = st.step ?? n; }
+    const tab = st.ancTab ?? (mom === 'table' ? 1 : 0);
+    const state = (i) => (stage === 'preview' || stage === 'after' ? 'done' : stage === 'before' ? 'wait' : i < step ? 'done' : i === step ? 'lit' : 'wait');
+    const mk = (r, i, side) => {
+      const s = state(i), moved = s === 'done';
+      const [bw, bd] = split(fmt(r.before)), [aw, ad] = split(fmt(r.after)), [cw, cd] = split(r.shared ? '0.00' : sgn(r.change));
+      const pct = r.shared ? 0 : Math.min(100, Math.round(Math.abs(r.change) / r.before * 1000) / 10);
+      const text = s === 'wait' ? (stage === 'before' ? 'Not posted yet' : 'Waiting') : s === 'lit' ? 'Recounting' : '';
+      return { name: r.name, tier: r.tier + (r.shared && moved ? ', shared by both paths' : ''), side, cls: 'is-' + s, state: s === 'done' ? 'Recounted' : s === 'lit' ? 'Recounting' : 'Waiting',
+        bw, bd, aw, ad, cw, cd, text, hasText: !!text, hasAmt: !text, noChange: !text && r.shared, moves: !text && !r.shared,
+        chCls: 'num r' + (r.change < 0 && !r.shared ? ' neg' : ''), pct, meter: 'width:' + pct + '%', hasMeter: !r.shared && moved, pctText: pct + '% of its available' };
+    };
+    const up = a.up.map((r, i) => mk(r, i, 'Source, Going Up')), down = a.down.map((r, i) => mk(r, a.up.length + i, 'Target, Going Down'));
+    const upDone = a.up.filter((r, i) => !r.shared && state(i) === 'done').length, upAll = a.up.filter((r) => !r.shared).length;
+    const dnDone = a.down.filter((r, i) => !r.shared && state(a.up.length + i) === 'done').length, dnAll = a.down.filter((r) => !r.shared).length;
+    const out = stage === 'preview' ? c : Math.round(c * upDone / upAll), inn = stage === 'preview' ? c : Math.round(c * dnDone / dnAll);
+    const [ow, od] = split(fmt(-out)), [iw, id] = split(sgn(inn)), [nw, nd] = split(fmt(inn - out));
+    const lit = state(step) === 'lit' ? (step < a.up.length ? a.up[step] : a.down[step - a.up.length]).name : '';
+    const live = stage === 'before' ? 'Posting has not started.' : stage === 'trace' ? 'Recounting ' + lit + ', step ' + (step + 1) + ' of ' + n + '.' : stage === 'preview' ? 'Totals are recounted when the transfer posts.' : 'Posted. Every level is recounted and the net change is zero.';
+    const tabs = ['Chart', 'Table'].map((label, i) => ({ id: 'an-t' + i, label, sel: i === tab, ti: i === tab ? 0 : -1, go: () => this.setState({ ancTab: i }) }));
+    return {
+      up, down, flat: [...up, ...down], tabs, ind: 'width:50%;transform:translateX(' + tab * 100 + '%)', isChart: tab === 0, isTable: tab === 1, lab: 'an-t' + tab,
+      tabKey: (e) => { let to = tab; if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') to = 1 - tab; else if (e.key === 'Home') to = 0; else if (e.key === 'End') to = 1; else return; e.preventDefault(); this.setState({ ancTab: to }); this.back(document.getElementById('an-t' + to)); },
+      outW: ow, outD: od, outCls: 'num' + (out > 0 ? ' neg' : ''), inW: iw, inD: id, netW: nw, netD: nd, live, stage, reducedNote: mom === 'reduced',
+      n, canReplay: mode !== 'preview', replay: () => {
+        if (reduce) { this.setState({ stage: 'after', step: n }); return; }
+        clearInterval(this._iv); let i = 0; this.setState({ stage: 'trace', step: 0 });
+        this._iv = setInterval(() => { i++; if (i >= n) { clearInterval(this._iv); this.setState({ stage: 'after', step: n }); } else this.setState({ stage: 'trace', step: i }); }, 420);
+      },
+      sourceName: PRJ[sk].name, targetName: PRJ[tk].name
+    };
+  }
+
+  componentWillUnmount() { clearTimeout(this._tt); clearTimeout(this._bt); clearInterval(this._iv); }
+  afterUpdate() {
+    if (this._focusSummary) { this._focusSummary = false; const el = document.getElementById('tr-summary'); if (el) el.focus(); }
+  }
+  renderVals() {
+    const st = this.state || {};
+    const view = st.view ?? this.props.view ?? 'draft';
+    const { fmt, sgn, cents, PRJ, kindOf, ORG } = this.D();
+    const split = (s) => this.split(s);
+    const P = { x: "M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6", ok: "M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6", info: "M20 11a8 8 0 00-14-4M4 4v4h4M4 13a8 8 0 0014 4M20 20v-4h-4", n: "M12 21a9 9 0 100-18 9 9 0 000 18z", w: "M12 3l10 18H2zM12 10v5M12 18h.01" };
+    const TODAY = '2026-10-09', POOL = 125000000;
+    const POLICY = view !== 'policy';      // organization setting: cross-level transfers enabled (BUD-002)
+    const EVID = 'cross';                   // organization setting: off | cross | always (BUD-007)
+    const SEEDS = {
+      new: { type: 'transfer', src: '', tgt: '', dir: '', amt: '', date: '', why: '', files: 0 },
+      draft: { type: 'transfer', src: 'p4', tgt: 'p2', dir: '', amt: '40,000.00', date: '2026-10-12', why: 'Move unused budget from the retrofit to the dock upgrade before the winter shutdown.', files: 0 },
+      cross: { type: 'transfer', src: 'cc', tgt: 'p4', dir: '', amt: '90,000.00', date: '2026-10-14', why: 'Cover the audit-driven safety work on Line 4 from the corporate reserve.', files: 1 },
+      errors: { type: 'transfer', src: 'p4', tgt: 'er', dir: '', amt: '', date: '2026-09-24', why: '', files: 0 },
+      short: { type: 'transfer', src: 'p4', tgt: 'p2', dir: '', amt: '600,000.00', date: '2026-10-12', why: 'Fund the dock upgrade overrun.', files: 0 },
+      race: { type: 'transfer', src: 'p4', tgt: 'p2', dir: '', amt: '40,000.00', date: '2026-10-12', why: 'Move unused budget from the retrofit to the dock upgrade before the winter shutdown.', files: 0 },
+      policy: { type: 'transfer', src: 'cc', tgt: 'p4', dir: '', amt: '90,000.00', date: '2026-10-14', why: 'Cover the audit-driven safety work on Line 4 from the corporate reserve.', files: 1 },
+      allocation: { type: 'allocation', src: '', tgt: 'p4', dir: '', amt: '100,000.00', date: '2026-10-12', why: 'FY27 fourth-quarter allocation from the unallocated pool.', files: 0 },
+      adjustment: { type: 'adjustment', src: '', tgt: 'p4', dir: 'decrease', amt: '12,000.00', date: '2026-10-12', why: 'Remove the budget for the cancelled guard-rail scope.', files: 0 }
+    };
+    const seed = SEEDS[view] || SEEDS.draft;
+    const f = { ...seed, ...(st.f || {}) };
+    const type = st.type ?? seed.type;
+    const isTransfer = type === 'transfer', isAllocation = type === 'allocation', isAdjustment = type === 'adjustment';
+    const isLoading = view === 'loading';
+    const nFiles = st.files ?? seed.files;
+    const amt = cents(f.amt), amtOk = Number.isFinite(amt) && amt > 0;
+    const S = PRJ[f.src], T = PRJ[f.tgt];
+    const raceOn = view === 'race' && !st.raceCleared;
+    const srcKey = isTransfer ? f.src : f.tgt;
+    const srcAvail = raceOn && srcKey === 'p4' ? 2400000 : isAllocation ? POOL : (PRJ[srcKey] ? PRJ[srcKey].avail : 0);
+    const takes = isTransfer || (isAdjustment && f.dir === 'decrease');   // BUD-008: outgoing changes may not reduce available below zero
+    const checkFunds = takes || isAllocation;
+    const after = srcAvail - (amtOk ? amt : 0), short = checkFunds && amtOk && after < 0;
+    const kind = isTransfer && S && T ? kindOf(S, T) : '';
+    const needEvid = isTransfer && (EVID === 'always' || (EVID === 'cross' && kind === 'Cross Hierarchy'));
+
+    // validation (BUD-002, BUD-007, BUD-008): required fields, eligibility, funds, period, evidence
+    const attempted = st.attempted ?? ['errors', 'short', 'race', 'policy'].includes(view);
+    const checks = [];
+    const add = (cat, id, text) => checks.push({ cat, id, text });
+    if (isTransfer && !f.src) add('Required field', 'tr-src', 'Choose the source project');
+    if (!f.tgt) add('Required field', 'tr-tgt', 'Choose the ' + (isTransfer ? 'target ' : '') + 'project');
+    if (isAdjustment && !f.dir) add('Required field', 'tr-dir', 'Choose a direction');
+    if (!amtOk) add('Required field', 'tr-amt', 'Enter an amount greater than zero');
+    if (!f.date) add('Required field', 'tr-date', 'Enter the effective date');
+    else if (f.date < '2026-10-01') add('Period', 'tr-date', 'The effective date falls in a closed period (September 2026). Use today or later');
+    else if (f.date < TODAY) add('Period', 'tr-date', 'The effective date is in the past. Use today or later');
+    if (!f.why.trim()) add('Required field', 'tr-why', 'Explain why the funds are moving');
+    if (isTransfer && S && T) {
+      if (f.src === f.tgt) add('Eligibility', 'tr-tgt', 'Choose two different projects');
+      [S, T].forEach((p) => {
+        if (!p.open) add('Eligibility', p === S ? 'tr-src' : 'tr-tgt', p.name + ' is closed. Choose an open project');
+        if (p.cur !== 'USD') add('Eligibility', p === S ? 'tr-src' : 'tr-tgt', p.name + ' is in ' + p.cur + '. Both projects must use USD');
+      });
+      if (kind === 'Cross Hierarchy' && !POLICY) add('Eligibility', 'tr-tgt', 'Transfers across levels are not enabled for ' + ORG.name + '. Ask an administrator, or choose projects at the same level');
+    }
+    if (needEvid && !nFiles) add('Required field', 'tr-ev', 'Attach supporting evidence. This organization requires it for transfers across levels');
+    if (short) add('Funds', 'tr-amt', raceOn ? 'Available is now ' + fmt(srcAvail) + ' USD and this transfer needs ' + fmt(amt) + ' USD. Another transfer used the funds first' : 'Over the available funds by ' + fmt(-after) + ' USD. Lower the amount or choose another source');
+    const show = attempted;
+    const err = (id) => { const c = show && checks.find((x) => x.id === id && x.cat !== 'Funds'); return c ? c.text + '.' : ''; };
+    const e = { src: err('tr-src'), tgt: err('tr-tgt'), amt: err('tr-amt'), date: err('tr-date'), why: err('tr-why') };
+    const eb = Object.fromEntries(Object.entries(e).map(([k, v]) => [k, !!v]));
+    const focusId = (id) => (ev) => { ev.preventDefault(); const el = document.getElementById(id); if (el) el.focus(); };
+    const problems = checks.map((c) => ({ cat: c.cat, text: c.text, go: focusId(c.id) }));
+    const submitted = view === 'submitted' || st.done;
+    const summaryOn = show && checks.length > 0 && !submitted;
+
+    // the checks card
+    const eligBad = checks.some((c) => c.cat === 'Eligibility');
+    const ancOk = isTransfer && S && T && f.src !== f.tgt && amtOk && !eligBad;
+    const bad = [S, T].some((p) => p && (!p.open || p.cur !== 'USD'));
+    const eligible = isTransfer && S && T && f.src !== f.tgt && !bad && !(kind === 'Cross Hierarchy' && !POLICY);
+    const dispAfter = amtOk ? after : srcAvail;
+    const [avW, avD] = split(fmt(srcAvail)), [afW, afD] = split(fmt(dispAfter)), [amW, amD] = split(fmt(amtOk ? amt : 0)), [shW, shD] = split(fmt(Math.max(0, -after)));
+    const pct = Math.max(0, Math.min(100, srcAvail ? (amtOk ? amt : 0) / srcAvail * 100 : 0));
+    const fundOk = !short;
+    const route = kind === 'Cross Hierarchy' ? 'Source owner ' + (S ? S.owner : '') + ', target owner ' + (T ? T.owner : '') + ', then the Finance Director. Transfers across levels are always routed.' : amtOk && amt > 10000000 ? 'Source owner, Plant Manager, then the Finance Director. Over 100,000.00 USD adds the Finance Director.' : 'Source owner, then the Plant Manager (step 2 of 2). Over 100,000.00 USD adds the Finance Director.';
+    const tgtP = PRJ[f.tgt];
+    const projOpts = Object.entries(PRJ).map(([v, p]) => ({ v, t: p.name + (p.open ? '' : ' (closed)') }));
+    const entries = [];
+    if (amtOk && isTransfer && S && T) { const [a1, a2] = split(fmt(-amt)), [b1, b2] = split(sgn(amt)); entries.push({ what: 'Transfer Out', project: S.name, bucket: 'Allocated', cls: 'num r neg', w: a1, d: a2, c: -amt }, { what: 'Transfer In', project: T.name, bucket: 'Allocated', cls: 'num r', w: b1, d: b2, c: amt }); }
+    if (amtOk && isAllocation && tgtP) { const [b1, b2] = split(sgn(amt)); entries.push({ what: 'Allocation From The Unallocated Pool', project: tgtP.name, bucket: 'Allocated', cls: 'num r', w: b1, d: b2, c: amt }); }
+    if (amtOk && isAdjustment && tgtP && f.dir) { const dn = f.dir === 'decrease', [b1, b2] = split(dn ? fmt(-amt) : sgn(amt)); entries.push({ what: dn ? 'Adjustment, Decrease' : 'Adjustment, Increase', project: tgtP.name, bucket: 'Allocated', cls: 'num r' + (dn ? ' neg' : ''), w: b1, d: b2, c: dn ? -amt : amt }); }
+    const netC = entries.reduce((s, en) => s + en.c, 0), [nW, nD] = split(fmt(netC));
+    const ancOn = isTransfer && ancOk && view !== 'partial' && !isLoading;
+    const anc = this.ancVals(st, ancOk ? f.src : 'p4', ancOk ? f.tgt : 'p2', ancOk ? amt : 100, 'preview');
+    const evPill = needEvid ? (nFiles ? 'pill success' : 'pill warning') : 'pill neutral';
+    const files = nFiles ? [{ name: 'Audit finding AF-2026-044.pdf', note: 'PDF · 410 KB · Luis Moreno', scan: 'Clean', pd: P.ok, pillCls: 'pill success' }] : [];
+    const busy = view === 'busy' || !!st.busy;
+    const number = 'BT-00033';
+    const setF = (k) => (ev) => this.setState({ f: { ...f, [k]: ev.target.value } });
+    const setT = (t) => () => this.setState({ type: t });
+    const titles = { transfer: 'New Transfer', allocation: 'New Allocation', adjustment: 'New Adjustment' };
+    return {
+      ...this.shellVals(st), rootCls: 'xf', f, e, eb, set: { src: setF('src'), tgt: setF('tgt'), dir: setF('dir'), amt: setF('amt'), date: setF('date'), why: setF('why') },
+      title: titles[type], subline: (view === 'new' ? 'Draft · not saved' : 'Draft ' + number + ' · saved 09:41') + ' · amounts in USD',
+      number, formOn: !submitted && view !== 'error', pageError: view === 'error', submitted,
+      isTransfer, isAllocation, isAdjustment, setTransfer: setT('transfer'), setAllocation: setT('allocation'), setAdjustment: setT('adjustment'),
+      tgtLabel: isTransfer ? 'Target Project' : 'Project', projOpts,
+      det: { loading: isLoading, ok: !isLoading }, fund: { loading: isLoading, error: false, ok: !isLoading },
+      availLabel: isTransfer ? 'Source Availability' : isAllocation ? 'Unallocated Pool' : 'Project Availability',
+      avW, avD, afW, afD, amW, amD, shortW: shW, shortD: shD, short,
+      afterCls: 'num r' + (after < 0 && checkFunds ? ' neg' : ''), fundFill: 'width:' + pct.toFixed(1) + '%;background:var(' + (fundOk ? '--c1' : '--st-danger-fg') + ')',
+      fundAria: fmt(amtOk ? amt : 0) + ' of ' + fmt(srcAvail) + ' USD available, ' + pct.toFixed(0) + '%',
+      fundPill: 'pill ' + (fundOk ? 'success' : 'danger'), fundIcon: fundOk ? P.ok : P.x, fundText: fundOk ? (checkFunds ? 'Within the available funds' : 'Adds to the allocation') : 'Exceeds the available funds',
+      eligPill: 'pill ' + (eligible ? 'success' : eligBad ? 'danger' : 'neutral'), eligIcon: eligible ? P.ok : eligBad ? P.x : P.n, eligText: eligible ? 'Eligible' : eligBad ? 'Not Eligible' : 'Not Checked Yet',
+      eligNote: eligible ? 'Same organization, both projects open, both in USD.' : eligBad ? 'See the Eligibility items in the summary.' : 'Choose both projects to check eligibility.',
+      kindPill: 'pill ' + (kind === 'Cross Hierarchy' ? 'info' : 'neutral'), kindText: kind || 'Not Known Yet',
+      kindNote: kind === 'Cross Hierarchy' ? 'The projects are at different levels. Funds move up the source ancestry and down the target ancestry.' : kind === 'Same Level' ? 'Both projects are at level ' + S.lvl + '. Levels above them are recounted, and shared levels do not change.' : 'Same Level or Cross Hierarchy shows once both projects are chosen.',
+      periodPill: 'pill ' + (checks.some((c) => c.cat === 'Period') ? 'danger' : 'success'), periodIcon: checks.some((c) => c.cat === 'Period') ? P.x : P.ok, periodText: checks.some((c) => c.cat === 'Period') ? 'Period Not Open' : 'October 2026 Is Open',
+      routeText: route, evPill, evIcon: needEvid ? (nFiles ? P.ok : P.w) : P.n, evText: needEvid ? (nFiles ? 'Required, Attached' : 'Required, Not Attached') : 'Optional',
+      evNote: needEvid ? 'This organization requires evidence for transfers across levels.' : 'This organization asks for evidence on transfers across levels only.',
+      files, noFiles: nFiles === 0,
+      ancOn, anc, ancTitle: 'Ancestry Preview', ancFail: isTransfer && view === 'partial', ancWaitTitle: !S || !T ? 'Choose Both Projects' : eligBad ? 'Not Eligible Yet' : 'Enter an Amount', ancWaitText: !S || !T ? 'Pick a source, a target and an amount. The levels above each project are traced here and recounted live.' : eligBad ? 'The levels are traced once the pair is eligible. See the Eligibility items in the summary.' : 'The levels are traced once there is an amount greater than zero.', ancWait: isTransfer && !ancOk && view !== 'partial' && !isLoading,
+      entries, entOn: entries.length > 0 && !isLoading, entWait: entries.length === 0 && !isLoading, entCount: entries.length + (entries.length === 1 ? ' entry' : ' entries'),
+      netLabel: isTransfer ? 'Net, All Entries' : 'Total', netW: nW, netD: nD,
+      entNote: isTransfer ? 'Assumption: levels above the two projects are recounted from these two entries and get no entries of their own (DECISIONS 68, to confirm for E07-S08). Every entry shares one transfer id.' : 'One entry on one project. It is never edited later: a correction is a reversal row.',
+      problems, summaryOn, raceOn: raceOn && summaryOn, summaryTitle: raceOn ? 'Not submitted. The available amount changed' : 'Fix ' + checks.length + (checks.length === 1 ? ' thing' : ' things') + ' before you submit',
+      editAmount: () => { this.setState({ raceCleared: true, attempted: false }); this.back(document.getElementById('tr-amt')); },
+      savedText: busy ? 'Submitting' : view === 'new' ? 'Not saved yet' : (st.saved ?? 'Draft saved 09:41'), busy, submitLabel: busy ? 'Submitting' : 'Submit for approval',
+      doneText: 'Routed to ' + (kind === 'Cross Hierarchy' ? (S ? S.owner : 'the source owner') : 'Amara Okafor') + ', step 1 of 2.',
+      retry: () => this.setState({ view: 'draft' }), again: () => this.setState({ done: false, view: 'new', f: {}, type: 'transfer', attempted: false, files: 0 }),
+      upload: () => { this.setState({ files: 1 }); this.toast('The file picker opens here. Each file is scanned before it can be opened.'); },
+      saveDraft: () => { this.setState({ saved: 'Draft saved 09:42' }); this.toast('Draft saved. Nothing moves until it is approved.'); },
+      submit: (ev) => {
+        if (ev && ev.preventDefault) ev.preventDefault();
+        if (busy) return;
+        this._focusSummary = checks.length > 0;
+        if (checks.length) { this.setState({ attempted: true }); return; }
+        this.setState({ busy: true });
+        clearTimeout(this._bt); this._bt = setTimeout(() => this.setState({ busy: false, done: true }), 900);
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

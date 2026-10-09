@@ -4,7 +4,7 @@ Read `DECISIONS.md` first (everything decided so far), then `README.md` (how to 
 
 ## State
 
-**Next session: Budget Transfer. Screen list and open questions are ready in `HANDOFF-budget-transfer.md`; nothing is built. Read that file first.**
+**Budget Transfer page built (DECISIONS 6e and 6f, 47 boards, `transfers.spec.mjs`). Next: Comparison Dashboard, then the rest of Common Screens (6c), then the MASTER amendment the operator deferred to "after Budget Transfer" (DECISIONS 6e item 84).**
 
 **Approval Inbox and Approval Workflow Builder pages built (DECISIONS 6d). Next: Budget Transfer, Comparison Dashboard, then the rest of Common Screens (6c). Requisition Create is 6b.**
 
@@ -26,7 +26,7 @@ Add one canvas page per key flow, in this order, plus one page for common screen
 | Requisition Create | header, item and service lines, catalogue suggestions, submission validation summary |
 | ~~Approval Inbox~~ | built: inbox, decision panel, withdraw, resubmit diff, delegation (DECISIONS 6d) |
 | ~~Approval Workflow Builder~~ | built: list, version history, builder canvas and outline, problems, route preview, publish (DECISIONS 6d) |
-| Budget Transfer | same level and cross-hierarchy, preview of both ancestries (signature moment 3) |
+| ~~Budget Transfer~~ | built: list, create with the Type switch, detail with reversal, the posting moment, inbox transfer panel (DECISIONS 6e, 6f) |
 | Comparison Dashboard | RFQ bid comparison with the accessible table equivalent |
 | Common Screens | sign in, MFA (challenge, enrol, recovery), password reset, sign up and verify, suspended tenant notice, session expired, logout, 403/404/500 with correlation id, demo banner, empty and error patterns, role-based onboarding tour |
 

@@ -145,9 +145,30 @@
         <dt class="t-label">Requested By</dt><dd style="margin:0">{{sheet.by}}</dd>
         <dt class="t-label">Project</dt><dd style="margin:0"><a href="#" class="u">{{sheet.proj}}</a></dd>
         <dt class="t-label">Amount</dt><dd style="margin:0"><sc-if value="{{sheet.hasAmt}}" hint-placeholder-val="{{ true }}"><span class="amt"><span class="metric" style="font-size:22px;line-height:28px"><span class="w">{{sheet.aw}}</span><span class="d">{{sheet.ad}}</span></span><span class="cur">USD</span></span></sc-if><sc-if value="{{sheet.noAmt}}" hint-placeholder-val="{{ false }}">Not applicable</sc-if></dd>
-        <dt class="t-label">Needed By</dt><dd style="margin:0">{{sheet.needed}}</dd>
+        <dt class="t-label">{{sheet.needLabel}}</dt><dd style="margin:0">{{sheet.needed}}</dd>
         <dt class="t-label">Version</dt><dd style="margin:0">{{sheet.verText}}</dd>
       </dl>
+      <sc-if value="{{sheet.isTransfer}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="sh-post">
+          <h3 class="t-label" id="sh-post" style="margin-bottom:8px">What Posts If You Approve</h3>
+          <div class="card" style="box-shadow:none"><div class="card-b" style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;flex-wrap:wrap;gap:8px"><span class="{{sheet.tr.kindPill}}">{{sheet.tr.kind}}</span><span class="{{sheet.tr.fundPill}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{sheet.tr.fundIcon}}"></path></svg>{{sheet.tr.fundText}}</span></div>
+            <dl class="kv" style="margin:0;grid-template-columns:minmax(0,1fr) auto">
+              <dt class="t-label">Source Available Now</dt><dd class="amt" style="margin:0;text-align:right"><span class="w">{{sheet.tr.avW}}</span><span class="d">{{sheet.tr.avD}}</span><span class="cur">USD</span></dd>
+              <dt class="t-label">This Transfer</dt><dd class="amt" style="margin:0;text-align:right"><span class="w">{{sheet.tr.amW}}</span><span class="d">{{sheet.tr.amD}}</span><span class="cur">USD</span></dd>
+              <dt class="t-label">Available After</dt><dd class="{{sheet.tr.afCls}}" style="margin:0"><span class="w">{{sheet.tr.afW}}</span><span class="d">{{sheet.tr.afD}}</span><span class="cur">USD</span></dd>
+            </dl>
+            <div style="border-top:1px solid var(--border);padding-top:12px"><div class="t-label" style="margin-bottom:6px">Source, Going Up</div>
+              <dl class="kv" style="margin:0;grid-template-columns:minmax(0,1fr) auto"><sc-for list="{{sheet.tr.up}}" as="u" hint-placeholder-count="3"><dt>{{u.name}}</dt><dd class="{{u.cls}}" style="margin:0">{{u.text}}</dd></sc-for></dl></div>
+            <div><div class="t-label" style="margin-bottom:6px">Target, Going Down</div>
+              <dl class="kv" style="margin:0;grid-template-columns:minmax(0,1fr) auto"><sc-for list="{{sheet.tr.down}}" as="u" hint-placeholder-count="3"><dt>{{u.name}}</dt><dd class="{{u.cls}}" style="margin:0">{{u.text}}</dd></sc-for></dl></div>
+            <div style="border-top:1px solid var(--border);padding-top:12px"><div class="t-label" style="margin-bottom:6px">Entries That Would Post</div>
+              <dl class="kv" style="margin:0;grid-template-columns:minmax(0,1fr) auto"><sc-for list="{{sheet.tr.entries}}" as="u" hint-placeholder-count="2"><dt>{{u.name}}</dt><dd class="{{u.cls}}" style="margin:0">{{u.text}}</dd></sc-for></dl>
+              <p class="t-caption" style="margin:8px 0 0">Both entries commit together or not at all, under one transfer id. Funds are checked again under a lock when you approve.</p></div>
+          </div></div>
+        </section>
+      </sc-if>
+
       <p class="t-dense" style="margin:0"><a href="#" class="link">Open the full {{sheet.kind}}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a></p>
 
       <sc-if value="{{sheet.hasDiff}}" hint-placeholder-val="{{ false }}">
@@ -212,7 +233,7 @@
 </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"dark","options":["light","dark"]},"collapsed":{"editor":"enum","default":"auto","options":["auto","yes","no"]},"navOpen":{"editor":"boolean","default":false},"view":{"editor":"enum","default":"ready","options":["ready","loading","error","partial","empty"]},"tab":{"editor":"enum","default":"pending","options":["pending","overdue","completed","delegated"]},"open":{"editor":"string","default":""},"err":{"editor":"enum","default":"","options":["","reason","stale"]},"ooo":{"editor":"enum","default":"no","options":["no","yes"]},"$preview":{"width":1440,"height":1100}}'>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"dark","options":["light","dark"]},"collapsed":{"editor":"enum","default":"auto","options":["auto","yes","no"]},"navOpen":{"editor":"boolean","default":false},"view":{"editor":"enum","default":"ready","options":["ready","loading","error","partial","empty"]},"tab":{"editor":"enum","default":"pending","options":["pending","overdue","completed","delegated"]},"open":{"editor":"string","default":""},"err":{"editor":"enum","default":"","options":["","reason","stale","funds"]},"ooo":{"editor":"enum","default":"no","options":["no","yes"]},"$preview":{"width":1440,"height":1100}}'>
 class Component extends DCLogic {
   componentDidMount() {
     if ((this.props.collapsed ?? 'auto') === 'auto') {
@@ -370,6 +391,23 @@ class Component extends DCLogic {
     const typeSet = ['', ...Array.from(new Set(T.map((t) => t.type)))];
 
     // ---- the decision sheet ----
+    // budget transfers (decisions 68 to 77): the two project entries, the recounted levels above them, and availability at decision time
+    const TRF = {
+      'BT-00031': { eff: '12 Oct 2026', kind: 'Same Level', from: 'Plant 4 Line Retrofit', to: 'Plant 2 Dock Upgrade', avail: 546000, amt: 40000, up: [['Plant 4 Line Retrofit', -1], ['Manufacturing', -1], ['Northwind Capital, EMEA', 0]], down: [['Northwind Capital, EMEA', 0], ['Facilities', 1], ['Plant 2 Dock Upgrade', 1]], gone: 24000 },
+      'BT-00029': { eff: '12 Oct 2026', kind: 'Same Level', from: 'Plant 2 Dock Upgrade', to: 'Plant 4 Line Retrofit', avail: 212000, amt: 15000, up: [['Plant 2 Dock Upgrade', -1], ['Facilities', -1], ['Northwind Capital, EMEA', 0]], down: [['Northwind Capital, EMEA', 0], ['Manufacturing', 1], ['Plant 4 Line Retrofit', 1]], gone: 9000 },
+      'BT-00027': { eff: '4 Oct 2026', kind: 'Cross Hierarchy', from: 'Corporate Contingency', to: 'Plant 4 Line Retrofit', avail: 1200000, amt: 90000, up: [['Corporate Contingency', -1], ['Northwind Capital, EMEA', 0]], down: [['Northwind Capital, EMEA', 0], ['Manufacturing', 1], ['Plant 4 Line Retrofit', 1]], gone: 60000 }
+    };
+    const fundsGone = errKey === 'funds' || !!st.fundsGone;
+    const trView = (id) => {
+      const x = TRF[id]; if (!x) return null;
+      const av = fundsGone ? x.gone : x.avail, af = av - x.amt, ok = af >= 0;
+      const sp = (t) => { const i = t.lastIndexOf('.'); return [t.slice(0, i), t.slice(i)]; };
+      const [avW, avD] = split(av), [amW, amD] = split(x.amt), [afW, afD] = sp(af < 0 ? '(' + money(-af) + ')' : money(af));
+      const lv = ([name, d]) => ({ name, text: d === 0 ? 'No net change' : d < 0 ? '(' + money(x.amt) + ')' : '+' + money(x.amt), cls: 'num' + (d < 0 ? ' neg' : '') });
+      return { kind: x.kind, kindPill: 'pill ' + (x.kind === 'Cross Hierarchy' ? 'info' : 'neutral'), fundPill: 'pill ' + (ok ? 'success' : 'danger'), fundIcon: ok ? P.ok : P.x, fundText: ok ? 'Within the available funds' : 'Exceeds the available funds',
+        avW, avD, amW, amD, afW, afD, afCls: 'num r' + (ok ? '' : ' neg'), up: x.up.map(lv), down: x.down.map(lv),
+        entries: [{ name: 'Transfer Out, ' + x.from, text: '(' + money(x.amt) + ')', cls: 'num neg' }, { name: 'Transfer In, ' + x.to, text: '+' + money(x.amt), cls: 'num' }] };
+    };
     const result = st.result || null;
     const cur = T.find((t) => t.id === openId);
     const loadedNow = st.loaded && st.loaded[openId];
@@ -408,7 +446,7 @@ class Component extends DCLogic {
       sheet = {
         id: cur.id, type: cur.type, ver: cur.ver, title: cur.title, kind: cur.kind,
         pillCls: 'pill ' + v.pill.c, pd: v.pill.d, pillText: v.pill.t, focusClose: !result,
-        notes, by: cur.by, proj: cur.proj, hasAmt: !!a, noAmt: !a, aw: a ? a[0] : '', ad: a ? a[1] : '', needed: '6 Nov 2026',
+        notes, by: cur.by, proj: cur.proj, hasAmt: !!a, noAmt: !a, aw: a ? a[0] : '', ad: a ? a[1] : '', needed: TRF[cur.id] ? TRF[cur.id].eff : '6 Nov 2026', needLabel: TRF[cur.id] ? 'Effective Date' : 'Needed By', isTransfer: !!TRF[cur.id], tr: trView(cur.id),
         verText: (cur.stale && loadedNow ? 'v3, loaded 09:40' : cur.stale ? 'v2 (you have it), v3 is current' : cur.ver + ', submitted 6 Oct 2026, 09:12'),
         hasDiff: showDiff, diff: DIFF, diffSummary: cur.changes ? 'Three changes. The estimate rose, so this is a material change: routing restarted and your earlier return no longer applies.' : 'Two changes. The estimate rose by half, so routing restarted from the first step.',
         whyOk: !partial, whyErr: partial,
@@ -434,6 +472,7 @@ class Component extends DCLogic {
     };
     const needReason = () => { if (!(st.comment || '').trim()) { this.setState({ err: 'reason' }); focusErr(); return true; } return false; };
     const errObj = errKey === 'stale' ? { title: 'Not decided. This requisition changed.', item: 'Version 3 replaced the version you opened, and approving an old version is not allowed. Your comment is kept.', hasFix: true, fixLabel: 'Load Version 3', fix: () => this.setState({ loaded: { ...(st.loaded || {}), [openId]: true }, err: '' }) }
+      : errKey === 'funds' ? { title: 'Not decided. The funds changed.', item: 'Funds: ' + (cur && TRF[cur.id] ? TRF[cur.id].from : 'The source') + ' now has ' + (cur && TRF[cur.id] ? money(TRF[cur.id].gone) : '') + ' USD available and this transfer needs ' + (cur ? money(cur.amt) : '') + ' USD. Another transfer used the funds first, so approving is refused. Your comment is kept. You can still reject it or return it for changes.', hasFix: false }
       : errKey === 'reason' ? { title: 'Not decided. A reason is needed.', item: 'Reason: enter why you are rejecting or returning this. It is shown to ' + (cur ? cur.by : 'the requester') + '.', hasFix: false } : null;
     return {
       ...this.shellVals(st), rootCls: 'xf',
@@ -453,7 +492,7 @@ class Component extends DCLogic {
       rows, count: 'Showing ' + mine.length + ' of ' + mine.length + (filtered ? ' (filtered)' : ''), hasTotal: tab === 'pending' || tab === 'overdue', totW: tw[0], totD: tw[1],
       sheetOpen: !!cur, sheet, noResult: !result, result, closeSheet, err: errObj, commentBad: errKey === 'reason', comment: st.comment ?? '', setComment: (e) => this.setState({ comment: e.target.value, err: errKey === 'reason' ? '' : errKey }),
       yes: true,
-      approve: () => { if (guard()) return; const sp = cur.step.split(' of '); const multi = sp[0] !== sp[1];
+      approve: () => { if (cur && TRF[cur.id] && fundsGone) { this.setState({ err: 'funds', fundsGone: true }); focusErr(); return; } if (guard()) return; const sp = cur.step.split(' of '); const multi = sp[0] !== sp[1];
         finish('approved', 'Approved', multi ? 'Routed on to the next step. ' + cur.by + ' is told when the last step is done.' : 'The reservation stays in place and ' + cur.id + ' moves to Sourcing.', 'Recorded: you' + (cur.grp === 'cover' ? ' on behalf of Luis Moreno' : '') + ', 8 Oct 2026, 09:40, version ' + cur.ver.slice(1) + '. Decisions cannot be edited.', 'color:var(--st-success-fg)', 'M4 12l5 5L20 6', 'tick'); },
       reject: () => { if (guard() || needReason()) return; finish('rejected', 'Rejected', 'The reservation of ' + (cur.amt ? money(cur.amt) + ' USD' : 'funds') + ' is released once. ' + cur.by + ' sees your reason.', 'Recorded: you, 8 Oct 2026, 09:40, version ' + cur.ver.slice(1) + '.', 'color:var(--st-danger-fg)', P.x, ''); },
       returnIt: () => { if (guard() || needReason()) return; finish('returned', 'Returned for Changes', cur.by + ' can amend and resubmit. The reservation is held meanwhile, and the new version comes back to you with a diff.', 'Recorded: you, 8 Oct 2026, 09:40, version ' + cur.ver.slice(1) + '.', 'color:var(--st-warning-fg)', P.ret, ''); },

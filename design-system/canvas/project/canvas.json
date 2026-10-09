@@ -683,7 +683,7 @@
     },
     "DetailW375.dc.html": {
       "expand": "fill",
-      "h": 1946,
+      "h": 2004,
       "is_interactive": true,
       "page": "project-dashboard",
       "title": "Project Detail, 375",
@@ -693,7 +693,7 @@
     },
     "DetailW768.dc.html": {
       "expand": "fill",
-      "h": 1541,
+      "h": 1599,
       "is_interactive": true,
       "page": "project-dashboard",
       "title": "Project Detail, 768",
@@ -1939,6 +1939,496 @@
       "w": 1440,
       "x": 0,
       "y": 3353
+    },
+    "BudgetTransferList.dc.html": {
+      "expand": "fill",
+      "h": 1054,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Budget Transfers, 1440",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "TrListW1920.dc.html": {
+      "expand": "fill",
+      "h": 1054,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Budget Transfers, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 0
+    },
+    "TrListW1024.dc.html": {
+      "expand": "fill",
+      "h": 1054,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Budget Transfers, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 0
+    },
+    "TrListW768.dc.html": {
+      "expand": "fill",
+      "h": 1121,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Budget Transfers, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 0
+    },
+    "TrListW375.dc.html": {
+      "expand": "fill",
+      "h": 2789,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Budget Transfers, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 0
+    },
+    "TrListLoading.dc.html": {
+      "expand": "fill",
+      "h": 909,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Budget Transfers, Loading",
+      "w": 1440,
+      "x": 0,
+      "y": 3129
+    },
+    "TrListEmpty.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Budget Transfers, Empty",
+      "w": 1440,
+      "x": 1520,
+      "y": 3129
+    },
+    "TrListError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Budget Transfers, Error",
+      "w": 1440,
+      "x": 3040,
+      "y": 3129
+    },
+    "TrListPartial.dc.html": {
+      "expand": "fill",
+      "h": 1107,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Budget Transfers, Partial",
+      "w": 1440,
+      "x": 4560,
+      "y": 3129
+    },
+    "BudgetTransferCreate.dc.html": {
+      "expand": "fill",
+      "h": 1607,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, 1440",
+      "w": 1440,
+      "x": 0,
+      "y": 4576
+    },
+    "TrCreateW1920.dc.html": {
+      "expand": "fill",
+      "h": 1605,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 4576
+    },
+    "TrCreateW1024.dc.html": {
+      "expand": "fill",
+      "h": 2432,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 4576
+    },
+    "TrCreateW768.dc.html": {
+      "expand": "fill",
+      "h": 2458,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 4576
+    },
+    "TrCreateW375.dc.html": {
+      "expand": "fill",
+      "h": 3754,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 4576
+    },
+    "TrCreateCross.dc.html": {
+      "expand": "fill",
+      "h": 1551,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, Cross Hierarchy",
+      "w": 1440,
+      "x": 0,
+      "y": 8670
+    },
+    "TrCreatePolicy.dc.html": {
+      "expand": "fill",
+      "h": 1326,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, Policy Not Enabled",
+      "w": 1440,
+      "x": 1520,
+      "y": 8670
+    },
+    "TrCreateAllocation.dc.html": {
+      "expand": "fill",
+      "h": 988,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Allocation",
+      "w": 1440,
+      "x": 3040,
+      "y": 8670
+    },
+    "TrCreateAdjustment.dc.html": {
+      "expand": "fill",
+      "h": 990,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Adjustment",
+      "w": 1440,
+      "x": 4560,
+      "y": 8670
+    },
+    "TrCreateErrors.dc.html": {
+      "expand": "fill",
+      "h": 1302,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, Validation Summary",
+      "w": 1440,
+      "x": 6080,
+      "y": 8670
+    },
+    "TrCreateShort.dc.html": {
+      "expand": "fill",
+      "h": 1729,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, Over the Available Funds",
+      "w": 1440,
+      "x": 7600,
+      "y": 8670
+    },
+    "TrCreateRace.dc.html": {
+      "expand": "fill",
+      "h": 1769,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, Lost the Race",
+      "w": 1440,
+      "x": 0,
+      "y": 10739
+    },
+    "TrCreateBusy.dc.html": {
+      "expand": "fill",
+      "h": 1607,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, Submitting",
+      "w": 1440,
+      "x": 1520,
+      "y": 10739
+    },
+    "TrCreateSubmitted.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, Submitted",
+      "w": 1440,
+      "x": 3040,
+      "y": 10739
+    },
+    "TrCreateLoading.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, Loading",
+      "w": 1440,
+      "x": 4560,
+      "y": 10739
+    },
+    "TrCreateError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, Error",
+      "w": 1440,
+      "x": 6080,
+      "y": 10739
+    },
+    "TrCreatePartial.dc.html": {
+      "expand": "fill",
+      "h": 1174,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, Partial",
+      "w": 1440,
+      "x": 7600,
+      "y": 10739
+    },
+    "BudgetTransferDetail.dc.html": {
+      "expand": "fill",
+      "h": 1495,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Transfer Detail, 1440",
+      "w": 1440,
+      "x": 0,
+      "y": 12848
+    },
+    "TrDetailW1920.dc.html": {
+      "expand": "fill",
+      "h": 1630,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Transfer Detail, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 12848
+    },
+    "TrDetailW1024.dc.html": {
+      "expand": "fill",
+      "h": 2440,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Transfer Detail, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 12848
+    },
+    "TrDetailW768.dc.html": {
+      "expand": "fill",
+      "h": 2091,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Transfer Detail, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 12848
+    },
+    "TrDetailW375.dc.html": {
+      "expand": "fill",
+      "h": 3119,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Transfer Detail, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 12848
+    },
+    "TrDetailCross.dc.html": {
+      "expand": "fill",
+      "h": 1439,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Transfer Detail, Cross Hierarchy Pending",
+      "w": 1440,
+      "x": 0,
+      "y": 16307
+    },
+    "TrDetailPosted.dc.html": {
+      "expand": "fill",
+      "h": 1525,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Transfer Detail, Posted",
+      "w": 1440,
+      "x": 1520,
+      "y": 16307
+    },
+    "TrDetailReversed.dc.html": {
+      "expand": "fill",
+      "h": 1597,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Transfer Detail, Reversed",
+      "w": 1440,
+      "x": 3040,
+      "y": 16307
+    },
+    "TrDetailRejected.dc.html": {
+      "expand": "fill",
+      "h": 1527,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Transfer Detail, Rejected",
+      "w": 1440,
+      "x": 4560,
+      "y": 16307
+    },
+    "TrDetailReverse.dc.html": {
+      "expand": "fill",
+      "h": 1525,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Reverse Transfer Confirmation",
+      "w": 1440,
+      "x": 0,
+      "y": 18244
+    },
+    "TrDetailReverseBusy.dc.html": {
+      "expand": "fill",
+      "h": 1525,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Reverse Transfer, Creating",
+      "w": 1440,
+      "x": 1520,
+      "y": 18244
+    },
+    "TrDetailReverseBlocked.dc.html": {
+      "expand": "fill",
+      "h": 1621,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Reverse Transfer, Funds Not There",
+      "w": 1440,
+      "x": 3040,
+      "y": 18244
+    },
+    "TrDetailLoading.dc.html": {
+      "expand": "fill",
+      "h": 917,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Transfer Detail, Loading",
+      "w": 1440,
+      "x": 4560,
+      "y": 18244
+    },
+    "TrDetailError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Transfer Detail, Error",
+      "w": 1440,
+      "x": 6080,
+      "y": 18244
+    },
+    "TrDetailPartial.dc.html": {
+      "expand": "fill",
+      "h": 1062,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Transfer Detail, Partial",
+      "w": 1440,
+      "x": 7600,
+      "y": 18244
+    },
+    "TransferPosting.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Posting Moment, After",
+      "w": 1440,
+      "x": 0,
+      "y": 20205
+    },
+    "TrMomentBefore.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Posting Moment, Before",
+      "w": 1440,
+      "x": 1520,
+      "y": 20205
+    },
+    "TrMomentTrace.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Posting Moment, Trace in Progress",
+      "w": 1440,
+      "x": 3040,
+      "y": 20205
+    },
+    "TrMomentReduced.dc.html": {
+      "expand": "fill",
+      "h": 953,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Posting Moment, Reduced Motion",
+      "w": 1440,
+      "x": 4560,
+      "y": 20205
+    },
+    "TrMomentTable.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Posting Moment, Table Alternative",
+      "w": 1440,
+      "x": 6080,
+      "y": 20205
+    },
+    "TrMomentW375.dc.html": {
+      "expand": "fill",
+      "h": 1879,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Posting Moment, 375",
+      "w": 375,
+      "x": 7600,
+      "y": 20205
+    },
+    "ApprSheetTransfer.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Budget Transfer",
+      "w": 1440,
+      "x": 0,
+      "y": 18834
+    },
+    "ApprSheetTransferFunds.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Funds Changed",
+      "w": 1440,
+      "x": 1520,
+      "y": 18834
     }
   },
   "createdOnFiles": {
@@ -2274,6 +2764,96 @@
       "w": 240,
       "x": 0,
       "y": -260
+    },
+    "ap14": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-inbox",
+      "text": "Decision Panel: Budget Transfer",
+      "w": 240,
+      "x": 0,
+      "y": 18574
+    },
+    "bt1": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "budget-transfer",
+      "text": "Budget Transfers: Responsive Widths",
+      "w": 240,
+      "x": 0,
+      "y": -260
+    },
+    "bt2": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "budget-transfer",
+      "text": "Budget Transfers: States",
+      "w": 240,
+      "x": 0,
+      "y": 2869
+    },
+    "bt3": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "budget-transfer",
+      "text": "New Transfer: Responsive Widths",
+      "w": 240,
+      "x": 0,
+      "y": 4316
+    },
+    "bt4": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "budget-transfer",
+      "text": "New Transfer: Types, Cross Hierarchy and Validation",
+      "w": 240,
+      "x": 0,
+      "y": 8410
+    },
+    "bt5": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "budget-transfer",
+      "text": "New Transfer: Race, Submit and States",
+      "w": 240,
+      "x": 0,
+      "y": 10479
+    },
+    "bt6": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "budget-transfer",
+      "text": "Transfer Detail: Responsive Widths",
+      "w": 240,
+      "x": 0,
+      "y": 12588
+    },
+    "bt7": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "budget-transfer",
+      "text": "Transfer Detail: Statuses",
+      "w": 240,
+      "x": 0,
+      "y": 16047
+    },
+    "bt8": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "budget-transfer",
+      "text": "Transfer Detail: Reversal and States",
+      "w": 240,
+      "x": 0,
+      "y": 17984
+    },
+    "bt9": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "budget-transfer",
+      "text": "Posting Moment: Signature Moment 3",
+      "w": 240,
+      "x": 0,
+      "y": 19945
     }
   },
   "order": [
@@ -2470,7 +3050,56 @@
     "DelegError.dc.html",
     "DelegErrors.dc.html",
     "DelegRevoke.dc.html",
-    "DelegOrg.dc.html"
+    "DelegOrg.dc.html",
+    "BudgetTransferList.dc.html",
+    "TrListW1920.dc.html",
+    "TrListW1024.dc.html",
+    "TrListW768.dc.html",
+    "TrListW375.dc.html",
+    "TrListLoading.dc.html",
+    "TrListEmpty.dc.html",
+    "TrListError.dc.html",
+    "TrListPartial.dc.html",
+    "BudgetTransferCreate.dc.html",
+    "TrCreateW1920.dc.html",
+    "TrCreateW1024.dc.html",
+    "TrCreateW768.dc.html",
+    "TrCreateW375.dc.html",
+    "TrCreateCross.dc.html",
+    "TrCreatePolicy.dc.html",
+    "TrCreateAllocation.dc.html",
+    "TrCreateAdjustment.dc.html",
+    "TrCreateErrors.dc.html",
+    "TrCreateShort.dc.html",
+    "TrCreateRace.dc.html",
+    "TrCreateBusy.dc.html",
+    "TrCreateSubmitted.dc.html",
+    "TrCreateLoading.dc.html",
+    "TrCreateError.dc.html",
+    "TrCreatePartial.dc.html",
+    "BudgetTransferDetail.dc.html",
+    "TrDetailW1920.dc.html",
+    "TrDetailW1024.dc.html",
+    "TrDetailW768.dc.html",
+    "TrDetailW375.dc.html",
+    "TrDetailCross.dc.html",
+    "TrDetailPosted.dc.html",
+    "TrDetailReversed.dc.html",
+    "TrDetailRejected.dc.html",
+    "TrDetailReverse.dc.html",
+    "TrDetailReverseBusy.dc.html",
+    "TrDetailReverseBlocked.dc.html",
+    "TrDetailLoading.dc.html",
+    "TrDetailError.dc.html",
+    "TrDetailPartial.dc.html",
+    "TransferPosting.dc.html",
+    "TrMomentBefore.dc.html",
+    "TrMomentTrace.dc.html",
+    "TrMomentReduced.dc.html",
+    "TrMomentTable.dc.html",
+    "TrMomentW375.dc.html",
+    "ApprSheetTransfer.dc.html",
+    "ApprSheetTransferFunds.dc.html"
   ],
   "pages": [
     {
@@ -2496,6 +3125,10 @@
     {
       "id": "approval-builder",
       "name": "Approval Workflow Builder"
+    },
+    {
+      "id": "budget-transfer",
+      "name": "Budget Transfer"
     },
     {
       "id": "design-system",

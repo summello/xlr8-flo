@@ -99,6 +99,7 @@
                   <div><div class="bar" role="img" aria-label="3,654,000.00 of 4,200,000.00 USD used, 87.0%"><span style="width:87%;background:var(--c1)"></span></div><div class="t-caption" style="margin-top:4px">3.65M used of 4.20M USD · 87.0%</div></div>
                   <div><div class="t-label">Available</div><div class="amt"><span class="w">546,000</span><span class="d">.00</span><span class="cur">USD</span></div></div>
                   <div><span class="pill warning"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2zM12 10v5M12 18h.01"></path></svg>Nearing limit</span></div>
+                  <div class="t-dense"><a href="BudgetTransferList.dc.html" class="u">4 transfers this year</a> <span class="t-caption">1 awaiting approval</span></div>
                 </sc-if>
             <sc-if value="{{sum.loading}}" hint-placeholder-val="{{ false }}"><div role="status" aria-label="Loading the budget summary" style="display:flex;flex-direction:column;gap:12px;padding:16px"><span class="skel" style="height:12px;width:70%"></span><span class="skel" style="height:140px"></span><span class="skel" style="height:12px;width:45%"></span></div></sc-if>
             <sc-if value="{{sum.empty}}" hint-placeholder-val="{{ false }}"><div class="state"><div class="t-heading">Not Allocated Yet</div><div class="t-dense secondary">This project has no allocation. Allocate budget to see its summary.</div></div></sc-if>

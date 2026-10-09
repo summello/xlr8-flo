@@ -1,12 +1,12 @@
 # Handoff: Budget Transfer canvas page
 
-**Status 9 Oct 2026: all open questions answered (DECISIONS 6e). Awaiting the operator's yes on the screen list below before any board is built.**
+**Status 9 Oct 2026: BUILT. Questions answered (DECISIONS 6e), screens confirmed and built (6f), page spec `design-system/pages/budget-transfer.md`, tests `tests/transfers.spec.mjs`. This file is now a record of the plan; everything below describes what was proposed and decided.**
 
 Written 9 Oct 2026 at the end of the approvals session. **Nothing is built.** This file lists the proposed screens and everything a fresh session needs. The operator will confirm the list (and answer the open questions) before any board is made.
 
 ## Start here
 
-**Read `NEXT-SESSION.md` first: it says to ask the operator the open questions one at a time before any work.**
+
 
 1. Read `design-system/canvas/HANDOFF.md`, then `DECISIONS.md` (sections 6 to 6d, items 52 to 63 are the newest), `README.md`.
 2. Read `design-system/MASTER.md` sections on signature moments (6.2, moment 3) and the UI definition of done (section 8). **Do not amend MASTER.md.**

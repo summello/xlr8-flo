@@ -1,6 +1,6 @@
 # Design canvas: decisions
 
-Status at 9 Oct 2026 (Project Dashboard, Requisition Create, Common Screens, Approval Inbox and Approval Workflow Builder pages added). Canvas: https://claude.ai/artifact/95sB8BhSTJnNetSkmmNCNn (private). Source of truth in the repo: `design-system/canvas/project/`. Branch `worktree-design-canvas-xlr8flo`, no PR opened (only a human opens a PR to `main`; `milestone/M1-budget-spine` is not on origin).
+Status at 9 Oct 2026 (Project Dashboard, Requisition Create, Common Screens, Approval Inbox, Approval Workflow Builder and Budget Transfer pages added). Canvas: https://claude.ai/artifact/95sB8BhSTJnNetSkmmNCNn (private). Source of truth in the repo: `design-system/canvas/project/`. Branch `worktree-design-canvas-xlr8flo`, no PR opened (only a human opens a PR to `main`; `milestone/M1-budget-spine` is not on origin).
 
 Decided by the operator unless marked *(Claude)*. Where a decision departs from `design-system/MASTER.md`, it says so. **MASTER.md was not amended**; the canvas transcribes it and extends it. The amendments are listed at the end.
 
@@ -142,7 +142,7 @@ Open questions are in the two page files (withdraw rights, material change, revo
 
 ## 6e. Budget Transfer and approval open questions (answered by the operator, 9 Oct 2026; nothing built yet)
 
-Asked one at a time from `NEXT-SESSION.md`. Every answer below was chosen by the operator; the ones marked *(Claude's recommendation, accepted)* matched the recommended option.
+Asked one at a time from the handoff note `NEXT-SESSION.md` (removed once the page was built). Every answer below was chosen by the operator; the ones marked *(Claude's recommendation, accepted)* matched the recommended option.
 
 **Scope**
 
@@ -176,8 +176,27 @@ Asked one at a time from `NEXT-SESSION.md`. Every answer below was chosen by the
 
 **What changes in the proposed screen list** (see `HANDOFF-budget-transfer.md`): screen 2 gains the `Type` switch; screen 3 (ancestry preview) shows recounted totals, not new rows; screen 4 gains `Reverse Transfer`; screen 6 follows decisions 70 and 77. No new screen.
 
+## 6f. Budget Transfer (built 9 Oct 2026; screen list confirmed with the operator first)
+
+Page `Budget Transfer` holds 47 boards: the **list**, **create** (transfer, allocation, adjustment), **detail** (with reversal) and the **posting moment**, each with 1440, 1920, 1024, 768 and 375 where it is a page and its states (loading, empty, partial, error). Two boards on the Approval Inbox page show the transfer variant of the decision panel. Page spec for the coding agents: `design-system/pages/budget-transfer.md`. Story requests: `STORY-NOTES.md` section 5. The money rules are 6e (items 67 to 77); these are the design decisions made while building.
+
+85. **The ancestry preview is two stacked tables, not two columns** *(Claude)*. Four money columns do not fit half of an 8/12 card with the currency code visible; stacked, every cell keeps its code. Source, Going Up above Target, Going Down; a shared level appears in both and reads `No net change`.
+86. **Every level carries its state as a word as well as a dot.** `Recounted`, `Recounting`, `Waiting` (screen readers get it as hidden text, the Change cell says `Recounting` or `Waiting` while it runs). Colour never carries it (A11Y-004). The lit row is tinted with a rail; the dot pulses once, 260ms, transform only. A planted-violation test blanks a word and proves the check fails.
+87. **The Chart and Table tabs are the accessible data table for the moment** (A11Y-009). Same levels, one list, recount order, State column. Arrow keys switch, the panel is labelled by its tab.
+88. **Reduced motion shows the finished picture at once** with a note, and `Replay Posting` jumps to it. The posting moment ends in a `Posted` result with the entry ids; its static frames (before, trace in progress, after, reduced motion, table) are boards. `Replay Posting` is prototype-only, like `Replay intro`.
+89. **Totals follow the rows.** Moved Out and Moved In are derived from how many levels on each side are recounted, so a static frame is deterministic and the strip never disagrees with the table. A test checks the three figures on the trace frame.
+90. **Posted-state ledger entries are the transfer's two project entries, linked to the ledger sheet.** A pending transfer says `Will post`. Net zero is shown. The page never offers to edit an entry (append-only).
+91. **A reversal is a confirmation, then a draft.** The dialog focuses the safe button and says what is created, that it needs approval and that the funds are checked. A refusal for missing funds is a `role=alert` on the page with focus and `Nothing was created`. A reversed transfer shows `Reversed By BT-00030` and no second reversal.
+92. **The inbox transfer panel puts "What Posts If You Approve" with the key facts, before the link and the trail** (decision 65 order kept: facts, link, trail). Funds gone at decision time **refuse approval** and keep the comment; Approve stays enabled (decision 52).
+93. **One id family, `BT-`,** for transfers, allocations and adjustments, and one list. Open: separate prefixes. Sample owners follow the existing data (Dev Patel owns Plant 4 Line Retrofit).
+94. **New classes in `xlr8flo.css` (tokens only):** `.cols-tr .cols-ent .cols-dent .cols-anc .cols-anct .anc-dot .anc-row` (states `is-done`, `is-lit`, `is-wait`) and the keyframe `ancPulse`. The Design System sheet gains **Ancestry Traces and Entry Grids** (`s-transfers`). Everything else is reused (`.tabs`, `.row.stack`, `.meter`, `.total-bar`, `.lineage`, `.dialog`, `.summary`, the required-field mark). The Type switch is the existing `fieldset.choice`.
+95. **Entry points:** `Transfer Funds` in the project dashboard header and `N transfers this year` with `N awaiting approval` in the project detail Budget Summary card. Two existing width boards (`DetailW375`, `DetailW768`) grew 58px and were re-measured.
+
+Tests: `transfers.spec.mjs` (140 tests, including planted violations: an altered ancestry level, a trace row that loses its word, an unlabelled input) with axe in light and dark on 38 boards. `designsystem.spec.mjs` now expects eight pages and the new section. Heights in `canvas.json` come from a measured run.
+
 ## 7. Findings to feed back into MASTER.md (not yet amended)
 
+- **The MASTER amendment is deferred until after Budget Transfer (item 84), which is now built: the next session can draft it for the operator.** It would fold in the items below plus the ancestry state rows (6f item 86).
 - **Required fields (6d item 66) and hyperlinks (item 64) are new conventions with no MASTER section.** Candidates for 7.x: the tag, rail and summary line, and the link style and hover.
 - `--fg-muted` clears 4.5:1 on canvas and surface but measures 4.31:1 on `--sunken`; the canvas steps muted text up to `--fg-secondary` on sunken grounds (hover and selected rows).
 - The three E04 debts in `agents/project-memory.md` (border rule, dark `--shadow-drag`, `--fg-muted` comment value) were left alone, as instructed.
@@ -186,7 +205,7 @@ Asked one at a time from `NEXT-SESSION.md`. Every answer below was chosen by the
 
 ## 8. Open
 
-- Remaining pages: Budget Transfer, Comparison Dashboard, and the rest of Common Screens (6c).
+- Remaining pages: Comparison Dashboard, and the rest of Common Screens (6c). Budget Transfer is built (6f).
 - Project Dashboard page: only signature moment 1 (KPI count-up) is used. The budget overview screen waits for a story.
 - Home needs more cards and KPIs as screens are added (then retire E-1).
 - Sample data only; amounts are internally consistent but invented.

@@ -655,3 +655,23 @@ label:has(input:required:checked) .req-tag .rq-done { display: inline-flex; }
 .req-left .rq-allset { display: none; color: var(--st-success-fg); font-weight: 560; }
 :is(.page, .req-scope):not(:has(:is(input, select, textarea):required:invalid)) .req-left .rq-count { display: none; }
 :is(.page, .req-scope):not(:has(:is(input, select, textarea):required:invalid)) .req-left .rq-allset { display: inline; }
+
+/* ---- budget transfer: the list and entry grids and the ancestry trace (signature moment 3). Tokens only. ---- */
+.cols-tr { grid-template-columns: 156px minmax(0, 1.6fr) 150px 190px 130px 100px; }
+.cols-ent { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.2fr) 100px 160px; }
+.cols-dent { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) 100px 160px 140px; }
+.cols-anc { grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 1fr)); }
+.cols-anct { grid-template-columns: minmax(0, 1.5fr) 100px repeat(3, minmax(0, 1fr)); }
+@container card (max-width: 899px) {
+  .cols-tr { grid-template-columns: 148px minmax(0, 1fr) 136px 172px; }
+  .cols-ent, .cols-dent { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 150px; }
+  .cols-anct { grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 1fr)); }
+}
+.anc-dot { flex: none; width: 10px; height: 10px; border-radius: 999px; border: 2px solid var(--border-strong); background: var(--surface); }
+.anc-row.is-done .anc-dot { background: var(--phase-plan); border-color: var(--phase-plan); }
+.anc-row.is-lit { background: var(--sunken); box-shadow: inset 2px 0 0 0 var(--phase-plan); }
+.anc-row.is-lit .anc-dot { background: var(--phase-plan); border-color: var(--phase-plan); animation: ancPulse var(--dur-base) var(--ease-out); }
+.anc-row.is-wait :is(.num, .t-caption, .secondary) { color: var(--fg-secondary); }
+@keyframes ancPulse { from { transform: scale(1); } 50% { transform: scale(1.6); } to { transform: scale(1); } }
+.anc-row.is-lit :is(.t-caption, .cur, .d) { color: var(--fg-secondary); }   /* --fg-muted measures 4.31:1 on --sunken (DECISIONS section 7) */
+.total-bar .num :is(.cur, .d) { color: var(--fg-secondary); }   /* same ground, same measurement */
