@@ -209,7 +209,8 @@ def test_uniform_bytes_for_all_unavailable_states_on_both_routes(invites):
     asyncio.run(scenario())
 
 
-def test_weak_password_forged_values_existing_identity_and_expiry(invites):
+def test_weak_password_forged_values_existing_identity_and_expiry(invites, monkeypatch):
+    monkeypatch.setenv("FLO_INVITATION_TTL_DAYS", "3")
     conn, org, _ = invites
     row, token = issue(invites)
     existing, existing_token = issue(invites, "admin@example.test")
@@ -242,7 +243,8 @@ def test_weak_password_forged_values_existing_identity_and_expiry(invites):
             result = await browser.get(
                 "/api/v1/invitations/by-token", headers={"X-Invitation-Token": expired_token}
             )
-            assert result.json() == {"state": "expired"}
+            assert result.json() == {"state": "expired", "lifetime_days": 3}
+            assert "First tenant" not in result.text
             assert_unavailable(await accept(browser, expired_token))
 
     asyncio.run(scenario())
@@ -258,7 +260,7 @@ def test_weak_password_forged_values_existing_identity_and_expiry(invites):
             conn.execute("SELECT used_at FROM invitation WHERE id=%s", (row.id,)).fetchone()[0]
             is None
         )
-    service = InvitationService(conn, settings(conn), clock=lambda: now - timedelta(hours=1))
+    service = InvitationService(conn, settings(conn), clock=lambda: now - timedelta(days=5))
     assert service.by_token(expired_token).state == "valid"
     configured = settings(conn)
     configured.invitation_ttl_days = 2

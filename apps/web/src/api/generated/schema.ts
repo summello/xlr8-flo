@@ -1595,6 +1595,8 @@ export interface components {
         };
         /** InvitationExpired */
         InvitationExpired: {
+            /** Lifetime Days */
+            lifetime_days: number;
             /**
              * State
              * @default expired

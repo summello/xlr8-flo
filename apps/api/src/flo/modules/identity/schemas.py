@@ -52,6 +52,7 @@ class InvitationValid(BaseModel):
 
 class InvitationExpired(BaseModel):
     state: Literal["expired"] = "expired"
+    lifetime_days: int
 
 
 class InvitationAccept(BaseModel):

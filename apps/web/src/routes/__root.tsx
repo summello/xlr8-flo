@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import Screens from "./sign-in";
+import InviteScreen from "./invite";
 import { destination, probe, safeReturn, organizationName } from "../features/auth/api";
 import { apiClient } from "../api/client";
 
@@ -20,7 +21,7 @@ type RouteDefinition = {
   title: string;
 };
 
-const AUTH_PATHS: readonly string[] = ["/sign-in", "/sign-in/mfa", "/sign-in/mfa/enroll", "/sign-in/organization"];
+const AUTH_PATHS: readonly string[] = ["/invite", "/sign-in", "/sign-in/mfa", "/sign-in/mfa/enroll", "/sign-in/organization"];
 
 const ORGANIZATION = ["/organization", "Northstar Capital"] as const;
 const BUSINESS_UNIT = ["/organization/infrastructure", "Infrastructure BU"] as const;
@@ -217,6 +218,7 @@ export default function RootRoute() {
     setRoute(activateRoute(new URL(href, window.location.origin).pathname));
   }, []);
   useEffect(() => {
+    if (route.path === "/invite" || /^\/invite\/[^/]+$/.test(route.path)) return;
     let active = true;
     void probe().then(access => {
       if (!active) return;
@@ -264,6 +266,7 @@ export default function RootRoute() {
       if (window.fetch === observed) window.fetch = original;
     };
   }, [navigate]);
+  if (route.path === "/invite" || /^\/invite\/[^/]+$/.test(route.path)) return <InviteScreen navigate={navigate} />;
   if (AUTH_PATHS.includes(route.path)) return <Screens key={route.path} path={route.path} navigate={navigate} probeFailed={failed} />;
   if (failed) return <main><h1>We could not reach the server</h1><p>Your page is kept. Check your connection and try again.</p><button onClick={() => window.location.reload()}>Try again</button></main>;
   if (!allowed && !approvedRoute) return <main role="status">Checking your session</main>;

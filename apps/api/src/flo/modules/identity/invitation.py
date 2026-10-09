@@ -363,7 +363,7 @@ class InvitationService:
             row = InvitationRepository(self.connection, scope).get(invitation_id, lock=True)
             self._check_live(row, digest)
             if row.expires_at <= self.clock():
-                return InvitationExpired()
+                return InvitationExpired(lifetime_days=self.settings.invitation_ttl_days)
             return self._details(row, scope)
 
     def _check_live(self, row: InvitationRecord, digest: str) -> None:

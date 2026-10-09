@@ -28,7 +28,7 @@ export default function OrganizationChooser({ back, navigate }: { back: string; 
         setBusy(true); setError('');
         try {
             const { response } = await apiClient.POST('/api/v1/auth/organization', { body: { org_id }, headers: writeHeaders() });
-            if (response.status === 204) window.location.assign(back);
+            if (response.status === 204) { if (back === '/invite') navigate(back); else window.location.assign(back); }
             else setError('Organization could not be selected. Pick another organization, try again, or sign out.');
         } catch { setError('Check your connection and try again.'); }
         finally { setBusy(false); }

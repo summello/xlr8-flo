@@ -1177,6 +1177,10 @@
       },
       "InvitationExpired": {
         "properties": {
+          "lifetime_days": {
+            "title": "Lifetime Days",
+            "type": "integer"
+          },
           "state": {
             "const": "expired",
             "default": "expired",
@@ -1184,6 +1188,9 @@
             "type": "string"
           }
         },
+        "required": [
+          "lifetime_days"
+        ],
         "title": "InvitationExpired",
         "type": "object"
       },

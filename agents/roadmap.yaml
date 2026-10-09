@@ -600,7 +600,7 @@ epics:
           - UX-005
         dep:
           - E05-S13
-        st: todo
+        st: done
 
   - id: E06
     name: Projects

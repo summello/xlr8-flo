@@ -103,3 +103,26 @@
 .org-btn:hover { background: var(--sunken); }
 .org-btn strong { display: block; font-size: var(--text-body); font-weight: var(--weight-label); }
 .org-btn small { display: block; color: var(--fg-secondary); font-size: var(--text-caption); }
+
+/* invitation.md §3: page-local geometry; MASTER owns all chrome values. */
+.auth-root { --auth-invite-label: 110px; --auth-skeleton-last: 60%; }
+.invite-details { display: grid; gap: var(--space-3); }
+.invite-details > div { display: grid; grid-template-columns: var(--auth-invite-label) minmax(0, 1fr); gap: var(--space-3); }
+.invite-details dt { font-size: var(--text-label); line-height: var(--leading-label); font-weight: var(--weight-label); letter-spacing: var(--tracking-label); text-transform: uppercase; }
+.invite-details dd { margin: 0; font-size: var(--text-body-dense); line-height: var(--leading-body-dense); overflow-wrap: anywhere; }
+.invite-caption { color: var(--fg-secondary); font-size: var(--text-caption); }
+.auth-root input[readonly] { background: var(--sunken); }
+.invite-box { padding: var(--space-4); background: var(--sunken); border: var(--auth-hairline) solid var(--border-control); border-radius: var(--radius-control); }
+.invite-box svg { width: var(--space-4); height: var(--space-4); margin-right: var(--space-2); }
+.invite-skeleton { display: grid; gap: var(--space-5); margin-top: var(--space-5); }
+.invite-skeleton > div { height: var(--auth-control); background: var(--sunken); border-radius: var(--radius-control); }
+.invite-skeleton > div:last-child { width: var(--auth-skeleton-last); }
+
+/* Reserve invitation context before lookup, including wrapped phone rows. */
+.auth-root { --auth-invite-heading: calc(var(--leading-metric) * 3); --auth-invite-row: calc(var(--leading-body-dense) * 2); }
+.invite-aside h2 { min-height: var(--auth-invite-heading); }
+.invite-aside .auth-aside-copy { min-height: calc(var(--leading-body) * 3); }
+.invite-details > div { min-height: var(--auth-invite-row); }
+.invite-placeholder-block { display: block; height: var(--leading-body-dense); background: var(--border); border-radius: var(--radius-control); }
+.invite-placeholder h2 .invite-placeholder-block { height: var(--auth-invite-heading); }
+.invite-placeholder .auth-aside-copy .invite-placeholder-block { height: calc(var(--leading-body) * 3); }

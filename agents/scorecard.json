@@ -1950,6 +1950,43 @@
       },
       "recap": "Implemented E05-S13 invitation issue/list/resend/withdraw/token validation and acceptance with hashed single-use lookup, locked state transitions, tenant memberships, RBAC/MFA/session issuance, audited outbox mail and payload discard. Checks: full pytest 1459 passed, 1 skipped; skipped Postgres money round-trip subsequently passed in the 16-test money suite with local DATABASE_URL configured. Invitation/migration focused suite 46 passed; Vitest 82 passed; Playwright/axe 161 passed. Ruff, strict mypy (120 files), import-linter (4 contracts), migration --check, and staged gitleaks passed. No dependency added. Operator/profile/UI follow-ups are recorded. Ready for review; no submit/gate/done/push/merge performed.",
       "title": "Invitation acceptance: issue, validate, accept, withdraw and resend with a hashed single-use token"
+    },
+    {
+      "story": "E05-S14",
+      "kind": "ui",
+      "size": "S",
+      "tags": [
+        "auth",
+        "ui"
+      ],
+      "author": "opencode-nemotron",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E05-S14 and model~nvidia/nemotron-3-ultra-550b-a55b:free"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "332a41fa-e50e-41ed-8a9e-4cde6648200f",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented public invitation lookup/accept, uniform unavailable DOM, expired lifetime setting, in-memory sign-in/MFA/chooser detour, reusable auth primitives, referrer protection, generated types, and browser/unit/API regressions. Manual API hardcode-7 and referrer-header violations failed their guards and were restored; committed browser plants cover expiry copy, chooser hard reload, editable email, token URL persistence and organization leakage. Final validation: ruff/mypy green; pytest 1459 passed, 1 skipped; web lint/typecheck green; vitest 86 passed; Playwright full 198 passed and final invitation 42 passed, native paste/privacy recheck 3 passed; boundaries 4 kept; migration chain valid; staged secret scan clean. Round 2: added aria-hidden matching invitation checking aside with shared token-based reserved geometry; fixed summary singular/plural by actual field count. Removed CLS follow-up. Web lint/typecheck green, Vitest 86 passed, full Playwright 207 passed including delayed CLS at 375/1440 and source-mutation placeholder-removal failure proof. No API changes; API checks omitted as directed.",
+      "title": "Invitation acceptance screen: /invite/:token, uniform unavailable state, MFA handoff"
     }
   ]
 }
