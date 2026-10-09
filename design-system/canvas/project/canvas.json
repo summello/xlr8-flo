@@ -2422,7 +2422,7 @@
     },
     "RfqComparison.dc.html": {
       "expand": "fill",
-      "h": 2392,
+      "h": 2182,
       "is_interactive": true,
       "page": "rfq-comparison",
       "title": "Bid Comparison, 1440",
@@ -2432,7 +2432,7 @@
     },
     "CmpW1920.dc.html": {
       "expand": "fill",
-      "h": 2235,
+      "h": 1985,
       "is_interactive": true,
       "page": "rfq-comparison",
       "title": "Bid Comparison, 1920",
@@ -2442,7 +2442,7 @@
     },
     "CmpW1024.dc.html": {
       "expand": "fill",
-      "h": 2911,
+      "h": 2647,
       "is_interactive": true,
       "page": "rfq-comparison",
       "title": "Bid Comparison, 1024",
@@ -2452,7 +2452,7 @@
     },
     "CmpW768.dc.html": {
       "expand": "fill",
-      "h": 3043,
+      "h": 2845,
       "is_interactive": true,
       "page": "rfq-comparison",
       "title": "Bid Comparison, 768",
@@ -2462,7 +2462,7 @@
     },
     "CmpW375.dc.html": {
       "expand": "fill",
-      "h": 3092,
+      "h": 2907,
       "is_interactive": true,
       "page": "rfq-comparison",
       "title": "Bid Comparison, 375",
@@ -2472,13 +2472,13 @@
     },
     "CmpLines.dc.html": {
       "expand": "fill",
-      "h": 1098,
+      "h": 1121,
       "is_interactive": true,
       "page": "rfq-comparison",
       "title": "Bid Comparison, by Line",
       "w": 1440,
       "x": 0,
-      "y": 3432
+      "y": 3247
     },
     "CmpBreakdown.dc.html": {
       "expand": "fill",
@@ -2488,7 +2488,7 @@
       "title": "Bid Comparison, Cost Breakdown Chart",
       "w": 1440,
       "x": 1520,
-      "y": 3432
+      "y": 3247
     },
     "CmpBreakdownTable.dc.html": {
       "expand": "fill",
@@ -2498,27 +2498,27 @@
       "title": "Bid Comparison, Cost Breakdown Table",
       "w": 1440,
       "x": 3040,
-      "y": 3432
+      "y": 3247
     },
     "CmpScoring.dc.html": {
       "expand": "fill",
-      "h": 1249,
+      "h": 1358,
       "is_interactive": true,
       "page": "rfq-comparison",
       "title": "Bid Comparison, Scoring",
       "w": 1440,
       "x": 4560,
-      "y": 3432
+      "y": 3247
     },
     "CmpAverage.dc.html": {
       "expand": "fill",
-      "h": 2424,
+      "h": 2214,
       "is_interactive": true,
       "page": "rfq-comparison",
       "title": "Bid Comparison, Best Average Cost Selected",
       "w": 1440,
       "x": 6080,
-      "y": 3432
+      "y": 3247
     },
     "CmpSheetForeign.dc.html": {
       "expand": "fill",
@@ -2528,7 +2528,7 @@
       "title": "Vendor Bid, Foreign Currency",
       "w": 1440,
       "x": 0,
-      "y": 6196
+      "y": 5801
     },
     "CmpSheetLate.dc.html": {
       "expand": "fill",
@@ -2538,7 +2538,7 @@
       "title": "Vendor Bid, Late by Override",
       "w": 1440,
       "x": 1520,
-      "y": 6196
+      "y": 5801
     },
     "CmpSheetPartial.dc.html": {
       "expand": "fill",
@@ -2548,7 +2548,7 @@
       "title": "Vendor Bid, Partial",
       "w": 1440,
       "x": 3040,
-      "y": 6196
+      "y": 5801
     },
     "CmpSheetW375.dc.html": {
       "expand": "fill",
@@ -2558,7 +2558,7 @@
       "title": "Vendor Bid, 375",
       "w": 375,
       "x": 4560,
-      "y": 6196
+      "y": 5801
     },
     "CmpSealed.dc.html": {
       "expand": "fill",
@@ -2568,7 +2568,7 @@
       "title": "Bid Comparison, Sealed",
       "w": 1440,
       "x": 0,
-      "y": 7436
+      "y": 7041
     },
     "CmpEmpty.dc.html": {
       "expand": "fill",
@@ -2578,7 +2578,7 @@
       "title": "Bid Comparison, No Bids",
       "w": 1440,
       "x": 1520,
-      "y": 7436
+      "y": 7041
     },
     "CmpLoading.dc.html": {
       "expand": "fill",
@@ -2588,7 +2588,7 @@
       "title": "Bid Comparison, Loading",
       "w": 1440,
       "x": 3040,
-      "y": 7436
+      "y": 7041
     },
     "CmpError.dc.html": {
       "expand": "fill",
@@ -2598,37 +2598,37 @@
       "title": "Bid Comparison, Error",
       "w": 1440,
       "x": 4560,
-      "y": 7436
+      "y": 7041
     },
     "CmpPartial.dc.html": {
       "expand": "fill",
-      "h": 2297,
+      "h": 2126,
       "is_interactive": true,
       "page": "rfq-comparison",
       "title": "Bid Comparison, Scores Not Available",
       "w": 1440,
       "x": 6080,
-      "y": 7436
+      "y": 7041
     },
     "CmpStale.dc.html": {
       "expand": "fill",
-      "h": 2480,
+      "h": 2270,
       "is_interactive": true,
       "page": "rfq-comparison",
       "title": "Bid Comparison, Stale Rate",
       "w": 1440,
       "x": 7600,
-      "y": 7436
+      "y": 7041
     },
     "CmpOver.dc.html": {
       "expand": "fill",
-      "h": 2392,
+      "h": 2182,
       "is_interactive": true,
       "page": "rfq-comparison",
       "title": "Bid Comparison, Over Approved Scope",
       "w": 1440,
       "x": 9120,
-      "y": 7436
+      "y": 7041
     },
     "ApprSheetTransfer.dc.html": {
       "expand": "fill",
@@ -3091,7 +3091,7 @@
       "text": "Bid Comparison: Views and Award Basis",
       "w": 240,
       "x": 0,
-      "y": 3172
+      "y": 2987
     },
     "cm3": {
       "kind": "title1",
@@ -3100,7 +3100,7 @@
       "text": "Bid Comparison: Vendor Bid Sheet",
       "w": 240,
       "x": 0,
-      "y": 5936
+      "y": 5541
     },
     "cm4": {
       "kind": "title1",
@@ -3109,7 +3109,7 @@
       "text": "Bid Comparison: States",
       "w": 240,
       "x": 0,
-      "y": 7176
+      "y": 6781
     }
   },
   "order": [

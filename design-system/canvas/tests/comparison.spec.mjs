@@ -33,7 +33,8 @@ const dark = async (page) => { await page.evaluate(() => document.querySelector(
 const num = (t) => { const m = String(t).match(/\(?[\d,]*\d(?:\.\d+)?\)?/); if (!m) return NaN; const v = parseFloat(m[0].replace(/[^0-9.]/g, '')); return m[0].startsWith('(') ? -v : v; };   // the first figure in the text
 // the cells of one matrix row, by its label
 const cells = (page, label) => page.locator('[role=row]', { has: page.locator('[role=rowheader]', { hasText: new RegExp('^' + label) }) }).first().locator('[role=cell]').allInnerTexts();
-const markers = (page, label) => page.locator('[role=row]', { has: page.locator('[role=rowheader]', { hasText: new RegExp('^' + label) }) }).first().locator('[role=cell]').evaluateAll((els) => els.map((e) => (e.querySelector('.pill') ? e.querySelector('.pill').textContent.trim() : '')));
+const markers = (page, label) => page.locator('[role=row]', { has: page.locator('[role=rowheader]', { hasText: new RegExp('^' + label) }) }).first().locator('[role=cell]').evaluateAll((els) => els.map((e) => (e.querySelector('.cmp-mark.tone-win') ? e.querySelector('.cmp-mark.tone-win').textContent.trim() : '')));
+const group = async (page, name) => { const b = page.getByRole('button', { name: new RegExp('^' + name) }); if ((await b.getAttribute('aria-expanded')) !== 'true') await b.click(); };
 // planted-violation targets
 export const sumsAdd = (price, tax, freight, landed) => landed.map((l, i) => (Math.abs(price[i] + tax[i] + freight[i] - l) < 0.005 ? null : i)).filter((x) => x !== null);
 export const lowestIndex = (landed, full) => landed.reduce((best, v, i) => (full[i] && (best === -1 || v < landed[best]) ? i : best), -1);
@@ -60,6 +61,7 @@ test.describe('overview: the verdict strip and the matrix agree with figures com
   });
   test('price plus tax plus freight is the landed total, for every vendor', async ({ page }) => {
     await open(page, MAIN);
+    await group(page, 'Price, Tax and Freight');
     const row = async (l) => (await cells(page, l)).map((t) => (/Free/.test(t) ? 0 : num(t)));
     const price = await row('Price Before Tax'), tax = await row('Tax and Duty'), fr = await row('Freight'), landed = await row('Landed Total');
     expect(price).toEqual(PRICE); expect(tax).toEqual(TAX); expect(fr).toEqual(FREIGHT); expect(landed).toEqual(LANDED);
@@ -67,6 +69,8 @@ test.describe('overview: the verdict strip and the matrix agree with figures com
   });
   test('the foreign bid is converted and says so, without altering the original', async ({ page }) => {
     await open(page, MAIN);
+    expect((await cells(page, 'Landed Total'))[2]).toContain('Converted from EUR at 1.0840');
+    await group(page, 'Price, Tax and Freight');
     expect((await cells(page, 'Bid Currency'))[2]).toContain('EUR');
     expect((await cells(page, 'Bid Currency'))[2]).toContain('Converted at 1.0840');
     await page.getByRole('button', { name: 'View bid, Siemar Automation' }).click();
@@ -81,7 +85,7 @@ test.describe('overview: the verdict strip and the matrix agree with figures com
     expect(await markers(page, 'Landed Total')).toEqual(['', '', 'Lowest', '', '']);        // Apex is cheaper in total but quoted three of four lines
     expect(await markers(page, 'Lead Time')).toEqual(['', '', '', '', 'Fastest']);
     expect(await markers(page, 'Weighted Score')).toEqual(['Highest Score', '', '', '', '']);
-    for (const p of await page.locator('.cmp-row .pill').all()) expect(await p.locator('svg').count()).toBe(1);
+    for (const m of await page.locator('.cmp-row .cmp-mark, .cmp-strip .cmp-mark').all()) expect(await m.locator('svg').count()).toBe(1);
     expect(lowestIndex(LANDED, [true, true, true, true, false])).toBe(2);
   });
   test('difference from the lowest, and a partial bid is not compared with full ones', async ({ page }) => {
@@ -103,15 +107,83 @@ test.describe('overview: the verdict strip and the matrix agree with figures com
   });
 });
 
-test.describe('show only differences', () => {
-  test('identical rows are hidden by default, counted, and come back when switched off', async ({ page }) => {
+test.describe('show only differences, and groups that open on demand', () => {
+  test('the detail groups start closed and say how many rows they hold; the headline groups start open', async ({ page }) => {
     await open(page, MAIN);
+    await expect(page.getByRole('button', { name: /^Price, Tax and Freight/ })).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.getByRole('button', { name: /^Price, Tax and Freight/ })).toContainText('4 rows');
+    await expect(page.getByRole('button', { name: /^Terms/ })).toContainText('5 rows');
+    for (const g of ['Cost', 'Delivery', 'Compliance and Score']) await expect(page.getByRole('button', { name: new RegExp('^' + g) })).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('[role=rowheader]', { hasText: /^Freight/ })).toHaveCount(0);
+  });
+  test('opening Terms: identical rows are hidden and counted, and come back when switched off', async ({ page }) => {
+    await open(page, MAIN);
+    await group(page, 'Terms');
+    await expect(page.locator('[role=rowheader]', { hasText: /^Warranty/ })).toHaveCount(1);
     await expect(page.locator('[role=rowheader]', { hasText: /^Delivery Location/ })).toHaveCount(0);
     await expect(page.getByText('1 identical row hidden')).toBeVisible();
+    await page.getByLabel('Show Only Differences').evaluate((e) => e.scrollIntoView({ block: 'center' }));
     await page.getByLabel('Show Only Differences').uncheck();
     await expect(page.locator('[role=rowheader]', { hasText: /^Delivery Location/ })).toHaveCount(1);
     expect((await cells(page, 'Delivery Location')).every((t) => t === 'Plant 4 Receiving Dock')).toBe(true);
     await expect(page.getByText('identical row hidden')).toHaveCount(0);
+  });
+  test('a group toggles from the keyboard', async ({ page }) => {
+    await open(page, MAIN);
+    const b = page.getByRole('button', { name: /^Terms/ });
+    await b.focus();
+    await page.keyboard.press('Enter');
+    await expect(b).toHaveAttribute('aria-expanded', 'true');
+    await page.keyboard.press('Space');
+    await expect(b).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
+test.describe('colour: a win, a thing to look at, a failure, each with an icon and words', () => {
+  test('wins are green marks with words; the needed-by miss and three unmet requirements are the only red', async ({ page }) => {
+    await open(page, MAIN);
+    expect((await cells(page, 'Lead Time'))[2]).toContain('Misses 20 Nov');
+    expect(await page.locator('.cmp-row .c.tone-fail').count()).toBe(2);                    // Siemar's lead time, Apex's requirements: nothing else is red
+    expect(await page.locator('.cmp-row .c.tone-win').count()).toBe(3);                     // Lowest, Fastest, Highest Score
+    expect(await page.locator('.cmp-row .c.tone-warn').count()).toBe(2);                    // the partial bid: its total and its difference
+    for (const c of await page.locator('.cmp-row .c[class*=tone-]').all()) {
+      expect(await c.locator('.cmp-mark svg, .t-caption').count(), 'a tinted cell says why').toBeGreaterThan(0);
+      expect((await c.innerText()).replace(/\s+/g, ' ').trim().length).toBeGreaterThan(3);
+    }
+  });
+  test('one or two unmet requirements are text only, not a tinted cell', async ({ page }) => {
+    await open(page, MAIN);
+    const r = page.locator('[role=row]', { has: page.locator('[role=rowheader]', { hasText: /^Requirements Met/ }) }).locator('[role=cell]');
+    await expect(r.nth(1)).toContainText('1 unmet');
+    expect(await r.nth(1).getAttribute('class')).not.toMatch(/tone-/);
+    expect(await r.nth(4).getAttribute('class')).toMatch(/tone-fail/);
+  });
+  test('a tint never sits behind another box: every mark is inside its cell and nothing overlaps it', async ({ page }) => {
+    for (const url of [MAIN, '/CmpLines.dc.html', '/CmpScoring.dc.html']) {
+      await open(page, url);
+      const bad = await page.evaluate(() => [...document.querySelectorAll('.cmp-row .c')].flatMap((c) => {
+        const cb = c.getBoundingClientRect(), out = [];
+        for (const m of c.querySelectorAll('.cmp-mark')) { const mb = m.getBoundingClientRect(); if (mb.left < cb.left - 0.5 || mb.right > cb.right + 0.5 || mb.top < cb.top - 0.5 || mb.bottom > cb.bottom + 0.5) out.push('mark outside its cell'); }
+        const kids = [...c.children].map((k) => k.getBoundingClientRect());
+        for (let i = 0; i < kids.length; i++) for (let j = i + 1; j < kids.length; j++) { const a = kids[i], b = kids[j]; if (a.width && b.width && a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5) out.push('children overlap'); }
+        return out;
+      }));
+      expect(bad, url).toEqual([]);
+    }
+  });
+  test('by line: the outline for the selection and the Lowest mark do not collide, and the outline has a text twin', async ({ page }) => {
+    await open(page, '/CmpLines.dc.html');
+    const pick = page.locator('.cmp-row .c.is-pick').first();
+    await expect(pick).toContainText('Lowest');
+    await expect(pick.locator('.sr-only')).toHaveText('In this selection');
+    await expect(page.getByText('Outlined cells are in the current selection: Lowest Cost Supplier.')).toBeVisible();
+    const m = await pick.locator('.cmp-mark').boundingBox(), c = await pick.boundingBox();
+    expect(m.x).toBeGreaterThanOrEqual(c.x); expect(m.y + m.height).toBeLessThanOrEqual(c.y + c.height);
+  });
+  test('the colour key is on the matrix and names all three meanings', async ({ page }) => {
+    await open(page, MAIN);
+    const k = page.getByRole('list', { name: 'Colour key' });
+    for (const t of ['Best in the row', 'Worth a look', 'Misses a requirement']) await expect(k).toContainText(t);
   });
 });
 
@@ -323,7 +395,7 @@ test.describe('narrow widths', () => {
   });
   test('375: touch targets are 44px', async ({ page }) => {
     await open(page, MAIN, 375);
-    for (const b of await page.locator('.cmp-vend:visible, .cmp-toggle, .cmp-opt, .tab').all()) expect((await b.boundingBox()).height).toBeGreaterThanOrEqual(43.5);
+    for (const b of await page.locator('.cmp-vend:visible, .cmp-toggle, .cmp-opt, .tab, .cmp-gbtn').all()) expect((await b.boundingBox()).height).toBeGreaterThanOrEqual(43.5);
   });
 });
 
@@ -340,7 +412,7 @@ test.describe('gates prove themselves on a planted violation', () => {
     await open(page, MAIN);
     expect(await markers(page, 'Landed Total')).toEqual(['', '', 'Lowest', '', '']);
     expect(lowestIndex(LANDED, [true, true, true, true, true])).toBe(4);                      // ignoring coverage would crown Apex
-    await page.locator('[role=row]', { has: page.locator('[role=rowheader]', { hasText: /^Landed Total/ }) }).locator('[role=cell]').nth(4).evaluate((e) => { e.insertAdjacentHTML('beforeend', '<div><span class="pill neutral">Lowest</span></div>'); });
+    await page.locator('[role=row]', { has: page.locator('[role=rowheader]', { hasText: /^Landed Total/ }) }).locator('[role=cell]').nth(4).evaluate((e) => { e.insertAdjacentHTML('beforeend', '<div><span class="cmp-mark tone-win">Lowest</span></div>'); });
     expect(await markers(page, 'Landed Total')).not.toEqual(['', '', 'Lowest', '', '']);
   });
   test('the sealed check fails when a figure leaks onto the page', async ({ page }) => {

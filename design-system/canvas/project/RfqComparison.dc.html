@@ -115,8 +115,8 @@
                   <div class="card-b" style="display:flex;flex-direction:column;gap:10px;flex:1">
                     <div style="display:flex;flex-wrap:wrap;gap:6px;min-height:22px"><sc-if value="{{c.late}}" hint-placeholder-val="{{ false }}"><span class="pill warning"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3 2"></path></svg>Late</span></sc-if><sc-if value="{{c.partial}}" hint-placeholder-val="{{ false }}"><span class="pill neutral"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18z"></path></svg>Partial</span></sc-if></div>
                     <div><div class="t-label">Landed Total</div><div class="amt mamt"><span class="metric" style="font-size:22px;line-height:28px"><span class="w">{{c.lw}}</span><span class="d">{{c.ld}}</span></span><span class="cur">USD</span></div><div class="t-caption">{{c.delta}}</div><sc-if value="{{c.partial}}" hint-placeholder-val="{{ false }}"><div class="t-caption">{{c.partialText}}</div></sc-if></div>
-                    <dl class="kv" style="margin:0;grid-template-columns:minmax(0,1fr) auto"><dt class="t-label">Lead Time</dt><dd style="margin:0;text-align:right">{{c.lead}}</dd><dt class="t-label">Requirements</dt><dd style="margin:0;text-align:right">{{c.met}}</dd><dt class="t-label">Score</dt><dd style="margin:0;text-align:right">{{c.score}}</dd></dl>
-                    <div style="display:flex;flex-wrap:wrap;gap:6px;min-height:22px"><sc-for list="{{c.marks}}" as="m" hint-placeholder-count="1"><span class="pill neutral"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{m.d}}"></path></svg>{{m.t}}</span></sc-for></div>
+                    <div class="cmp-mini"><sc-for list="{{c.facts}}" as="f" hint-placeholder-count="3"><span class="{{f.cls}}"><sc-if value="{{f.icon}}" hint-placeholder-val="{{ false }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{f.d}}"></path></svg></sc-if>{{f.t}}</span></sc-for></div>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;min-height:20px"><sc-for list="{{c.marks}}" as="m" hint-placeholder-count="1"><span class="cmp-mark tone-win"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{m.d}}"></path></svg>{{m.t}}</span></sc-for></div>
                     <div style="margin-top:auto"><button class="btn" type="button" onClick="{{c.open}}" aria-label="View bid, {{c.name}}">View Bid</button></div>
                   </div>
                 </section>
@@ -128,6 +128,7 @@
             <section class="card" aria-labelledby="h-mx">
               <div class="card-h"><h2 class="t-heading" id="h-mx">Side By Side</h2>
                 <label class="cmp-toggle"><input type="checkbox" checked="{{diffOnly}}" onChange="{{toggleDiff}}">Show Only Differences</label></div>
+              <div class="cmp-keybar"><ul class="cmp-key" aria-label="Colour key"><li class="tone-win"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6"></path></svg>Best in the row</li><li class="tone-warn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2zM12 10v5M12 18h.01"></path></svg>Worth a look</li><li class="tone-fail"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>Misses a requirement</li></ul><sc-if value="{{linesTab}}" hint-placeholder-val="{{ false }}"><span class="t-caption">{{selNote}}</span></sc-if></div>
               <div class="cmp-pick" role="group" aria-label="Choose the two vendors to compare">
                 <div class="field"><label class="t-caption" for="cm-a">First Vendor</label><select id="cm-a" class="btn" style="padding-right:8px" value="{{pickA}}" onChange="{{setPickA}}"><sc-for list="{{vendorOpts}}" as="o" hint-placeholder-count="5"><option value="{{o.k}}">{{o.name}}</option></sc-for></select></div>
                 <div class="field"><label class="t-caption" for="cm-b">Second Vendor</label><select id="cm-b" class="btn" style="padding-right:8px" value="{{pickB}}" onChange="{{setPickB}}"><sc-for list="{{vendorOpts}}" as="o" hint-placeholder-count="5"><option value="{{o.k}}">{{o.name}}</option></sc-for></select></div>
@@ -137,9 +138,9 @@
                   <sc-for list="{{heads}}" as="h" hint-placeholder-count="5"><div role="columnheader" class="{{h.cls}}"><button class="cmp-vend" type="button" onClick="{{h.open}}">{{h.name}}</button><div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end"><sc-if value="{{h.late}}" hint-placeholder-val="{{ false }}"><span class="pill warning"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3 2"></path></svg>Late</span></sc-if><sc-if value="{{h.partial}}" hint-placeholder-val="{{ false }}"><span class="pill neutral"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18z"></path></svg>Partial</span></sc-if></div></div></sc-for>
                 </div>
                 <sc-for list="{{rows}}" as="r" hint-placeholder-count="12">
-                  <sc-if value="{{r.isGroup}}" hint-placeholder-val="{{ false }}"><div class="cmp-group" role="row"><span role="rowheader" class="t-label">{{r.label}}</span></div></sc-if>
+                  <sc-if value="{{r.isGroup}}" hint-placeholder-val="{{ false }}"><div class="cmp-group" role="row"><span role="rowheader"><button class="cmp-gbtn" type="button" aria-expanded="{{r.open}}" onClick="{{r.toggle}}"><svg class="cmp-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>{{r.label}}<span class="t-caption">{{r.count}}</span></button></span></div></sc-if>
                   <sc-if value="{{r.isRow}}" hint-placeholder-val="{{ true }}"><div class="{{r.cls}}" role="row"><div role="rowheader" class="lab"><div>{{r.label}}</div><div class="t-caption">{{r.hint}}</div></div>
-                    <sc-for list="{{r.cells}}" as="c" hint-placeholder-count="5"><div role="cell" class="{{c.cls}}" data-label="{{c.vname}}"><sc-if value="{{c.isAmt}}" hint-placeholder-val="{{ false }}"><span class="{{c.amtCls}}"><span class="w">{{c.w}}</span><span class="d">{{c.d}}</span><span class="cur">USD</span></span></sc-if><sc-if value="{{c.isText}}" hint-placeholder-val="{{ true }}"><span>{{c.text}}</span></sc-if><sc-if value="{{c.hasSub}}" hint-placeholder-val="{{ false }}"><div class="t-caption">{{c.sub}}</div></sc-if><sc-if value="{{c.hasMarker}}" hint-placeholder-val="{{ false }}"><div><span class="pill neutral"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.markerIcon}}"></path></svg>{{c.marker}}</span></div></sc-if></div></sc-for>
+                    <sc-for list="{{r.cells}}" as="c" hint-placeholder-count="5"><div role="cell" class="{{c.cls}}" data-label="{{c.vname}}"><sc-if value="{{c.isAmt}}" hint-placeholder-val="{{ false }}"><span class="{{c.amtCls}}"><span class="w">{{c.w}}</span><span class="d">{{c.d}}</span><span class="cur">USD</span></span></sc-if><sc-if value="{{c.isText}}" hint-placeholder-val="{{ true }}"><span>{{c.text}}</span></sc-if><sc-if value="{{c.hasSub}}" hint-placeholder-val="{{ false }}"><div class="t-caption">{{c.sub}}</div></sc-if><sc-if value="{{c.hasMarker}}" hint-placeholder-val="{{ false }}"><div><span class="cmp-mark {{c.markCls}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.markerIcon}}"></path></svg>{{c.marker}}</span></div></sc-if><sc-if value="{{c.pick}}" hint-placeholder-val="{{ false }}"><span class="sr-only">In this selection</span></sc-if></div></sc-for>
                   </div></sc-if>
                 </sc-for>
               </div>
@@ -252,7 +253,7 @@
 </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"dark","options":["light","dark"]},"collapsed":{"editor":"enum","default":"auto","options":["auto","yes","no"]},"navOpen":{"editor":"boolean","default":false},"view":{"editor":"enum","default":"ready","options":["ready","sealed","empty","loading","error","partial","stale","over"]},"tab":{"editor":"enum","default":"overview","options":["overview","lines","breakdown","scoring"]},"basis":{"editor":"enum","default":"lowest","options":["lowest","average"]},"open":{"editor":"string","default":""},"abtab":{"editor":"string","default":"0"},"$preview":{"width":1440,"height":2392}}'>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"dark","options":["light","dark"]},"collapsed":{"editor":"enum","default":"auto","options":["auto","yes","no"]},"navOpen":{"editor":"boolean","default":false},"view":{"editor":"enum","default":"ready","options":["ready","sealed","empty","loading","error","partial","stale","over"]},"tab":{"editor":"enum","default":"overview","options":["overview","lines","breakdown","scoring"]},"basis":{"editor":"enum","default":"lowest","options":["lowest","average"]},"open":{"editor":"string","default":""},"abtab":{"editor":"string","default":"0"},"$preview":{"width":1440,"height":2182}}'>
 class Component extends DCLogic {
   componentDidMount() {
     if ((this.props.collapsed ?? 'auto') === 'auto') {
@@ -399,53 +400,67 @@ class Component extends DCLogic {
     const save = BASES.average.total - BASES.lowest.total;
 
     // ---- the matrix: one row model serves every tab; the cells follow the vendors ----
+    // Colour has three jobs only, each with an icon and words: a win (green), a thing to look at (amber), a failure (red). Everything else is quiet.
     const pick = st.pick ?? ['v1', 'v3'];
+    const grpOpen = { cost: true, price: false, delivery: true, terms: false, compliance: true, ...(st.grp || {}) };
+    const NEEDBY = Date.UTC(2026, 10, 20), AWARD = Date.UTC(2026, 9, 12);
+    const missesNeed = (v) => AWARD + v.lead * 86400000 > NEEDBY;
     const money = (c, neg) => { const [w, d] = split(fmt(c)); return { isAmt: true, isText: false, w, d, amtCls: 'num' + (neg ? ' neg' : '') }; };
     const text = (t, sub) => ({ isAmt: false, isText: true, text: t, sub: sub || '', hasSub: !!sub });
-    const mk = (v, c, extra) => ({ v: v.k, vname: v.name, hasMarker: false, marker: '', markerIcon: P.ok, isAmt: false, isText: false, hasSub: false, sub: '', ...c, ...extra, cls: (extra && extra.cls) || ('c r' + (pick.includes(v.k) ? '' : ' is-off')) });
-    const row = (label, cellOf, o = {}) => { const cells = V.map((v) => mk(v, cellOf(v))); const same = new Set(cells.map((c) => (c.isAmt ? c.w + c.d : c.text))).size === 1; return { isGroup: false, isRow: true, label, hint: o.hint || '', strong: !!o.strong, cells, same, cls: 'cmp-row' + (o.strong ? ' strong' : '') }; };
-    const grp = (label) => ({ isGroup: true, isRow: false, label, same: false, cells: [] });
-    const withMarker = (cells, keys, word, icon) => cells.map((c) => (keys.includes(c.v) ? { ...c, hasMarker: true, marker: word, markerIcon: icon, cls: c.cls + ' is-best' } : c));
-    const setMarker = (r, keys, word, icon) => ({ ...r, cells: withMarker(r.cells, keys, word, icon) });
-    const rowsOverview = [
-      grp('Cost'),
+    const finish = (v, c) => ({ v: v.k, vname: v.name, hasMarker: false, marker: '', markerIcon: P.ok, markCls: '', isAmt: false, isText: false, hasSub: false, sub: '', tone: '', pick: false, ...c, cls: 'c r' + (pick.includes(v.k) ? '' : ' is-off') + (c.tone ? ' tone-' + c.tone : '') + (c.pick ? ' is-pick' : '') });
+    const mark = (tone, word, icon) => ({ tone, hasMarker: true, marker: word, markerIcon: icon, markCls: 'tone-' + tone });
+    const quiet = (tone, word, icon) => ({ hasMarker: true, marker: word, markerIcon: icon, markCls: 'tone-' + tone });   // words and icon in the colour, no tint
+    const row = (label, cellOf, o = {}) => { const raw = V.map((v) => cellOf(v)); const same = new Set(raw.map((c) => (c.isAmt ? c.w + c.d : c.text))).size === 1; return { isGroup: false, isRow: true, label, hint: o.hint || '', same: same && !o.keep, cells: V.map((v, i) => finish(v, raw[i])), cls: 'cmp-row' + (o.strong ? ' strong' : '') }; };
+    const winOn = (keys, word, icon) => (v) => (keys.includes(v.k) ? mark('win', word, icon) : {});
+    const cost = [
+      row('Landed Total', (v) => ({ ...money(v.landed), ...(v.full ? {} : { tone: 'warn', hasSub: true, sub: 'Partial: ' + v.quoted + ' of ' + LINES.length + ' lines' }), ...(v.cur !== 'USD' ? { hasSub: true, sub: 'Converted from ' + v.cur + ' at ' + v.rate.toFixed(4) } : {}), ...winOn(lowTotalKeys, 'Lowest', P.ok)(v) }), { strong: true, hint: 'Price, tax and freight in USD', keep: true }),
+      row('Difference From Lowest', (v) => (!v.full ? { ...text('Not comparable', 'Did not quote every line'), tone: 'warn' } : v.landed === lowTotal ? text('Lowest') : money(v.landed - lowTotal)), { keep: true })
+    ];
+    const price = [
       row('Bid Currency', (v) => (v.cur === 'USD' ? text('USD') : text(v.cur, 'Converted at ' + v.rate.toFixed(4)))),
       row('Price Before Tax', (v) => money(v.S)),
-      row('Tax and Duty', (v) => money(v.tax), {}),
-      row('Freight', (v) => (v.fr ? money(v.fr) : text('Free'))),
-      setMarker(row('Landed Total', (v) => (v.full ? money(v.landed) : { ...money(v.landed), isText: false, sub: 'Partial: ' + v.quoted + ' of ' + LINES.length + ' lines', hasSub: true }), { strong: true, hint: 'Price, tax and freight in USD' }), lowTotalKeys, 'Lowest', P.ok),
-      row('Difference From Lowest', (v) => (!v.full ? text('Not comparable', 'Did not quote every line') : v.landed === lowTotal ? text('Lowest') : money(v.landed - lowTotal))),
-      grp('Delivery and Terms'),
-      setMarker(row('Lead Time', (v) => text(v.lead + ' days')), fastKeys, 'Fastest', P.clk),
+      row('Tax and Duty', (v) => money(v.tax)),
+      row('Freight', (v) => (v.fr ? money(v.fr) : text('Free')))
+    ];
+    const delivery = [
+      row('Lead Time', (v) => ({ ...text(v.lead + ' days'), ...(missesNeed(v) ? mark('fail', 'Misses 20 Nov', P.x) : {}), ...winOn(fastKeys, 'Fastest', P.clk)(v) }), { keep: true, hint: 'Against the needed-by date, 20 Nov 2026' })
+    ];
+    const terms = [
       row('Offer Valid Until', (v) => text(v.valid)),
       row('Delivery Location', () => text('Plant 4 Receiving Dock')),
       row('Delivery Terms', (v) => text(v.delivery)),
       row('Warranty', (v) => text(v.warranty)),
-      row('Payment Terms', (v) => text(v.terms)),
-      grp('Compliance and Score'),
-      row('Requirements Met', (v) => text(v.metN + ' of ' + REQS.length + ' Met', v.exc.length ? v.exc.length + (v.exc.length === 1 ? ' exception' : ' exceptions') : 'No exceptions')),
-      setMarker(row('Weighted Score', (v) => (noScores ? text('Not available') : text((v.weighted / 10).toFixed(1), 'of 100'))), noScores ? [] : topKeys, 'Highest Score', P.ok)
+      row('Payment Terms', (v) => text(v.terms))
     ];
+    const compliance = [
+      row('Requirements Met', (v) => { const n = REQS.length - v.metN; return { ...text(v.metN + ' of ' + REQS.length + ' Met', v.exc.length ? v.exc.length + (v.exc.length === 1 ? ' exception' : ' exceptions') : 'No exceptions'), ...(n >= 3 ? mark('fail', n + ' unmet', P.x) : n >= 1 ? quiet('warn', n + ' unmet', P.w) : {}) }; }, { keep: true }),
+      row('Weighted Score', (v) => ({ ...(noScores ? text('Not available') : text((v.weighted / 10).toFixed(1), 'of 100')), ...(noScores ? {} : winOn(topKeys, 'Highest Score', P.ok)(v)) }), { keep: true })
+    ];
+    const GROUPS = [['cost', 'Cost', cost], ['price', 'Price, Tax and Freight', price], ['delivery', 'Delivery', delivery], ['terms', 'Terms', terms], ['compliance', 'Compliance and Score', compliance]];
     const rowsLines = [
-      ...LINES.map((l, i) => setMarker({ ...row(l.d, (v) => (v.land[i] == null ? text('Not quoted') : money(v.land[i])), { hint: l.q + ' ' + l.u + ' · estimate ' + fmt(l.est * l.q) + ' USD' }), cells: V.map((v) => mk(v, v.land[i] == null ? text('Not quoted') : { ...money(v.land[i]), ...(B.pick[i] === v.k ? { hasSub: true, sub: 'In this selection' } : {}) }, B.pick[i] === v.k ? { cls: 'c r is-pick' + (pick.includes(v.k) ? '' : ' is-off') } : {})) }, V.filter((v) => v.land[i] === lineLow[i]).map((v) => v.k), 'Lowest', P.ok)),
-      { ...row('In This Selection', (v) => { const t = B.pick.reduce((a, k, i) => a + (k === v.k ? v.land[i] : 0), 0); return t ? money(t) : text('None'); }, { strong: true, hint: B.name }), same: false }
+      ...LINES.map((l, i) => row(l.d, (v) => (v.land[i] == null ? { ...text('Not quoted'), tone: 'warn' } : { ...money(v.land[i]), pick: B.pick[i] === v.k, ...(v.land[i] === lineLow[i] ? mark('win', 'Lowest', P.ok) : {}), ...(B.pick[i] === v.k ? { hasSub: true, sub: '' } : {}) }), { hint: l.q + ' ' + l.u + ' · estimate ' + fmt(l.est * l.q) + ' USD', keep: true })),
+      row('In This Selection', (v) => { const t = B.pick.reduce((a, k, i) => a + (k === v.k ? v.land[i] : 0), 0); return t ? money(t) : text('None'); }, { strong: true, hint: B.name, keep: true })
     ];
     const rowsScoring = [
-      ...CRIT.map((c, ci) => row(c.n + ', ' + c.w + '%', (v) => (noScores ? text('Not available') : text((v.sc[ci] / 10).toFixed(1), 'of 10')), { hint: 'Average of the evaluators' })),
-      setMarker({ ...row('Weighted Score', (v) => (noScores ? text('Not available') : text((v.weighted / 10).toFixed(1), 'of 100')), { strong: true }), same: false }, noScores ? [] : topKeys, 'Highest Score', P.ok)
+      ...CRIT.map((c, ci) => row(c.n + ', ' + c.w + '%', (v) => (noScores ? text('Not available') : text((v.sc[ci] / 10).toFixed(1), 'of 10')), { hint: 'Average of the evaluators', keep: true })),
+      row('Weighted Score', (v) => ({ ...(noScores ? text('Not available') : text((v.weighted / 10).toFixed(1), 'of 100')), ...(noScores ? {} : winOn(topKeys, 'Highest Score', P.ok)(v)) }), { strong: true, keep: true })
     ];
-    const useRows = tab === 'lines' ? rowsLines : tab === 'scoring' ? rowsScoring : rowsOverview;
-    const hidden = diffOnly ? useRows.filter((r) => r.isRow && r.same).length : 0;
-    let shown = useRows.filter((r) => !(diffOnly && r.same));
-    shown = shown.filter((r, i) => !(r.isGroup && (!shown[i + 1] || shown[i + 1].isGroup)));   // no heading over nothing
+    let shown = [], hidden = 0;
+    if (tab === 'overview') {
+      for (const [key, label, rs] of GROUPS) {
+        const open = grpOpen[key];
+        shown.push({ isGroup: true, isRow: false, key, label, open, count: open ? '' : rs.length + (rs.length === 1 ? ' row' : ' rows'), toggle: () => this.setState({ grp: { ...grpOpen, [key]: !open } }), cells: [] });
+        if (open) for (const r of rs) { if (diffOnly && r.same) hidden += 1; else shown.push(r); }
+      }
+    } else shown = tab === 'lines' ? rowsLines : rowsScoring;
     const heads = V.map((v) => ({ k: v.k, name: v.name, late: v.late, partial: !v.full, cls: 'c r' + (pick.includes(v.k) ? '' : ' is-off'), open: (ev) => { this._opener = ev.currentTarget; this.setState({ open: v.k }); } }));
 
-    // ---- verdict strip ----
-    const cards = V.map((v) => { const d = v.landed - lowTotal, [lw, ld] = split(fmt(v.landed));
+    // ---- verdict strip: a total, how it compares, three quiet facts, and only the wins as marks ----
+    const cards = V.map((v) => { const d = v.landed - lowTotal, [lw, ld] = split(fmt(v.landed)), n = REQS.length - v.metN;
       return { k: v.k, name: v.name, late: v.late, partial: !v.full, lw, ld, partialText: v.quoted + ' of ' + LINES.length + ' lines quoted',
-        delta: !v.full ? 'Not comparable with full bids' : d === 0 ? 'Lowest of the full bids' : fmt(d) + ' USD above the lowest', deltaCls: 't-caption',
+        delta: !v.full ? 'Not comparable with full bids' : d === 0 ? 'Lowest of the full bids' : fmt(d) + ' USD above the lowest',
         marks: [lowTotalKeys.includes(v.k) ? { t: 'Lowest', d: P.ok } : null, fastKeys.includes(v.k) ? { t: 'Fastest', d: P.clk } : null, !noScores && topKeys.includes(v.k) ? { t: 'Highest Score', d: P.ok } : null].filter(Boolean),
-        lead: v.lead + ' days', met: v.metN + ' of ' + REQS.length + ' Met', score: noScores ? 'Not available' : (v.weighted / 10).toFixed(1),
+        facts: [{ t: v.lead + ' days', cls: 'cmp-fact' + (missesNeed(v) ? ' tone-fail' : ''), icon: missesNeed(v), d: P.x }, { t: v.metN + ' of ' + REQS.length + ' Met', cls: 'cmp-fact' + (n >= 3 ? ' tone-fail' : n >= 1 ? ' tone-warn' : ''), icon: n >= 1, d: n >= 3 ? P.x : P.w }, { t: noScores ? 'Score not available' : 'Score ' + (v.weighted / 10).toFixed(1), cls: 'cmp-fact', icon: false, d: P.ok }],
         open: (ev) => { this._opener = ev.currentTarget; this.setState({ open: v.k }); } }; });
 
     // ---- cost breakdown ----
@@ -484,7 +499,7 @@ class Component extends DCLogic {
       scopePill: 'pill ' + (over > 0 ? 'danger' : 'success'), scopeIcon: over > 0 ? P.x : P.ok, scopeText: over > 0 ? 'Exceeds approved scope by ' + fmt(over) + ' USD' : 'Within approved scope, ' + fmt(-over) + ' USD to spare',
       hasNotLowest: notLowest.length > 0, notLowestText: 'Not the lowest on ' + notLowest.length + (notLowest.length === 1 ? ' line' : ' lines') + ' (' + notLowest.join(', ') + '). A justification will be asked for at award (SRC-014).',
       hasUnmet: unmet.length > 0, unmetText: unmet.map((u) => u.name + ' ' + u.n).join(', ') + ' requirements not met.',
-      cards, heads, rows: shown, hiddenN: hidden, diffOnly, toggleDiff: () => this.setState({ diffOnly: !diffOnly }), hasHidden: hidden > 0, hiddenText: hidden + (hidden === 1 ? ' identical row hidden' : ' identical rows hidden'),
+      cards, heads, rows: shown, hiddenN: hidden, diffOnly, linesTab: tab === 'lines', selNote: 'Outlined cells are in the current selection: ' + B.name + '.', toggleDiff: () => this.setState({ diffOnly: !diffOnly }), hasHidden: hidden > 0, hiddenText: hidden + (hidden === 1 ? ' identical row hidden' : ' identical rows hidden'),
       pickA: pick[0], pickB: pick[1], vendorOpts: V.map((v) => ({ k: v.k, name: v.name })), setPickA: (e) => this.setState({ pick: [e.target.value, pick[1] === e.target.value ? V.find((v) => v.k !== e.target.value).k : pick[1]] }), setPickB: (e) => this.setState({ pick: [pick[0] === e.target.value ? V.find((v) => v.k !== e.target.value).k : pick[0], e.target.value] }),
       bars, tableRows, scopeLeft, scopeLabel: 'Approved scope ' + fmt(SCOPE) + ' USD', abTabs: ['Chart', 'Table'].map((label, i) => ({ id: 'cb-t' + i, label, sel: i === abTab, ti: i === abTab ? 0 : -1, go: () => this.setState({ abTab: i }) })), abInd: 'width:50%;transform:translateX(' + abTab * 100 + '%)', abChart: abTab === 0, abTable: abTab === 1, abLab: 'cb-t' + abTab,
       abKey: (e) => { let to = abTab; if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') to = 1 - abTab; else if (e.key === 'Home') to = 0; else if (e.key === 'End') to = 1; else return; e.preventDefault(); this.setState({ abTab: to }); this.back(document.getElementById('cb-t' + to)); },

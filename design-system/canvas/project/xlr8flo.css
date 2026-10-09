@@ -698,11 +698,8 @@ label:has(input:required:checked) .req-tag .rq-done { display: inline-flex; }
 .cmp-row:is(:hover, .is-hover) :is(.t-caption, .cur, .d) { color: var(--fg-secondary); }
 .cmp-row.head { position: sticky; top: 52px; z-index: calc(var(--z-sticky) - 1); background: var(--sunken); border-top: 0; align-items: end; padding-top: 10px; padding-bottom: 10px; }
 .cmp-row.head > span { font-size: 12px; font-weight: 560; letter-spacing: 0.045em; text-transform: uppercase; color: var(--fg-secondary); }
-.cmp-row.strong { font-weight: 560; background: var(--sunken); }
-.cmp-row .c { min-width: 0; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; text-align: right; }
+.cmp-row .c { min-width: 0; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; text-align: right; padding: 6px 10px; border-radius: var(--radius-control); }
 .cmp-row .lab { min-width: 0; }
-.cmp-row .c.is-best > .num, .cmp-row .c.is-best > span:first-child { font-weight: 560; }
-.cmp-row .c.is-pick { box-shadow: inset 0 -2px 0 0 var(--phase-commit); }
 .cmp-group { padding: 10px 16px 6px; border-top: 1px solid var(--border); }
 button.cmp-vend { all: unset; cursor: pointer; font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--fg); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; border-radius: var(--radius-control); text-align: right; }
 button.cmp-vend:is(:hover, .is-hover) { text-decoration-thickness: 2px; }
@@ -735,4 +732,30 @@ button.cmp-vend:focus-visible { outline: 2px solid var(--ring); outline-offset: 
   .cmp-strip { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 82%; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px; }
   .cmp-strip > * { scroll-snap-align: start; }
 }
-.cmp-row.strong :is(.t-caption, .cur, .d) { color: var(--fg-secondary); }   /* a --sunken ground, as above */
+
+/* bid comparison, colour: three jobs only (a win, a thing to look at, a failure), each with an icon and words; the rest stays quiet. */
+.cmp-row.strong { font-weight: 560; font-size: 14px; }
+.cmp-row .c.tone-win { background: var(--st-success-bg); }
+.cmp-row .c.tone-warn { background: var(--st-warning-bg); }
+.cmp-row .c.tone-fail { background: var(--st-danger-bg); }
+.cmp-row .c[class*=tone-] :is(.t-caption, .cur, .d) { color: var(--fg-secondary); }
+.cmp-row .c.is-pick { box-shadow: inset 0 0 0 1px var(--ring); }
+.cmp-mark { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 560; line-height: 16px; white-space: nowrap; }
+.cmp-mark.tone-win, .cmp-key .tone-win { color: var(--st-success-fg); }
+.cmp-mark.tone-warn, .cmp-key .tone-warn { color: var(--st-warning-fg); }
+.cmp-mark.tone-fail, .cmp-key .tone-fail { color: var(--st-danger-fg); }
+.cmp-fact { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; }
+.cmp-fact.tone-warn { color: var(--st-warning-fg); font-weight: 560; }
+.cmp-fact.tone-fail { color: var(--st-danger-fg); font-weight: 560; }
+.cmp-mini { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.cmp-keybar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+.cmp-key { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12px; font-weight: 560; }
+.cmp-key li { display: inline-flex; align-items: center; gap: 5px; }
+.cmp-group { padding: 4px 8px; border-top: 1px solid var(--border); background: var(--sunken); }
+button.cmp-gbtn { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 8px; cursor: pointer; border-radius: var(--radius-control); font-size: 12px; font-weight: 560; letter-spacing: 0.045em; text-transform: uppercase; color: var(--fg-secondary); }
+button.cmp-gbtn:is(:hover, .is-hover) { color: var(--fg); }
+button.cmp-gbtn:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+button.cmp-gbtn .t-caption { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--fg-secondary); }
+.cmp-chev { transition: transform var(--dur-fast) var(--ease-out); }
+.cmp-gbtn[aria-expanded="true"] .cmp-chev { transform: rotate(90deg); }
+@media (max-width: 1023px) { button.cmp-gbtn { min-height: 44px; } }
