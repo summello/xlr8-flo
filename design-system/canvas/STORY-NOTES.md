@@ -79,5 +79,17 @@ Page spec: `design-system/pages/budget-transfer.md`. **E07-S07 and E07-S08 are e
 3. **Allocation and adjustment (BUD-001) have no story.** They share the transfer form (decision 67). They need the engine (an allocation from the unallocated pool, an adjustment up or down on one project), the approval workflow coverage (APR-003) and the same ledger linkage.
 4. **A reversal story:** a new linked transfer through the same route, refused if the target lacks the funds (decision 76); the original is never touched.
 5. **Organization settings:** evidence required (off, Cross Hierarchy only, always) and the policy flag for transfers across levels. Both need a settings story and an audit entry on change.
-6. **Open before the packets are written:** the approval thresholds, the role names for reversal, the id prefix(es), the unallocated pool, notification copy (page spec section 8).
+6. **Answered 9 Oct 2026 (DECISIONS 98 to 103):** reversal is Finance Administrator only, one `BT-` prefix, allocations draw on available budget, allocation and adjustment reuse the transfer workflow, the policy flag is `Allow Cross-Level Transfers`. **New story needed: approval thresholds configurable by tenant, entity and user** (a settings screen, resolution order, an audit entry on change, and the routing explanation naming the scope that matched). Notification copy is drafted in the page spec section 10.
+
+## 6. Bid comparison: stories the canvas needs (DECISIONS 6g)
+
+Page spec: `design-system/pages/rfq-comparison.md`. E12-S10 is the UI story and cites it.
+
+1. **E12-S10 should cite the page spec** and requirements SRC-006 to 011, 014, 016, A11Y-009, RPT-013. Depends on E12-S06, E12-S04, E12-S07, E12-S05.
+2. **The comparison engine (E12-S06) must return both award bases** (Lowest Cost Supplier per line, Best Average Cost for one vendor among full bids), landed cost per vendor and per line, the normalized figures with rate, source and effective date, and the markers' inputs. The page computes nothing.
+3. **Sealed bids (E12-S05):** no figure may leave the server before the deadline, for any role. A test must prove it.
+4. **An award UI story is missing** (E12-S08 is an engine story). `Start Award` hands off to it: split by line, scope and reserved-funds guard (SRC-016), non-lowest justification (SRC-014).
+5. **A 5-vendor limit per RFQ** must be enforced on invitation (E12-S02), not only shown.
+6. **Compliance requirements** need a home (per RFQ or per template) and a waiver rule; scoring and conflict-of-interest declarations (E12-S07) feed the Scoring tab.
+7. **Open before packets are written:** page spec section 8 (freight allocation, rate staleness, evaluator visibility of a sealed round, ties, minimum order values).
 

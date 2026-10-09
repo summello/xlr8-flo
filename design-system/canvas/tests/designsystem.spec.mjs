@@ -8,8 +8,8 @@ const dir = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'project');
 const canvas = JSON.parse(readFileSync(join(dir, 'canvas.json'), 'utf8'));
 
 test.describe('canvas pages', () => {
-  test('eight pages: Playground, Project Dashboard, Requisition Create, Common Screens, Approval Inbox, Approval Workflow Builder, Budget Transfer, then Design System, which holds only the sheet and the theme panel', () => {
-    expect(canvas.pages.map((p) => p.name)).toEqual(['Playground', 'Project Dashboard', 'Requisition Create', 'Common Screens', 'Approval Inbox', 'Approval Workflow Builder', 'Budget Transfer', 'Design System']);
+  test('nine pages: Playground, Project Dashboard, Requisition Create, Common Screens, Approval Inbox, Approval Workflow Builder, Budget Transfer, RFQ Comparison, then Design System, which holds only the sheet and the theme panel', () => {
+    expect(canvas.pages.map((p) => p.name)).toEqual(['Playground', 'Project Dashboard', 'Requisition Create', 'Common Screens', 'Approval Inbox', 'Approval Workflow Builder', 'Budget Transfer', 'RFQ Comparison', 'Design System']);
     expect(canvas.launch.page).toBe('playground');
     const onPage = (id) => Object.entries(canvas.boards).filter(([, b]) => b.page === id).map(([f]) => f).sort();
     expect(onPage('design-system')).toEqual(['DesignSystem.dc.html', 'ThemePanel.dc.html']);
@@ -31,7 +31,7 @@ test.describe('canvas pages', () => {
 });
 
 test.describe('design system sheet is complete and in step with the screens', () => {
-  const SECTIONS = ['s-chrome', 's-phase', 's-status', 's-tags', 's-chart', 's-type', 's-comp', 's-shell', 's-icons', 's-over', 's-forms', 's-access', 's-tables', 's-approvals', 's-required', 's-transfers', 's-states', 's-motion', 's-load', 's-rules'];
+  const SECTIONS = ['s-chrome', 's-phase', 's-status', 's-tags', 's-chart', 's-type', 's-comp', 's-shell', 's-icons', 's-over', 's-forms', 's-access', 's-tables', 's-approvals', 's-required', 's-transfers', 's-compare', 's-states', 's-motion', 's-load', 's-rules'];
 
   test('every section is present, in both themes', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });

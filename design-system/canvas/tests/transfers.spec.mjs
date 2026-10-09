@@ -37,7 +37,7 @@ test.describe('the page on the canvas', () => {
   test('screens with widths and states, none overlapping, on its own page', () => {
     const mine = Object.entries(canvas.boards).filter(([, b]) => b.page === 'budget-transfer');
     expect(canvas.pages.find((p) => p.id === 'budget-transfer').name).toBe('Budget Transfer');
-    expect(mine.length).toBe(47);
+    expect(mine.length).toBe(48);
     for (const stem of ['TrList', 'TrCreate', 'TrDetail']) for (const w of [1920, 1024, 768, 375]) expect(canvas.boards[`${stem}W${w}.dc.html`].w).toBe(w);
     expect(canvas.boards['ApprSheetTransfer.dc.html'].page).toBe('approval-inbox');
     const box = (b) => ({ x1: b.x, y1: b.y, x2: b.x + b.w, y2: b.y + b.h });
@@ -216,7 +216,7 @@ test.describe('create: a transfer', () => {
 
   test('policy off: a cross-level transfer fails with an Eligibility entry', async ({ page }) => {
     await open(page, '/TrCreatePolicy.dc.html');
-    await expect(page.getByRole('alert').first()).toContainText('Transfers across levels are not enabled for Northwind Capital, EMEA');
+    await expect(page.getByRole('alert').first()).toContainText('Allow Cross-Level Transfers is off for Northwind Capital, EMEA');
   });
 
   test('an unusable pair: nothing is traced until both projects and the amount are valid', async ({ page }) => {
@@ -249,7 +249,7 @@ test.describe('create: allocation and adjustment share the form (decision 67)', 
     await expect(page.getByRole('heading', { name: 'New Allocation' })).toBeVisible();
     await expect(page.locator('#tr-src')).toHaveCount(0);
     await expect(page.locator('#h-anc')).toHaveCount(0);
-    await expect(page.getByText('Unallocated Pool', { exact: true })).toBeVisible();
+    await expect(page.getByText('Organization Available Budget', { exact: true })).toBeVisible();
     await expect(page.locator('[role=table][aria-label="Entries that will post"] .row:not(.head)')).toHaveCount(1);
   });
   test('adjustment: a direction, a decrease is checked against what is available', async ({ page }) => {
@@ -328,6 +328,12 @@ test.describe('detail', () => {
     await expect(page.getByRole('button', { name: 'Reverse Transfer' })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'BT-00030' })).toBeVisible();
     await expect(page.getByText('The original entries stay in the ledger')).toBeVisible();
+  });
+  test('without the reversal right: no Reverse Transfer button, and the page says who can', async ({ page }) => {
+    await open(page, '/TrDetailReadOnly.dc.html');
+    await expect(page.getByRole('button', { name: 'Reverse Transfer' })).toHaveCount(0);
+    await expect(page.getByText('Only a Finance Administrator can reverse a transfer.')).toBeVisible();
+    await expect(page.getByText('Signed in as Dev Patel, Project Owner.')).toBeVisible();
   });
   test('rejected: nothing posted, with the reason, and a way to revise', async ({ page }) => {
     await open(page, '/TrDetailRejected.dc.html');
@@ -538,7 +544,7 @@ for (const theme of ['light', 'dark']) {
     const boards = [['list', LIST, 1440], ['list at 375', LIST, 375], ['list loading', '/TrListLoading.dc.html', 1440], ['list empty', '/TrListEmpty.dc.html', 1440], ['list error', '/TrListError.dc.html', 1440], ['list partial', '/TrListPartial.dc.html', 1440],
       ['create', CREATE, 1440], ['create at 375', CREATE, 375], ['create cross', '/TrCreateCross.dc.html', 1440], ['create errors', '/TrCreateErrors.dc.html', 1440], ['create short', '/TrCreateShort.dc.html', 1440], ['create race', '/TrCreateRace.dc.html', 1440], ['create policy', '/TrCreatePolicy.dc.html', 1440],
       ['create allocation', '/TrCreateAllocation.dc.html', 1440], ['create adjustment', '/TrCreateAdjustment.dc.html', 1440], ['create busy', '/TrCreateBusy.dc.html', 1440], ['create submitted', '/TrCreateSubmitted.dc.html', 1440], ['create loading', '/TrCreateLoading.dc.html', 1440], ['create error', '/TrCreateError.dc.html', 1440], ['create partial', '/TrCreatePartial.dc.html', 1440],
-      ['detail', DETAIL, 1440], ['detail at 375', DETAIL, 375], ['detail cross', '/TrDetailCross.dc.html', 1440], ['detail posted', '/TrDetailPosted.dc.html', 1440], ['detail reversed', '/TrDetailReversed.dc.html', 1440], ['detail rejected', '/TrDetailRejected.dc.html', 1440],
+      ['detail', DETAIL, 1440], ['detail at 375', DETAIL, 375], ['detail cross', '/TrDetailCross.dc.html', 1440], ['detail posted', '/TrDetailPosted.dc.html', 1440], ['detail reversed', '/TrDetailReversed.dc.html', 1440], ['detail rejected', '/TrDetailRejected.dc.html', 1440], ['detail read only', '/TrDetailReadOnly.dc.html', 1440],
       ['reverse dialog', '/TrDetailReverse.dc.html', 1440], ['reverse blocked', '/TrDetailReverseBlocked.dc.html', 1440], ['detail loading', '/TrDetailLoading.dc.html', 1440], ['detail error', '/TrDetailError.dc.html', 1440], ['detail partial', '/TrDetailPartial.dc.html', 1440],
       ['moment before', '/TrMomentBefore.dc.html', 1440], ['moment trace', '/TrMomentTrace.dc.html', 1440], ['moment after', MOMENT, 1440], ['moment reduced', '/TrMomentReduced.dc.html', 1440], ['moment table', '/TrMomentTable.dc.html', 1440], ['moment at 375', '/TrMomentW375.dc.html', 375],
       ['inbox transfer panel', '/ApprSheetTransfer.dc.html', 1440], ['inbox funds changed', '/ApprSheetTransferFunds.dc.html', 1440]];

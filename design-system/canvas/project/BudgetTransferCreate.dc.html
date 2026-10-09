@@ -80,7 +80,7 @@
                   <label><input type="radio" name="tr-type" checked="{{isAllocation}}" onChange="{{setAllocation}}">Allocation</label>
                   <label><input type="radio" name="tr-type" checked="{{isAdjustment}}" onChange="{{setAdjustment}}">Adjustment</label>
                 </fieldset>
-                <sc-if value="{{isAllocation}}" hint-placeholder-val="{{ false }}"><div class="summary info" role="note"><div class="t-dense">An allocation moves funds from the unallocated pool of Northwind Capital, EMEA to one project. It involves one project, so there is no second project and no ancestry to trace.</div></div></sc-if>
+                <sc-if value="{{isAllocation}}" hint-placeholder-val="{{ false }}"><div class="summary info" role="note"><div class="t-dense">An allocation assigns part of the organization's available budget (Northwind Capital, EMEA) to one project. It involves one project, so there is no second project and no ancestry to trace.</div></div></sc-if>
                 <sc-if value="{{isAdjustment}}" hint-placeholder-val="{{ false }}"><div class="summary info" role="note"><div class="t-dense">An adjustment raises or lowers one project&rsquo;s allocation by a stated amount and reason. It involves one project, so there is no second project and no ancestry to trace.</div></div></sc-if>
                 <div class="form-grid">
                   <sc-if value="{{isTransfer}}" hint-placeholder-val="{{ true }}"><div class="field"><label class="t-label" for="tr-src">Source Project<span class="req-tag" aria-hidden="true"><span class="rq-need">Required</span><span class="rq-done">Done</span></span></label><select required id="tr-src" class="btn" style="padding-right:8px" value="{{f.src}}" onChange="{{set.src}}" aria-invalid="{{eb.src}}" aria-describedby="tr-src-e"><option value="">Choose</option><sc-for list="{{projOpts}}" as="o" hint-placeholder-count="6"><option value="{{o.v}}">{{o.t}}</option></sc-for></select><sc-if value="{{e.src}}" hint-placeholder-val="{{ false }}"><div class="field-err" id="tr-src-e"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg><span>{{e.src}}</span></div></sc-if></div></sc-if>
@@ -418,7 +418,7 @@ class Component extends DCLogic {
     const { fmt, sgn, cents, PRJ, kindOf, ORG } = this.D();
     const split = (s) => this.split(s);
     const P = { x: "M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6", ok: "M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6", info: "M20 11a8 8 0 00-14-4M4 4v4h4M4 13a8 8 0 0014 4M20 20v-4h-4", n: "M12 21a9 9 0 100-18 9 9 0 000 18z", w: "M12 3l10 18H2zM12 10v5M12 18h.01" };
-    const TODAY = '2026-10-09', POOL = 125000000;
+    const TODAY = '2026-10-09', POOL = ORG.avail;   // an allocation draws on the organization's available budget (decision 99)
     const POLICY = view !== 'policy';      // organization setting: cross-level transfers enabled (BUD-002)
     const EVID = 'cross';                   // organization setting: off | cross | always (BUD-007)
     const SEEDS = {
@@ -467,7 +467,7 @@ class Component extends DCLogic {
         if (!p.open) add('Eligibility', p === S ? 'tr-src' : 'tr-tgt', p.name + ' is closed. Choose an open project');
         if (p.cur !== 'USD') add('Eligibility', p === S ? 'tr-src' : 'tr-tgt', p.name + ' is in ' + p.cur + '. Both projects must use USD');
       });
-      if (kind === 'Cross Hierarchy' && !POLICY) add('Eligibility', 'tr-tgt', 'Transfers across levels are not enabled for ' + ORG.name + '. Ask an administrator, or choose projects at the same level');
+      if (kind === 'Cross Hierarchy' && !POLICY) add('Eligibility', 'tr-tgt', 'Allow Cross-Level Transfers is off for ' + ORG.name + '. Ask an administrator, or choose projects at the same level');
     }
     if (needEvid && !nFiles) add('Required field', 'tr-ev', 'Attach supporting evidence. This organization requires it for transfers across levels');
     if (short) add('Funds', 'tr-amt', raceOn ? 'Available is now ' + fmt(srcAvail) + ' USD and this transfer needs ' + fmt(amt) + ' USD. Another transfer used the funds first' : 'Over the available funds by ' + fmt(-after) + ' USD. Lower the amount or choose another source');
@@ -489,12 +489,12 @@ class Component extends DCLogic {
     const [avW, avD] = split(fmt(srcAvail)), [afW, afD] = split(fmt(dispAfter)), [amW, amD] = split(fmt(amtOk ? amt : 0)), [shW, shD] = split(fmt(Math.max(0, -after)));
     const pct = Math.max(0, Math.min(100, srcAvail ? (amtOk ? amt : 0) / srcAvail * 100 : 0));
     const fundOk = !short;
-    const route = kind === 'Cross Hierarchy' ? 'Source owner ' + (S ? S.owner : '') + ', target owner ' + (T ? T.owner : '') + ', then the Finance Director. Transfers across levels are always routed.' : amtOk && amt > 10000000 ? 'Source owner, Plant Manager, then the Finance Director. Over 100,000.00 USD adds the Finance Director.' : 'Source owner, then the Plant Manager (step 2 of 2). Over 100,000.00 USD adds the Finance Director.';
+    const route = 'Set by your approval thresholds. ' + (kind === 'Cross Hierarchy' ? 'Source owner ' + (S ? S.owner : '') + ', target owner ' + (T ? T.owner : '') + ', then the Finance Director. Transfers across levels are always routed.' : amtOk && amt > 10000000 ? 'Source owner, Plant Manager, then the Finance Director (over 100,000.00 USD).' : 'Source owner, then the Plant Manager (step 2 of 2). Over 100,000.00 USD adds the Finance Director.');
     const tgtP = PRJ[f.tgt];
     const projOpts = Object.entries(PRJ).map(([v, p]) => ({ v, t: p.name + (p.open ? '' : ' (closed)') }));
     const entries = [];
     if (amtOk && isTransfer && S && T) { const [a1, a2] = split(fmt(-amt)), [b1, b2] = split(sgn(amt)); entries.push({ what: 'Transfer Out', project: S.name, bucket: 'Allocated', cls: 'num r neg', w: a1, d: a2, c: -amt }, { what: 'Transfer In', project: T.name, bucket: 'Allocated', cls: 'num r', w: b1, d: b2, c: amt }); }
-    if (amtOk && isAllocation && tgtP) { const [b1, b2] = split(sgn(amt)); entries.push({ what: 'Allocation From The Unallocated Pool', project: tgtP.name, bucket: 'Allocated', cls: 'num r', w: b1, d: b2, c: amt }); }
+    if (amtOk && isAllocation && tgtP) { const [b1, b2] = split(sgn(amt)); entries.push({ what: 'Allocation From Available Budget', project: tgtP.name, bucket: 'Allocated', cls: 'num r', w: b1, d: b2, c: amt }); }
     if (amtOk && isAdjustment && tgtP && f.dir) { const dn = f.dir === 'decrease', [b1, b2] = split(dn ? fmt(-amt) : sgn(amt)); entries.push({ what: dn ? 'Adjustment, Decrease' : 'Adjustment, Increase', project: tgtP.name, bucket: 'Allocated', cls: 'num r' + (dn ? ' neg' : ''), w: b1, d: b2, c: dn ? -amt : amt }); }
     const netC = entries.reduce((s, en) => s + en.c, 0), [nW, nD] = split(fmt(netC));
     const ancOn = isTransfer && ancOk && view !== 'partial' && !isLoading;
@@ -513,7 +513,7 @@ class Component extends DCLogic {
       isTransfer, isAllocation, isAdjustment, setTransfer: setT('transfer'), setAllocation: setT('allocation'), setAdjustment: setT('adjustment'),
       tgtLabel: isTransfer ? 'Target Project' : 'Project', projOpts,
       det: { loading: isLoading, ok: !isLoading }, fund: { loading: isLoading, error: false, ok: !isLoading },
-      availLabel: isTransfer ? 'Source Availability' : isAllocation ? 'Unallocated Pool' : 'Project Availability',
+      availLabel: isTransfer ? 'Source Availability' : isAllocation ? 'Organization Available Budget' : 'Project Availability',
       avW, avD, afW, afD, amW, amD, shortW: shW, shortD: shD, short,
       afterCls: 'num r' + (after < 0 && checkFunds ? ' neg' : ''), fundFill: 'width:' + pct.toFixed(1) + '%;background:var(' + (fundOk ? '--c1' : '--st-danger-fg') + ')',
       fundAria: fmt(amtOk ? amt : 0) + ' of ' + fmt(srcAvail) + ' USD available, ' + pct.toFixed(0) + '%',

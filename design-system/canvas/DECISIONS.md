@@ -1,6 +1,6 @@
 # Design canvas: decisions
 
-Status at 9 Oct 2026 (Project Dashboard, Requisition Create, Common Screens, Approval Inbox, Approval Workflow Builder and Budget Transfer pages added). Canvas: https://claude.ai/artifact/95sB8BhSTJnNetSkmmNCNn (private). Source of truth in the repo: `design-system/canvas/project/`. Branch `worktree-design-canvas-xlr8flo`, no PR opened (only a human opens a PR to `main`; `milestone/M1-budget-spine` is not on origin).
+Status at 10 Oct 2026 (Project Dashboard, Requisition Create, Common Screens, Approval Inbox, Approval Workflow Builder, Budget Transfer and RFQ Comparison pages added). Canvas: https://claude.ai/artifact/95sB8BhSTJnNetSkmmNCNn (private). Source of truth in the repo: `design-system/canvas/project/`. Branch `worktree-design-canvas-xlr8flo`, no PR opened (only a human opens a PR to `main`; `milestone/M1-budget-spine` is not on origin).
 
 Decided by the operator unless marked *(Claude)*. Where a decision departs from `design-system/MASTER.md`, it says so. **MASTER.md was not amended**; the canvas transcribes it and extends it. The amendments are listed at the end.
 
@@ -197,7 +197,28 @@ Page `Budget Transfer` holds 47 boards: the **list**, **create** (transfer, allo
 
 Tests: `transfers.spec.mjs` (140 tests, including planted violations: an altered ancestry level, a trace row that loses its word, an unlabelled input) with axe in light and dark on 38 boards. `designsystem.spec.mjs` now expects eight pages and the new section. Heights in `canvas.json` come from a measured run.
 
-## 7. Findings to feed back into MASTER.md (not yet amended)
+## 6g. Transfer answers (9 Oct 2026) and the Bid Comparison page (built 10 Oct 2026)
+
+Operator answers to the open Budget Transfer questions, then the screen list confirmed for the RFQ comparison dashboard. Page specs: `pages/budget-transfer.md` (amended) and `pages/rfq-comparison.md`.
+
+98. **Only a Finance Administrator may reverse a transfer, for now** (operator). Supersedes the "requester's role or finance administrator" wording of decision 76. Anyone else sees no `Reverse Transfer` button and the line `Only a Finance Administrator can reverse a transfer.` The server enforces it (hiding a button is not authorization).
+99. **An allocation draws on the organization's available budget; there is no separate unallocated pool** (operator). The form says `Organization Available Budget`, the entry `Allocation From Available Budget`, and BUD-008 is checked against the organization's available.
+100. **Approval thresholds are configurable by tenant and by entity, with a provision for user-based thresholds** (operator). The create form states `Set by your approval thresholds` before the route. *Assumption, confirm:* the most specific scope wins (user over entity over tenant), and the routing explanation names the scope that matched. The sample amounts (over 100,000.00 USD adds the Finance Director) are only a sample. This needs a settings story (STORY-NOTES section 6).
+101. **The policy flag is `Allow Cross-Level Transfers`, changed by an organization administrator only** (operator). Off, a Cross Hierarchy pair fails with an `Eligibility` entry that names the flag.
+102. **One `BT-` id prefix** for transfers, allocations and adjustments (operator). **Allocation and adjustment reuse the transfer workflow** (operator).
+103. **Notification copy is drafted** (operator asked) in `pages/budget-transfer.md` section 10.
+104. **Bid comparison, award basis** (operator): the default is **Lowest Cost Supplier**, which picks the lowest supplier **per item** so an RFQ with several items and suppliers may be awarded to **several vendors**; the second option is **Best Average Cost**, which keeps the **whole RFQ with one vendor**. Both are shown as radio cards with their own totals. *Assumption, confirm:* "average cost" is the lowest total landed cost among vendors that quoted every line, so a partial bid cannot win it.
+105. **The award is a hand-off, not part of this page** (operator: "okay"). `Start Award` carries the selection to the award draft (engine E12-S08, no UI story yet). It is never disabled; over the approved scope it is refused with the figure (SRC-016).
+106. **At most 5 vendors per RFQ** (operator, for uniformity with the UI). **Compliance is pass or fail per requirement, counted `n of N Met`**, with scoring separate. **The base currency is the organization's currency** (USD in the sample).
+107. **Decide in layers** *(Claude)*: a verdict strip, then a side-by-side matrix, then a sheet per vendor. `Show Only Differences` is on by default and counts what it hides. The best value in a row carries one marker, an icon plus words, never colour alone; `Lowest` is awarded only among full bids; a partial bid is labelled and not compared, but can win a line. Nothing recommends a vendor.
+108. **Sealed means sealed** *(Claude)*: before the deadline no price, term, score or requirement count is on the page, only who has submitted; a test fails if a figure leaks. A late bid is shown only with its audited override (who, when, why).
+109. **Narrow widths pick two vendors** *(Claude)* instead of scrolling a five-column table sideways: under 1000px of content width two vendors show with a picker (never the same one twice); under 560px each measure sits above its values and the verdict strip swipes.
+110. **The cost chart is one stacked bar per vendor** *(Claude)* in a fixed order (price, tax and duty, freight) with the total beside it and a dashed approved-scope line; the Chart/Table tabs make the table the accessible equivalent. No radar chart and no weighted-score gauge.
+111. **New classes in `xlr8flo.css` (tokens only):** `.cmp-strip .cmp-facts .cmp-opts .cmp-opt .cmp-toggle .cmp-pick .cmp-matrix .cmp-row .cmp-group .cmp-vend .cmp-legend .cmp-bars .cmp-bar-row .cmp-bar .cmp-scope .cols-cmp .cols-bl`. The Design System sheet gains **Comparison Matrix, Award Basis and Cost Bars** (`s-compare`). A `--fg-muted` on `--sunken` fix is repeated for the selected option card, a hovered row, the lit ancestry row and the totals bar (DECISIONS section 7).
+
+Tests: `comparison.spec.mjs` (74 tests, including planted violations: an altered landed total, `Lowest` on a partial bid, a figure on a sealed page, an unlabelled input), with figures checked against values computed outside the page, and axe in light and dark on 19 boards. `transfers.spec.mjs` now has 141 tests.
+
+## 7. Findings to feed back into MASTER.md (amended 9 Oct 2026, see 97)
 
 - **The MASTER amendment is deferred until after Budget Transfer (item 84), which is now built: the next session can draft it for the operator.** It would fold in the items below plus the ancestry state rows (6f item 86).
 - **Required fields (6d item 66) and hyperlinks (item 64) are new conventions with no MASTER section.** Candidates for 7.x: the tag, rail and summary line, and the link style and hover.
@@ -208,7 +229,7 @@ Tests: `transfers.spec.mjs` (140 tests, including planted violations: an altered
 
 ## 8. Open
 
-- Remaining pages: Comparison Dashboard, and the rest of Common Screens (6c). Budget Transfer is built (6f).
+- Remaining pages: the rest of Common Screens (6c). Budget Transfer (6f) and Bid Comparison (6g) are built.
 - Project Dashboard page: only signature moment 1 (KPI count-up) is used. The budget overview screen waits for a story.
 - Home needs more cards and KPIs as screens are added (then retire E-1).
 - Sample data only; amounts are internally consistent but invented.

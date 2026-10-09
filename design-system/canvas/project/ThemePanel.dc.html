@@ -367,6 +367,26 @@
     </div>
     <div class="total-bar" role="group" aria-label="Sample totals"><span style="display:flex;flex-wrap:wrap;gap:4px 24px;align-items:center"><span><span class="t-caption">Moved Out </span><span class="num neg"><span class="w">(40,000</span><span class="d">.00)</span><span class="cur">USD</span></span></span><span><span class="t-caption">Moved In </span><span class="num"><span class="w">+40,000</span><span class="d">.00</span><span class="cur">USD</span></span></span></span><span><span class="t-caption">Net Change </span><span class="num"><span class="w">0</span><span class="d">.00</span><span class="cur">USD</span></span></span></div></div>
   </section>
+  <section aria-labelledby="s-compare" style="display:flex;flex-direction:column;gap:12px">
+    <h3 class="t-label" id="s-compare">Comparison Matrix, Award Basis and Cost Bars</h3>
+    <p class="t-dense secondary">Added with the Bid Comparison page. Decide in layers: a verdict strip, then a side-by-side matrix, then a sheet per vendor. The matrix is rows of measures and one column per vendor (up to 5), with <b>Show Only Differences</b> on by default. The best value in a row carries a marker that is an icon and a word (<b>Lowest</b>, <b>Fastest</b>, <b>Highest Score</b>), never colour alone, and only one marker per measure. Below 1000px of content width two vendors are shown and a picker changes them. An award basis is a pair of radio cards that each show their own result. A cost bar is price, tax and freight in a fixed order with the total beside it and a dashed scope line; its accessible table is the Table tab.</p>
+    <div class="card" id="cmp-sample" style="padding:0;overflow:hidden">
+      <div role="table" aria-label="Sample comparison">
+        <div class="cmp-row head" role="row" style="grid-template-columns:188px repeat(2,minmax(0,1fr))"><span role="columnheader">Measure</span><div role="columnheader" class="c r"><button class="cmp-vend" type="button">Voltek Drives</button></div><div role="columnheader" class="c r"><button class="cmp-vend" type="button">Siemar Automation</button></div></div>
+        <div class="cmp-group" role="row"><span role="rowheader" class="t-label">Cost</span></div>
+        <div class="cmp-row strong" role="row" style="grid-template-columns:188px repeat(2,minmax(0,1fr))"><div role="rowheader" class="lab"><div>Landed Total</div><div class="t-caption">Price, tax and freight in USD</div></div><div role="cell" class="c r"><span class="num"><span class="w">208,213</span><span class="d">.44</span><span class="cur">USD</span></span></div><div role="cell" class="c r is-best"><span class="num"><span class="w">193,503</span><span class="d">.64</span><span class="cur">USD</span></span><div><span class="pill neutral"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6"></path></svg>Lowest</span></div></div></div>
+        <div class="cmp-row" role="row" style="grid-template-columns:188px repeat(2,minmax(0,1fr))"><div role="rowheader" class="lab"><div>Lead Time</div></div><div role="cell" class="c r"><span>28 days</span></div><div role="cell" class="c r"><span>42 days</span></div></div>
+      </div>
+    </div>
+    <div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))" id="cmp-opts-sample">
+      <label class="cmp-opt is-on"><input type="radio" name="ds-basis" checked><span class="cmp-opt-b"><b>Lowest Cost Supplier</b><span class="t-caption">Each line goes to its lowest supplier.</span><span class="num r" style="text-align:left"><span class="w">193,012</span><span class="d">.13</span><span class="cur">USD</span></span></span></label>
+      <label class="cmp-opt"><input type="radio" name="ds-basis"><span class="cmp-opt-b"><b>Best Average Cost</b><span class="t-caption">One vendor takes the whole RFQ.</span><span class="num r" style="text-align:left"><span class="w">193,503</span><span class="d">.64</span><span class="cur">USD</span></span></span></label>
+    </div>
+    <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:10px" id="cmpbar-sample">
+      <ul class="cmp-legend" aria-label="Sample legend"><li><span class="sw" style="background:var(--c1)"></span>Price Before Tax</li><li><span class="sw" style="background:var(--c2)"></span>Tax and Duty</li><li><span class="sw" style="background:var(--c5)"></span>Freight</li></ul>
+      <div class="cmp-bar" role="img" aria-label="Sample: price 181,088.80, tax 9,054.44, freight 3,360.40 USD"><span style="width:60%;background:var(--c1)"></span><span style="width:12%;background:var(--c2)"></span><span style="width:5%;background:var(--c5)"></span></div>
+    </div>
+  </section>
 
 
 

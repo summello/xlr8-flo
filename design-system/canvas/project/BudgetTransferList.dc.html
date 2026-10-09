@@ -288,7 +288,7 @@ class Component extends DCLogic {
       ['BT-00021', 'p4', 'p2', 1800000, 'Same Level', 'Reversed', '2026-09-15', true, 'Luis Moreno', 'Reversed by BT-00030']
     ].map(([id, from, to, amount, type, status, eff, mine, by, note]) => ({ id, from, to, amount, type, status, eff, mine, by, note }));
     const label = (r) => {
-      if (r.type === 'Allocation') return ['Unallocated Pool', 'to ' + N(r.to)];
+      if (r.type === 'Allocation') return ['Available Budget', 'to ' + N(r.to)];
       if (r.type === 'Adjustment') return [N(r.from), 'decrease of its allocation'];
       return [N(r.from), 'to ' + N(r.to)];
     };

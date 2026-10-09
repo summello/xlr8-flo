@@ -4,7 +4,7 @@ Read `DECISIONS.md` first (everything decided so far), then `README.md` (how to 
 
 ## State
 
-**Budget Transfer page built (DECISIONS 6e and 6f, 47 boards, `transfers.spec.mjs`). Next: Comparison Dashboard, then the rest of Common Screens (6c), then the MASTER amendment the operator deferred to "after Budget Transfer" (DECISIONS 6e item 84).**
+**Budget Transfer (6e, 6f) and Bid Comparison (6g, 21 boards, `comparison.spec.mjs`) pages built; MASTER amended (97). Next: the rest of Common Screens (6c), then the operator sign-off on MASTER 7.13 (semantic buttons).**
 
 **Approval Inbox and Approval Workflow Builder pages built (DECISIONS 6d). Next: Budget Transfer, Comparison Dashboard, then the rest of Common Screens (6c). Requisition Create is 6b.**
 
@@ -27,7 +27,7 @@ Add one canvas page per key flow, in this order, plus one page for common screen
 | ~~Approval Inbox~~ | built: inbox, decision panel, withdraw, resubmit diff, delegation (DECISIONS 6d) |
 | ~~Approval Workflow Builder~~ | built: list, version history, builder canvas and outline, problems, route preview, publish (DECISIONS 6d) |
 | ~~Budget Transfer~~ | built: list, create with the Type switch, detail with reversal, the posting moment, inbox transfer panel (DECISIONS 6e, 6f) |
-| Comparison Dashboard | RFQ bid comparison with the accessible table equivalent |
+| ~~Comparison Dashboard~~ | built as `RFQ Comparison`: verdict strip, matrix, two award bases, by line, cost breakdown with table, scoring, vendor sheet, sealed (DECISIONS 6g) |
 | Common Screens | sign in, MFA (challenge, enrol, recovery), password reset, sign up and verify, suspended tenant notice, session expired, logout, 403/404/500 with correlation id, demo banner, empty and error patterns, role-based onboarding tour |
 
 Sign in belongs to Common Screens, not the flows (the inventory's "sign in" flow is covered there). Confirm the screen list with the operator before building anything that is a gap in the inventory.

@@ -21,7 +21,7 @@ Entry points: `Transfer Funds` in the project dashboard header, and `N transfers
 
 ## 2. List
 
-Tabs `Mine`, `Awaiting Approval`, `Posted`, `All` (counts in each tab; `Posted` includes `Reversed`). Search (number, project, requester), project filter, type filter (`Same Level`, `Cross Hierarchy`, `Allocation`, `Adjustment`). Columns: Transfer (id, with a caption: step, `Reverses BT-...`, `Reversed by BT-...`), From and To (two lines; an allocation reads `Unallocated Pool` / `to <project>`, an adjustment `<project>` / `decrease of its allocation`), Amount (a decrease in parentheses and red), Status (icon and words), Type (in words), Effective. Sort on Transfer, Amount, Effective. 10 per page, server filtered and paged (PERF-005). Below 900 card width Type and Effective drop out and return as labelled values in the stacked card below 660. No total row: a column of mixed signs has no meaning.
+Tabs `Mine`, `Awaiting Approval`, `Posted`, `All` (counts in each tab; `Posted` includes `Reversed`). Search (number, project, requester), project filter, type filter (`Same Level`, `Cross Hierarchy`, `Allocation`, `Adjustment`). Columns: Transfer (id, with a caption: step, `Reverses BT-...`, `Reversed by BT-...`), From and To (two lines; an allocation reads `Available Budget` / `to <project>`, an adjustment `<project>` / `decrease of its allocation`), Amount (a decrease in parentheses and red), Status (icon and words), Type (in words), Effective. Sort on Transfer, Amount, Effective. 10 per page, server filtered and paged (PERF-005). Below 900 card width Type and Effective drop out and return as labelled values in the stacked card below 660. No total row: a column of mixed signs has no meaning.
 
 States: loading (skeleton rows at final height), empty (`No Transfers Yet` with the primary action), no match (`No Transfers Match` and `Clear filters`), error (filters kept), partial (`Status delayed`, statuses read `Not available`, amounts stay).
 
@@ -36,7 +36,7 @@ A radio group `Type`: `Transfer between projects` (default), `Allocation`, `Adju
 | Type | Fields | Hidden |
 |---|---|---|
 | Transfer | Source Project, Target Project, Amount, Effective Date, Reason | |
-| Allocation | Project, Amount, Effective Date, Reason | Source, ancestry preview. Funds come from the unallocated pool; its availability is checked. |
+| Allocation | Project, Amount, Effective Date, Reason | Source, ancestry preview. Funds come from the organization's **available budget** (decision 99); its availability is checked. |
 | Adjustment | Project, Direction (Increase or Decrease), Amount, Effective Date, Reason | Source, ancestry preview. A decrease is checked against the project's available (BUD-008). |
 
 Currency (read-only, `USD`) and Requester (read-only) always show. Evidence is in the side card.
@@ -51,7 +51,7 @@ Currency (read-only, `USD`) and Requester (read-only) always show. Evidence is i
 | Currency (72) | Same currency only. No rates, no conversion. |
 | Effective date (73) | Today or later, in an open period. A past date gives `Period: ... is in the past`; a date in a closed period gives `Period: ... closed period (<month>)`. |
 | Evidence (74) | An organization setting: off, Cross Hierarchy only, or always. When it demands evidence the card shows `Required, Not Attached` and submit gives a `Required field` entry; otherwise `Optional`. Files show scan states as on project detail. |
-| Approval (70) | The Checks card states the route. Same Level: the workflow by amount (sample: source owner, then the Plant Manager; over 100,000.00 USD adds the Finance Director). Cross Hierarchy: always routed, source owner, target owner, then the Finance Director. Ancestor owners are notified, not asked. **Sample thresholds, to be confirmed.** |
+| Approval (70) | The Checks card states the route, prefixed `Set by your approval thresholds`. **Thresholds are configurable by tenant and by entity, with a provision for user-based thresholds** (assumption: the most specific scope wins; the routing explanation names it). Same Level: the workflow by amount (sample: source owner, then the Plant Manager; over 100,000.00 USD adds the Finance Director). Cross Hierarchy: always routed, source owner, target owner, then the Finance Director. Ancestor owners are notified, not asked. **The sample amounts are not rules.** |
 | Race (77) | If the funds went between the preview and the submit, the server refuses. The screen shows `Not submitted. The available amount changed` as a `role=alert` with focus, the current figure and `Another transfer used the funds first`, keeps every typed value, and offers one button, `Edit Amount`, which focuses the field. No queue and no automatic retry. |
 
 ### 3.3 Ancestry Preview (decision 68, signature moment 3)
@@ -64,7 +64,7 @@ Two tables, stacked: **Source, Going Up** (the source, its business unit, the or
 
 ### 3.4 Entries That Will Post
 
-Transfer: `Transfer Out` (negative, parenthesised, red) and `Transfer In` on the Allocated bucket of the two projects; net zero. Allocation: one entry, `Allocation From The Unallocated Pool`. Adjustment: one entry, `Adjustment, Increase` or `Decrease`. Every entry shares one transfer id, assigned on submit.
+Transfer: `Transfer Out` (negative, parenthesised, red) and `Transfer In` on the Allocated bucket of the two projects; net zero. Allocation: one entry, `Allocation From Available Budget`. Adjustment: one entry, `Adjustment, Increase` or `Decrease`. Every entry shares one transfer id, assigned on submit.
 
 ### 3.5 Validation (UX-005, decision 45)
 
@@ -72,7 +72,7 @@ Submit and Save are never disabled to signal an error. A failed submit gives a s
 
 ## 4. Detail
 
-Dashboard layout rule (same as requisition detail): under 760 one column; 760 to 1099 cards 7/5; 1100 and up 8/4; cards in a row share a height. Header: title (`Transfer <from> To <to>`), id, kind, requester, status (icon and words) and the kind pill. Actions: `Withdraw` (pending, requester), `Reverse Transfer` (posted, requester's role or finance administrator; role names to be decided), `Create Revised Transfer` (rejected).
+Dashboard layout rule (same as requisition detail): under 760 one column; 760 to 1099 cards 7/5; 1100 and up 8/4; cards in a row share a height. Header: title (`Transfer <from> To <to>`), id, kind, requester, status (icon and words) and the kind pill. Actions: `Withdraw` (pending, requester), `Reverse Transfer` (posted, **Finance Administrator only**, decision 98; anyone else sees `Only a Finance Administrator can reverse a transfer.`), `Create Revised Transfer` (rejected).
 
 Cards: **Transfer** (amount, from, to with owners, effective date, reason, requested, transfer id), **Approval Trail** (the first entry says who it waits for, with delegation attribution as on the inbox), **Ancestry As Posted** (the same component as 3.3; for a pending transfer `Ancestry As It Will Post`), **Supporting Evidence**, **Ledger Entries** (entry ids that link to the ledger sheet, bucket, amount, posted time; `Will post` before posting; net zero; entries are never edited), **Linked Records** (the reversal or the original).
 
@@ -96,15 +96,29 @@ The existing panel (DECISIONS 52 to 55, 65) gains **What Posts If You Approve** 
 
 ## 8. Open questions (put in `notes.blocked`; the canvas shows each assumption)
 
-1. **BUD-003 / 7.3 wording** versus decision 68 and 96 (ancestors recounted, no entries of their own): needs the Opus decision-log entry proposed in `STORY-NOTES.md` section 5.
-2. Exact approval thresholds (amounts) and the Same Level route.
-3. The name of the organization policy flag for transfers across levels, and who may change it.
-4. The role names that may `Reverse Transfer`.
-5. One id family `BT-` for transfers, allocations and adjustments, or separate prefixes.
-6. Where allocations come from when the organization has no unallocated pool concept (the sample uses a pool of 1,250,000.00 USD).
-7. Allocation and adjustment approval routing (the sample reuses the transfer workflow).
-8. Notification content and digest rules (decision 75 names who is told and when; the copy is not designed).
+Answered 9 Oct 2026 (DECISIONS 98 to 103): thresholds are configurable by tenant, entity and user; the policy flag is `Allow Cross-Level Transfers`, administrator only; only a Finance Administrator reverses; one `BT-` prefix; an allocation draws on available budget; allocation and adjustment reuse the transfer workflow. Still open:
+
+1. **BUD-003 / 7.3 wording** versus decisions 68 and 96 (ancestors recounted, no entries of their own): needs the Opus decision-log entry proposed in `STORY-NOTES.md` section 5.
+2. **Threshold resolution order** across user, entity and tenant (assumed most specific wins) and what a user-based threshold means exactly (an approval limit per person, assumed).
+3. **Which administrator role** changes `Allow Cross-Level Transfers` and the evidence setting.
 
 ## 9. Tests the stories must leave behind
 
 Unit tests on the recount (before plus change equals after on every level, shared levels net zero, the two entries net zero), a real-Postgres concurrency test (two transfers racing for the same funds: exactly one wins, the loser gets the refusal), Idempotency-Key and ACC-002 (retrying an approved transfer posts once), a TEN-010 isolation case (a foreign tenant's transfer is a 404), authorization per role, a state-machine test for Draft, Approval Pending, Returned, Rejected, Posted, Reversed, and Playwright with `@axe-core/playwright` on each route, a keyboard-only path, the tab keys, the reversal dialog's focus handling, and a reduced-motion check. The canvas's own checks are in `design-system/canvas/tests/transfers.spec.mjs`.
+
+## 10. Notification copy (draft, decision 103)
+
+Who is told and when is decided (decision 75). All of it goes through the outbox (never sent from a request handler), is plain text with one link, shows every amount with its currency, and never includes attachment contents or another organization's data. Resend's 100 a day is a real ceiling: everything except a refusal or a failed posting is batched into the recipient's digest, and an organization may choose immediate delivery for approval tasks. Each event has one subject line and a short body; `[Link]` is the only link.
+
+| Event | To | Delivery | Subject | Body |
+|---|---|---|---|---|
+| Submitted | Approvers of the current step | Approvals digest (or immediate, per setting) | `Approval needed: BT-00031, 40,000.00 USD, Plant 4 Line Retrofit to Plant 2 Dock Upgrade` | `Luis Moreno asks you to approve a transfer of 40,000.00 USD from Plant 4 Line Retrofit to Plant 2 Dock Upgrade, effective 12 Oct 2026. Reason: Move unused budget before the winter shutdown. You are step 2 of 2. Available on Plant 4 Line Retrofit now: 546,000.00 USD. [Review Transfer]` |
+| Returned for changes | Requester | Immediate | `BT-00031 was returned for changes` | `Amara Okafor returned your transfer: "<reason>". Nothing posted. You can amend it and resubmit; the approvers will see what changed. [Open Transfer]` |
+| Rejected | Requester | Immediate | `BT-00027 was rejected` | `Amara Okafor rejected your transfer of 90,000.00 USD: "<reason>". Nothing posted. [Create Revised Transfer]` |
+| Posted | Requester, source and target project owners (and ancestor owners, as a notice, for Cross Hierarchy) | Digest | `BT-00031 posted: 40,000.00 USD moved` | `40,000.00 USD moved from Plant 4 Line Retrofit to Plant 2 Dock Upgrade, effective 12 Oct 2026. Available now: Plant 4 Line Retrofit 506,000.00 USD, Plant 2 Dock Upgrade 252,000.00 USD. Entries LE-01944 and LE-01945. [View Transfer]` |
+| Posted, across levels | Ancestor owners | Digest | `A transfer across levels posted under <level>` | `BT-00032 moved 60,000.00 USD from Corporate Contingency to Plant 2 Dock Upgrade. The total available for <level> changed from X to Y. You did not need to approve it. [View Transfer]` |
+| Could not post | Requester and Finance Administrators | Immediate | `BT-00031 could not post on 12 Oct 2026` | `Plant 4 Line Retrofit has 24,000.00 USD available and 40,000.00 USD is needed. Nothing moved. [Edit Amount]` |
+| Reversal drafted | Approvers (as Submitted), requester of the original | Digest | `Reversal of BT-00021 awaits approval` | `Luis Moreno drafted a reversal of BT-00021 (18,000.00 USD). The original stays in the ledger as posted. [Review Transfer]` |
+| Reversed | Same as Posted | Digest | `BT-00021 was reversed by BT-00030` | `18,000.00 USD moved back from Plant 2 Dock Upgrade to Plant 4 Line Retrofit. [View Transfer]` |
+
+Allocations and adjustments use the same events with `Allocation` or `Adjustment` in the subject and one project in the body.

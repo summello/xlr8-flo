@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bid Comparison</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="xlr8flo.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;560;600;640&amp;family=JetBrains+Mono:wght@400;460;620&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{rootCls}}" data-theme="{{theme}}" style="min-height: 100vh">
+<div class="{{appCls}}">
+  <nav class="side" aria-label="Primary" onScroll="{{navTipHide}}">
+    <div class="brand"><span class="brand-mark">FL</span><span class="brand-name">XLR8 FLO</span></div>
+    <button class="iconbtn side-toggle toggle-collapse" type="button" onClick="{{toggleCollapse}}" aria-label="{{collapseLabel}}" aria-expanded="{{expanded}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4zM9 5v14"></path></svg></button>
+    <button class="iconbtn side-toggle toggle-nav" type="button" onClick="{{toggleNav}}" aria-label="{{navLabel}}" aria-expanded="{{navOpen}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4zM9 5v14"></path></svg></button>
+    <sc-for list="{{nav}}" as="n" hint-placeholder-count="18">
+      <sc-if value="{{n.isHead}}" hint-placeholder-val="{{ false }}"><div class="nav-h">{{n.label}}</div></sc-if>
+      <sc-if value="{{n.isLink}}" hint-placeholder-val="{{ true }}">
+        <a href="#" class="{{n.cls}}" aria-label="{{n.label}}" data-tip="{{n.label}}" onMouseEnter="{{navTipShow}}" onFocus="{{navTipShow}}" onMouseLeave="{{navTipHide}}" onBlur="{{navTipHide}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{n.d}}"></path></svg><span class="lbl">{{n.label}}</span></a>
+      </sc-if>
+    </sc-for>
+  </nav>
+  <div class="scrim" onClick="{{closeNav}}"></div>
+  <div class="main">
+    <header class="top">
+      <button class="iconbtn menu-btn" type="button" onClick="{{toggleNav}}" aria-label="Open navigation" aria-expanded="{{navOpen}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
+      <div class="crumbs"><span class="crumb-parent"><a href="#" class="secondary">Sourcing</a></span><span class="sep" aria-hidden="true">/</span><span class="crumb-parent"><a href="#" class="secondary">RFQs</a></span><span class="sep" aria-hidden="true">/</span><span class="crumb-parent"><a href="#" class="secondary">RFQ-00118</a></span><span class="sep" aria-hidden="true">/</span><b>Bid Comparison</b></div>
+      <button class="cmdk" type="button" aria-label="Open command menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4"></path></svg><span class="txt">Search or run a command</span><kbd>⌘K</kbd></button>
+      <button class="iconbtn" type="button" aria-label="Notifications"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 17V11a6 6 0 1112 0v6l2 2H4zM10 21h4"></path></svg></button>
+      <span class="avatar" aria-label="Signed in as Luis Moreno">LM</span>
+    </header>
+
+    <main class="page">
+      <div class="phead">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <h1 class="t-display">Bid Comparison</h1>
+          <p class="secondary">{{subline}}</p>
+          <div><span class="{{statusCls}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{statusIcon}}"></path></svg>{{status}}</span></div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+          <a href="#" class="btn">Back to RFQ</a>
+          <button class="btn" type="button" onClick="{{exportIt}}">Export</button>
+        </div>
+      </div>
+
+      <sc-if value="{{summaryOn}}" hint-placeholder-val="{{ false }}">
+        <div class="summary" role="alert" tabindex="-1" id="cmp-summary">
+          <div style="display:flex;gap:8px;align-items:center;font-weight:560"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>Award not started. The selection is over the approved scope</div>
+          <p class="t-dense" style="margin:0">Nothing was started. Your selection is kept.</p>
+          <ul class="t-dense"><li><b>Funds:</b> {{summaryText}}</li></ul>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{loading}}" hint-placeholder-val="{{ false }}">
+        <div role="status" aria-label="Loading the comparison" style="display:flex;flex-direction:column;gap:16px">
+          <span class="skel" style="height:64px"></span>
+          <div class="cmp-strip"><span class="skel" style="height:190px"></span><span class="skel" style="height:190px"></span><span class="skel" style="height:190px"></span></div>
+          <span class="skel" style="height:320px"></span>
+        </div>
+      </sc-if>
+      <sc-if value="{{error}}" hint-placeholder-val="{{ false }}"><div class="card state" role="alert" style="padding:48px 16px"><span class="pill danger"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>Could not load the comparison</span><div class="t-dense secondary">The request timed out. Nothing was changed, and no bid was opened. Reference 6c3f-9b27.</div><button class="btn" type="button" onClick="{{retry}}">Try again</button></div></sc-if>
+      <sc-if value="{{empty}}" hint-placeholder-val="{{ false }}"><div class="card state" style="padding:48px 16px"><div class="t-heading">No Bids Received</div><div class="t-dense secondary" style="max-width:520px">The deadline of 6 Oct 2026, 17:00 has passed and none of the 5 invited vendors responded. Extend the deadline or invite more vendors, up to 5 in all.</div><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><a href="#" class="btn primary">Extend Deadline</a><a href="#" class="btn">Edit Invitations</a></div></div></sc-if>
+
+      <sc-if value="{{sealed}}" hint-placeholder-val="{{ false }}">
+        <section class="card" aria-labelledby="h-facts"><div class="card-h"><h2 class="t-heading" id="h-facts">Bid Round</h2></div><div class="card-b"><dl class="cmp-facts"><sc-for list="{{facts}}" as="f" hint-placeholder-count="4"><div><dt class="t-label">{{f.l}}</dt><dd>{{f.v}}</dd></div></sc-for></dl></div></section>
+        <section class="card" aria-labelledby="h-sealed">
+          <div class="card-h"><h2 class="t-heading" id="h-sealed">Bids Are Sealed</h2></div>
+          <div class="card-b" style="display:flex;flex-direction:column;gap:12px">
+            <p class="t-dense" style="margin:0" role="status">3 of 5 invited vendors have submitted. Prices, terms and scores stay hidden from everyone until the deadline, so no bid can be seen early or favoured (SRC-007). The comparison opens on its own at 14 Oct 2026, 17:00.</p>
+            <ul class="suggest"><sc-for list="{{sealedVendors}}" as="v" hint-placeholder-count="5"><li><span style="font-weight:520">{{v.n}}</span><span class="{{v.cls}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{v.d}}"></path></svg>{{v.s}}</span></li></sc-for></ul>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{body}}" hint-placeholder-val="{{ true }}">
+        <section class="card" aria-labelledby="h-facts2"><div class="card-h"><h2 class="t-heading" id="h-facts2">Bid Round</h2><span class="t-caption">Up to 5 vendors per RFQ</span></div><div class="card-b"><dl class="cmp-facts"><sc-for list="{{facts}}" as="f" hint-placeholder-count="5"><div><dt class="t-label">{{f.l}}</dt><dd>{{f.v}}</dd></div></sc-for></dl></div></section>
+
+        <sc-if value="{{lateNote}}" hint-placeholder-val="{{ false }}"><div class="summary info" role="note"><div style="display:flex;gap:8px;align-items:flex-start"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:1px"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3 2"></path></svg><div><b class="t-dense">One Late Bid, Included By Override</b><div class="t-dense">{{lateNote}}</div></div></div></div></sc-if>
+        <sc-if value="{{staleOn}}" hint-placeholder-val="{{ false }}"><div class="summary warning" role="status"><div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:1px"><path d="M12 3l10 18H2zM12 10v5M12 18h.01"></path></svg><div><b class="t-dense">The EUR Rate Is 12 Days Old</b><div class="t-dense">Siemar Automation is converted at 1.0840 from 28 Sep 2026. Refresh the rate before you award. Their original bid in EUR is not changed.</div></div><button class="btn" type="button" onClick="{{refreshRate}}">Refresh Rate</button></div></div></sc-if>
+        <sc-if value="{{noScoresOn}}" hint-placeholder-val="{{ false }}"><div class="summary warning" role="status"><div style="display:flex;gap:8px;align-items:flex-start"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:1px"><path d="M12 3l10 18H2zM12 10v5M12 18h.01"></path></svg><div><b class="t-dense">Scores Are Not Available</b><div class="t-dense">Costs, terms and requirements are current. Evaluation scores could not be loaded.</div></div><button class="btn" type="button" onClick="{{retry}}">Try again</button></div></div></sc-if>
+
+        <div style="padding:0 0 0;border-bottom:1px solid var(--border)">
+          <div class="tabs" role="tablist" aria-label="Comparison views" style="grid-auto-columns:minmax(0,1fr);width:min(100%,560px)" onKeyDown="{{tabKey}}">
+            <sc-for list="{{tabs}}" as="t" hint-placeholder-count="4"><button class="tab" role="tab" id="{{t.id}}" aria-selected="{{t.sel}}" aria-controls="cm-p" tabindex="{{t.ti}}" type="button" onClick="{{t.go}}">{{t.label}}</button></sc-for>
+            <span class="tab-ind" style="{{ind}}"></span>
+          </div>
+        </div>
+
+        <div role="tabpanel" id="cm-p" aria-labelledby="{{lab}}" style="display:flex;flex-direction:column;gap:16px">
+          <sc-if value="{{isOverview}}" hint-placeholder-val="{{ true }}">
+            <section class="card" aria-labelledby="h-basis">
+              <div class="card-h"><h2 class="t-heading" id="h-basis">Award Basis</h2><span class="t-caption">How the RFQ would be awarded</span></div>
+              <div class="card-b" style="display:flex;flex-direction:column;gap:14px">
+                <fieldset class="choice cmp-opts"><legend class="sr-only">Award basis</legend>
+                  <sc-for list="{{opts}}" as="o" hint-placeholder-count="2">
+                    <label class="{{o.cls}}"><input type="radio" name="cmp-basis" checked="{{o.checked}}" onChange="{{o.set}}"><span class="cmp-opt-b"><b>{{o.name}}</b><span class="t-caption">{{o.desc}}</span><span class="amt mamt"><span class="metric" style="font-size:20px;line-height:26px"><span class="w">{{o.w}}</span><span class="d">{{o.d}}</span></span><span class="cur">USD</span></span><span class="t-dense secondary">{{o.vendors}}</span></span></label>
+                  </sc-for>
+                </fieldset>
+                <p class="t-dense" style="margin:0">{{insight}}</p>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><span class="{{scopePill}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{scopeIcon}}"></path></svg>{{scopeText}}</span></div>
+                <sc-if value="{{hasNotLowest}}" hint-placeholder-val="{{ false }}"><p class="t-dense" style="margin:0"><b>Note:</b> {{notLowestText}}</p></sc-if>
+                <sc-if value="{{hasUnmet}}" hint-placeholder-val="{{ false }}"><p class="t-dense" style="margin:0"><b>Requirements:</b> {{unmetText}}</p></sc-if>
+              </div>
+            </section>
+            <div class="cmp-strip" role="list" aria-label="Vendors">
+              <sc-for list="{{cards}}" as="c" hint-placeholder-count="5">
+                <section class="card" role="listitem" style="display:flex;flex-direction:column">
+                  <div class="card-h" style="align-items:flex-start"><h3 class="t-heading" style="font-size:15px">{{c.name}}</h3></div>
+                  <div class="card-b" style="display:flex;flex-direction:column;gap:10px;flex:1">
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;min-height:22px"><sc-if value="{{c.late}}" hint-placeholder-val="{{ false }}"><span class="pill warning"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3 2"></path></svg>Late</span></sc-if><sc-if value="{{c.partial}}" hint-placeholder-val="{{ false }}"><span class="pill neutral"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18z"></path></svg>Partial</span></sc-if></div>
+                    <div><div class="t-label">Landed Total</div><div class="amt mamt"><span class="metric" style="font-size:22px;line-height:28px"><span class="w">{{c.lw}}</span><span class="d">{{c.ld}}</span></span><span class="cur">USD</span></div><div class="t-caption">{{c.delta}}</div><sc-if value="{{c.partial}}" hint-placeholder-val="{{ false }}"><div class="t-caption">{{c.partialText}}</div></sc-if></div>
+                    <dl class="kv" style="margin:0;grid-template-columns:minmax(0,1fr) auto"><dt class="t-label">Lead Time</dt><dd style="margin:0;text-align:right">{{c.lead}}</dd><dt class="t-label">Requirements</dt><dd style="margin:0;text-align:right">{{c.met}}</dd><dt class="t-label">Score</dt><dd style="margin:0;text-align:right">{{c.score}}</dd></dl>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;min-height:22px"><sc-for list="{{c.marks}}" as="m" hint-placeholder-count="1"><span class="pill neutral"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{m.d}}"></path></svg>{{m.t}}</span></sc-for></div>
+                    <div style="margin-top:auto"><button class="btn" type="button" onClick="{{c.open}}" aria-label="View bid, {{c.name}}">View Bid</button></div>
+                  </div>
+                </section>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{isMatrix}}" hint-placeholder-val="{{ true }}">
+            <section class="card" aria-labelledby="h-mx">
+              <div class="card-h"><h2 class="t-heading" id="h-mx">Side By Side</h2>
+                <label class="cmp-toggle"><input type="checkbox" checked="{{diffOnly}}" onChange="{{toggleDiff}}">Show Only Differences</label></div>
+              <div class="cmp-pick" role="group" aria-label="Choose the two vendors to compare">
+                <div class="field"><label class="t-caption" for="cm-a">First Vendor</label><select id="cm-a" class="btn" style="padding-right:8px" value="{{pickA}}" onChange="{{setPickA}}"><sc-for list="{{vendorOpts}}" as="o" hint-placeholder-count="5"><option value="{{o.k}}">{{o.name}}</option></sc-for></select></div>
+                <div class="field"><label class="t-caption" for="cm-b">Second Vendor</label><select id="cm-b" class="btn" style="padding-right:8px" value="{{pickB}}" onChange="{{setPickB}}"><sc-for list="{{vendorOpts}}" as="o" hint-placeholder-count="5"><option value="{{o.k}}">{{o.name}}</option></sc-for></select></div>
+              </div>
+              <div role="table" aria-label="Bids compared side by side" class="cmp-matrix">
+                <div class="cmp-row head" role="row"><span role="columnheader">Measure</span>
+                  <sc-for list="{{heads}}" as="h" hint-placeholder-count="5"><div role="columnheader" class="{{h.cls}}"><button class="cmp-vend" type="button" onClick="{{h.open}}">{{h.name}}</button><div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end"><sc-if value="{{h.late}}" hint-placeholder-val="{{ false }}"><span class="pill warning"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3 2"></path></svg>Late</span></sc-if><sc-if value="{{h.partial}}" hint-placeholder-val="{{ false }}"><span class="pill neutral"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18z"></path></svg>Partial</span></sc-if></div></div></sc-for>
+                </div>
+                <sc-for list="{{rows}}" as="r" hint-placeholder-count="12">
+                  <sc-if value="{{r.isGroup}}" hint-placeholder-val="{{ false }}"><div class="cmp-group" role="row"><span role="rowheader" class="t-label">{{r.label}}</span></div></sc-if>
+                  <sc-if value="{{r.isRow}}" hint-placeholder-val="{{ true }}"><div class="{{r.cls}}" role="row"><div role="rowheader" class="lab"><div>{{r.label}}</div><div class="t-caption">{{r.hint}}</div></div>
+                    <sc-for list="{{r.cells}}" as="c" hint-placeholder-count="5"><div role="cell" class="{{c.cls}}" data-label="{{c.vname}}"><sc-if value="{{c.isAmt}}" hint-placeholder-val="{{ false }}"><span class="{{c.amtCls}}"><span class="w">{{c.w}}</span><span class="d">{{c.d}}</span><span class="cur">USD</span></span></sc-if><sc-if value="{{c.isText}}" hint-placeholder-val="{{ true }}"><span>{{c.text}}</span></sc-if><sc-if value="{{c.hasSub}}" hint-placeholder-val="{{ false }}"><div class="t-caption">{{c.sub}}</div></sc-if><sc-if value="{{c.hasMarker}}" hint-placeholder-val="{{ false }}"><div><span class="pill neutral"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.markerIcon}}"></path></svg>{{c.marker}}</span></div></sc-if></div></sc-for>
+                  </div></sc-if>
+                </sc-for>
+              </div>
+              <sc-if value="{{hasHidden}}" hint-placeholder-val="{{ false }}"><p class="t-caption" style="padding:12px 16px" role="status">{{hiddenText}}. Switch off Show Only Differences to see them.</p></sc-if>
+            </section>
+          </sc-if>
+
+          <sc-if value="{{isScoring}}" hint-placeholder-val="{{ false }}">
+            <section class="card" aria-labelledby="h-ev">
+              <div class="card-h"><h2 class="t-heading" id="h-ev">Evaluators</h2><span class="t-caption">Conflict declarations (SRC-011)</span></div>
+              <ul class="suggest"><sc-for list="{{evals}}" as="e" hint-placeholder-count="3"><li><div style="min-width:0"><div style="font-weight:520">{{e.n}} <span class="t-caption">{{e.r}}</span></div><div class="t-dense secondary">{{e.c}}</div></div></li></sc-for></ul>
+            </section>
+          </sc-if>
+
+          <sc-if value="{{isBreakdown}}" hint-placeholder-val="{{ false }}">
+            <section class="card" aria-labelledby="h-cb">
+              <div class="card-h"><h2 class="t-heading" id="h-cb">Landed Cost Breakdown</h2><span class="t-caption">Price, tax and freight in USD</span></div>
+              <div style="padding:12px 16px 0;border-bottom:1px solid var(--border)">
+                <div class="tabs" role="tablist" aria-label="Breakdown view" style="grid-auto-columns:minmax(0,1fr);width:min(100%,240px)" onKeyDown="{{abKey}}">
+                  <sc-for list="{{abTabs}}" as="t" hint-placeholder-count="2"><button class="tab" role="tab" id="{{t.id}}" aria-selected="{{t.sel}}" aria-controls="cb-p" tabindex="{{t.ti}}" type="button" onClick="{{t.go}}">{{t.label}}</button></sc-for>
+                  <span class="tab-ind" style="{{abInd}}"></span>
+                </div>
+              </div>
+              <div role="tabpanel" id="cb-p" aria-labelledby="{{abLab}}">
+                <sc-if value="{{abChart}}" hint-placeholder-val="{{ true }}">
+                  <div style="padding:16px;display:flex;flex-direction:column;gap:14px">
+                    <ul class="cmp-legend" aria-label="Legend"><li><span class="sw" style="background:var(--c1)"></span>Price Before Tax</li><li><span class="sw" style="background:var(--c2)"></span>Tax and Duty</li><li><span class="sw" style="background:var(--c5)"></span>Freight</li></ul>
+                    <div class="cmp-bars">
+                      <span class="cmp-scope"><span class="ln" style="{{scopeLeft}}"><span class="t-caption">{{scopeLabel}}</span></span></span>
+                      <sc-for list="{{bars}}" as="b" hint-placeholder-count="5">
+                        <div class="cmp-bar-row"><span class="cmp-bar-name">{{b.name}}</span><div class="cmp-bar" role="img" aria-label="{{b.aria}}"><span style="{{b.s1}}"></span><span style="{{b.s2}}"></span><span style="{{b.s3}}"></span></div><span class="num r"><span class="w">{{b.lw}}</span><span class="d">{{b.ld}}</span><span class="cur">USD</span></span></div>
+                      </sc-for>
+                    </div>
+                    <p class="t-caption" style="margin:0">Vendors that did not quote every line are shown partial and are not comparable with full bids. The dashed line is the approved scope.</p>
+                  </div>
+                </sc-if>
+                <sc-if value="{{abTable}}" hint-placeholder-val="{{ false }}">
+                  <div role="table" aria-label="Landed cost by vendor">
+                    <div class="row head cols-cmp stack" role="row"><span role="columnheader">Vendor</span><span role="columnheader" class="r">Price Before Tax</span><span role="columnheader" class="r hide-md">Tax and Duty</span><span role="columnheader" class="r hide-md">Freight</span><span role="columnheader" class="r">Landed Total</span><span role="columnheader" class="r">Versus Scope</span></div>
+                    <sc-for list="{{tableRows}}" as="t" hint-placeholder-count="5">
+                      <div class="row cols-cmp stack" role="row" style="min-height:52px">
+                        <div role="cell" class="stack-main" style="font-weight:520">{{t.name}}</div>
+                        <span role="cell" class="num r" data-label="Price Before Tax"><span class="w">{{t.pw}}</span><span class="d">{{t.pd}}</span><span class="cur">USD</span></span>
+                        <span role="cell" class="num r hide-md" data-label="Tax and Duty"><span class="w">{{t.tw}}</span><span class="d">{{t.td}}</span><span class="cur">USD</span></span>
+                        <span role="cell" class="num r hide-md" data-label="Freight"><span class="w">{{t.fw}}</span><span class="d">{{t.fd}}</span><span class="cur">USD</span></span>
+                        <span role="cell" class="num r" data-label="Landed Total"><span class="w">{{t.lw}}</span><span class="d">{{t.ld}}</span><span class="cur">USD</span></span>
+                        <span role="cell" class="{{t.dCls}}" data-label="Versus Scope"><span class="w">{{t.dw}}</span><span class="d">{{t.dd}}</span><span class="cur">USD</span> <span class="t-caption">{{t.dWord}}</span></span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </section>
+          </sc-if>
+        </div>
+
+        <div class="action-bar">
+          <span class="t-dense" role="status">Award draft: {{barText}}</span>
+          <span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="button" onClick="{{startAward}}">Start Award</button></span>
+        </div>
+      </sc-if>
+      <p class="t-caption">Sample data for layout review. Landed cost is price plus tax plus freight in USD; freight is shared across lines by line value.</p>
+    </main>
+  </div>
+</div>
+<sc-if value="{{sheetOpen}}" hint-placeholder-val="{{ false }}">
+  <div class="sheet-scrim" onClick="{{closeSheet}}"></div>
+  <div class="sheet wide" role="dialog" aria-modal="true" aria-labelledby="sheet-title" onKeyDown="{{sheetKey}}">
+    <div class="sheet-h">
+      <div style="min-width:0;display:flex;flex-direction:column;gap:6px">
+        <div class="t-caption">Bid for RFQ-00118 · submitted {{sheet.at}}</div>
+        <h2 class="t-title" id="sheet-title">{{sheet.name}}</h2>
+        <div style="display:flex;flex-wrap:wrap;gap:6px"><sc-if value="{{sheet.late}}" hint-placeholder-val="{{ false }}"><span class="pill warning"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3 2"></path></svg>Late, Accepted By Override</span></sc-if><sc-if value="{{sheet.partial}}" hint-placeholder-val="{{ false }}"><span class="pill neutral"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18z"></path></svg>Partial, Not Every Line Quoted</span></sc-if></div>
+      </div>
+      <button class="iconbtn" type="button" aria-label="Close" onClick="{{closeSheet}}" autoFocus="{{sheetOpen}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+    </div>
+    <div class="sheet-b" tabindex="0" role="region" aria-label="Bid details">
+      <sc-if value="{{sheet.late}}" hint-placeholder-val="{{ false }}"><div class="summary info" role="note"><div class="t-dense"><b>Submitted after the deadline.</b> Sana Qureshi accepted it on 6 Oct 2026, 20:05 with the reason &ldquo;The portal was down from 16:30 to 19:00.&rdquo; The override is in the audit trail (SRC-008).</div></div></sc-if>
+      <sc-if value="{{sheet.foreign}}" hint-placeholder-val="{{ false }}"><div class="summary info" role="note"><div class="t-dense"><b>Converted for comparison only.</b> {{sheet.cur}} to USD at {{sheet.rate}}, European Central Bank reference rate, effective 8 Oct 2026. The vendor&rsquo;s bid in {{sheet.cur}} is kept exactly as submitted (SRC-010).</div></div></sc-if>
+      <dl class="kv" style="margin:0">
+        <dt class="t-label">Landed Total</dt><dd style="margin:0"><span class="amt"><span class="metric" style="font-size:22px;line-height:28px">{{sheet.landed}}</span><span class="cur">USD</span></span></dd>
+        <dt class="t-label">Price</dt><dd style="margin:0">{{sheet.price}} USD before tax</dd>
+        <dt class="t-label">{{sheet.taxName}}</dt><dd style="margin:0">{{sheet.tax}} USD</dd>
+        <dt class="t-label">Freight</dt><dd style="margin:0">{{sheet.fr}} USD</dd>
+        <dt class="t-label">Lead Time</dt><dd style="margin:0">{{sheet.lead}}</dd>
+        <dt class="t-label">Valid Until</dt><dd style="margin:0">{{sheet.valid}}</dd>
+        <dt class="t-label">Terms</dt><dd style="margin:0">{{sheet.terms}}, {{sheet.warranty}} warranty, {{sheet.delivery}}</dd>
+        <dt class="t-label">Score</dt><dd style="margin:0">{{sheet.score}}</dd>
+      </dl>
+      <section aria-labelledby="sh-lines">
+        <h3 class="t-label" id="sh-lines" style="margin-bottom:8px">Lines</h3>
+        <div class="card" style="box-shadow:none"><div role="table" aria-label="Quoted lines">
+          <div class="row head cols-bl stack" role="row"><span role="columnheader">Line</span><span role="columnheader">Quantity</span><span role="columnheader" class="r">Unit Price</span><span role="columnheader" class="r">Landed Line</span></div>
+          <sc-for list="{{sheet.lines}}" as="l" hint-placeholder-count="4"><div class="row cols-bl stack" role="row" style="min-height:52px"><div role="cell" class="stack-main"><div style="font-weight:520">{{l.d}}</div><div class="t-caption">{{l.orig}}</div></div><span role="cell" data-label="Quantity">{{l.qty}}</span><span role="cell" class="num r" data-label="Unit Price"><sc-if value="{{l.quoted}}" hint-placeholder-val="{{ true }}"><span class="w">{{l.uw}}</span><span class="d">{{l.ud}}</span><span class="cur">USD</span></sc-if><sc-if value="{{l.noQuote}}" hint-placeholder-val="{{ false }}"><span class="t-caption">Not quoted</span></sc-if></span><span role="cell" class="num r" data-label="Landed Line"><sc-if value="{{l.quoted}}" hint-placeholder-val="{{ true }}"><span class="w">{{l.tw}}</span><span class="d">{{l.td}}</span><span class="cur">USD</span></sc-if></span></div></sc-for>
+        </div></div>
+      </section>
+      <section aria-labelledby="sh-req">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:8px"><h3 class="t-label" id="sh-req">Requirements</h3><span class="t-caption">{{sheet.met}}</span></div>
+        <ul class="suggest" style="border:1px solid var(--border);border-radius:var(--radius-control)"><sc-for list="{{sheet.reqs}}" as="r" hint-placeholder-count="6"><li><span class="t-dense">{{r.r}}</span><span class="{{r.cls}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.d}}"></path></svg>{{r.word}}</span></li></sc-for></ul>
+      </section>
+      <sc-if value="{{sheet.hasExc}}" hint-placeholder-val="{{ false }}"><section aria-labelledby="sh-exc"><h3 class="t-label" id="sh-exc" style="margin-bottom:8px">Exceptions</h3><ul class="t-dense" style="margin:0;padding-left:18px"><sc-for list="{{sheet.exc}}" as="x" hint-placeholder-count="1"><li>{{x.e}}</li></sc-for></ul></section></sc-if>
+      <section aria-labelledby="sh-note"><h3 class="t-label" id="sh-note" style="margin-bottom:8px">Evaluator Summary</h3><p class="t-dense" style="margin:0">{{sheet.note}}</p></section>
+    </div>
+    <div class="sheet-f"><button class="btn" type="button" onClick="{{closeSheet}}">Close</button></div>
+  </div>
+</sc-if>
+<sc-if value="{{navTip}}" hint-placeholder-val="{{ false }}"><div class="nav-tip" style="{{navTip.style}}">{{navTip.text}}</div></sc-if>
+<div class="toasts" role="status" aria-live="polite">
+  <sc-if value="{{toast}}" hint-placeholder-val="{{ false }}"><div class="toast"><span>{{toast.msg}}</span></div></sc-if>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"dark","options":["light","dark"]},"collapsed":{"editor":"enum","default":"auto","options":["auto","yes","no"]},"navOpen":{"editor":"boolean","default":false},"view":{"editor":"enum","default":"ready","options":["ready","sealed","empty","loading","error","partial","stale","over"]},"tab":{"editor":"enum","default":"overview","options":["overview","lines","breakdown","scoring"]},"basis":{"editor":"enum","default":"lowest","options":["lowest","average"]},"open":{"editor":"string","default":""},"abtab":{"editor":"string","default":"0"},"$preview":{"width":1440,"height":2392}}'>
+class Component extends DCLogic {
+  componentDidMount() {
+    if ((this.props.collapsed ?? 'auto') === 'auto') {
+      try { if (localStorage.getItem('xf.sidebar') === 'collapsed') this.setState({ collapsed: true }); } catch (e) {}
+    }
+    this.applyHues();
+    this.afterMount && this.afterMount();
+  }
+  componentDidUpdate() { this.applyHues(); this.afterUpdate && this.afterUpdate(); }
+  // Card hover outline colour: the next colour of the chart series by position, so a new card needs no colour decision.
+  applyHues() {
+    const H = ['--c5', '--c7', '--c8', '--c1', '--c3', '--c2', '--c4', '--c6'];
+    document.querySelectorAll('.dash > .card').forEach((el, i) => el.style.setProperty('--hue', 'var(' + H[i % H.length] + ')'));
+  }
+  componentWillUnmount() { clearTimeout(this._tt); clearTimeout(this._bt); clearInterval(this._iv); }
+  split(s) { const i = s.lastIndexOf('.'); return i < 0 ? [s, ''] : [s.slice(0, i), s.slice(i)]; }
+  back(el) { setTimeout(() => { if (el && el.focus) el.focus(); }, 0); }
+  toast(msg) {
+    clearTimeout(this._tt);
+    this.setState({ toast: { msg } });
+    this._tt = setTimeout(() => this.setState({ toast: null }), 4000);
+  }
+  shellVals(st) {
+    const collapsed = st.collapsed ?? (this.props.collapsed === 'yes');
+    const navOpen = st.navOpen ?? (this.props.navOpen === true);
+    const act = this.activeNav || 'Budget';
+    const I = {
+      home: "M3 11l9-8 9 8M5 10v10h14V10M10 20v-6h4v6",
+      org: "M4 21V5l8-2v18M12 9h8v12M7 8h2M7 12h2M7 16h2M15 13h2M15 17h2",
+      admin: "M4 7h10M18 7h2M4 17h2M10 17h10M16 4v6M8 14v6",
+      proj: "M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z",
+      budget: "M3 7a2 2 0 012-2h13v4M3 7v11a2 2 0 002 2h15V9H5a2 2 0 01-2-2zM16 14.5h.01",
+      rep: "M4 20V10M10 20V4M16 20v-7M2 20h20",
+      req: "M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6",
+      appr: "M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6",
+      vend: "M4 9l1-5h14l1 5M4 9a2.5 2.5 0 005 0 2.5 2.5 0 006 0 2.5 2.5 0 005 0M5 11v9h14v-9M10 20v-5h4v5",
+      src: "M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4",
+      po: "M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6",
+      asset: "M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10",
+      help: "M12 21a9 9 0 100-18 9 9 0 000 18zM9.5 9.5a2.5 2.5 0 115 .5c0 1.5-2.5 2-2.5 3.5M12 17h.01"
+    };
+    const link = (label, d, ph, on) => ({ isLink: true, isHead: false, label, d, cls: 'nav-i ' + ph + (on ? ' on' : '') });
+    const hd = (label) => ({ isHead: true, isLink: false, label });
+    const nav = [
+      link('Home', I.home, '', false),
+      hd('Foundation'), link('Organization', I.org, 'p-foundation'), link('Administration', I.admin, 'p-foundation'),
+      hd('Plan'), link('Projects', I.proj, 'p-plan', act === 'Projects'), link('Budget', I.budget, 'p-plan', act === 'Budget'), link('Reporting', I.rep, 'p-plan'),
+      hd('Demand'), link('Requisitions', I.req, 'p-demand'), link('Approvals', I.appr, 'p-demand'),
+      hd('Commit'), link('Vendors', I.vend, 'p-commit'), link('Sourcing', I.src, 'p-commit'), link('Purchase orders', I.po, 'p-commit'), link('Assets', I.asset, 'p-commit'),
+      hd('Support'), link('Help', I.help, '')
+    ];
+    return {
+      theme: this.props.theme ?? 'light', nav,
+      rootCls: 'xf' + (st.intro ? ' intro' : ''),
+      appCls: 'app' + (collapsed ? ' collapsed' : '') + (navOpen ? ' nav-open' : ''),
+      navOpen, expanded: !collapsed, collapseLabel: collapsed ? 'Expand sidebar' : 'Collapse sidebar',
+      navLabel: navOpen ? 'Close navigation' : 'Open navigation',
+      // rail tooltips are one fixed-position element, so the scrolling sidebar cannot clip them
+      navTip: st.navTip || null,
+      navTipShow: (e) => {
+        const a = e.currentTarget, lbl = a.querySelector('.lbl');
+        if (!lbl || getComputedStyle(lbl).display !== 'none') return;
+        const r = a.getBoundingClientRect();
+        this.setState({ navTip: { text: a.getAttribute('data-tip'), style: 'left:' + (r.right + 12) + 'px;top:' + (r.top + r.height / 2) + 'px' } });
+      },
+      navTipHide: () => { if (st.navTip) this.setState({ navTip: null }); },
+      toggleCollapse: () => {
+        this.setState({ collapsed: !collapsed });
+        try { localStorage.setItem('xf.sidebar', collapsed ? 'expanded' : 'collapsed'); } catch (e) {}
+      },
+      toggleNav: () => this.setState({ navOpen: !navOpen }),
+      closeNav: () => this.setState({ navOpen: false }),
+      toast: st.toast || null
+    };
+  }
+
+
+  get activeNav() { return 'Sourcing'; }
+  componentWillUnmount() { clearTimeout(this._tt); }
+  afterUpdate() {
+    if (this._focusSummary) { this._focusSummary = false; const el = document.getElementById('cmp-summary'); if (el) el.focus(); }
+  }
+  // Sample RFQ-00118 for REQ-00418. Money is whole cents. Bids are normalized to the organization currency (USD) at the stated rate; the vendor's own figures are shown beside, never altered (SRC-010).
+  bids() {
+    const LINES = [{ d: 'Servo drive, 7.5 kW', q: 4, u: 'ea', est: 1850000 }, { d: 'Proximity sensor, M18', q: 40, u: 'ea', est: 42000 }, { d: 'Encoder cable, 10 m', q: 24, u: 'ea', est: 8500 }, { d: 'On-site drive tuning', q: 8, u: 'day', est: 1289500 }];
+    const REQS = ['ISO 9001 certified', 'CE marking on every drive', '24 months warranty', 'On-site commissioning', 'Delivery by 20 Nov 2026', 'Payment terms of net 45 or better'];
+    const CRIT = [{ n: 'Price', w: 40 }, { n: 'Delivery', w: 20 }, { n: 'Compliance and Quality', w: 25 }, { n: 'Support', w: 15 }];
+    const V = [
+      { k: 'v1', name: 'Voltek Drives', cur: 'USD', rate: 1, p: [17900, 445, 82, 12400], tax: 0.08, taxName: 'Sales tax 8%', fr: 2400, lead: 28, valid: '30 Nov 2026', terms: 'Net 45', warranty: '24 months', delivery: 'Delivered duty paid', sub: '5 Oct 2026, 14:20', late: false, met: [1, 1, 1, 1, 1, 1], sc: [75, 65, 90, 90], exc: [], note: 'Strong references on the drive family; freight is charged separately.' },
+      { k: 'v2', name: 'Cablecraft Ltd', cur: 'USD', rate: 1, p: [18400, 410, 76, 13100], tax: 0.08, taxName: 'Sales tax 8%', fr: 1100, lead: 21, valid: '15 Nov 2026', terms: 'Net 45', warranty: '24 months', delivery: 'Delivered duty paid', sub: '6 Oct 2026, 09:05', late: false, met: [1, 1, 1, 0, 1, 1], sc: [80, 80, 70, 75], exc: ['Commissioning is done by a partner, not by the vendor.'], note: 'Fastest of the full bids. Commissioning through a partner is the one gap.' },
+      { k: 'v3', name: 'Siemar Automation', cur: 'EUR', rate: 1.084, p: [15900, 385, 69, 10800], tax: 0.05, taxName: 'Import duty 5%', fr: 3100, lead: 42, valid: '30 Nov 2026', terms: 'Net 45', warranty: '24 months', delivery: 'Delivered at place', sub: '6 Oct 2026, 11:48', late: false, met: [1, 1, 1, 1, 0, 1], sc: [90, 45, 90, 60], exc: ['Lead time of 42 days misses the needed-by date of 20 Nov 2026.'], note: 'Lowest cost on three lines, but the lead time misses the needed-by date.' },
+      { k: 'v4', name: 'Brightline Controls', cur: 'USD', rate: 1, p: [18100, 430, 80, 12950], tax: 0.08, taxName: 'Sales tax 8%', fr: 0, lead: 35, valid: '30 Nov 2026', terms: 'Net 30', warranty: '24 months', delivery: 'Delivered duty paid', sub: '6 Oct 2026, 19:42', late: true, met: [1, 1, 1, 1, 1, 0], sc: [70, 55, 85, 80], exc: ['Payment terms are net 30.'], note: 'Free freight. Submitted after the deadline.' },
+      { k: 'v5', name: 'Apex Industrial Supply', cur: 'USD', rate: 1, p: [18900, 398, 90, null], tax: 0.08, taxName: 'Sales tax 8%', fr: 900, lead: 14, valid: '31 Oct 2026', terms: 'Net 30', warranty: '12 months', delivery: 'Delivered duty paid', sub: '5 Oct 2026, 16:10', late: false, met: [1, 1, 0, 0, 1, 0], sc: [75, 95, 55, 60], exc: ['No quote for on-site drive tuning.', 'Warranty is 12 months.', 'Payment terms are net 30.'], note: 'Quickest and cheapest sensor price, but quoted three of four lines.' }
+    ];
+    const out = V.map((v) => {
+      const unit = v.p.map((p) => (p == null ? null : Math.round(Math.round(p * 100) * v.rate)));
+      const sub = unit.map((u, i) => (u == null ? null : u * LINES[i].q));
+      const S = sub.reduce((a, b) => a + (b || 0), 0), fr = Math.round(Math.round(v.fr * 100) * v.rate);
+      const land = sub.map((s) => (s == null ? null : Math.round(s * (1 + v.tax) + fr * s / S)));
+      const landed = land.reduce((a, b) => a + (b || 0), 0), tax = landed - S - fr;
+      const quoted = sub.filter((s) => s != null).length;
+      const weighted = Math.round(CRIT.reduce((a, c, i) => a + c.w * v.sc[i], 0) / 10);   // tenths of a point, 0 to 1000
+      return { ...v, unit, sub, land, S, fr, landed, tax, quoted, full: quoted === LINES.length, weighted, metN: v.met.filter(Boolean).length };
+    });
+    return { LINES, REQS, CRIT, V: out };
+  }
+  renderVals() {
+    const st = this.state || {};
+    const view = st.view ?? this.props.view ?? 'ready';
+    const tab = st.tab ?? this.props.tab ?? 'overview';
+    const basisKey = st.basis ?? this.props.basis ?? 'lowest';
+    const openKey = st.open !== undefined ? st.open : (this.props.open || '');
+    const diffOnly = st.diffOnly ?? true;
+    const { LINES, REQS, CRIT, V } = this.bids();
+    const split = (s) => this.split(s);
+    const fmt = (c) => { const neg = c < 0, a = (Math.abs(c) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); return neg ? '(' + a + ')' : a; };
+    const sgn = (c) => (c > 0 ? '+' + fmt(c) : fmt(c));
+    const P = { ok: 'M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6', x: 'M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6', clk: 'M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3 2', w: 'M12 3l10 18H2zM12 10v5M12 18h.01', info: 'M20 11a8 8 0 00-14-4M4 4v4h4M4 13a8 8 0 0014 4M20 20v-4h-4', n: 'M12 21a9 9 0 100-18 9 9 0 000 18z' };
+    const SCOPE = view === 'over' ? 19000000 : 19600000;
+    const sealed = view === 'sealed', empty = view === 'empty', loading = view === 'loading', error = view === 'error';
+    const noScores = view === 'partial';
+    const body = !sealed && !empty && !loading && !error;
+    const [sw, sd] = [0, 0];
+    const vname = (k) => V.find((v) => v.k === k).name;
+
+    // ---- markers: computed from the data, never hand-placed ----
+    const fullV = V.filter((v) => v.full);
+    const lowTotal = Math.min(...fullV.map((v) => v.landed));
+    const lowTotalKeys = fullV.filter((v) => v.landed === lowTotal).map((v) => v.k);
+    const fastest = Math.min(...V.map((v) => v.lead)), fastKeys = V.filter((v) => v.lead === fastest).map((v) => v.k);
+    const topScore = Math.max(...V.map((v) => v.weighted)), topKeys = V.filter((v) => v.weighted === topScore).map((v) => v.k);
+    const lineLow = LINES.map((_, i) => Math.min(...V.filter((v) => v.land[i] != null).map((v) => v.land[i])));
+
+    // ---- the two award bases (decision 100): split by line, or one vendor for everything ----
+    const pickLowest = LINES.map((_, i) => V.filter((v) => v.land[i] === lineLow[i])[0].k);
+    const single = fullV.filter((v) => v.landed === lowTotal)[0];
+    const pickAverage = LINES.map(() => single.k);
+    const total = (pick) => pick.reduce((a, k, i) => a + V.find((v) => v.k === k).land[i], 0);
+    const BASES = { lowest: { name: 'Lowest Cost Supplier', desc: 'Each line goes to the supplier with the lowest landed cost for that line. The RFQ can be split across vendors.', pick: pickLowest }, average: { name: 'Best Average Cost', desc: 'One vendor takes the whole RFQ: the lowest total landed cost among the vendors that quoted every line.', pick: pickAverage } };
+    for (const b of Object.values(BASES)) { b.total = total(b.pick); b.vendors = [...new Set(b.pick)]; }
+    const B = BASES[basisKey], over = B.total - SCOPE;
+    const notLowest = B.pick.map((k, i) => ({ k, i })).filter((x) => V.find((v) => v.k === x.k).land[x.i] !== lineLow[x.i]).map((x) => LINES[x.i].d);
+    const unmet = B.vendors.map((k) => ({ name: vname(k), n: 6 - V.find((v) => v.k === k).metN })).filter((x) => x.n > 0);
+    const save = BASES.average.total - BASES.lowest.total;
+
+    // ---- the matrix: one row model serves every tab; the cells follow the vendors ----
+    const pick = st.pick ?? ['v1', 'v3'];
+    const money = (c, neg) => { const [w, d] = split(fmt(c)); return { isAmt: true, isText: false, w, d, amtCls: 'num' + (neg ? ' neg' : '') }; };
+    const text = (t, sub) => ({ isAmt: false, isText: true, text: t, sub: sub || '', hasSub: !!sub });
+    const mk = (v, c, extra) => ({ v: v.k, vname: v.name, hasMarker: false, marker: '', markerIcon: P.ok, isAmt: false, isText: false, hasSub: false, sub: '', ...c, ...extra, cls: (extra && extra.cls) || ('c r' + (pick.includes(v.k) ? '' : ' is-off')) });
+    const row = (label, cellOf, o = {}) => { const cells = V.map((v) => mk(v, cellOf(v))); const same = new Set(cells.map((c) => (c.isAmt ? c.w + c.d : c.text))).size === 1; return { isGroup: false, isRow: true, label, hint: o.hint || '', strong: !!o.strong, cells, same, cls: 'cmp-row' + (o.strong ? ' strong' : '') }; };
+    const grp = (label) => ({ isGroup: true, isRow: false, label, same: false, cells: [] });
+    const withMarker = (cells, keys, word, icon) => cells.map((c) => (keys.includes(c.v) ? { ...c, hasMarker: true, marker: word, markerIcon: icon, cls: c.cls + ' is-best' } : c));
+    const setMarker = (r, keys, word, icon) => ({ ...r, cells: withMarker(r.cells, keys, word, icon) });
+    const rowsOverview = [
+      grp('Cost'),
+      row('Bid Currency', (v) => (v.cur === 'USD' ? text('USD') : text(v.cur, 'Converted at ' + v.rate.toFixed(4)))),
+      row('Price Before Tax', (v) => money(v.S)),
+      row('Tax and Duty', (v) => money(v.tax), {}),
+      row('Freight', (v) => (v.fr ? money(v.fr) : text('Free'))),
+      setMarker(row('Landed Total', (v) => (v.full ? money(v.landed) : { ...money(v.landed), isText: false, sub: 'Partial: ' + v.quoted + ' of ' + LINES.length + ' lines', hasSub: true }), { strong: true, hint: 'Price, tax and freight in USD' }), lowTotalKeys, 'Lowest', P.ok),
+      row('Difference From Lowest', (v) => (!v.full ? text('Not comparable', 'Did not quote every line') : v.landed === lowTotal ? text('Lowest') : money(v.landed - lowTotal))),
+      grp('Delivery and Terms'),
+      setMarker(row('Lead Time', (v) => text(v.lead + ' days')), fastKeys, 'Fastest', P.clk),
+      row('Offer Valid Until', (v) => text(v.valid)),
+      row('Delivery Location', () => text('Plant 4 Receiving Dock')),
+      row('Delivery Terms', (v) => text(v.delivery)),
+      row('Warranty', (v) => text(v.warranty)),
+      row('Payment Terms', (v) => text(v.terms)),
+      grp('Compliance and Score'),
+      row('Requirements Met', (v) => text(v.metN + ' of ' + REQS.length + ' Met', v.exc.length ? v.exc.length + (v.exc.length === 1 ? ' exception' : ' exceptions') : 'No exceptions')),
+      setMarker(row('Weighted Score', (v) => (noScores ? text('Not available') : text((v.weighted / 10).toFixed(1), 'of 100'))), noScores ? [] : topKeys, 'Highest Score', P.ok)
+    ];
+    const rowsLines = [
+      ...LINES.map((l, i) => setMarker({ ...row(l.d, (v) => (v.land[i] == null ? text('Not quoted') : money(v.land[i])), { hint: l.q + ' ' + l.u + ' · estimate ' + fmt(l.est * l.q) + ' USD' }), cells: V.map((v) => mk(v, v.land[i] == null ? text('Not quoted') : { ...money(v.land[i]), ...(B.pick[i] === v.k ? { hasSub: true, sub: 'In this selection' } : {}) }, B.pick[i] === v.k ? { cls: 'c r is-pick' + (pick.includes(v.k) ? '' : ' is-off') } : {})) }, V.filter((v) => v.land[i] === lineLow[i]).map((v) => v.k), 'Lowest', P.ok)),
+      { ...row('In This Selection', (v) => { const t = B.pick.reduce((a, k, i) => a + (k === v.k ? v.land[i] : 0), 0); return t ? money(t) : text('None'); }, { strong: true, hint: B.name }), same: false }
+    ];
+    const rowsScoring = [
+      ...CRIT.map((c, ci) => row(c.n + ', ' + c.w + '%', (v) => (noScores ? text('Not available') : text((v.sc[ci] / 10).toFixed(1), 'of 10')), { hint: 'Average of the evaluators' })),
+      setMarker({ ...row('Weighted Score', (v) => (noScores ? text('Not available') : text((v.weighted / 10).toFixed(1), 'of 100')), { strong: true }), same: false }, noScores ? [] : topKeys, 'Highest Score', P.ok)
+    ];
+    const useRows = tab === 'lines' ? rowsLines : tab === 'scoring' ? rowsScoring : rowsOverview;
+    const hidden = diffOnly ? useRows.filter((r) => r.isRow && r.same).length : 0;
+    let shown = useRows.filter((r) => !(diffOnly && r.same));
+    shown = shown.filter((r, i) => !(r.isGroup && (!shown[i + 1] || shown[i + 1].isGroup)));   // no heading over nothing
+    const heads = V.map((v) => ({ k: v.k, name: v.name, late: v.late, partial: !v.full, cls: 'c r' + (pick.includes(v.k) ? '' : ' is-off'), open: (ev) => { this._opener = ev.currentTarget; this.setState({ open: v.k }); } }));
+
+    // ---- verdict strip ----
+    const cards = V.map((v) => { const d = v.landed - lowTotal, [lw, ld] = split(fmt(v.landed));
+      return { k: v.k, name: v.name, late: v.late, partial: !v.full, lw, ld, partialText: v.quoted + ' of ' + LINES.length + ' lines quoted',
+        delta: !v.full ? 'Not comparable with full bids' : d === 0 ? 'Lowest of the full bids' : fmt(d) + ' USD above the lowest', deltaCls: 't-caption',
+        marks: [lowTotalKeys.includes(v.k) ? { t: 'Lowest', d: P.ok } : null, fastKeys.includes(v.k) ? { t: 'Fastest', d: P.clk } : null, !noScores && topKeys.includes(v.k) ? { t: 'Highest Score', d: P.ok } : null].filter(Boolean),
+        lead: v.lead + ' days', met: v.metN + ' of ' + REQS.length + ' Met', score: noScores ? 'Not available' : (v.weighted / 10).toFixed(1),
+        open: (ev) => { this._opener = ev.currentTarget; this.setState({ open: v.k }); } }; });
+
+    // ---- cost breakdown ----
+    const maxC = Math.max(SCOPE, ...V.map((v) => v.landed)) * 1.04;
+    const bars = V.map((v) => { const [lw, ld] = split(fmt(v.landed)); return { name: v.name + (v.full ? '' : ' (partial)'), s1: 'width:' + (v.S / maxC * 100).toFixed(2) + '%;background:var(--c1)', s2: 'width:' + (v.tax / maxC * 100).toFixed(2) + '%;background:var(--c2)', s3: 'width:' + (v.fr / maxC * 100).toFixed(2) + '%;background:var(--c5)', lw, ld, aria: v.name + ': price ' + fmt(v.S) + ', tax ' + fmt(v.tax) + ', freight ' + fmt(v.fr) + ', landed ' + fmt(v.landed) + ' USD' }; });
+    const tableRows = V.map((v) => { const diff = v.landed - SCOPE, [pw, pd] = split(fmt(v.S)), [tw, td] = split(fmt(v.tax)), [fw, fd] = split(fmt(v.fr)), [lw, ld] = split(fmt(v.landed)), [dw, dd] = split(fmt(diff));
+      return { name: v.name, partial: !v.full, pw, pd, tw, td, fw, fd, lw, ld, dw, dd, dCls: 'num r' + (diff > 0 ? ' neg' : ''), dWord: v.full ? (diff > 0 ? 'Over scope' : 'Within scope') : 'Partial' }; });
+    const scopeLeft = 'left:' + (SCOPE / maxC * 100).toFixed(2) + '%';
+    const abTab = st.abTab ?? (this.props.abtab === '1' ? 1 : 0);
+
+    // ---- the vendor sheet ----
+    const cur = V.find((v) => v.k === openKey);
+    let sheet = {};
+    if (cur) {
+      const lines = LINES.map((l, i) => { const [uw, ud] = split(fmt(cur.unit[i] || 0)), [tw, td] = split(fmt(cur.land[i] || 0)); return { d: l.d, qty: l.q + ' ' + l.u, quoted: cur.land[i] != null, noQuote: cur.land[i] == null, orig: cur.cur === 'USD' ? '' : (cur.p[i] == null ? '' : cur.cur + ' ' + cur.p[i].toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' per ' + l.u), uw, ud, tw, td }; });
+      sheet = { name: cur.name, at: cur.sub, late: cur.late, foreign: cur.cur !== 'USD', partial: !cur.full, valid: cur.valid, terms: cur.terms, lead: cur.lead + ' days', warranty: cur.warranty, delivery: cur.delivery, taxName: cur.taxName, rate: cur.rate.toFixed(4), cur: cur.cur,
+        lines, reqs: REQS.map((r, i) => ({ r, ok: cur.met[i] === 1, word: cur.met[i] ? 'Met' : 'Not Met', cls: 'pill ' + (cur.met[i] ? 'success' : 'danger'), d: cur.met[i] ? P.ok : P.x })), exc: cur.exc.map((e) => ({ e })), hasExc: cur.exc.length > 0, note: cur.note, noScores,
+        landed: fmt(cur.landed), price: fmt(cur.S), tax: fmt(cur.tax), fr: fmt(cur.fr), met: cur.metN + ' of ' + REQS.length + ' Met', score: noScores ? 'Not available' : (cur.weighted / 10).toFixed(1) + ' of 100' };
+    }
+    const closeSheet = () => { this.setState({ open: '' }); this.back(this._opener); };
+    const stale = view === 'stale';
+    const sumOn = !!st.attempted && over > 0;
+    return {
+      ...this.shellVals(st), rootCls: 'xf', view, body, sealed, empty, loading, error,
+      status: sealed ? 'Sealed' : 'Under Evaluation', statusCls: 'pill ' + (sealed ? 'neutral' : 'info'), statusIcon: sealed ? P.n : P.info,
+      subline: 'RFQ-00118 · Servo and Sensor Package, Plant 4 · for REQ-00418 · amounts in USD',
+      facts: sealed ? [{ l: 'Status', v: 'Sealed until 14 Oct 2026, 17:00' }, { l: 'Bids In', v: '3 of 5 invited' }, { l: 'Approved Scope', v: '196,000.00 USD' }, { l: 'Needed By', v: '20 Nov 2026' }] : [{ l: 'Bids In', v: '5 of 5 invited' }, { l: 'Closed', v: '6 Oct 2026, 17:00' }, { l: 'Approved Scope', v: fmt(SCOPE) + ' USD' }, { l: 'Reserved Funds', v: '196,000.00 USD' }, { l: 'Needed By', v: '20 Nov 2026' }],
+      lateNote: body && V.some((v) => v.late) && !noScores ? 'Brightline Controls submitted at 19:42, after the 17:00 deadline. It is included through an audited override by Sana Qureshi on 6 Oct 2026, 20:05. Without that override it would be excluded (SRC-008).' : '',
+      staleOn: stale, noScoresOn: noScores,
+      tabs: [['overview', 'Overview'], ['lines', 'By Line'], ['breakdown', 'Cost Breakdown'], ['scoring', 'Scoring']].map(([k, label], i) => ({ id: 'cm-t' + i, label, sel: k === tab, ti: k === tab ? 0 : -1, go: () => this.setState({ tab: k }) })), tabKey: (e) => { const ks = ['overview', 'lines', 'breakdown', 'scoring']; const i = ks.indexOf(tab); let to = i; if (e.key === 'ArrowRight') to = (i + 1) % 4; else if (e.key === 'ArrowLeft') to = (i + 3) % 4; else if (e.key === 'Home') to = 0; else if (e.key === 'End') to = 3; else return; e.preventDefault(); this.setState({ tab: ks[to] }); this.back(document.getElementById('cm-t' + to)); },
+      ind: 'width:25%;transform:translateX(' + ['overview', 'lines', 'breakdown', 'scoring'].indexOf(tab) * 100 + '%)', lab: 'cm-t' + ['overview', 'lines', 'breakdown', 'scoring'].indexOf(tab),
+      isOverview: tab === 'overview', isLines: tab === 'lines', isBreakdown: tab === 'breakdown', isScoring: tab === 'scoring', isMatrix: tab !== 'breakdown',
+      opts: Object.entries(BASES).map(([k, b]) => { const [w, d] = split(fmt(b.total)); return { k, name: b.name, desc: b.desc, w, d, checked: k === basisKey, cls: 'cmp-opt' + (k === basisKey ? ' is-on' : ''), vendors: b.vendors.length === 1 ? vname(b.vendors[0]) : b.vendors.length + ' vendors', set: () => this.setState({ basis: k }) }; }),
+      insight: save > 0 ? 'Splitting the award is ' + fmt(save) + ' USD (' + (save / BASES.average.total * 100).toFixed(1) + '%) cheaper than the best single vendor, and uses ' + BASES.lowest.vendors.length + ' vendors instead of one.' : 'Both bases cost the same.',
+      basisName: B.name, selTotalW: split(fmt(B.total))[0], selTotalD: split(fmt(B.total))[1], selVendors: B.vendors.map(vname).join(', '),
+      scopePill: 'pill ' + (over > 0 ? 'danger' : 'success'), scopeIcon: over > 0 ? P.x : P.ok, scopeText: over > 0 ? 'Exceeds approved scope by ' + fmt(over) + ' USD' : 'Within approved scope, ' + fmt(-over) + ' USD to spare',
+      hasNotLowest: notLowest.length > 0, notLowestText: 'Not the lowest on ' + notLowest.length + (notLowest.length === 1 ? ' line' : ' lines') + ' (' + notLowest.join(', ') + '). A justification will be asked for at award (SRC-014).',
+      hasUnmet: unmet.length > 0, unmetText: unmet.map((u) => u.name + ' ' + u.n).join(', ') + ' requirements not met.',
+      cards, heads, rows: shown, hiddenN: hidden, diffOnly, toggleDiff: () => this.setState({ diffOnly: !diffOnly }), hasHidden: hidden > 0, hiddenText: hidden + (hidden === 1 ? ' identical row hidden' : ' identical rows hidden'),
+      pickA: pick[0], pickB: pick[1], vendorOpts: V.map((v) => ({ k: v.k, name: v.name })), setPickA: (e) => this.setState({ pick: [e.target.value, pick[1] === e.target.value ? V.find((v) => v.k !== e.target.value).k : pick[1]] }), setPickB: (e) => this.setState({ pick: [pick[0] === e.target.value ? V.find((v) => v.k !== e.target.value).k : pick[0], e.target.value] }),
+      bars, tableRows, scopeLeft, scopeLabel: 'Approved scope ' + fmt(SCOPE) + ' USD', abTabs: ['Chart', 'Table'].map((label, i) => ({ id: 'cb-t' + i, label, sel: i === abTab, ti: i === abTab ? 0 : -1, go: () => this.setState({ abTab: i }) })), abInd: 'width:50%;transform:translateX(' + abTab * 100 + '%)', abChart: abTab === 0, abTable: abTab === 1, abLab: 'cb-t' + abTab,
+      abKey: (e) => { let to = abTab; if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') to = 1 - abTab; else if (e.key === 'Home') to = 0; else if (e.key === 'End') to = 1; else return; e.preventDefault(); this.setState({ abTab: to }); this.back(document.getElementById('cb-t' + to)); },
+      evals: [{ n: 'Priya Raman', r: 'Sourcing Specialist', c: 'No conflict declared.' }, { n: 'Marcus Lee', r: 'Plant Engineer', c: 'Recused from Brightline Controls: former employer. Their scores for it are excluded.' }, { n: 'Elena Fischer', r: 'Finance', c: 'No conflict declared.' }],
+      sheetOpen: !!cur, sheet, closeSheet,
+      sheetKey: (e) => { if (e.key === 'Escape') { e.preventDefault(); closeSheet(); return; } if (e.key !== 'Tab') return; const f = Array.from(e.currentTarget.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter((x) => !x.disabled); if (!f.length) return; const first = f[0], last = f[f.length - 1], at = document.activeElement; if (e.shiftKey && at === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && at === last) { e.preventDefault(); first.focus(); } },
+      summaryOn: sumOn, summaryText: 'This selection costs ' + fmt(B.total) + ' USD against an approved scope of ' + fmt(SCOPE) + ' USD, ' + fmt(over) + ' USD over. Amend the requisition first, or choose a cheaper basis (SRC-016).',
+      barOn: body, barText: B.name + ' · ' + (B.vendors.length === 1 ? vname(B.vendors[0]) : B.vendors.length + ' vendors') + ' · ' + fmt(B.total) + ' USD',
+      startAward: () => { if (over > 0) { this._focusSummary = true; this.setState({ attempted: true }); return; } this.setState({ attempted: false }); this.toast('The award draft opens with this selection. Nothing is awarded yet.'); },
+      skel: [60, 74, 52, 66, 70].map((w) => ({ w: w + '%' })), retry: () => this.setState({ view: 'ready' }),
+      sealedVendors: [['Voltek Drives', true], ['Cablecraft Ltd', true], ['Siemar Automation', true], ['Brightline Controls', false], ['Apex Industrial Supply', false]].map(([n, s]) => ({ n, s: s ? 'Submitted' : 'Not Yet Submitted', cls: 'pill ' + (s ? 'info' : 'neutral'), d: s ? P.info : P.n })),
+      exportIt: () => this.toast('Export queued. You will get an email when it is ready.'), refreshRate: () => this.toast('Rate refreshed to 1.0840, 9 Oct 2026. Nothing in the bid changed.')
+    };
+  }
+}
+</script>
+</body>
+</html>

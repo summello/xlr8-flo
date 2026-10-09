@@ -47,6 +47,7 @@
           <a href="BudgetTransferList.dc.html" class="btn">Back to transfers</a>
           <sc-if value="{{canWithdraw}}" hint-placeholder-val="{{ false }}"><button class="btn" type="button" onClick="{{withdraw}}">Withdraw</button></sc-if>
           <sc-if value="{{canReverse}}" hint-placeholder-val="{{ false }}"><button class="btn" type="button" id="tr-reverse" onClick="{{openReverse}}">Reverse Transfer</button></sc-if>
+          <sc-if value="{{noReverseNote}}" hint-placeholder-val="{{ false }}"><span class="t-caption" style="max-width:280px">Only a Finance Administrator can reverse a transfer.</span></sc-if>
           <sc-if value="{{canRevise}}" hint-placeholder-val="{{ false }}"><a href="BudgetTransferCreate.dc.html" class="btn primary">Create Revised Transfer</a></sc-if>
         </div>
       </div>
@@ -205,7 +206,7 @@
         </section>
       </div>
       </sc-if>
-      <p class="t-caption">Sample data for layout review. Signed in as Luis Moreno, Project Controller.</p>
+      <p class="t-caption">Sample data for layout review. {{footer}}</p>
     </main>
   </div>
 </div>
@@ -418,7 +419,8 @@ class Component extends DCLogic {
         banner: ['danger', P.x, 'Rejected', 'Amara Okafor rejected this on 4 Oct 2026: “Contingency is committed to the retrofit until the audit closes.” Nothing posted. You can create a revised transfer from it.'],
         trail: [{ what: 'Rejected', when: '4 Oct 2026, 10:05', who: 'Amara Okafor, step 2 of 2', note: 'Contingency is committed to the retrofit until the audit closes.' }, { what: 'Step 1 of 2 approved', when: '2 Oct 2026, 09:30', who: 'Elena Fischer, source owner', note: '' }, { what: 'Submitted for approval', when: '1 Oct 2026, 13:00', who: 'Luis Moreno', note: '' }] }
     };
-    const key = ['posted', 'cross', 'reversed', 'rejected'].includes(view) ? view : ['dialog', 'blocked', 'dialogbusy'].includes(view) ? 'posted' : 'pending';
+    const key = ['posted', 'cross', 'reversed', 'rejected'].includes(view) ? view : ['dialog', 'blocked', 'dialogbusy', 'readonly'].includes(view) ? 'posted' : 'pending';
+    const viewerIsAdmin = view !== 'readonly';   // decision 98: only a Finance Administrator may reverse
     const K = CASES[key], S = PRJ[K.src], T = PRJ[K.tgt];
     const kind = S.lvl === T.lvl ? 'Same Level' : 'Cross Hierarchy';
     const tone = TONE[K.status];
@@ -442,7 +444,7 @@ class Component extends DCLogic {
       ...this.shellVals(st), rootCls: 'xf', title: 'Transfer ' + S.name + ' To ' + T.name, c,
       pageOk: view !== 'error', pageError: view === 'error', sum: { loading: isLoading, ok: !isLoading },
       noFiles: !isLoading && K.files.length === 0, noLinks: !isLoading && K.links.length === 0,
-      canWithdraw: key === 'pending' || key === 'cross', canReverse: key === 'posted' && !isLoading, canRevise: key === 'rejected',
+      canWithdraw: key === 'pending' || key === 'cross', canReverse: key === 'posted' && !isLoading && viewerIsAdmin, noReverseNote: key === 'posted' && !isLoading && !viewerIsAdmin, footer: viewerIsAdmin ? 'Signed in as Luis Moreno, Finance Administrator.' : 'Signed in as Dev Patel, Project Owner.', canRevise: key === 'rejected',
       ancOn: !isLoading && !partial, ancFail: partial, anc: this.ancVals(st, K.src, K.tgt, K.amt, done ? 'posted' : 'preview'), ancTitle: done ? 'Ancestry As Posted' : 'Ancestry As It Will Post',
       retry: () => this.setState({ view: 'pending' }),
       withdraw: () => this.toast('Withdrawn. Nothing was reserved, so nothing is released.'),
