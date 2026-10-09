@@ -1,5 +1,7 @@
 # XLR8 FLO — Design System (Master)
 
+> *Amended 9 Oct 2026: sections 7.11 to 7.13 added (links, folds, required fields, ancestry trace, buttons); 7.13 is a proposal pending sign-off.*
+>
 > **Binding on every UI story.** Page-specific deviations live in `design-system/pages/<page>.md` and override this file only where they say so explicitly.
 >
 > **North Star:** *Neutral chrome, chromatic data.* The shell is quiet. Colour appears only where it carries meaning — status, money direction, lifecycle phase, and risk.
@@ -426,7 +428,7 @@ Five, all specific to capital expenditure. Each teaches something the interface 
 
 2. **Budget waterfall settle.** Allocated → Reserved → Committed → Actual → Available. Bars build in sequence with the connector line tracing between them. This *is* the domain model — a new user understands the reservation/commitment distinction in one animation instead of one training session.
 
-3. **Cross-hierarchy transfer.** The single most cinematic moment, and the one that earns its cost. A transfer travels **up the source ancestry and down the target ancestry** as a light trace along the hierarchy tree, each affected level pulsing as its balance updates, ending with both totals recounting. It renders BUD-003 — an atomic transfer through two ancestries — literally visible. Nobody has to read the spec to understand what just happened.
+3. **Cross-hierarchy transfer** *(built on the canvas, §7.12)*. The single most cinematic moment, and the one that earns its cost. A transfer travels **up the source ancestry and down the target ancestry** as a light trace along the hierarchy tree, each affected level pulsing as its balance updates, ending with both totals recounting. It renders BUD-003 — an atomic transfer through two ancestries — literally visible. Nobody has to read the spec to understand what just happened.
 
 4. **Requisition approval → reservation.** The approved amount visually detaches from the *Available* bar and settles into *Reserved*, with the two numbers counting in opposite directions. Cause and effect in 500ms.
 
@@ -446,6 +448,9 @@ Five, all specific to capital expenditure. Each teaches something the interface 
 | Stagger | 40ms per item, max 8 items, never blocks interaction |
 | Skeleton | shimmer sweep 1.4s linear over `--sunken` |
 | Route change | content fades up 6px, 200ms — no overlay wipe |
+| Link hover | underline thickens and lifts, arrow moves 3px, 120ms, `transform` only (§7.11) |
+| Required tag done | tick draws, 120ms |
+| Ancestry level | dot pulses once at `--dur-base`, `transform` only (§7.12) |
 | ⌘K | **none** |
 
 ### 6.4 Reduced motion
@@ -563,6 +568,47 @@ Every chart: legend near the plot and interactive, tooltips on hover **and** key
 
 **Phosphor**, regular weight, 16px inline / 20px control / 24px nav. One family, one weight per hierarchy level. Icon-only controls always carry `aria-label`. **No emoji in the interface, ever.**
 
+### 7.11 Links, folds and required fields
+
+*Amended 9 Oct 2026 (operator-authorized). Transcribed from the design canvas (`DECISIONS.md` 6d items 64 to 66, 6f item 86); `tokens.css` and component code follow this text, never the reverse.*
+
+**Hyperlink.** In-text and "open the full record" links use `--ring` as text colour, a 1px underline, and a trailing arrow icon. On hover the underline thickens to 2px and lifts from 3px to 5px, and the arrow moves 3px; 120ms `--ease-out`, `transform` only, and under reduced motion the shifted end state is kept without the movement. Pressed returns to `--fg`. A link is never identified by colour alone: the underline is always there. Links inside a table cell or a sentence the user did not write (an id, a project name) may use the plain underline-on-hover form.
+
+**Fold.** Audit detail most people never need sits in a native `<details>` with a chevron that turns a quarter (120ms). It opens by itself when its content failed to load, so an error is never hidden. The summary names the content and, if it is for audit, says so.
+
+**Required field.** Marked by the control's own state, so no script keeps it honest:
+- every required control carries `required`; its label carries a `Required` tag (pill, 11px) that becomes a green `Done` with a drawn tick the moment the control has a value (120ms);
+- an empty required control has a 3px `--phase-plan` rail on its start edge, hidden while it has focus so the focus ring wins;
+- a rule that depends on context uses `data-req` and its own words (`Needed to reject or return`);
+- the action bar says `Required fields are still empty` or `All required fields complete`, derived with `:has()`.
+Submit and Save **stay enabled**: an incomplete form is refused with a summary (focus moves to it, one `Category: link` item per problem, typed input kept) and the server enforces every required field independently. The tag is `aria-hidden`; assistive technology gets `required`. A lint gate fails any tag whose control is not required and any required control without a tag.
+
+### 7.12 Ancestry trace (signature moment 3, built)
+
+The cross-hierarchy transfer moment (§6.2 item 3) is a table first and an animation second. Each level above the source and below the target is a row with Level, Available Before, Change and Available After. A level shared by both paths reads `No net change`; levels above the two projects are recounted from the two project entries and are not posted to.
+
+| State | Dot | Word in the Change cell |
+|---|---|---|
+| Waiting | hollow, `--border-control` | `Waiting` |
+| Recounting | filled `--phase-plan`, pulses once (`--dur-base`, `transform` only), row tinted `--sunken` with a 2px `--phase-plan` rail | `Recounting` |
+| Recounted | filled `--phase-plan` | the figure |
+
+State is always a word as well as a dot (§2.7). The Chart and Table tabs are the same rows (Table adds a State column in recount order); the table is the accessible equivalent (A11Y-009). A live region reads `Recounting <level>, step N of M.`. The totals strip (Moved Out, Moved In, Net Change) is derived from how many levels are recounted, so a static frame and the table can never disagree. Under reduced motion the finished picture is shown at once and nothing pulses. Text on a `--sunken` row uses `--fg-secondary` for captions and currency codes (`--fg-muted` measures 4.31:1 there).
+
+### 7.13 Buttons and semantic colour (proposed, needs the operator's sign-off before code)
+
+Direction from the operator: fixed semantic colours for buttons, each with an icon or text, so the meaning of a button is learned once. Proposal, on existing tokens only:
+
+| Intent | Treatment | Where |
+|---|---|---|
+| Primary | `--fg` fill on `--surface` text (the only accent fill, one per viewport region, §2.7) | the one action that moves the work forward |
+| Secondary | `--surface`, `--border-control`, `--fg` | everything else, the default |
+| Destructive | `--status-danger` text and `--border-control` on `--surface`, `Trash` or `XCircle` icon plus the verb; `--status-danger` fill only on the confirm button of a confirmation dialog | delete, withdraw, reject, reverse |
+| Reversible | `--status-info` text, `ArrowCounterClockwise` icon plus `Undo` | undo in a toast |
+| Positive | not a button colour: approval is the primary action, not a green button | |
+
+The safe button of a destructive dialog takes focus (DECISIONS 58). A semantic colour never replaces the verb. The destructive fill is the one new fill in the system, so it counts against the one-accent-per-region rule inside its dialog only. **Open:** exact dark-mode values must be contrast-measured in a tokens story before this is built.
+
 ---
 
 ## 8. Definition of done for a UI story
@@ -585,6 +631,8 @@ Every chart: legend near the plot and interactive, tooltips on hover **and** key
 - [ ] Touch targets ≥44px below 1024px; verified at 375 / 768 / 1024 / 1440; no horizontal page scroll
 - [ ] `axe` passes on the new route; `@axe-core/playwright` test committed
 - [ ] Icons from Phosphor, one weight; every icon-only control labelled; no emoji
+- [ ] Forms: every required control has `required` and a `Required` tag (§7.11); submit is never disabled to signal an error; a failed submit gives a focused summary and keeps typed input
+- [ ] A state that animates is also a word (§7.12); the finished picture is shown under reduced motion
 
 ---
 

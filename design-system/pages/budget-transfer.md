@@ -60,7 +60,7 @@ Shown for a valid transfer only (both projects, eligible, amount greater than ze
 
 Two tables, stacked: **Source, Going Up** (the source, its business unit, the organization) and **Target, Going Down** (the organization, the target's business unit, the target). Columns Level, Available Before, Change, Available After. A level shared by both paths reads `No net change` and says `shared by both paths`. A level that moves shows a meter with its share of that level's available as text. Tabs `Chart` and `Table`: the table view is the same levels in one list in recount order with a State column (`Recounted`, `Recounting`, `Waiting`). The totals strip shows Moved Out, Moved In and Net Change (zero when every level is recounted).
 
-**Ancestors are recounted, not posted to (68).** Only the two projects get entries. **This reads BUD-003 and requirements 7.3 ("balanced, linked ledger entries for every affected level") as the recounted roll-up lines of this preview; E07-S08 must confirm that reading before it is built (`notes.blocked`).** The canvas shows the assumption as a caption under the entries.
+**Ancestors are recounted, not posted to (68).** Only the two projects get entries. **This reads BUD-003 and requirements 7.3 ("balanced, linked ledger entries for every affected level") as the recounted roll-up lines of this preview (DECISIONS 96). It needs an Opus decision-log entry before E07-S08 is built (`notes.blocked`); locks are taken on the two project rows only, in ascending id order.** The canvas shows the assumption as a caption under the entries.
 
 ### 3.4 Entries That Will Post
 
@@ -84,7 +84,7 @@ A banner explains a terminal state: `Reversed By BT-00030` (the original entries
 
 ## 5. The posting moment (MASTER 6.2, moment 3)
 
-When a transfer posts, the ancestry trace plays once per session: each level in turn (up the source, down the target) takes a state, the dot fills and pulses once (260ms, **transform only**), and the totals recount. Static frames exist for every stage, and **the end state says the same thing**: `Posted`, every level recounted, net change zero. Under `prefers-reduced-motion` nothing pulses and the finished picture is shown at once, with a note. State is always a word (`Recounted`, `Recounting`, `Waiting`) as well as a dot. `Replay Posting` is a prototype-only button. The Table tab is the accessible data equivalent (A11Y-009). The live region (`role=status`) reads `Recounting <level>, step N of M.`.
+When a transfer posts, the ancestry trace plays once per session: each level in turn (up the source, down the target) takes a state, the dot fills and pulses once (180ms, `--dur-base`, **transform only**), and the totals recount. Static frames exist for every stage, and **the end state says the same thing**: `Posted`, every level recounted, net change zero. Under `prefers-reduced-motion` nothing pulses and the finished picture is shown at once, with a note. State is always a word (`Recounted`, `Recounting`, `Waiting`) as well as a dot. `Replay Posting` is a prototype-only button. The Table tab is the accessible data equivalent (A11Y-009). The live region (`role=status`) reads `Recounting <level>, step N of M.`.
 
 ## 6. Decision panel, transfer variant (inbox)
 
@@ -96,7 +96,7 @@ The existing panel (DECISIONS 52 to 55, 65) gains **What Posts If You Approve** 
 
 ## 8. Open questions (put in `notes.blocked`; the canvas shows each assumption)
 
-1. **BUD-003 / 7.3 wording** versus decision 68 (ancestors recounted, no entries of their own). E07-S08 must confirm.
+1. **BUD-003 / 7.3 wording** versus decision 68 and 96 (ancestors recounted, no entries of their own): needs the Opus decision-log entry proposed in `STORY-NOTES.md` section 5.
 2. Exact approval thresholds (amounts) and the Same Level route.
 3. The name of the organization policy flag for transfers across levels, and who may change it.
 4. The role names that may `Reverse Transfer`.
