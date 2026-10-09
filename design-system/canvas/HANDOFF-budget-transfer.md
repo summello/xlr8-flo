@@ -4,6 +4,8 @@ Written 9 Oct 2026 at the end of the approvals session. **Nothing is built.** Th
 
 ## Start here
 
+**Read `NEXT-SESSION.md` first: it says to ask the operator the open questions one at a time before any work.**
+
 1. Read `design-system/canvas/HANDOFF.md`, then `DECISIONS.md` (sections 6 to 6d, items 52 to 63 are the newest), `README.md`.
 2. Read `design-system/MASTER.md` sections on signature moments (6.2, moment 3) and the UI definition of done (section 8). **Do not amend MASTER.md.**
 3. Read the page specs you will reuse: `design-system/pages/requisition-create.md` (form, validation summary, funds check, never-disabled submit), `approval-inbox.md` (decision panel, diff, result state, withdraw dialog), `requisitions.md` (list and detail patterns).
