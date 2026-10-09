@@ -95,3 +95,11 @@
 .account-panel button { padding: var(--space-3); border: thin solid var(--border-control); border-radius: var(--radius-control); background: var(--surface); margin: var(--space-2); }
 .account-panel ul { padding-left: var(--space-5); }
 .auth-check input { width: var(--leading-body-dense); height: var(--leading-body-dense); }
+
+/* sign-in.md §3b: page-local chooser geometry; all other values use MASTER tokens. */
+.auth-root { --auth-org-control: 56px; }
+.org-list { display: grid; gap: var(--space-3); }
+.org-btn { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: var(--auth-org-control); padding: var(--space-3); border: var(--auth-hairline) solid var(--border-control); border-radius: var(--radius-control); background: var(--surface); color: var(--fg); text-align: left; }
+.org-btn:hover { background: var(--sunken); }
+.org-btn strong { display: block; font-size: var(--text-body); font-weight: var(--weight-label); }
+.org-btn small { display: block; color: var(--fg-secondary); font-size: var(--text-caption); }

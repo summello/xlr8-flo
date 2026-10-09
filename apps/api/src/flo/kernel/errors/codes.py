@@ -23,6 +23,7 @@ class ErrorCode(StrEnum):
     MFA_ENROLLMENT_REQUIRED = "mfa-enrollment-required"
     MFA_VERIFICATION_REQUIRED = "mfa-verification-required"
     PAYLOAD_TOO_LARGE = "payload-too-large"
+    ORGANIZATION_SELECTION_REQUIRED = "organization-selection-required"
     NOT_FOUND = "not-found"
     REQUEST_IN_FLIGHT = "request_in_flight"
     SERVICE_UNAVAILABLE = "service-unavailable"
@@ -115,6 +116,13 @@ ERROR_TAXONOMY: dict[ErrorCode, ErrorTaxonomyEntry] = {
         title="Verify multi-factor authentication to continue",
         detail="This session must verify its enrolled MFA factor before continuing.",
         recovery="Enter a current authenticator or recovery code, then try again.",
+    ),
+    ErrorCode.ORGANIZATION_SELECTION_REQUIRED: ErrorTaxonomyEntry(
+        status=403,
+        type_uri="https://xlr8flo.app/errors/organization-selection-required",
+        title="Choose an organization to continue",
+        detail="This session must choose an organization before continuing.",
+        recovery="Choose which organization to work in, or sign out.",
     ),
     ErrorCode.NOT_FOUND: ErrorTaxonomyEntry(
         status=404,

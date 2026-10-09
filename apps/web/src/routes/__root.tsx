@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import Screens from "./sign-in";
-import { destination, probe, safeReturn } from "../features/auth/api";
+import { destination, probe, safeReturn, organizationName } from "../features/auth/api";
 import { apiClient } from "../api/client";
 
 import AppShell, { type ShellRoute } from "../components/shell/AppShell";
@@ -20,7 +20,7 @@ type RouteDefinition = {
   title: string;
 };
 
-const AUTH_PATHS: readonly string[] = ["/sign-in", "/sign-in/mfa", "/sign-in/mfa/enroll"];
+const AUTH_PATHS: readonly string[] = ["/sign-in", "/sign-in/mfa", "/sign-in/mfa/enroll", "/sign-in/organization"];
 
 const ORGANIZATION = ["/organization", "Northstar Capital"] as const;
 const BUSINESS_UNIT = ["/organization/infrastructure", "Infrastructure BU"] as const;
@@ -199,6 +199,7 @@ export default function RootRoute() {
   const verified = useRef(false);
   const [allowed, setAllowed] = useState(false);
   const [approvedRoute, setApprovedRoute] = useState<ShellRoute | null>(null);
+  const [tenantName, setTenantName] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [route, setRoute] = useState(() => activateRoute(window.location.pathname));
 
@@ -222,7 +223,13 @@ export default function RootRoute() {
       const auth = AUTH_PATHS.includes(route.path);
       if (access === 'error') { setFailed(true); return; }
       if (!auth) {
-        if (access === 'verified') { verified.current = true; setApprovedRoute(route); setAllowed(true); }
+        if (access === 'verified') { verified.current = true; setApprovedRoute(route); setAllowed(true);
+          void apiClient.GET('/api/v1/auth/organizations').then(({ data }) => {
+            if (!active || !data) return;
+            const current = data.items.find(item => item.org_id === data.current_org_id);
+            if (current) setTenantName(organizationName(current));
+          });
+        }
         else navigate(`${destination(access, '/')}?return=${encodeURIComponent(safeReturn(window.location.pathname + window.location.search + window.location.hash))}`);
       } else if (route.path !== '/sign-in' && access === 'signin') {
         navigate(`/sign-in?return=${encodeURIComponent(safeReturn(new URLSearchParams(window.location.search).get('return')))}`);
@@ -265,7 +272,7 @@ export default function RootRoute() {
   const adminUserId = shellRoute.path.match(ADMIN_USER_PATH)?.[1];
 
   return (
-    <AppShell navigate={navigate} route={shellRoute}>
+    <AppShell navigate={navigate} route={{ ...shellRoute, breadcrumbs: shellRoute.breadcrumbs.map(item => ({ ...item, label: item.href === "/organization" && tenantName ? tenantName : item.label })) }}>
       {shellRoute.path === "/_dev/status-gallery" ? <StatusGallery /> : undefined}
       {shellRoute.path === "/_dev/grid" ? <GridGallery /> : undefined}
       {shellRoute.path === "/_dev/forms" ? <FormGallery /> : undefined}

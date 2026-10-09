@@ -57,6 +57,7 @@ class SessionRecord:
     ip_prefix: str | None
     user_agent: str
     org_id: UUID | None = None
+    org_selection_required: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -193,12 +194,13 @@ def _record(row: Sequence[object]) -> SessionRecord:
         ip_prefix=None if row[8] is None else str(row[8]),
         user_agent=cast(str, row[9]),
         org_id=cast(UUID | None, row[10]) if len(row) > 10 else None,
+        org_selection_required=bool(row[11]) if len(row) > 11 else False,
     )
 
 
 _RETURNING_COLUMNS = (
     "id, identity_id, created_at, last_seen_at, last_auth_at, mfa_verified_at, "
-    "idle_expires_at, absolute_expires_at, ip_prefix, user_agent"
+    "idle_expires_at, absolute_expires_at, ip_prefix, user_agent, org_id"
 )
 
 
@@ -248,8 +250,11 @@ class SessionStore:
                 INSERT INTO auth_session
                     (id, identity_id, token_hash, created_at, last_seen_at,
                      last_auth_at, mfa_verified_at, idle_timeout_seconds,
-                     idle_expires_at, absolute_expires_at, ip_prefix, user_agent)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                     idle_expires_at, absolute_expires_at, ip_prefix, user_agent, org_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    (SELECT org_id FROM identity_membership WHERE identity_id = %s
+                     AND (SELECT count(*) FROM identity_membership
+                          WHERE identity_id = %s) = 1))
                 RETURNING {_RETURNING_COLUMNS}
                 """,
                 (
@@ -265,6 +270,8 @@ class SessionStore:
                     absolute_expires_at,
                     device.ip_prefix,
                     device.user_agent,
+                    identity_id,
+                    identity_id,
                 ),
             ).fetchone()
         if row is None:
@@ -298,9 +305,10 @@ class SessionStore:
                    )
                 RETURNING {_RETURNING_COLUMNS}
                 )
-                SELECT refreshed.*, membership.org_id
-                  FROM refreshed LEFT JOIN identity_membership AS membership
-                    ON membership.identity_id = refreshed.identity_id
+                SELECT refreshed.*, refreshed.org_id IS NULL AND
+                    (SELECT count(*) FROM identity_membership
+                     WHERE identity_id = refreshed.identity_id) >= 2 AS org_selection_required
+                  FROM refreshed
                 """,
                 (now, now, token_hash, now, now),
             ).fetchone()
@@ -340,7 +348,6 @@ class SessionStore:
     ) -> IssuedSession:
         """Revoke the old row and issue a distinct row for a privilege change."""
 
-        del reason  # The enum closes call sites; the token or reason is never persisted.
         now = self._clock()
         token = secrets.token_urlsafe(32)
         replacement_id = SessionId(uuid4())
@@ -364,8 +371,12 @@ class SessionStore:
                 INSERT INTO auth_session
                     (id, identity_id, token_hash, created_at, last_seen_at,
                      last_auth_at, mfa_verified_at, idle_timeout_seconds,
-                     idle_expires_at, absolute_expires_at, ip_prefix, user_agent)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                     idle_expires_at, absolute_expires_at, ip_prefix, user_agent, org_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    CASE WHEN %s THEN (SELECT org_id FROM identity_membership WHERE identity_id = %s
+                     AND (SELECT count(*) FROM identity_membership
+                          WHERE identity_id = %s) = 1)
+                    ELSE %s END)
                 RETURNING {_RETURNING_COLUMNS}
                 """,
                 (
@@ -381,6 +392,10 @@ class SessionStore:
                     absolute_expires_at,
                     device.ip_prefix,
                     device.user_agent,
+                    reason is RotationReason.LOGIN,
+                    identity_id,
+                    identity_id,
+                    current.org_id,
                 ),
             ).fetchone()
         if row is None:

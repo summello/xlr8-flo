@@ -37,7 +37,7 @@ from flo.modules.identity.service import (
     identity_organization,
     role_code,
 )
-from flo.modules.org.service import create_organization
+from flo.modules.org.service import create_organization, validate_tenant_label
 
 
 class BootstrapConflict(Exception):
@@ -72,8 +72,10 @@ async def bootstrap(
     password: str,
     settings: Settings,
     base_currency: str | None = None,
+    tenant_label: str | None = None,
 ) -> BootstrapResult:
     """Commit all bootstrap state together; the code primary key arbitrates races."""
+    tenant_label = validate_tenant_label(tenant_label)
     code = org_code.upper()
     email = admin_email.casefold()
     if re.fullmatch(r"[A-Z][A-Z0-9_-]{1,31}", code) is None:
@@ -89,8 +91,11 @@ async def bootstrap(
             org_id = create_organization(conn, name=org_name, base_currency=base_currency)
             # Insert before hashing/grants: a concurrent loser waits on this key,
             # then rolls its organization back and resolves the winner.
+            # Any future organization rename must update this display name in the same transaction.
             conn.execute(
-                "INSERT INTO organization_code (code, org_id) VALUES (%s, %s)", (code, org_id)
+                "INSERT INTO organization_code (code, org_id, display_name, tenant_label) "
+                "VALUES (%s, %s, %s, %s)",
+                (code, org_id, org_name.strip(), tenant_label),
             )
             provider = await build_local_identity_provider(cast(IdentityConnection, conn), settings)
             admin_id = await provider.create_identity(email, password)
@@ -134,6 +139,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--org-code", required=True)
     parser.add_argument("--admin-email", required=True)
     parser.add_argument("--base-currency")
+    parser.add_argument("--tenant-label")
     args = parser.parse_args(argv)
     try:
         settings = Settings()
@@ -152,6 +158,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                     password=password,
                     settings=settings,
                     base_currency=args.base_currency,
+                    tenant_label=args.tenant_label,
                 )
             )
         if not result.created:

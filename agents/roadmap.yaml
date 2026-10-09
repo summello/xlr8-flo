@@ -556,7 +556,7 @@ epics:
         dep:
           - E05-S09
           - E05-S10
-        st: todo
+        st: done
       - id: E05-S13
         t: 'Invitation acceptance: issue, validate, accept, withdraw and resend with a
           hashed single-use token'

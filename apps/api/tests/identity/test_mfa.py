@@ -134,6 +134,7 @@ def mfa_database() -> Iterator[MfaDatabase]:
         "org_id uuid NOT NULL)"
     )
     session_migration.upgrade(connection)
+    connection.execute("ALTER TABLE auth_session ADD COLUMN org_id uuid")
     mfa_migration.upgrade(connection)
     connection.execute("CREATE TABLE role (id uuid, org_id uuid, PRIMARY KEY (org_id, id))")
     connection.execute("CREATE TABLE permission (code text PRIMARY KEY)")

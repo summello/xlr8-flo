@@ -45,6 +45,12 @@ from flo.kernel.session.store import (
     SessionStoreFactory,
     request_device,
 )
+from flo.modules.identity.service import (
+    IdentityAuthorizationConnection,
+    OrganizationMembership,
+    list_identity_memberships,
+    select_identity_organization,
+)
 
 router = APIRouter(prefix="/api/v1/auth", tags=["authentication"])
 _RESET_REQUEST_MIN_SECONDS = 0.05
@@ -584,3 +590,41 @@ def revoke_session(
     if session.id == session_id:
         _delete_auth_cookies(response)
     return response
+
+
+class OrganizationListResponse(BaseModel):
+    current_org_id: UUID | None
+    items: list[OrganizationMembership]
+
+
+class OrganizationSelectionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    org_id: UUID
+
+
+@router.get("/organizations", response_model=OrganizationListResponse)
+@public_route
+def organizations(
+    session: Annotated[SessionRecord, Depends(current_session)],
+    connection: Annotated[psycopg.Connection[tuple[object, ...]], Depends(get_auth_connection)],
+) -> OrganizationListResponse:
+    return OrganizationListResponse(
+        current_org_id=session.org_id,
+        items=list_identity_memberships(
+            cast(IdentityAuthorizationConnection, connection), session.identity_id
+        ),
+    )
+
+
+@router.post("/organization", status_code=204)
+@public_route
+def select_organization(
+    body: OrganizationSelectionRequest,
+    session: Annotated[SessionRecord, Depends(current_session)],
+    connection: Annotated[psycopg.Connection[tuple[object, ...]], Depends(get_auth_connection)],
+) -> Response:
+    """Request a session switch; org_id is checked against the caller's memberships."""
+    select_identity_organization(
+        cast(IdentityAuthorizationConnection, connection), session, body.org_id
+    )
+    return Response(status_code=204)

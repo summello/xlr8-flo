@@ -45,6 +45,7 @@ from flo.kernel.storage import create_storage
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.middleware import install_tenant_context
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
+from flo.kernel.tenancy.selection import OrganizationSelectionMiddleware
 from flo.modules.identity.resolver import AuthorizationConnection, AuthorizationResolver
 
 HealthProbe = Callable[[Settings], Awaitable[None]]
@@ -149,6 +150,7 @@ def production_idempotency_connection() -> Iterator[IdempotencyConnection]:
 # correlation then serializes their failures, and browser headers wrap every path.
 install_idempotency(app, production_idempotency_connection)
 install_tenant_context(app)
+app.add_middleware(OrganizationSelectionMiddleware)
 install_mfa_access_gate(app, production_mfa_service_factory())
 install_session_authentication(app, production_session_store_factory())
 install_csrf_protection(app)

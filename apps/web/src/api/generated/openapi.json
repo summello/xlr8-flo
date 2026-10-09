@@ -2023,6 +2023,94 @@
         "title": "OrgUnitRead",
         "type": "object"
       },
+      "OrganizationListResponse": {
+        "properties": {
+          "current_org_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Org Id"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OrganizationMembership"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "current_org_id",
+          "items"
+        ],
+        "title": "OrganizationListResponse",
+        "type": "object"
+      },
+      "OrganizationMembership": {
+        "properties": {
+          "last_used_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "org_id": {
+            "format": "uuid",
+            "title": "Org Id",
+            "type": "string"
+          },
+          "tenant_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tenant Label"
+          }
+        },
+        "required": [
+          "org_id",
+          "name",
+          "tenant_label",
+          "last_used_at"
+        ],
+        "title": "OrganizationMembership",
+        "type": "object"
+      },
+      "OrganizationSelectionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "org_id": {
+            "format": "uuid",
+            "title": "Org Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "org_id"
+        ],
+        "title": "OrganizationSelectionRequest",
+        "type": "object"
+      },
       "PasswordResetCompletion": {
         "additionalProperties": false,
         "description": "One opaque token and the replacement credential.",
@@ -3026,6 +3114,27 @@
           "columns"
         ],
         "title": "TemplateRead",
+        "type": "object"
+      },
+      "TenantLabelPut": {
+        "additionalProperties": false,
+        "properties": {
+          "tenant_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tenant Label"
+          }
+        },
+        "required": [
+          "tenant_label"
+        ],
+        "title": "TenantLabelPut",
         "type": "object"
       },
       "TransferCreate": {
@@ -4039,6 +4148,128 @@
           }
         },
         "summary": "Verify Mfa",
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
+    "/api/v1/auth/organization": {
+      "post": {
+        "description": "Request a session switch; org_id is checked against the caller's memberships.",
+        "operationId": "select_organization_api_v1_auth_organization_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganizationSelectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Select Organization",
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
+    "/api/v1/auth/organizations": {
+      "get": {
+        "operationId": "organizations_api_v1_auth_organizations_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Organizations",
         "tags": [
           "authentication"
         ]
@@ -6155,6 +6386,75 @@
           }
         },
         "summary": "Set Setting",
+        "tags": [
+          "organization"
+        ]
+      }
+    },
+    "/api/v1/org/tenant-label": {
+      "put": {
+        "operationId": "set_tenant_label_api_v1_org_tenant_label_put",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TenantLabelPut"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantLabelPut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Set Tenant Label",
         "tags": [
           "organization"
         ]

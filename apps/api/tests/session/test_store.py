@@ -282,6 +282,7 @@ def test_mfa_migration_extends_sessions_and_is_reversible_with_seeded_data(
         "revoked_at",
         "ip_prefix",
         "user_agent",
+        "org_id",
         "last_auth_at",
         "mfa_verified_at",
     ]

@@ -102,6 +102,7 @@ def authorization_database() -> Iterator[AuthorizationDatabase]:
         "org_id uuid NOT NULL)"
     )
     session_migration.upgrade(connection)
+    connection.execute("ALTER TABLE auth_session ADD COLUMN org_id uuid")
     audit_migration.upgrade(connection)
     rbac_migration.upgrade(connection)
     mfa_migration.upgrade(connection)

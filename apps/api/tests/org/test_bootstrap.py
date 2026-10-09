@@ -222,7 +222,8 @@ def test_migration_preserves_existing_identity_organization_and_guards(bootstrap
         )
     with pytest.raises(CheckViolation), conn.transaction():
         conn.execute(
-            "INSERT INTO organization_code(code, org_id) VALUES (%s, %s)", ("bad", result.org_id)
+            "INSERT INTO organization_code(code, org_id, display_name) VALUES (%s, %s, %s)",
+            ("bad", result.org_id, "Invalid code"),
         )
     migration = next(
         item
@@ -305,7 +306,13 @@ def test_bootstrap_audit_failure_rolls_back_everything(bootstrap_db, monkeypatch
     with pytest.raises(RuntimeError, match="planted audit failure"):
         create(bootstrap_db)
     for table in (
-        "organization", "organization_code", "identity", "identity_membership", "role",
-        "role_permission", "user_role", "audit_log",
+        "organization",
+        "organization_code",
+        "identity",
+        "identity_membership",
+        "role",
+        "role_permission",
+        "user_role",
+        "audit_log",
     ):
         assert bootstrap_db.execute(f"SELECT count(*) FROM {table}").fetchone()[0] == 0

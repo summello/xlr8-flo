@@ -6,6 +6,7 @@ from uuid import UUID
 
 import psycopg
 from fastapi import APIRouter, Depends, Query, Response
+from pydantic import BaseModel, ConfigDict
 
 from flo.api.admin_users import get_admin_connection, organization_target
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
@@ -181,3 +182,23 @@ def set_base_currency(
     connection: Connection,
 ) -> BaseCurrencyPut:
     return OrgService(connection, current_scope(), context.user_id).set_base_currency(body)
+
+
+class TenantLabelPut(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    tenant_label: str | None
+
+
+@router.put("/tenant-label", response_model=TenantLabelPut)
+def set_tenant_label(
+    body: TenantLabelPut,
+    context: Annotated[
+        AuthorizationContext, Depends(require("org.setting.manage", organization_target))
+    ],
+    connection: Connection,
+) -> TenantLabelPut:
+    return TenantLabelPut(
+        tenant_label=OrgService(connection, current_scope(), context.user_id).set_tenant_label(
+            body.tenant_label
+        )
+    )

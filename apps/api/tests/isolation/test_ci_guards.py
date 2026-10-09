@@ -5,6 +5,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 from flo.api.health import app
 from flo.kernel.tenancy.guards import forbidden_org_id_operations, unprotected_tenant_tables
 
@@ -19,17 +21,13 @@ def test_openapi_guard_rejects_org_id_parameters_and_request_bodies() -> None:
     document: dict[str, object] = {
         "paths": {
             "/bad-query": {
-                "get": {
-                    "parameters": [{"$ref": "#/components/parameters/OrganizationHeader"}]
-                },
+                "get": {"parameters": [{"$ref": "#/components/parameters/OrganizationHeader"}]},
             },
             "/bad-body": {
                 "post": {
                     "requestBody": {
                         "content": {
-                            "application/json": {
-                                "schema": {"$ref": "#/components/schemas/BadBody"}
-                            }
+                            "application/json": {"schema": {"$ref": "#/components/schemas/BadBody"}}
                         }
                     }
                 }
@@ -126,3 +124,28 @@ def test_global_membership_registry_exceptions_are_exact_and_documented() -> Non
         assert unprotected_tenant_tables(f"CREATE TABLE {table}_business (org_id uuid)") == [
             f"{table}_business"
         ]
+
+
+def test_selection_body_exception_is_exact_and_never_exempts_parameters(monkeypatch):
+    from flo.kernel.tenancy import guards
+
+    body = {
+        "requestBody": {
+            "content": {
+                "application/json": {"schema": {"properties": {"org_id": {"type": "string"}}}}
+            }
+        }
+    }
+    path = "/api/v1/auth/organization"
+    assert forbidden_org_id_operations({"paths": {path: {"post": body}}}) == []
+    for location in ("query", "header", "path"):
+        operation = {**body, "parameters": [{"name": "org_id", "in": location}]}
+        assert forbidden_org_id_operations({"paths": {path: {"post": operation}}}) == [
+            f"POST {path}"
+        ]
+    assert forbidden_org_id_operations({"paths": {"/other": {"post": body}}}) == ["POST /other"]
+    assert forbidden_org_id_operations({"paths": {path: {"put": body}}}) == [f"PUT {path}"]
+    monkeypatch.setattr(guards, "ORG_ID_BODY_EXCEPTIONS", frozenset())
+    assert f"POST {path}" in forbidden_org_id_operations(app.openapi())
+    with pytest.raises(AssertionError):
+        test_no_openapi_operation_accepts_org_id()

@@ -39,6 +39,8 @@ IDEMPOTENCY_KEY_EXEMPT_PATHS = frozenset(
     }
 )
 
+IDEMPOTENCY_BYPASS_PATHS = frozenset({"/api/v1/imports", "/api/v1/auth/organization"})
+
 _logger = logging.getLogger(__name__)
 
 type ConnectionFactory = Callable[[], AbstractContextManager[IdempotencyConnection]]
@@ -219,9 +221,8 @@ class IdempotencyMiddleware:
             await self._app(scope, receive, send)
             return
 
-        # D-M1-19: imports stream with a counted cap. Each upload is a new batch,
-        # even with an Idempotency-Key; record deduplication belongs to E08-S03.
-        if str(scope.get("path", "")).rstrip("/") == "/api/v1/imports":
+        # D-M1-19 and E05-S12: uploads and session selections must never replay.
+        if str(scope.get("path", "")).rstrip("/") in IDEMPOTENCY_BYPASS_PATHS:
             await self._app(scope, receive, send)
             return
 

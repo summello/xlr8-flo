@@ -356,3 +356,11 @@ def test_openapi_documents_problem_schema_for_every_operation(problem_app: FastA
                     }
                 }
             assert "422" not in responses
+
+
+def test_organization_selection_taxonomy_contract() -> None:
+    entry = ERROR_TAXONOMY[ErrorCode.ORGANIZATION_SELECTION_REQUIRED]
+    assert entry.status == 403
+    assert entry.type_uri == "https://xlr8flo.app/errors/organization-selection-required"
+    assert entry.title == "Choose an organization to continue"
+    assert entry.recovery == "Choose which organization to work in, or sign out."

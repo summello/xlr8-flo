@@ -1873,6 +1873,45 @@
       },
       "recap": "Implemented login throttling, trusted Worker visitor addresses, reversible migration 0029, and guard mutation tests. Full real-Postgres pytest: 1390 passed, zero skips (10 existing deprecation warnings). Focused regressions: 28 passed; web: 78 passed. Ruff, strict mypy (116 source files), 4 import contracts, and migration --check pass. OpenAPI regenerated with no diff. No dependency added; no submit, gate, done, push, or merge run. Session metadata now records visitor-derived /24 IPv4 or /48 IPv6 prefixes, unchanged privacy rules.",
       "title": "Login throttling: per-identity and per-client failure limits, trusted client IP behind Cloudflare"
+    },
+    {
+      "story": "E05-S12",
+      "kind": "security",
+      "size": "L",
+      "tags": [
+        "auth",
+        "security",
+        "migration",
+        "ui"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a11ecb-67de-7b93-8cd6-c3dfd613d595",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "332a41fa-e50e-41ed-8a9e-4cde6648200f",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented packet and amendments 1\u20134; selection bypasses replay, MFA gate remains first, session rotations preserve choice except LOGIN. Real production-app and Postgres plants cover membership checks, duplicate session joins, rotation, MFA ordering and allow-list entries, replay bypass, body exception, label constraints and downgrade guard. UI specs cover chooser keyboard, both-theme axe, responsive sizes, recoverable selection errors, switcher icon/text and hard-reload stale-memory plant. Validation: ruff, mypy --strict (117 source files), import-linter (4 contracts), real migration-chain --check, web lint/typecheck and gitleaks all green. Full pytest: 1413 passed, 1 optional explicit-DATABASE_URL test skipped and then passed separately against disposable Postgres. Final guard rerun: 48 passed. Vitest: 81 passed. Full Playwright: 161 passed. Commits: 1c5d4fe (backend), 4b3f11b (web). Working tree clean; no submit, gate, done, push or merge.",
+      "title": "Multi-organization membership: (identity_id, org_id) key, chosen organization on the session, chooser, switcher, tenant label"
     }
   ]
 }

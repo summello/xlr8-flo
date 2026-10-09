@@ -68,7 +68,7 @@ def build_app(conn, *, remove_join=False):
 
         def execute(self, query, params=()):
             if remove_join:
-                query = query.replace("membership.org_id", "NULL::uuid AS org_id")
+                query = query.replace("user_agent, org_id", "user_agent, NULL::uuid AS org_id")
             return self.database.execute(query, params)
 
     @contextmanager
@@ -333,7 +333,7 @@ def test_no_membership_identity_routes_work_tenant_routes_unauthorized(bootstrap
     asyncio.run(scenario())
 
 
-def test_membership_and_session_join_plants_break_end_to_end(bootstrap_db):
+def test_membership_and_session_org_plants_break_end_to_end(bootstrap_db):
     conn = bootstrap_db
     create(conn)
     app = build_app(conn)
@@ -349,7 +349,9 @@ def test_membership_and_session_join_plants_break_end_to_end(bootstrap_db):
                 with pytest.raises(AssertionError):
                     assert response.status_code == 200
                 assert response.status_code == 401
+            # A chosen organization is now session-owned. Plant its removal too.
             conn.execute("DELETE FROM identity_membership")
+            conn.execute("UPDATE auth_session SET org_id = NULL")
             response = await browser.get("/api/v1/org/units")
             with pytest.raises(AssertionError):
                 assert response.status_code == 200

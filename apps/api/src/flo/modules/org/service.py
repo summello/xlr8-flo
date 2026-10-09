@@ -1,5 +1,6 @@
 """Transactional unit structure and nearest-scope settings resolution."""
 
+import unicodedata
 from datetime import UTC, date, datetime
 from typing import Literal, cast
 from uuid import UUID, uuid4
@@ -114,6 +115,28 @@ class OrgService:
         self.scope = scope
         self.repo = OrgRepository(connection, scope)
         self.actor_id = actor_id
+
+    def set_tenant_label(self, label: str | None) -> str | None:
+        label = validate_tenant_label(label)
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            row = self.connection.execute(
+                "SELECT tenant_label FROM organization_code WHERE org_id = %s FOR UPDATE",
+                (self.scope.org_id,),
+            ).fetchone()
+            if row is None:
+                raise ProblemError(ErrorCode.NOT_FOUND)
+            if row[0] != label:
+                self.connection.execute(
+                    "UPDATE organization_code SET tenant_label = %s WHERE org_id = %s",
+                    (label, self.scope.org_id),
+                )
+                self._audit(
+                    "org.tenant_label.set",
+                    self.scope.org_id,
+                    {"tenant_label": row[0]},
+                    {"tenant_label": label},
+                )
+        return label
 
     def set_base_currency(self, body: BaseCurrencyPut) -> BaseCurrencyPut:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
@@ -688,3 +711,19 @@ def create_organization(
             (org_id, name.strip(), base_currency),
         )
     return org_id
+
+
+def validate_tenant_label(label: str | None) -> str | None:
+    if label is None:
+        return None
+    trimmed = label.strip()
+    if not 1 <= len(trimmed) <= 60 or any(unicodedata.category(c) == "Cc" for c in label):
+        raise ProblemError(
+            ErrorCode.VALIDATION_FAILED,
+            errors=(
+                ProblemFieldError(
+                    field="tenant_label", message="Use 1–60 characters without control characters."
+                ),
+            ),
+        )
+    return trimmed

@@ -22,6 +22,18 @@ TESTS = Path(__file__).resolve().parents[1]
 COVERED = {
     (
         "GET",
+        "/api/v1/auth/organizations",
+    ): "isolation/test_multi_org.py::test_selection_isolation_and_no_replay",
+    (
+        "POST",
+        "/api/v1/auth/organization",
+    ): "isolation/test_multi_org.py::test_selection_isolation_and_no_replay",
+    (
+        "PUT",
+        "/api/v1/org/tenant-label",
+    ): "isolation/test_multi_org.py::test_tenant_label_authorization_validation_and_isolation",
+    (
+        "GET",
         "/api/v1/fx/rates",
     ): "org/test_fx.py::test_fx_reads_foreign_org_inputs_do_not_change_reference_data",
     (

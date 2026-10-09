@@ -8,12 +8,14 @@ from typing import Literal, Protocol, cast
 from uuid import UUID, uuid4
 
 from psycopg import sql
+from pydantic import BaseModel
 
 from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.db.repo import ScopedRepo
+from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.identity import IdentityId
-from flo.kernel.session.store import SessionConnection, revoke_all_sessions
+from flo.kernel.session.store import SessionConnection, SessionRecord, revoke_all_sessions
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import tenant_transaction
 from flo.modules.identity.models import (
@@ -709,8 +711,80 @@ def identity_organization(connection: IdentityAuthorizationConnection, email: st
 def add_identity_membership(
     connection: IdentityAuthorizationConnection, identity_id: IdentityId, org_id: UUID
 ) -> None:
-    """Assign exactly one organization; the database rejects duplicate membership."""
+    """Add one organization membership; the database rejects duplicate membership."""
     connection.execute(
         "INSERT INTO identity_membership (identity_id, org_id) VALUES (%(identity)s, %(org)s)",
         {"identity": identity_id, "org": org_id},
     )
+
+
+class OrganizationMembership(BaseModel):
+    org_id: UUID
+    name: str
+    tenant_label: str | None
+    last_used_at: datetime | None
+
+
+def list_identity_memberships(
+    connection: IdentityAuthorizationConnection, identity_id: IdentityId
+) -> list[OrganizationMembership]:
+    """Read only the caller's global display links before tenant selection."""
+    rows = connection.execute(
+        """SELECT m.org_id, c.display_name, c.tenant_label, m.last_used_at
+        FROM identity_membership m JOIN organization_code c ON c.org_id = m.org_id
+        WHERE m.identity_id = %(identity)s
+        ORDER BY m.last_used_at DESC NULLS LAST, c.display_name, m.org_id""",
+        {"identity": identity_id},
+    ).fetchall()
+    return [
+        OrganizationMembership(
+            org_id=cast(UUID, _value(row, 0, "org_id")),
+            name=cast(str, _value(row, 1, "display_name")),
+            tenant_label=cast(str | None, _value(row, 2, "tenant_label")),
+            last_used_at=cast(datetime | None, _value(row, 3, "last_used_at")),
+        )
+        for row in rows
+    ]
+
+
+def select_identity_organization(
+    connection: IdentityAuthorizationConnection, session: SessionRecord, org_id: UUID
+) -> None:
+    """Choose an owned membership atomically; repeated selection is a no-op."""
+    with connection.transaction():
+        membership = connection.execute(
+            """SELECT 1 FROM identity_membership
+            WHERE identity_id = %(identity)s AND org_id = %(org)s FOR SHARE""",
+            {"identity": session.identity_id, "org": org_id},
+        ).fetchone()
+        if membership is None:
+            raise ProblemError(ErrorCode.NOT_FOUND)
+        row = connection.execute(
+            """SELECT org_id FROM auth_session WHERE id = %(session)s
+            AND identity_id = %(identity)s AND revoked_at IS NULL FOR UPDATE""",
+            {"session": session.id, "identity": session.identity_id},
+        ).fetchone()
+        if row is None:
+            raise ProblemError(ErrorCode.UNAUTHORIZED)
+        if _value(row, 0, "org_id") == org_id:
+            return
+        connection.execute(
+            "UPDATE auth_session SET org_id = %(org)s WHERE id = %(session)s",
+            {"org": org_id, "session": session.id},
+        )
+        connection.execute(
+            """UPDATE identity_membership SET last_used_at = now()
+            WHERE identity_id = %(identity)s AND org_id = %(org)s""",
+            {"identity": session.identity_id, "org": org_id},
+        )
+        connection.execute(
+            """INSERT INTO session_security_event
+            (session_id, identity_id, event_type, occurred_at, ip_prefix, user_agent)
+            VALUES (%(session)s, %(identity)s, 'organization_switched', now(), %(ip)s, %(ua)s)""",
+            {
+                "session": session.id,
+                "identity": session.identity_id,
+                "ip": session.ip_prefix,
+                "ua": session.user_agent,
+            },
+        )
