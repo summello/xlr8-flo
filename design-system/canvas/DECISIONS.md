@@ -140,6 +140,42 @@ Tests: `approvals.spec.mjs` (76 tests, including planted violations: a removed a
 
 Open questions are in the two page files (withdraw rights, material change, revoke behaviour, re-delegation, duplicate approvals, conditions beyond the estimate).
 
+## 6e. Budget Transfer and approval open questions (answered by the operator, 9 Oct 2026; nothing built yet)
+
+Asked one at a time from `NEXT-SESSION.md`. Every answer below was chosen by the operator; the ones marked *(Claude's recommendation, accepted)* matched the recommended option.
+
+**Scope**
+
+67. **Manual allocation and adjustment share the transfer form** through a `Type` switch (Transfer, Allocation, Adjustment) (BUD-001). The operator chose this over the recommended separate page. Allocation and adjustment involve one project, so the second project, the eligibility check and the ancestry preview are hidden for them. The roadmap has no UI story for them yet, so the stories need a request in `STORY-NOTES.md`.
+
+**Budget Transfer money rules**
+
+68. **Ancestors are re-summed, not posted to** *(accepted)*. Only the source and target projects get ledger entries (out, in). Each ancestor's total is a derived roll-up; the preview shows recounted totals (before, change, after), not new rows. **Conflict to raise with Opus:** BUD-003 and requirements 7.3 say "generate balanced, linked ledger entries for every affected level". Decision 68 reads that as the roll-up lines of the preview, not as persisted rows. A requirement is not changed here (AGENTS.md rule 4); E07-S08 must confirm the reading before it is built. Until then the canvas shows the preview rows as "recounted" and the entry list as two rows.
+69. **Eligible = same organization, same hierarchy depth, both projects open** *(accepted)*. Anything else is `Cross Hierarchy` and needs an organization policy flag plus approval (BUD-002). A closed or frozen project is ineligible with an `Eligibility` entry.
+70. **Approval is the workflow by amount** *(accepted)*. Cross Hierarchy is always routed, and the source and target project owners are added. Ancestor owners are notified, not required to approve.
+71. **A transfer that takes the source below zero is always blocked** *(accepted)*. No negative-budget policy exists; no override on the screen (same as decision 33). The shortfall shows as a parenthesised, red, signed figure and a `Funds` entry in the summary.
+72. **Same currency only** *(accepted)*. Different currencies make the pair ineligible with an `Eligibility` entry. No rates, no conversion.
+73. **The effective date is today or later, in an open period** *(accepted)*. A past or closed-period date fails with a `Period` entry. Backdating is a later decision.
+74. **Evidence is an organization setting with three values:** off, Cross Hierarchy only, or always *(accepted)*. When it demands evidence the field carries the `Required` tag (decision 66); otherwise it is optional. Attachments show scan states as on project detail.
+75. **Notification:** approvers on submit; both project owners on posting, plus ancestor owners for Cross Hierarchy; the requester on rejection or return *(accepted)*. All through the outbox.
+76. **A posted transfer can be reversed** *(accepted)*. `Reverse Transfer` on the detail page creates a new linked draft that goes through the same approval route; the original is untouched (append-only). Blocked with a `Funds` entry if the target no longer has the funds available. Who sees the button: the requester's role or finance administrator (exact role names for the page spec).
+77. **The loser of a race is refused, not queued** *(accepted)*. A `role=alert` with focus says what changed ("Available is now X; your transfer needs Y"). Nothing posts, the typed input and draft are kept, and one button, `Edit Amount`, returns to the form. No automatic retry. The server decides under the `FOR UPDATE` lock; the figure on screen is advisory.
+
+**Approval pages (closes the open questions of 6d)**
+
+78. **Withdraw:** the requester, until sourcing starts *(accepted)*. An approved requisition releases its reservation exactly once.
+79. **Material change on resubmit is the fixed list** *(accepted)*: amount, project, ledger account, catalogue item, line count. Not configurable per workflow; the builder gets no setting.
+80. **Revoking a delegation returns undecided tasks to the owner** *(accepted)*. Decisions already made stay attributed to the delegate acting for the owner.
+81. **A delegate cannot re-delegate** *(accepted)*. The picker is absent on delegated tasks and the server refuses it too.
+82. **Duplicate approvals are allowed per step with an explicit tick** *(accepted)* (`Same Approver May Repeat`). The default is one decision per person per document.
+83. **Workflow conditions use the estimate only** *(accepted)*. Department and risk wait for Phase 2.
+
+**Housekeeping**
+
+84. **No MASTER.md amendment yet** *(accepted)*. Required-field indicator, hyperlink style, border rule and semantic button colours stay on the canvas and in the page specs until **after Budget Transfer is built**, then one amendment pass for everything in section 7. Only the operator can authorize it.
+
+**What changes in the proposed screen list** (see `HANDOFF-budget-transfer.md`): screen 2 gains the `Type` switch; screen 3 (ancestry preview) shows recounted totals, not new rows; screen 4 gains `Reverse Transfer`; screen 6 follows decisions 70 and 77. No new screen.
+
 ## 7. Findings to feed back into MASTER.md (not yet amended)
 
 - **Required fields (6d item 66) and hyperlinks (item 64) are new conventions with no MASTER section.** Candidates for 7.x: the tag, rail and summary line, and the link style and hover.

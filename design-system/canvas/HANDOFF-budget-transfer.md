@@ -1,5 +1,7 @@
 # Handoff: Budget Transfer canvas page
 
+**Status 9 Oct 2026: all open questions answered (DECISIONS 6e). Awaiting the operator's yes on the screen list below before any board is built.**
+
 Written 9 Oct 2026 at the end of the approvals session. **Nothing is built.** This file lists the proposed screens and everything a fresh session needs. The operator will confirm the list (and answer the open questions) before any board is made.
 
 ## Start here
@@ -38,27 +40,34 @@ Stories: E07-S07 (same-level transfer, one `transfer_group_id`), E07-S08 (cross-
 One page, `Budget Transfer`. Each screen gets 1440, 1920, 1024, 768, 375 and loading, empty, partial, error states as for earlier pages.
 
 1. **Transfer list** (`/budget/transfers`). Tabs `Mine`, `Awaiting Approval`, `Posted`, `All`; search, project filter; table of transfer id, from, to, amount, type (`Same Level` or `Cross Hierarchy`, in words), status (icon and words), effective date. Server-side paging. Entry point from the project dashboard's `Transfer Funds` action.
-2. **New transfer** (create and edit a draft). Source project, target project, amount, reason, effective date, evidence (attachments, scan states as on project detail). Live checks as the fields change: source availability (BUD-008), eligibility, whether this is same level or cross hierarchy, which approval workflow will apply. Submit is never disabled; a failure gives the summary with `Category: link` items (Required field, Eligibility, Funds, Period, Routing), typed input kept. A transfer that would take the source below zero is blocked unless a negative-budget policy applies (see open question).
+2. **New transfer** (create and edit a draft; `Type` switch: Transfer, Allocation, Adjustment, decision 67). Source project, target project, amount, reason, effective date, evidence (attachments, scan states as on project detail). Live checks as the fields change: source availability (BUD-008), eligibility, whether this is same level or cross hierarchy, which approval workflow will apply. Submit is never disabled; a failure gives the summary with `Category: link` items (Required field, Eligibility, Funds, Period, Routing), typed input kept. A transfer that would take the source below zero is blocked unless a negative-budget policy applies (see open question).
 3. **Ancestry preview** (inside screen 2, and again read-only in 4). Two hierarchy trees side by side or stacked on narrow screens: source ancestry (up) and target ancestry (down), each level showing balance before, change and after, plus the **list of balanced, linked entries** this transfer will post (one transfer id). This is the data table equivalent of the animation.
 4. **Transfer detail** (`/budget/transfers/:id`). Header, status, amounts, reason, evidence, **ancestry as posted**, the ledger entries sharing the transfer id (each linking to the ledger sheet), approval trail with delegation attribution, history. Same dashboard layout rule as requisition detail. Reversal shown as a new linked entry set (append-only); whether users may reverse is an open question.
 5. **Posting moment** (signature moment 3) as boards: before, trace in progress (static frames), after, and the reduced-motion end state; plus the Chart/Table style alternative. Plays once per session in the product.
 6. **Transfer in the approval inbox.** No new page: add the transfer variant of the decision panel content (both ancestries summarised, availability at decision time, the entries that would post) and make sure the inbox's existing `BT-` rows open it. Reuses `ApprovalInbox` boards with a transfer sheet board.
 7. **Dashboard entry points** (small): `Transfer Funds` on the project dashboard header, and a transfer count and link on the project detail. Check whether the Project Dashboard boards need a one-line change or only the spec.
 
-**Probably out of scope, ask:** manual allocation and adjustment utilities (BUD-001 lists them with transfer; they share most of the form). The roadmap has them in other stories. Suggest either a `Type` switch on screen 2 or a separate later page.
+**Allocation and adjustment (BUD-001):** share screen 2 through a `Type` switch (decision 67). One-project types hide the second project, eligibility and ancestry preview. Needs story requests.
 
-## Open questions (do not guess; mark as assumptions on the canvas and put in the page spec's `notes.blocked` list)
+## Questions: all answered 9 Oct 2026 (DECISIONS 6e, items 67 to 84)
 
-1. **What does each ancestor's entry mean?** When funds move up the source ancestry and down the target's, does each level's allocation change, or is the level's balance just re-summed? The ledger rows per level need a definition before the preview can show true numbers. This is a money rule: ask, do not invent.
-2. **Eligibility:** what makes two projects "eligible"; what is "same hierarchy level"; when does policy permit otherwise (BUD-002)?
-3. **Approval:** thresholds, who approves a cross-hierarchy transfer, whether owners of every affected ancestor must approve.
-4. **Negative budget:** is there a policy at all today, who authorizes it, and how does the screen show it?
-5. **Currency:** can two projects have different currencies, and if so how is a transfer priced?
-6. **Effective date and periods:** can it be in the past or in a closed period?
-7. **Evidence:** when is it required (configured per organization)?
-8. **Notification:** which owners are told, and when (on submit, on approval, on posting).
-9. **Reversal:** may a posted transfer be reversed, by whom, under approval?
-10. **Concurrency in the UI:** the availability figure is advisory; two transfers racing for the same funds, exactly one wins. What does the loser see?
+| Topic | Decision |
+|---|---|
+| Scope | Type switch on the transfer form (67) |
+| Ancestor entries | Re-summed roll-up only; entries on source and target projects. **Raise with Opus: BUD-003 / 7.3 wording "entries for every affected level" (68)** |
+| Eligibility | Same org, same depth, both open; else Cross Hierarchy with policy flag (69) |
+| Approval | Workflow by amount; Cross Hierarchy adds source and target owners; ancestors notified only (70) |
+| Negative budget | Always blocked, no override (71) |
+| Currency | Same currency only (72) |
+| Effective date | Today or later, open period (73) |
+| Evidence | Org setting: off, Cross Hierarchy only, always (74) |
+| Notification | Approvers on submit; both owners (and ancestors if Cross Hierarchy) on posting; requester on reject/return (75) |
+| Reversal | New linked transfer through the same route; original untouched (76) |
+| Race loser | Refused with current figure, draft kept, `Edit Amount` (77) |
+| Withdraw, material change, revoke, re-delegate, duplicates, conditions | 78 to 83 |
+| MASTER.md amendment | After Budget Transfer is built (84) |
+
+Still open for the page spec: exact role names for `Reverse Transfer`, approval thresholds (amounts), and the organization policy flag's name for cross-level transfers.
 
 ## Decisions already made that apply
 
