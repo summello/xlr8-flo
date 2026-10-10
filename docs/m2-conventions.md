@@ -89,16 +89,28 @@ Requisition money is `estimate NUMERIC(18,4)` with `currency char(3)` beside it,
 is **derived from the project** (D-M2-7), never accepted from a request body (a body carrying
 `currency` is a 422 naming the field). Reservation and release go through
 `budget.service.reserve` / `release_reservation` only, inside the transaction that changes the
-requisition's status, with idempotency keys `req:<requisition_id>:reserve` and
-`req:<requisition_id>:release:<reason>` (one release per reason, and at most one non-zero release
-in total — FIN-011).
+requisition's status, after locking the project's funding row (`SELECT … FOR UPDATE`, invariant 3).
+
+**Funding rounds (D-M2-15).** A project-linked requisition reserves at submit and may reserve again
+after a reject-to-draft and resubmit, so it holds **at most one live reservation at a time**:
+`requisition.reservation_entry_id bigint NULL` and `requisition.funding_round int NOT NULL DEFAULT 0`.
+Each reservation starts a new round. Idempotency keys:
+
+- reserve: `req:<id>:reserve:<round>`
+- release: `req:<id>:release:<round>:<reason>`, reason ∈ `withdrawn | rejected | returned_to_draft | cancelled | expired | resubmit`
+- partial reduce: `req:<id>:release:<round>:reduce:<version>`
+
+A resubmit that changes the estimate releases the round's remaining reservation and reserves the new
+total under the same lock (round + 1). Exactly-once is **per round**, guaranteed by
+`release_reservation`'s remaining-never-below-zero rule plus these keys (FIN-011). A standalone
+requisition has no reservation until approval (D-M2-5), which is its round 1.
 
 ## M. Settings added in M2 (register in `modules/org/settings.py` `SETTING_DEFAULTS` and `SETTING_VALIDATORS`)
 
 | Key | Default | Valid | Packet |
 |---|---|---|---|
 | `approval.max_depth` | `10` | integer 1..50 | E10-S03 |
-| `requisition.expiry_days` | `null` | `null` or integer 1..3650 | E09-S05 |
+| `requisition.expiry_days` | `null` | `null` or integer 1..3650 | E09-S07 |
 | `approval.separation_of_duty` | `true` | boolean | E10-S04 |
 
 ## O. Optimistic concurrency (DATA-002)
