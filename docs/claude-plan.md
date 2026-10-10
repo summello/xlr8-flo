@@ -548,7 +548,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E10-S06** Decisions: approve, reject, return, comment, withdraw; full attribution recorded | E10 | engine | M | APR-013, APR-014, AUD-001 | E10-S05 |
 | ⬜ | **E10-S07** Stale-version guard and material-change resubmission policy | E10 | concurrency | M | APR-015, APR-016, DATA-002, WF-001 | E10-S06 |
 | ⬜ | **E10-S08** Delegation, out-of-office, due dates, reminders and escalation | E10 | engine | L | APR-017 | E10-S06 |
-| ⬜ | **E10-S09** Routing explainability: which rule matched and why this approver | E10 | api | M | APR-021 | E10-S05 |
+| ⬜ | **E10-S09** Routing explainability: which rule matched and why this approver | E10 | api | M | APR-021 | E10-S05, E10-S06, E10-S08 |
 | ⬜ | **E10-S10** Approval inbox: pending, overdue, completed, delegated views | E10 | ui | L | APR-020 | E10-S06, ~~E04-S03~~, E10-S08, E10-S09 |
 | ⬜ | **E10-S11** Visual workflow builder, drag-and-drop canvas | E10 | ui | L | APR-001 | E10-S03, ~~E04-S02~~ |
 | ⬜ | **E10-S12** Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11) | E10 | ui | L | APR-011, APR-021, ACC-007 | E10-S11, E10-S05 |
