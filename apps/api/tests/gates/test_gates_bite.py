@@ -1031,12 +1031,77 @@ def test_run_check_points_pytest_at_local_postgres(
         observed_environment.update(environment)
         return subprocess.CompletedProcess(args, 0, "", "")
 
+    recreated: list[Path] = []
+
+    def fake_fresh_database(cwd: Path) -> str:
+        recreated.append(cwd)
+        return str(flo.test_database_url(cwd))
+
     monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.setattr(flo, "CHECKS", [("pytest", ["pytest"])])
+    monkeypatch.setattr(flo, "fresh_test_database", fake_fresh_database)
     monkeypatch.setattr(flo.subprocess, "run", successful_check)
 
     assert flo.run_check(tmp_path) is True
-    assert observed_environment["DATABASE_URL"] == flo.LOCAL_TEST_DATABASE_URL
+    assert recreated == [tmp_path]
+    expected = flo.test_database_url(tmp_path)
+    assert expected.startswith(flo.LOCAL_POSTGRES + "flo_test_")
+    assert observed_environment["DATABASE_URL"] == expected
+    assert observed_environment["TEST_DATABASE_URL"] == expected
+
+
+def test_each_worktree_gets_its_own_test_database(tmp_path: Path) -> None:
+    """Parallel trains share one Postgres; a shared database name lets one gate reset another's."""
+    flo = load_flo()
+    first, second = tmp_path / "xlr8flo-E09-S01", tmp_path / "xlr8flo-E10-S01"
+
+    assert flo.test_database_url(first) == flo.test_database_url(first)
+    assert flo.test_database_url(first) != flo.test_database_url(second)
+
+
+@pytest.mark.parametrize(
+    ("kind", "tags", "author", "reviewers"),
+    [
+        ("crud", ["money"], "codex", ["opus"]),  # a gated tag keeps the free author off it
+        ("crud", [], "opencode-nemotron", ["qwen"]),
+        ("ui", ["auth"], "codex", ["opus"]),
+        ("engine", [], "codex", ["qwen"]),  # engines never go to a free author
+    ],
+)
+def test_assignment_scales_review_to_risk(
+    monkeypatch: pytest.MonkeyPatch, kind: str, tags: list[str], author: str, reviewers: list[str]
+) -> None:
+    """Review is Opus's only on gated stories; everything else must still get one reviewer."""
+    flo = load_flo()
+    story = {"id": "E99-S01", "t": "planted", "k": kind, "s": "M", "tags": tags}
+    monkeypatch.setattr(
+        flo, "roadmap", lambda: {"epics": [{"id": "E99", "milestone": "M9", "stories": [story]}]}
+    )
+    monkeypatch.setattr(flo, "state", lambda: {})
+
+    out = flo.cmd_assign(["E99-S01"])
+
+    assert (out["author"], out["reviewers"]) == (author, reviewers)
+    assert out["opus_final"] is (reviewers == ["opus"])
+
+
+def test_run_check_leaves_a_configured_database_alone(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """CI configures DATABASE_URL; flo must never drop a database it was handed."""
+    flo = load_flo()
+
+    def refuse(cwd: Path) -> str:
+        raise AssertionError("dropped a configured database")
+
+    monkeypatch.setenv("DATABASE_URL", "postgresql://ci/flo_test")
+    monkeypatch.setattr(flo, "CHECKS", [("pytest", ["pytest"])])
+    monkeypatch.setattr(flo, "fresh_test_database", refuse)
+    monkeypatch.setattr(
+        flo.subprocess, "run", lambda *a, **k: subprocess.CompletedProcess(a, 0, "", "")
+    )
+
+    assert flo.run_check(tmp_path) is True
 
 
 @pytest.mark.parametrize(
