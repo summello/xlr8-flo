@@ -1142,6 +1142,7 @@ epics:
           - APR-012
         dep:
           - E10-S01
+          - E10-S02
         st: todo
       - id: E10-S04
         t: Approver eligibility resolution scoped to organization and BU/OU
@@ -1156,6 +1157,7 @@ epics:
         dep:
           - E10-S02
           - E02-S05
+          - E10-S03
         st: todo
       - id: E10-S05
         t: 'Execution engine: instances, tasks, any-one/all/quorum groups, membership
@@ -1163,6 +1165,7 @@ epics:
         k: engine
         s: L
         tags:
+          - auth
           - concurrency
         reqs:
           - APR-009

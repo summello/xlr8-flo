@@ -55,7 +55,7 @@ seeded role unable to act until someone hand-grants the new codes.
 |---|---|---|---|
 | `requisition.view` (read), `requisition.create`, `requisition.edit` (draft edits) | existing | — | the requisition's BU/OU, or its project |
 | `requisition.submit`, `requisition.withdraw`, `requisition.cancel` | new | E09-S05 | the requisition's scope target |
-| `requisition.approve`, `project.approve` (existing), `budget.approve` (new, E10-S13) | — | — | **approval eligibility**: each `DocumentAdapter` names its `approve_permission`; holding it at the document's scope makes a user *eligible*, step membership makes them an *approver* (E10-S04) |
+| `requisition.approve`, `project.approve`, `budget.approve` (all existing) | — | — | **approval eligibility**: each `DocumentAdapter` names its `approve_permission`; holding it at the document's scope makes a user *eligible*, step membership makes them an *approver* (E10-S04) |
 | `workflow.read`, `workflow.manage` | new | E10-S01 | organization (definitions), or the BU/OU an override binds to |
 | `approval.delegate`, `approval.admin` | new | E10-S08 | own tasks; organization (reassign, escalate, view all) |
 
@@ -65,7 +65,7 @@ baseline role), and the migration, which inserts the `permission` row **and** gr
 tenants' system roles by role code, so current tenants get it too. **New permissions go in their own permissions-only migration** (`<next+1>_<module>_permissions.py`,
 touching only `permission`, `role` and `role_permission`, the E09-S05 pattern), separate from the
 story's table migration, so `tests/authz/conftest.py` can apply it right after RBAC without the
-story's tables. This applies to E09-S05, E10-S01, E10-S08 and E10-S13. **The same story updates the permission catalogue tests**, which hardcode the set: `apps/api/tests/authz/test_models.py` (`EXPECTED_PERMISSIONS`), and `tests/authz/test_migration.py` with the migration list `tests/authz/conftest.py` applies (pre-flight finding on E10-S08). No other new permission without
+story's tables. This applies to E09-S05, E10-S01 and E10-S08 (E10-S13 adds no permission: `budget.approve` exists). **The same story updates the permission catalogue tests**, which hardcode the set: `apps/api/tests/authz/test_models.py` (`EXPECTED_PERMISSIONS`), and `tests/authz/test_migration.py` with the migration list `tests/authz/conftest.py` applies (pre-flight finding on E10-S08). No other new permission without
 a packet amendment. Downgrades delete `role_permission` rows first, then `permission` rows (the
 E06-S03 precedent, `migrations/20261008_0025_project_lifecycle.py`).
 
@@ -123,6 +123,37 @@ A write needs `If-Match`: missing is **400 `BAD_REQUEST`** ("Supply If-Match wit
 version."), a mismatch is **409 `CONFLICT`, `checks.problem = "stale_version"`** (the
 `ProjectService.transition` precedent, `modules/projects/service.py`). There is no 428: the error
 taxonomy is closed (convention D).
+
+## P. Authorizing approval routes (the CI route gate)
+
+Every non-public route must carry a `kernel.authz` guard in its dependency graph:
+`route_authorization_failures` (`kernel/authz.py`), run in CI by `apps/api/scripts/check_route_authz.py`.
+Approval routes cannot name a static permission, because the permission depends on the document type
+behind an instance or task. **E10-S05 adds two sanctioned guards to `kernel/authz.py`**, both
+setting the gate's marker and both answering through the same outcome rules as `require`
+(convention A), by factoring `require`'s body into one shared `_decide(request, permission, target)`:
+
+- **`require_resolved(resolve)`**: `resolve` is a FastAPI dependency that loads the record from the
+  path and returns `(permission, AuthorizationTarget)`. For approvals: instance or task, then
+  `document_type`, then the adapter's permission at the document snapshot's `target`. A missing or
+  foreign record makes `resolve` raise 404 itself, before any decision.
+- **`require_member()`**: for **self-scoped lists only** (the caller's inbox, the caller's
+  delegations). It requires an authenticated session in a selected organization. The handler then
+  filters strictly by the caller's identity and by live eligibility, so it can return nothing the
+  caller could not reach through `require_resolved`. A route that returns another user's data
+  never uses it.
+
+`DocumentAdapter` therefore carries **`read_permission: str`** (for example `requisition.view`)
+instead of a `can_read()` callable; read routes use `require_resolved` with `read_permission`, and
+decision routes use the adapter's `approve_permission`. `@public_route` is never used for approval
+routes.
+
+## Q. People are shown by email in M2 (D-M2-16)
+
+`identity` has no name column (only `invitation.full_name` stores one, and it is not copied to the
+identity). Wherever a packet shows a person (approver pickers, requester, "on behalf of", decision
+trails, explanations), M2 shows the **email**, and `q` filters match an email prefix. Adding a
+profile name is an operator follow-up.
 
 ## N. Parallel lanes in M2
 
