@@ -148,13 +148,15 @@ def test_csv_injection(probe):
     asyncio.run(scenario())
 
 
-def test_page_5000_rows_and_inline_limit(probe):
+def test_page_5000_rows_and_async_threshold(probe):
     async def scenario():
         async with client(app) as browser:
             await login(browser)
             id = await upload(browser, [[str(i), "ok", ""] for i in range(5000)])
             response = await send(browser, "POST", id, "validate")
-            assert response.status_code == 200, response.text
+            assert response.status_code == 202, response.text
+            from tests.imports.test_async_import import tick
+            assert tick(probe).done == 1
             numbers = []
             suffix = "preview?page_size=50"
             while True:
@@ -168,8 +170,8 @@ def test_page_5000_rows_and_inline_limit(probe):
             assert (await send(browser, "GET", id, "preview?cursor=invalid")).status_code == 422
             big = await upload(browser, [[str(i), "ok", ""] for i in range(5001)])
             rejected = await send(browser, "POST", big, "validate")
-            assert rejected.status_code == 422
-            assert rejected.json()["checks"]["problem"] == "file_too_large_for_inline"
+            assert rejected.status_code == 202
+            assert rejected.json()["status"] == "validating"
 
     asyncio.run(scenario())
 

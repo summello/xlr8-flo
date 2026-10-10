@@ -539,11 +539,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** History */
+        get: operations["history_api_v1_imports_get"];
         put?: never;
         /**
          * Upload
-         * @description Every upload creates a new batch; Idempotency-Key is accepted and ignored (D-M1-19).
+         * @description External keys replay batches; Idempotency-Key is ignored (D-M1-19).
          */
         post: operations["upload_api_v1_imports_post"];
         delete?: never;
@@ -597,6 +598,23 @@ export interface paths {
         get: operations["get_api_v1_imports__id__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imports/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel */
+        post: operations["cancel_api_v1_imports__id__cancel_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1706,6 +1724,10 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Error Class */
+            error_class?: string | null;
+            /** External Key */
+            external_key?: string | null;
             /** File Name */
             file_name: string;
             /** File Sha256 */
@@ -1723,6 +1745,7 @@ export interface components {
             mapping: {
                 [key: string]: string;
             } | null;
+            progress?: components["schemas"]["ImportProgress"] | null;
             result?: components["schemas"]["ImportReport"] | null;
             /** Row Count */
             row_count: number;
@@ -1742,6 +1765,13 @@ export interface components {
             uploader_id: string;
             /** Validated At */
             validated_at: string | null;
+        };
+        /** ImportHistory */
+        ImportHistory: {
+            /** Next Cursor */
+            next_cursor: string | null;
+            /** Rows */
+            rows: components["schemas"]["ImportBatchRead"][];
         };
         /** ImportIssueRead */
         ImportIssueRead: {
@@ -1763,6 +1793,18 @@ export interface components {
             next_cursor: string | null;
             /** Rows */
             rows: components["schemas"]["ImportRowRead"][];
+        };
+        /** ImportProgress */
+        ImportProgress: {
+            /**
+             * Phase
+             * @enum {string}
+             */
+            phase: "validating" | "committing";
+            /** Rows Done */
+            rows_done: number;
+            /** Rows Total */
+            rows_total: number;
         };
         /** ImportReport */
         ImportReport: {
@@ -4227,10 +4269,55 @@ export interface operations {
             };
         };
     };
+    history_api_v1_imports_get: {
+        parameters: {
+            query?: {
+                status?: ("uploaded" | "validating" | "validated" | "failed_validation" | "committing" | "committed" | "failed" | "cancelled") | null;
+                cursor?: string | null;
+                page_size?: number;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportHistory"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     upload_api_v1_imports_post: {
         parameters: {
             query?: never;
             header?: {
+                "X-Import-Key"?: string | null;
                 "X-FLO-Origin-Secret"?: string | null;
             };
             path?: never;
@@ -4239,6 +4326,7 @@ export interface operations {
         requestBody: {
             content: {
                 "multipart/form-data": {
+                    external_key?: string;
                     /** Format: binary */
                     file: string;
                     template: string;
@@ -4246,6 +4334,15 @@ export interface operations {
             };
         };
         responses: {
+            /** @description External key replay */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportBatchRead"];
+                };
+            };
             /** @description Successful Response */
             201: {
                 headers: {
@@ -4401,6 +4498,48 @@ export interface operations {
             };
         };
     };
+    cancel_api_v1_imports__id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportBatchRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     commit_api_v1_imports__id__commit_post: {
         parameters: {
             query?: never;
@@ -4420,6 +4559,15 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportBatchRead"];
+                };
+            };
+            /** @description Commit job queued */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4596,6 +4744,15 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportBatchRead"];
+                };
+            };
+            /** @description Validation job queued */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };

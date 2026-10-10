@@ -10,10 +10,12 @@ import psycopg
 from psycopg.types.json import Jsonb
 
 from flo.kernel.authz import AuthorizationTarget
+from flo.kernel.config import Settings
+from flo.kernel.errors import ErrorCode, ProblemError
+from flo.kernel.jobs.queue import JobConnection, JobQueue
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.imports.handlers import get_handler
 from flo.modules.imports.schemas import ImportBatchRead, ImportReport
-from flo.modules.imports.service import ImportRepository
 from flo.modules.imports.templates import get_template
 from flo.modules.imports.validation import ValidationService, conflict, plan_rows
 
@@ -57,6 +59,56 @@ class CommitService(ValidationService):
                     raise conflict("batch_not_editable")
                 if mode == "atomic" and batch.status == "failed_validation":
                     raise conflict("has_errors")
+                if batch.row_count > 500:
+                    if mode == "atomic" and batch.row_count > Settings().import_atomic_max_rows:
+                        raise ProblemError(
+                            ErrorCode.VALIDATION_FAILED,
+                            detail=(
+                                "This file is too large for atomic commit. Use partial mode or "
+                                "split the file."
+                            ),
+                            checks={"problem": "atomic_too_large"},
+                        )
+                    if (
+                        mode == "partial"
+                        and not self.repo.execute(
+                            "SELECT 1 FROM import_row WHERE org_id=%(org_id)s AND "
+                            "batch_id=%(id)s AND action!='error' LIMIT 1",
+                            {"id": id},
+                        ).fetchone()
+                    ):
+                        raise conflict("nothing_to_commit")
+                    self.repo.execute(
+                        "UPDATE import_batch SET "
+                        "status='committing',cancel_requested=false,error_class=NULL,"
+                        "progress=%(progress)s,result=%(result)s "
+                        "WHERE org_id=%(org_id)s AND id=%(id)s",
+                        {
+                            "id": id,
+                            "progress": Jsonb(
+                                {
+                                    "phase": "committing",
+                                    "rows_done": 0,
+                                    "rows_total": batch.row_count,
+                                }
+                            ),
+                            "result": Jsonb(
+                                ImportReport(
+                                    mode=mode,
+                                    committed=0,
+                                    skipped_errors=0,
+                                    unchanged=0,
+                                    committed_row_numbers=[],
+                                    skipped_row_numbers=[],
+                                    recovery=None,
+                                ).model_dump()
+                            ),
+                        },
+                    )
+                    JobQueue(cast(JobConnection, self.connection), self.scope).enqueue(
+                        "import.commit", {"batch_id": str(id)}, max_attempts=5
+                    )
+                    return self.repo.get(id)
                 stored = self.repo.execute(
                     "SELECT row_no,raw,action,state_token FROM import_row WHERE "
                     "org_id=%(org_id)s AND batch_id=%(id)s ORDER BY row_no",
@@ -138,6 +190,7 @@ class CommitService(ValidationService):
                     "WHERE org_id=%(org_id)s AND id=%(id)s",
                     {"id": id, "result": Jsonb(report.model_dump())},
                 )
+                self.notify(id, "committed", batch.status)
                 self._audit(
                     "import.commit",
                     id,
@@ -148,7 +201,7 @@ class CommitService(ValidationService):
                     },
                 )
                 return self.repo.get(id)
-        except Exception:
+        except Exception as error:
             if applying and mode == "atomic":
                 # The request's idempotency transaction rolls back on 500; persist only
                 # the safe failure status using a separate, short tenant transaction.
@@ -158,10 +211,13 @@ class CommitService(ValidationService):
                     autocommit=True,
                 ) as connection:
                     with tenant_transaction(cast(RlsSession, connection), self.scope):
-                        ImportRepository(connection, self.scope).execute(
-                            "UPDATE import_batch SET status='failed' "
+                        failure_service = ValidationService(connection, self.scope)
+                        previous = failure_service.repo.get(id).status
+                        failure_service.repo.execute(
+                            "UPDATE import_batch SET status='failed', error_class=%(error)s "
                             "WHERE org_id=%(org_id)s AND id=%(id)s",
-                            {"id": id},
+                            {"id": id, "error": type(error).__name__},
                         )
+                        failure_service.notify(id, "failed", previous)
                 logger.error("atomic import rolled back", extra={"batch_id": str(id)})
             raise

@@ -80,7 +80,28 @@ class ImportPreview(BaseModel):
     next_cursor: str | None
 
 
+BatchStatus = Literal[
+    "uploaded",
+    "validating",
+    "validated",
+    "failed_validation",
+    "committing",
+    "committed",
+    "failed",
+    "cancelled",
+]
+
+
+class ImportProgress(BaseModel):
+    phase: Literal["validating", "committing"]
+    rows_done: int = Field(ge=0)
+    rows_total: int = Field(ge=0)
+
+
 class ImportBatchRead(BaseModel):
+    external_key: str | None = None
+    progress: ImportProgress | None = None
+    error_class: str | None = None
     id: UUID
     template: str
     template_version: int
@@ -106,3 +127,8 @@ class ImportBatchRead(BaseModel):
     validated_at: datetime | None
     committed_at: datetime | None
     result: ImportReport | None = None
+
+
+class ImportHistory(BaseModel):
+    rows: list[ImportBatchRead]
+    next_cursor: str | None

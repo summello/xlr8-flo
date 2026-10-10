@@ -127,6 +127,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261009_0032",
         "20261009_0033",
         "20261009_0034",
+        "20261009_0035",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -594,3 +595,47 @@ def test_import_rows_migration_preserves_batch_and_enforces_tenant_guards(empty_
         ).fetchone() == (None, None)
         chain[-1].upgrade(conn)
         assert conn.execute("SELECT id FROM import_batch").fetchall() == [(batch,)]
+
+
+def test_import_async_migration_preserves_data_and_plants_key_guards(empty_database):
+    from psycopg.errors import CheckViolation, UniqueViolation
+
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from tests.org.test_bootstrap import admin_id, create
+
+    chain = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(chain[:-1], empty_database)
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        tenant = create(conn)
+        actor = admin_id(conn)
+        id = uuid4()
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            conn.execute("INSERT INTO import_batch(id,org_id,template,template_version,"
+                         "uploader_id,"
+                         "file_name,file_sha256,file_size,counts) "
+                         "VALUES(%s,%s,'probe',1,%s,'seed.csv',%s,1,'{}')",
+                         (id, tenant.org_id, actor, "a" * 64))
+            before = conn.execute("SELECT * FROM import_batch").fetchall()
+        chain[-1].upgrade(conn)
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            assert conn.execute(
+                "SELECT external_key,progress,cancel_requested,error_class "
+                "FROM import_batch WHERE id=%s", (id,),
+            ).fetchone() == (None, {}, False, None)
+            for key in ("", "k" * 129):
+                with pytest.raises(CheckViolation), conn.transaction():
+                    conn.execute("UPDATE import_batch SET external_key=%s WHERE id=%s", (key, id))
+            conn.execute("UPDATE import_batch SET external_key='seed' WHERE id=%s", (id,))
+            with pytest.raises(UniqueViolation), conn.transaction():
+                conn.execute("INSERT INTO import_batch(id,org_id,template,template_version,"
+                         "uploader_id,"
+                             "file_name,file_sha256,file_size,counts,external_key) "
+                             "VALUES(%s,%s,'probe',1,%s,'other.csv',%s,1,'{}','seed')",
+                             (uuid4(), tenant.org_id, actor, "b" * 64))
+        chain[-1].downgrade(conn)
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            assert conn.execute("SELECT * FROM import_batch").fetchall() == before
+        chain[-1].upgrade(conn)
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            assert conn.execute("SELECT id FROM import_batch").fetchall() == [(id,)]

@@ -23,6 +23,14 @@ TESTS = Path(__file__).resolve().parents[1]
 COVERED = {
     (
         "POST",
+        "/api/v1/imports/{id}/cancel",
+    ): "imports/test_async_import.py::test_history_and_cancel_foreign_tenant_routes_and_guards",
+    (
+        "GET",
+        "/api/v1/imports",
+    ): "imports/test_async_import.py::test_history_and_cancel_foreign_tenant_routes_and_guards",
+    (
+        "POST",
         "/api/v1/imports/{id}/validate",
     ): "imports/test_validation.py::test_foreign_batch_routes",
     (

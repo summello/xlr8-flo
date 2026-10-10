@@ -23,6 +23,9 @@ class Settings(BaseSettings):
         populate_by_name=True,
     )
 
+    # ponytail: raise only after measuring commit time per row against the request limit.
+    import_atomic_max_rows: int = Field(default=10_000, ge=500, le=50_000)
+
     port: int = Field(default=8080, ge=1, le=65535, validation_alias="PORT")
     fx_feed_url: str = Field(
         default="https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml",

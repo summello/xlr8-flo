@@ -52,9 +52,14 @@ def imports_db(org_database: AuthorizationDatabase) -> Iterator[AuthorizationDat
     migration.upgrade(org_database.connection)
     rows = load_migration(ROOT / "migrations/20261009_0034_import_rows.py", "import_rows")
     rows.upgrade(org_database.connection)
+    async_migration = load_migration(
+        ROOT / "migrations/20261009_0035_import_async.py", "import_async"
+    )
+    async_migration.upgrade(org_database.connection)
     try:
         yield org_database
     finally:
+        async_migration.downgrade(org_database.connection)
         rows.downgrade(org_database.connection)
         migration.downgrade(org_database.connection)
 

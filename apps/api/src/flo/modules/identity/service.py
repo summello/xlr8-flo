@@ -788,3 +788,11 @@ def select_identity_organization(
                 "ua": session.user_agent,
             },
         )
+
+
+def identity_email(connection: IdentityAuthorizationConnection, identity_id: UUID) -> str | None:
+    """Read the globally resolved uploader address without mutating identity."""
+    row = connection.execute(
+        "SELECT email FROM identity WHERE id=%(id)s", {"id": identity_id}
+    ).fetchone()
+    return None if row is None else cast(str, _value(row, 0, "email"))

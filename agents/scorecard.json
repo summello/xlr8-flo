@@ -2092,6 +2092,41 @@
       },
       "recap": "Added inline dry-run validation, paged previews and safe CSV issue downloads through a template handler registry. Commit re-plans under an advisory lock, supports atomic rollback or partial savepoints, and records committed identifiers and returns recovery instructions.",
       "title": "Dry-run preview, row/column error report, atomic or explicitly partial commit"
+    },
+    {
+      "story": "E08-S03",
+      "kind": "engine",
+      "size": "M",
+      "tags": [],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "qwen",
+          "to": "opus",
+          "role": "review",
+          "reason": "10 Oct 2026: untagged story adds migration 0035 and moves the production authorization resolver (api/authz_factory.py); Opus reviews authorization wiring and migrations (AGENTS.md 1, 3.3)."
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E08-S03"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "f99e76bc-9224-410c-ab96-dac139bf2f2b",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented keyed upload replay, scoped history, resumable background imports, safe cancellation, and single outbox completion/failure emails. All 1,554 API tests and the full flo check passed, and all 15 distinct plants failed as expected before restoration.",
+      "title": "Import batch record, idempotent re-import by external key, async with progress"
     }
   ]
 }

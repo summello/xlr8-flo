@@ -18,8 +18,9 @@ import psycopg
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, ConfigDict, Field
 
+from flo.api.authz_factory import production_authorization_resolver
 from flo.api.origin_auth import require_origin_secret
-from flo.kernel.authz import public_route
+from flo.kernel.authz import PermissionResolverFactory, public_route
 from flo.kernel.config import Settings
 from flo.kernel.email import create_email_sender
 from flo.kernel.errors import ErrorCode, ProblemError
@@ -29,6 +30,7 @@ from flo.kernel.outbox import OutboxDispatcher, email_handler
 from flo.kernel.outbox.dispatcher import DispatcherConnection
 from flo.kernel.storage import create_storage
 from flo.modules.budget.reconcile import job_handler, reconcile_all
+from flo.modules.imports.jobs import handlers as import_handlers
 from flo.modules.org.fx import MAX_BYTES, FeedFailure, Fetcher, ingest
 from flo.modules.org.schemas import FxIngestReport
 
@@ -306,7 +308,13 @@ def _run_jobs_tick(settings: Settings) -> TickReport:
     try:
         jobs = JobRunner(
             cast(RunnerConnection, connection),
-            {"budget-reconcile": job_handler(lambda: psycopg.connect(database_url))},
+            {
+                "budget-reconcile": job_handler(lambda: psycopg.connect(database_url)),
+                **import_handlers(
+                    lambda: psycopg.connect(database_url),
+                    cast(PermissionResolverFactory, production_authorization_resolver),
+                ),
+            },
             random_fraction=random.random,
         ).run(25.0)
         outbox = OutboxDispatcher(

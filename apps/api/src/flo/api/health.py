@@ -21,6 +21,7 @@ from flo.api.auth import (
     production_session_store_factory,
 )
 from flo.api.auth import router as auth_router
+from flo.api.authz_factory import production_authorization_resolver
 from flo.api.budget import router as budget_router
 from flo.api.fiscal import router as fiscal_router
 from flo.api.fx import router as fx_router
@@ -43,11 +44,8 @@ from flo.kernel.session import (
     install_session_authentication,
 )
 from flo.kernel.storage import create_storage
-from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.middleware import install_tenant_context
-from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.kernel.tenancy.selection import OrganizationSelectionMiddleware
-from flo.modules.identity.resolver import AuthorizationConnection, AuthorizationResolver
 
 HealthProbe = Callable[[Settings], Awaitable[None]]
 
@@ -109,22 +107,6 @@ app.include_router(projects_router)
 app.include_router(budget_router)
 app.include_router(imports_router)
 app.include_router(invitations_router)
-
-
-@contextmanager
-def production_authorization_resolver(scope: Scope) -> Iterator[AuthorizationResolver]:
-    """Open one uncached, tenant-scoped resolver for one authorization check."""
-
-    settings = Settings()
-    try:
-        connection = psycopg.connect(_database_url(settings), autocommit=False)
-    except psycopg.Error as exc:
-        raise ProblemError(ErrorCode.SERVICE_UNAVAILABLE) from exc
-    try:
-        with tenant_transaction(cast(RlsSession, connection), scope):
-            yield AuthorizationResolver(cast(AuthorizationConnection, connection), scope)
-    finally:
-        connection.close()
 
 
 install_authorization(

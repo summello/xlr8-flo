@@ -3,7 +3,7 @@
 from typing import Annotated, Literal, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Request, Response
+from fastapi import APIRouter, Depends, Header, Query, Request, Response
 from fastapi.responses import StreamingResponse
 
 from flo.api.admin_users import organization_target
@@ -20,8 +20,10 @@ from flo.modules.imports.commit import CommitService
 from flo.modules.imports.multipart import read_upload
 from flo.modules.imports.reports import PreviewKind, ReportService
 from flo.modules.imports.schemas import (
+    BatchStatus,
     CommitBody,
     ImportBatchRead,
+    ImportHistory,
     ImportPreview,
     MappingPut,
     TemplateRead,
@@ -68,6 +70,7 @@ def download(name: str, context: ReadContext, format: Literal["csv", "xlsx"] = "
     "",
     status_code=201,
     response_model=ImportBatchRead,
+    responses={200: {"model": ImportBatchRead, "description": "External key replay"}},
     openapi_extra={
         "requestBody": {
             "required": True,
@@ -78,6 +81,7 @@ def download(name: str, context: ReadContext, format: Literal["csv", "xlsx"] = "
                         "required": ["template", "file"],
                         "properties": {
                             "template": {"type": "string"},
+                            "external_key": {"type": "string", "minLength": 1, "maxLength": 128},
                             "file": {"type": "string", "format": "binary"},
                         },
                     }
@@ -87,11 +91,39 @@ def download(name: str, context: ReadContext, format: Literal["csv", "xlsx"] = "
     },
 )
 async def upload(
-    request: Request, context: RunContext, connection: Connection, storage: StoragePort
+    request: Request,
+    response: Response,
+    context: RunContext,
+    connection: Connection,
+    storage: StoragePort,
+    external_key: Annotated[str | None, Header(alias="X-Import-Key")] = None,
 ) -> ImportBatchRead:
-    """Every upload creates a new batch; Idempotency-Key is accepted and ignored (D-M1-19)."""
+    """External keys replay batches; Idempotency-Key is ignored (D-M1-19)."""
     payload = await read_upload(request)
-    return ImportService(connection, current_scope(), context.user_id, storage).upload(payload)
+    service = ImportService(connection, current_scope(), context.user_id, storage)
+    batch = service.upload(
+        payload, external_key if external_key is not None else payload.external_key
+    )
+    if service.replayed:
+        response.status_code = 200
+        response.headers["Idempotent-Replay"] = "true"
+    return batch
+
+
+@router.get("", response_model=ImportHistory)
+def history(
+    context: ReadContext,
+    connection: Connection,
+    status: BatchStatus | None = None,
+    cursor: str | None = None,
+    page_size: Annotated[int, Query(ge=1, le=50)] = 50,
+) -> ImportHistory:
+    return ImportService(connection, current_scope()).history(status, cursor, page_size)
+
+
+@router.post("/{id}/cancel", status_code=202, response_model=ImportBatchRead)
+def cancel(id: UUID, context: BatchRunContext, connection: Connection) -> ImportBatchRead:
+    return ImportService(connection, current_scope(), context.user_id).cancel(id)
 
 
 @router.get("/{id}", response_model=ImportBatchRead)
@@ -112,26 +144,48 @@ def mapping(
     )
 
 
-@router.post("/{id}/validate", response_model=ImportBatchRead)
+@router.post(
+    "/{id}/validate",
+    response_model=ImportBatchRead,
+    responses={202: {"model": ImportBatchRead, "description": "Validation job queued"}},
+)
 def validate(
     id: UUID,
     request: Request,
+    response: Response,
     context: BatchRunContext,
     connection: Connection,
     storage: StoragePort,
 ) -> ImportBatchRead:
-    return ValidationService(connection, current_scope(), context.user_id, storage).validate(
+    batch = ValidationService(connection, current_scope(), context.user_id, storage).validate(
         id, lambda permission, target: permits(request, permission, target)
     )
+    if batch.status == "validating":
+        response.status_code = 202
+        response.headers["Location"] = f"/api/v1/imports/{id}"
+    return batch
 
 
-@router.post("/{id}/commit", response_model=ImportBatchRead)
+@router.post(
+    "/{id}/commit",
+    response_model=ImportBatchRead,
+    responses={202: {"model": ImportBatchRead, "description": "Commit job queued"}},
+)
 def commit(
-    id: UUID, body: CommitBody, request: Request, context: BatchRunContext, connection: Connection
+    id: UUID,
+    body: CommitBody,
+    request: Request,
+    response: Response,
+    context: BatchRunContext,
+    connection: Connection,
 ) -> ImportBatchRead:
-    return CommitService(connection, current_scope(), context.user_id).commit(
+    batch = CommitService(connection, current_scope(), context.user_id).commit(
         id, body.mode, lambda permission, target: permits(request, permission, target)
     )
+    if batch.status == "committing":
+        response.status_code = 202
+        response.headers["Location"] = f"/api/v1/imports/{id}"
+    return batch
 
 
 @router.get("/{id}/preview", response_model=ImportPreview)

@@ -983,6 +983,28 @@
             "title": "Created At",
             "type": "string"
           },
+          "error_class": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Class"
+          },
+          "external_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Key"
+          },
           "file_name": {
             "title": "File Name",
             "type": "string"
@@ -1020,6 +1042,16 @@
               }
             ],
             "title": "Mapping"
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImportProgress"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "result": {
             "anyOf": [
@@ -1095,6 +1127,34 @@
         "title": "ImportBatchRead",
         "type": "object"
       },
+      "ImportHistory": {
+        "properties": {
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ImportBatchRead"
+            },
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rows",
+          "next_cursor"
+        ],
+        "title": "ImportHistory",
+        "type": "object"
+      },
       "ImportIssueRead": {
         "properties": {
           "code": {
@@ -1160,6 +1220,35 @@
           "next_cursor"
         ],
         "title": "ImportPreview",
+        "type": "object"
+      },
+      "ImportProgress": {
+        "properties": {
+          "phase": {
+            "enum": [
+              "validating",
+              "committing"
+            ],
+            "title": "Phase",
+            "type": "string"
+          },
+          "rows_done": {
+            "minimum": 0.0,
+            "title": "Rows Done",
+            "type": "integer"
+          },
+          "rows_total": {
+            "minimum": 0.0,
+            "title": "Rows Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "phase",
+          "rows_done",
+          "rows_total"
+        ],
+        "title": "ImportProgress",
         "type": "object"
       },
       "ImportReport": {
@@ -6868,10 +6957,137 @@
       }
     },
     "/api/v1/imports": {
+      "get": {
+        "operationId": "history_api_v1_imports_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "uploaded",
+                    "validating",
+                    "validated",
+                    "failed_validation",
+                    "committing",
+                    "committed",
+                    "failed",
+                    "cancelled"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportHistory"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "History",
+        "tags": [
+          "imports"
+        ]
+      },
       "post": {
-        "description": "Every upload creates a new batch; Idempotency-Key is accepted and ignored (D-M1-19).",
+        "description": "External keys replay batches; Idempotency-Key is ignored (D-M1-19).",
         "operationId": "upload_api_v1_imports_post",
         "parameters": [
+          {
+            "in": "header",
+            "name": "X-Import-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Import-Key"
+            }
+          },
           {
             "in": "header",
             "name": "X-FLO-Origin-Secret",
@@ -6894,6 +7110,11 @@
             "multipart/form-data": {
               "schema": {
                 "properties": {
+                  "external_key": {
+                    "maxLength": 128,
+                    "minLength": 1,
+                    "type": "string"
+                  },
                   "file": {
                     "format": "binary",
                     "type": "string"
@@ -6913,6 +7134,16 @@
           "required": true
         },
         "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportBatchRead"
+                }
+              }
+            },
+            "description": "External key replay"
+          },
           "201": {
             "content": {
               "application/json": {
@@ -7162,6 +7393,75 @@
         ]
       }
     },
+    "/api/v1/imports/{id}/cancel": {
+      "post": {
+        "operationId": "cancel_api_v1_imports__id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportBatchRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Cancel",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
     "/api/v1/imports/{id}/commit": {
       "post": {
         "operationId": "commit_api_v1_imports__id__commit_post",
@@ -7213,6 +7513,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportBatchRead"
+                }
+              }
+            },
+            "description": "Commit job queued"
           },
           "4XX": {
             "content": {
@@ -7550,6 +7860,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportBatchRead"
+                }
+              }
+            },
+            "description": "Validation job queued"
           },
           "4XX": {
             "content": {

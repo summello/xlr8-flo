@@ -21,6 +21,7 @@ class Upload:
     content_type: str
     data: bytes
     checksum: str
+    external_key: str | None = None
 
 
 async def read_upload(request: Request) -> Upload:
@@ -79,7 +80,7 @@ async def read_upload(request: Request) -> Upload:
                 name = str(headers.get_param("name", header="content-disposition") or "")
                 if (
                     headers.get_content_disposition() != "form-data"
-                    or name not in {"file", "template"}
+                    or name not in {"file", "template", "external_key"}
                     or name in parts
                 ):
                     raise invalid("file", "Send exactly one template and one file part.")
@@ -107,7 +108,7 @@ async def read_upload(request: Request) -> Upload:
                 if bytes(buffer) not in {b"", b"\r", b"\r\n"}:
                     raise invalid("file", "Unexpected multipart trailing data.")
                 break
-    if phase != "done" or set(parts) != {"template", "file"}:
+    if phase != "done" or not {"template", "file"}.issubset(parts):
         raise invalid("file", "Incomplete multipart upload.")
     headers, data = parts["file"]
     try:
@@ -117,4 +118,17 @@ async def read_upload(request: Request) -> Upload:
     filename = headers.get_filename()
     if not filename:
         raise invalid("file", "A file name is required.")
-    return Upload(template, filename, headers.get_content_type(), bytes(data), digest.hexdigest())
+    try:
+        external_key = (
+            bytes(parts["external_key"][1]).decode("utf-8") if "external_key" in parts else None
+        )
+    except UnicodeDecodeError:
+        raise invalid("external_key", "Import key must be UTF-8.") from None
+    return Upload(
+        template,
+        filename,
+        headers.get_content_type(),
+        bytes(data),
+        digest.hexdigest(),
+        external_key,
+    )
