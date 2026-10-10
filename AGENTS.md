@@ -192,6 +192,11 @@ agents/scripts/finish.sh E09-S01        # submit + done; one finish at a time (l
 
 - **Every worktree has its own test database** (`flo db url`); `flo check` recreates it before
   pytest, so parallel gates never collide. Never point a run at the shared `flo_test`.
+- **The gate runs on the merged result.** `finish.sh` merges the current milestone branch into the
+  story branch under the finish lock before `submit` and `done`, so a story is gated against every
+  lane that merged before it. A conflict stops the finish and lists the files. Two lanes that each
+  passed alone broke M1 together on 10 Oct (a renamed import and a new required field). A
+  regenerated API client on both lanes is the usual conflict: regenerate it on the merged tree.
 - **Migrations chain linearly** and the runner refuses two heads. When two lanes both add a
   migration, the second to merge rebases its first revision's `down_revision` onto the new head
   and re-runs `python -m flo.kernel.migrate --check` before `finish.sh`.
