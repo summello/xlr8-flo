@@ -31,6 +31,7 @@ from flo.modules.org.service import (
 from flo.modules.projects.hierarchy import Hierarchy
 from flo.modules.projects.lifecycle import Lifecycle, conflict
 from flo.modules.projects.models import COLUMNS, FIELDS, ProjectRepository
+from flo.modules.projects.risks import Risks
 from flo.modules.projects.schedule import Schedule, with_variance
 from flo.modules.projects.schemas import (
     ChildrenPage,
@@ -78,6 +79,7 @@ class ProjectService:
         self.actor_id = actor_id
         self.settings = settings
         self.repo = ProjectRepository(connection, scope)
+        self.risks = Risks(self.repo, actor_id)
 
     def _get(self, project_id: UUID, *, lock: bool = False) -> dict[str, object]:
         row = self.repo.get(project_id, lock=lock)

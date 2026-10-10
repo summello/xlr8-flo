@@ -682,7 +682,7 @@ epics:
           - PROJ-016
         dep:
           - E06-S01
-        st: todo
+        st: done
       - id: E06-S07
         t: Project list and detail screens, filter/sort/group/search, saved views
         k: ui

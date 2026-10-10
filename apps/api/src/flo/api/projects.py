@@ -29,6 +29,11 @@ from flo.modules.projects.schemas import (
     ProjectRead,
     ProjectSort,
     ProjectStatus,
+    RiskCreate,
+    RiskPage,
+    RiskPatch,
+    RiskRead,
+    RiskStatus,
     TransitionAvailable,
     TransitionCreate,
     TreeRead,
@@ -213,4 +218,40 @@ def patch_milestone(
 ) -> MilestoneRead:
     return ProjectService(connection, current_scope(), context.user_id).write_milestone(
         id, body, mid
+    )
+
+
+@router.post("/{id}/risks", status_code=201, response_model=RiskRead)
+def create_risk(
+    id: UUID, body: RiskCreate, context: UpdateContext, connection: Connection
+) -> RiskRead:
+    return ProjectService(connection, current_scope(), context.user_id).risks.write(id, body)
+
+
+@router.get("/{id}/risks", response_model=RiskPage)
+def list_risks(
+    id: UUID,
+    context: ReadContext,
+    connection: Connection,
+    status: RiskStatus | None = None,
+    min_score: Annotated[int | None, Query(ge=1, le=25)] = None,
+    cursor: str | None = None,
+    page_size: Annotated[int, Query(ge=1, le=50)] = 50,
+) -> RiskPage:
+    return ProjectService(connection, current_scope(), context.user_id).risks.list(
+        id, status, min_score, cursor, page_size
+    )
+
+
+@router.patch("/{id}/risks/{risk_id}", response_model=RiskRead)
+def patch_risk(
+    id: UUID,
+    risk_id: UUID,
+    body: RiskPatch,
+    context: UpdateContext,
+    connection: Connection,
+    version: Annotated[str | None, Header(alias="If-Match")] = None,
+) -> RiskRead:
+    return ProjectService(connection, current_scope(), context.user_id).risks.write(
+        id, body, risk_id, version
     )

@@ -125,6 +125,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261009_0030",
         "20261009_0031",
         "20261009_0032",
+        "20261009_0033",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -413,7 +414,8 @@ def test_project_schedule_migration_preserves_existing_project(empty_database):
     from flo.modules.org.service import OrgService
     from tests.org.test_bootstrap import admin_id, create
 
-    chain = migrate.discover_migrations(MIGRATIONS)
+    chain = tuple(r for r in migrate.discover_migrations(MIGRATIONS)
+                  if r.revision <= "20261009_0032")
     migrate.apply_migrations(chain[:-1], empty_database)
     with psycopg.connect(empty_database, autocommit=True) as conn:
         tenant = create(conn)
@@ -454,6 +456,61 @@ def test_project_schedule_migration_preserves_existing_project(empty_database):
             "SELECT to_regclass('project_phase'),to_regclass('project_milestone')"
         ).fetchone() == (None, None)
         chain[-1].upgrade(conn)
+        assert conn.execute("SELECT name FROM project WHERE id=%s", (project_id,)).fetchone() == (
+            "Seed",
+        )
+
+
+def test_project_risk_migration_preserves_existing_project(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.org.schemas import MasterCreate, OrgUnitCreate
+    from flo.modules.org.service import OrgService
+    from tests.org.test_bootstrap import admin_id, create
+
+    chain = tuple(r for r in migrate.discover_migrations(MIGRATIONS)
+                  if r.revision <= "20261009_0033")
+    migrate.apply_migrations(chain[:-1], empty_database)
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        tenant = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(tenant.org_id)
+        with correlation_context("risk-migration"), tenant_transaction(conn, scope):
+            org = OrgService(conn, scope, actor)
+            bu = org.create_unit(OrgUnitCreate(code="BU", name="BU", kind="bu"))
+            for kind, code in (("department", "D"), ("ledger_account", "L")):
+                org.create_master(
+                    kind,
+                    MasterCreate(
+                        code=code,
+                        name=code,
+                        effective_from=date(2000, 1, 1),
+                        attributes={"account_type": "expense"} if kind == "ledger_account" else {},
+                    ),
+                )
+            project_id = uuid4()
+            conn.execute(
+                "INSERT INTO project (id,org_id,bu_id,number,name,owner_id,department_code,"
+                "ledger_account_code,currency,created_by) VALUES (%s,%s,%s,'P','Seed',%s,"
+                "'D','L','USD',%s)",
+                (project_id, tenant.org_id, bu.id, actor, actor),
+            )
+            before = conn.execute("SELECT * FROM project").fetchall()
+            seeds = {table: conn.execute(f"SELECT * FROM {table} ORDER BY id").fetchall()
+                     for table in ("identity", "organization")}
+        chain[-1].upgrade(conn)
+        assert conn.execute("SELECT relrowsecurity,relforcerowsecurity FROM pg_class "
+                            "WHERE relname='project_risk'").fetchone() == (True, True)
+        assert conn.execute("SELECT * FROM project").fetchall() == before
+        chain[-1].downgrade(conn)
+        assert conn.execute("SELECT * FROM project").fetchall() == before
+        assert conn.execute(
+            "SELECT to_regclass('project_risk')"
+        ).fetchone() == (None,)
+        chain[-1].upgrade(conn)
+        for table, rows in seeds.items():
+            assert conn.execute(f"SELECT * FROM {table} ORDER BY id").fetchall() == rows
         assert conn.execute("SELECT name FROM project WHERE id=%s", (project_id,)).fetchone() == (
             "Seed",
         )

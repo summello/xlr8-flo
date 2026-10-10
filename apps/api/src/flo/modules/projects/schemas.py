@@ -201,3 +201,48 @@ class MilestoneRead(MilestoneCreate):
     id: UUID
     project_id: UUID
     created_at: datetime
+
+
+type RiskStatus = Literal["open", "mitigating", "closed", "accepted"]
+
+
+class RiskCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    title: str = Field(min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=4000)
+    likelihood: int = Field(ge=1, le=5, strict=True)
+    impact: int = Field(ge=1, le=5, strict=True)
+    owner_id: UUID
+    mitigation: str | None = Field(default=None, max_length=4000)
+    due_date: date | None = None
+    status: RiskStatus = "open"
+    closed_reason: str | None = None
+
+
+class RiskPatch(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=4000)
+    likelihood: int | None = Field(default=None, ge=1, le=5, strict=True)
+    impact: int | None = Field(default=None, ge=1, le=5, strict=True)
+    owner_id: UUID | None = None
+    mitigation: str | None = Field(default=None, max_length=4000)
+    due_date: date | None = None
+    status: RiskStatus | None = None
+    closed_reason: str | None = None
+
+
+class RiskRead(RiskCreate):
+    id: UUID
+    project_id: UUID
+    score: int
+    overdue: bool
+    created_by: UUID
+    created_at: datetime
+    updated_at: datetime
+    version: int
+
+
+class RiskPage(BaseModel):
+    rows: list[RiskRead]
+    next_cursor: str | None

@@ -1046,6 +1046,41 @@ export interface paths {
         patch: operations["patch_phase_api_v1_projects__id__phases__phase_id__patch"];
         trace?: never;
     };
+    "/api/v1/projects/{id}/risks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Risks */
+        get: operations["list_risks_api_v1_projects__id__risks_get"];
+        put?: never;
+        /** Create Risk */
+        post: operations["create_risk_api_v1_projects__id__risks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{id}/risks/{risk_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Risk */
+        patch: operations["patch_risk_api_v1_projects__id__risks__risk_id__patch"];
+        trace?: never;
+    };
     "/api/v1/projects/{id}/transitions": {
         parameters: {
             query?: never;
@@ -2592,6 +2627,114 @@ export interface components {
              */
             reason: string;
         };
+        /** RiskCreate */
+        RiskCreate: {
+            /** Closed Reason */
+            closed_reason?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Due Date */
+            due_date?: string | null;
+            /** Impact */
+            impact: number;
+            /** Likelihood */
+            likelihood: number;
+            /** Mitigation */
+            mitigation?: string | null;
+            /**
+             * Owner Id
+             * Format: uuid
+             */
+            owner_id: string;
+            /** @default open */
+            status?: components["schemas"]["RiskStatus"];
+            /** Title */
+            title: string;
+        };
+        /** RiskPage */
+        RiskPage: {
+            /** Next Cursor */
+            next_cursor: string | null;
+            /** Rows */
+            rows: components["schemas"]["RiskRead"][];
+        };
+        /** RiskPatch */
+        RiskPatch: {
+            /** Closed Reason */
+            closed_reason?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Due Date */
+            due_date?: string | null;
+            /** Impact */
+            impact?: number | null;
+            /** Likelihood */
+            likelihood?: number | null;
+            /** Mitigation */
+            mitigation?: string | null;
+            /** Owner Id */
+            owner_id?: string | null;
+            status?: components["schemas"]["RiskStatus"] | null;
+            /** Title */
+            title?: string | null;
+        };
+        /** RiskRead */
+        RiskRead: {
+            /** Closed Reason */
+            closed_reason?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Created By
+             * Format: uuid
+             */
+            created_by: string;
+            /** Description */
+            description?: string | null;
+            /** Due Date */
+            due_date?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Impact */
+            impact: number;
+            /** Likelihood */
+            likelihood: number;
+            /** Mitigation */
+            mitigation?: string | null;
+            /** Overdue */
+            overdue: boolean;
+            /**
+             * Owner Id
+             * Format: uuid
+             */
+            owner_id: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Score */
+            score: number;
+            /** @default open */
+            status?: components["schemas"]["RiskStatus"];
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Version */
+            version: number;
+        };
+        /** @enum {string} */
+        RiskStatus: "open" | "mitigating" | "closed" | "accepted";
         /**
          * ScopeType
          * @description The only scopes to which a role can be granted.
@@ -5654,6 +5797,147 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PhaseRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    list_risks_api_v1_projects__id__risks_get: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["RiskStatus"] | null;
+                min_score?: number | null;
+                cursor?: string | null;
+                page_size?: number;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskPage"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    create_risk_api_v1_projects__id__risks_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RiskCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    patch_risk_api_v1_projects__id__risks__risk_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                risk_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RiskPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

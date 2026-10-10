@@ -2021,6 +2021,40 @@
       },
       "recap": "Implemented schedule migration 0032, phases/milestones, manual health/progress/actual dates and computed variance; production authorization, audit, tenant isolation, and generated API client. Full pytest: 1478 passed, 1 skipped; skipped money round-trip subsequently passed with explicit local database setting. Final targeted: 35 passed. Web: 86 vitest and 207 Playwright passed. Ruff, strict mypy, migration-chain check, all 4 import contracts and gitleaks passed. Required closed-project, direct-child and composite-FK removal plants each failed their named test and were restored. Existing tests/fixtures minimally updated under m1-conventions C. No submit, gate, done, push or merge.",
       "title": "Phases, milestones, planned vs actual dates, owner, sponsor, health, percent complete"
+    },
+    {
+      "story": "E06-S06",
+      "kind": "crud",
+      "size": "M",
+      "tags": [],
+      "author": "opencode-nemotron",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E06-S06 and model~nvidia/nemotron-3-ultra-550b-a55b:free"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "332a41fa-e50e-41ed-8a9e-4cde6648200f",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Committed bb7dd31 (E06-S06: add tenant-scoped project risk management). PROJ-016 implemented per amendments; revision 20261009_0033 follows validated 0032. All flo check commands green against a disposable local Postgres database with URL configuration: 1499 pytest tests, 86 Vitest tests and 207 Playwright/axe checks. Ruff, strict mypy, import boundaries, web lint/types, migration-chain check and gitleaks green. Focused risk/migration run: 20 passed. Required project_closed, closed_reason and FOR UPDATE removal plants each failed their corresponding test, then were restored. Disposable check database removed; verified shared-test residue cleaned, extensions preserved. No dependency added, no implementation blocker. No submit, gate, done, push or merge.",
+      "title": "Project risks with likelihood, impact, owner, mitigation, due date, status"
     }
   ]
 }
