@@ -57,7 +57,11 @@ def plan_rows(
                     )
                 continue
             try:
-                values[column.name] = parse_value(column.type, value)
+                values[column.name] = (
+                    value
+                    if column.name in getattr(handler, "parsed_columns", ())
+                    else parse_value(column.type, value)
+                )
             except ValueError:
                 issues.append(
                     Issue(

@@ -45,7 +45,7 @@ class TemplateHandler(Protocol):
 
     def apply_row(
         self, context: RowContext, plan: RowPlan, values: dict[str, object]
-    ) -> tuple[str, UUID]: ...
+    ) -> tuple[str, UUID | int]: ...
 
 
 HANDLERS: dict[str, TemplateHandler] = {}

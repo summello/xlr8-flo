@@ -29,7 +29,10 @@ from flo.modules.imports.schemas import (
     TemplateRead,
 )
 from flo.modules.imports.service import ImportService, list_templates, template_file
+from flo.modules.imports.templates.builtin import register_builtin
 from flo.modules.imports.validation import ValidationService
+
+register_builtin()
 
 router = APIRouter(prefix="/api/v1/imports", tags=["imports"])
 

@@ -58,6 +58,7 @@ __all__ = [
     "balance_query",
     "commit",
     "get_balance",
+    "entry_by_idempotency_key",
     "ledger_query",
     "post_entry",
     "record_actual",
@@ -241,3 +242,16 @@ def _funding_mode_guard(
 
 
 setting_guards.register("funding_mode", _funding_mode_guard)
+
+
+def entry_by_idempotency_key(
+    connection: psycopg.Connection[tuple[object, ...]], scope: Scope, key: str
+) -> LedgerEntryRead | None:
+    """Resolve the recipient credit in direct and roll-down allocations."""
+    with tenant_transaction(cast(RlsSession, connection), scope):
+        entry = LedgerRepository(connection, scope).entry(
+            "idempotency_key IN (%(key)s, %(key)s || ':in') "
+            "ORDER BY (idempotency_key = %(key)s) DESC LIMIT 1",
+            {"key": key},
+        )
+        return LedgerEntryRead(**asdict(entry)) if entry else None

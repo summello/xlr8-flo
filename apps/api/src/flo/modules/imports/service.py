@@ -21,6 +21,7 @@ from flo.kernel.ports.storage import Storage
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.identity.service import IdentityAuthorizationConnection, identity_email
+from flo.modules.imports.handlers import HANDLERS
 from flo.modules.imports.multipart import MAX_FILE_SIZE, Upload
 from flo.modules.imports.parsers import invalid, parse_value
 from flo.modules.imports.schemas import (
@@ -128,6 +129,8 @@ def check_types(template: Template, rows: list[Sequence[str]], mapping: dict[str
             value = row[index] if index < len(row) else ""
             if not value:
                 continue  # Required cell values belong to E08-S02 row validation.
+            if target in getattr(HANDLERS.get(template.name), "parsed_columns", ()):
+                continue
             try:
                 parse_value(columns[target].type, value)
             except ValueError:

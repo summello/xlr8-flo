@@ -74,6 +74,7 @@ __all__ = [
     "period_for",
     "range_for",
     "today",
+    "unit_by_code",
     "valid_value",
     "validate_master_dates",
 ]
@@ -727,3 +728,15 @@ def validate_tenant_label(label: str | None) -> str | None:
             ),
         )
     return trimmed
+
+
+def unit_by_code(
+    connection: psycopg.Connection[tuple[object, ...]], scope: Scope, code: str
+) -> OrgUnitRead | None:
+    with tenant_transaction(cast(RlsSession, connection), scope):
+        repository = OrgRepository(connection, scope)
+        row = repository.execute(
+            "SELECT id FROM org_unit WHERE org_id=%(org_id)s AND lower(code)=lower(%(code)s)",
+            {"code": code},
+        ).fetchone()
+        return OrgUnitRead.model_validate(repository.unit(row[0])) if row else None

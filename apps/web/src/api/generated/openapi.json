@@ -1190,6 +1190,17 @@
             "title": "Message",
             "type": "string"
           },
+          "problem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem"
+          },
           "severity": {
             "enum": [
               "error",
@@ -3609,6 +3620,18 @@
             ],
             "title": "Description"
           },
+          "external_ref": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9._:-]{1,64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Ref"
+          },
           "ledger_account_code": {
             "title": "Ledger Account Code",
             "type": "string"
@@ -3775,6 +3798,18 @@
               }
             ],
             "title": "Description"
+          },
+          "external_ref": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9._:-]{1,64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Ref"
           },
           "health": {
             "anyOf": [
@@ -3951,6 +3986,17 @@
             ],
             "title": "Description"
           },
+          "external_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Ref"
+          },
           "health": {
             "$ref": "#/components/schemas/ProjectHealth"
           },
@@ -4048,6 +4094,7 @@
           }
         },
         "required": [
+          "external_ref",
           "id",
           "number",
           "name",

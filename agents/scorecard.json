@@ -2173,6 +2173,36 @@
       },
       "recap": "Implemented project list, creation and detail screens with shared-grid saved views, schedule and risk forms, transitions and exact money display. Added scoped list projections, session identity and transition metadata with Postgres and browser regression coverage.",
       "title": "Project list and detail screens, filter/sort/group/search, saved views"
+    },
+    {
+      "story": "E08-S04",
+      "kind": "crud",
+      "size": "M",
+      "tags": [
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E08-S04"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "f99e76bc-9224-410c-ab96-dac139bf2f2b",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented service-backed project and budget imports, immutable project references, recipient-credit idempotency, and the four authorized framework fixes. Full flo check and the final accepted-code metadata regression are green; all required violation plants were observed failing and restored.",
+      "title": "Project and budget import templates end to end"
     }
   ]
 }

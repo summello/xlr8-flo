@@ -129,8 +129,9 @@ def test_valid_upload(imports_db, storage, format):
 def test_template_download_round_trip(imports_db, storage, format):
     admin(imports_db)
     catalog = request(imports_db, storage, "GET", "/templates").json()
-    assert catalog[0]["version"] == 1
-    assert catalog[0]["columns"][0] == {
+    fixture = next(template for template in catalog if template["name"] == "test_fixture")
+    assert fixture["version"] == 1
+    assert fixture["columns"][0] == {
         "name": "code",
         "type": "text",
         "required": True,

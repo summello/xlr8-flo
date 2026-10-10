@@ -128,6 +128,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261009_0033",
         "20261009_0034",
         "20261009_0035",
+        "20261009_0036",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -604,7 +605,9 @@ def test_import_async_migration_preserves_data_and_plants_key_guards(empty_datab
     from flo.kernel.tenancy.rls import tenant_transaction
     from tests.org.test_bootstrap import admin_id, create
 
-    chain = migrate.discover_migrations(MIGRATIONS)
+    chain = tuple(
+        r for r in migrate.discover_migrations(MIGRATIONS) if r.revision <= "20261009_0035"
+    )
     migrate.apply_migrations(chain[:-1], empty_database)
     with psycopg.connect(empty_database, autocommit=True) as conn:
         tenant = create(conn)

@@ -1809,6 +1809,8 @@ export interface components {
             column: string | null;
             /** Message */
             message: string;
+            /** Problem */
+            problem?: string | null;
             /**
              * Severity
              * @enum {string}
@@ -2679,6 +2681,8 @@ export interface components {
             department_code: string;
             /** Description */
             description?: string | null;
+            /** External Ref */
+            external_ref?: string | null;
             /** Ledger Account Code */
             ledger_account_code: string;
             /** Name */
@@ -2715,6 +2719,8 @@ export interface components {
             actual_start?: string | null;
             /** Description */
             description?: string | null;
+            /** External Ref */
+            external_ref?: string | null;
             health?: components["schemas"]["ProjectHealth"] | null;
             /** Name */
             name?: string | null;
@@ -2757,6 +2763,8 @@ export interface components {
             department_code: string;
             /** Description */
             description: string | null;
+            /** External Ref */
+            external_ref: string | null;
             health: components["schemas"]["ProjectHealth"];
             /**
              * Id

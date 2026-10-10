@@ -796,3 +796,16 @@ def identity_email(connection: IdentityAuthorizationConnection, identity_id: UUI
         "SELECT email FROM identity WHERE id=%(id)s", {"id": identity_id}
     ).fetchone()
     return None if row is None else cast(str, _value(row, 0, "email"))
+
+
+def user_id_by_email(
+    connection: IdentityAuthorizationConnection, scope: Scope, email: str
+) -> UUID | None:
+    repository = RoleRepository(connection, scope)
+    with tenant_transaction(connection, scope):
+        row = connection.execute(
+            "SELECT id FROM identity WHERE lower(email)=%(email)s AND EXISTS "
+            "(SELECT 1 FROM user_role WHERE org_id=%(org_id)s AND user_id=identity.id)",
+            repository.scoped_params({"email": email.casefold()}),
+        ).fetchone()
+        return None if row is None else cast(UUID, _value(row, 0, "id"))

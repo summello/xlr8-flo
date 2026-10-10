@@ -251,16 +251,21 @@ class ProjectService:
                 with self.connection.transaction():
                     inserted = self.repo.execute(
                         """INSERT INTO project(id, org_id, bu_id, parent_id, number, name,
-                        description,
+                        description, external_ref,
                         owner_id, sponsor_id, department_code, ledger_account_code, currency,
                         planned_start, planned_end, created_by)
                         VALUES (%(id)s, %(org_id)s, %(bu_id)s, %(parent_id)s, %(number)s, %(name)s,
-                        %(description)s, %(owner_id)s, %(sponsor_id)s, %(department_code)s,
+                        %(description)s, %(external_ref)s, %(owner_id)s, %(sponsor_id)s,
+                        %(department_code)s,
                         %(ledger_account_code)s, %(currency)s, %(planned_start)s, %(planned_end)s,
                         %(created_by)s) ON CONFLICT (org_id, bu_id, number)
                         DO NOTHING RETURNING id""",
                         values,
                     ).fetchone()
+            except psycopg.errors.UniqueViolation as exc:
+                if exc.diag.constraint_name != "project_external_ref":
+                    raise
+                raise external_ref_locked() from exc
             except psycopg.errors.CheckViolation as exc:
                 if exc.diag.message_primary != "project depth exceeded":
                     raise
@@ -421,6 +426,19 @@ class ProjectService:
                     checks={"problem": "stale_version"},
                 )
             changes = body.model_dump(exclude_unset=True)
+            if "external_ref" in changes:
+                if (
+                    before["external_ref"] is not None
+                    and changes["external_ref"] != before["external_ref"]
+                ):
+                    raise external_ref_locked()
+                ref = changes["external_ref"]
+                if (
+                    ref is not None
+                    and ref != before["external_ref"]
+                    and get_by_external_ref(self.connection, self.scope, ref)
+                ):
+                    raise external_ref_locked()
             for field in ("name", "owner_id", "health", "percent_complete"):
                 if field in changes and changes[field] is None:
                     raise invalid(field, f"{field} cannot be null. Supply a value.")
@@ -437,15 +455,22 @@ class ProjectService:
                 and cast(date, after["actual_end"]) < cast(date, after["actual_start"])
             ):
                 raise invalid("actual_end", "Actual end precedes start.")
-            self.repo.execute(
-                """UPDATE project SET name = %(name)s, description = %(description)s,
-                owner_id = %(owner_id)s, sponsor_id = %(sponsor_id)s,
-                planned_start = %(planned_start)s, planned_end = %(planned_end)s,
-                health = %(health)s, percent_complete = %(percent_complete)s,
-                actual_start = %(actual_start)s, actual_end = %(actual_end)s,
-                version = version + 1 WHERE org_id = %(org_id)s AND id = %(id)s""",
-                after,
-            )
+            try:
+                with self.connection.transaction():
+                    self.repo.execute(
+                        """UPDATE project SET external_ref = %(external_ref)s,
+                        name = %(name)s, description = %(description)s,
+                        owner_id = %(owner_id)s, sponsor_id = %(sponsor_id)s,
+                        planned_start = %(planned_start)s, planned_end = %(planned_end)s,
+                        health = %(health)s, percent_complete = %(percent_complete)s,
+                        actual_start = %(actual_start)s, actual_end = %(actual_end)s,
+                        version = version + 1 WHERE org_id = %(org_id)s AND id = %(id)s""",
+                        after,
+                    )
+            except psycopg.errors.UniqueViolation as exc:
+                if exc.diag.constraint_name != "project_external_ref":
+                    raise
+                raise external_ref_locked() from exc
             after = self._get(project_id)
             self._audit("project.update", project_id, before, after)
             return self._read(after)
@@ -639,4 +664,31 @@ def assert_posting_allowed(
                 f"A {entry_type} posting to {bucket} is not allowed while the project is {status}. "
                 "Use an eligible project or release/reverse an existing entry."
             ),
+        )
+
+
+def external_ref_locked() -> ProblemError:
+    return ProblemError(
+        ErrorCode.CONFLICT,
+        detail="This external reference is already set or in use. Keep its existing identity.",
+        checks={"problem": "external_ref_locked"},
+    )
+
+
+def get_by_external_ref(
+    connection: psycopg.Connection[tuple[object, ...]], scope: Scope, ref: str
+) -> ProjectRead | None:
+    with tenant_transaction(cast(RlsSession, connection), scope):
+        row = (
+            ProjectRepository(connection, scope)
+            .execute(
+                f"SELECT {COLUMNS} FROM project WHERE org_id=%(org_id)s AND external_ref=%(ref)s",
+                {"ref": ref},
+            )
+            .fetchone()
+        )
+        return (
+            ProjectRead.model_validate(with_variance(dict(zip(FIELDS, row, strict=True))))
+            if row
+            else None
         )

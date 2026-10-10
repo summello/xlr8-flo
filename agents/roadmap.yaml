@@ -711,7 +711,7 @@ epics:
         dep:
           - E06-S07
           - E07-S06
-        st: todo
+        st: in_progress
 
   - id: E07
     name: Budget ledger
@@ -906,7 +906,7 @@ epics:
         dep:
           - E08-S03
           - E07-S03
-        st: in_progress
+        st: done
 
   # ─────────────────────── M2 — Governed demand ───────────────────────
 

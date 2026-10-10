@@ -36,6 +36,9 @@ def project_db(org_database) -> Iterator:
             "20260826_0023_ledger_lineage.py",
             "20261008_0025_project_lifecycle.py",
             "20261009_0032_project_schedule.py",
+            "20261008_0027_import_batch.py",
+            "20261009_0034_import_rows.py",
+            "20261009_0036_project_external_ref.py",
         ]
     ]
     with db.connection.transaction():

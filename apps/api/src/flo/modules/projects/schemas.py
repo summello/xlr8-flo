@@ -4,7 +4,7 @@ from datetime import date, datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError
 
@@ -18,7 +18,16 @@ type ProjectGroup = Literal["status", "bu"]
 type Direction = Literal["asc", "desc"]
 
 
-class ProjectCreate(BaseModel):
+class ExternalReference(BaseModel):
+    external_ref: str | None = Field(default=None, pattern=r"^[A-Za-z0-9._:-]{1,64}$")
+
+    @field_validator("external_ref", mode="before")
+    @classmethod
+    def trim_reference(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
+
+
+class ProjectCreate(ExternalReference):
     model_config = ConfigDict(extra="forbid")
     bu_id: UUID
     parent_id: UUID | None = None
@@ -33,7 +42,7 @@ class ProjectCreate(BaseModel):
     sponsor_id: UUID | None = None
 
 
-class ProjectPatch(BaseModel):
+class ProjectPatch(ExternalReference):
     model_config = ConfigDict(extra="forbid")
     name: str | None = Field(default=None, min_length=1)
     description: str | None = None
@@ -72,6 +81,7 @@ class ProjectPatch(BaseModel):
 
 
 class ProjectRead(BaseModel):
+    external_ref: str | None
     id: UUID
     number: str
     name: str

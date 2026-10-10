@@ -9,6 +9,7 @@ from flo.kernel.db.repo import ScopedRepo
 from flo.kernel.tenancy.context import Scope
 
 FIELDS = (
+    "external_ref",
     "id",
     "number",
     "name",

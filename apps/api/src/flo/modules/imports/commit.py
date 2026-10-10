@@ -161,14 +161,15 @@ class CommitService(ValidationService):
                                     "id": id,
                                     "row": row.row_no,
                                     "type": record_type,
-                                    "record": record_id,
+                                    "record": str(record_id),
                                 },
                             )
-                    except Exception:
+                    except Exception as error:
                         if mode == "atomic":
                             raise
                         context.scratch = scratch
                         skipped.append(row.row_no)
+                        persist_failure(self, id, row.row_no, error)
                         logger.warning(
                             "import row rolled back",
                             extra={"batch_id": str(id), "row_no": row.row_no},
@@ -221,3 +222,21 @@ class CommitService(ValidationService):
                         failure_service.notify(id, "failed", previous)
                 logger.error("atomic import rolled back", extra={"batch_id": str(id)})
             raise
+
+
+def persist_failure(
+    service: ValidationService, batch_id: UUID, row_no: int, error: Exception
+) -> None:
+    if isinstance(error, ProblemError):
+        issue = {
+            "column": None,
+            "code": error.code.value,
+            "message": error.detail,
+            "severity": "error",
+            "problem": (error.checks or {}).get("problem"),
+        }
+        service.repo.execute(
+            "UPDATE import_row SET action='error', issues=issues || %(issues)s "
+            "WHERE org_id=%(org_id)s AND batch_id=%(id)s AND row_no=%(row)s",
+            {"id": batch_id, "row": row_no, "issues": Jsonb([issue])},
+        )

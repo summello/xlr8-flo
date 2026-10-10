@@ -18,12 +18,13 @@ from flo.kernel.ports.storage import Storage
 from flo.kernel.storage import create_storage
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
-from flo.modules.imports.commit import recovery_text
+from flo.modules.imports.commit import persist_failure, recovery_text
 from flo.modules.imports.handlers import get_handler
 from flo.modules.imports.parsers import parse_value
 from flo.modules.imports.schemas import ImportBatchRead, ImportReport
 from flo.modules.imports.service import ImportRepository, ImportService, read_rows
 from flo.modules.imports.templates import get_template
+from flo.modules.imports.templates.builtin import register_builtin
 from flo.modules.imports.validation import ValidationService, conflict, plan_rows, store_planned
 
 type ConnectionFactory = Callable[[], psycopg.Connection[tuple[object, ...]]]
@@ -199,6 +200,17 @@ class ImportWorker:
         if done == 0:
             counts.update(dict.fromkeys(("create", "update", "skip", "warning", "error"), 0))
         context = service.row_context(can)
+        if batch.template == "projects" and done:
+            # Preserve ordered parent references across durable validation slices.
+            with tenant_transaction(cast(RlsSession, service.connection), service.scope):
+                prior = service.repo.execute(
+                    "SELECT parsed FROM import_row WHERE org_id=%(org_id)s "
+                    "AND batch_id=%(id)s AND action='create' ORDER BY row_no",
+                    {"id": batch.id},
+                ).fetchall()
+            context.scratch["planned"] = {
+                str(cast(dict[str, object], row[0])["external_ref"]): True for row in prior
+            }
         while done < len(raw):
             if self.control(job):
                 raise Cancelled
@@ -313,7 +325,12 @@ class ImportWorker:
                         "INSERT INTO "
                         "import_result(org_id,batch_id,row_no,record_type,record_id) "
                         "VALUES(%(org_id)s,%(id)s,%(row)s,%(type)s,%(record)s)",
-                        {"id": batch.id, "row": number, "type": record_type, "record": record_id},
+                        {
+                            "id": batch.id,
+                            "row": number,
+                            "type": record_type,
+                            "record": str(record_id),
+                        },
                     )
             except (
                 psycopg.OperationalError,
@@ -322,11 +339,12 @@ class ImportWorker:
                 TransientJobError,
             ):
                 raise
-            except Exception:
+            except Exception as error:
                 if report.mode == "atomic":
                     raise
                 context.scratch = scratch
                 skipped.add(number)
+                persist_failure(service, batch.id, number, error)
             else:
                 committed.add(number)
         report.committed_row_numbers = sorted(committed)
@@ -424,6 +442,7 @@ def handlers(
     storage: Storage | None = None,
     monotonic: Callable[[], float] = time.monotonic,
 ) -> dict[str, JobHandler]:
+    register_builtin()
     worker = ImportWorker(
         connection_factory, resolver_factory, storage=storage, monotonic=monotonic
     )

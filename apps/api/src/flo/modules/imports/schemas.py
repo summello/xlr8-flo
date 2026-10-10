@@ -61,6 +61,7 @@ class CommitBody(BaseModel):
 
 
 class ImportIssueRead(BaseModel):
+    problem: str | None = None
     column: str | None
     code: str
     message: str
