@@ -5,7 +5,7 @@ Source of the Claude Design canvas `xlr8flo-design-system` (https://claude.ai/ar
 > **Authority: this folder is a drawing, not a specification of values.** `../MASTER.md` and `apps/web/src/styles/tokens.css` win over everything here, then `../pages/*.md`. If a board or `project/xlr8flo.css` disagrees with them, the canvas is stale: ignore it, do not copy its value, and record the stale board in `notes.followup`. Use it for layout, composition, copy and interaction. See AGENTS.md, "Authority for UI values". This folder is excluded from CodeQL (`.github/codeql/config.yml`) and its specs are not run by CI.
 
 - Start with `DECISIONS.md` (everything decided) and `HANDOFF.md` (the plan for the remaining screens).
-- Five canvas pages (Requisition Create holds `Requisition*`, `ReqCreate*`, `ReqList*`, `ReqDetail*`; Common Screens holds the access screens, `SignIn*`): Playground (Home, Executive Dashboard, width variants), Project Dashboard (project list, dashboard, ledger entries, detail, with widths and states) and Design System (the sheet and the theme panel).
+- Nine canvas pages (RFQ Comparison holds `RfqComparison` and `Cmp*`; Budget Transfer holds `BudgetTransfer*`, `TransferPosting`, `Tr*` and its inbox variants `ApprSheetTransfer*`; Approval Inbox holds `Appr*`, `ApprSheet*`, `WdDialog*`, `ReqDetailReturned`, `ReqDetailWithdrawn`, `Resub*`, `Deleg*`; Approval Workflow Builder holds `WfList*`, `Build*`; Requisition Create holds `Requisition*`, `ReqCreate*`, `ReqList*`, `ReqDetail*`; Common Screens holds the access screens, `SignIn*`): Playground (Home, Executive Dashboard, width variants), Project Dashboard (project list, dashboard, ledger entries, detail, with widths and states) and Design System (the sheet and the theme panel).
 - Files under `project/` mirror the published canvas paths.
 - `project/xlr8flo.css` transcribes the tokens in `../MASTER.md` and adds the motion, state and overlay classes. It does not amend MASTER.md; MASTER.md stays the source of truth.
 - Boards: `ProjectList`, `ProjectDashboard`, `ProjectLedger`, `ProjectDetail` (variants `List*`, `Dash*`, `Ledger*`, `Detail*`), `Main` (Home), `ExecutiveDashboard`, `DesignSystem` (+ `ThemePanel`), and width variants `HomeW*`, `ExecW*`, `HomeCollapsed`.
@@ -33,6 +33,7 @@ Playwright runs the real boards locally, with the canvas runtime served as `supp
 cd design-system/canvas/tests
 ln -s "$(npm root -g)" node_modules        # or npm i -D playwright
 DC_RUNTIME=<dc-runtime.js> AXE_CORE=<axe.min.js> npx playwright test
+# if another checkout already serves 4173, set PORT=4180 (any free port) for both the run and any server you start
 ```
 
 - `DC_RUNTIME`: the canvas's `artifact-type/dc-runtime.js` (read it from the artifact; it is not committed).
@@ -46,4 +47,8 @@ DC_RUNTIME=<dc-runtime.js> AXE_CORE=<axe.min.js> npx playwright test
 - `projects.spec.mjs`: the Project Dashboard page: happy and keyboard paths, every state, figures that must agree across screens, sheet focus trap, phone targets, axe in light and dark on 26 boards, planted violations.
 - `requisitions.spec.mjs`: create (lines, cents, catalogue, validation summary, funds block, submit, standalone, keyboard, sticky bar), list (tabs, filters, status icons), detail (lifecycle, quantities, ledger agreement, layout rule), axe in light and dark on 25 boards, planted violations.
 - `auth.spec.mjs`: the access screens: sign in, two-step verification, sign up, the backdrop's motion rules (with planted violations), reduced motion, axe in light and dark on 18 boards.
+- `approvals.spec.mjs`: the two approval pages: inbox, decision panel, withdraw, resubmit diff, delegation, workflow list and builder (validation, cycle prevention, outline, keyboard, pointer drag, route preview), axe in light and dark on 31 boards, planted violations.
+- `required.spec.mjs`: the required-field indicator (tag, rail, summary line, checkbox, conditional rule, line cells, delegation, sign in and sign up, design system sample), the hyperlink hover and focus, the decision panel order and its fold. `lint.spec.mjs` also runs `requiredMarkViolations` on every board, with planted violations.
+- `transfers.spec.mjs`: the Budget Transfer page: list, create (transfer, allocation, adjustment, validation, race, policy), detail, reversal, the posting moment (frames, trace, reduced motion, table), the inbox transfer panel, the entry points, axe in light and dark on 38 boards, planted violations.
+- `comparison.spec.mjs`: the Bid Comparison page: totals against independently computed figures, markers, show-only-differences, the two award bases, by line, cost breakdown and its table, scoring weights, the bid sheet, the hand-off and its scope refusal, sealed bids, narrow widths, planted violations, axe in light and dark on 19 boards.
 - `a11y.spec.mjs`: axe in light and dark across the default, collapsed, popover, command menu, sheet, drawer and tab states. Includes a planted violation to prove the harness fails.

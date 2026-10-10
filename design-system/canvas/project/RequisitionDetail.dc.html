@@ -45,6 +45,7 @@
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
           <sc-if value="{{canEdit}}" hint-placeholder-val="{{ false }}"><a href="#" class="btn">Edit draft</a></sc-if>
+          <sc-if value="{{isReturned}}" hint-placeholder-val="{{ false }}"><a href="RequisitionResubmit.dc.html" class="btn primary">Edit and Resubmit</a></sc-if>
           <sc-if value="{{canWithdraw}}" hint-placeholder-val="{{ true }}"><button class="btn" type="button" onClick="{{withdraw}}">{{withdrawLabel}}</button></sc-if>
         </div>
       </div>
@@ -54,8 +55,11 @@
       </sc-if>
 
       <sc-if value="{{pageOk}}" hint-placeholder-val="{{ true }}">
+      <sc-if value="{{isReturned}}" hint-placeholder-val="{{ false }}">
+        <div class="summary warning" role="status"><div style="display:flex;gap:8px;align-items:flex-start"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:1px"><path d="M9 14L4 9l5-5M4 9h10a6 6 0 016 6v2"></path></svg><div><b class="t-dense">Returned for Changes</b><div class="t-dense">Amara Okafor returned this on 7 Oct 2026, 11:20: &ldquo;The proximity sensor quote is for 30, the request says 40. Correct the quantity or attach a new quote.&rdquo; The reservation is held while you amend. Nothing is lost: version 1 stays in the history.</div></div></div></div>
+      </sc-if>
       <section class="card" aria-labelledby="h-life" style="padding:16px;display:flex;flex-direction:column;gap:12px">
-        <h2 class="t-heading" id="h-life">Where It Is</h2>
+        <h2 class="t-heading" id="h-life" tabindex="-1">Where It Is</h2>
         <ol class="stepper" aria-label="Requisition lifecycle">
           <sc-for list="{{stages}}" as="s" hint-placeholder-count="7"><li class="{{s.cls}}" aria-current="{{s.cur}}">{{s.mark}}{{s.label}}<span class="sr-only">{{s.sr}}</span></li></sc-for>
         </ol>
@@ -93,6 +97,11 @@
                 <div><div class="t-label">Reserved</div><div class="amt mamt"><span class="metric"><span class="w">196,000</span><span class="d">.00</span></span><span class="cur">USD</span></div></div>
                 <dl class="kv" style="margin:0;grid-template-columns:minmax(0,1fr) auto"><dt class="t-label">Released</dt><dd class="amt" style="margin:0;text-align:right"><span class="w">0</span><span class="d">.00</span><span class="cur">USD</span></dd><dt class="t-label">Project Available</dt><dd class="amt" style="margin:0;text-align:right"><span class="w">350,000</span><span class="d">.00</span><span class="cur">USD</span></dd></dl>
                 <p class="t-dense secondary" style="margin:0">Reserved against Plant 4 Line Retrofit when it was submitted (<a href="#" class="u">LE-0318</a>). Withdrawing, rejection or a smaller award releases the unused part exactly once.</p>
+              </sc-if>
+              <sc-if value="{{isWithdrawn}}" hint-placeholder-val="{{ false }}">
+                <div><div class="t-label">Reserved</div><div class="amt mamt"><span class="metric"><span class="w">0</span><span class="d">.00</span></span><span class="cur">USD</span></div></div>
+                <dl class="kv" style="margin:0;grid-template-columns:minmax(0,1fr) auto"><dt class="t-label">Released</dt><dd class="amt" style="margin:0;text-align:right"><span class="w">196,000</span><span class="d">.00</span><span class="cur">USD</span></dd><dt class="t-label">Project Available</dt><dd class="amt" style="margin:0;text-align:right"><span class="w">546,000</span><span class="d">.00</span><span class="cur">USD</span></dd></dl>
+                <p class="t-dense secondary" style="margin:0">Released once, when the requisition was withdrawn (<a href="#" class="u">LE-0322</a>). The reservation <a href="#" class="u">LE-0318</a> stays in the ledger and is reversed, never edited.</p>
               </sc-if>
               <sc-if value="{{notReserved}}" hint-placeholder-val="{{ false }}"><p class="t-dense secondary" style="margin:0">Nothing is reserved yet. Submitting reserves <span class="amt"><span class="w">196,000</span><span class="d">.00</span><span class="cur">USD</span></span> against Plant 4 Line Retrofit, which has <span class="amt"><span class="w">546,000</span><span class="d">.00</span><span class="cur">USD</span></span> available.</p></sc-if>
             </sc-if>
@@ -156,13 +165,35 @@
     </main>
   </div>
 </div>
+<sc-if value="{{dlgOpen}}" hint-placeholder-val="{{ false }}">
+  <div class="dialog-scrim" onClick="{{closeDlg}}">
+    <div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="wd-t" aria-describedby="wd-d" onClick="{{stop}}" onKeyDown="{{dlgKey}}">
+      <div class="dialog-h"><h2 class="t-title" id="wd-t">Withdraw This Requisition?</h2></div>
+      <div class="dialog-b" id="wd-d">
+        <sc-if value="{{dlg.isError}}" hint-placeholder-val="{{ false }}"><div class="summary" role="alert"><div style="display:flex;gap:8px;align-items:flex-start"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:1px"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg><div><b class="t-dense">Not withdrawn</b><div class="t-dense">The request timed out. Nothing changed: the approval is still pending and the 196,000.00 USD is still reserved. Your reason is kept. Reference 3d90-71ac.</div></div></div></div></sc-if>
+        <sc-if value="{{dlg.isDecided}}" hint-placeholder-val="{{ false }}"><div class="summary info" role="alert"><div style="display:flex;gap:8px;align-items:flex-start"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:1px"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6"></path></svg><div><b class="t-dense">Already Approved</b><div class="t-dense">Amara Okafor approved this at 09:41, a moment before you confirmed. It can no longer be withdrawn, and nothing was released. It is now Sourcing in Progress; to stop it, ask Procurement to cancel it.</div></div></div></div></sc-if>
+        <p class="t-dense" style="margin:0">Withdrawing stops the approval and gives the reserved funds back to the project. You cannot undo it, but the history stays and you can raise a new requisition.</p>
+        <dl class="kv" style="margin:0;grid-template-columns:104px minmax(0,1fr)">
+          <dt class="t-label">Approval</dt><dd style="margin:0">APR-00302 is cancelled and Amara Okafor is told.</dd>
+          <dt class="t-label">Reservation</dt><dd style="margin:0">Releases <span class="amt"><span class="w">196,000</span><span class="d">.00</span><span class="cur">USD</span></span> to Plant 4 Line Retrofit, exactly once.</dd>
+          <dt class="t-label">After</dt><dd style="margin:0">Status becomes Withdrawn. It stays in the list and cannot be reopened.</dd>
+        </dl>
+        <div class="field"><label class="t-label" for="wd-r">Reason (optional)</label><textarea id="wd-r" class="inp ta" rows="2" readonly="{{dlg.busy}}" placeholder="Shown to the approver and kept in the history"></textarea></div>
+      </div>
+      <div class="dialog-f">
+        <button class="btn" type="button" onClick="{{closeDlg}}" autoFocus="{{dlg.cancelFocus}}">{{dlg.cancelLabel}}</button>
+        <sc-if value="{{dlg.canConfirm}}" hint-placeholder-val="{{ true }}"><button class="btn primary" type="button" aria-busy="{{dlg.busy}}" onClick="{{confirmWd}}">{{dlg.confirmLabel}}</button></sc-if>
+      </div>
+    </div>
+  </div>
+</sc-if>
 <sc-if value="{{navTip}}" hint-placeholder-val="{{ false }}"><div class="nav-tip" style="{{navTip.style}}">{{navTip.text}}</div></sc-if>
 <div class="toasts" role="status" aria-live="polite">
   <sc-if value="{{toast}}" hint-placeholder-val="{{ false }}"><div class="toast"><span>{{toast.msg}}</span></div></sc-if>
 </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"dark","options":["light","dark"]},"collapsed":{"editor":"enum","default":"auto","options":["auto","yes","no"]},"navOpen":{"editor":"boolean","default":false},"view":{"editor":"enum","default":"ready","options":["ready","loading","error","partial","empty"]},"status":{"editor":"enum","default":"pending","options":["draft","pending","sourcing","awarded"]},"$preview":{"width":1440,"height":1500}}'>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"dark","options":["light","dark"]},"collapsed":{"editor":"enum","default":"auto","options":["auto","yes","no"]},"navOpen":{"editor":"boolean","default":false},"view":{"editor":"enum","default":"ready","options":["ready","loading","error","partial","empty"]},"status":{"editor":"enum","default":"pending","options":["draft","pending","returned","withdrawn","sourcing","awarded"]},"dialog":{"editor":"enum","default":"","options":["","open","busy","error","decided"]},"$preview":{"width":1440,"height":1500}}'>
 class Component extends DCLogic {
   componentDidMount() {
     if ((this.props.collapsed ?? 'auto') === 'auto') {
@@ -177,7 +208,7 @@ class Component extends DCLogic {
     const H = ['--c5', '--c7', '--c8', '--c1', '--c3', '--c2', '--c4', '--c6'];
     document.querySelectorAll('.dash > .card').forEach((el, i) => el.style.setProperty('--hue', 'var(' + H[i % H.length] + ')'));
   }
-  componentWillUnmount() { cancelAnimationFrame(this._raf); clearTimeout(this._it); clearTimeout(this._tt); }
+  componentWillUnmount() { cancelAnimationFrame(this._raf); clearTimeout(this._it); clearTimeout(this._tt); clearTimeout(this._wd); }
   split(s) { const i = s.lastIndexOf('.'); return i < 0 ? [s, ''] : [s.slice(0, i), s.slice(i)]; }
   back(el) { setTimeout(() => { if (el && el.focus) el.focus(); }, 0); }
   toast(msg) {
@@ -244,22 +275,27 @@ class Component extends DCLogic {
     const st = this.state || {};
     const view = st.view ?? this.props.view ?? 'ready';
     const status = st.status ?? this.props.status ?? 'pending';
+    const dlgKey = st.dlg !== undefined ? st.dlg : (this.props.dialog || '');
     const P = { x: "M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6", ok: "M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6", info: "M20 11a8 8 0 00-14-4M4 4v4h4M4 13a8 8 0 0014 4M20 20v-4h-4", n: "M12 21a9 9 0 100-18 9 9 0 000 18z" };
     const LIFE = ['Draft', 'Approval Pending', 'Sourcing in Progress', 'Sourced', 'Awarded', 'Open for Purchase', 'Completed'];
-    const idx = { draft: 0, pending: 1, sourcing: 2, awarded: 4 }[status];
-    const TONE = { draft: ['neutral', P.n, 'Draft'], pending: ['info', P.info, 'Approval Pending'], sourcing: ['info', P.info, 'Sourcing in Progress'], awarded: ['success', P.ok, 'Awarded'] }[status];
-    const stages = LIFE.map((label, i) => ({ label, cls: i < idx ? 'done' : i === idx ? 'now' : '', cur: i === idx ? 'step' : undefined, mark: i < idx ? '\u2713 ' : '', sr: i < idx ? ', done' : i === idx ? ', current' : ', not yet' }));
-    const WHERE = { draft: 'This is a draft. Nothing is reserved and nobody has been asked to approve it.', pending: 'Waiting for Amara Okafor, step 1 of 1. The estimate is reserved against the project until it is decided.', sourcing: 'Approved. RFQ-00071 went to 3 vendors and bids are being collected.', awarded: 'Awarded in full. Purchase orders are being raised; the servo drives are split across two orders.' }[status];
+    const idx = { draft: 0, pending: 1, returned: 1, withdrawn: -1, sourcing: 2, awarded: 4 }[status];
+    const TONE = { draft: ['neutral', P.n, 'Draft'], pending: ['info', P.info, 'Approval Pending'], sourcing: ['info', P.info, 'Sourcing in Progress'], awarded: ['success', P.ok, 'Awarded'], returned: ['warning', 'M9 14L4 9l5-5M4 9h10a6 6 0 016 6v2', 'Returned for Changes'], withdrawn: ['neutral', P.x, 'Withdrawn'] }[status];
+    const stages = LIFE.map((label, i) => status === 'withdrawn' ? ({ label, cls: i === 0 ? 'done' : '', cur: undefined, mark: i === 0 ? '\u2713 ' : '', sr: i === 0 ? ', done' : ', not reached' }) : ({ label, cls: i < idx ? 'done' : i === idx ? 'now' : '', cur: i === idx ? 'step' : undefined, mark: i < idx ? '\u2713 ' : '', sr: i < idx ? ', done' : i === idx ? ', current' : ', not yet' }));
+    const WHERE = { draft: 'This is a draft. Nothing is reserved and nobody has been asked to approve it.', pending: 'Waiting for Amara Okafor, step 1 of 1. The estimate is reserved against the project until it is decided.', sourcing: 'Approved. RFQ-00071 went to 3 vendors and bids are being collected.', returned: 'Returned to the requester on 7 Oct 2026. Amend and resubmit; the approval restarts from the first step if the change is material.', withdrawn: 'Withdrawn by Dev Patel on 8 Oct 2026, 09:52. The approval was cancelled and the reservation was released once. It cannot be reopened.', awarded: 'Awarded in full. Purchase orders are being raised; the servo drives are split across two orders.' }[status];
     const HIST = {
       draft: [['Created', '5 Oct 2026, 13:48', 'Dev Patel']],
       pending: [['Routed to Amara Okafor, step 1 of 1', '6 Oct 2026, 09:12', 'System'], ['Reserved 196,000.00 USD against Plant 4 Line Retrofit', '6 Oct 2026, 09:12', 'System'], ['Submitted for approval', '6 Oct 2026, 09:12', 'Dev Patel'], ['Created', '5 Oct 2026, 13:48', 'Dev Patel']],
       sourcing: [['RFQ-00071 published to 3 vendors', '7 Oct 2026, 10:05', 'Priya Raman'], ['Approved', '6 Oct 2026, 15:40', 'Amara Okafor'], ['Reserved 196,000.00 USD against Plant 4 Line Retrofit', '6 Oct 2026, 09:12', 'System'], ['Submitted for approval', '6 Oct 2026, 09:12', 'Dev Patel'], ['Created', '5 Oct 2026, 13:48', 'Dev Patel']],
+      returned: [['Returned for changes: "Quantity of sensors does not match the quote"', '7 Oct 2026, 11:20', 'Amara Okafor'], ['Reserved 196,000.00 USD against Plant 4 Line Retrofit', '6 Oct 2026, 09:12', 'System'], ['Submitted for approval', '6 Oct 2026, 09:12', 'Dev Patel'], ['Created', '5 Oct 2026, 13:48', 'Dev Patel']],
+      withdrawn: [['Released 196,000.00 USD to Plant 4 Line Retrofit', '8 Oct 2026, 09:52', 'System'], ['Withdrawn', '8 Oct 2026, 09:52', 'Dev Patel'], ['Reserved 196,000.00 USD against Plant 4 Line Retrofit', '6 Oct 2026, 09:12', 'System'], ['Submitted for approval', '6 Oct 2026, 09:12', 'Dev Patel'], ['Created', '5 Oct 2026, 13:48', 'Dev Patel']],
       awarded: [['Awarded, split by line', '16 Oct 2026, 10:20', 'Priya Raman'], ['Bids closed, 3 received', '14 Oct 2026, 17:00', 'System'], ['RFQ-00071 published to 3 vendors', '7 Oct 2026, 10:05', 'Priya Raman'], ['Approved', '6 Oct 2026, 15:40', 'Amara Okafor'], ['Submitted for approval', '6 Oct 2026, 09:12', 'Dev Patel'], ['Created', '5 Oct 2026, 13:48', 'Dev Patel']]
     }[status].map(([what, when, who]) => ({ what, when, who }));
     const LINKS = {
       draft: [],
       pending: [['LE-0318', 'Ledger entry', 'Reservation, 196,000.00 USD'], ['APR-00302', 'Approval', 'Pending, step 1 of 1']],
       sourcing: [['LE-0318', 'Ledger entry', 'Reservation, 196,000.00 USD'], ['APR-00302', 'Approval', 'Approved by Amara Okafor'], ['RFQ-00071', 'RFQ', 'Open, closes 14 Oct'], ['Bids', '3 received', 'Comparison opens at close']],
+      returned: [['LE-0318', 'Ledger entry', 'Reservation, 196,000.00 USD, held'], ['APR-00302', 'Approval', 'Returned by Amara Okafor']],
+      withdrawn: [['LE-0322', 'Ledger entry', 'Release, 196,000.00 USD'], ['LE-0318', 'Ledger entry', 'Reservation, reversed by LE-0322'], ['APR-00302', 'Approval', 'Cancelled by withdrawal']],
       awarded: [['LE-0318', 'Ledger entry', 'Reservation, 196,000.00 USD'], ['APR-00302', 'Approval', 'Approved by Amara Okafor'], ['RFQ-00071', 'RFQ', 'Closed, 3 bids'], ['AWD-00094', 'Award', 'Split by line, 2 vendors'], ['PO-00237', 'Purchase order', 'Servo drives, 2 of 4']]
     }[status].map(([ref, kind, note]) => ({ ref, kind, note }));
     // REQ-015: requested, sourced, awarded, ordered, cancelled and remaining per line
@@ -273,12 +309,23 @@ class Component extends DCLogic {
     const links = view === 'empty' ? [] : LINKS;
     return {
       ...this.shellVals(st), rootCls: 'xf', number: status === 'draft' ? 'Draft REQ-00431' : 'REQ-00418', pillCls: 'pill ' + TONE[0], pd: TONE[1], statusText: TONE[2],
-      canEdit: status === 'draft', canWithdraw: status === 'draft' || status === 'pending', withdrawLabel: status === 'draft' ? 'Discard draft' : 'Withdraw requisition',
+      canEdit: status === 'draft', canWithdraw: status === 'draft' || status === 'pending' || status === 'returned', withdrawLabel: status === 'draft' ? 'Discard draft' : 'Withdraw requisition', isReturned: status === 'returned', isWithdrawn: status === 'withdrawn',
+      dlgOpen: !!dlgKey, stop: (e) => e.stopPropagation(),
+      dlg: { isError: dlgKey === 'error', isDecided: dlgKey === 'decided', busy: dlgKey === 'busy', canConfirm: dlgKey !== 'decided', cancelFocus: true, cancelLabel: dlgKey === 'decided' ? 'Close' : 'Keep Requisition', confirmLabel: dlgKey === 'busy' ? 'Withdrawing\u2026' : dlgKey === 'error' ? 'Try Again' : 'Withdraw Requisition' },
+      closeDlg: () => { if (dlgKey === 'busy') return; this.setState({ dlg: '' }); this.back(this._opener); },
+      confirmWd: () => { if (dlgKey === 'busy') return; this.setState({ dlg: 'busy' }); this._wd = setTimeout(() => { this.setState({ dlg: '', status: 'withdrawn' }); this.toast('Withdrawn. 196,000.00 USD released to Plant 4 Line Retrofit, once.'); this.back(document.getElementById('h-life')); }, 900); },
+      dlgKey: (e) => {
+        if (e.key === 'Escape') { e.preventDefault(); if (dlgKey !== 'busy') { this.setState({ dlg: '' }); this.back(this._opener); } return; }
+        if (e.key !== 'Tab') return;
+        const f = Array.from(e.currentTarget.querySelectorAll('button, textarea')).filter((x) => !x.disabled);
+        const first = f[0], last = f[f.length - 1], at = document.activeElement;
+        if (e.shiftKey && at === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && at === last) { e.preventDefault(); first.focus(); }
+      },
       pageOk: view !== 'error', pageError: view === 'error', stages, whereText: WHERE, history: HIST, links, lineRows,
-      reserved: status !== 'draft', notReserved: status === 'draft',
+      reserved: status !== 'draft' && status !== 'withdrawn', notReserved: status === 'draft',
       sum: cs('sum'), res: cs('res'), hist: cs('hist'), link: cs('link'), lines: cs('lines'),
       retry: () => this.setState({ view: 'ready' }),
-      withdraw: () => this.toast(status === 'draft' ? 'Draft discarded. Nothing was reserved.' : 'Withdrawing releases the reservation once. The confirmation step comes with the Approval Inbox page.')
+      withdraw: (ev) => { if (status === 'draft') { this.toast('Draft discarded. Nothing was reserved.'); return; } this._opener = ev.currentTarget; this.setState({ dlg: 'open' }); }
     };
   }
 }
