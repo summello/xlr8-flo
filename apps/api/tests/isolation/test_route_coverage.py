@@ -22,6 +22,22 @@ TESTS = Path(__file__).resolve().parents[1]
 # (method, path) -> "file::test" that proves a foreign id returns 404.
 COVERED = {
     (
+        "POST",
+        "/api/v1/imports/{id}/validate",
+    ): "imports/test_validation.py::test_foreign_batch_routes",
+    (
+        "POST",
+        "/api/v1/imports/{id}/commit",
+    ): "imports/test_validation.py::test_foreign_batch_routes",
+    (
+        "GET",
+        "/api/v1/imports/{id}/preview",
+    ): "imports/test_validation.py::test_foreign_batch_routes",
+    (
+        "GET",
+        "/api/v1/imports/{id}/errors.csv",
+    ): "imports/test_validation.py::test_foreign_batch_routes",
+    (
         "GET",
         "/api/v1/projects/{id}/risks",
     ): "projects/test_risks.py::test_risk_foreign_tenant_routes",

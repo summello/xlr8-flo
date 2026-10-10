@@ -40,6 +40,7 @@ _FIELDS = (
     "created_at",
     "validated_at",
     "committed_at",
+    "result",
 )
 
 
@@ -66,7 +67,7 @@ class ImportRepository(ScopedRepo[object]):
         counts = cast(dict[str, object], values["counts"])
         values["headers"] = counts["headers"]
         values["row_count"] = counts["rows"]
-        values["counts"] = {"rows": counts["rows"]}
+        values["counts"] = {key: value for key, value in counts.items() if key != "headers"}
         return ImportBatchRead.model_validate(values)
 
 

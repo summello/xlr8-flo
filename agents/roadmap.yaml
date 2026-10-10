@@ -695,7 +695,7 @@ epics:
         dep:
           - E06-S03
           - E04-S03
-        st: todo
+        st: in_progress
       - id: E06-S08
         t: Project dashboard with hierarchy visual and drill-down to ledger entries
         k: ui
@@ -879,7 +879,7 @@ epics:
           - IMP-007
         dep:
           - E08-S01
-        st: todo
+        st: done
       - id: E08-S03
         t: Import batch record, idempotent re-import by external key, async with
           progress

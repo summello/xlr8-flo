@@ -45,6 +45,41 @@ class MappingPut(BaseModel):
     mapping: dict[str, str]
 
 
+class ImportReport(BaseModel):
+    mode: Literal["atomic", "partial"]
+    committed: int
+    skipped_errors: int
+    unchanged: int
+    committed_row_numbers: list[int]
+    skipped_row_numbers: list[int]
+    recovery: str | None
+
+
+class CommitBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    mode: Literal["atomic", "partial"]
+
+
+class ImportIssueRead(BaseModel):
+    column: str | None
+    code: str
+    message: str
+    severity: Literal["error", "warning"]
+
+
+class ImportRowRead(BaseModel):
+    row_no: int
+    action: Literal["create", "update", "skip", "error"]
+    has_warning: bool
+    record_preview: dict[str, str]
+    issues: list[ImportIssueRead]
+
+
+class ImportPreview(BaseModel):
+    rows: list[ImportRowRead]
+    next_cursor: str | None
+
+
 class ImportBatchRead(BaseModel):
     id: UUID
     template: str
@@ -70,3 +105,4 @@ class ImportBatchRead(BaseModel):
     created_at: datetime
     validated_at: datetime | None
     committed_at: datetime | None
+    result: ImportReport | None = None

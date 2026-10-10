@@ -603,6 +603,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/imports/{id}/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Commit */
+        post: operations["commit_api_v1_imports__id__commit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imports/{id}/errors.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Errors Csv */
+        get: operations["errors_csv_api_v1_imports__id__errors_csv_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/imports/{id}/mapping": {
         parameters: {
             query?: never;
@@ -614,6 +648,40 @@ export interface paths {
         /** Mapping */
         put: operations["mapping_api_v1_imports__id__mapping_put"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imports/{id}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Preview */
+        get: operations["preview_api_v1_imports__id__preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imports/{id}/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Validate */
+        post: operations["validate_api_v1_imports__id__validate_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1447,6 +1515,14 @@ export interface components {
             /** Rows */
             rows: components["schemas"]["ProjectRef"][];
         };
+        /** CommitBody */
+        CommitBody: {
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "atomic" | "partial";
+        };
         /** CurrencyAggregate */
         CurrencyAggregate: {
             /** Currency */
@@ -1647,6 +1723,7 @@ export interface components {
             mapping: {
                 [key: string]: string;
             } | null;
+            result?: components["schemas"]["ImportReport"] | null;
             /** Row Count */
             row_count: number;
             /**
@@ -1665,6 +1742,65 @@ export interface components {
             uploader_id: string;
             /** Validated At */
             validated_at: string | null;
+        };
+        /** ImportIssueRead */
+        ImportIssueRead: {
+            /** Code */
+            code: string;
+            /** Column */
+            column: string | null;
+            /** Message */
+            message: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "error" | "warning";
+        };
+        /** ImportPreview */
+        ImportPreview: {
+            /** Next Cursor */
+            next_cursor: string | null;
+            /** Rows */
+            rows: components["schemas"]["ImportRowRead"][];
+        };
+        /** ImportReport */
+        ImportReport: {
+            /** Committed */
+            committed: number;
+            /** Committed Row Numbers */
+            committed_row_numbers: number[];
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "atomic" | "partial";
+            /** Recovery */
+            recovery: string | null;
+            /** Skipped Errors */
+            skipped_errors: number;
+            /** Skipped Row Numbers */
+            skipped_row_numbers: number[];
+            /** Unchanged */
+            unchanged: number;
+        };
+        /** ImportRowRead */
+        ImportRowRead: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "create" | "update" | "skip" | "error";
+            /** Has Warning */
+            has_warning: boolean;
+            /** Issues */
+            issues: components["schemas"]["ImportIssueRead"][];
+            /** Record Preview */
+            record_preview: {
+                [key: string]: string;
+            };
+            /** Row No */
+            row_no: number;
         };
         /** InvitationAccept */
         InvitationAccept: {
@@ -4265,6 +4401,94 @@ export interface operations {
             };
         };
     };
+    commit_api_v1_imports__id__commit_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommitBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportBatchRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    errors_csv_api_v1_imports__id__errors_csv_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     mapping_api_v1_imports__id__mapping_put: {
         parameters: {
             query?: never;
@@ -4281,6 +4505,94 @@ export interface operations {
                 "application/json": components["schemas"]["MappingPut"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportBatchRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    preview_api_v1_imports__id__preview_get: {
+        parameters: {
+            query?: {
+                kind?: ("create" | "update" | "skip" | "warning" | "error") | null;
+                cursor?: string | null;
+                page_size?: number;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportPreview"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    validate_api_v1_imports__id__validate_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {

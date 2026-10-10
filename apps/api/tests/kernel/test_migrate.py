@@ -126,6 +126,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261009_0031",
         "20261009_0032",
         "20261009_0033",
+        "20261009_0034",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -514,3 +515,82 @@ def test_project_risk_migration_preserves_existing_project(empty_database):
         assert conn.execute("SELECT name FROM project WHERE id=%s", (project_id,)).fetchone() == (
             "Seed",
         )
+
+
+def test_import_rows_migration_preserves_batch_and_enforces_tenant_guards(empty_database):
+    from psycopg.errors import CheckViolation, ForeignKeyViolation, InsufficientPrivilege
+
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from tests.org.test_bootstrap import admin_id, create
+
+    chain = tuple(r for r in migrate.discover_migrations(MIGRATIONS)
+                  if r.revision <= "20261009_0034")
+    migrate.apply_migrations(chain[:-1], empty_database)
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        tenant = create(conn)
+        other = create(conn, "SECOND", "second@example.test")
+        actor = admin_id(conn)
+        batch = uuid4()
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            conn.execute(
+                "INSERT INTO import_batch(id,org_id,template,template_version,uploader_id,"
+                "file_name,file_sha256,file_size,mapping,counts) "
+                "VALUES(%s,%s,'probe',1,%s,'data.csv',%s,1,'{}','{}')",
+                (batch, tenant.org_id, actor, "a" * 64),
+            )
+            before = conn.execute("SELECT * FROM import_batch").fetchall()
+        chain[-1].upgrade(conn)
+        assert conn.execute(
+            "SELECT relname,relrowsecurity,relforcerowsecurity FROM pg_class "
+            "WHERE relname IN ('import_row','import_result') ORDER BY relname"
+        ).fetchall() == [("import_result", True, True), ("import_row", True, True)]
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            conn.execute(
+                "INSERT INTO import_row(org_id,batch_id,row_no,action,raw) "
+                "VALUES(%s,%s,2,'create','{}')", (tenant.org_id, batch),
+            )
+            with pytest.raises(CheckViolation), conn.transaction():
+                conn.execute("UPDATE import_row SET action='warning' WHERE batch_id=%s", (batch,))
+            for table, columns, values in (
+                ("import_row", "action,raw", "'create','{}'"),
+                ("import_result", "record_type,record_id", "'probe',gen_random_uuid()"),
+            ):
+                with pytest.raises(ForeignKeyViolation), conn.transaction():
+                    conn.execute(
+                        f"INSERT INTO {table}(org_id,batch_id,row_no,{columns}) "
+                        f"VALUES(%s,%s,3,{values})", (other.org_id, batch),
+                    )
+        role = "import_row_rls_" + uuid4().hex
+        conn.execute(
+            sql.SQL("CREATE ROLE {} NOLOGIN NOSUPERUSER NOBYPASSRLS").format(sql.Identifier(role))
+        )
+        try:
+            conn.execute(sql.SQL("GRANT USAGE ON SCHEMA public TO {}").format(sql.Identifier(role)))
+            conn.execute(
+                sql.SQL("GRANT SELECT,INSERT ON import_row,import_result TO {}")
+                .format(sql.Identifier(role))
+            )
+            conn.execute(sql.SQL("SET ROLE {}").format(sql.Identifier(role)))
+            with tenant_transaction(conn, Scope(other.org_id)):
+                assert conn.execute("SELECT * FROM import_row").fetchall() == []
+                assert conn.execute("SELECT * FROM import_result").fetchall() == []
+            for table, columns, values in (
+                ("import_row", "action,raw", "'create','{}'"),
+                ("import_result", "record_type,record_id", "'probe',gen_random_uuid()"),
+            ):
+                with pytest.raises(InsufficientPrivilege):
+                    with tenant_transaction(conn, Scope(other.org_id)):
+                        conn.execute(f"INSERT INTO {table}(org_id,batch_id,row_no,{columns}) "
+                                     f"VALUES(%s,%s,4,{values})", (tenant.org_id, batch))
+        finally:
+            conn.execute("RESET ROLE")
+            conn.execute(sql.SQL("DROP OWNED BY {}").format(sql.Identifier(role)))
+            conn.execute(sql.SQL("DROP ROLE {}").format(sql.Identifier(role)))
+        chain[-1].downgrade(conn)
+        assert conn.execute("SELECT * FROM import_batch").fetchall() == before
+        assert conn.execute(
+            "SELECT to_regclass('import_row'),to_regclass('import_result')"
+        ).fetchone() == (None, None)
+        chain[-1].upgrade(conn)
+        assert conn.execute("SELECT id FROM import_batch").fetchall() == [(batch,)]

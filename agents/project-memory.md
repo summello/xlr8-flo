@@ -8,9 +8,9 @@ Loaded into every agent session. Updated by `flo done` (status) and by Opus at e
 | | |
 |---|---|
 | Milestone | **M1 — Budget spine** |
-| Stories | 53 / 168 done |
+| Stories | 54 / 168 done |
 | Branch | milestone/M1-budget-spine |
-| In flight | — |
+| In flight | E06-S07 |
 | Blocked | — |
 <!-- STATE:END -->
 

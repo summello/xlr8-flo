@@ -2055,6 +2055,43 @@
       },
       "recap": "Committed bb7dd31 (E06-S06: add tenant-scoped project risk management). PROJ-016 implemented per amendments; revision 20261009_0033 follows validated 0032. All flo check commands green against a disposable local Postgres database with URL configuration: 1499 pytest tests, 86 Vitest tests and 207 Playwright/axe checks. Ruff, strict mypy, import boundaries, web lint/types, migration-chain check and gitleaks green. Focused risk/migration run: 20 passed. Required project_closed, closed_reason and FOR UPDATE removal plants each failed their corresponding test, then were restored. Disposable check database removed; verified shared-test residue cleaned, extensions preserved. No dependency added, no implementation blocker. No submit, gate, done, push or merge.",
       "title": "Project risks with likelihood, impact, owner, mitigation, due date, status"
+    },
+    {
+      "story": "E08-S02",
+      "kind": "engine",
+      "size": "L",
+      "tags": [],
+      "author": "codex",
+      "reviewers": [
+        "qwen"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "qwen": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E08-S02"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "unavailable: OpenRouter has no session concept - pass the generation id to `flo session qwen <id>`"
+        }
+      },
+      "recap": "Added inline dry-run validation, paged previews and safe CSV issue downloads through a template handler registry. Commit re-plans under an advisory lock, supports atomic rollback or partial savepoints, and records committed identifiers and returns recovery instructions.",
+      "title": "Dry-run preview, row/column error report, atomic or explicitly partial commit"
     }
   ]
 }
