@@ -154,7 +154,10 @@ test("Escape closes only the topmost layer and restores focus at each level", as
   await expect(page.getByRole("dialog", { name: "Command menu" })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog", { name: "Command menu" })).toHaveCount(0);
-  expect(await drawer.evaluate((element) => element.contains(document.activeElement))).toBe(true);
+  // Focus returns to the drawer asynchronously after the menu unmounts; poll instead of racing it.
+  await expect
+    .poll(() => drawer.evaluate((element) => element.contains(document.activeElement)))
+    .toBe(true);
 
   await page.keyboard.press("Escape");
   await expect(drawer).toHaveCount(0);
