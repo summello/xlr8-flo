@@ -1083,6 +1083,22 @@ epics:
           - E09-S08
           - E10-S06
         st: todo
+      - id: E09-S12
+        t: 'Resubmit and amendment screens: review changes, funding effect, version
+          lineage'
+        k: ui
+        s: L
+        tags:
+          - ui
+        reqs:
+          - REQ-012
+          - APR-015
+          - DATA-002
+          - UX-003
+        dep:
+          - E09-S08
+          - E09-S11
+        st: todo
 
   - id: E10
     name: Approvals
