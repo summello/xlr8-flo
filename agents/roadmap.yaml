@@ -933,6 +933,7 @@ epics:
         k: crud
         s: M
         tags:
+          - migration
           - money
         reqs:
           - REQ-006
@@ -1051,6 +1052,7 @@ epics:
         k: security
         s: L
         tags:
+          - migration
           - security
         reqs:
           - COL-001

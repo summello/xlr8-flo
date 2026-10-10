@@ -47,5 +47,13 @@ recorded as a `notes.followup` in the story that meets it:
 
 ## Follow-ups raised by these decisions
 
+**Operator items raised by the E09 packets** (each also sits in its packet's `notes.followup`):
+
+- **E09-S06, who may assign a standalone request to an existing project** (REQ-004, "an authorized approver"): the packet reads it as the final approver holding `requisition.approve` on the **assigned project's** scope. Confirm or correct.
+- **MASTER §2.3's requisition status map lacks `rejected`, `withdrawn` and `expired`.** E09-S11 maps rejected and expired to the danger tone and withdrawn to neutral, pending a MASTER amendment.
+- **M1 gap: no baseline role holds `project.read` or `master.read`**, so a seeded Requestor cannot use `/projects` or `/master`. E09-S03 serves the requisition form's options through a requisition-scoped lookups endpoint instead of widening grants; whether the baseline roles should gain those reads is an operator decision.
+- **No UI story owns the resubmit diff and amendment screens** (canvas boards `RequisitionResubmit*`, `design-system/canvas/STORY-NOTES.md` §3 item 3). E09-S08 is engine-only; E09-S11 ships the returned banner, Edit and Resubmit, and the withdraw dialog. A new UI story is needed before M2's exit.
+- **Autosave:** E09-S11 keeps the explicit Save draft button as drawn, with UX-003 guarding navigation; there is no autosave.
+
 - **D-M2-7 versus M1:** `ProjectCreate.currency` (E06-S01) accepts any currency, so a project can exist in a currency other than the organization's base currency. D-M2-7 says projects carry the organization currency. M2 does not change M1: a requisition simply takes its project's currency. The operator should decide whether project creation should be restricted to the base currency; that is a separate story.
 - **D-M2-5 versus canvas `DECISIONS.md` 99 (operator: "an allocation draws on the organization's available budget; there is no separate unallocated pool"):** a standalone requisition's approval allocates its amount to a new top-level project through `budget.service.allocate` in Direct mode, which today has no organization-pool check, so it creates budget. Either 99 needs an organization-level budget pool that Direct allocations draw from (a new story), or D-M2-5 stands as an explicit exception. **Operator to decide**; E09-S06 records it in `notes.followup` and implements D-M2-5 as written meanwhile.
