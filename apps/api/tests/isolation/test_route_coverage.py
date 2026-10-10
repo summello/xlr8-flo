@@ -22,6 +22,11 @@ TESTS = Path(__file__).resolve().parents[1]
 # (method, path) -> "file::test" that proves a foreign id returns 404.
 COVERED = {
     (
+        "GET",
+        "/api/v1/projects/{id}/risk-indicators",
+    ): "projects/test_risk_indicators.py::test_foreign_dashboard_reads",
+    ("GET", "/api/v1/budget/summary"): "budget/test_summary.py::test_foreign_summary_unit",
+    (
         "POST",
         "/api/v1/imports/{id}/cancel",
     ): "imports/test_async_import.py::test_history_and_cancel_foreign_tenant_routes_and_guards",
@@ -179,7 +184,10 @@ COVERED = {
         "GET",
         "/api/v1/projects/{id}/children",
     ): "projects/test_hierarchy.py::test_children_foreign_project",
-    ("GET", "/api/v1/projects/{id}/tree"): "projects/test_hierarchy.py::test_tree_foreign_project",
+    (
+        "GET",
+        "/api/v1/projects/{id}/tree",
+    ): "projects/test_risk_indicators.py::test_foreign_dashboard_reads",
     ("POST", "/api/v1/projects"): "projects/test_projects.py::test_create_foreign_bu",
     ("GET", "/api/v1/projects"): "projects/test_projects.py::test_list_tenant_isolation",
     ("GET", "/api/v1/projects/{id}"): "projects/test_projects.py::test_get_foreign_project",

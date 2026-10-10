@@ -14,6 +14,8 @@ import EffectiveAccessExplorer from "./admin/users/$id";
 import ProjectList from "./projects/list";
 import NewProject from "./projects/new";
 import ProjectDetail from "./projects/detail";
+import Dashboard from "./projects/dashboard";
+import BudgetOverview from "./budget";
 import type { Project } from "../components/projects/api";
 import type { RoutePath } from "./route-paths";
 
@@ -32,6 +34,7 @@ const BUSINESS_UNIT = ["/organization/infrastructure", "Infrastructure BU"] as c
 const PROJECT = ["/projects/north-plant-renewal", "North plant renewal"] as const;
 const SUB_PROJECT = ["/projects/north-plant-renewal/cooling", "Cooling system upgrade"] as const;
 const PROJECT_PATH = /^\/projects\/([0-9a-f-]{36})$/;
+const DASHBOARD_PATH = /^\/projects\/([0-9a-f-]{36})\/dashboard$/;
 const ADMIN_USER_PATH = /^\/admin\/users\/([^/]+)$/;
 
 const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
@@ -72,8 +75,8 @@ const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
   },
   "/budget": {
     activeHref: "/budget",
-    description: "Budget screens arrive with the budget spine milestone.",
-    hierarchy: [ORGANIZATION, BUSINESS_UNIT, PROJECT, ["/budget", "Budget"]],
+    description: "Organization and unit budgets, grouped by currency.",
+    hierarchy: [ORGANIZATION, ["/budget", "Budget"]],
     phase: "plan",
     title: "Budget",
   },
@@ -164,8 +167,8 @@ const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
 };
 
 function routeFor(path: string): ShellRoute {
-  if (PROJECT_PATH.test(path)) return {
-    activeHref: "/projects", path, phase: "plan", title: "Project", description: "Project details and actions.",
+  if (PROJECT_PATH.test(path) || DASHBOARD_PATH.test(path)) return {
+    activeHref: "/projects", path, phase: "plan", title: DASHBOARD_PATH.test(path) ? "Project Dashboard" : "Project", description: "Project details and actions.",
     breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/projects", label: "Projects" }],
   };
   const adminUser = path.match(ADMIN_USER_PATH)?.[1];
@@ -280,7 +283,8 @@ export default function RootRoute() {
   // Keep the last authorized shell mounted during the probe; no new route is rendered early.
   const shellRoute = allowed ? route : approvedRoute!;
   const projectId = shellRoute.path.match(PROJECT_PATH)?.[1];
-  const loadedHeading = projectHeading?.id === projectId ? projectHeading : null;
+  const dashboardId = shellRoute.path.match(DASHBOARD_PATH)?.[1];
+  const loadedHeading = projectHeading?.id === (projectId ?? dashboardId) ? projectHeading : null;
   const displayedRoute = loadedHeading ? { ...shellRoute, title: loadedHeading.title,
     breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: `/organization/${loadedHeading.buId}`, label: loadedHeading.unit }, { href: shellRoute.path, label: `${loadedHeading.number} ${loadedHeading.title}` }] } : shellRoute;
   const adminUserId = shellRoute.path.match(ADMIN_USER_PATH)?.[1];
@@ -289,6 +293,8 @@ export default function RootRoute() {
     <AppShell navigate={navigate} route={{ ...displayedRoute, breadcrumbs: displayedRoute.breadcrumbs.map(item => ({ ...item, label: item.href === "/organization" && tenantName ? tenantName : item.label })) }}>
       {shellRoute.path === "/projects" ? <ProjectList navigate={navigate} /> : undefined}
       {shellRoute.path === "/projects/new" ? <NewProject navigate={navigate} /> : undefined}
+      {dashboardId ? <Dashboard key={`${dashboardId}-${window.location.search}`} id={dashboardId} navigate={navigate} onLoaded={onProjectLoaded} /> : undefined}
+      {shellRoute.path === "/budget" ? <BudgetOverview key={window.location.search} navigate={navigate} /> : undefined}
       {projectId ? <ProjectDetail key={projectId} id={projectId} onLoaded={onProjectLoaded} /> : undefined}
       {shellRoute.path === "/_dev/status-gallery" ? <StatusGallery /> : undefined}
       {shellRoute.path === "/_dev/grid" ? <GridGallery /> : undefined}

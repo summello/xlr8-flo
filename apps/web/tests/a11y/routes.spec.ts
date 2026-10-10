@@ -1,7 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
-import { stubProjects } from "../e2e/projects-fixture";
+import { stubDashboard } from "../e2e/dashboard-fixture";
+import { projectId } from "../e2e/projects-fixture";
 import { ROUTE_PATHS } from "../../src/routes/route-paths";
 
 expect(ROUTE_PATHS, "MISSING: forms-kit route in the shared route manifest").toContain(
@@ -9,7 +10,7 @@ expect(ROUTE_PATHS, "MISSING: forms-kit route in the shared route manifest").toC
 );
 
 for (const theme of ["light", "dark"] as const) {
-  for (const route of ROUTE_PATHS) {
+  for (const route of [...ROUTE_PATHS, `/projects/${projectId}/dashboard`]) {
     test(`${route} passes axe in ${theme} theme`, async ({ page }) => {
       await page.addInitScript((selectedTheme) => {
         localStorage.setItem("xlr8flo.theme", selectedTheme);
@@ -24,6 +25,7 @@ for (const theme of ["light", "dark"] as const) {
         await expect(page.locator("tr[data-grid-row]").first()).toBeVisible();
       }
 
+      if (route === "/budget" || route.endsWith("/dashboard")) await expect(page.locator(".dashboard-kpi").first()).toBeVisible();
       const results = await new AxeBuilder({ page }).analyze();
       expect(results.violations).toEqual([]);
     });
@@ -68,6 +70,6 @@ test("reduced motion preserves the form's information and complete keyboard outc
 
 // These pre-auth-story fixtures represent a signed-in operator.
 test.beforeEach(async ({ page }) => {
-  await stubProjects(page);
+  await stubDashboard(page);
   await page.route("**/api/v1/auth/sessions", route => route.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
 });

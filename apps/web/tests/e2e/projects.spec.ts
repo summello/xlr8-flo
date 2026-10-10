@@ -181,10 +181,9 @@ test("lazy tabs support create/edit schedule and risks, close reasons, partial e
   await page.getByLabel(/^Risk status filter\s*\*?$/).selectOption("closed"); await page.getByLabel(/^Minimum score\s*\*?$/).fill("10");
   await expect.poll(() => state.requests.some(r => r.query.get("min_score") === "10" && r.query.get("status") === "closed")).toBe(true);
   await page.getByRole("tab", { name: "Budget", exact: true }).click(); await expect(page.getByText("48.60%", { exact: true })).toBeVisible();
-  // No route serves /projects/<id>/ledger yet: the tab links nowhere until E06-S08 (amendment 8).
+  // E06-S08 replaces the dashboard placeholder with the real dashboard route.
   const budget = page.getByRole("region", { name: "Project budget" });
-  await expect(budget.getByRole("link")).toHaveCount(0);
-  await expect(budget.getByText("Dashboard arrives with the next story")).toBeVisible();
+  await expect(budget.getByRole("link", { name: "Open project dashboard" })).toHaveAttribute("href", `/projects/${projectId}/dashboard`);
 });
 
 for (const theme of ["light", "dark"] as const) {

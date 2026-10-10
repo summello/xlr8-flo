@@ -711,7 +711,7 @@ epics:
         dep:
           - E06-S07
           - E07-S06
-        st: in_progress
+        st: done
 
   - id: E07
     name: Budget ledger

@@ -401,6 +401,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/budget/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Budget Summary */
+        get: operations["read_budget_summary_api_v1_budget_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/budget/transfers": {
         parameters: {
             query?: never;
@@ -1152,6 +1169,23 @@ export interface paths {
         patch: operations["patch_phase_api_v1_projects__id__phases__phase_id__patch"];
         trace?: never;
     };
+    "/api/v1/projects/{id}/risk-indicators": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Risk Indicators */
+        get: operations["read_risk_indicators_api_v1_projects__id__risk_indicators_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{id}/risks": {
         parameters: {
             query?: never;
@@ -1537,6 +1571,11 @@ export interface components {
         BaseCurrencyPut: {
             /** Currency */
             currency: string;
+        };
+        /** BudgetSummary */
+        BudgetSummary: {
+            /** Totals */
+            totals: components["schemas"]["SummaryCurrency"][];
         };
         /** CalendarPut */
         CalendarPut: {
@@ -2875,6 +2914,30 @@ export interface components {
             /** Title */
             title: string;
         };
+        /** RiskFact */
+        RiskFact: {
+            /** Label */
+            label: string;
+            /** Value */
+            value: string;
+        };
+        /** RiskIndicator */
+        RiskIndicator: {
+            /** Code */
+            code: string;
+            /** Facts */
+            facts: components["schemas"]["RiskFact"][];
+            /**
+             * Level
+             * @enum {string}
+             */
+            level: "low" | "medium" | "high" | "unknown";
+        };
+        /** RiskIndicatorsRead */
+        RiskIndicatorsRead: {
+            /** Indicators */
+            indicators: components["schemas"]["RiskIndicator"][];
+        };
         /** RiskPage */
         RiskPage: {
             /** Next Cursor */
@@ -3011,6 +3074,21 @@ export interface components {
             /** Unit Id */
             unit_id?: string | null;
         };
+        /** SummaryCurrency */
+        SummaryCurrency: {
+            /** Actual */
+            actual: string;
+            /** Allocated */
+            allocated: string;
+            /** Available */
+            available: string;
+            /** Committed */
+            committed: string;
+            /** Currency */
+            currency: string;
+            /** Reserved */
+            reserved: string;
+        };
         /** TemplateColumnRead */
         TemplateColumnRead: {
             /** Accepted Codes Url */
@@ -3102,10 +3180,30 @@ export interface components {
             reason?: string | null;
             to: components["schemas"]["ProjectStatus"];
         };
+        /** TreeBalance */
+        TreeBalance: {
+            /** Actual */
+            actual: string;
+            /** Allocated */
+            allocated: string;
+            /** Available */
+            available: string;
+            /** Committed */
+            committed: string;
+            /** Consumed */
+            consumed: string;
+            /** Currency */
+            currency: string;
+            /** Reserved */
+            reserved: string;
+        };
         /** TreeNode */
         TreeNode: {
+            balance?: components["schemas"]["TreeBalance"] | null;
             /** Children */
             children?: components["schemas"]["TreeNode"][];
+            /** Consumption Percent */
+            consumption_percent?: string | null;
             /** Depth */
             depth: number;
             /**
@@ -3994,6 +4092,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReconcileStatus"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    read_budget_summary_api_v1_budget_summary_get: {
+        parameters: {
+            query?: {
+                unit_id?: string | null;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetSummary"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */
@@ -6381,6 +6521,48 @@ export interface operations {
             };
         };
     };
+    read_risk_indicators_api_v1_projects__id__risk_indicators_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskIndicatorsRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     list_risks_api_v1_projects__id__risks_get: {
         parameters: {
             query?: {
@@ -6614,6 +6796,7 @@ export interface operations {
     project_tree_api_v1_projects__id__tree_get: {
         parameters: {
             query?: {
+                include?: "balances" | null;
                 max_depth?: number;
             };
             header?: {

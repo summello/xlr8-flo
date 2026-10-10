@@ -30,14 +30,17 @@ from flo.modules.budget.schemas import (
     TransferRead,
 )
 from flo.modules.budget.service import (
+    BudgetSummary,
     adjust,
     aggregate_balance,
     allocate,
     balance_query,
+    budget_summary,
     ledger_query,
     transfer,
 )
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
+from flo.modules.org.service import OrgService
 from flo.modules.projects.service import ProjectService
 
 router = APIRouter(tags=["budget"])
@@ -235,3 +238,19 @@ def read_reconciliation_drift(
     page_size: Annotated[int, Query(ge=1, le=50)] = 50,
 ) -> DriftPage:
     return reconciliation_drift(connection, current_scope(), run_id, cursor, page_size)
+
+
+def summary_target(connection: Connection, unit_id: UUID | None = None) -> TargetProtocol:
+    if unit_id is None:
+        return organization_target()
+    unit = OrgService(connection, current_scope()).get_unit(unit_id)
+    return cast(TargetProtocol, AuthorizationTarget(ScopeType.BU, unit.id))
+
+
+@router.get("/api/v1/budget/summary", response_model=BudgetSummary)
+def read_budget_summary(
+    context: Annotated[AuthorizationContext, Depends(require("ledger.read", summary_target))],
+    connection: Connection,
+    unit_id: UUID | None = None,
+) -> BudgetSummary:
+    return budget_summary(connection, current_scope(), unit_id)

@@ -473,6 +473,22 @@
         "title": "BaseCurrencyPut",
         "type": "object"
       },
+      "BudgetSummary": {
+        "properties": {
+          "totals": {
+            "items": {
+              "$ref": "#/components/schemas/SummaryCurrency"
+            },
+            "title": "Totals",
+            "type": "array"
+          }
+        },
+        "required": [
+          "totals"
+        ],
+        "title": "BudgetSummary",
+        "type": "object"
+      },
       "CalendarPut": {
         "additionalProperties": false,
         "properties": {
@@ -4357,6 +4373,72 @@
         "title": "RiskCreate",
         "type": "object"
       },
+      "RiskFact": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "value"
+        ],
+        "title": "RiskFact",
+        "type": "object"
+      },
+      "RiskIndicator": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "facts": {
+            "items": {
+              "$ref": "#/components/schemas/RiskFact"
+            },
+            "title": "Facts",
+            "type": "array"
+          },
+          "level": {
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "unknown"
+            ],
+            "title": "Level",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "level",
+          "facts"
+        ],
+        "title": "RiskIndicator",
+        "type": "object"
+      },
+      "RiskIndicatorsRead": {
+        "properties": {
+          "indicators": {
+            "items": {
+              "$ref": "#/components/schemas/RiskIndicator"
+            },
+            "title": "Indicators",
+            "type": "array"
+          }
+        },
+        "required": [
+          "indicators"
+        ],
+        "title": "RiskIndicatorsRead",
+        "type": "object"
+      },
       "RiskPage": {
         "properties": {
           "next_cursor": {
@@ -4767,6 +4849,44 @@
         "title": "SettingSource",
         "type": "object"
       },
+      "SummaryCurrency": {
+        "properties": {
+          "actual": {
+            "title": "Actual",
+            "type": "string"
+          },
+          "allocated": {
+            "title": "Allocated",
+            "type": "string"
+          },
+          "available": {
+            "title": "Available",
+            "type": "string"
+          },
+          "committed": {
+            "title": "Committed",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "reserved": {
+            "title": "Reserved",
+            "type": "string"
+          }
+        },
+        "required": [
+          "currency",
+          "allocated",
+          "reserved",
+          "committed",
+          "actual",
+          "available"
+        ],
+        "title": "SummaryCurrency",
+        "type": "object"
+      },
       "TemplateColumnRead": {
         "properties": {
           "accepted_codes_url": {
@@ -5008,14 +5128,78 @@
         "title": "TransitionCreate",
         "type": "object"
       },
+      "TreeBalance": {
+        "properties": {
+          "actual": {
+            "title": "Actual",
+            "type": "string"
+          },
+          "allocated": {
+            "title": "Allocated",
+            "type": "string"
+          },
+          "available": {
+            "title": "Available",
+            "type": "string"
+          },
+          "committed": {
+            "title": "Committed",
+            "type": "string"
+          },
+          "consumed": {
+            "title": "Consumed",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "reserved": {
+            "title": "Reserved",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reserved",
+          "committed",
+          "actual",
+          "allocated",
+          "consumed",
+          "available",
+          "currency"
+        ],
+        "title": "TreeBalance",
+        "type": "object"
+      },
       "TreeNode": {
         "properties": {
+          "balance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TreeBalance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "children": {
             "items": {
               "$ref": "#/components/schemas/TreeNode"
             },
             "title": "Children",
             "type": "array"
+          },
+          "consumption_percent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consumption Percent"
           },
           "depth": {
             "title": "Depth",
@@ -6535,6 +6719,82 @@
           }
         },
         "summary": "Read Reconciliation Status",
+        "tags": [
+          "budget"
+        ]
+      }
+    },
+    "/api/v1/budget/summary": {
+      "get": {
+        "operationId": "read_budget_summary_api_v1_budget_summary_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "unit_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Unit Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Read Budget Summary",
         "tags": [
           "budget"
         ]
@@ -10918,6 +11178,75 @@
         ]
       }
     },
+    "/api/v1/projects/{id}/risk-indicators": {
+      "get": {
+        "operationId": "read_risk_indicators_api_v1_projects__id__risk_indicators_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskIndicatorsRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Read Risk Indicators",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
     "/api/v1/projects/{id}/risks": {
       "get": {
         "operationId": "list_risks_api_v1_projects__id__risks_get",
@@ -11411,6 +11740,23 @@
               "format": "uuid",
               "title": "Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "const": "balances",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Include"
             }
           },
           {

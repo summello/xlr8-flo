@@ -25,6 +25,6 @@ export default function Budget({ id }: { id: string }) {
       {(["allocated", "reserved", "committed", "actual", "available"] as const).map(key => <div key={key}><dt>{label(key)}</dt><dd><Money value={balance[key]} currency={balance.currency} /></dd></div>)}
       <div><dt>Consumption</dt><dd className="numeric">{consumptionPercent(balance.allocated, balance.available)}</dd></div>
     </dl>{balance.allocated === "0.0000" && <p>No budget allocated yet.</p>}</>}
-    <p>Dashboard arrives with the next story</p>
+    <p><a href={`/projects/${id}/dashboard`}>Open project dashboard</a></p>
   </section>;
 }

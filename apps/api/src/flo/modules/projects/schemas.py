@@ -135,12 +135,24 @@ class ChildrenPage(BaseModel):
     next_cursor: str | None
 
 
+class TreeBalance(BaseModel):
+    reserved: str
+    committed: str
+    actual: str
+    allocated: str
+    consumed: str
+    available: str
+    currency: str
+
+
 class TreeNode(BaseModel):
     id: UUID
     number: str
     name: str
     status: ProjectStatus
     depth: int
+    balance: TreeBalance | None = None
+    consumption_percent: str | None = None
     children: list["TreeNode"] = Field(default_factory=list)
 
 
@@ -264,3 +276,18 @@ class RiskRead(RiskCreate):
 class RiskPage(BaseModel):
     rows: list[RiskRead]
     next_cursor: str | None
+
+
+class RiskFact(BaseModel):
+    label: str
+    value: str
+
+
+class RiskIndicator(BaseModel):
+    code: str
+    level: Literal["low", "medium", "high", "unknown"]
+    facts: list[RiskFact]
+
+
+class RiskIndicatorsRead(BaseModel):
+    indicators: list[RiskIndicator]

@@ -6,7 +6,7 @@ from typing import cast
 from uuid import UUID
 
 import psycopg
-from pydantic import JsonValue
+from pydantic import BaseModel, JsonValue
 
 from flo.kernel import setting_guards
 from flo.kernel.errors import ErrorCode, ProblemError
@@ -56,6 +56,7 @@ __all__ = [
     "aggregate_balance",
     "allocate",
     "balance_query",
+    "budget_summary",
     "commit",
     "get_balance",
     "entry_by_idempotency_key",
@@ -242,6 +243,50 @@ def _funding_mode_guard(
 
 
 setting_guards.register("funding_mode", _funding_mode_guard)
+
+
+class SummaryCurrency(BaseModel):
+    currency: str
+    allocated: str
+    reserved: str
+    committed: str
+    actual: str
+    available: str
+
+
+class BudgetSummary(BaseModel):
+    totals: list[SummaryCurrency]
+
+
+def budget_summary(
+    conn: psycopg.Connection[tuple[object, ...]], scope: Scope, unit_id: UUID | None = None
+) -> BudgetSummary:
+    """One statement over the authorization unit, keeping currencies separate."""
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        if unit_id is not None:
+            OrgService(conn, scope).get_unit(unit_id)
+        rows = (
+            LedgerRepository(conn, scope)
+            .execute(
+                "SELECT p.currency, COALESCE(sum(b.allocated),0)::text, "
+                "COALESCE(sum(b.reserved),0)::text, COALESCE(sum(b.committed),0)::text, "
+                "COALESCE(sum(b.actual),0)::text, COALESCE(sum(b.available),0)::text "
+                "FROM project p JOIN project root ON root.id=p.root_id AND root.org_id=p.org_id "
+                "LEFT JOIN project_balance b "
+                "ON b.project_id=p.id AND b.org_id=p.org_id "
+                "WHERE p.org_id=%(org_id)s "
+                "AND (%(unit)s::uuid IS NULL OR root.bu_id=%(unit)s) "
+                "GROUP BY p.currency ORDER BY p.currency",
+                {"unit": unit_id},
+            )
+            .fetchall()
+        )
+        fields = ("currency", "allocated", "reserved", "committed", "actual", "available")
+        return BudgetSummary(
+            totals=[
+                SummaryCurrency.model_validate(dict(zip(fields, row, strict=True))) for row in rows
+            ]
+        )
 
 
 def entry_by_idempotency_key(

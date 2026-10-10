@@ -31,6 +31,7 @@ from flo.modules.org.service import (
 from flo.modules.projects.hierarchy import Hierarchy
 from flo.modules.projects.lifecycle import Lifecycle, conflict
 from flo.modules.projects.models import COLUMNS, FIELDS, ProjectRepository
+from flo.modules.projects.risk_indicators import risk_indicators as compute_risk_indicators
 from flo.modules.projects.risks import Risks
 from flo.modules.projects.schedule import Schedule, with_variance
 from flo.modules.projects.schemas import (
@@ -51,6 +52,7 @@ from flo.modules.projects.schemas import (
     ProjectRef,
     ProjectSort,
     ProjectStatus,
+    RiskIndicatorsRead,
     TransitionAvailable,
     TransitionCreate,
     TreeNode,
@@ -369,7 +371,7 @@ class ProjectService:
                 ).decode()
             return ChildrenPage(rows=records, next_cursor=next_cursor)
 
-    def tree(self, project_id: UUID, max_depth: int = 5) -> TreeRead:
+    def tree(self, project_id: UUID, max_depth: int = 5, balances: bool = False) -> TreeRead:
         if not 1 <= max_depth <= 5:
             raise invalid("max_depth", "Choose a depth between 1 and 5.")
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
@@ -381,9 +383,20 @@ class ProjectService:
                 SELECT p.id, p.parent_id, p.number, p.name, p.status, p.depth, depth_guard + 1
                 FROM walk JOIN project p ON p.parent_id = walk.id AND p.org_id = %(org_id)s
                 WHERE depth_guard < 6 AND depth_guard < %(max_depth)s
-                ) SELECT DISTINCT ON (depth, id) id, parent_id, number, name, status, depth
-                FROM walk ORDER BY depth, id LIMIT 501""",
-                {"id": project_id, "max_depth": max_depth},
+                ) , bounded AS (SELECT DISTINCT ON (depth, id) * FROM walk
+                ORDER BY depth, id LIMIT 501)
+                SELECT w.id,w.parent_id,w.number,w.name,w.status,w.depth,
+                COALESCE(b.allocated,0)::text,
+                (COALESCE(b.reserved,0)+COALESCE(b.committed,0)+COALESCE(b.actual,0))::text,
+                COALESCE(b.available,0)::text, p.currency,
+                CASE WHEN b.allocated <> 0 THEN
+                round((b.reserved+b.committed+b.actual)*100/b.allocated,1)::text END,
+                COALESCE(b.reserved,0)::text, COALESCE(b.committed,0)::text,
+                COALESCE(b.actual,0)::text
+                FROM bounded w JOIN project p ON p.id=w.id AND p.org_id=%(org_id)s
+                LEFT JOIN project_balance b ON b.project_id=w.id AND b.org_id=%(org_id)s
+                AND %(balances)s ORDER BY w.depth,w.id""",
+                {"id": project_id, "max_depth": max_depth, "balances": balances},
             ).fetchall()
             if not rows:
                 raise ProblemError(ErrorCode.NOT_FOUND)
@@ -393,11 +406,24 @@ class ProjectService:
                     dict(
                         zip(
                             ("id", "number", "name", "status", "depth"),
-                            (row[0], *row[2:]),
+                            (row[0], *row[2:6]),
                             strict=True,
                         )
                     )
                 )
+                if balances:
+                    from flo.modules.projects.schemas import TreeBalance
+
+                    node.balance = TreeBalance(
+                        reserved=str(row[11]),
+                        committed=str(row[12]),
+                        actual=str(row[13]),
+                        allocated=str(row[6]),
+                        consumed=str(row[7]),
+                        available=str(row[8]),
+                        currency=str(row[9]),
+                    )
+                    node.consumption_percent = cast(str | None, row[10])
                 nodes[node.id] = node
                 parent_id = cast(UUID | None, row[1])
                 if parent_id in nodes and node.id != project_id:
@@ -665,6 +691,12 @@ def assert_posting_allowed(
                 "Use an eligible project or release/reverse an existing entry."
             ),
         )
+
+
+def risk_indicators(
+    connection: psycopg.Connection[tuple[object, ...]], scope: Scope, project_id: UUID
+) -> RiskIndicatorsRead:
+    return compute_risk_indicators(ProjectRepository(connection, scope), project_id)
 
 
 def external_ref_locked() -> ProblemError:

@@ -1,6 +1,6 @@
 """Parse and authorize project operations."""
 
-from typing import Annotated, cast
+from typing import Annotated, Literal, cast
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Query, Request
@@ -31,6 +31,7 @@ from flo.modules.projects.schemas import (
     ProjectSort,
     ProjectStatus,
     RiskCreate,
+    RiskIndicatorsRead,
     RiskPage,
     RiskPatch,
     RiskRead,
@@ -39,7 +40,7 @@ from flo.modules.projects.schemas import (
     TransitionCreate,
     TreeRead,
 )
-from flo.modules.projects.service import ProjectService
+from flo.modules.projects.service import ProjectService, risk_indicators
 
 router = APIRouter(prefix="/api/v1/projects", tags=["projects"])
 
@@ -151,9 +152,15 @@ def project_tree(
     id: UUID,
     context: ReadContext,
     connection: Connection,
+    request: Request,
+    include: Literal["balances"] | None = None,
     max_depth: Annotated[int, Query(ge=1, le=5)] = 5,
 ) -> TreeRead:
-    return ProjectService(connection, current_scope(), context.user_id).tree(id, max_depth)
+    if include == "balances":
+        require("ledger.read", project_target)(request, project_target(id, connection))
+    return ProjectService(connection, current_scope(), context.user_id).tree(
+        id, max_depth, include == "balances"
+    )
 
 
 @router.post("/{id}/transitions", response_model=ProjectRead)
@@ -260,3 +267,14 @@ def patch_risk(
     return ProjectService(connection, current_scope(), context.user_id).risks.write(
         id, body, risk_id, version
     )
+
+
+@router.get(
+    "/{id}/risk-indicators",
+    response_model=RiskIndicatorsRead,
+    dependencies=[Depends(require("ledger.read", project_target))],
+)
+def read_risk_indicators(
+    id: UUID, context: ReadContext, connection: Connection
+) -> RiskIndicatorsRead:
+    return risk_indicators(connection, current_scope(), id)

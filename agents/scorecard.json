@@ -2203,6 +2203,45 @@
       },
       "recap": "Implemented service-backed project and budget imports, immutable project references, recipient-credit idempotency, and the four authorized framework fixes. Full flo check and the final accepted-code metadata regression are green; all required violation plants were observed failing and restored.",
       "title": "Project and budget import templates end to end"
+    },
+    {
+      "story": "E06-S08",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "codex",
+      "reviewers": [
+        "qwen"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "qwen": {
+          "ran_tests": true,
+          "findings": 2,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E06-S08"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "unavailable: OpenRouter has no session concept - pass the generation id to `flo session qwen <id>`"
+        }
+      },
+      "recap": "Implemented project dashboards and currency-separated budget roll-ups with keyboard hierarchy, chart/table comparisons, ledger drill-down and fact-backed risk indicators. Generated API contracts and regression tests cover permissions, tenant isolation, decimal thresholds, drift and accessibility.",
+      "title": "Project dashboard with hierarchy visual and drill-down to ledger entries"
     }
   ]
 }
