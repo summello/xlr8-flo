@@ -131,6 +131,16 @@ findings/review (85), deepseek 0.8 (76), kimi 0.0 (n=2). Both of qwen's runs com
 also confirms the four E01-S05 failures were the review packet's fault, not the model's.
 `agents.yaml` M0 reviewers are now `[opus, qwen, deepseek]`; kimi is qwen's fallback.
 
+**10 Oct 2026 — parallel lanes, review scaled to risk, draft PR from story one.** Operator
+approved all three. Evidence: 52/168 done at ~6–7 stories a day, strictly serial; codex merges
+clean (98%, 1.05 rounds), so the time went to serialisation and halts, not to bad code.
+nemotron as author: 9/9 clean merges, so it takes the ungated crud/ui/docs lane (`avoid_tags`
+keeps it off anything gated); codex keeps engines and every gated story. Ungated stories are
+reviewed by qwen (2.4 findings/review, best in the fleet); Opus reviews gated stories and each
+train's diff. Each worktree now has its own test database, so lanes run side by side.
+Why the draft PR matters: M1 CI was red for eight pushes (E05-S14's invitation CLS 0.132 at 375px,
+Linux only) with nobody looking. Revisit at the M2 retro with escapes on qwen-reviewed stories.
+
 **Merge authority:** the operator has delegated GitHub merges for M0 to Opus, with the
 instruction to space them out so the repository does not read as bot-driven. Outside M0 the
 standing rule holds: push, never merge.

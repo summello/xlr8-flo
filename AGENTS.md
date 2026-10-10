@@ -31,23 +31,30 @@ Your packet is in your worktree at `design/<STORY_ID>.md` — packets are tracke
 
 | Agent | Authors | Reviews | Never |
 |---|---|---|---|
-| **Opus** (`claude-opus-5`, Claude Pro) | Design packets, arbitration patches | **Every story**; whole-milestone diff before PR | Routine authoring — it is the scarcest capacity in the fleet |
-| **Codex** (ChatGPT Plus) | Ledger, approvals engine, concurrency, migrations, security-sensitive backend | Any story | Boilerplate, CRUD screens, docs — its cap is too tight to spend there |
-| **OpenCode-nemotron** (nemotron-ultra, free) | Default author for everything else | Any story | — |
-| **OpenCode-ox** (ox-alpha, free) | Author when nemotron is the reviewer, or on fallback | Any story | — |
-| **Qwen** (OpenRouter, <$20/mo) | Small stories (`size: S`) | Release review — the milestone diff, not single stories | Exceeding the monthly cap in `agents/agents.yaml` |
+| **Opus** (`claude-opus-5`, Claude Pro) | Design packets, arbitration patches, fixes for red milestone CI | **Gated stories**; every train diff; whole-milestone diff before PR | Routine authoring — it is the scarcest capacity in the fleet |
+| **Codex** (ChatGPT Plus) | Ledger, approvals engine, concurrency, migrations, security-sensitive backend, every story carrying a gated tag | Any story | Boilerplate, CRUD screens, docs — its cap is too tight to spend there |
+| **OpenCode-nemotron** (OpenRouter, free) | Ungated crud, ui, api, docs, chore, test — the second parallel lane | — (0.0 findings per review) | A story tagged money, auth, security, migration or concurrency (`avoid_tags`) |
+| **OpenCode-ox** (OpenRouter) | Fallback only; its endpoint has been withdrawn before | — | — |
+| **Qwen** (OpenRouter, <$20/mo) | Small stories (`size: S`) | **Ungated stories**; release review of the milestone diff | Exceeding the monthly cap in `agents/agents.yaml` |
 | **DeepSeek** (OpenRouter) | — | Release review — the milestone diff, not single stories | Authoring |
 
-**Per-story review is Opus alone. Release review is qwen and deepseek.** A story needs one
-review — Opus's — and Opus runs the tests and plants the violations like any other reviewer.
-The independent second and third passes happen once per milestone, on the whole diff, before
-the pull request to `main`: `policy.release_reviewers` in `agents/agents.yaml`.
+**Review is scaled to risk (10 Oct 2026, operator-approved).** Every story gets exactly one
+reviewer, computed by `flo assign`:
 
-This is a deliberate trade made on 25 Aug 2026. Two metered reviewers per story cost more
-wall-clock than they returned once Opus reviewed every story anyway, and cross-story drift —
-the failure a per-story reviewer structurally cannot see — is only visible in the milestone
-diff. What it costs: a defect now has one gate before it merges into the milestone branch
-instead of three. Opus does not get to skim.
+- A story tagged `money`, `auth`, `security`, `migration` or `concurrency`
+  (`policy.opus_final_required_tags`) is reviewed by **Opus alone**, who runs the tests and plants
+  the violations like any other reviewer. Codex authors it.
+- Every other story is reviewed by the first of `policy.ungated_reviewers` (qwen, then kimi) with
+  budget left. Opus then reads the **whole train's diff once** (§2.5) instead of each story.
+- Release review stays qwen and deepseek on the milestone diff, before the PR leaves draft.
+
+What this trades: an ungated crud or ui story merges on a metered model's review, and Opus sees
+it one train later. What it buys: Opus's capacity goes to the stories where a defect is a breach
+or a wrong balance. A train-diff blocker on an ungated story is recorded as an escape against
+that story's reviewer.
+
+The 25 Aug 2026 arrangement (Opus alone on every story) is superseded; its reasoning about
+cross-story drift still holds, which is why the train and milestone diffs are reviewed whole.
 
 Assignment is computed, not chosen: `agents/scripts/flo assign <STORY_ID>`.
 
@@ -151,10 +158,47 @@ flo done E07-S03             # squash-merge into the milestone branch, update ro
 is met with `ran_tests: true` and `verdict: approve`, and — for gated stories — Opus's final
 review is recorded.
 
-**Before the milestone pull request**, the whole milestone diff goes to
+**The milestone PR opens as a draft when the milestone's first story merges** (10 Oct 2026,
+operator-approved). Opus pushes the milestone branch and opens a **draft** PR to `main` titled
+`<MILESTONE> — <name> (partial, N/total)`. Every later story merge is pushed to the same branch,
+so CI runs on every merge, against the merge with `main`, where the required checks show.
+
+- **Red CI on the milestone branch stops the line.** No further story merges until it is green.
+  Opus fixes a small breakage directly as a `fix:` maintenance commit (the author is already on
+  the next train); anything that needs a design decision becomes a story. A red check nobody
+  looked at is how E05-S14's mobile layout shift sat red on M1 through eight pushes.
+- The draft PR body is the milestone's running record: stories done and open, exit-criteria
+  evidence, new dependencies, `ponytail:` markers, follow-ups. Refresh it on each push.
+- **The PR never leaves draft on its own momentum.** It leaves draft only when the exit criteria
+  are met, the release reviews below are clean, and Opus's milestone review is recorded. Only
+  the operator merges it: merging deploys and migrates production.
+
+**Before the milestone pull request leaves draft**, the whole milestone diff goes to
 `policy.release_reviewers` for an independent second and third pass, after Opus's own
 milestone review. Their verdicts live in `reviews/<MILESTONE>.<agent>.json` and an open
 `blocker` there stops the PR exactly as it would stop a story.
+
+### 2.5 Parallel trains
+
+Up to `policy.max_stories_in_flight` stories run at once, on independent dependency chains
+(different epics, or stories with no edge between them). The helpers in `agents/scripts/` drive
+them from the parent repo:
+
+```bash
+agents/scripts/begin.sh  E09-S01        # flo start, installs, launch the assigned author
+agents/scripts/review.sh E09-S01 qwen   # ungated stories; Opus reviews gated ones itself
+agents/scripts/finish.sh E09-S01        # submit + done; one finish at a time (lock)
+```
+
+- **Every worktree has its own test database** (`flo db url`); `flo check` recreates it before
+  pytest, so parallel gates never collide. Never point a run at the shared `flo_test`.
+- **Migrations chain linearly** and the runner refuses two heads. When two lanes both add a
+  migration, the second to merge rebases its first revision's `down_revision` onto the new head
+  and re-runs `python -m flo.kernel.migrate --check` before `finish.sh`.
+- A **train** is a run of dependent stories in one lane. Opus reviews the train's combined diff
+  once when its last story merges, with emphasis on what per-story review cannot see: drift
+  between the stories, duplicated helpers, and the ungated stories nobody else at Opus's level
+  has read.
 
 ---
 

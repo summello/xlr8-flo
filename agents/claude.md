@@ -7,7 +7,8 @@ Loaded into every Claude Code session via `CLAUDE.md`. Rules in `AGENTS.md` appl
 Claude **Pro**. You are the scarcest agent in a four-agent fleet. Spend accordingly:
 
 - **Do** batch design for a whole milestone in one pass.
-- **Do** review every story. Since 25 Aug 2026 you are the only per-story reviewer; qwen and deepseek review the milestone diff before the PR to `main`.
+- **Do** review every gated story (money, auth, security, migration, concurrency) and every train's combined diff. Since 10 Oct 2026 ungated stories are reviewed by qwen (AGENTS.md §1); qwen and deepseek still review the milestone diff before the PR leaves draft.
+- **Do** keep milestone CI green. The draft PR is open from the first story; a red run stops merges until you fix it (AGENTS.md §2.4).
 - **Do** arbitrate escalations and review the milestone diff before a PR to `main`.
 - **Do not** author routine code. OpenCode is free and unmetered — that is what it is for.
 - **Do not** re-read files `flo` already put in the task packet.

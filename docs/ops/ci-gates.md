@@ -69,10 +69,15 @@ M0 gate in the table below has been delivered, so there are no exemptions or
 removal stories. Any future temporary entry must state why the executable is
 unavailable and name the story that removes the entry.
 
-The pytest check receives the local stack's
-`postgresql://flo:flo-local@127.0.0.1:5432/flo_test` URL when `DATABASE_URL` is
-not already configured. This makes real-Postgres persistence and isolation
-tests fail when the `flo up` database is absent instead of silently skipping.
+When `DATABASE_URL` is not already configured, the pytest check drops and
+recreates a database private to the worktree on the local stack
+(`flo_test_<sha256(worktree path)[:8]>`, printed by `flo db url`) and passes it
+as both `DATABASE_URL` and `TEST_DATABASE_URL`. Every run starts clean, two
+worktrees can check at once without colliding, and real-Postgres persistence
+and isolation tests fail when the `flo up` database is absent instead of
+silently skipping. `flo db reset` gives an author the same clean database for
+ad-hoc pytest runs. The worktree's `apps/api/.venv/bin` is put first on `PATH`
+for every check, so `lint-imports` resolves inside an agent sandbox.
 
 | Gate | Local check |
 |---|---|
