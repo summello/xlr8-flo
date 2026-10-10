@@ -118,6 +118,8 @@ agents:
     roles: [author, review]
     allowed_kinds: [crud, ui, api, chore, docs, test]   # 10 Oct 2026: engine, migration → codex
     avoid_tags: [money, auth, security, migration, concurrency]   # gated stories → codex
+    max_author_size: M           # 10 Oct 2026: E06-S07 (ui, L) ended exit 0 with nothing committed,
+                                 # no tests and an out-of-scope identity edit; L stories → codex
     fallback: [opencode-ox, qwen, codex]
     notes: >
       10 Oct 2026: second parallel author lane, operator-approved. Takes the crud, ui and
@@ -136,7 +138,7 @@ agents:
     cli: "opencode run --model openrouter/stealth/ox-alpha"
     plan: openrouter-credits
     metered: none                # second free model — the reason Codex is not spent on reviews
-    roles: [author, review]
+    roles: [review]              # 10 Oct 2026: endpoint withdrawn before; never routed as author
     allowed_kinds: [crud, ui, api, chore, docs, test]
     avoid_tags: [money, auth, security, migration, concurrency]
     fallback: [opencode-nemotron, qwen]

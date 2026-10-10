@@ -141,6 +141,14 @@ train's diff. Each worktree now has its own test database, so lanes run side by 
 Why the draft PR matters: M1 CI was red for eight pushes (E05-S14's invitation CLS 0.132 at 375px,
 Linux only) with nobody looking. Revisit at the M2 retro with escapes on qwen-reviewed stories.
 
+**10 Oct 2026 — nemotron capped at size M; ox removed as an author.** nemotron's first story on
+the new lane, E06-S07 (ui, L), exited 0 with nothing committed, `flo check` never run, no tests,
+and an edit to `modules/identity/service.py` outside scope; codex then delivered it. Its 9/9 clean
+merges were all M or smaller. `max_author_size: M` keeps it on the small crud/ui lane. ox's
+endpoint has been withdrawn before and the cap would have routed E06-S08 to it, so ox is
+review-only. Same day: qwen's E06-S07 review caught a dead `/projects/<id>/ledger` link (major,
+upheld), and its pre-flight audit caught E08-S03's resolver wiring before codex started.
+
 **Merge authority:** the operator has delegated GitHub merges for M0 to Opus, with the
 instruction to space them out so the repository does not read as bot-driven. Outside M0 the
 standing rule holds: push, never merge.
