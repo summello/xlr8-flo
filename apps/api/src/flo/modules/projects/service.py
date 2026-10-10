@@ -13,7 +13,7 @@ import psycopg
 from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.config import Settings
-from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError
+from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.identity.service import (
@@ -29,7 +29,7 @@ from flo.modules.org.service import (
     list_currencies,
 )
 from flo.modules.projects.hierarchy import Hierarchy
-from flo.modules.projects.lifecycle import Lifecycle, conflict
+from flo.modules.projects.lifecycle import Lifecycle, conflict, invalid
 from flo.modules.projects.models import COLUMNS, FIELDS, ProjectRepository
 from flo.modules.projects.risk_indicators import risk_indicators as compute_risk_indicators
 from flo.modules.projects.risks import Risks
@@ -58,15 +58,6 @@ from flo.modules.projects.schemas import (
     TreeNode,
     TreeRead,
 )
-
-
-def invalid(field: str, message: str, label: str = "invalid_project") -> ProblemError:
-    return ProblemError(
-        ErrorCode.VALIDATION_FAILED,
-        detail=message,
-        errors=(ProblemFieldError(field=field, message=message),),
-        checks={"problem": label},
-    )
 
 
 class ProjectService:

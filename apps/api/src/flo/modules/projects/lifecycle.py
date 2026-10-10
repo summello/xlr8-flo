@@ -28,6 +28,16 @@ def conflict(label: str, detail: str) -> ProblemError:
     return ProblemError(ErrorCode.CONFLICT, detail=detail, checks={"problem": label})
 
 
+# Lives here, not in service.py, so risks.py can import it without an import cycle.
+def invalid(field: str, message: str, label: str = "invalid_project") -> ProblemError:
+    return ProblemError(
+        ErrorCode.VALIDATION_FAILED,
+        detail=message,
+        errors=(ProblemFieldError(field=field, message=message),),
+        checks={"problem": label},
+    )
+
+
 def open_documents(project_id: UUID) -> int:
     """M1 hook; requisitions and POs supply open-document counts in M2/M3."""
     return 0

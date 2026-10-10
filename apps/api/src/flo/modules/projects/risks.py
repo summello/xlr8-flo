@@ -11,6 +11,7 @@ from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.identity.service import IdentityAuthorizationConnection, user_exists
+from flo.modules.projects.lifecycle import invalid
 from flo.modules.projects.models import ProjectRepository
 from flo.modules.projects.schemas import RiskCreate, RiskPage, RiskPatch, RiskRead, RiskStatus
 
@@ -100,8 +101,6 @@ class Risks:
         risk_id: UUID | None = None,
         version: str | None = None,
     ) -> RiskRead:
-        from flo.modules.projects.service import invalid
-
         expected = None
         if risk_id is not None:
             if version is None:
@@ -179,8 +178,6 @@ class Risks:
         cursor: str | None = None,
         page_size: int = 50,
     ) -> RiskPage:
-        from flo.modules.projects.service import invalid
-
         if not 1 <= page_size <= 50:
             raise invalid("page_size", "Page size must be from 1 to 50.")
         if min_score is not None and not 1 <= min_score <= 25:

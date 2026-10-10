@@ -488,7 +488,6 @@ def test_client_throttle_is_uniform_and_invitation_selection_paths_work(invites,
     from flo.kernel.identity.throttle import LoginThrottle
     from flo.kernel.tenancy import selection
 
-    conn, org, other = invites
     _, token = issue(invites)
     monkeypatch.setenv("FLO_LOGIN_CLIENT_MAX_FAILURES", "5")
     jitter_calls = []

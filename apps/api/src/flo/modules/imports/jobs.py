@@ -195,6 +195,7 @@ class ImportWorker:
                     )
                 )
             except ValueError:
+                # A key that does not parse cannot collide; validation reports the row itself.
                 pass
         counts = {**batch.counts}
         if done == 0:
@@ -286,6 +287,7 @@ class ImportWorker:
                     )
                 )
             except ValueError:
+                # A key that does not parse cannot collide; validation reports the row itself.
                 pass
         planned = plan_rows(
             template,
