@@ -45,17 +45,26 @@ sub-project and the reservation commit together or not at all (WF-003). An excep
 
 ## I. Permissions added in M2 (seeded by the story that first needs them, in its migration)
 
-| Permission | Seeded by | Checked on |
-|---|---|---|
-| `requisition.create`, `requisition.read`, `requisition.update` | E09-S01 | the requisition's BU/OU, or its project |
-| `requisition.submit`, `requisition.withdraw`, `requisition.cancel` | E09-S05 | the requisition's scope target |
-| `workflow.read`, `workflow.manage` | E10-S01 | organization (definitions), or the BU/OU an override binds to |
-| `approval.decide` | E10-S04 | the document's scope target; holding it makes a user *eligible*, step membership makes them an *approver* |
-| `approval.delegate` | E10-S08 | the delegator's own tasks |
-| `approval.admin` | E10-S08 | organization: reassign, escalate, view all |
+**Reuse the shipped catalogue first.** `modules/identity/models.py` `PERMISSION_CODES` already
+holds `requisition.create`, `requisition.edit`, `requisition.view` and `requisition.approve`, and
+`BASELINE_ROLE_PERMISSIONS` grants them (requestor: create, edit, view; approver: approve, view;
+organization-administrator: all). M2 uses those codes; inventing parallel ones would leave every
+seeded role unable to act until someone hand-grants the new codes.
 
-No other new permission without a packet amendment. Downgrades delete `role_permission` rows
-first, then `permission` rows (the E06-S03 precedent, `migrations/20261008_0025_project_lifecycle.py`).
+| Permission | New? | Seeded by | Checked on |
+|---|---|---|---|
+| `requisition.view` (read), `requisition.create`, `requisition.edit` (draft edits) | existing | — | the requisition's BU/OU, or its project |
+| `requisition.submit`, `requisition.withdraw`, `requisition.cancel` | new | E09-S05 | the requisition's scope target |
+| `requisition.approve`, `project.approve` (existing), `budget.approve` (new, E10-S13) | — | — | **approval eligibility**: each `DocumentAdapter` names its `approve_permission`; holding it at the document's scope makes a user *eligible*, step membership makes them an *approver* (E10-S04) |
+| `workflow.read`, `workflow.manage` | new | E10-S01 | organization (definitions), or the BU/OU an override binds to |
+| `approval.delegate`, `approval.admin` | new | E10-S08 | own tasks; organization (reassign, escalate, view all) |
+
+**Every new permission is added in three places in the same story:** `PERMISSION_CODES`,
+`BASELINE_ROLE_PERMISSIONS` (organization-administrator always; the packet names any other
+baseline role), and the migration, which inserts the `permission` row **and** grants it to existing
+tenants' system roles by role code, so current tenants get it too. No other new permission without
+a packet amendment. Downgrades delete `role_permission` rows first, then `permission` rows (the
+E06-S03 precedent, `migrations/20261008_0025_project_lifecycle.py`).
 
 ## J. Requisition statuses are fixed now, so no later story migrates the CHECK
 
