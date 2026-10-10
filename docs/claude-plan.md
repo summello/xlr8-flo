@@ -549,7 +549,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E10-S09** Routing explainability: which rule matched and why this approver | E10 | api | M | APR-021 | E10-S05 |
 | ⬜ | **E10-S10** Approval inbox: pending, overdue, completed, delegated views | E10 | ui | L | APR-020 | E10-S06, ~~E04-S03~~, E10-S08, E10-S09 |
 | ⬜ | **E10-S11** Visual workflow builder, drag-and-drop canvas | E10 | ui | L | APR-001 | E10-S03, ~~E04-S02~~ |
-| ⬜ | **E10-S12** Keyboard/list workflow editor with identical capability to the canvas | E10 | ui | L | APR-002, A11Y-003 | E10-S11 |
+| ⬜ | **E10-S12** Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11) | E10 | ui | L | APR-011, APR-021, ACC-007 | E10-S11, E10-S05 |
 | ⬜ | **E10-S13** Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes | E10 | engine | M | APR-003, PROJ-002, VEN-005, BUD-007 | E10-S07 |
 
 #### M3 — First sellable release · 0/28 done

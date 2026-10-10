@@ -1227,16 +1227,18 @@ epics:
           - E04-S02
         st: todo
       - id: E10-S12
-        t: Keyboard/list workflow editor with identical capability to the canvas
+        t: 'Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11)'
         k: ui
         s: L
         tags:
           - ui
         reqs:
-          - APR-002
-          - A11Y-003
+          - APR-011
+          - APR-021
+          - ACC-007
         dep:
           - E10-S11
+          - E10-S05
         st: todo
       - id: E10-S13
         t: Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget
