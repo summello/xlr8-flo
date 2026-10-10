@@ -30,7 +30,7 @@ from flo.modules.org.service import (
 )
 from flo.modules.projects.hierarchy import Hierarchy
 from flo.modules.projects.lifecycle import Lifecycle, conflict
-from flo.modules.projects.models import COLUMNS, FIELDS, ProjectRepository
+from flo.modules.projects.models import FIELDS, ProjectRepository
 from flo.modules.projects.risks import Risks
 from flo.modules.projects.schedule import Schedule, with_variance
 from flo.modules.projects.schemas import (
@@ -44,6 +44,7 @@ from flo.modules.projects.schemas import (
     PhasePatch,
     PhaseRead,
     ProjectCreate,
+    ProjectGroup,
     ProjectPage,
     ProjectPatch,
     ProjectRead,
@@ -87,9 +88,19 @@ class ProjectService:
             raise ProblemError(ErrorCode.NOT_FOUND)
         return row
 
+    def _read(self, row: dict[str, object]) -> ProjectRead:
+        # The BU name is project metadata required by the detail breadcrumb.
+        unit = self.repo.execute(
+            "SELECT name FROM org_unit WHERE org_id = %(org_id)s AND id = %(id)s",
+            {"id": row["bu_id"]},
+        ).fetchone()
+        return ProjectRead.model_validate(
+            with_variance(row | {"bu_name": str(unit[0]) if unit is not None else None})
+        )
+
     def get(self, project_id: UUID) -> ProjectRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
-            return ProjectRead.model_validate(with_variance(self._get(project_id)))
+            return self._read(self._get(project_id))
 
     def transition(
         self,
@@ -126,7 +137,7 @@ class ProjectService:
                 before,
                 after | {"override": body.override, "blocked_by": blocked, "reason": body.reason},
             )
-            return ProjectRead.model_validate(with_variance(after))
+            return self._read(after)
 
     def available_transitions(
         self, project_id: UUID, permitted: Callable[[str], bool]
@@ -281,7 +292,7 @@ class ProjectService:
             )
             row = self._get(project_id)
             self._audit("project.create", project_id, None, row)
-            return ProjectRead.model_validate(with_variance(row))
+            return self._read(row)
 
     def ancestors(self, project_id: UUID) -> list[ProjectRef]:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
@@ -437,7 +448,7 @@ class ProjectService:
             )
             after = self._get(project_id)
             self._audit("project.update", project_id, before, after)
-            return ProjectRead.model_validate(with_variance(after))
+            return self._read(after)
 
     def list(
         self,
@@ -449,21 +460,32 @@ class ProjectService:
         direction: Direction = "asc",
         cursor: str | None = None,
         page_size: int = 50,
+        group_by: ProjectGroup | None = None,
+        balances: bool = False,
     ) -> ProjectPage:
-        # The router requires org-level project.read; that grant covers every project.
+        # Organization-scoped project.read covers this collection.
         if sort not in ("number", "name", "status", "created_at") or direction not in (
             "asc",
             "desc",
         ):
             raise invalid("sort", "Choose a supported sort and direction.")
+        if group_by not in (None, "status", "bu"):
+            raise invalid("group_by", "Choose status or business unit grouping.")
         if not 1 <= page_size <= 50:
             raise invalid("page_size", "Page size must be from 1 to 50.")
+        if group_by is not None:
+            sort, direction = "number", "asc"
         key: object = None
+        group_key: str | None = None
         cursor_id: UUID | None = None
         if cursor is not None:
             try:
                 decoded = json.loads(base64.urlsafe_b64decode(cursor).decode())
-                if decoded["sort"] != sort or decoded["direction"] != direction:
+                if (
+                    decoded["sort"] != sort
+                    or decoded["direction"] != direction
+                    or decoded.get("group_by") != group_by
+                ):
                     raise ValueError("cursor ordering mismatch")
                 key = decoded["key"]
                 if not isinstance(key, str):
@@ -471,6 +493,12 @@ class ProjectService:
                 if sort == "created_at":
                     key = datetime.fromisoformat(key)
                 cursor_id = UUID(decoded["id"])
+                if group_by is not None:
+                    group_key = decoded["group_key"]
+                    if not isinstance(group_key, str):
+                        raise ValueError("invalid group key")
+                    if group_by == "bu":
+                        UUID(group_key)
             except (ValueError, KeyError, TypeError, UnicodeError) as exc:
                 raise invalid(
                     "cursor", "Invalid cursor. Restart paging with the selected order."
@@ -482,26 +510,51 @@ class ProjectService:
                 "status": status,
                 "bu_id": bu_id,
                 "key": key,
+                "group_key": group_key,
                 "cursor_id": cursor_id,
                 "limit": page_size + 1,
             }
-            comparator = ">" if direction == "asc" else "<"
-            boundary = (
-                f" AND ({sort}, id) {comparator} (%(key)s, %(cursor_id)s)"
-                if cursor_id is not None
-                else ""
+            filters = """p.org_id = %(org_id)s
+                AND (p.number ILIKE %(q)s OR p.name ILIKE %(q)s)
+                AND (%(status)s::text IS NULL OR p.status = %(status)s)
+                AND (%(bu_id)s::uuid IS NULL OR p.bu_id = %(bu_id)s)"""
+            count = self.repo.execute(
+                "SELECT count(*) FROM project p WHERE " + filters, params
+            ).fetchone()
+            assert count is not None
+            boundary = ""
+            group_column = "p.status" if group_by == "status" else "p.bu_id"
+            if cursor_id is not None:
+                if group_by is not None:
+                    # Explicit disjunction preserves runs, including tied numbers.
+                    boundary = (
+                        f" AND ({group_column} > %(group_key)s OR "
+                        f"({group_column} = %(group_key)s AND p.number > %(key)s) OR "
+                        f"({group_column} = %(group_key)s AND p.number = %(key)s "
+                        "AND p.id > %(cursor_id)s))"
+                    )
+                else:
+                    comparator = ">" if direction == "asc" else "<"
+                    boundary = f" AND (p.{sort}, p.id) {comparator} (%(key)s, %(cursor_id)s)"
+            order = (
+                f"{group_column}, p.number, p.id"
+                if group_by is not None
+                else f"p.{sort} {direction}, p.id {direction}"
+            )
+            projection = ", ".join("p." + f for f in FIELDS)
+            amounts = (
+                "b.allocated::text, b.available::text" if balances else "NULL::text, NULL::text"
             )
             rows = self.repo.execute(
-                f"""SELECT {COLUMNS} FROM project WHERE org_id = %(org_id)s
-                AND (number ILIKE %(q)s OR name ILIKE %(q)s)
-                AND (%(status)s::text IS NULL OR status = %(status)s)
-                AND (%(bu_id)s::uuid IS NULL OR bu_id = %(bu_id)s)"""
-                + boundary
-                + f" ORDER BY {sort} {direction}, id {direction} LIMIT %(limit)s",
+                f"SELECT {projection}, u.name, {amounts} FROM project p "
+                "LEFT JOIN org_unit u ON u.org_id = p.org_id AND u.id = p.bu_id "
+                "LEFT JOIN project_balance b ON b.org_id = p.org_id AND b.project_id = p.id "
+                "WHERE " + filters + boundary + f" ORDER BY {order} LIMIT %(limit)s",
                 params,
             ).fetchall()
+            fields = (*FIELDS, "bu_name", "allocated", "available")
             records = [
-                ProjectRead.model_validate(with_variance(dict(zip(FIELDS, row, strict=True))))
+                ProjectRead.model_validate(with_variance(dict(zip(fields, row, strict=True))))
                 for row in rows[:page_size]
             ]
             next_cursor = None
@@ -514,10 +567,12 @@ class ProjectService:
                             "direction": direction,
                             "id": str(last.id),
                             "key": str(getattr(last, sort)),
+                            "group_by": group_by,
+                            "group_key": str(last.status if group_by == "status" else last.bu_id),
                         }
                     ).encode()
                 ).decode()
-            return ProjectPage(rows=records, next_cursor=next_cursor)
+            return ProjectPage(rows=records, total=int(str(count[0])), next_cursor=next_cursor)
 
 
 def get_status(

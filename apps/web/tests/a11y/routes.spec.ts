@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+import { stubProjects } from "../e2e/projects-fixture";
 import { ROUTE_PATHS } from "../../src/routes/route-paths";
 
 expect(ROUTE_PATHS, "MISSING: forms-kit route in the shared route manifest").toContain(
@@ -17,6 +18,8 @@ for (const theme of ["light", "dark"] as const) {
       await page.locator(".app-shell").waitFor();
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+      if (route === "/projects") await expect(page.locator("tr[data-grid-row]").first()).toBeVisible();
+      if (route === "/projects/new") await expect(page.locator(".project-form")).toBeVisible();
       if (route === "/_dev/grid") {
         await expect(page.locator("tr[data-grid-row]").first()).toBeVisible();
       }
@@ -65,5 +68,6 @@ test("reduced motion preserves the form's information and complete keyboard outc
 
 // These pre-auth-story fixtures represent a signed-in operator.
 test.beforeEach(async ({ page }) => {
+  await stubProjects(page);
   await page.route("**/api/v1/auth/sessions", route => route.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
 });

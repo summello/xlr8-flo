@@ -628,3 +628,14 @@ def select_organization(
         cast(IdentityAuthorizationConnection, connection), session, body.org_id
     )
     return Response(status_code=204)
+
+
+class CurrentIdentityResponse(BaseModel):
+    identity_id: UUID
+
+
+@router.get("/me", response_model=CurrentIdentityResponse)
+@public_route
+def me(session: Annotated[SessionRecord, Depends(current_session)]) -> CurrentIdentityResponse:
+    """Return only the current session's identity; normal MFA and org gates apply."""
+    return CurrentIdentityResponse(identity_id=session.identity_id)

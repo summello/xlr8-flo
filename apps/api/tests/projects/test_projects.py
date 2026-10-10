@@ -56,6 +56,9 @@ def test_create_details_scope_audit_and_status(project_db):
         "actual_start",
         "actual_end",
         "schedule_variance_days",
+        "bu_name",
+        "allocated",
+        "available",
     }
     assert request(db, "GET", "/" + row["id"]).json() == row
     from uuid import UUID

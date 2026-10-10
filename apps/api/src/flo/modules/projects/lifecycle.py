@@ -188,10 +188,23 @@ class Lifecycle:
     ) -> list[TransitionAvailable]:
         result = []
         for target in get_args(ProjectStatus.__value__):
-            problems = self.evaluate(project, blocked, TransitionCreate(to=target), permitted)
+            rule = TRANSITIONS.get((str(project["status"]), target))
+            needs_reason = rule is not None and rule[1]
+            problems = self.evaluate(
+                project,
+                blocked,
+                TransitionCreate(to=target, reason="x" * 20 if needs_reason else None),
+                permitted,
+            )
+            override_available = len(problems) == 1 and problems[0].checks == {
+                "problem": "closing_blocked"
+            }
             result.append(
                 TransitionAvailable(
                     to=target,
+                    reachable=rule is not None,
+                    reason_required=needs_reason or override_available,
+                    override_available=override_available,
                     allowed=not problems,
                     blocked_reasons=[p.detail or p.code.value for p in problems],
                 )

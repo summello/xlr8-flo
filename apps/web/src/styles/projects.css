@@ -1,0 +1,45 @@
+:root {
+  --projects-currency-size: 11px; /* MASTER §7.4 currency code */
+  --projects-dialog-width: var(--sheet-w);
+}
+.projects { min-width: 0; margin-top: var(--space-5); }
+.projects p { color: var(--fg-secondary); }
+.project-toolbar, .project-actions, .project-record-heading, .project-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-block: var(--space-4); }
+.project-toolbar label { display: grid; gap: var(--space-1); }
+.projects button, .projects select, .projects input, .project-dialog button, .project-dialog input {
+  font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--border-control); border-radius: var(--radius-control); padding: var(--space-2) var(--space-3);
+}
+.projects button, .project-dialog button { cursor: pointer; }
+.projects button:disabled { cursor: default; color: var(--fg-muted); }
+.project-form { width: min(100%, var(--sheet-w)); }
+.project-money { display: inline-flex; align-items: center; justify-content: flex-end; gap: var(--space-1); color: var(--money-inflow); font-size: var(--text-numeric); line-height: var(--leading-numeric); font-weight: var(--weight-numeric); }
+.project-money[data-negative] { color: var(--money-outflow); }
+.project-money[data-zero] { color: var(--money-zero); }
+.project-money svg { width: var(--icon-inline); height: var(--icon-inline); }
+.project-currency { color: var(--fg-muted); font-size: var(--projects-currency-size); }
+.project-group-start { display: block; }
+.projects tr:has(.project-group-start) td { border-top: 1px solid var(--border); }
+.project-transition { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-block: var(--space-3); }
+.project-blocked, .projects [role="alert"], .project-dialog p { font-size: var(--text-input-mobile); line-height: var(--leading-heading); }
+.project-tabs { border-bottom: 1px solid var(--border); }
+.project-tabs [aria-selected="true"] { color: var(--fg); background: var(--sunken); font-weight: var(--weight-heading); }
+.project-facts { display: grid; gap: var(--space-3); margin-block: var(--space-4); }
+.project-facts > div { min-height: var(--row-h); display: flex; justify-content: space-between; gap: var(--space-4); border-bottom: 1px solid var(--border); padding-block: var(--space-2); }
+.project-facts dt { color: var(--fg-secondary); }
+.project-facts dd { overflow-wrap: anywhere; margin: 0; }
+.project-records { list-style: none; padding: 0; }
+.project-records li { padding: var(--space-4); margin-block: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-card); overflow-wrap: anywhere; }
+.project-dialog-overlay { position: fixed; inset: 0; background: var(--scrim); z-index: var(--z-modal); }
+.project-dialog { position: fixed; inset: var(--space-6); margin: auto; width: min(calc(100% - var(--space-8)), var(--projects-dialog-width)); height: fit-content; max-height: calc(100% - var(--space-8)); overflow-y: auto; padding: var(--space-6); border-radius: var(--radius-card); z-index: var(--z-modal); }
+.project-checkbox { display: flex; align-items: center; gap: var(--space-2); margin-block: var(--space-3); }
+@media (max-width: 1023px) {
+  .projects button, .projects select, .projects input, .projects .form-submit, .project-dialog button, .project-dialog input { min-height: var(--touch-target); }
+}
+
+@media (max-width: 767px) {
+  .projects input, .projects select, .project-dialog input { font-size: var(--text-input-mobile); }
+}
+
+.project-skeleton { display: block; width: var(--space-8); height: var(--leading-body); border-radius: var(--radius-control); background: var(--sunken); }
+.project-loading .project-record-heading { min-height: var(--pill-h); }
+.project-loading .project-tabs { min-height: var(--row-h); }

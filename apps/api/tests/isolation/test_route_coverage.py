@@ -47,6 +47,10 @@ COVERED = {
     ): "imports/test_validation.py::test_foreign_batch_routes",
     (
         "GET",
+        "/api/v1/auth/me",
+    ): "projects/test_list_ui.py::test_auth_me_unauthenticated_and_session_identity_isolation",
+    (
+        "GET",
         "/api/v1/projects/{id}/risks",
     ): "projects/test_risks.py::test_risk_foreign_tenant_routes",
     (

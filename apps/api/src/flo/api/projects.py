@@ -24,6 +24,7 @@ from flo.modules.projects.schemas import (
     PhasePatch,
     PhaseRead,
     ProjectCreate,
+    ProjectGroup,
     ProjectPage,
     ProjectPatch,
     ProjectRead,
@@ -91,8 +92,10 @@ def create_project(
 
 @router.get("", response_model=ProjectPage)
 def list_projects(
+    request: Request,
     context: ListContext,
     connection: Connection,
+    group_by: ProjectGroup | None = None,
     q: str = "",
     status: ProjectStatus | None = None,
     bu_id: UUID | None = None,
@@ -102,6 +105,8 @@ def list_projects(
     page_size: Annotated[int, Query(ge=1, le=50)] = 50,
 ) -> ProjectPage:
     return ProjectService(connection, current_scope(), context.user_id).list(
+        group_by=group_by,
+        balances=permits(request, "ledger.read", organization_target()),
         q=q,
         status=status,
         bu_id=bu_id,

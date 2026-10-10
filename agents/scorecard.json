@@ -2127,6 +2127,52 @@
       },
       "recap": "Implemented keyed upload replay, scoped history, resumable background imports, safe cancellation, and single outbox completion/failure emails. All 1,554 API tests and the full flo check passed, and all 15 distinct plants failed as expected before restoration.",
       "title": "Import batch record, idempotent re-import by external key, async with progress"
+    },
+    {
+      "story": "E06-S07",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "codex",
+      "reviewers": [
+        "qwen"
+      ],
+      "rounds": 2,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "qwen": {
+          "ran_tests": true,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [
+        {
+          "from": "opencode-nemotron",
+          "to": "codex",
+          "role": "author",
+          "reason": "10 Oct 2026: nemotron ended exit 0 with nothing committed, flo check never run, tests unwritten, and edits outside packet scope (api/auth.py, modules/identity/service.py). Its diff is kept at .scratch/E06-S07.nemotron.patch; codex starts from a clean tree."
+        }
+      ],
+      "sessions": {
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E06-S07 and model~nvidia/nemotron-3-ultra-550b-a55b:free"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "unavailable: OpenRouter has no session concept - pass the generation id to `flo session qwen <id>`"
+        }
+      },
+      "recap": "Implemented project list, creation and detail screens with shared-grid saved views, schedule and risk forms, transitions and exact money display. Added scoped list projections, session identity and transition metadata with Postgres and browser regression coverage.",
+      "title": "Project list and detail screens, filter/sort/group/search, saved views"
     }
   ]
 }

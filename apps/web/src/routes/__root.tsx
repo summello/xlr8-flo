@@ -11,6 +11,10 @@ import FormGallery from "./_dev/form-gallery";
 import GridGallery from "./_dev/grid-gallery";
 import StatusGallery from "./_dev/status-gallery";
 import EffectiveAccessExplorer from "./admin/users/$id";
+import ProjectList from "./projects/list";
+import NewProject from "./projects/new";
+import ProjectDetail from "./projects/detail";
+import type { Project } from "../components/projects/api";
 import type { RoutePath } from "./route-paths";
 
 type RouteDefinition = {
@@ -27,6 +31,7 @@ const ORGANIZATION = ["/organization", "Northstar Capital"] as const;
 const BUSINESS_UNIT = ["/organization/infrastructure", "Infrastructure BU"] as const;
 const PROJECT = ["/projects/north-plant-renewal", "North plant renewal"] as const;
 const SUB_PROJECT = ["/projects/north-plant-renewal/cooling", "Cooling system upgrade"] as const;
+const PROJECT_PATH = /^\/projects\/([0-9a-f-]{36})$/;
 const ADMIN_USER_PATH = /^\/admin\/users\/([^/]+)$/;
 
 const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
@@ -53,24 +58,17 @@ const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
   },
   "/projects": {
     activeHref: "/projects",
-    description: "Project screens arrive with the budget spine milestone.",
+    description: "Search, filter and manage capital projects.",
     hierarchy: [ORGANIZATION, BUSINESS_UNIT, ["/projects", "Projects"]],
     phase: "plan",
     title: "Projects",
   },
   "/projects/new": {
     activeHref: "/projects",
-    description: "The project form arrives with the project management story.",
+    description: "Create a project and submit it for approval.",
     hierarchy: [ORGANIZATION, BUSINESS_UNIT, ["/projects", "Projects"], ["/projects/new", "Create"]],
     phase: "plan",
     title: "Create project",
-  },
-  "/projects/north-plant-renewal": {
-    activeHref: "/projects",
-    description: "The project overview arrives with the project management story.",
-    hierarchy: [ORGANIZATION, BUSINESS_UNIT, PROJECT],
-    phase: "plan",
-    title: "North plant renewal",
   },
   "/budget": {
     activeHref: "/budget",
@@ -166,6 +164,10 @@ const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
 };
 
 function routeFor(path: string): ShellRoute {
+  if (PROJECT_PATH.test(path)) return {
+    activeHref: "/projects", path, phase: "plan", title: "Project", description: "Project details and actions.",
+    breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/projects", label: "Projects" }],
+  };
   const adminUser = path.match(ADMIN_USER_PATH)?.[1];
   if (adminUser !== undefined) {
     return {
@@ -197,6 +199,11 @@ function activateRoute(path: string): ShellRoute {
 }
 
 export default function RootRoute() {
+  const [projectHeading, setProjectHeading] = useState<{ id: string; title: string; unit: string; number: string; buId: string } | null>(null);
+  const onProjectLoaded = useCallback((project: Project, unit: string) => {
+    document.title = project.name;
+    setProjectHeading({ id: project.id, title: project.name, unit, number: project.number, buId: project.bu_id });
+  }, []);
   const verified = useRef(false);
   const [allowed, setAllowed] = useState(false);
   const [approvedRoute, setApprovedRoute] = useState<ShellRoute | null>(null);
@@ -272,10 +279,17 @@ export default function RootRoute() {
   if (!allowed && !approvedRoute) return <main role="status">Checking your session</main>;
   // Keep the last authorized shell mounted during the probe; no new route is rendered early.
   const shellRoute = allowed ? route : approvedRoute!;
+  const projectId = shellRoute.path.match(PROJECT_PATH)?.[1];
+  const loadedHeading = projectHeading?.id === projectId ? projectHeading : null;
+  const displayedRoute = loadedHeading ? { ...shellRoute, title: loadedHeading.title,
+    breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: `/organization/${loadedHeading.buId}`, label: loadedHeading.unit }, { href: shellRoute.path, label: `${loadedHeading.number} ${loadedHeading.title}` }] } : shellRoute;
   const adminUserId = shellRoute.path.match(ADMIN_USER_PATH)?.[1];
 
   return (
-    <AppShell navigate={navigate} route={{ ...shellRoute, breadcrumbs: shellRoute.breadcrumbs.map(item => ({ ...item, label: item.href === "/organization" && tenantName ? tenantName : item.label })) }}>
+    <AppShell navigate={navigate} route={{ ...displayedRoute, breadcrumbs: displayedRoute.breadcrumbs.map(item => ({ ...item, label: item.href === "/organization" && tenantName ? tenantName : item.label })) }}>
+      {shellRoute.path === "/projects" ? <ProjectList navigate={navigate} /> : undefined}
+      {shellRoute.path === "/projects/new" ? <NewProject navigate={navigate} /> : undefined}
+      {projectId ? <ProjectDetail key={projectId} id={projectId} onLoaded={onProjectLoaded} /> : undefined}
       {shellRoute.path === "/_dev/status-gallery" ? <StatusGallery /> : undefined}
       {shellRoute.path === "/_dev/grid" ? <GridGallery /> : undefined}
       {shellRoute.path === "/_dev/forms" ? <FormGallery /> : undefined}

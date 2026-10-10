@@ -482,7 +482,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E04-S05** StatusPill primitive: closed per-document-type tone map, icon always, never author-coloured | E04 | ui | M | TAG-001, TAG-002, TAG-003, A11Y-004 | ~~E04-S01~~ |
 | ✅ | **E04-S06** Material layer: tinted shadows, lit edge, grain, honest glass, glow focus ring | E04 | ui | M | UX-006, A11Y-005 | ~~E04-S01~~ |
 
-#### M1 — Budget spine · 29/32 done
+#### M1 — Budget spine · 30/32 done
 
 > The trustworthy system of record. Projects, hierarchy and the complete budget ledger.
 
@@ -505,8 +505,8 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E06-S04** Roll-down and roll-up funding modes, set per BU/OU and inherited | E06 | ledger | L | PROJ-006, PROJ-007, PROJ-008 | ~~E06-S02~~, ~~E07-S02~~ |
 | ✅ | **E06-S05** Phases, milestones, planned vs actual dates, owner, sponsor, health, percent complete | E06 | crud | M | PROJ-011, PROJ-015 | ~~E06-S01~~ |
 | ✅ | **E06-S06** Project risks with likelihood, impact, owner, mitigation, due date, status | E06 | crud | M | PROJ-016 | ~~E06-S01~~ |
-| 🔨 | **E06-S07** Project list and detail screens, filter/sort/group/search, saved views | E06 | ui | L | PROJ-020, XFN-002 | ~~E06-S03~~, ~~E04-S03~~ |
-| ⬜ | **E06-S08** Project dashboard with hierarchy visual and drill-down to ledger entries | E06 | ui | L | PROJ-009, PROJ-021, RPT-002, RPT-003, A11Y-009 | E06-S07, ~~E07-S06~~ |
+| ✅ | **E06-S07** Project list and detail screens, filter/sort/group/search, saved views | E06 | ui | L | PROJ-020, XFN-002 | ~~E06-S03~~, ~~E04-S03~~ |
+| ⬜ | **E06-S08** Project dashboard with hierarchy visual and drill-down to ledger entries | E06 | ui | L | PROJ-009, PROJ-021, RPT-002, RPT-003, A11Y-009 | ~~E06-S07~~, ~~E07-S06~~ |
 | ✅ | **E07-S01** Ledger schema, append-only triggers, entry types, partitioning, source linkage | E07 | migration | L | FIN-004, FIN-007, BUD-005, BUD-006, ARCH-003 | ~~E03-S01~~, ~~E03-S04~~ |
 | ✅ | **E07-S02** project_balance rollup maintained in-transaction with the ledger write | E07 | ledger | L | FIN-005, FIN-006, BUD-011, D-11 | ~~E07-S01~~ |
 | ✅ | **E07-S03** Allocation command with authorization, reason, effective date and audit | E07 | ledger | M | BUD-001, BUD-006, BUD-007 | ~~E07-S02~~ |
@@ -519,7 +519,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E08-S01** Import framework: template versioning, column mapping, type and reference validation | E08 | engine | L | IMP-001, IMP-002, IMP-003, IMP-004 | ~~E03-S06~~ |
 | ✅ | **E08-S02** Dry-run preview, row/column error report, atomic or explicitly partial commit | E08 | engine | L | IMP-005, IMP-006, IMP-007 | ~~E08-S01~~ |
 | ✅ | **E08-S03** Import batch record, idempotent re-import by external key, async with progress | E08 | engine | M | IMP-008, IMP-009, IMP-012, PERF-004 | ~~E08-S02~~ |
-| ⬜ | **E08-S04** Project and budget import templates end to end | E08 | crud | M | PROJ-001, IMP-001 | ~~E08-S03~~, ~~E07-S03~~ |
+| 🔨 | **E08-S04** Project and budget import templates end to end | E08 | crud | M | PROJ-001, IMP-001 | ~~E08-S03~~, ~~E07-S03~~ |
 
 #### M2 — Governed demand · 0/24 done
 

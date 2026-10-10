@@ -204,7 +204,9 @@ def test_available_matches_post(project_db):
     assert len(options.json()) == 6
     for option in options.json():
         with db.connection.transaction(force_rollback=True):
-            result = send(db, row, option["to"])
+            result = send(
+                db, row, option["to"], **({"reason": "x" * 20} if option["reason_required"] else {})
+            )
             assert option["allowed"] == (result.status_code == 200)
             if not option["allowed"]:
                 assert result.json()["detail"] in option["blocked_reasons"]
@@ -635,3 +637,32 @@ def test_direct_posting_allow_list(posting_db, monkeypatch, status, bucket, sign
         assert exc.value.checks == {
             "problem": "invalid_ledger_entry" if invalid_sign else "posting_not_allowed"
         }
+
+
+def test_available_reason_input_does_not_bypass_post_guard(project_db):
+    db = project_db
+    row = project(db, "active")
+    options = request(db, "GET", f"/{row.id}/transitions/available").json()
+    deferred = next(option for option in options if option["to"] == "deferred")
+    assert deferred["reachable"] and deferred["reason_required"] and deferred["allowed"]
+    assert not deferred["override_available"]
+    assert db.connection.execute("SELECT count(*) FROM project_status_event").fetchone() == (0,)
+    assert send(db, row, "deferred").status_code == 422
+    assert send(db, row, "deferred", reason="Explained deferral").status_code == 200
+
+
+def test_available_override_only_when_closing_is_sole_blocker(posting_db):
+    db = posting_db
+    row = project(db, "active")
+    post(db, row)
+    post(db, row, entry_type=LedgerType.RESERVATION, amount=Decimal("40"))
+    grant_permissions(db, db.actor_id, "project.complete")
+    options = request(db, "GET", f"/{row.id}/transitions/available").json()
+    completed = next(option for option in options if option["to"] == "completed")
+    assert completed["reachable"] and completed["override_available"]
+    assert completed["reason_required"] and not completed["allowed"]
+    viewer = insert_identity(db, "read-only")
+    grant_permissions(db, viewer, "project.read")
+    options = request(db, "GET", f"/{row.id}/transitions/available", viewer=viewer).json()
+    assert not next(o for o in options if o["to"] == "completed")["override_available"]
+    assert not next(o for o in options if o["to"] == "draft")["reachable"]

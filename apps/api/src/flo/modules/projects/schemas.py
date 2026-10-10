@@ -14,6 +14,7 @@ type ProjectStatus = Literal[
 type ProjectSort = Literal["number", "name", "status", "created_at"]
 type ProjectHealth = Literal["unknown", "on_track", "at_risk", "off_track"]
 type PhaseStatus = Literal["planned", "in_progress", "done", "skipped"]
+type ProjectGroup = Literal["status", "bu"]
 type Direction = Literal["asc", "desc"]
 
 
@@ -92,9 +93,13 @@ class ProjectRead(BaseModel):
     schedule_variance_days: int | None
     version: int
     created_at: datetime
+    bu_name: str | None = None
+    allocated: str | None = None
+    available: str | None = None
 
 
 class ProjectPage(BaseModel):
+    total: int
     rows: list[ProjectRead]
     next_cursor: str | None
 
@@ -142,6 +147,9 @@ class TransitionCreate(BaseModel):
 
 
 class TransitionAvailable(BaseModel):
+    reachable: bool
+    reason_required: bool
+    override_available: bool
     to: ProjectStatus
     allowed: bool
     blocked_reasons: list[str]

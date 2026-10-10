@@ -695,7 +695,7 @@ epics:
         dep:
           - E06-S03
           - E04-S03
-        st: in_progress
+        st: done
       - id: E06-S08
         t: Project dashboard with hierarchy visual and drill-down to ledger entries
         k: ui
@@ -906,7 +906,7 @@ epics:
         dep:
           - E08-S03
           - E07-S03
-        st: todo
+        st: in_progress
 
   # ─────────────────────── M2 — Governed demand ───────────────────────
 

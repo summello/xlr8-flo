@@ -4,7 +4,6 @@ export const ROUTE_PATHS = [
   "/administration",
   "/projects",
   "/projects/new",
-  "/projects/north-plant-renewal",
   "/budget",
   "/reporting",
   "/requisitions",

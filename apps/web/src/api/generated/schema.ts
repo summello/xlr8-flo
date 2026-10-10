@@ -146,6 +146,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Me
+         * @description Return only the current session's identity; normal MFA and org gates apply.
+         */
+        get: operations["me_api_v1_auth_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/mfa": {
         parameters: {
             query?: never;
@@ -1556,6 +1576,14 @@ export interface components {
             /** Exponent */
             exponent: number;
         };
+        /** CurrentIdentityResponse */
+        CurrentIdentityResponse: {
+            /**
+             * Identity Id
+             * Format: uuid
+             */
+            identity_id: string;
+        };
         /**
          * DeniedExampleResponse
          * @description A missing permission paired with an actionable explanation.
@@ -2667,6 +2695,8 @@ export interface components {
             sponsor_id?: string | null;
         };
         /** @enum {string} */
+        ProjectGroup: "status" | "bu";
+        /** @enum {string} */
         ProjectHealth: "unknown" | "on_track" | "at_risk" | "off_track";
         /** ProjectPage */
         ProjectPage: {
@@ -2674,6 +2704,8 @@ export interface components {
             next_cursor: string | null;
             /** Rows */
             rows: components["schemas"]["ProjectRead"][];
+            /** Total */
+            total: number;
         };
         /** ProjectPatch */
         ProjectPatch: {
@@ -2703,11 +2735,17 @@ export interface components {
             actual_end: string | null;
             /** Actual Start */
             actual_start: string | null;
+            /** Allocated */
+            allocated?: string | null;
+            /** Available */
+            available?: string | null;
             /**
              * Bu Id
              * Format: uuid
              */
             bu_id: string;
+            /** Bu Name */
+            bu_name?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -3037,6 +3075,12 @@ export interface components {
             allowed: boolean;
             /** Blocked Reasons */
             blocked_reasons: string[];
+            /** Override Available */
+            override_available: boolean;
+            /** Reachable */
+            reachable: boolean;
+            /** Reason Required */
+            reason_required: boolean;
             to: components["schemas"]["ProjectStatus"];
         };
         /** TransitionCreate */
@@ -3363,6 +3407,46 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    me_api_v1_auth_me_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CurrentIdentityResponse"];
+                };
             };
             /** @description Client error expressed as RFC 9457 problem details. */
             "4XX": {
@@ -5795,6 +5879,7 @@ export interface operations {
     list_projects_api_v1_projects_get: {
         parameters: {
             query?: {
+                group_by?: components["schemas"]["ProjectGroup"] | null;
                 q?: string;
                 status?: components["schemas"]["ProjectStatus"] | null;
                 bu_id?: string | null;

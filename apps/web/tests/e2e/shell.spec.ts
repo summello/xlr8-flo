@@ -55,8 +55,8 @@ test("palette filters permissions, fuzzy-highlights, navigates with arrows, and 
   await page.keyboard.up("Alt");
 
   const search = page.getByRole("combobox", { name: "Search commands" });
-  await search.fill("npr");
-  const record = dialog.getByRole("option", { name: "North plant renewal" });
+  await search.fill("gto");
+  const record = dialog.getByRole("option", { name: "Go to Organization" });
   await expect(record.locator("mark")).toHaveCount(3);
   await search.press("ArrowDown");
   await expect(record).toHaveAttribute("aria-selected", "false");
@@ -64,7 +64,7 @@ test("palette filters permissions, fuzzy-highlights, navigates with arrows, and 
   await expect(record).toHaveAttribute("aria-selected", "true");
   await search.press("Enter");
 
-  await expect(page.getByRole("heading", { level: 1, name: "North plant renewal" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Organization" })).toBeVisible();
   await expect(page.getByRole("main")).toBeFocused();
 });
 

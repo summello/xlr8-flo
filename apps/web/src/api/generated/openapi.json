@@ -579,6 +579,20 @@
         "title": "CurrencyRead",
         "type": "object"
       },
+      "CurrentIdentityResponse": {
+        "properties": {
+          "identity_id": {
+            "format": "uuid",
+            "title": "Identity Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "identity_id"
+        ],
+        "title": "CurrentIdentityResponse",
+        "type": "object"
+      },
       "DeniedExampleResponse": {
         "description": "A missing permission paired with an actionable explanation.",
         "properties": {
@@ -3675,6 +3689,13 @@
         "title": "ProjectCreate",
         "type": "object"
       },
+      "ProjectGroup": {
+        "enum": [
+          "status",
+          "bu"
+        ],
+        "type": "string"
+      },
       "ProjectHealth": {
         "enum": [
           "unknown",
@@ -3703,9 +3724,14 @@
             },
             "title": "Rows",
             "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
           }
         },
         "required": [
+          "total",
           "rows",
           "next_cursor"
         ],
@@ -3863,10 +3889,43 @@
             ],
             "title": "Actual Start"
           },
+          "allocated": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allocated"
+          },
+          "available": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Available"
+          },
           "bu_id": {
             "format": "uuid",
             "title": "Bu Id",
             "type": "string"
+          },
+          "bu_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bu Name"
           },
           "created_at": {
             "format": "date-time",
@@ -4846,11 +4905,26 @@
             "title": "Blocked Reasons",
             "type": "array"
           },
+          "override_available": {
+            "title": "Override Available",
+            "type": "boolean"
+          },
+          "reachable": {
+            "title": "Reachable",
+            "type": "boolean"
+          },
+          "reason_required": {
+            "title": "Reason Required",
+            "type": "boolean"
+          },
           "to": {
             "$ref": "#/components/schemas/ProjectStatus"
           }
         },
         "required": [
+          "reachable",
+          "reason_required",
+          "override_available",
           "to",
           "allowed",
           "blocked_reasons"
@@ -5507,6 +5581,66 @@
           }
         },
         "summary": "Logout",
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "description": "Return only the current session's identity; normal MFA and org gates apply.",
+        "operationId": "me_api_v1_auth_me_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentIdentityResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Me",
         "tags": [
           "authentication"
         ]
@@ -9761,6 +9895,22 @@
       "get": {
         "operationId": "list_projects_api_v1_projects_get",
         "parameters": [
+          {
+            "in": "query",
+            "name": "group_by",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ProjectGroup"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Group By"
+            }
+          },
           {
             "in": "query",
             "name": "q",
