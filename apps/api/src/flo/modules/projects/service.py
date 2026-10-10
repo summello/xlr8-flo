@@ -30,7 +30,7 @@ from flo.modules.org.service import (
 )
 from flo.modules.projects.hierarchy import Hierarchy
 from flo.modules.projects.lifecycle import Lifecycle, conflict
-from flo.modules.projects.models import FIELDS, ProjectRepository
+from flo.modules.projects.models import COLUMNS, FIELDS, ProjectRepository
 from flo.modules.projects.risks import Risks
 from flo.modules.projects.schedule import Schedule, with_variance
 from flo.modules.projects.schemas import (

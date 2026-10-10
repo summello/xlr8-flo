@@ -5,7 +5,7 @@ export const unitId = "22222222-2222-4222-8222-222222222222";
 export const firstActor = "33333333-3333-4333-8333-333333333333";
 export const secondActor = "44444444-4444-4444-8444-444444444444";
 export const project: components["schemas"]["ProjectRead"] = {
-  id: projectId, number: "PRJ-0001", name: "Plant renewal", status: "draft", bu_id: unitId, bu_name: "Infrastructure",
+  id: projectId, external_ref: null, number: "PRJ-0001", name: "Plant renewal", status: "draft", bu_id: unitId, bu_name: "Infrastructure",
   parent_id: null, owner_id: firstActor, sponsor_id: null, description: "Renew the plant", department_code: "D", ledger_account_code: "L", currency: "USD",
   planned_start: "2026-10-01", planned_end: "2026-12-31", health: "unknown", percent_complete: 0, actual_start: null, actual_end: null, schedule_variance_days: null,
   version: 1, created_at: "2026-10-01T00:00:00Z", allocated: "1234.5000", available: "-0.0050",
