@@ -1078,6 +1078,36 @@ def test_assignment_scales_review_to_risk(
         flo, "roadmap", lambda: {"epics": [{"id": "E99", "milestone": "M9", "stories": [story]}]}
     )
     monkeypatch.setattr(flo, "state", lambda: {})
+    # The routing-relevant slice of agents/agents.yaml, inline: CI's venv has no PyYAML.
+    gated = ["money", "auth", "security", "migration", "concurrency"]
+    fleet = {
+        "policy": {
+            "min_reviewers": 1,
+            "opus_final_required_tags": gated,
+            "ungated_reviewers": ["qwen", "kimi"],
+        },
+        "agents": {
+            "opus": {"metered": "rate", "roles": ["final_review"], "allowed_kinds": []},
+            "codex": {
+                "metered": "rate",
+                "roles": ["author", "review"],
+                "allowed_kinds": ["ledger", "concurrency", "migration", "security", "engine",
+                                  "api", "chore", "ui", "crud"],
+                "prefer_tags": ["money", "concurrency", "migration", "security"],
+            },
+            "opencode-nemotron": {
+                "metered": "none",
+                "roles": ["author", "review"],
+                "allowed_kinds": ["crud", "ui", "api", "chore", "docs", "test"],
+                "avoid_tags": gated,
+            },
+            "qwen": {"metered": "spend", "roles": ["author", "review"], "allowed_kinds": [],
+                     "monthly_budget_usd": 20},
+            "kimi": {"metered": "spend", "roles": ["author", "review"], "allowed_kinds": [],
+                     "monthly_budget_usd": 20},
+        },
+    }
+    monkeypatch.setattr(flo, "load_yaml", lambda path: fleet)
 
     out = flo.cmd_assign(["E99-S01"])
 
