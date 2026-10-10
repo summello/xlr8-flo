@@ -444,7 +444,7 @@ epics:
           - ORG-012
         dep:
           - E02-S05
-        st: todo
+        st: done
       - id: E05-S02
         t: Bill To / Ship To addresses with effective dates
         k: crud
@@ -454,7 +454,7 @@ epics:
           - ORG-005
         dep:
           - E05-S01
-        st: todo
+        st: done
       - id: E05-S03
         t: 'Master data: departments, ledger accounts, UoM, tax codes, payment terms,
           categories'
@@ -468,7 +468,7 @@ epics:
           - XFN-009
         dep:
           - E05-S01
-        st: todo
+        st: done
       - id: E05-S04
         t: Fiscal calendar and period open/close with authorization and audit
         k: engine
@@ -480,7 +480,7 @@ epics:
           - FIN-010
         dep:
           - E05-S01
-        st: todo
+        st: done
       - id: E05-S05
         t: 'FX: ECB daily rate ingest, rate table, effective dating, missing-rate block'
         k: engine
@@ -495,7 +495,112 @@ epics:
           - FIN-003
         dep:
           - E03-S06
-        st: todo
+        st: done
+      - id: E05-S09
+        t: 'Identity belongs to an organization: membership, org_id on the session, seeded first tenant and bootstrap command'
+        k: security
+        s: L
+        tags:
+          - auth
+          - security
+        reqs:
+          - AUTH-001
+          - AUTH-005
+          - ORG-001
+          - TEN-010
+        dep:
+          - E05-S01
+        st: done
+      - id: E05-S10
+        t: 'Sign-in screen: CSRF bootstrap, login, MFA challenge, logout, error and locked states'
+        k: ui
+        s: L
+        tags:
+          - auth
+          - ui
+        reqs:
+          - AUTH-001
+          - AUTH-007
+          - AUTH-010
+        dep:
+          - E05-S09
+        st: done
+      - id: E05-S11
+        t: 'Login throttling: per-identity and per-client failure limits, trusted client IP behind Cloudflare'
+        k: security
+        s: M
+        tags:
+          - auth
+          - security
+        reqs:
+          - AUTH-004
+          - AUTH-007
+          - SEC-001
+        dep:
+          - E05-S09
+        st: done
+      - id: E05-S12
+        t: 'Multi-organization membership: (identity_id, org_id) key, chosen organization
+          on the session, chooser, switcher, tenant label'
+        k: security
+        s: L
+        tags:
+          - auth
+          - security
+          - migration
+          - ui
+        reqs:
+          - AUTH-001
+          - SEC-008
+          - TEN-010
+        dep:
+          - E05-S09
+          - E05-S10
+        st: done
+      - id: E05-S13
+        t: 'Invitation acceptance: issue, validate, accept, withdraw and resend with a
+          hashed single-use token'
+        k: security
+        s: M
+        tags:
+          - auth
+          - security
+          - migration
+        reqs:
+          - AUTH-001
+          - AUTH-003
+          - AUTH-004
+          - AUTH-005
+          - AUTH-006
+          - AUTH-007
+          - AUTH-008
+          - AUTH-011
+          - SEC-006
+          - SEC-008
+          - TEN-010
+        dep:
+          - E05-S11
+          - E05-S12
+        st: done
+      - id: E05-S14
+        t: 'Invitation acceptance screen: /invite/:token, uniform unavailable state, MFA
+          handoff'
+        k: ui
+        s: S
+        tags:
+          - auth
+          - ui
+        reqs:
+          - AUTH-003
+          - AUTH-004
+          - AUTH-006
+          - AUTH-007
+          - A11Y-006
+          - UX-004
+          - UX-005
+        dep:
+          - E05-S13
+        st: done
 
   - id: E06
     name: Projects
@@ -516,7 +621,7 @@ epics:
           - SEQ-004
         dep:
           - E05-S03
-        st: todo
+        st: done
       - id: E06-S02
         t: Five-level hierarchy with recursive CTE traversal and depth guard
         k: engine
@@ -527,7 +632,7 @@ epics:
           - PROJ-005
         dep:
           - E06-S01
-        st: todo
+        st: done
       - id: E06-S03
         t: Project lifecycle state machine with permission and budget-effect enforcement
         k: engine
@@ -541,7 +646,7 @@ epics:
           - WF-006
         dep:
           - E06-S01
-        st: todo
+        st: done
       - id: E06-S04
         t: Roll-down and roll-up funding modes, set per BU/OU and inherited
         k: ledger
@@ -555,7 +660,7 @@ epics:
         dep:
           - E06-S02
           - E07-S02
-        st: todo
+        st: done
       - id: E06-S05
         t: Phases, milestones, planned vs actual dates, owner, sponsor, health, percent
           complete
@@ -567,7 +672,7 @@ epics:
           - PROJ-015
         dep:
           - E06-S01
-        st: todo
+        st: done
       - id: E06-S06
         t: Project risks with likelihood, impact, owner, mitigation, due date, status
         k: crud
@@ -577,7 +682,7 @@ epics:
           - PROJ-016
         dep:
           - E06-S01
-        st: todo
+        st: done
       - id: E06-S07
         t: Project list and detail screens, filter/sort/group/search, saved views
         k: ui
@@ -590,7 +695,7 @@ epics:
         dep:
           - E06-S03
           - E04-S03
-        st: todo
+        st: done
       - id: E06-S08
         t: Project dashboard with hierarchy visual and drill-down to ledger entries
         k: ui
@@ -606,7 +711,7 @@ epics:
         dep:
           - E06-S07
           - E07-S06
-        st: todo
+        st: done
 
   - id: E07
     name: Budget ledger
@@ -629,7 +734,7 @@ epics:
         dep:
           - E03-S01
           - E03-S04
-        st: todo
+        st: done
       - id: E07-S02
         t: project_balance rollup maintained in-transaction with the ledger write
         k: ledger
@@ -644,7 +749,7 @@ epics:
           - D-11
         dep:
           - E07-S01
-        st: todo
+        st: done
       - id: E07-S03
         t: Allocation command with authorization, reason, effective date and audit
         k: ledger
@@ -657,7 +762,7 @@ epics:
           - BUD-007
         dep:
           - E07-S02
-        st: todo
+        st: done
       - id: E07-S04
         t: Reservation and release primitives, exactly-once release guarantee
         k: ledger
@@ -673,7 +778,7 @@ epics:
           - ACC-006
         dep:
           - E07-S02
-        st: todo
+        st: done
       - id: E07-S05
         t: Commitment, actual and reversal primitives with source-document lineage
         k: ledger
@@ -686,7 +791,7 @@ epics:
           - AUD-007
         dep:
           - E07-S04
-        st: todo
+        st: done
       - id: E07-S06
         t: 'Balance query API: MTD/QTD/YTD/fiscal/life-to-date/range, reconcile to
           entries'
@@ -700,7 +805,7 @@ epics:
           - ACC-003
         dep:
           - E07-S05
-        st: todo
+        st: done
       - id: E07-S07
         t: Same-level transfer, atomic, one transfer_group_id
         k: ledger
@@ -712,7 +817,7 @@ epics:
           - BUD-004
         dep:
           - E07-S05
-        st: todo
+        st: done
       - id: E07-S08
         t: Cross-hierarchy transfer up-then-down through both ancestries, one
           transaction
@@ -728,7 +833,7 @@ epics:
         dep:
           - E07-S07
           - E06-S02
-        st: todo
+        st: done
       - id: E07-S09
         t: 'Nightly reconciliation job: recompute from ledger, report drift, never
           correct'
@@ -742,7 +847,7 @@ epics:
         dep:
           - E07-S06
           - E03-S06
-        st: todo
+        st: done
 
   - id: E08
     name: Import & export framework
@@ -762,7 +867,7 @@ epics:
           - IMP-004
         dep:
           - E03-S06
-        st: todo
+        st: done
       - id: E08-S02
         t: Dry-run preview, row/column error report, atomic or explicitly partial commit
         k: engine
@@ -774,7 +879,7 @@ epics:
           - IMP-007
         dep:
           - E08-S01
-        st: todo
+        st: done
       - id: E08-S03
         t: Import batch record, idempotent re-import by external key, async with
           progress
@@ -788,7 +893,7 @@ epics:
           - PERF-004
         dep:
           - E08-S02
-        st: todo
+        st: done
       - id: E08-S04
         t: Project and budget import templates end to end
         k: crud
@@ -801,7 +906,7 @@ epics:
         dep:
           - E08-S03
           - E07-S03
-        st: todo
+        st: done
 
   # ─────────────────────── M2 — Governed demand ───────────────────────
 

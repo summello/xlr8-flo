@@ -122,7 +122,7 @@ describe("Cloudflare API proxy", () => {
     vi.stubGlobal("fetch", fetchMock);
     let scheduled: Promise<unknown> | undefined;
 
-    apiProxy.scheduled(null, environment, {
+    apiProxy.scheduled({ scheduledTime: Date.UTC(2026, 9, 2, 12) }, environment, {
       waitUntil(promise) {
         scheduled = promise;
       },
@@ -155,6 +155,21 @@ describe("Cloudflare API proxy", () => {
     ).toBe(environment.ORIGIN_SHARED_SECRET);
   });
 
+  it("sends the CSRF pair and a fresh Idempotency-Key the API requires on every tick", () => {
+    // apps/api/tests/test_internal.py pins the API side of this exact shape. Without it
+    // the production API answers the cron with 403, then 400, and no job ever runs.
+    const origin = new URL(environment.CLOUD_RUN_ORIGIN);
+    const first = jobsTickRequest(origin, environment);
+    const second = jobsTickRequest(origin, environment);
+    const token = first.headers.get("x-csrf-token");
+
+    expect(token).toBeTruthy();
+    expect(first.headers.get("cookie")).toBe(`flo_csrf=${token}`);
+    expect(first.headers.get("idempotency-key")).toBeTruthy();
+    expect(second.headers.get("idempotency-key")).not.toBe(first.headers.get("idempotency-key"));
+    expect(second.headers.get("x-csrf-token")).not.toBe(token);
+  });
+
   it("still starts the job tick when the independent quota call fails", async () => {
     const fetchMock = vi
       .fn()
@@ -163,7 +178,7 @@ describe("Cloudflare API proxy", () => {
     vi.stubGlobal("fetch", fetchMock);
     let scheduled: Promise<unknown> | undefined;
 
-    apiProxy.scheduled(null, environment, {
+    apiProxy.scheduled({ scheduledTime: Date.UTC(2026, 9, 2, 12) }, environment, {
       waitUntil(promise) {
         scheduled = promise;
       },
@@ -174,4 +189,79 @@ describe("Cloudflare API proxy", () => {
     const jobs = fetchMock.mock.calls[1]?.[0] as Request;
     expect(jobs.url).toContain("/internal/jobs/tick");
   });
+});
+
+it.each([
+  [16, 30, "/internal/jobs/fx-ingest"],
+  [18, 30, "/internal/jobs/fx-ingest"],
+  [2, 30, "/internal/jobs/budget-reconcile"],
+  [12, 0, null],
+  [16, 31, null],
+])("schedules UTC %i:%i internal work", async (hour, minute, path) => {
+  const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+  vi.stubGlobal("fetch", fetchMock);
+  let work: Promise<unknown> | undefined;
+  apiProxy.scheduled({ scheduledTime: Date.UTC(2026, 9, 2, hour, minute) }, environment, {
+    waitUntil(promise) { work = promise; },
+  });
+  await work;
+  expect(fetchMock).toHaveBeenCalledTimes(path ? 3 : 2);
+  const requests = fetchMock.mock.calls.map(call => call[0] as Request);
+  expect(requests[0]?.url).toContain("/internal/health/quota");
+  expect(requests[1]?.url).toContain("/internal/jobs/tick");
+  for (const request of requests.slice(1)) {
+    expect(request.headers.get("x-flo-origin-secret")).toBe(environment.ORIGIN_SHARED_SECRET);
+    expect(request.headers.get("idempotency-key")).toBeTruthy();
+    const csrf = request.headers.get("x-csrf-token");
+    expect(csrf).toBeTruthy();
+    expect(request.headers.get("cookie")).toBe(`flo_csrf=${csrf}`);
+    expect(request.method).toBe("POST");
+  }
+  if (path) expect(requests[2]?.url).toContain(path);
+});
+
+it("a failed FX call leaves the independent tick and quota running", async () => {
+  const fetchMock = vi.fn().mockImplementation((request: Request) =>
+    Promise.resolve(new Response(null, {
+      status: request.url.endsWith("fx-ingest") ? 503 : 200,
+    })),
+  );
+  vi.stubGlobal("fetch", fetchMock);
+  let work: Promise<unknown> | undefined;
+  apiProxy.scheduled({ scheduledTime: Date.UTC(2026, 9, 2, 16, 30) }, environment, {
+    waitUntil(promise) { work = promise; },
+  });
+  await expect(work).rejects.toThrow("internal job failed with HTTP 503");
+  expect(fetchMock).toHaveBeenCalledTimes(3);
+});
+
+it("tick delegates to the shared internal request contract (legacy shape plant)", async () => {
+  const source = await import("node:fs/promises").then(fs => fs.readFile(
+    new URL("../../../infra/cron-worker/jobs-tick.ts", import.meta.url), "utf8",
+  ));
+  const delegates = (text: string) => /return internalJobRequest\("\/internal\/jobs\/tick", origin, environment\)/.test(text);
+  expect(delegates(source)).toBe(true);
+  // The former inline implementation may carry the same headers today, but must not
+  // diverge from the shared helper when its protocol changes.
+  expect(delegates(source.replace('return internalJobRequest("/internal/jobs/tick", origin, environment)',
+    'return new Request(new URL("/internal/jobs/tick", origin), { method: "POST" })'))).toBe(false);
+});
+
+it("replaces untrusted client IP with the Cloudflare visitor address", () => {
+  const upstream = cloudRunRequest(new Request("https://example.test/api/healthz", {
+    headers: { "X-FLO-Client-IP": "spoof", "CF-Connecting-IP": "203.0.113.8" },
+  }), environment);
+  expect(upstream.headers.get("X-FLO-Client-IP")).toBe("203.0.113.8");
+  const absent = cloudRunRequest(new Request("https://example.test/api/healthz", {
+    headers: { "X-FLO-Client-IP": "spoof" },
+  }), environment);
+  expect(absent.headers.has("X-FLO-Client-IP")).toBe(false);
+});
+
+it("forwards invitation tokens in headers without placing them in the URL", () => {
+  const upstream = cloudRunRequest(new Request("https://example.test/api/v1/invitations/by-token", {
+    headers: { "X-Invitation-Token": "disposable-test-token" },
+  }), environment);
+  expect(upstream.headers.get("X-Invitation-Token")).toBe("disposable-test-token");
+  expect(upstream.url).not.toContain("disposable-test-token");
 });

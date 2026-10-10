@@ -23,7 +23,22 @@ class Settings(BaseSettings):
         populate_by_name=True,
     )
 
+    # ponytail: raise only after measuring commit time per row against the request limit.
+    import_atomic_max_rows: int = Field(default=10_000, ge=500, le=50_000)
+
     port: int = Field(default=8080, ge=1, le=65535, validation_alias="PORT")
+    fx_feed_url: str = Field(
+        default="https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml",
+        validation_alias="FX_FEED_URL",
+    )
+
+    @field_validator("fx_feed_url")
+    @classmethod
+    def https_fx_feed(cls, value: str) -> str:
+        if not value.startswith("https://"):
+            raise ValueError("FX feed must use HTTPS")
+        return value
+
     database_url: SecretStr | None = Field(default=None, validation_alias="DATABASE_URL")
     migrations_dir: Path = Field(
         default=Path("/app/migrations"),
@@ -108,11 +123,24 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="MFA_ENCRYPTION_KEY",
     )
+    login_identity_max_failures: int = Field(default=10, ge=3, le=100)
+    login_client_max_failures: int = Field(default=30, ge=5, le=1000)
+    login_window_seconds: int = Field(default=900, ge=60, le=86400)
+    login_throttle_jitter_min_ms: int = Field(default=150, ge=0, le=2000)
+    login_throttle_jitter_max_ms: int = Field(default=300, ge=0, le=5000)
+
+    @model_validator(mode="after")
+    def require_ordered_login_jitter(self) -> Settings:
+        if self.login_throttle_jitter_min_ms > self.login_throttle_jitter_max_ms:
+            raise ValueError("login throttle minimum jitter must not exceed maximum jitter")
+        return self
+
     mfa_max_failed_attempts: int = Field(default=5, ge=1, le=20)
     mfa_failure_window_seconds: int = Field(default=5 * 60, ge=30, le=3600)
     mfa_lock_duration_seconds: int = Field(default=15 * 60, ge=30, le=86400)
     session_idle_timeout_seconds: int = Field(default=8 * 60 * 60, ge=60)
     session_absolute_timeout_seconds: int = Field(default=12 * 60 * 60, ge=60)
+    invitation_ttl_days: int = Field(default=7, ge=1, le=30)
     password_reset_ttl_seconds: int = Field(default=30 * 60, ge=60, le=24 * 60 * 60)
     password_reset_rate_window_seconds: int = Field(
         default=60 * 60,

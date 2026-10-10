@@ -93,6 +93,17 @@ def _factory(request: Request) -> PermissionResolverFactory:
     return cast(PermissionResolverFactory, factory)
 
 
+def permits(request: Request, permission: str, target: AuthorizationTarget) -> bool:
+    """Evaluate a dynamic permission with the same session and scope as require."""
+    user_id = _identity_id(request)
+    try:
+        scope = current_scope()
+    except TenantScopeMissing as exc:
+        raise ProblemError(ErrorCode.UNAUTHORIZED) from exc
+    with _factory(request)(scope) as resolver:
+        return resolver.check(user_id, permission, target).allowed
+
+
 def require(
     permission: str,
     target: TargetResolver,

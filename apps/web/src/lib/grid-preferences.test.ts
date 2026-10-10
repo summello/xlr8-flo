@@ -76,3 +76,17 @@ describe("personal grid preferences", () => {
     );
   });
 });
+
+
+it("round trips project filters and grouping while retaining legacy views", () => {
+  const storage = memoryStorage();
+  const extended: GridPreferences = { ...preferences, views: preferences.views.map(view => ({ ...view, extra: { group_by: "status", status: "active", bu_id: "unit" } })) };
+  saveGridPreferences(storage, "user-1", "projects", extended);
+  expect(loadGridPreferences(storage, "user-1", "projects")).toEqual(extended);
+  saveGridPreferences(storage, "user-1", "projects", preferences);
+  expect(loadGridPreferences(storage, "user-1", "projects")).toEqual(preferences);
+  for (const extra of [{ group_by: "invalid" }, { status: 3 }, { bu_id: false }]) {
+    storage.setItem(gridPreferenceKey("user-1", "projects"), JSON.stringify({ ...preferences, views: [{ ...preferences.views[0], extra }] }));
+    expect(loadGridPreferences(storage, "user-1", "projects")).toEqual(DEFAULT_GRID_PREFERENCES);
+  }
+});

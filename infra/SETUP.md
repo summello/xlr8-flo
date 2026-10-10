@@ -497,3 +497,56 @@ The workflow uses `gcloud run jobs execute flo-migrate --wait` before `gcloud ru
 non-zero migration therefore skips the new service revision and leaves existing traffic unchanged.
 Inspect the job execution, correct the migration in a new commit, and redeploy. Never bypass the job
 or manually point traffic at the unserved image.
+
+### Rehearse on a staging branch first
+
+Migrations and the bootstrap command change the production database. Rehearse both on a
+disposable Neon branch before running them against production:
+
+1. In the Neon console, open the production project, create a branch named `staging` from
+   the production branch, and copy its **pooled** connection string (strip any trailing
+   `&channel_bin` fragment the console truncates).
+2. Keep it apart from production: macOS keychain item `FLO_STAGING_DATABASE_URL` and Secret
+   Manager secret `flo-database-url-staging`, created exactly like `flo-database-url`
+   (see the secrets section above). Never reuse the production names.
+3. Run the pending migrations and the bootstrap command (next section) as a Cloud Run job or
+   locally with `DATABASE_URL` read from the staging keychain item at the point of use. Locally
+   the migration runner defaults to the container path `/app/migrations`, so set
+   `MIGRATIONS_DIR` to the repository's `migrations` folder first:
+
+   ```sh
+   cd apps/api
+   export MIGRATIONS_DIR="$PWD/../../migrations"
+   uv run python -m flo.kernel.migrate --check
+   DATABASE_URL="$(security find-generic-password -a "$USER" -s FLO_STAGING_DATABASE_URL -w)" \
+     uv run python -m flo.kernel.migrate
+   ```
+
+   Check the exit code, then sign in against it if a staging deploy exists.
+4. Only when the rehearsal is clean, repeat against production. If the rehearsal fails or
+   leaves the branch in a bad state, delete the branch and recreate it from production.
+
+The branch shares the project's 512 MB storage allowance, so delete it when you are done
+rather than leaving it to grow. A full second environment (another Cloud Run service, R2
+bucket and Worker route) waits for the graduation trigger.
+
+### Bootstrap the first tenant
+
+After applying migrations, run the operator command against the disposable local
+stack, or execute it as the command of a Cloud Run job using the API image:
+
+```sh
+python -m flo.modules.org.bootstrap --org-name "Example" --org-code EXAMPLE --admin-email admin@example.com
+```
+
+The job command/args are `python`, `-m`, `flo.modules.org.bootstrap`, followed by
+those organization and email options. Bind `DATABASE_URL` and the one-time
+`FLO_BOOTSTRAP_PASSWORD` through the job's existing secret bindings; never put the
+password in job arguments. Locally, omit `FLO_BOOTSTRAP_PASSWORD` to use the
+no-echo prompt. Optional `--base-currency` accepts an ISO 4217 code.
+
+The command commits the organization, code registry, identity, membership,
+administrator grant and audit evidence together. The administrator must sign in
+and enroll MFA before using tenant routes. A repeated code with the original
+administrator is a no-op (exit 0); another administrator exits 3. Invalid code,
+currency or password exits 2. A database failure exits 1 without partial state.

@@ -20,10 +20,12 @@ Stdlib only, except PyYAML for the two config files.
   flo budget                per-agent spend and remaining capacity
   flo roadmap [--check]     regenerate docs/claude-plan.md §5 (or verify it)
   flo board                 regenerate board.html - drilldown status view (gitignored)\n  flo ack     [KEY|all]     confirm a 'waiting on you' item (list keys with no argument)\n  flo unack   <KEY|all>     reopen a confirmed item
-  flo check                 run everything CI runs, locally
+  flo check                 run everything CI runs, locally, on a fresh per-worktree database
+  flo db      [url|reset]   this worktree's test database (reset drops and recreates it)
   flo up [--reset]          start local Postgres + MinIO + Mailpit; optionally reset data
   flo down                  stop the local stack
 """
+import hashlib
 import json
 import os
 import re
@@ -167,6 +169,8 @@ def cmd_assign(argv):
             return False
         if st["k"] not in cfg.get("allowed_kinds", []):
             return False
+        if tags & set(cfg.get("avoid_tags", [])):
+            return False
         cap = cfg.get("max_author_size")
         if cap and size_rank[st["s"]] > size_rank[cap]:
             return False
@@ -187,19 +191,16 @@ def cmd_assign(argv):
         return (0 if prefers else 1, scarcity[c.get("metered", "none")])
 
     author = sorted(cands, key=rank)[0]
-    # At least one reviewer must be unmetered, so a rationed agent is never the
-    # reason a story cannot merge. Cheapest reviewers first for the second slot.
-    pool = [n for n in pol["free_reviewer_pool"] if n != author and "review" in agents[n]["roles"]]
-    if not pool:
-        die(f"no free reviewer available for author {author} — widen policy.free_reviewer_pool")
-    reviewers = [pool[0]]
-    rest = sorted((n for n, c in agents.items()
-                   if n != author and n not in reviewers and "review" in c.get("roles", [])),
-                  key=lambda n: scarcity[agents[n].get("metered", "none")])
-    reviewers += rest[: pol["min_reviewers"] - len(reviewers)]
+    # 10 Oct 2026: review is scaled to risk. A gated story is Opus's alone; an ungated one
+    # goes to the first ungated reviewer with budget left, and Opus reviews the train diff.
+    opus_final = bool(tags & set(pol["opus_final_required_tags"]))
+    if opus_final:
+        reviewers = ["opus"]
+    else:
+        reviewers = [n for n in pol["ungated_reviewers"]
+                     if n != author and sp.get(n, 0.0) < agents[n].get("monthly_budget_usd", float("inf"))][:1]
     if len(reviewers) < pol["min_reviewers"]:
         die(f"only {len(reviewers)} reviewer(s) available; minimum is {pol['min_reviewers']} — story waits")
-    opus_final = bool(tags & set(pol["opus_final_required_tags"]))
     out = {"author": author, "reviewers": reviewers, "opus_final": opus_final}
     print(json.dumps(out, indent=2))
     return out
@@ -327,7 +328,9 @@ def cmd_review(argv):
     print(f"""\
 1. cd {wt}
 2. Run the tests. A verdict with ran_tests=false does not count toward the floor.
-     cd apps/api && uv run --extra dev pytest -q
+     apps/api/.venv/bin/python agents/scripts/flo check   # every CI stage, private fresh database
+   For a single test file afterwards, use the worktree's own database, never flo_test:
+     export TEST_DATABASE_URL="$(apps/api/.venv/bin/python agents/scripts/flo db reset)"
 3. For EVERY gate, contract or guard in the diff: plant a violation, watch it fail,
    then restore. A gate you have not seen fail is not reviewed.
      <edit the guarded file>            # break it
@@ -921,8 +924,10 @@ summary .caret{color:var(--fg3);transition:transform .15s cubic-bezier(.22,1,.36
 details[open]>summary .caret{transform:rotate(90deg)}
 summary .nm{font-weight:600;letter-spacing:-.01em}
 summary .sp{flex:1}
-.track{height:6px;border-radius:3px;background:var(--sunken);overflow:hidden;width:150px;flex:none}
-.fill{height:100%;border-radius:3px;background:var(--pl)}
+.track{display:flex;height:6px;border-radius:3px;background:var(--sunken);box-shadow:inset 0 0 0 1px var(--border);overflow:hidden;width:150px;flex:none}
+.fill{display:block;height:100%}
+.fill.done{background:var(--ok)}
+.fill.live{background:var(--info)}
 .cnt{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:var(--fg3);min-width:52px;text-align:right}
 .epic{border-top:1px solid var(--border);padding:2px 0}
 .epic>summary{padding:10px 16px 10px 34px;font-size:13px}
@@ -1143,6 +1148,17 @@ def cmd_unack(argv):
     cmd_board([])
 
 
+def _bar(done, live, total, label, width=None):
+    """Progress bar: done in one colour, in-flight in another, scaled to the total."""
+    pct = lambda n: (n / total * 100) if total else 0
+    style = f' style="width:{width}"' if width else ""
+    return (f'<span class="track"{style} role="progressbar" aria-label="{_esc(label)}" '
+            f'aria-valuemin="0" aria-valuemax="{total}" aria-valuenow="{done}" '
+            f'aria-valuetext="{done} of {total} done, {live} in flight">'
+            f'<span class="fill done" style="width:{pct(done):.2f}%"></span>'
+            f'<span class="fill live" style="width:{pct(live):.2f}%"></span></span>')
+
+
 def cmd_board(argv):
     rm, fleet = roadmap(), load_yaml(FLEET)
     sc = {s["story"]: s for s in load_scores()["stories"]}
@@ -1265,21 +1281,21 @@ def cmd_board(argv):
         eps = [e for e in rm["epics"] if e["milestone"] == m["id"]]
         ms_s = [s for e in eps for s in e["stories"]]
         d = sum(1 for s in ms_s if s["st"] == "done")
-        w = (d / len(ms_s) * 100) if ms_s else 0
+        lv = sum(1 for s in ms_s if s["st"] in ACTIVE)
         opn = "open" if any(s["st"] != "done" for s in ms_s) and d < len(ms_s) else ""
         parts.append(
             f'<details class="card ms" {opn}><summary>'
             f'<span class="caret">▸</span><span class="nm">{m["id"]} · {_esc(m["name"])}</span>'
-            f'<span class="sp"></span><span class="track"><span class="fill" style="width:{w:.0f}%"></span></span>'
+            f'<span class="sp"></span>' + _bar(d, lv, len(ms_s), f'{m["id"]} {m["name"]}') +
             f'<span class="cnt">{d}/{len(ms_s)}</span></summary>')
         for e in eps:
             ed = sum(1 for s in e["stories"] if s["st"] == "done")
-            ew = ed / len(e["stories"]) * 100
+            el = sum(1 for s in e["stories"] if s["st"] in ACTIVE)
             parts.append(
                 f'<details class="epic"><summary><span class="caret">▸</span>'
                 f'<span class="mono" style="font-size:11.5px;color:var(--fg3)">{e["id"]}</span>'
                 f'<span>{_esc(e["name"])}</span><span class="sp"></span>'
-                f'<span class="track" style="width:88px"><span class="fill" style="width:{ew:.0f}%"></span></span>'
+                + _bar(ed, el, len(e["stories"]), f'{e["id"]} {e["name"]}', "88px") +
                 f'<span class="cnt">{ed}/{len(e["stories"])}</span></summary><table>')
             for s in e["stories"]:
                 rec = sc.get(s["id"], {})
@@ -1331,16 +1347,46 @@ CHECKS = [
 # Every current M0 check is delivered and therefore mandatory. Temporary exemptions must
 # name both their reason and the story that removes them; docs/ops/ci-gates.md mirrors this.
 M0_MISSING_TOOL_OPTOUTS = {}
-LOCAL_TEST_DATABASE_URL = "postgresql://flo:flo-local@127.0.0.1:5432/flo_test"
+LOCAL_POSTGRES = "postgresql://flo:flo-local@127.0.0.1:5432/"
+
+
+def test_database_url(cwd):
+    """One database per worktree, so parallel stories never share, or reset, each other's data."""
+    digest = hashlib.sha256(str(Path(cwd).resolve()).encode()).hexdigest()[:8]
+    return f"{LOCAL_POSTGRES}flo_test_{digest}"
+
+
+def fresh_test_database(cwd):
+    import psycopg  # lives in the worktree venv; run flo with that interpreter
+
+    url = test_database_url(cwd)
+    name = url.rsplit("/", 1)[1]
+    with psycopg.connect(LOCAL_POSTGRES + "postgres", autocommit=True) as connection:
+        connection.execute(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)')
+        connection.execute(f'CREATE DATABASE "{name}"')
+    return url
+
+
+def cmd_db(argv):
+    action = argv[0] if argv else "url"
+    if action not in ("url", "reset"):
+        die("usage: flo db [url|reset]")
+    print(fresh_test_database(Path.cwd()) if action == "reset" else test_database_url(Path.cwd()))
 
 
 def run_check(cwd=None):
     cwd = cwd or ROOT
     ok = True
+    venv_bin = Path(cwd) / "apps" / "api" / ".venv" / "bin"
     for name, cmd in CHECKS:
         command_environment = os.environ.copy()
-        if name == "pytest":
-            command_environment.setdefault("DATABASE_URL", LOCAL_TEST_DATABASE_URL)
+        if venv_bin.is_dir():
+            # lint-imports and friends live in the story venv; the codex sandbox has no other PATH
+            command_environment["PATH"] = f"{venv_bin}{os.pathsep}{command_environment['PATH']}"
+        if name == "pytest" and "DATABASE_URL" not in command_environment:
+            url = fresh_test_database(cwd)
+            command_environment["DATABASE_URL"] = url
+            command_environment["TEST_DATABASE_URL"] = url
         try:
             r = subprocess.run(
                 cmd,
@@ -1475,7 +1521,7 @@ COMMANDS = {
     "review": cmd_review, "gate": cmd_gate, "final": cmd_final, "escalate": cmd_escalate,
     "done": cmd_done, "design": cmd_design, "status": cmd_status, "budget": cmd_budget,
     "roadmap": cmd_roadmap, "score": cmd_score, "session": cmd_session, "board": cmd_board,
-    "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "up": cmd_up, "down": cmd_down,
+    "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "db": cmd_db, "up": cmd_up, "down": cmd_down,
 }
 
 if __name__ == "__main__":

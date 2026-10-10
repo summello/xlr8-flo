@@ -17,6 +17,7 @@ from flo.kernel.errors import (
     ProblemFieldError,
     install_problem_details,
 )
+from flo.kernel.tenancy.context import TenantScopeMissing
 
 _request_logger = logging.getLogger("flo.tests.request")
 
@@ -81,6 +82,10 @@ def problem_app() -> FastAPI:
         query = "SELECT secret FROM credentials"
         path = "/srv/xlr8flo/internal/database.py"
         raise ZeroDivisionError(f"{query} at {path} in psycopg.connection")
+
+    @app.get("/api/v1/no-tenant")
+    def no_tenant() -> None:
+        raise TenantScopeMissing
 
     @app.get("/api/v1/records/{record_id}")
     def record(record_id: str) -> None:
@@ -182,6 +187,26 @@ def test_unhandled_exception_is_generic_but_full_traceback_is_correlated_server_
     assert "ZeroDivisionError" in caplog.text
     assert "SELECT secret FROM credentials" in caplog.text
     assert "/srv/xlr8flo/internal/database.py" in caplog.text
+
+
+def test_tenant_scope_missing_is_unauthorized_without_error_logging(
+    client: TestClient,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    response = client.get("/api/v1/no-tenant")
+    taxonomy = ERROR_TAXONOMY[ErrorCode.UNAUTHORIZED]
+    assert response.status_code == 401
+    assert response.headers["content-type"] == "application/problem+json"
+    assert response.json() == {
+        "type": taxonomy.type_uri,
+        "title": taxonomy.title,
+        "status": 401,
+        "detail": taxonomy.detail,
+        "instance": "/api/v1/no-tenant",
+        "correlation_id": response.headers["x-correlation-id"],
+        "recovery": taxonomy.recovery,
+    }
+    assert not [record for record in caplog.records if record.levelno >= logging.ERROR]
 
 
 def test_every_response_has_a_server_generated_correlation_header(
@@ -331,3 +356,11 @@ def test_openapi_documents_problem_schema_for_every_operation(problem_app: FastA
                     }
                 }
             assert "422" not in responses
+
+
+def test_organization_selection_taxonomy_contract() -> None:
+    entry = ERROR_TAXONOMY[ErrorCode.ORGANIZATION_SELECTION_REQUIRED]
+    assert entry.status == 403
+    assert entry.type_uri == "https://xlr8flo.app/errors/organization-selection-required"
+    assert entry.title == "Choose an organization to continue"
+    assert entry.recovery == "Choose which organization to work in, or sign out."

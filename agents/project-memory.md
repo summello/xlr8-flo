@@ -7,9 +7,9 @@ Loaded into every agent session. Updated by `flo done` (status) and by Opus at e
 
 | | |
 |---|---|
-| Milestone | **M1 — Budget spine** |
-| Stories | 26 / 162 done |
-| Branch | milestone/M1-budget-spine |
+| Milestone | **M2 — Governed demand** |
+| Stories | 58 / 168 done |
+| Branch | milestone/M2-governed-demand |
 | In flight | — |
 | Blocked | — |
 <!-- STATE:END -->
@@ -131,9 +131,31 @@ findings/review (85), deepseek 0.8 (76), kimi 0.0 (n=2). Both of qwen's runs com
 also confirms the four E01-S05 failures were the review packet's fault, not the model's.
 `agents.yaml` M0 reviewers are now `[opus, qwen, deepseek]`; kimi is qwen's fallback.
 
+**10 Oct 2026 — parallel lanes, review scaled to risk, draft PR from story one.** Operator
+approved all three. Evidence: 52/168 done at ~6–7 stories a day, strictly serial; codex merges
+clean (98%, 1.05 rounds), so the time went to serialisation and halts, not to bad code.
+nemotron as author: 9/9 clean merges, so it takes the ungated crud/ui/docs lane (`avoid_tags`
+keeps it off anything gated); codex keeps engines and every gated story. Ungated stories are
+reviewed by qwen (2.4 findings/review, best in the fleet); Opus reviews gated stories and each
+train's diff. Each worktree now has its own test database, so lanes run side by side.
+Why the draft PR matters: M1 CI was red for eight pushes (E05-S14's invitation CLS 0.132 at 375px,
+Linux only) with nobody looking. Revisit at the M2 retro with escapes on qwen-reviewed stories.
+
+**10 Oct 2026 — nemotron capped at size M; ox removed as an author.** nemotron's first story on
+the new lane, E06-S07 (ui, L), exited 0 with nothing committed, `flo check` never run, no tests,
+and an edit to `modules/identity/service.py` outside scope; codex then delivered it. Its 9/9 clean
+merges were all M or smaller. `max_author_size: M` keeps it on the small crud/ui lane. ox's
+endpoint has been withdrawn before and the cap would have routed E06-S08 to it, so ox is
+review-only. Same day: qwen's E06-S07 review caught a dead `/projects/<id>/ledger` link (major,
+upheld), and its pre-flight audit caught E08-S03's resolver wiring before codex started.
+
 **Merge authority:** the operator has delegated GitHub merges for M0 to Opus, with the
 instruction to space them out so the repository does not read as bot-driven. Outside M0 the
 standing rule holds: push, never merge.
+
+## Latest handoff
+
+`docs/handoff-2026-10-09.md` (9 Oct 2026): where M1 stands, the E05-S05 dispatch steps, the packet pre-flight technique, and what is open for the operator. Read it before dispatching any story.
 
 ## Open questions for the human
 
@@ -230,6 +252,14 @@ PATH="<worktree>/.venv/bin:$PATH" <worktree>/.venv/bin/python agents/scripts/flo
 `pip install pyyaml` into each new story venv once.
 
 ---
+
+## Staging database (8 Oct 2026)
+
+Rehearse migrations and the first-tenant bootstrap on a Neon branch named `staging` (copy-on-write
+from production) before touching production; secrets `FLO_STAGING_DATABASE_URL` (keychain) and
+`flo-database-url-staging` (Secret Manager), never the production names. Procedure in
+`infra/SETUP.md` ("Rehearse on a staging branch first"). A full second environment waits for the
+graduation trigger. Agents never run against Neon from a worktree, staging branch included.
 
 ## Branch protection
 

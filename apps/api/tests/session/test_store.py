@@ -66,6 +66,36 @@ def test_token_is_256_bits_and_only_its_sha256_hash_is_stored(
     assert issued.cookie_value() not in repr(issued)
 
 
+def test_session_membership_resolves_in_one_query(session_database: SessionDatabase) -> None:
+    database = session_database
+    org_id = uuid4()
+    database.connection.execute(
+        "INSERT INTO identity_membership(identity_id, org_id) VALUES (%s, %s)",
+        (database.identity_id, org_id),
+    )
+    issued = store(database, MutableClock(START)).issue(database.identity_id, DEVICE)
+    queries = []
+
+    class CountingConnection:
+        def transaction(self):
+            return database.connection.transaction()
+
+        def execute(self, query, params=()):
+            queries.append(query)
+            return database.connection.execute(query, params)
+
+    session_store = SessionStore(
+        CountingConnection(),
+        idle_timeout=timedelta(hours=8),
+        absolute_timeout=timedelta(hours=12),
+        clock=MutableClock(START),
+    )
+    resolved = session_store.authenticate(issued.cookie_value(), DEVICE)
+    assert resolved is not None
+    assert resolved.org_id == org_id
+    assert len(queries) == 1
+
+
 def test_idle_timeout_refreshes_on_activity_but_absolute_timeout_never_moves(
     session_database: SessionDatabase,
 ) -> None:
@@ -252,6 +282,7 @@ def test_mfa_migration_extends_sessions_and_is_reversible_with_seeded_data(
         "revoked_at",
         "ip_prefix",
         "user_agent",
+        "org_id",
         "last_auth_at",
         "mfa_verified_at",
     ]

@@ -4,16 +4,18 @@
 version: 1
 
 policy:
-  max_stories_in_flight: 3      # two reviewers per story saturates the fleet at 3
-  min_reviewers: 1              # 25 Aug 2026: per-story review is Opus only. Two
-                                # metered reviewers per story cost more wall-clock than
-                                # they returned once Opus reviewed every story anyway.
+  max_stories_in_flight: 4      # 10 Oct 2026: parallel trains, one test database per worktree
+  min_reviewers: 1              # one review per story, scaled to risk (below)
   release_reviewers: [qwen, deepseek]   # second and third pass on the whole milestone
                                         # diff, before the PR to main — not per story
   max_review_rounds: 3          # then flo escalate → opus arbitration
-  free_reviewer_pool: [opencode-nemotron, opencode-ox]  # at least one reviewer must come from here,
-                                                        # so a rationed agent is never the merge blocker
-  opus_final_required_tags: [money, auth, security, migration, ui, concurrency]
+  # 10 Oct 2026, operator-approved: a story carrying one of these tags is reviewed by Opus
+  # alone, as before. Every other story (crud, plain ui, docs) is reviewed by the first
+  # ungated reviewer with budget left, and Opus reviews the whole train's diff instead.
+  # `ui` left this list deliberately: MASTER-token and a11y checks are mechanical and run
+  # in flo check; Opus's UI pass moves to the train diff.
+  opus_final_required_tags: [money, auth, security, migration, concurrency]
+  ungated_reviewers: [qwen, kimi]
 
 # Per-milestone overrides. A milestone may concentrate authorship on one agent when
 # the cost of getting it wrong is a rewrite rather than a patch. Reviewers are NOT
@@ -101,7 +103,7 @@ agents:
                                  # loop cannot burn every reset in one night.
     roles: [author, review]
     # M0 needs api/chore/ui too, because the M0 override makes codex sole author.
-    allowed_kinds: [ledger, concurrency, migration, security, engine, api, chore, ui]
+    allowed_kinds: [ledger, concurrency, migration, security, engine, api, chore, ui, crud]  # crud only reaches codex when a free author avoids its tags
     prefer_tags: [money, concurrency, migration, security]
     fallback: [opencode-nemotron]
     notes: >
@@ -114,9 +116,16 @@ agents:
     plan: openrouter-credits
     metered: none                # :free variant — no credit drawdown
     roles: [author, review]
-    allowed_kinds: [crud, ui, api, chore, docs, engine, migration, test]
+    allowed_kinds: [crud, ui, api, chore, docs, test]   # 10 Oct 2026: engine, migration → codex
+    avoid_tags: [money, auth, security, migration, concurrency]   # gated stories → codex
+    max_author_size: M           # 10 Oct 2026: E06-S07 (ui, L) ended exit 0 with nothing committed,
+                                 # no tests and an out-of-scope identity edit; L stories → codex
     fallback: [opencode-ox, qwen, codex]
     notes: >
+      10 Oct 2026: second parallel author lane, operator-approved. Takes the crud, ui and
+      docs lanes so codex's cap stays on the money, engine and security trains. Evidence:
+      9 of 9 authored stories merged clean in one round (SCORECARD.md, author score 100.0).
+      Its reviewer record (0.0 findings per review) is why it reviews nothing here.
       Default author. 25 Aug 2026: moved off OpenCode Zen's `nemotron-ultra`, which
       began failing every request with "Unexpected server error" — a bare one-word
       prompt failed identically, so the endpoint, not the model, was gone. That was
@@ -129,8 +138,9 @@ agents:
     cli: "opencode run --model openrouter/stealth/ox-alpha"
     plan: openrouter-credits
     metered: none                # second free model — the reason Codex is not spent on reviews
-    roles: [author, review]
-    allowed_kinds: [crud, ui, api, chore, docs, engine, test]
+    roles: [review]              # 10 Oct 2026: endpoint withdrawn before; never routed as author
+    allowed_kinds: [crud, ui, api, chore, docs, test]
+    avoid_tags: [money, auth, security, migration, concurrency]
     fallback: [opencode-nemotron, qwen]
     notes: >
       Distinct model from nemotron-ultra, so a free author still gets a free,
@@ -192,7 +202,9 @@ agents:
 #                   and (size <= max_author_size or unset)
 #                   and has remaining capacity
 #   2. author  = candidate with the lowest scarcity, preferring prefer_tags matches
-#   3. reviewers = 2 agents != author, at least one from policy.free_reviewer_pool
+#   3. opus_final = story.tags ∩ policy.opus_final_required_tags is non-empty
+#      reviewers = [opus] if opus_final, else the first of policy.ungated_reviewers
+#                  that is not the author and is under its monthly budget
 #   4. if fewer than min_reviewers are reachable → story waits, never merges short
-#   5. opus_final required if story.tags ∩ policy.opus_final_required_tags
+#   5. an ungated story's code is still read by Opus, once, in its train's diff
 #   6. every substitution is recorded in the task packet

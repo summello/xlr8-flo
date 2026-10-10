@@ -59,3 +59,20 @@ def test_accepts_decimal_in_money_module(tmp_path: Path) -> None:
 
     assert result.returncode == 0
     assert result.stderr == ""
+
+
+def test_fx_file_is_default_scope_and_float_plant_fails(tmp_path: Path) -> None:
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("money_checker", CHECKER)
+    assert spec is not None and spec.loader is not None
+    checker = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(checker)
+    assert any(
+        path.as_posix().endswith("modules/org/fx.py") for path in checker.default_money_modules()
+    )
+    target = tmp_path / "modules" / "org" / "fx.py"
+    target.parent.mkdir(parents=True)
+    source = next(path for path in checker.default_money_modules() if path.name == "fx.py")
+    target.write_text(source.read_text() + "\namount = float(1)\n")
+    assert checker.main([str(target)]) == 1

@@ -22,6 +22,8 @@ class ErrorCode(StrEnum):
     METHOD_NOT_ALLOWED = "method-not-allowed"
     MFA_ENROLLMENT_REQUIRED = "mfa-enrollment-required"
     MFA_VERIFICATION_REQUIRED = "mfa-verification-required"
+    PAYLOAD_TOO_LARGE = "payload-too-large"
+    ORGANIZATION_SELECTION_REQUIRED = "organization-selection-required"
     NOT_FOUND = "not-found"
     REQUEST_IN_FLIGHT = "request_in_flight"
     SERVICE_UNAVAILABLE = "service-unavailable"
@@ -115,12 +117,26 @@ ERROR_TAXONOMY: dict[ErrorCode, ErrorTaxonomyEntry] = {
         detail="This session must verify its enrolled MFA factor before continuing.",
         recovery="Enter a current authenticator or recovery code, then try again.",
     ),
+    ErrorCode.ORGANIZATION_SELECTION_REQUIRED: ErrorTaxonomyEntry(
+        status=403,
+        type_uri="https://xlr8flo.app/errors/organization-selection-required",
+        title="Choose an organization to continue",
+        detail="This session must choose an organization before continuing.",
+        recovery="Choose which organization to work in, or sign out.",
+    ),
     ErrorCode.NOT_FOUND: ErrorTaxonomyEntry(
         status=404,
         type_uri="https://xlr8flo.app/errors/not-found",
         title="Record not found",
         detail="The requested record was not found. No data was changed.",
         recovery="Check the address or return to the previous page and choose the record again.",
+    ),
+    ErrorCode.PAYLOAD_TOO_LARGE: ErrorTaxonomyEntry(
+        status=413,
+        type_uri="https://xlr8flo.app/errors/payload-too-large",
+        title="The upload is too large",
+        detail="The upload exceeds the 10 MiB limit. No import batch was created.",
+        recovery="Choose a smaller file and upload again.",
     ),
     ErrorCode.REQUEST_IN_FLIGHT: ErrorTaxonomyEntry(
         status=409,

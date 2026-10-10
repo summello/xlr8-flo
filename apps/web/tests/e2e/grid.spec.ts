@@ -5,6 +5,7 @@ const gridPath = "/_dev/grid";
 
 async function openGrid(page: Page, path = gridPath) {
   await page.goto(path);
+  await page.locator(".app-shell").waitFor();
   const table = page.getByRole("table", { name: "Projects data grid" });
   await expect(table).toHaveAttribute("aria-rowcount", "10000");
   await expect(page.locator("tr[data-grid-row]").first()).toBeVisible();
@@ -243,11 +244,16 @@ test("loading, partial, empty, and error states reserve and preserve the right i
       }
     }).observe({ type: "layout-shift", buffered: true });
   });
+  // Hold each response until the test has asserted the loading state: a fixed delay raced
+  // the assertions on a cold dev server.
+  let release: () => void = () => {};
+  let gate = new Promise<void>((resolve) => (release = resolve));
   await page.route("**/api/_dev/grid**", async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, 180));
+    await gate;
     await route.continue();
   });
   await page.goto(gridPath);
+  await page.locator(".app-shell").waitFor();
 
   const skeletonSurface = page.locator(".grid-skeleton");
   await expect(skeletonSurface).toHaveClass(/\bmaterial-surface\b/);
@@ -256,16 +262,20 @@ test("loading, partial, empty, and error states reserve and preserve the right i
   const skeleton = page.getByTestId("grid-skeleton-row").first();
   await expect(skeleton).toBeVisible();
   const skeletonHeight = await skeleton.evaluate((row) => row.getBoundingClientRect().height);
+  release();
   await expect(page.locator("tr[data-grid-row]").first()).toBeVisible();
   const rowHeight = await page.locator("tr[data-grid-row]").first().evaluate((row) => row.getBoundingClientRect().height);
   expect(skeletonHeight).toBe(rowHeight);
   expect(await page.evaluate(() => (window as Window & { __gridCls?: number }).__gridCls ?? 0)).toBeLessThan(0.1);
 
+  gate = new Promise<void>((resolve) => (release = resolve));
   await page.getByRole("button", { name: "Load next 50" }).click();
   await expect(page.getByText("Loading more records…")).toBeVisible();
+  release();
   await expect(page.getByText("10,000 server records · 100 loaded")).toBeVisible();
 
   await page.goto(`${gridPath}?fixture=empty`);
+  await page.locator(".app-shell").waitFor();
   const emptySurface = page.locator(".grid-empty-state");
   await expect(emptySurface).toHaveClass(/\bmaterial-surface\b/);
   await expect(emptySurface).toHaveClass(/\bmaterial-shadow\b/);
@@ -275,6 +285,7 @@ test("loading, partial, empty, and error states reserve and preserve the right i
   await expect(page.locator(".grid-empty-state svg")).toHaveCount(1);
 
   await page.goto(`${gridPath}?fixture=error`);
+  await page.locator(".app-shell").waitFor();
   const errorSurface = page.getByRole("alert");
   await expect(errorSurface).toHaveClass(/\bmaterial-surface\b/);
   await expect(errorSurface).toHaveClass(/\bmaterial-shadow\b/);
@@ -341,3 +352,8 @@ for (const width of [375, 768, 1024, 1440]) {
     }
   });
 }
+
+// These pre-auth-story fixtures represent a signed-in operator.
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/v1/auth/sessions", route => route.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
+});

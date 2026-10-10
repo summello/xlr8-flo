@@ -5,6 +5,7 @@ import subprocess
 import sys
 import textwrap
 from collections.abc import Iterator
+from datetime import date
 from pathlib import Path
 from unittest.mock import MagicMock
 from urllib.parse import urlsplit
@@ -104,6 +105,30 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20260825_0010",
         "20260825_0011",
         "20260825_0012",
+        "20260826_0013",
+        "20260826_0014",
+        "20260826_0015",
+        "20260826_0016",
+        "20260826_0017",
+        "20260826_0018",
+        "20260826_0019",
+        "20260826_0020",
+        "20260826_0021",
+        "20260826_0022",
+        "20260826_0023",
+        "20261008_0024",
+        "20261008_0025",
+        "20261008_0026",
+        "20261008_0027",
+        "20261008_0028",
+        "20261009_0029",
+        "20261009_0030",
+        "20261009_0031",
+        "20261009_0032",
+        "20261009_0033",
+        "20261009_0034",
+        "20261009_0035",
+        "20261009_0036",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -321,3 +346,299 @@ def test_runner_disables_server_side_prepared_statements(
 
     assert migrate.apply_migrations((), "postgresql+psycopg://database.invalid/flo") == ()
     connect.assert_called_once_with("postgresql://database.invalid/flo", prepare_threshold=None)
+
+
+def test_invitation_migration_preserves_seed_and_database_guards(empty_database):
+    chain = tuple(r for r in migrate.discover_migrations(MIGRATIONS)
+                  if r.revision <= "20261009_0031")
+    migrate.apply_migrations(chain[:-1], empty_database)
+    from psycopg.errors import CheckViolation, UniqueViolation
+
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from tests.org.test_bootstrap import create
+
+    with psycopg.connect(empty_database, autocommit=True) as connection:
+        organization = create(connection)
+        before = connection.execute("SELECT * FROM identity ORDER BY id").fetchall()
+        chain[-1].upgrade(connection)
+        actor = before[0][0]
+        invitation = uuid4()
+        with tenant_transaction(connection, Scope(organization.org_id)):
+            connection.execute(
+                "INSERT INTO "
+                "invitation(id,org_id,email,role_code,scope_type,"
+                "invited_by,sent_at,expires_at) "
+                "VALUES (%s,%s,'person@example.test','executive-viewer','org',%s,"
+                "now(),now()+interval '7 days')",
+                (invitation, organization.org_id, actor),
+            )
+            with pytest.raises(UniqueViolation), connection.transaction():
+                connection.execute(
+                    "INSERT INTO "
+                    "invitation(id,org_id,email,role_code,scope_type,"
+                    "invited_by,sent_at,expires_at) "
+                    "VALUES (%s,%s,'PERSON@example.test','executive-viewer','org',%s,"
+                    "now(),now()+interval '7 days')",
+                    (uuid4(), organization.org_id, actor),
+                )
+            with pytest.raises(CheckViolation), connection.transaction():
+                connection.execute(
+                    "UPDATE invitation SET "
+                    "used_at=now(),used_by=%s,withdrawn_at=now(),withdrawn_by=%s WHERE id=%s",
+                    (actor, actor, invitation),
+                )
+            for assignment in (
+                "scope_type='invalid'", "resend_counter=-1",
+                "used_at=now()", "withdrawn_at=now()",
+            ):
+                with pytest.raises(CheckViolation), connection.transaction():
+                    connection.execute(f"UPDATE invitation SET {assignment} WHERE id=%s",
+                                       (invitation,))
+            with pytest.raises(CheckViolation), connection.transaction():
+                connection.execute(
+                    "INSERT INTO invitation_token VALUES ('plaintext',%s,%s)",
+                    (invitation, organization.org_id),
+                )
+        chain[-1].downgrade(connection)
+        assert connection.execute("SELECT * FROM identity ORDER BY id").fetchall() == before
+        assert connection.execute(
+            "SELECT to_regclass('invitation'), to_regclass('invitation_token')"
+        ).fetchone() == (None, None)
+        chain[-1].upgrade(connection)
+        assert connection.execute("SELECT * FROM identity ORDER BY id").fetchall() == before
+
+
+def test_project_schedule_migration_preserves_existing_project(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.org.schemas import MasterCreate, OrgUnitCreate
+    from flo.modules.org.service import OrgService
+    from tests.org.test_bootstrap import admin_id, create
+
+    chain = tuple(r for r in migrate.discover_migrations(MIGRATIONS)
+                  if r.revision <= "20261009_0032")
+    migrate.apply_migrations(chain[:-1], empty_database)
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        tenant = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(tenant.org_id)
+        with correlation_context("schedule-migration"), tenant_transaction(conn, scope):
+            org = OrgService(conn, scope, actor)
+            bu = org.create_unit(OrgUnitCreate(code="BU", name="BU", kind="bu"))
+            for kind, code in (("department", "D"), ("ledger_account", "L")):
+                org.create_master(
+                    kind,
+                    MasterCreate(
+                        code=code,
+                        name=code,
+                        effective_from=date(2000, 1, 1),
+                        attributes={"account_type": "expense"} if kind == "ledger_account" else {},
+                    ),
+                )
+            project_id = uuid4()
+            conn.execute(
+                "INSERT INTO project (id,org_id,bu_id,number,name,owner_id,department_code,"
+                "ledger_account_code,currency,created_by) VALUES (%s,%s,%s,'P','Seed',%s,"
+                "'D','L','USD',%s)",
+                (project_id, tenant.org_id, bu.id, actor, actor),
+            )
+            before = conn.execute("SELECT * FROM project").fetchall()
+        chain[-1].upgrade(conn)
+        assert conn.execute(
+            "SELECT health,percent_complete,actual_start,actual_end FROM project"
+        ).fetchone() == ("unknown", 0, None, None)
+        assert conn.execute(
+            "SELECT relname,relrowsecurity,relforcerowsecurity FROM pg_class "
+            "WHERE relname IN ('project_phase','project_milestone') ORDER BY relname"
+        ).fetchall() == [("project_milestone", True, True), ("project_phase", True, True)]
+        chain[-1].downgrade(conn)
+        assert conn.execute("SELECT * FROM project").fetchall() == before
+        assert conn.execute(
+            "SELECT to_regclass('project_phase'),to_regclass('project_milestone')"
+        ).fetchone() == (None, None)
+        chain[-1].upgrade(conn)
+        assert conn.execute("SELECT name FROM project WHERE id=%s", (project_id,)).fetchone() == (
+            "Seed",
+        )
+
+
+def test_project_risk_migration_preserves_existing_project(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.org.schemas import MasterCreate, OrgUnitCreate
+    from flo.modules.org.service import OrgService
+    from tests.org.test_bootstrap import admin_id, create
+
+    chain = tuple(r for r in migrate.discover_migrations(MIGRATIONS)
+                  if r.revision <= "20261009_0033")
+    migrate.apply_migrations(chain[:-1], empty_database)
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        tenant = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(tenant.org_id)
+        with correlation_context("risk-migration"), tenant_transaction(conn, scope):
+            org = OrgService(conn, scope, actor)
+            bu = org.create_unit(OrgUnitCreate(code="BU", name="BU", kind="bu"))
+            for kind, code in (("department", "D"), ("ledger_account", "L")):
+                org.create_master(
+                    kind,
+                    MasterCreate(
+                        code=code,
+                        name=code,
+                        effective_from=date(2000, 1, 1),
+                        attributes={"account_type": "expense"} if kind == "ledger_account" else {},
+                    ),
+                )
+            project_id = uuid4()
+            conn.execute(
+                "INSERT INTO project (id,org_id,bu_id,number,name,owner_id,department_code,"
+                "ledger_account_code,currency,created_by) VALUES (%s,%s,%s,'P','Seed',%s,"
+                "'D','L','USD',%s)",
+                (project_id, tenant.org_id, bu.id, actor, actor),
+            )
+            before = conn.execute("SELECT * FROM project").fetchall()
+            seeds = {table: conn.execute(f"SELECT * FROM {table} ORDER BY id").fetchall()
+                     for table in ("identity", "organization")}
+        chain[-1].upgrade(conn)
+        assert conn.execute("SELECT relrowsecurity,relforcerowsecurity FROM pg_class "
+                            "WHERE relname='project_risk'").fetchone() == (True, True)
+        assert conn.execute("SELECT * FROM project").fetchall() == before
+        chain[-1].downgrade(conn)
+        assert conn.execute("SELECT * FROM project").fetchall() == before
+        assert conn.execute(
+            "SELECT to_regclass('project_risk')"
+        ).fetchone() == (None,)
+        chain[-1].upgrade(conn)
+        for table, rows in seeds.items():
+            assert conn.execute(f"SELECT * FROM {table} ORDER BY id").fetchall() == rows
+        assert conn.execute("SELECT name FROM project WHERE id=%s", (project_id,)).fetchone() == (
+            "Seed",
+        )
+
+
+def test_import_rows_migration_preserves_batch_and_enforces_tenant_guards(empty_database):
+    from psycopg.errors import CheckViolation, ForeignKeyViolation, InsufficientPrivilege
+
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from tests.org.test_bootstrap import admin_id, create
+
+    chain = tuple(r for r in migrate.discover_migrations(MIGRATIONS)
+                  if r.revision <= "20261009_0034")
+    migrate.apply_migrations(chain[:-1], empty_database)
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        tenant = create(conn)
+        other = create(conn, "SECOND", "second@example.test")
+        actor = admin_id(conn)
+        batch = uuid4()
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            conn.execute(
+                "INSERT INTO import_batch(id,org_id,template,template_version,uploader_id,"
+                "file_name,file_sha256,file_size,mapping,counts) "
+                "VALUES(%s,%s,'probe',1,%s,'data.csv',%s,1,'{}','{}')",
+                (batch, tenant.org_id, actor, "a" * 64),
+            )
+            before = conn.execute("SELECT * FROM import_batch").fetchall()
+        chain[-1].upgrade(conn)
+        assert conn.execute(
+            "SELECT relname,relrowsecurity,relforcerowsecurity FROM pg_class "
+            "WHERE relname IN ('import_row','import_result') ORDER BY relname"
+        ).fetchall() == [("import_result", True, True), ("import_row", True, True)]
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            conn.execute(
+                "INSERT INTO import_row(org_id,batch_id,row_no,action,raw) "
+                "VALUES(%s,%s,2,'create','{}')", (tenant.org_id, batch),
+            )
+            with pytest.raises(CheckViolation), conn.transaction():
+                conn.execute("UPDATE import_row SET action='warning' WHERE batch_id=%s", (batch,))
+            for table, columns, values in (
+                ("import_row", "action,raw", "'create','{}'"),
+                ("import_result", "record_type,record_id", "'probe',gen_random_uuid()"),
+            ):
+                with pytest.raises(ForeignKeyViolation), conn.transaction():
+                    conn.execute(
+                        f"INSERT INTO {table}(org_id,batch_id,row_no,{columns}) "
+                        f"VALUES(%s,%s,3,{values})", (other.org_id, batch),
+                    )
+        role = "import_row_rls_" + uuid4().hex
+        conn.execute(
+            sql.SQL("CREATE ROLE {} NOLOGIN NOSUPERUSER NOBYPASSRLS").format(sql.Identifier(role))
+        )
+        try:
+            conn.execute(sql.SQL("GRANT USAGE ON SCHEMA public TO {}").format(sql.Identifier(role)))
+            conn.execute(
+                sql.SQL("GRANT SELECT,INSERT ON import_row,import_result TO {}")
+                .format(sql.Identifier(role))
+            )
+            conn.execute(sql.SQL("SET ROLE {}").format(sql.Identifier(role)))
+            with tenant_transaction(conn, Scope(other.org_id)):
+                assert conn.execute("SELECT * FROM import_row").fetchall() == []
+                assert conn.execute("SELECT * FROM import_result").fetchall() == []
+            for table, columns, values in (
+                ("import_row", "action,raw", "'create','{}'"),
+                ("import_result", "record_type,record_id", "'probe',gen_random_uuid()"),
+            ):
+                with pytest.raises(InsufficientPrivilege):
+                    with tenant_transaction(conn, Scope(other.org_id)):
+                        conn.execute(f"INSERT INTO {table}(org_id,batch_id,row_no,{columns}) "
+                                     f"VALUES(%s,%s,4,{values})", (tenant.org_id, batch))
+        finally:
+            conn.execute("RESET ROLE")
+            conn.execute(sql.SQL("DROP OWNED BY {}").format(sql.Identifier(role)))
+            conn.execute(sql.SQL("DROP ROLE {}").format(sql.Identifier(role)))
+        chain[-1].downgrade(conn)
+        assert conn.execute("SELECT * FROM import_batch").fetchall() == before
+        assert conn.execute(
+            "SELECT to_regclass('import_row'),to_regclass('import_result')"
+        ).fetchone() == (None, None)
+        chain[-1].upgrade(conn)
+        assert conn.execute("SELECT id FROM import_batch").fetchall() == [(batch,)]
+
+
+def test_import_async_migration_preserves_data_and_plants_key_guards(empty_database):
+    from psycopg.errors import CheckViolation, UniqueViolation
+
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from tests.org.test_bootstrap import admin_id, create
+
+    chain = tuple(
+        r for r in migrate.discover_migrations(MIGRATIONS) if r.revision <= "20261009_0035"
+    )
+    migrate.apply_migrations(chain[:-1], empty_database)
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        tenant = create(conn)
+        actor = admin_id(conn)
+        id = uuid4()
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            conn.execute("INSERT INTO import_batch(id,org_id,template,template_version,"
+                         "uploader_id,"
+                         "file_name,file_sha256,file_size,counts) "
+                         "VALUES(%s,%s,'probe',1,%s,'seed.csv',%s,1,'{}')",
+                         (id, tenant.org_id, actor, "a" * 64))
+            before = conn.execute("SELECT * FROM import_batch").fetchall()
+        chain[-1].upgrade(conn)
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            assert conn.execute(
+                "SELECT external_key,progress,cancel_requested,error_class "
+                "FROM import_batch WHERE id=%s", (id,),
+            ).fetchone() == (None, {}, False, None)
+            for key in ("", "k" * 129):
+                with pytest.raises(CheckViolation), conn.transaction():
+                    conn.execute("UPDATE import_batch SET external_key=%s WHERE id=%s", (key, id))
+            conn.execute("UPDATE import_batch SET external_key='seed' WHERE id=%s", (id,))
+            with pytest.raises(UniqueViolation), conn.transaction():
+                conn.execute("INSERT INTO import_batch(id,org_id,template,template_version,"
+                         "uploader_id,"
+                             "file_name,file_sha256,file_size,counts,external_key) "
+                             "VALUES(%s,%s,'probe',1,%s,'other.csv',%s,1,'{}','seed')",
+                             (uuid4(), tenant.org_id, actor, "b" * 64))
+        chain[-1].downgrade(conn)
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            assert conn.execute("SELECT * FROM import_batch").fetchall() == before
+        chain[-1].upgrade(conn)
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            assert conn.execute("SELECT id FROM import_batch").fetchall() == [(id,)]

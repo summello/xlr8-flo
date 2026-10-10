@@ -312,6 +312,36 @@ def test_module_boundary_rejects_cross_module_import_and_then_passes(tmp_path: P
     assert_accepts(run_import_linter(project))
 
 
+@pytest.mark.parametrize(
+    ("imported", "allowed"),
+    (
+        ("service", True),
+        ("schemas", True),
+        ("models", False),
+        ("repo", False),
+        ("db", False),
+    ),
+)
+def test_module_boundary_allows_only_service_and_schemas(
+    tmp_path: Path, imported: str, allowed: bool
+) -> None:
+    project = copy_import_linter_project(tmp_path)
+    (project / "flo" / "modules" / "b" / f"{imported}.py").write_text(
+        "VALUE = 1\n", encoding="utf-8"
+    )
+    (project / "flo" / "modules" / "a" / "caller.py").write_text(
+        f"from flo.modules.b.{imported} import VALUE\n\nTOTAL = VALUE\n",
+        encoding="utf-8",
+    )
+    result = run_import_linter(project)
+    if allowed:
+        assert_accepts(result)
+    else:
+        assert_rejects(
+            result, "Business modules are independent", "flo.modules.a", f"flo.modules.b.{imported}"
+        )
+
+
 def test_module_boto3_import_fails_and_then_passes(tmp_path: Path) -> None:
     project = copy_import_linter_project(tmp_path)
     violation = project / "flo" / "modules" / "a" / "storage_violation.py"
@@ -1001,12 +1031,107 @@ def test_run_check_points_pytest_at_local_postgres(
         observed_environment.update(environment)
         return subprocess.CompletedProcess(args, 0, "", "")
 
+    recreated: list[Path] = []
+
+    def fake_fresh_database(cwd: Path) -> str:
+        recreated.append(cwd)
+        return str(flo.test_database_url(cwd))
+
     monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.setattr(flo, "CHECKS", [("pytest", ["pytest"])])
+    monkeypatch.setattr(flo, "fresh_test_database", fake_fresh_database)
     monkeypatch.setattr(flo.subprocess, "run", successful_check)
 
     assert flo.run_check(tmp_path) is True
-    assert observed_environment["DATABASE_URL"] == flo.LOCAL_TEST_DATABASE_URL
+    assert recreated == [tmp_path]
+    expected = flo.test_database_url(tmp_path)
+    assert expected.startswith(flo.LOCAL_POSTGRES + "flo_test_")
+    assert observed_environment["DATABASE_URL"] == expected
+    assert observed_environment["TEST_DATABASE_URL"] == expected
+
+
+def test_each_worktree_gets_its_own_test_database(tmp_path: Path) -> None:
+    """Parallel trains share one Postgres; a shared database name lets one gate reset another's."""
+    flo = load_flo()
+    first, second = tmp_path / "xlr8flo-E09-S01", tmp_path / "xlr8flo-E10-S01"
+
+    assert flo.test_database_url(first) == flo.test_database_url(first)
+    assert flo.test_database_url(first) != flo.test_database_url(second)
+
+
+@pytest.mark.parametrize(
+    ("kind", "tags", "author", "reviewers"),
+    [
+        ("crud", ["money"], "codex", ["opus"]),  # a gated tag keeps the free author off it
+        ("crud", [], "opencode-nemotron", ["qwen"]),
+        ("ui", ["auth"], "codex", ["opus"]),
+        ("engine", [], "codex", ["qwen"]),  # engines never go to a free author
+    ],
+)
+def test_assignment_scales_review_to_risk(
+    monkeypatch: pytest.MonkeyPatch, kind: str, tags: list[str], author: str, reviewers: list[str]
+) -> None:
+    """Review is Opus's only on gated stories; everything else must still get one reviewer."""
+    flo = load_flo()
+    story = {"id": "E99-S01", "t": "planted", "k": kind, "s": "M", "tags": tags}
+    monkeypatch.setattr(
+        flo, "roadmap", lambda: {"epics": [{"id": "E99", "milestone": "M9", "stories": [story]}]}
+    )
+    monkeypatch.setattr(flo, "state", lambda: {})
+    # The routing-relevant slice of agents/agents.yaml, inline: CI's venv has no PyYAML.
+    gated = ["money", "auth", "security", "migration", "concurrency"]
+    fleet = {
+        "policy": {
+            "min_reviewers": 1,
+            "opus_final_required_tags": gated,
+            "ungated_reviewers": ["qwen", "kimi"],
+        },
+        "agents": {
+            "opus": {"metered": "rate", "roles": ["final_review"], "allowed_kinds": []},
+            "codex": {
+                "metered": "rate",
+                "roles": ["author", "review"],
+                "allowed_kinds": ["ledger", "concurrency", "migration", "security", "engine",
+                                  "api", "chore", "ui", "crud"],
+                "prefer_tags": ["money", "concurrency", "migration", "security"],
+            },
+            "opencode-nemotron": {
+                "metered": "none",
+                "roles": ["author", "review"],
+                "allowed_kinds": ["crud", "ui", "api", "chore", "docs", "test"],
+                "avoid_tags": gated,
+            },
+            "qwen": {"metered": "spend", "roles": ["author", "review"], "allowed_kinds": [],
+                     "monthly_budget_usd": 20},
+            "kimi": {"metered": "spend", "roles": ["author", "review"], "allowed_kinds": [],
+                     "monthly_budget_usd": 20},
+        },
+    }
+    monkeypatch.setattr(flo, "load_yaml", lambda path: fleet)
+
+    out = flo.cmd_assign(["E99-S01"])
+
+    assert (out["author"], out["reviewers"]) == (author, reviewers)
+    assert out["opus_final"] is (reviewers == ["opus"])
+
+
+def test_run_check_leaves_a_configured_database_alone(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """CI configures DATABASE_URL; flo must never drop a database it was handed."""
+    flo = load_flo()
+
+    def refuse(cwd: Path) -> str:
+        raise AssertionError("dropped a configured database")
+
+    monkeypatch.setenv("DATABASE_URL", "postgresql://ci/flo_test")
+    monkeypatch.setattr(flo, "CHECKS", [("pytest", ["pytest"])])
+    monkeypatch.setattr(flo, "fresh_test_database", refuse)
+    monkeypatch.setattr(
+        flo.subprocess, "run", lambda *a, **k: subprocess.CompletedProcess(a, 0, "", "")
+    )
+
+    assert flo.run_check(tmp_path) is True
 
 
 @pytest.mark.parametrize(

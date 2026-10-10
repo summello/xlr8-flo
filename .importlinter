@@ -15,6 +15,12 @@ name = Business modules are independent
 type = independence
 modules =
     flo.modules.*
+# AGENTS.md 3.3: a module may import another module's service and schemas, never its models,
+# repo or db. Every other cross-module edge (including the package root) stays forbidden.
+unmatched_ignore_imports_alerting = none
+ignore_imports =
+    flo.modules.** -> flo.modules.*.service
+    flo.modules.** -> flo.modules.*.schemas
 
 [importlinter:contract:local-identity-adapter]
 name = Local identity adapter is hidden behind the port

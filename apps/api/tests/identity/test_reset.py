@@ -89,6 +89,7 @@ def _load_migration_chain() -> tuple[ModuleType, ...]:
 
 
 def _drop_objects(connection: psycopg.Connection[tuple[object, ...]]) -> None:
+    connection.execute("DROP TABLE IF EXISTS login_attempt")
     connection.execute("DROP TABLE IF EXISTS outbox")
     connection.execute("DROP TABLE IF EXISTS job")
     connection.execute("DROP TABLE IF EXISTS password_reset_rate_limit")

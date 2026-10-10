@@ -6,6 +6,14 @@ import ast
 import re
 from collections.abc import Iterator, Mapping
 
+# D-M1-24/26: global links are read before tenant resolution. These exact
+# tables carry no business data and must not require an existing app.org_id.
+GLOBAL_TENANT_LINK_TABLES = {
+    "invitation_token": "public invitation links resolve a token before any tenant scope exists",
+    "identity_membership": "Session store resolves an identity's organization before scope exists",
+    "organization_code": "Operator bootstrap resolves a global code before scope exists",
+}
+
 HTTP_METHODS = {"delete", "get", "head", "options", "patch", "post", "put", "trace"}
 
 
@@ -72,6 +80,12 @@ def _contains_org_id(document: Mapping[str, object], node: object) -> bool:
     return any(_contains_org_id(document, value) for value in node.values())
 
 
+# Membership-verified selection requests a session switch, E05-S12.
+ORG_ID_BODY_EXCEPTIONS: frozenset[tuple[str, str]] = frozenset(
+    {("POST", "/api/v1/auth/organization")}
+)
+
+
 def forbidden_org_id_operations(document: Mapping[str, object]) -> list[str]:
     """Return operations that allow a caller to supply ``org_id``."""
 
@@ -99,7 +113,10 @@ def forbidden_org_id_operations(document: Mapping[str, object]) -> list[str]:
                 if isinstance(name, str) and name.lower().replace("-", "_") == "org_id":
                     bad_parameter = True
                     break
-            if bad_parameter or _contains_org_id(document, operation.get("requestBody")):
+            if bad_parameter or (
+                (method.upper(), path) not in ORG_ID_BODY_EXCEPTIONS
+                and _contains_org_id(document, operation.get("requestBody"))
+            ):
                 violations.append(f"{method.upper()} {path}")
     return violations
 
@@ -166,6 +183,8 @@ def unprotected_tenant_tables(source: str) -> list[str]:
     normalized = re.sub(r"[\"']", "", source)
     missing: list[str] = []
     for table in sorted(set(_created_tenant_tables(source))):
+        if table in GLOBAL_TENANT_LINK_TABLES:
+            continue
         escaped = re.escape(table)
         requirements = (
             rf"ALTER\s+TABLE\s+(?:[A-Za-z_][A-Za-z0-9_]*\.)?{escaped}\s+"
@@ -174,8 +193,7 @@ def unprotected_tenant_tables(source: str) -> list[str]:
             r"FORCE\s+ROW\s+LEVEL\s+SECURITY",
         )
         has_rls = all(
-            re.search(pattern, normalized, flags=re.IGNORECASE)
-            for pattern in requirements
+            re.search(pattern, normalized, flags=re.IGNORECASE) for pattern in requirements
         )
         if not has_rls or not _has_tenant_policy(normalized, table):
             missing.append(table)

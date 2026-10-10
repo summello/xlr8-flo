@@ -11,6 +11,7 @@ from starlette.responses import Response
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from flo.kernel.errors import ErrorCode, ProblemError
+from flo.kernel.errors.handler import problem_exception_handler
 
 CSRF_COOKIE_NAME = "flo_csrf"
 CSRF_HEADER_NAME = "X-CSRF-Token"
@@ -58,29 +59,41 @@ class CsrfMiddleware:
 
         request = Request(scope, receive=receive)
         cookie_token = request.cookies.get(CSRF_COOKIE_NAME, "")
-        if request.method in UNSAFE_METHODS:
-            header_token = Headers(scope=scope).get(CSRF_HEADER_NAME, "")
-            if not cookie_token or not hmac.compare_digest(cookie_token, header_token):
-                raise ProblemError(
-                    ErrorCode.FORBIDDEN,
-                    detail="The CSRF token is missing or does not match. No data was changed.",
-                )
-
-        seed_cookie = not cookie_token and request.method not in UNSAFE_METHODS
-        cookie_header = _csrf_cookie_header(secrets.token_urlsafe(32)) if seed_cookie else None
+        cookie_header = _csrf_cookie_header(secrets.token_urlsafe(32)) if not cookie_token else None
+        response_started = False
 
         async def send_with_cookie(message: Message) -> None:
+            nonlocal response_started
+            if message["type"] == "http.response.start":
+                response_started = True
             if cookie_header is not None and message["type"] == "http.response.start":
                 headers = list(message.get("headers", []))
-                headers.append(cookie_header)
+                # Preserve a rotation or deletion supplied by authentication routes.
+                if not any(key.lower() == b"set-cookie" and value.startswith(b"flo_csrf=")
+                           for key, value in headers):
+                    headers.append(cookie_header)
                 message = {**message, "headers": headers}
             await send(message)
 
-        await self._app(scope, receive, send_with_cookie)
+        try:
+            if request.method in UNSAFE_METHODS:
+                header_token = Headers(scope=scope).get(CSRF_HEADER_NAME, "")
+                if not cookie_token or not hmac.compare_digest(cookie_token, header_token):
+                    raise ProblemError(
+                        ErrorCode.FORBIDDEN,
+                        detail="The CSRF token is missing or does not match. No data was changed.",
+                    )
+            await self._app(scope, receive, send_with_cookie)
+        except Exception as exc:
+            if response_started:
+                raise
+            # Render middleware failures inside the cookie wrapper using the kernel.
+            response = await problem_exception_handler(request, exc)
+            await response(scope, receive, send_with_cookie)
 
 
 def install_csrf_protection(app: ASGIApp) -> None:
-    """Install double-submit protection and safe-request token seeding."""
+    """Install double-submit protection and first-response token seeding."""
 
     if not hasattr(app, "add_middleware"):
         raise TypeError("CSRF protection requires a Starlette-compatible application")

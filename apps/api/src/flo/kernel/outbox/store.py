@@ -158,6 +158,14 @@ class OutboxStore(ScopedRepo[OutboxRecord]):
             idempotency_key=idempotency_key,
         )
 
+    def discard_email(self, idempotency_key: str) -> int:
+        """Remove undelivered bearer-link payloads without deleting sent evidence."""
+        return self._connection.execute(
+            "DELETE FROM outbox WHERE org_id = %(org_id)s AND topic = 'email' "
+            "AND idempotency_key = %(key)s AND state IN ('pending', 'failed', 'dead')",
+            self.scoped_params({"key": idempotency_key}),
+        ).rowcount
+
     def list_dead(self, limit: int = 100) -> list[OutboxRecord]:
         if limit < 1 or limit > 1000:
             raise ValueError("dead-outbox limit must be between 1 and 1000")

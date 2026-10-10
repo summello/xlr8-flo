@@ -140,6 +140,7 @@ async function mockAccess(page: Page, options: MockOptions = {}) {
 
 async function openExplorer(page: Page) {
   await page.goto(path);
+  await page.locator(".app-shell").waitFor();
   await expect(page.getByRole("heading", { level: 2, name: "avery@example.test" })).toBeVisible();
   await expect(page.getByRole("table", { name: "Effective permissions data grid" })).toHaveAttribute(
     "aria-rowcount",
@@ -215,6 +216,7 @@ test("step-up failure preserves access data and explains recovery", async ({ pag
 test("load failure states cause, preservation, recovery, and retries successfully", async ({ page }) => {
   const access = await mockAccess(page, { failInitial: true });
   await page.goto(path);
+  await page.locator(".app-shell").waitFor();
   const alert = page.getByRole("alert");
   await expect(alert).toContainText("Cause: The access service is temporarily unavailable.");
   await expect(alert).toContainText("Your place in Administration is preserved");
@@ -261,3 +263,8 @@ for (const width of [375, 768, 1024, 1440]) {
     }
   });
 }
+
+// These pre-auth-story fixtures represent a signed-in operator.
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/v1/auth/sessions", route => route.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
+});

@@ -1,6 +1,8 @@
 import { List, MagnifyingGlass } from "@phosphor-icons/react";
 import type { RefObject } from "react";
 
+import AccountMenu from "../../features/auth/AccountMenu";
+
 import Breadcrumbs, { type Breadcrumb } from "./Breadcrumbs";
 
 type HeaderProps = {
@@ -35,6 +37,7 @@ export default function Header({
         <span>Search or run a command</span>
         <kbd aria-label="Command K or Control K">⌘K</kbd>
       </button>
+      <AccountMenu navigate={onNavigate} />
     </header>
   );
 }
