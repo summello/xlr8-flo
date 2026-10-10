@@ -62,7 +62,10 @@ seeded role unable to act until someone hand-grants the new codes.
 **Every new permission is added in three places in the same story:** `PERMISSION_CODES`,
 `BASELINE_ROLE_PERMISSIONS` (organization-administrator always; the packet names any other
 baseline role), and the migration, which inserts the `permission` row **and** grants it to existing
-tenants' system roles by role code, so current tenants get it too. **The same story updates the permission catalogue tests**, which hardcode the set: `apps/api/tests/authz/test_models.py` (`EXPECTED_PERMISSIONS`), and `tests/authz/test_migration.py` with the migration list `tests/authz/conftest.py` applies (pre-flight finding on E10-S08). No other new permission without
+tenants' system roles by role code, so current tenants get it too. **New permissions go in their own permissions-only migration** (`<next+1>_<module>_permissions.py`,
+touching only `permission`, `role` and `role_permission`, the E09-S05 pattern), separate from the
+story's table migration, so `tests/authz/conftest.py` can apply it right after RBAC without the
+story's tables. This applies to E09-S05, E10-S01, E10-S08 and E10-S13. **The same story updates the permission catalogue tests**, which hardcode the set: `apps/api/tests/authz/test_models.py` (`EXPECTED_PERMISSIONS`), and `tests/authz/test_migration.py` with the migration list `tests/authz/conftest.py` applies (pre-flight finding on E10-S08). No other new permission without
 a packet amendment. Downgrades delete `role_permission` rows first, then `permission` rows (the
 E06-S03 precedent, `migrations/20261008_0025_project_lifecycle.py`).
 
