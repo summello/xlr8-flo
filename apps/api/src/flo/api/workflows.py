@@ -19,6 +19,7 @@ from flo.modules.approvals.schemas import (
     WorkflowVersionWrite,
 )
 from flo.modules.approvals.service import WorkflowService
+from flo.modules.approvals.validation import PublishWrite, ValidationReport
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.org.service import OrgService
 
@@ -105,11 +106,24 @@ def update_version(
 
 @router.post("/{id}/versions/{version}/publish", response_model=WorkflowVersionRead)
 def publish_version(
-    id: UUID, version: int, context: ManageContext, connection: Connection
+    id: UUID, version: int, body: PublishWrite, context: ManageContext, connection: Connection
 ) -> WorkflowVersionRead:
-    return WorkflowService(connection, current_scope(), context.user_id).publish(id, version)
+    return WorkflowService(connection, current_scope(), context.user_id).publish(
+        id, version, body.acknowledge_warnings
+    )
 
 
 @router.post("/{id}/retire", response_model=WorkflowRead)
 def retire_workflow(id: UUID, context: ManageContext, connection: Connection) -> WorkflowRead:
     return WorkflowService(connection, current_scope(), context.user_id).retire(id)
+
+
+@router.get(
+    "/{id}/versions/{version}/validation",
+    response_model=ValidationReport,
+    response_model_exclude_none=True,
+)
+def validate_version(
+    id: UUID, version: int, context: ReadContext, connection: Connection
+) -> ValidationReport:
+    return WorkflowService(connection, current_scope(), context.user_id).validation(id, version)

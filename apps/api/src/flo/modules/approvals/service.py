@@ -11,7 +11,7 @@ from psycopg.types.json import Jsonb
 
 from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
 from flo.kernel.audit.writer import AuditConnection
-from flo.kernel.errors import ErrorCode, ProblemError
+from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.approvals.conditions import (
@@ -37,10 +37,13 @@ from flo.modules.approvals.schemas import (
     invalid,
     parse_graph,
 )
+from flo.modules.approvals.validation import ValidationReport, check_graph
 from flo.modules.org.service import OrgService
 
 __all__ = [
     "WorkflowService",
+    "ValidationReport",
+    "validate_graph",
     "resolve_version",
     "AttributeProvider",
     "ConditionError",
@@ -217,13 +220,56 @@ class WorkflowService:
             self._audit("workflow.version.update", id, before, after)
             return WorkflowVersionRead.model_validate(after)
 
-    def publish(self, id: UUID, version: int) -> WorkflowVersionRead:
+    def validation(self, id: UUID, version: int) -> ValidationReport:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
-            self._definition(id, lock=True)
+            definition = self._definition(id)
+            return validate_graph(
+                self.connection,
+                self.scope,
+                str(definition["document_type"]),
+                self._version(id, version)["graph"],
+            )
+
+    def publish(
+        self, id: UUID, version: int, acknowledge_warnings: bool = False
+    ) -> WorkflowVersionRead:
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            definition = self._definition(id, lock=True)
             before = self._version(id, version)
             if before["status"] != "draft":
                 raise conflict("version_immutable")
-            parse_graph(before["graph"])
+            report = validate_graph(
+                self.connection, self.scope, str(definition["document_type"]), before["graph"]
+            )
+            graph = parse_graph(before["graph"])
+            pointers = {node.id: f"/nodes/{i}" for i, node in enumerate(graph.nodes)}
+            if report.errors:
+                raise ProblemError(
+                    ErrorCode.VALIDATION_FAILED,
+                    detail="Correct workflow issues before publishing.",
+                    checks={"problem": "workflow_invalid"},
+                    errors=tuple(
+                        ProblemFieldError(
+                            field=(
+                                f"/edges/{issue.edge_index}"
+                                if issue.edge_index is not None
+                                else pointers[str(issue.node_id)]
+                            ),
+                            message=issue.detail,
+                        )
+                        for issue in report.errors
+                    ),
+                )
+            if report.warnings and not acknowledge_warnings:
+                raise ProblemError(
+                    ErrorCode.CONFLICT,
+                    detail="Acknowledge repeated approvals before publishing.",
+                    checks={"problem": "warnings_unacknowledged"},
+                    errors=tuple(
+                        ProblemFieldError(field=pointers[str(issue.node_id)], message=issue.detail)
+                        for issue in report.warnings
+                    ),
+                )
             superseded = self.repo.execute(
                 "UPDATE workflow_version SET status='superseded' WHERE org_id=%(org_id)s "
                 "AND definition_id=%(id)s AND status='published' RETURNING id",
@@ -321,4 +367,36 @@ def resolve_version(
             WorkflowVersionRead.model_validate(dict(zip(VERSION_FIELDS, row, strict=True)))
             if row
             else None
+        )
+
+
+def validate_graph(
+    conn: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    document_type: str,
+    graph: object,
+) -> ValidationReport:
+    """Validate named approvers and the organization's current operational limit."""
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        repo = WorkflowRepository(conn, scope)
+        roles = {
+            str(row[0])
+            for row in repo.execute("SELECT code FROM role WHERE org_id=%(org_id)s").fetchall()
+        }
+        users = {
+            cast(UUID, row[0])
+            for row in repo.execute(
+                "SELECT identity_id FROM identity_membership WHERE org_id=%(org_id)s"
+            ).fetchall()
+        }
+        setting = repo.execute(
+            "SELECT value FROM org_setting WHERE org_id=%(org_id)s AND unit_id IS NULL "
+            "AND key='approval.max_depth'"
+        ).fetchone()
+        return check_graph(
+            parse_graph(graph),
+            document_type,
+            roles,
+            users,
+            cast(int, setting[0]) if setting else 10,
         )

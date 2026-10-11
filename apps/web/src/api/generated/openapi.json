@@ -1783,6 +1783,47 @@
         "title": "InvitationValid",
         "type": "object"
       },
+      "Issue": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "edge_index": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edge Index"
+          },
+          "node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Node Id"
+          }
+        },
+        "required": [
+          "code",
+          "detail"
+        ],
+        "title": "Issue",
+        "type": "object"
+      },
       "JsonValue": {},
       "LedgerBucket": {
         "enum": [
@@ -4675,6 +4716,18 @@
         ],
         "type": "string"
       },
+      "PublishWrite": {
+        "additionalProperties": false,
+        "properties": {
+          "acknowledge_warnings": {
+            "default": false,
+            "title": "Acknowledge Warnings",
+            "type": "boolean"
+          }
+        },
+        "title": "PublishWrite",
+        "type": "object"
+      },
       "Quorum": {
         "additionalProperties": false,
         "properties": {
@@ -6332,6 +6385,27 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "ValidationReport": {
+        "additionalProperties": false,
+        "properties": {
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/Issue"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/Issue"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "title": "ValidationReport",
         "type": "object"
       },
       "WorkflowCreate": {
@@ -15428,6 +15502,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishWrite"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -15461,6 +15545,84 @@
           }
         },
         "summary": "Publish Version",
+        "tags": [
+          "workflows"
+        ]
+      }
+    },
+    "/api/v1/workflows/{id}/versions/{version}/validation": {
+      "get": {
+        "operationId": "validate_version_api_v1_workflows__id__versions__version__validation_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "title": "Version",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Validate Version",
         "tags": [
           "workflows"
         ]

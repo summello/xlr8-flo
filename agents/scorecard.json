@@ -2363,6 +2363,40 @@
       },
       "recap": "Added item and service lines with scoped master codes, currency-aware Decimal amounts, atomic estimates, stable numbering and versioned draft edits. Currency-changing project moves now fail under the requisition lock while lines exist.",
       "title": "Item and service lines with explicit type tagging and quantity/amount tracking"
+    },
+    {
+      "story": "E10-S03",
+      "kind": "engine",
+      "size": "M",
+      "tags": [],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "qwen",
+          "to": "opus",
+          "reason": "operator instruction 12 Oct 2026: qwen and deepseek review only when all of M2 is complete"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a12ba5-d9e6-7791-815c-38411956aa24",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented graph validation and publish rejection with organization-configured approval depth. Added read-only validation, warning acknowledgement, tenant isolation coverage, and regenerated API contracts.",
+      "title": "Graph validation: cycle detection, unreachable steps, duplicate approvals, depth limit"
     }
   ]
 }

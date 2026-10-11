@@ -1551,6 +1551,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workflows/{id}/versions/{version}/validation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Validate Version */
+        get: operations["validate_version_api_v1_workflows__id__versions__version__validation_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2230,6 +2247,17 @@ export interface components {
             state?: "valid";
             /** Tenant Label */
             tenant_label: string | null;
+        };
+        /** Issue */
+        Issue: {
+            /** Code */
+            code: string;
+            /** Detail */
+            detail: string;
+            /** Edge Index */
+            edge_index?: number | null;
+            /** Node Id */
+            node_id?: string | null;
         };
         JsonValue: unknown;
         /**
@@ -3183,6 +3211,14 @@ export interface components {
         };
         /** @enum {string} */
         ProjectStatus: "draft" | "approval_pending" | "active" | "deferred" | "completed" | "abandoned";
+        /** PublishWrite */
+        PublishWrite: {
+            /**
+             * Acknowledge Warnings
+             * @default false
+             */
+            acknowledge_warnings?: boolean;
+        };
         /** Quorum */
         Quorum: {
             /** Quorum */
@@ -3714,6 +3750,13 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** ValidationReport */
+        ValidationReport: {
+            /** Errors */
+            errors?: components["schemas"]["Issue"][];
+            /** Warnings */
+            warnings?: components["schemas"]["Issue"][];
         };
         /** WorkflowCreate */
         WorkflowCreate: {
@@ -8463,7 +8506,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublishWrite"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -8472,6 +8519,49 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkflowVersionRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    validate_version_api_v1_workflows__id__versions__version__validation_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationReport"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

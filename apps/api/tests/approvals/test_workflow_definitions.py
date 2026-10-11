@@ -63,6 +63,8 @@ def draft(db, row, graph=None):
 
 
 async def send(browser, method, suffix="", data=None, **kwargs):
+    if suffix.endswith("/publish") and data is None:
+        data = {"acknowledge_warnings": False}
     return await browser.request(
         method,
         "/api/v1/workflows" + suffix,
@@ -329,6 +331,7 @@ def test_foreign_tenant_routes_and_authorization(workflow_db):
         ("GET", f"/{foreign.id}", None),
         ("POST", f"/{foreign.id}/versions", {"graph": GRAPH}),
         ("GET", f"/{foreign.id}/versions/1", None),
+        ("GET", f"/{foreign.id}/versions/1/validation", None),
         ("PUT", f"/{foreign.id}/versions/1", {"graph": GRAPH}),
         ("POST", f"/{foreign.id}/versions/1/publish", None),
         ("POST", f"/{foreign.id}/retire", None),
@@ -666,3 +669,116 @@ def test_graph_accepts_python_uuid_approvers():
     assert graph.model_dump(mode="json", by_alias=True)["nodes"][2]["approvers"]["user_ids"] == [
         str(user)
     ]
+
+
+def test_publish_validation_gate_and_warning_acknowledgement(workflow_db):
+    from tests.approvals.test_graph_validation import chain
+
+    db = workflow_db
+    row = definition(db)
+    graph = chain(2)
+    for node in graph["nodes"][1:3]:
+        node["approvers"] = {"type": "permission"}
+    draft(db, row, graph)
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            path = f"/{row.id}/versions/1"
+            result = await send(browser, "POST", path + "/publish")
+            assert result.status_code == 422, result.text
+            assert result.json()["checks"]["problem"] == "workflow_invalid"
+            assert result.json()["errors"][0]["field"] == "/nodes/2"
+            assert svc(db).get_version(row.id, 1).status == "draft"
+            graph["nodes"][2]["allow_repeat"] = True
+            assert (
+                await send(browser, "PUT", path, {"graph": graph}, extra={"If-Match": "1"})
+            ).status_code == 200
+            before = svc(db).get_version(row.id, 1)
+            audit = db[0].execute("SELECT count(*) FROM audit_log").fetchone()
+            validation = await browser.get("/api/v1/workflows" + path + "/validation")
+            assert validation.status_code == 200
+            assert validation.json()["warnings"][0]["code"] == "duplicate_approval"
+            assert svc(db).get_version(row.id, 1) == before
+            assert db[0].execute("SELECT count(*) FROM audit_log").fetchone() == audit
+            result = await send(browser, "POST", path + "/publish")
+            assert result.status_code == 409
+            assert result.json()["checks"]["problem"] == "warnings_unacknowledged"
+            result = await send(
+                browser,
+                "POST",
+                path + "/publish",
+                {"acknowledge_warnings": True},
+                key="publish-repeat",
+            )
+            assert result.status_code == 200, result.text
+            assert (
+                await send(
+                    browser,
+                    "POST",
+                    path + "/publish",
+                    {"acknowledge_warnings": True},
+                    key="publish-repeat",
+                )
+            ).json() == result.json()
+            assert (
+                await browser.get("/api/v1/workflows" + path + "/validation")
+            ).json() == validation.json()
+
+    asyncio.run(scenario())
+
+
+def test_org_depth_setting_and_publish_boundary(workflow_db):
+    from flo.modules.org.schemas import SettingPut
+    from flo.modules.org.service import OrgService
+    from tests.approvals.test_graph_validation import chain
+
+    db = workflow_db
+    org = OrgService(db[0], Scope(db[1]), db[3])
+    for value in [0, 51, True, "3"]:
+        with pytest.raises(ProblemError):
+            org.set_setting("approval.max_depth", SettingPut(value=value))
+    org.set_setting("approval.max_depth", SettingPut(value=3))
+    row = definition(db)
+    graph = chain(4)
+    for node in graph["nodes"][1:5]:
+        node["approvers"] = {"type": "role", "role_code": "approver"}
+        node["allow_repeat"] = True
+    draft(db, row, graph)
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            result = await send(
+                browser, "POST", f"/{row.id}/versions/1/publish", {"acknowledge_warnings": True}
+            )
+            assert result.status_code == 422
+            assert "depth" in result.json()["errors"][0]["message"]
+            org.set_setting("approval.max_depth", SettingPut(value=4))
+            assert (
+                await send(
+                    browser, "POST", f"/{row.id}/versions/1/publish", {"acknowledge_warnings": True}
+                )
+            ).status_code == 200
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize(
+    "kind,op,value", [("text", "gt", "3"), ("code", "le", "3"), ("boolean", "lt", True)]
+)
+def test_invalid_ordering_blocks_publish(workflow_db, monkeypatch, kind, op, value):
+    from tests.approvals.test_graph_validation import condition_graph
+
+    monkeypatch.setattr("flo.modules.approvals.validation.field_catalog", lambda _: {"field": kind})
+    row = definition(workflow_db)
+    draft(workflow_db, row, condition_graph({"field": "field", "op": op, "value": value}))
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            result = await send(browser, "POST", f"/{row.id}/versions/1/publish")
+            assert result.status_code == 422
+            assert result.json()["errors"][0]["field"] == "/edges/2"
+
+    asyncio.run(scenario())

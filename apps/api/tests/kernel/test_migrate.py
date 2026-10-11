@@ -668,7 +668,7 @@ def test_workflow_permissions_roundtrip_preserves_definition_and_versions(empty_
             )
             graph = {
                 "nodes": [{"id": "start", "kind": "start"}, {"id": "end", "kind": "end"}],
-                "edges": [],
+                "edges": [{"from": "start", "to": "end"}],
             }
             service.create_version(row.id, WorkflowVersionWrite(graph=graph))
             service.publish(row.id, 1)

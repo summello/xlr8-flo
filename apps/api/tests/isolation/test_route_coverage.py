@@ -23,6 +23,8 @@ TESTS = Path(__file__).resolve().parents[1]
 
 # (method, path) -> "file::test" that proves a foreign id returns 404.
 COVERED = {
+    ("GET", "/api/v1/workflows/{id}/versions/{version}/validation"):
+        "approvals/test_workflow_definitions.py::test_foreign_tenant_routes_and_authorization",
     (
         "GET",
         "/api/v1/requisitions/{id}/lines",
