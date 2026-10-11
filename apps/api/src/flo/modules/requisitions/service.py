@@ -227,6 +227,18 @@ class RequisitionService:
                     can_create if body.project_id != before.project_id else None,
                 )
                 if body.project_id != before.project_id:
+                    # SEQ-001: the number belongs to the unit scope; a cross-unit move would
+                    # collide or need renumbering, so it is refused (E09-S01 amendment 6).
+                    if derived["bu_id"] != before.bu_id:
+                        target = OrgService(self.connection, self.scope).get_unit(
+                            cast(UUID, derived["bu_id"])
+                        )
+                        raise invalid(
+                            "project_id",
+                            f"This request belongs to {before.bu_name}. "
+                            f"Create a new request in {target.name} instead.",
+                            "unit_change_blocked",
+                        )
                     changes.update({field: derived[field] for field in ("bu_id", "currency")})
             if "title" in changes and body.title is None:
                 raise invalid("title", "Supply a title.")

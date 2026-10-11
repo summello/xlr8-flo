@@ -455,8 +455,9 @@ def test_foreign_tenant_routes_and_list_isolation(header_db):
 
 def test_project_switch_requires_create_at_new_scope(header_db):
     db = header_db
-    p = project(db)
-    new = project(db, unit(db, "NEW"))
+    shared = unit(db, "SHARED")  # a cross-unit move is 422 unit_change_blocked (amendment 6)
+    p = project(db, shared)
+    new = project(db, shared)
     row = draft(db, p=p)
     with tenant_transaction(db[0], Scope(db[1])):
         db[0].execute("DELETE FROM user_role WHERE org_id=%s AND user_id=%s", (db[1], db[3]))
@@ -669,18 +670,22 @@ def test_patch_lock_serializes_competing_versions(header_db):
     assert svc(db).get(row.id).title == "First"
 
 
-def test_project_switch_number_collision_preserves_draft(header_db):
+def test_project_switch_cross_unit_is_blocked_same_unit_keeps_number(header_db):
     from flo.modules.requisitions.schemas import RequisitionPatch
 
     db = header_db
     a, b = unit(db, "A"), unit(db, "B")
-    p, new = project(db, a), project(db, b)
-    first, other = draft(db, p=p), draft(db, p=new)
-    assert first.number == other.number
+    p, same, other_unit = project(db, a), project(db, a), project(db, b)
+    first = draft(db, p=p)
+    moved = svc(db).update(first.id, RequisitionPatch(project_id=same.id), "1", lambda _: True)
+    assert moved.project_id == same.id
+    assert moved.number == first.number
     with pytest.raises(ProblemError) as error:
-        svc(db).update(first.id, RequisitionPatch(project_id=new.id), "1", lambda _: True)
-    assert error.value.checks["problem"] == "duplicate_number"
-    assert svc(db).get(first.id) == first
+        svc(db).update(
+            first.id, RequisitionPatch(project_id=other_unit.id), str(moved.version), lambda _: True
+        )
+    assert error.value.checks["problem"] == "unit_change_blocked"
+    assert svc(db).get(first.id) == moved
 
 
 def test_header_bounds_extra_fields_and_incomplete_past_date_draft(header_db):
