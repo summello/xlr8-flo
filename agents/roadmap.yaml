@@ -940,7 +940,7 @@ epics:
           - REQ-015
         dep:
           - E09-S01
-        st: todo
+        st: done
       - id: E09-S03
         t: 'Catalogue: BU/OU-scoped suggestions from prior requested, sourced and
           purchased items'
@@ -1072,7 +1072,7 @@ epics:
         dep:
           - E03-S06
           - E09-S01
-        st: todo
+        st: in_progress
       - id: E09-S11
         t: 'Requisition screens: create, lines, submit, track, quantity rollup'
         k: ui
@@ -1149,7 +1149,7 @@ epics:
         dep:
           - E10-S01
           - E10-S02
-        st: todo
+        st: in_progress
       - id: E10-S04
         t: Approver eligibility resolution scoped to organization and BU/OU
         k: engine

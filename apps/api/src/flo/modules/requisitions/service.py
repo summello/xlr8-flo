@@ -239,6 +239,21 @@ class RequisitionService:
                             f"Create a new request in {target.name} instead.",
                             "unit_change_blocked",
                         )
+                    if (
+                        derived["currency"] != before.currency
+                        and self.repo.execute(
+                            "SELECT 1 FROM requisition_line WHERE org_id=%(org_id)s "
+                            "AND requisition_id=%(id)s LIMIT 1",
+                            {"id": id},
+                        ).fetchone()
+                        is not None
+                    ):
+                        raise invalid(
+                            "project_id",
+                            f"This request has lines priced in {before.currency}. Remove the lines "
+                            f"or choose a project in {before.currency}.",
+                            "currency_change_blocked",
+                        )
                     changes.update({field: derived[field] for field in ("bu_id", "currency")})
             if "title" in changes and body.title is None:
                 raise invalid("title", "Supply a title.")

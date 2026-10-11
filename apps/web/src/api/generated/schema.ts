@@ -1410,6 +1410,43 @@ export interface paths {
         patch: operations["patch_requisition_api_v1_requisitions__id__patch"];
         trace?: never;
     };
+    "/api/v1/requisitions/{id}/lines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Lines */
+        get: operations["get_lines_api_v1_requisitions__id__lines_get"];
+        /** Replace Lines */
+        put: operations["replace_lines_api_v1_requisitions__id__lines_put"];
+        /** Add Line */
+        post: operations["add_line_api_v1_requisitions__id__lines_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/requisitions/{id}/lines/{line_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Line */
+        put: operations["put_line_api_v1_requisitions__id__lines__line_id__put"];
+        post?: never;
+        /** Delete Line */
+        delete: operations["delete_line_api_v1_requisitions__id__lines__line_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workflows": {
         parameters: {
             query?: never;
@@ -2276,6 +2313,91 @@ export interface components {
          * @enum {string}
          */
         LedgerType: "allocation" | "reservation" | "commitment" | "actual" | "release" | "reversal" | "transfer" | "adjustment";
+        /** LineCreate */
+        LineCreate: {
+            /** Category Code */
+            category_code?: string | null;
+            /** Description */
+            description: string;
+            /**
+             * Line Type
+             * @enum {string}
+             */
+            line_type: "item" | "service";
+            /** Quantity */
+            quantity: string;
+            /** Unit Price */
+            unit_price: string;
+            /** Uom Code */
+            uom_code: string;
+        };
+        /** LineRead */
+        LineRead: {
+            /** Amount */
+            amount: string;
+            /** Awarded Qty */
+            awarded_qty: string;
+            /** Cancelled Qty */
+            cancelled_qty: string;
+            /** Category Code */
+            category_code: string | null;
+            /** Currency */
+            currency: string;
+            /** Description */
+            description: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Line No */
+            line_no: number;
+            /**
+             * Line Type
+             * @enum {string}
+             */
+            line_type: "item" | "service";
+            /** Ordered Qty */
+            ordered_qty: string;
+            /** Quantity */
+            quantity: string;
+            /** Remaining Qty */
+            remaining_qty: string;
+            /** Requested Qty */
+            requested_qty: string;
+            /** Sourced Qty */
+            sourced_qty: string;
+            /** Unit Price */
+            unit_price: string;
+            /** Uom Code */
+            uom_code: string;
+        };
+        /** LineWriteResult */
+        LineWriteResult: {
+            /** Currency */
+            currency: string;
+            /** Estimate */
+            estimate: string;
+            line: components["schemas"]["LineRead"] | null;
+            /** Version */
+            version: number;
+        };
+        /** LinesRead */
+        LinesRead: {
+            /** Currency */
+            currency: string;
+            /** Estimate */
+            estimate: string;
+            /** Rows */
+            rows: components["schemas"]["LineRead"][];
+            /** Version */
+            version: number;
+        };
+        /** LinesReplace */
+        LinesReplace: {
+            /** Lines */
+            lines: components["schemas"]["ReplacementLine"][];
+        };
         /**
          * LoginRequest
          * @description Credentials accepted by the local identity-provider boundary.
@@ -3094,6 +3216,26 @@ export interface components {
              * @description Explain why this period must be reopened.
              */
             reason: string;
+        };
+        /** ReplacementLine */
+        ReplacementLine: {
+            /** Category Code */
+            category_code?: string | null;
+            /** Description */
+            description: string;
+            /** Line Id */
+            line_id?: string | null;
+            /**
+             * Line Type
+             * @enum {string}
+             */
+            line_type: "item" | "service";
+            /** Quantity */
+            quantity: string;
+            /** Unit Price */
+            unit_price: string;
+            /** Uom Code */
+            uom_code: string;
         };
         /** RequisitionCreate */
         RequisitionCreate: {
@@ -7751,6 +7893,234 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RequisitionRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    get_lines_api_v1_requisitions__id__lines_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinesRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    replace_lines_api_v1_requisitions__id__lines_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinesReplace"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinesRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    add_line_api_v1_requisitions__id__lines_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LineCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LineWriteResult"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    put_line_api_v1_requisitions__id__lines__line_id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                line_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LineCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LineWriteResult"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    delete_line_api_v1_requisitions__id__lines__line_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                line_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LineWriteResult"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

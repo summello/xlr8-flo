@@ -15,8 +15,13 @@ from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.org.service import OrgService
 from flo.modules.projects.service import ProjectService
+from flo.modules.requisitions.lines import LineService
 from flo.modules.requisitions.schemas import (
     Direction,
+    LineCreate,
+    LinesRead,
+    LinesReplace,
+    LineWriteResult,
     RequisitionCreate,
     RequisitionPage,
     RequisitionPatch,
@@ -135,3 +140,83 @@ def patch_requisition(
     )
     response.headers["ETag"] = f'"{row.version}"'
     return row
+
+
+@router.get("/{id}/lines", response_model=LinesRead)
+def get_lines(id: UUID, context: ReadContext, connection: Connection) -> LinesRead:
+    return LineService(connection, current_scope(), context.user_id).list_lines(id)
+
+
+@router.post("/{id}/lines", status_code=201, response_model=LineWriteResult)
+def add_line(
+    id: UUID,
+    body: LineCreate,
+    context: EditContext,
+    connection: Connection,
+    response: Response,
+    version: Annotated[str | None, Header(alias="If-Match")] = None,
+) -> LineWriteResult:
+    result = cast(
+        LineWriteResult,
+        LineService(connection, current_scope(), context.user_id).write(id, version, body=body),
+    )
+    response.headers["ETag"] = f'"{result.version}"'
+    return result
+
+
+@router.put("/{id}/lines", response_model=LinesRead)
+def replace_lines(
+    id: UUID,
+    body: LinesReplace,
+    context: EditContext,
+    connection: Connection,
+    response: Response,
+    version: Annotated[str | None, Header(alias="If-Match")] = None,
+) -> LinesRead:
+    result = cast(
+        LinesRead,
+        LineService(connection, current_scope(), context.user_id).write(
+            id, version, replacement=body
+        ),
+    )
+    response.headers["ETag"] = f'"{result.version}"'
+    return result
+
+
+@router.put("/{id}/lines/{line_id}", response_model=LineWriteResult)
+def put_line(
+    id: UUID,
+    line_id: UUID,
+    body: LineCreate,
+    context: EditContext,
+    connection: Connection,
+    response: Response,
+    version: Annotated[str | None, Header(alias="If-Match")] = None,
+) -> LineWriteResult:
+    result = cast(
+        LineWriteResult,
+        LineService(connection, current_scope(), context.user_id).write(
+            id, version, body=body, line_id=line_id
+        ),
+    )
+    response.headers["ETag"] = f'"{result.version}"'
+    return result
+
+
+@router.delete("/{id}/lines/{line_id}", response_model=LineWriteResult)
+def delete_line(
+    id: UUID,
+    line_id: UUID,
+    context: EditContext,
+    connection: Connection,
+    response: Response,
+    version: Annotated[str | None, Header(alias="If-Match")] = None,
+) -> LineWriteResult:
+    result = cast(
+        LineWriteResult,
+        LineService(connection, current_scope(), context.user_id).write(
+            id, version, line_id=line_id, delete=True
+        ),
+    )
+    response.headers["ETag"] = f'"{result.version}"'
+    return result

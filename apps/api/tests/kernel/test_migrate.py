@@ -6,6 +6,7 @@ import sys
 import textwrap
 from collections.abc import Iterator
 from datetime import date
+from decimal import Decimal
 from pathlib import Path
 from unittest.mock import MagicMock
 from urllib.parse import urlsplit
@@ -132,6 +133,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261009_0037",
         "20261009_0038",
         "20261009_0039",
+        "20261009_0040",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -706,7 +708,10 @@ def test_requisition_migration_roundtrip_preserves_existing_data_and_plants_guar
     from flo.modules.requisitions.service import RequisitionService
     from tests.org.test_bootstrap import admin_id, create, settings
 
-    revisions = migrate.discover_migrations(MIGRATIONS)
+    revisions = tuple(
+        r for r in migrate.discover_migrations(MIGRATIONS)
+        if r.revision <= "20261009_0039"
+    )
     migrate.apply_migrations(revisions[:-1], empty_database)
     with (
         psycopg.connect(empty_database, autocommit=True) as conn,
@@ -876,3 +881,79 @@ def test_requisition_migration_roundtrip_preserves_existing_data_and_plants_guar
         assert conn.execute(
             "SELECT generated_by_requisition_id FROM project"
         ).fetchall() == [(None,), (None,)]
+
+
+def test_requisition_lines_migration_roundtrip_preserves_lines_and_header(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.org.schemas import BaseCurrencyPut, MasterCreate, OrgUnitCreate
+    from flo.modules.org.service import OrgService
+    from flo.modules.requisitions.lines import LineService
+    from flo.modules.requisitions.schemas import LineCreate, RequisitionCreate
+    from flo.modules.requisitions.service import RequisitionService
+    from tests.org.test_bootstrap import admin_id, create, settings
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(revisions[:-1], empty_database)
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("line-migration"),
+    ):
+        tenant = create(conn)
+        scope = Scope(tenant.org_id)
+        actor = admin_id(conn)
+        org = OrgService(conn, scope, actor)
+        org.set_base_currency(BaseCurrencyPut(currency="USD"))
+        bu = org.create_unit(OrgUnitCreate(code="BU", name="BU", kind="bu"))
+        requisitions = RequisitionService(conn, scope, actor, settings(conn))
+        row = requisitions.create(RequisitionCreate(title="Preserved", bu_id=bu.id))
+        before = conn.execute(
+            "SELECT id,title,estimate,currency,version FROM requisition"
+        ).fetchall()
+        revisions[-1].upgrade(conn)
+        assert (
+            conn.execute("SELECT id,title,estimate,currency,version FROM requisition").fetchall()
+            == before
+        )
+        org.create_master(
+            "uom",
+            MasterCreate(
+                code="EA",
+                name="Each",
+                effective_from=date(2000, 1, 1),
+                attributes={"dimension": "count"},
+            ),
+        )
+        LineService(conn, scope, actor).write(
+            row.id,
+            "1",
+            body=LineCreate(
+                line_type="item", description="Pump", quantity="3", unit_price="0.10", uom_code="EA"
+            ),
+        )
+        saved = conn.execute("SELECT * FROM requisition_line").fetchall()
+        header = conn.execute("SELECT * FROM requisition").fetchall()
+
+        class Rollback(Exception):
+            pass
+
+        with pytest.raises(Rollback), conn.transaction():
+            revisions[-1].downgrade(conn)
+            revisions[-1].upgrade(conn)
+            raise Rollback
+        assert conn.execute("SELECT * FROM requisition_line").fetchall() == saved
+        assert conn.execute("SELECT * FROM requisition").fetchall() == header
+        # Removing the feature preserves all pre-existing header data. A rolled-back
+        # down/up above proves existing line data survives an aborted migration.
+        revisions[-1].downgrade(conn)
+        assert conn.execute(
+            "SELECT id,title,estimate,currency,version FROM requisition"
+        ).fetchall() == [(row.id, "Preserved", Decimal("0.3000"), "USD", 2)]
+        revisions[-1].upgrade(conn)
+        assert (
+            conn.execute("SELECT to_regclass('requisition_line')").fetchone()[0]
+            == "requisition_line"
+        )
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT last_line_no FROM requisition").fetchone() == (0,)

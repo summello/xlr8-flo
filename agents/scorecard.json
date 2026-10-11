@@ -2332,6 +2332,37 @@
       },
       "recap": "Added draft requisition headers with derived currency, scoped numbering, audited writes and version checks under a row lock. Added project provenance, shared unit ancestry and generated API contracts.",
       "title": "Requisition header, scoped numbering, project-linked and standalone"
+    },
+    {
+      "story": "E09-S02",
+      "kind": "crud",
+      "size": "M",
+      "tags": [
+        "migration",
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a12bd0-7bfb-7220-ac0f-4f2df1dbc42c",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Added item and service lines with scoped master codes, currency-aware Decimal amounts, atomic estimates, stable numbering and versioned draft edits. Currency-changing project moves now fail under the requisition lock while lines exist.",
+      "title": "Item and service lines with explicit type tagging and quantity/amount tracking"
     }
   ]
 }

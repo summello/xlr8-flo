@@ -24,6 +24,26 @@ TESTS = Path(__file__).resolve().parents[1]
 # (method, path) -> "file::test" that proves a foreign id returns 404.
 COVERED = {
     (
+        "GET",
+        "/api/v1/requisitions/{id}/lines",
+    ): "requisitions/test_lines.py::test_foreign_tenant_line_routes_and_permissions",
+    (
+        "POST",
+        "/api/v1/requisitions/{id}/lines",
+    ): "requisitions/test_lines.py::test_foreign_tenant_line_routes_and_permissions",
+    (
+        "PUT",
+        "/api/v1/requisitions/{id}/lines",
+    ): "requisitions/test_lines.py::test_foreign_tenant_line_routes_and_permissions",
+    (
+        "PUT",
+        "/api/v1/requisitions/{id}/lines/{line_id}",
+    ): "requisitions/test_lines.py::test_foreign_tenant_line_routes_and_permissions",
+    (
+        "DELETE",
+        "/api/v1/requisitions/{id}/lines/{line_id}",
+    ): "requisitions/test_lines.py::test_foreign_tenant_line_routes_and_permissions",
+    (
         "POST",
         "/api/v1/requisitions",
     ): "requisitions/test_header.py::test_foreign_tenant_routes_and_list_isolation",

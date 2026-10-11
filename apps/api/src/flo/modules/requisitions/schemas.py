@@ -1,10 +1,12 @@
 """Draft header contracts; currency and estimate are derived."""
 
+import re
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError
 
@@ -115,3 +117,78 @@ class RequisitionPage(BaseModel):
     rows: list[RequisitionRead]
     total: int
     next_cursor: str | None
+
+
+class LineCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    line_type: Literal["item", "service"]
+    description: str = Field(min_length=1, max_length=500)
+    quantity: str
+    uom_code: str
+    unit_price: str
+    category_code: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def reject_derived(cls, value: object) -> object:
+        if isinstance(value, dict):
+            for field in ("amount", "currency", "line_no"):
+                if field in value:
+                    raise invalid(
+                        field, "This field is derived and cannot be entered.", "derived_field"
+                    )
+        return value
+
+    @field_validator("quantity", "unit_price")
+    @classmethod
+    def decimal_string(cls, value: str) -> str:
+        if not re.fullmatch(r"[0-9]{1,14}(?:\.[0-9]{1,4})?", value) or Decimal(value) <= 0:
+            raise ValueError(
+                "Enter a positive decimal string with at most 14 integer digits and 4 decimals."
+            )
+        return value
+
+
+LinePut = LineCreate
+
+
+class ReplacementLine(LineCreate):
+    line_id: UUID | None = None
+
+
+class LinesReplace(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    lines: list[ReplacementLine] = Field(max_length=500)
+
+
+class LineRead(BaseModel):
+    id: UUID
+    line_no: int
+    line_type: Literal["item", "service"]
+    description: str
+    quantity: str
+    uom_code: str
+    unit_price: str
+    amount: str
+    currency: str
+    category_code: str | None
+    requested_qty: str
+    sourced_qty: str
+    awarded_qty: str
+    ordered_qty: str
+    cancelled_qty: str
+    remaining_qty: str
+
+
+class LinesRead(BaseModel):
+    rows: list[LineRead]
+    estimate: str
+    currency: str
+    version: int
+
+
+class LineWriteResult(BaseModel):
+    line: LineRead | None
+    estimate: str
+    currency: str
+    version: int
