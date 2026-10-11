@@ -3,6 +3,7 @@
 # Launches the story's assigned author (task.json "author") in its worktree, in the background.
 # Log: .scratch/STORY.log, ending in "exit N". Run from the parent repo.
 set -e
+. "$(dirname "$0")/env.sh"
 S="$1"; R="$(cd "$(dirname "$0")/../.." && pwd)"; W="$R-$S"; D="$R/.scratch"
 mkdir -p "$D"
 A="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["author"])' "$W/task.json")"

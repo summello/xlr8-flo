@@ -69,6 +69,16 @@ story's tables. This applies to E09-S05, E10-S01 and E10-S08 (E10-S13 adds no pe
 a packet amendment. Downgrades delete `role_permission` rows first, then `permission` rows (the
 E06-S03 precedent, `migrations/20261008_0025_project_lifecycle.py`).
 
+**Auditor is read-only by construction.** `BASELINE_ROLE_PERMISSIONS[auditor]` is every catalogue
+permission whose action is `read` or `view`, and `tests/authz/test_models.py::test_auditor_permissions_are_read_only_by_construction`
+pins it (the requirements role table: the Auditor "reads configuration, decisions, transaction history
+and audit records"). A new permission with action `read` or `view` therefore reaches Auditors the moment
+it joins `PERMISSION_CODES`, and the story's permissions migration **must also backfill the system
+`auditor` role in existing tenants**, or new tenants and old tenants diverge. A permission with any
+other action never reaches Auditor. Add the code to `EXPECTED_PERMISSIONS`; the by-construction test then
+passes unchanged, and no special case for Auditor is written anywhere. Among M2's new permissions only
+`workflow.read` has such a suffix.
+
 ## J. Requisition statuses are fixed now, so no later story migrates the CHECK
 
 `draft`, `approval_pending`, `sourcing_in_progress`, `sourced`, `awarded`, `open_for_purchase`,

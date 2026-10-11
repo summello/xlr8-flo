@@ -3,6 +3,7 @@
 # Runs the reviewer on the flo review packet in the story worktree, in the background.
 # Log: .scratch/STORY.REVIEWER.log ending in "exit N"; verdict: <worktree>/reviews/STORY.REVIEWER.json
 set -e
+. "$(dirname "$0")/env.sh"
 S="$1"; A="${2:-qwen}"; R="$(cd "$(dirname "$0")/../.." && pwd)"; W="$R-$S"; D="$R/.scratch"
 case "$A" in
   qwen) M=openrouter/qwen/qwen3.8-27b ;;
