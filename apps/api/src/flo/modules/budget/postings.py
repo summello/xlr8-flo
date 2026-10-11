@@ -7,7 +7,7 @@ from uuid import UUID
 
 import psycopg
 
-from flo.kernel.errors import ErrorCode, ProblemError
+from flo.kernel.errors import ErrorCode, ProblemError, conflict
 from flo.kernel.money import quantize
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
@@ -15,10 +15,6 @@ from flo.modules.budget.ledger import LedgerRepository, invalid, post_entry
 from flo.modules.budget.models import LedgerBucket, LedgerEntry, LedgerType
 from flo.modules.budget.reservations import release_reservation
 from flo.modules.org.service import assert_usable
-
-
-def conflict(label: str, detail: str) -> ProblemError:
-    return ProblemError(ErrorCode.CONFLICT, detail=detail, checks={"problem": label})
 
 
 def original_entry(repo: LedgerRepository, entry_id: int) -> LedgerEntry:

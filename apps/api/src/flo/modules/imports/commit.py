@@ -235,8 +235,18 @@ def persist_failure(
             "severity": "error",
             "problem": (error.checks or {}).get("problem"),
         }
-        service.repo.execute(
-            "UPDATE import_row SET action='error', issues=issues || %(issues)s "
-            "WHERE org_id=%(org_id)s AND batch_id=%(id)s AND row_no=%(row)s",
-            {"id": batch_id, "row": row_no, "issues": Jsonb([issue])},
-        )
+    else:
+        # A target that vanished between validation and commit raises a plain exception;
+        # the row is skipped, so the report must still say why (class name only, no detail).
+        issue = {
+            "column": None,
+            "code": type(error).__name__,
+            "message": "This row could not be applied. Re-upload the file for details.",
+            "severity": "error",
+            "problem": None,
+        }
+    service.repo.execute(
+        "UPDATE import_row SET action='error', issues=issues || %(issues)s "
+        "WHERE org_id=%(org_id)s AND batch_id=%(id)s AND row_no=%(row)s",
+        {"id": batch_id, "row": row_no, "issues": Jsonb([issue])},
+    )

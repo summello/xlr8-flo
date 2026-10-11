@@ -208,3 +208,8 @@ class ProblemError(Exception):
         self.errors = errors
         self.checks = dict(checks) if checks is not None else None
         self.headers = dict(headers) if headers is not None else None
+
+
+def conflict(label: str, detail: str) -> ProblemError:
+    """A 409 whose stable `problem` label the client can switch on."""
+    return ProblemError(ErrorCode.CONFLICT, detail=detail, checks={"problem": label})

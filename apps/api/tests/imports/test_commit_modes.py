@@ -129,6 +129,13 @@ def test_partial_errors_savepoints_recovery_and_corrected_reupload(probe):
                 ("A",),
                 ("B",),
             ]
+            # Row 5 failed with a plain RuntimeError: the report must still explain it,
+            # and the private exception text must not reach the stored issue.
+            issues = conn.execute(
+                "SELECT issues FROM import_row WHERE batch_id=%s AND row_no=5", (id,)
+            ).fetchone()[0]
+            assert [(i["code"], i["severity"]) for i in issues] == [("RuntimeError", "error")]
+            assert "injected" not in issues[0]["message"]
             handler.fail_key = None
             rows[2][2] = ""
             corrected = await upload(browser, rows)

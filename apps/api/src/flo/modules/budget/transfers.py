@@ -10,14 +10,13 @@ import psycopg
 
 from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
 from flo.kernel.audit.writer import AuditConnection
-from flo.kernel.errors import ErrorCode, ProblemError
+from flo.kernel.errors import ErrorCode, ProblemError, conflict
 from flo.kernel.money import quantize
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.budget.funding_policy import mode_for
 from flo.modules.budget.ledger import InsufficientBudget, LedgerRepository, invalid, post_entry
 from flo.modules.budget.models import LedgerEntry, LedgerType
-from flo.modules.budget.postings import conflict
 from flo.modules.budget.schemas import (
     AllocationCreate,
     LedgerEntryRead,
