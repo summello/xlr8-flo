@@ -60,3 +60,21 @@ def test_migration_downgrade_preserves_identity_and_audit_data(
         assert database.connection.execute(
             "SELECT to_regclass(%s)", (f"public.{table}",)
         ).fetchone() == (None,)
+
+
+def test_workflow_permission_migration_is_applied_independently(authorization_database):
+    from .conftest import ROOT, load_migration
+
+    migration = load_migration(
+        ROOT / "migrations/20261009_0038_workflow_permissions.py", "authz_permissions_roundtrip"
+    )
+    conn = authorization_database.connection
+    migration.downgrade(conn)
+    assert conn.execute("SELECT code FROM permission WHERE code LIKE 'workflow.%'").fetchall() == []
+    migration.upgrade(conn)
+    assert {
+        row[0]
+        for row in conn.execute(
+            "SELECT code FROM permission WHERE code LIKE 'workflow.%'"
+        ).fetchall()
+    } == {"workflow.read", "workflow.manage"}

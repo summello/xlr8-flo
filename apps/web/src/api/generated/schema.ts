@@ -1374,6 +1374,110 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workflows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Workflows */
+        get: operations["list_workflows_api_v1_workflows_get"];
+        put?: never;
+        /** Create Workflow */
+        post: operations["create_workflow_api_v1_workflows_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflows/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Workflow */
+        get: operations["get_workflow_api_v1_workflows__id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflows/{id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retire Workflow */
+        post: operations["retire_workflow_api_v1_workflows__id__retire_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflows/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Version */
+        post: operations["create_version_api_v1_workflows__id__versions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflows/{id}/versions/{version}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Version */
+        get: operations["get_version_api_v1_workflows__id__versions__version__get"];
+        /** Update Version */
+        put: operations["update_version_api_v1_workflows__id__versions__version__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflows/{id}/versions/{version}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish Version */
+        post: operations["publish_version_api_v1_workflows__id__versions__version__publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1671,6 +1775,22 @@ export interface components {
              * Format: uuid
              */
             run_id: string;
+        };
+        /** Edge */
+        Edge: {
+            /**
+             * Default
+             * @default false
+             */
+            default?: boolean;
+            /** From */
+            from: string;
+            /** To */
+            to: string;
+            /** When */
+            when?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
         };
         /**
          * EffectiveAccessResponse
@@ -2320,6 +2440,33 @@ export interface components {
              */
             project_id: string;
         };
+        /** Node */
+        Node: {
+            /**
+             * Allow Repeat
+             * @default false
+             */
+            allow_repeat?: boolean;
+            /** Approvers */
+            approvers?: (components["schemas"]["RoleApprovers"] | components["schemas"]["UserApprovers"] | components["schemas"]["PermissionApprovers"]) | null;
+            /** Due Days */
+            due_days?: number | null;
+            /** Escalate After Days */
+            escalate_after_days?: number | null;
+            /** Escalate To */
+            escalate_to?: (components["schemas"]["RoleApprovers"] | components["schemas"]["UserApprovers"] | components["schemas"]["PermissionApprovers"]) | null;
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "start" | "condition" | "approval" | "end";
+            /** Mode */
+            mode?: ("any" | "all") | components["schemas"]["Quorum"] | null;
+            /** Name */
+            name?: string | null;
+        };
         /** OrgAddressClose */
         OrgAddressClose: {
             /**
@@ -2510,6 +2657,14 @@ export interface components {
             /** Email */
             email: string;
         };
+        /** PermissionApprovers */
+        PermissionApprovers: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "permission";
+        };
         /**
          * PermissionPageResponse
          * @description Cursor page in the shared DataGrid wire format.
@@ -2647,6 +2802,13 @@ export interface components {
         };
         /** @enum {string} */
         PhaseStatus: "planned" | "in_progress" | "done" | "skipped";
+        /** Position */
+        Position: {
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+        };
         /**
          * ProblemDetails
          * @description Problem details, including the support-safe request correlation identifier.
@@ -2861,6 +3023,11 @@ export interface components {
         };
         /** @enum {string} */
         ProjectStatus: "draft" | "approval_pending" | "active" | "deferred" | "completed" | "abandoned";
+        /** Quorum */
+        Quorum: {
+            /** Quorum */
+            quorum: number;
+        };
         /** ReconcileStatus */
         ReconcileStatus: {
             /** Drift Rows */
@@ -3022,6 +3189,16 @@ export interface components {
         };
         /** @enum {string} */
         RiskStatus: "open" | "mitigating" | "closed" | "accepted";
+        /** RoleApprovers */
+        RoleApprovers: {
+            /** Role Code */
+            role_code: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "role";
+        };
         /**
          * ScopeType
          * @description The only scopes to which a role can be granted.
@@ -3223,6 +3400,16 @@ export interface components {
             /** Truncated */
             truncated: boolean;
         };
+        /** UserApprovers */
+        UserApprovers: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "users";
+            /** User Ids */
+            user_ids: string[];
+        };
         /** ValidationError */
         ValidationError: {
             /** Context */
@@ -3235,6 +3422,138 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** WorkflowCreate */
+        WorkflowCreate: {
+            /**
+             * Document Type
+             * @enum {string}
+             */
+            document_type: "project" | "requisition" | "budget_change" | "vendor" | "rfq" | "award" | "po";
+            /** Name */
+            name: string;
+            /** Scope Id */
+            scope_id?: string | null;
+            /**
+             * Scope Type
+             * @enum {string}
+             */
+            scope_type: "org" | "bu";
+        };
+        /** WorkflowGraph */
+        WorkflowGraph: {
+            /** Edges */
+            edges: components["schemas"]["Edge"][];
+            /** Layout */
+            layout?: {
+                [key: string]: components["schemas"]["Position"];
+            };
+            /** Nodes */
+            nodes: components["schemas"]["Node"][];
+        };
+        /** WorkflowPage */
+        WorkflowPage: {
+            /** Next Cursor */
+            next_cursor: string | null;
+            /** Rows */
+            rows: components["schemas"]["WorkflowRead"][];
+        };
+        /** WorkflowRead */
+        WorkflowRead: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Created By
+             * Format: uuid
+             */
+            created_by: string;
+            /**
+             * Document Type
+             * @enum {string}
+             */
+            document_type: "project" | "requisition" | "budget_change" | "vendor" | "rfq" | "award" | "po";
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Retired At */
+            retired_at: string | null;
+            /**
+             * Scope Id
+             * Format: uuid
+             */
+            scope_id: string;
+            /**
+             * Scope Type
+             * @enum {string}
+             */
+            scope_type: "org" | "bu";
+            /** Versions */
+            versions?: components["schemas"]["WorkflowVersionSummary"][];
+        };
+        /** WorkflowVersionRead */
+        WorkflowVersionRead: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Created By
+             * Format: uuid
+             */
+            created_by: string;
+            /**
+             * Definition Id
+             * Format: uuid
+             */
+            definition_id: string;
+            graph: components["schemas"]["WorkflowGraph"];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Published At */
+            published_at: string | null;
+            /** Published By */
+            published_by: string | null;
+            /** Row Version */
+            row_version: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "published" | "superseded";
+            /** Version */
+            version: number;
+        };
+        /** WorkflowVersionSummary */
+        WorkflowVersionSummary: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Published At */
+            published_at: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "published" | "superseded";
+            /** Version */
+            version: number;
+        };
+        /** WorkflowVersionWrite */
+        WorkflowVersionWrite: {
+            graph: components["schemas"]["WorkflowGraph"];
         };
     };
     responses: never;
@@ -7100,6 +7419,357 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LedgerPage"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    list_workflows_api_v1_workflows_get: {
+        parameters: {
+            query?: {
+                document_type?: ("project" | "requisition" | "budget_change" | "vendor" | "rfq" | "award" | "po") | null;
+                cursor?: string | null;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowPage"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    create_workflow_api_v1_workflows_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkflowCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    get_workflow_api_v1_workflows__id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    retire_workflow_api_v1_workflows__id__retire_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    create_version_api_v1_workflows__id__versions_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkflowVersionWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowVersionRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    get_version_api_v1_workflows__id__versions__version__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowVersionRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    update_version_api_v1_workflows__id__versions__version__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkflowVersionWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowVersionRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    publish_version_api_v1_workflows__id__versions__version__publish_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowVersionRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

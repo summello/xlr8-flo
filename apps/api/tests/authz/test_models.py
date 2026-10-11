@@ -32,6 +32,8 @@ EXPECTED_ROLES = {
 }
 
 EXPECTED_PERMISSIONS = {
+    "workflow.read",
+    "workflow.manage",
     "admin.access.read",
     "asset.create",
     "asset.edit",

@@ -159,6 +159,8 @@ PERMISSION_CODES: tuple[PermissionCode, ...] = tuple(
         "vendor.edit",
         "vendor.view",
         "view.archive",
+        "workflow.read",
+        "workflow.manage",
     )
 )
 

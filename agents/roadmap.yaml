@@ -1121,7 +1121,7 @@ epics:
           - ACC-007
         dep:
           - E03-S04
-        st: todo
+        st: done
       - id: E10-S02
         t: Condition evaluator over any document attribute including amount and custom
           fields

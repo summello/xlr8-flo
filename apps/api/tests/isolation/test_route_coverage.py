@@ -16,11 +16,44 @@ from flo.api.invitations import router as invitations_router
 from flo.api.master import router as master_router
 from flo.api.org import router as org_router
 from flo.api.projects import router as projects_router
+from flo.api.workflows import router as workflows_router
 
 TESTS = Path(__file__).resolve().parents[1]
 
 # (method, path) -> "file::test" that proves a foreign id returns 404.
 COVERED = {
+    (
+        "GET",
+        "/api/v1/workflows",
+    ): "approvals/test_workflow_definitions.py::test_foreign_tenant_routes_and_authorization",
+    (
+        "POST",
+        "/api/v1/workflows",
+    ): "approvals/test_workflow_definitions.py::test_foreign_tenant_routes_and_authorization",
+    (
+        "GET",
+        "/api/v1/workflows/{id}",
+    ): "approvals/test_workflow_definitions.py::test_foreign_tenant_routes_and_authorization",
+    (
+        "POST",
+        "/api/v1/workflows/{id}/versions",
+    ): "approvals/test_workflow_definitions.py::test_foreign_tenant_routes_and_authorization",
+    (
+        "GET",
+        "/api/v1/workflows/{id}/versions/{version}",
+    ): "approvals/test_workflow_definitions.py::test_foreign_tenant_routes_and_authorization",
+    (
+        "PUT",
+        "/api/v1/workflows/{id}/versions/{version}",
+    ): "approvals/test_workflow_definitions.py::test_foreign_tenant_routes_and_authorization",
+    (
+        "POST",
+        "/api/v1/workflows/{id}/versions/{version}/publish",
+    ): "approvals/test_workflow_definitions.py::test_foreign_tenant_routes_and_authorization",
+    (
+        "POST",
+        "/api/v1/workflows/{id}/retire",
+    ): "approvals/test_workflow_definitions.py::test_foreign_tenant_routes_and_authorization",
     (
         "GET",
         "/api/v1/projects/{id}/risk-indicators",
@@ -302,6 +335,7 @@ def test_every_id_route_has_a_named_foreign_tenant_case() -> None:
                 budget_router,
                 imports_router,
                 invitations_router,
+                workflows_router,
             ),
             COVERED,
         )
@@ -324,6 +358,7 @@ def test_gate_fails_on_an_uncovered_route_and_on_a_dangling_reference() -> None:
             budget_router,
             imports_router,
             invitations_router,
+            workflows_router,
         )
         | widget
     )

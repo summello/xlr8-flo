@@ -1,0 +1,1 @@
+"""Versioned approval workflow configuration."""

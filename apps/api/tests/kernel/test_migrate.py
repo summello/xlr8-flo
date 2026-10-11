@@ -129,6 +129,8 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261009_0034",
         "20261009_0035",
         "20261009_0036",
+        "20261009_0037",
+        "20261009_0038",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -642,3 +644,49 @@ def test_import_async_migration_preserves_data_and_plants_key_guards(empty_datab
         chain[-1].upgrade(conn)
         with tenant_transaction(conn, Scope(tenant.org_id)):
             assert conn.execute("SELECT id FROM import_batch").fetchall() == [(id,)]
+
+
+def test_workflow_permissions_roundtrip_preserves_definition_and_versions(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.modules.approvals.schemas import WorkflowCreate, WorkflowVersionWrite
+    from flo.modules.approvals.service import WorkflowService
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(revisions, empty_database)
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        org = create(conn)
+        with correlation_context("workflow-migration"):
+            service = WorkflowService(conn, Scope(org.org_id), admin_id(conn))
+            row = service.create(
+                WorkflowCreate(document_type="project", name="Review", scope_type="org")
+            )
+            graph = {
+                "nodes": [{"id": "start", "kind": "start"}, {"id": "end", "kind": "end"}],
+                "edges": [],
+            }
+            service.create_version(row.id, WorkflowVersionWrite(graph=graph))
+            service.publish(row.id, 1)
+            service.create_version(row.id, WorkflowVersionWrite(graph=graph))
+        before = {
+            table: conn.execute(f"SELECT * FROM {table} ORDER BY id").fetchall()
+            for table in ("workflow_definition", "workflow_version", "identity", "organization")
+        }
+        # Permissions are independently reversible without removing stored routing versions.
+        revisions[-1].downgrade(conn)
+        assert (
+            conn.execute("SELECT code FROM permission WHERE code LIKE 'workflow.%'").fetchall()
+            == []
+        )
+        revisions[-1].upgrade(conn)
+        for table, rows in before.items():
+            assert conn.execute(f"SELECT * FROM {table} ORDER BY id").fetchall() == rows
+        # Table downgrade drops only this story's tables and leaves tenant/identity data intact.
+        revisions[-1].downgrade(conn)
+        revisions[-2].downgrade(conn)
+        for table in ("identity", "organization"):
+            assert conn.execute(f"SELECT * FROM {table} ORDER BY id").fetchall() == before[table]
+        revisions[-2].upgrade(conn)
+        revisions[-1].upgrade(conn)
+        assert conn.execute("SELECT count(*) FROM workflow_version").fetchone() == (0,)

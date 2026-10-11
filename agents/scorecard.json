@@ -2242,6 +2242,36 @@
       },
       "recap": "Implemented project dashboards and currency-separated budget roll-ups with keyboard hierarchy, chart/table comparisons, ledger drill-down and fact-backed risk indicators. Generated API contracts and regression tests cover permissions, tenant isolation, decimal thresholds, drift and accessibility.",
       "title": "Project dashboard with hierarchy visual and drill-down to ledger entries"
+    },
+    {
+      "story": "E10-S01",
+      "kind": "migration",
+      "size": "L",
+      "tags": [
+        "migration"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a12977-b518-7ab2-9795-616c49b51ef0",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented tenant-scoped workflow definitions, immutable published versions, BU fallback, audit evidence, and the amended administrator/Auditor grants. Full flo check is green, all five required plants failed at their named assertions and were restored, and the OpenAPI client is regenerated.",
+      "title": "Workflow definition schema, versioning, active-document version pinning"
     }
   ]
 }
