@@ -477,7 +477,9 @@ jobs:
             || { echo "::error::VITE_API_BASE_URL must be the relative path /api"; exit 1; }
           npm --prefix apps/web ci
           npm --prefix apps/web run build
-          if grep -RIlE -- 'sk-|-----BEGIN' apps/web/dist; then
+          # A key is `sk-` at a word start followed by 20+ key characters; the bare
+          # substring also matches `risk-indicators`.
+          if grep -RIlE -- '(^|[^A-Za-z0-9])sk-[A-Za-z0-9_-]{20,}|-----BEGIN' apps/web/dist; then
             echo "::error::SPA bundle contains a secret marker"
             exit 1
           fi
