@@ -4,6 +4,10 @@ For the operator, the authors (Codex), and the reviewers (Opus on gated stories,
 25 stories: E09 requisitions (S01..S12) and E10 approvals (S01..S13). Design is done and was audited
 against the code by qwen in two passes; every finding is settled in the packets.
 
+**Status (11 Oct 2026): design closed.** Three qwen pre-flight passes over all 25 packets are settled and
+each packet's header, tags and dependencies match `agents/roadmap.yaml` (checked mechanically). Open
+operator questions are listed in § 8; none blocks starting.
+
 **Read order for an author:** this file § 1 and § 5 → the story's packet **to its last line** (later
 "Pre-flight amendments" sections override earlier text) → its brief → `docs/m2-conventions.md` →
 `docs/m2-decisions.md` → `docs/author-traps.md`.
@@ -84,6 +88,8 @@ routing rules (L stories exceed nemotron's M cap, UI included). Run `flo assign 
 | `migrations/` head, `tests/kernel/test_migrate.py` | every migration story (E09-S01, S02, S03, S05, S07, S08, S10; E10-S01, S05, S06, S07, S08, S13) | next revision after the head **at start**; the second lane to merge re-points `down_revision`; append the revision to the test list |
 | `modules/identity/models.py`, `tests/authz/test_models.py`, `test_migration.py`, `conftest.py` | E10-S01, E10-S08, E09-S05 | new permissions ship in a permissions-only migration (convention I) |
 | `kernel/authz.py` | E10-S04 (holders protocol), E10-S05 (`require_resolved`, `require_member`) | E09 stories read it; convention P |
+| `kernel/session/middleware.py` | E09-S10 only (a handler-supplied `Content-Security-Policy: sandbox` is kept in addition to the fixed header; anything else is still replaced) | the one authorised kernel security edit in E09; Opus reviews it with its planted test in `tests/session/` |
+| `modules/identity/service.py` | E10-S06, E09-S05 (`emails_by_id`, read-only) | whichever merges first adds it |
 | `api/health.py` router includes | every story that adds a router | one include line each; trivial conflicts |
 | `api/internal.py` | E10-S08, E10-S13, E09-S05, S07, S10 | one registration call each |
 | `api/document_types.py` | E09-S05, E09-S10, E10-S13 | created by whichever merges first; the others add an adapter |
