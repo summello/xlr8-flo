@@ -81,6 +81,7 @@ class ProjectPatch(ExternalReference):
 
 
 class ProjectRead(BaseModel):
+    generated_by_requisition_id: UUID | None
     external_ref: str | None
     id: UUID
     number: str

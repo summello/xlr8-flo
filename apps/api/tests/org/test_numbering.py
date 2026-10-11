@@ -104,3 +104,28 @@ def test_allocation_requires_database_configuration():
         NumberingService(Settings(database_url=None), Scope(uuid4())).allocate(
             uuid4(), "project", date(2026, 1, 1)
         )
+
+
+def test_unconfigured_document_defaults_and_configured_requisition_wins(project_db):
+    db = project_db
+    bu = unit(db)
+    numbering = NumberingService(settings(db), Scope(db.org_a))
+    assert numbering.allocate(bu.id, "project", date(2026, 1, 1)) == "PRJ-2026-0001"
+    for kind, prefix in [
+        ("requisition", "REQ-"),
+        ("rfq", "RFQ"),
+        ("award", "AWD"),
+        ("po", "PO"),
+        ("asset", "AST"),
+    ]:
+        assert numbering.allocate(bu.id, kind, date(2026, 1, 1)) == prefix + "00001"
+    numbering.add_format(
+        db.connection,
+        bu.id,
+        "requisition",
+        prefix="R-",
+        include_year=False,
+        width=2,
+        effective_from=date(2000, 1, 1),
+    )
+    assert numbering.allocate(bu.id, "requisition", date(2026, 1, 1)) == "R-02"

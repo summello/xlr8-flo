@@ -75,6 +75,7 @@ __all__ = [
     "range_for",
     "today",
     "unit_by_code",
+    "unit_chain",
     "valid_value",
     "validate_master_dates",
 ]
@@ -188,6 +189,16 @@ class OrgService:
     def get_unit(self, unit_id: UUID) -> OrgUnitRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             return OrgUnitRead.model_validate(self._unit(unit_id))
+
+    def unit_chain(self, unit_id: UUID) -> list[UUID]:
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            chain: list[UUID] = []
+            current: UUID | None = unit_id
+            while current is not None:
+                row = self._unit(current)
+                chain.append(current)
+                current = cast(UUID | None, row["parent_id"])
+            return chain
 
     def create_unit(self, body: OrgUnitCreate) -> OrgUnitRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
@@ -740,3 +751,9 @@ def unit_by_code(
             {"code": code},
         ).fetchone()
         return OrgUnitRead.model_validate(repository.unit(row[0])) if row else None
+
+
+def unit_chain(
+    connection: psycopg.Connection[tuple[object, ...]], scope: Scope, unit_id: UUID
+) -> list[UUID]:
+    return OrgService(connection, scope).unit_chain(unit_id)

@@ -926,7 +926,7 @@ epics:
           - SEQ-001
         dep:
           - E06-S03
-        st: in_progress
+        st: done
       - id: E09-S02
         t: Item and service lines with explicit type tagging and quantity/amount
           tracking

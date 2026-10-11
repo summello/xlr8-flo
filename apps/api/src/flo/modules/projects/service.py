@@ -715,3 +715,24 @@ def get_by_external_ref(
             if row
             else None
         )
+
+
+__all__ = [
+    "ProjectService",
+    "get_status",
+    "ancestors",
+    "descendants",
+    "lowest_common_ancestor",
+    "path_between",
+    "depth_of",
+    "assert_posting_allowed",
+    "risk_indicators",
+    "get_by_external_ref",
+    "is_requisition_generated",
+]
+
+
+def is_requisition_generated(
+    connection: psycopg.Connection[tuple[object, ...]], scope: Scope, project_id: UUID
+) -> bool:
+    return ProjectService(connection, scope).get(project_id).generated_by_requisition_id is not None

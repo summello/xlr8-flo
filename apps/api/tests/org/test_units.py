@@ -382,3 +382,21 @@ def test_reads_require_read_permission(org_database: AuthorizationDatabase, path
     viewer = insert_identity(db, "manager-without-read")
     grant_permissions(db, viewer, "org.unit.manage")
     assert request(db, "GET", path.format(id=unit.id), viewer=viewer).status_code == 403
+
+
+def test_unit_chain_nearest_first_and_foreign_404(org_database):
+    db = org_database
+    root = create(db, "ROOT")
+    middle = create(db, "MIDDLE", root.id)
+    leaf = create(db, "LEAF", middle.id)
+    assert service(db).unit_chain(leaf.id) == [leaf.id, middle.id, root.id]
+    from flo.modules.org.service import unit_chain
+
+    assert unit_chain(db.connection, Scope(db.org_a), middle.id) == [middle.id, root.id]
+    foreign = create(db, "FOREIGN", org=db.org_b)
+    from flo.kernel.errors import ProblemError
+
+    for id in (foreign.id, uuid4()):
+        with pytest.raises(ProblemError) as error:
+            service(db).unit_chain(id)
+        assert error.value.code.value == "not-found"

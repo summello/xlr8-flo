@@ -2302,6 +2302,36 @@
       },
       "recap": "Implemented the pure condition grammar and evaluator with exact money comparisons, ordered traces, and document/custom-field catalogue hooks. All 176 condition tests and the full flo check pass; all 20 mutation plants failed as expected and were restored.",
       "title": "Condition evaluator over any document attribute including amount and custom fields"
+    },
+    {
+      "story": "E09-S01",
+      "kind": "crud",
+      "size": "M",
+      "tags": [
+        "migration"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a12a08-2d63-7821-b395-0bc6ed64d5dd",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Added draft requisition headers with derived currency, scoped numbering, audited writes and version checks under a row lock. Added project provenance, shared unit ancestry and generated API contracts.",
+      "title": "Requisition header, scoped numbering, project-linked and standalone"
     }
   ]
 }

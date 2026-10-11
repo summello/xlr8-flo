@@ -131,6 +131,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261009_0036",
         "20261009_0037",
         "20261009_0038",
+        "20261009_0039",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -653,7 +654,8 @@ def test_workflow_permissions_roundtrip_preserves_definition_and_versions(empty_
     from flo.modules.approvals.service import WorkflowService
     from tests.org.test_bootstrap import admin_id, create
 
-    revisions = migrate.discover_migrations(MIGRATIONS)
+    revisions = tuple(r for r in migrate.discover_migrations(MIGRATIONS)
+                      if r.revision <= "20261009_0038")
     migrate.apply_migrations(revisions, empty_database)
     with psycopg.connect(empty_database, autocommit=True) as conn:
         org = create(conn)
@@ -690,3 +692,187 @@ def test_workflow_permissions_roundtrip_preserves_definition_and_versions(empty_
         revisions[-2].upgrade(conn)
         revisions[-1].upgrade(conn)
         assert conn.execute("SELECT count(*) FROM workflow_version").fetchone() == (0,)
+
+
+def test_requisition_migration_roundtrip_preserves_existing_data_and_plants_guards(
+    empty_database,
+):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.org.schemas import MasterCreate, OrgUnitCreate
+    from flo.modules.org.service import OrgService
+    from flo.modules.requisitions.schemas import RequisitionCreate
+    from flo.modules.requisitions.service import RequisitionService
+    from tests.org.test_bootstrap import admin_id, create, settings
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(revisions[:-1], empty_database)
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("requisition-migration"),
+    ):
+        tenant = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(tenant.org_id)
+        org = OrgService(conn, scope, actor)
+        bu = org.create_unit(OrgUnitCreate(code="BU", name="BU", kind="bu"))
+        for kind, code in [("department", "D"), ("ledger_account", "L")]:
+            org.create_master(
+                kind,
+                MasterCreate(
+                    code=code,
+                    name=code,
+                    effective_from=date(2000, 1, 1),
+                    attributes={"account_type": "expense"}
+                    if kind == "ledger_account"
+                    else {},
+                ),
+            )
+        from types import SimpleNamespace
+
+        project = SimpleNamespace(id=uuid4())
+        second_project = SimpleNamespace(id=uuid4())
+        with tenant_transaction(conn, scope):
+            for index, row in enumerate((project, second_project)):
+                conn.execute(
+                    "INSERT INTO project(id,org_id,bu_id,number,name,owner_id,"
+                    "department_code,ledger_account_code,currency,created_by) "
+                    "VALUES (%s,%s,%s,%s,'Seed',%s,'D','L','USD',%s)",
+                    (row.id, tenant.org_id, bu.id, f"PRJ-{index}", actor, actor),
+                )
+        foreign = create(conn, "SECOND", "second@example.test")
+        before = conn.execute("SELECT * FROM project ORDER BY id").fetchall()
+        tenant_rows = {
+            table: conn.execute(f"SELECT * FROM {table} ORDER BY id").fetchall()
+            for table in ("organization", "identity")
+        }
+        revisions[-1].upgrade(conn)
+        req = RequisitionService(conn, scope, actor, settings(conn)).create(
+            RequisitionCreate(title="Seed", project_id=project.id)
+        )
+        conn.execute(
+            "UPDATE project SET generated_by_requisition_id=%s WHERE id=%s",
+            (req.id, project.id),
+        )
+        with pytest.raises(psycopg.errors.UniqueViolation), conn.transaction():
+            conn.execute(
+                "UPDATE project SET generated_by_requisition_id=%s WHERE id=%s",
+                (req.id, second_project.id),
+            )
+        role = "requisition_probe_" + uuid4().hex
+        from psycopg import sql
+
+        conn.execute(
+            sql.SQL("CREATE ROLE {} NOLOGIN NOSUPERUSER NOBYPASSRLS").format(
+                sql.Identifier(role)
+            )
+        )
+        try:
+            conn.execute(
+                sql.SQL("GRANT USAGE ON SCHEMA public TO {}").format(
+                    sql.Identifier(role)
+                )
+            )
+            conn.execute(
+                sql.SQL("GRANT SELECT,INSERT,UPDATE ON requisition TO {}").format(
+                    sql.Identifier(role)
+                )
+            )
+            conn.execute(
+                sql.SQL("ALTER TABLE requisition OWNER TO {}").format(
+                    sql.Identifier(role)
+                )
+            )
+            conn.execute(sql.SQL("SET ROLE {}").format(sql.Identifier(role)))
+            with tenant_transaction(conn, scope):
+                assert conn.execute("SELECT id FROM requisition").fetchall() == [
+                    (req.id,)
+                ]
+            with tenant_transaction(conn, Scope(foreign.org_id)):
+                assert conn.execute("SELECT id FROM requisition").fetchall() == []
+            with (
+                pytest.raises(psycopg.errors.InsufficientPrivilege),
+                tenant_transaction(conn, scope),
+            ):
+                conn.execute(
+                    "INSERT INTO requisition SELECT "
+                    "(jsonb_populate_record(NULL::requisition,to_jsonb(r) || "
+                    "jsonb_build_object('id',gen_random_uuid(),'org_id',%s::uuid))).* "
+                    "FROM requisition r WHERE r.id=%s",
+                    (foreign.org_id, req.id),
+                )
+        finally:
+            conn.execute("RESET ROLE")
+            conn.execute(
+                sql.SQL("ALTER TABLE requisition OWNER TO {}").format(
+                    sql.Identifier(conn.info.user)
+                )
+            )
+            conn.execute(sql.SQL("DROP OWNED BY {}").format(sql.Identifier(role)))
+            conn.execute(sql.SQL("DROP ROLE {}").format(sql.Identifier(role)))
+        saved_req = conn.execute("SELECT * FROM requisition ORDER BY id").fetchall()
+        saved_project = conn.execute("SELECT * FROM project ORDER BY id").fetchall()
+        for statement, error in [
+            ("UPDATE requisition SET status='invented'", psycopg.errors.CheckViolation),
+            ("UPDATE requisition SET estimate=-1", psycopg.errors.CheckViolation),
+            (
+                "UPDATE requisition SET standalone=false,project_id=NULL",
+                psycopg.errors.CheckViolation,
+            ),
+            (
+                "UPDATE requisition SET project_id=gen_random_uuid()",
+                psycopg.errors.ForeignKeyViolation,
+            ),
+            (
+                "UPDATE project SET generated_by_requisition_id=gen_random_uuid()",
+                psycopg.errors.ForeignKeyViolation,
+            ),
+        ]:
+            with pytest.raises(error), conn.transaction():
+                conn.execute(statement)
+        for status in (
+            "draft",
+            "approval_pending",
+            "sourcing_in_progress",
+            "sourced",
+            "awarded",
+            "open_for_purchase",
+            "completed",
+            "rejected",
+            "withdrawn",
+            "cancelled",
+            "expired",
+        ):
+            with conn.transaction():
+                conn.execute("UPDATE requisition SET status=%s", (status,))
+        conn.execute("UPDATE requisition SET status='draft'")
+
+        # A rolled-back downgrade preserves the new documents and provenance byte-for-byte.
+        class Rollback(Exception):
+            pass
+
+        with pytest.raises(Rollback), conn.transaction():
+            revisions[-1].downgrade(conn)
+            assert conn.execute("SELECT to_regclass('requisition')").fetchone() == (
+                None,
+            )
+            raise Rollback
+        assert (
+            conn.execute("SELECT * FROM requisition ORDER BY id").fetchall()
+            == saved_req
+        )
+        assert (
+            conn.execute("SELECT * FROM project ORDER BY id").fetchall()
+            == saved_project
+        )
+        # Committed removal of a new table preserves the pre-story tenant/project rows.
+        revisions[-1].downgrade(conn)
+        assert conn.execute("SELECT * FROM project ORDER BY id").fetchall() == before
+        for table, rows in tenant_rows.items():
+            assert conn.execute(f"SELECT * FROM {table} ORDER BY id").fetchall() == rows
+        revisions[-1].upgrade(conn)
+        assert conn.execute("SELECT * FROM requisition ORDER BY id").fetchall() == []
+        assert conn.execute(
+            "SELECT generated_by_requisition_id FROM project"
+        ).fetchall() == [(None,), (None,)]
