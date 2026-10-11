@@ -1166,8 +1166,7 @@ epics:
           - E10-S03
         st: todo
       - id: E10-S05
-        t: 'Execution engine: instances, tasks, any-one/all/quorum groups, membership
-          snapshot'
+        t: 'Execution engine: instances, tasks, any-one/all/quorum groups, live membership'
         k: engine
         s: L
         tags:
