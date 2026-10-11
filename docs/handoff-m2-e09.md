@@ -28,21 +28,20 @@ switch authors on a money story. A packet block costs a run: the briefs list the
 | S02 lines | crud/M · money, migration | S01 | — | codex · Opus |
 | S03 catalogue, lookups | engine/M · migration | S02 | — | codex · Opus |
 | S04 submission validation | engine/L · money | S02, E07-S06 | — | codex · Opus |
-| S05 lifecycle | engine/L · money, concurrency, migration | S04, S03, E10-S05 | **E10-S06** (`approvals.service.withdraw`, decisions), RoutePreview shape (§6) | codex · Opus |
+| S05 lifecycle | engine/L · money, concurrency, migration | S04, S03, E10-S05, E10-S06 | `approvals.service.withdraw`, decisions; `RoutePreview`/`RouteStep`/`TaskRead` are frozen in E10-S05 (§6) | codex · Opus |
 | S06 approval effects | ledger/L · money, concurrency | S05, E07-S04, E10-S05 | E10-S06 (decision route in tests) | codex · Opus |
-| S07 release, expiry | ledger/M · money | S06 | — | codex · Opus |
-| S08 return, amend | engine/M · migration | S05, S07 | **E10-S07** (`approval_state`, `material_digest`, `assert_current_approval`), E10-S05 `resume_from` | codex · Opus |
-| S09 links, upstream guard | api/M · — | S06, S10 | **E10-S07**, E10-S05 `instances_for` | nemotron-eligible (M, untagged) · qwen |
-| S10 notes, attachments | security/L · migration, security | E03-S06 | — | codex · Opus |
+| S07 release, expiry | ledger/M · money, migration | S06 | — | codex · Opus |
+| S08 return, amend | engine/M · migration | S05, S07, E10-S07 | `approval_state`, `material_digest`, `assert_current_approval` (E10-S07), `resume_from` (E10-S05) | codex · Opus |
+| S09 links, upstream guard | api/M · — | S06, S10, E10-S07, S08 | `instances_for` (E10-S05), `assert_current_approval` (E10-S07) | nemotron-eligible (M, untagged) · qwen |
+| S10 notes, attachments | security/L · migration, security | E03-S06, S01 | — | codex · Opus |
 | S11 screens | ui/L · ui | S09, E04-S03, S08, E10-S06 | E10-S05 route/instance read | codex (L exceeds nemotron's M cap) · qwen |
 | S12 resubmit, amend screens | ui/L · ui | S08, S11 | — | codex · qwen |
 
 Critical path: S01 → S02 → S04 → S05 → S06 → S07 → S08 → S11 → S12. S03 runs beside S04 (both after S02). **S10
-has no E09 prerequisite**: start it on the second lane at once; it shares only the router include, the migration
+needs only S01** (the document-access registry is exercised against the requisition header): start it on the second lane as soon as S01 merges; it shares only the router include, the migration
 head and `document_types.py` with the rest. Run `flo assign <STORY>` to confirm each author and reviewer.
 
-**Roadmap corrections for the operator** (reported to the plan session, not edited here): add E10-S06 to
-E09-S05, and E10-S07 to E09-S08 and E09-S09. Until then `flo next` can offer them early.
+**Roadmap dependencies:** the corrections found in the pre-flight (E10-S06 on S05; E10-S07 on S08 and S09; S08 on S09; S01 on S10) are applied in `agents/roadmap.yaml`; the table above matches it.
 
 ## 3. Rules every E09 story obeys
 
@@ -69,7 +68,7 @@ E09-S05, and E10-S07 to E09-S08 and E09-S09. Until then `flo next` can offer the
 
 | File | Stories | Rule |
 |---|---|---|
-| `migrations/*`, `tests/kernel/test_migrate.py` | S01, S02, S03, S05 (two revisions), S08, S10 | next revision after the head at story start; rebase `down_revision` at finish |
+| `migrations/*`, `tests/kernel/test_migrate.py` | S01, S02, S03, S05 (two revisions), S07, S08, S10 | next revision after the head at story start; rebase `down_revision` at finish |
 | `api/requisitions.py`, `modules/requisitions/{service,schemas}.py` | S01–S09 | additive; register `lookups/{kind}` before `/{id}` (S03) |
 | `api/document_types.py` | S05, S10, E10-S13 | the first to merge creates it; later ones add |
 | `api/health.py`, `api/internal.py` | S01, S05, S07, S10 | one include or registration call each |
@@ -126,7 +125,7 @@ COL-001..008, D-14 S10 · UX-003 S11/S12 · UX-004 S11/S12 · UX-005 S11 · UX-0
 | 7 | Routing problems answered as both 422 and 409; RoutePreview shape undefined | S05 contract; E10-S05 | S05 am. 5, §6 |
 | 8 | Confirmation and Reservation cards need figures the API does not return | page specs §6 / §2 | S05 am. 6, S11 am. 1 |
 | 9 | Line amount overflow `NUMERIC(18,4)` is a 500 | quantity×price digits | S02 am. 1 |
-| 10 | `project_status_event.actor_id` is an identity FK; expiry used the nil UUID | migration 0025 | S07 am. 1 |
+| 10 | `project_status_event.actor_id` is an identity FK; expiry used the nil UUID | migration 0025 | S07 body (plan ruling 9: the actor is made optional, with a `system_actor` column; S07 am. 1 is superseded) |
 | 11 | Multipart reader is import-specific (template part, import error helper) | `imports/multipart.py` | S10 am. 1 |
 | 12 | Open-documents stub takes only a project id; closure already blocks on `reserved` | `projects/lifecycle.py` | S05 am. 7 |
 | 13 | `lookups/{kind}` shadowed by `/{id}`; `LineCreate` required fields | route order | S03 am. 1–2 |
