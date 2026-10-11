@@ -4,6 +4,10 @@ For the operator, the authors (Codex), and the reviewers (Opus on gated stories,
 25 stories: E09 requisitions (S01..S12) and E10 approvals (S01..S13). Design is done and was audited
 against the code by qwen in two passes; every finding is settled in the packets.
 
+**Status (11 Oct 2026): design closed.** Three qwen pre-flight passes over all 25 packets are settled and
+each packet's header, tags and dependencies match `agents/roadmap.yaml` (checked mechanically). Open
+operator questions are listed in § 8; none blocks starting.
+
 **Read order for an author:** this file § 1 and § 5 → the story's packet **to its last line** (later
 "Pre-flight amendments" sections override earlier text) → its brief → `docs/m2-conventions.md` →
 `docs/m2-decisions.md` → `docs/author-traps.md`.
