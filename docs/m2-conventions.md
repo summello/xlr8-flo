@@ -155,6 +155,21 @@ identity). Wherever a packet shows a person (approver pickers, requester, "on be
 trails, explanations), M2 shows the **email**, and `q` filters match an email prefix. Adding a
 profile name is an operator follow-up.
 
+## R. Lock order (deadlock law, cross-lane)
+
+Every transaction that touches approvals and money takes locks in this one order, never another:
+
+1. the **approval instance** row (`SELECT … FOR UPDATE`; E10-S06's decision path starts here),
+2. the **`project_balance`** rows, **ascending by project id** (a sub-project and its parent are locked parent-first only because ids sort that way; never in discovery order),
+3. the **requisition** (or other document) row.
+
+A document module that starts, withdraws or cancels an approval takes the instance lock **before** its
+own balance and document locks, and must not pre-lock the document before calling
+`approvals.service.withdraw`, `start` or any decision function. A path that locks in another order
+deadlocks under load (Postgres `40P01`). Each story that takes more than one of these locks names its
+order in its packet and ships a two-connection test that interleaves two such transactions and asserts
+neither fails with a deadlock.
+
 ## N. Parallel lanes in M2
 
 E09 and E10 run as two lanes until E09-S06, which needs E10-S05. Each story's migration takes the

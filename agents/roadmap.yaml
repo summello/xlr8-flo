@@ -986,6 +986,7 @@ epics:
           - E09-S04
           - E09-S03
           - E10-S05
+          - E10-S06
         st: todo
       - id: E09-S06
         t: Approval reserves budget and generates the sub-project, one transaction
@@ -1032,6 +1033,7 @@ epics:
         dep:
           - E09-S05
           - E09-S07
+          - E10-S07
         st: todo
       - id: E09-S09
         t: 'Linked-record graph: RFQs, bids, awards, POs, approvals, notes, ledger
@@ -1045,6 +1047,8 @@ epics:
         dep:
           - E09-S06
           - E09-S10
+          - E10-S07
+          - E09-S08
         st: todo
       - id: E09-S10
         t: Notes and attachments on all business documents, upload validation,
@@ -1066,6 +1070,7 @@ epics:
           - D-14
         dep:
           - E03-S06
+          - E09-S01
         st: todo
       - id: E09-S11
         t: 'Requisition screens: create, lines, submit, track, quantity rollup'
