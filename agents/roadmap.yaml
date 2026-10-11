@@ -926,7 +926,7 @@ epics:
           - SEQ-001
         dep:
           - E06-S03
-        st: todo
+        st: in_progress
       - id: E09-S02
         t: Item and service lines with explicit type tagging and quantity/amount
           tracking
@@ -1134,7 +1134,7 @@ epics:
           - APR-010
         dep:
           - E10-S01
-        st: todo
+        st: done
       - id: E10-S03
         t: 'Graph validation: cycle detection, unreachable steps, duplicate approvals,
           depth limit'

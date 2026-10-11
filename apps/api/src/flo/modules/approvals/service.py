@@ -14,6 +14,17 @@ from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
+from flo.modules.approvals.conditions import (
+    AttributeProvider,
+    ConditionError,
+    DocumentAdapter,
+    Evaluation,
+    LeafTrace,
+    evaluate,
+    field_catalog,
+    register_attribute_provider,
+    register_document_type,
+)
 from flo.modules.approvals.models import DEFINITION_FIELDS, VERSION_FIELDS, WorkflowRepository
 from flo.modules.approvals.schemas import (
     DocumentType,
@@ -28,7 +39,19 @@ from flo.modules.approvals.schemas import (
 )
 from flo.modules.org.service import OrgService
 
-__all__ = ["WorkflowService", "resolve_version"]
+__all__ = [
+    "WorkflowService",
+    "resolve_version",
+    "AttributeProvider",
+    "ConditionError",
+    "DocumentAdapter",
+    "Evaluation",
+    "LeafTrace",
+    "evaluate",
+    "field_catalog",
+    "register_attribute_provider",
+    "register_document_type",
+]
 
 
 def conflict(problem: str) -> ProblemError:

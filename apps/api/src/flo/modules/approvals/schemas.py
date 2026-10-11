@@ -1,7 +1,9 @@
 """Frozen workflow graph and wire contracts; condition expressions remain opaque."""
 
 import json
-from datetime import datetime
+import re
+from datetime import date, datetime
+from decimal import Decimal
 from typing import Annotated, Literal, Self
 from uuid import UUID
 
@@ -10,12 +12,16 @@ from pydantic import (
     ConfigDict,
     Field,
     JsonValue,
+    StrictBool,
+    StrictStr,
+    TypeAdapter,
     ValidationError,
     field_validator,
     model_validator,
 )
 
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError
+from flo.kernel.money import Money, currency_exponent
 
 DocumentType = Literal["project", "requisition", "budget_change", "vendor", "rfq", "award", "po"]
 VersionStatus = Literal["draft", "published", "superseded"]
@@ -225,3 +231,115 @@ class WorkflowVersionRead(WorkflowVersionSummary):
 class WorkflowPage(Contract):
     rows: list[WorkflowRead]
     next_cursor: str | None
+
+
+# Conditions are parsed separately at publish time; draft graphs remain opaque.
+type AttributeValue = str | Decimal | date | bool | None | tuple[str, ...] | Money
+FieldType = Literal["text", "code", "decimal", "date", "boolean", "money", "code_list"]
+Operator = Literal[
+    "eq", "ne", "lt", "le", "gt", "ge", "in", "not_in", "contains", "is_null", "not_null"
+]
+
+
+class MoneyValue(Contract):
+    amount: str = Field(strict=True, pattern=r"^-?[0-9]{1,14}(\.[0-9]{1,4})?$")
+    currency: StrictStr
+
+    @field_validator("currency")
+    @classmethod
+    def valid_currency(cls, value: str) -> str:
+        currency_exponent(value)
+        return value
+
+
+class LeafCondition(Contract):
+    field: str = Field(strict=True, min_length=1)
+    op: Operator
+    value: StrictStr | StrictBool | MoneyValue | list[StrictStr] | None = None
+
+    @model_validator(mode="after")
+    def value_shape(self) -> Self:
+        if self.op in {"is_null", "not_null"}:
+            if "value" in self.model_fields_set:
+                raise ValueError("Null operators must omit value")
+        elif self.value is None:
+            raise ValueError("Operator requires value")
+        elif self.op in {"in", "not_in"}:
+            if not isinstance(self.value, list) or not 1 <= len(self.value) <= 100:
+                raise ValueError("Membership requires 1..100 strings")
+        elif isinstance(self.value, list):
+            raise ValueError("Only membership accepts lists")
+        elif self.op == "contains" and not isinstance(self.value, str):
+            raise ValueError("Contains requires a string")
+        if self.op in {"lt", "le", "gt", "ge"} and isinstance(self.value, str):
+            if re.fullmatch(r"-?[0-9]{1,14}(\.[0-9]{1,4})?", self.value) is None:
+                if re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", self.value) is None:
+                    raise ValueError("Ordered strings must be decimal amounts or ISO dates")
+                date.fromisoformat(self.value)
+        return self
+
+
+class AllCondition(Contract):
+    all: list["Condition"] = Field(min_length=1, max_length=20)
+
+
+class AnyCondition(Contract):
+    any: list["Condition"] = Field(min_length=1, max_length=20)
+
+
+class NotCondition(Contract):
+    not_: "Condition" = Field(alias="not")
+
+
+type Condition = LeafCondition | AllCondition | AnyCondition | NotCondition
+for _model in (AllCondition, AnyCondition, NotCondition):
+    _model.model_rebuild()
+_condition_adapter: TypeAdapter[Condition] = TypeAdapter(Condition)
+
+
+def parse_condition(value: object) -> Condition:
+    """Parse the frozen grammar, returning JSON-pointer validation errors."""
+    leaves = 0
+
+    def limits(node: object, depth: int, pointer: str) -> None:
+        nonlocal leaves
+        if depth > 6:
+            raise invalid(pointer or "/", "Condition depth exceeds 6")
+        if not isinstance(node, dict):
+            return
+        if "field" in node:
+            leaves += 1
+            if leaves > 50:
+                raise invalid(pointer or "/", "Condition exceeds 50 leaves")
+        for key in ("all", "any"):
+            children = node.get(key)
+            if isinstance(children, list):
+                for index, child in enumerate(children):
+                    limits(child, depth + 1, f"{pointer}/{key}/{index}")
+        if "not" in node:
+            limits(node["not"], depth + 1, f"{pointer}/not")
+
+    limits(value, 1, "")
+    try:
+        return _condition_adapter.validate_python(value)
+    except ValidationError as exc:
+        branch_names = {
+            "LeafCondition",
+            "AllCondition",
+            "AnyCondition",
+            "NotCondition",
+            "MoneyValue",
+        }
+        raise ProblemError(
+            ErrorCode.VALIDATION_FAILED,
+            detail="Correct the condition and retry.",
+            errors=tuple(
+                ProblemFieldError(
+                    field=graph_pointer(
+                        tuple(part for part in error["loc"] if part not in branch_names)
+                    ),
+                    message=str(error["msg"]),
+                )
+                for error in exc.errors()
+            ),
+        ) from exc

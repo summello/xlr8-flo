@@ -2272,6 +2272,36 @@
       },
       "recap": "Implemented tenant-scoped workflow definitions, immutable published versions, BU fallback, audit evidence, and the amended administrator/Auditor grants. Full flo check is green, all five required plants failed at their named assertions and were restored, and the OpenAPI client is regenerated.",
       "title": "Workflow definition schema, versioning, active-document version pinning"
+    },
+    {
+      "story": "E10-S02",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a12a08-1baa-78f3-b880-495732186b1e",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented the pure condition grammar and evaluator with exact money comparisons, ordered traces, and document/custom-field catalogue hooks. All 176 condition tests and the full flo check pass; all 20 mutation plants failed as expected and were restored.",
+      "title": "Condition evaluator over any document attribute including amount and custom fields"
     }
   ]
 }
