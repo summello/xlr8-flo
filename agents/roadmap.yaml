@@ -1072,7 +1072,7 @@ epics:
         dep:
           - E03-S06
           - E09-S01
-        st: review
+        st: done
       - id: E09-S11
         t: 'Requisition screens: create, lines, submit, track, quantity rollup'
         k: ui
@@ -1164,7 +1164,7 @@ epics:
           - E10-S02
           - E02-S05
           - E10-S03
-        st: todo
+        st: in_progress
       - id: E10-S05
         t: 'Execution engine: instances, tasks, any-one/all/quorum groups, live membership'
         k: engine
@@ -1255,7 +1255,7 @@ epics:
         dep:
           - E10-S03
           - E04-S02
-        st: todo
+        st: in_progress
       - id: E10-S12
         t: 'Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11)'
         k: ui

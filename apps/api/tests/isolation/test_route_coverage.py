@@ -10,6 +10,7 @@ from fastapi import APIRouter
 from flo.api.admin_users import router as admin_users_router
 from flo.api.auth import router as auth_router
 from flo.api.budget import router as budget_router
+from flo.api.collaboration import router as collaboration_router
 from flo.api.fiscal import router as fiscal_router
 from flo.api.imports import router as imports_router
 from flo.api.invitations import router as invitations_router
@@ -25,6 +26,42 @@ TESTS = Path(__file__).resolve().parents[1]
 COVERED = {
     ("GET", "/api/v1/workflows/{id}/versions/{version}/validation"):
         "approvals/test_workflow_definitions.py::test_foreign_tenant_routes_and_authorization",
+    (
+        "GET",
+        "/api/v1/documents/{document_type}/{document_id}/notes",
+    ): "collaboration/test_attachments.py::test_foreign_tenant_every_collaboration_route",
+    (
+        "POST",
+        "/api/v1/documents/{document_type}/{document_id}/notes",
+    ): "collaboration/test_attachments.py::test_foreign_tenant_every_collaboration_route",
+    (
+        "PATCH",
+        "/api/v1/notes/{id}",
+    ): "collaboration/test_attachments.py::test_foreign_tenant_every_collaboration_route",
+    (
+        "GET",
+        "/api/v1/notes/{id}/revisions",
+    ): "collaboration/test_attachments.py::test_foreign_tenant_every_collaboration_route",
+    (
+        "GET",
+        "/api/v1/documents/{document_type}/{document_id}/attachments",
+    ): "collaboration/test_attachments.py::test_foreign_tenant_every_collaboration_route",
+    (
+        "POST",
+        "/api/v1/documents/{document_type}/{document_id}/attachments",
+    ): "collaboration/test_attachments.py::test_foreign_tenant_every_collaboration_route",
+    (
+        "POST",
+        "/api/v1/attachments/{id}/versions",
+    ): "collaboration/test_attachments.py::test_foreign_tenant_every_collaboration_route",
+    (
+        "GET",
+        "/api/v1/attachments/{id}/content",
+    ): "collaboration/test_attachments.py::test_foreign_tenant_every_collaboration_route",
+    (
+        "DELETE",
+        "/api/v1/attachments/{id}",
+    ): "collaboration/test_attachments.py::test_foreign_tenant_every_collaboration_route",
     (
         "GET",
         "/api/v1/requisitions/{id}/lines",
@@ -376,6 +413,7 @@ def test_every_id_route_has_a_named_foreign_tenant_case() -> None:
                 invitations_router,
                 workflows_router,
                 requisitions_router,
+                collaboration_router,
             ),
             COVERED,
         )
@@ -400,6 +438,7 @@ def test_gate_fails_on_an_uncovered_route_and_on_a_dangling_reference() -> None:
             invitations_router,
             workflows_router,
             requisitions_router,
+            collaboration_router,
         )
         | widget
     )

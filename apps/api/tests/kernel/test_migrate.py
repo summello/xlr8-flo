@@ -39,9 +39,7 @@ def empty_database() -> Iterator[str]:
     database_url = make_conninfo(**connection_parameters)
     try:
         with psycopg.connect(administrative_url, autocommit=True) as connection:
-            connection.execute(
-                sql.SQL("CREATE DATABASE {}").format(sql.Identifier(database_name))
-            )
+            connection.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(database_name)))
     except psycopg.Error as exc:
         if configured:
             pytest.fail(f"configured Postgres is unavailable: {type(exc).__name__}")
@@ -52,9 +50,7 @@ def empty_database() -> Iterator[str]:
     finally:
         with psycopg.connect(administrative_url, autocommit=True) as connection:
             connection.execute(
-                sql.SQL("DROP DATABASE {} WITH (FORCE)").format(
-                    sql.Identifier(database_name)
-                )
+                sql.SQL("DROP DATABASE {} WITH (FORCE)").format(sql.Identifier(database_name))
             )
 
 
@@ -134,6 +130,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261009_0038",
         "20261009_0039",
         "20261009_0040",
+        "20261009_0041",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -290,9 +287,7 @@ def test_applied_revision_missing_from_image_is_rejected_without_secrets(
             "revision text PRIMARY KEY, "
             "applied_at timestamptz NOT NULL DEFAULT now())"
         )
-        connection.execute(
-            "INSERT INTO schema_migration (revision) VALUES ('newer_than_image')"
-        )
+        connection.execute("INSERT INTO schema_migration (revision) VALUES ('newer_than_image')")
     monkeypatch.setenv("MIGRATIONS_DIR", str(tmp_path))
     monkeypatch.setenv("DATABASE_URL", empty_database)
 
@@ -354,8 +349,9 @@ def test_runner_disables_server_side_prepared_statements(
 
 
 def test_invitation_migration_preserves_seed_and_database_guards(empty_database):
-    chain = tuple(r for r in migrate.discover_migrations(MIGRATIONS)
-                  if r.revision <= "20261009_0031")
+    chain = tuple(
+        r for r in migrate.discover_migrations(MIGRATIONS) if r.revision <= "20261009_0031"
+    )
     migrate.apply_migrations(chain[:-1], empty_database)
     from psycopg.errors import CheckViolation, UniqueViolation
 
@@ -394,12 +390,15 @@ def test_invitation_migration_preserves_seed_and_database_guards(empty_database)
                     (actor, actor, invitation),
                 )
             for assignment in (
-                "scope_type='invalid'", "resend_counter=-1",
-                "used_at=now()", "withdrawn_at=now()",
+                "scope_type='invalid'",
+                "resend_counter=-1",
+                "used_at=now()",
+                "withdrawn_at=now()",
             ):
                 with pytest.raises(CheckViolation), connection.transaction():
-                    connection.execute(f"UPDATE invitation SET {assignment} WHERE id=%s",
-                                       (invitation,))
+                    connection.execute(
+                        f"UPDATE invitation SET {assignment} WHERE id=%s", (invitation,)
+                    )
             with pytest.raises(CheckViolation), connection.transaction():
                 connection.execute(
                     "INSERT INTO invitation_token VALUES ('plaintext',%s,%s)",
@@ -422,8 +421,9 @@ def test_project_schedule_migration_preserves_existing_project(empty_database):
     from flo.modules.org.service import OrgService
     from tests.org.test_bootstrap import admin_id, create
 
-    chain = tuple(r for r in migrate.discover_migrations(MIGRATIONS)
-                  if r.revision <= "20261009_0032")
+    chain = tuple(
+        r for r in migrate.discover_migrations(MIGRATIONS) if r.revision <= "20261009_0032"
+    )
     migrate.apply_migrations(chain[:-1], empty_database)
     with psycopg.connect(empty_database, autocommit=True) as conn:
         tenant = create(conn)
@@ -477,8 +477,9 @@ def test_project_risk_migration_preserves_existing_project(empty_database):
     from flo.modules.org.service import OrgService
     from tests.org.test_bootstrap import admin_id, create
 
-    chain = tuple(r for r in migrate.discover_migrations(MIGRATIONS)
-                  if r.revision <= "20261009_0033")
+    chain = tuple(
+        r for r in migrate.discover_migrations(MIGRATIONS) if r.revision <= "20261009_0033"
+    )
     migrate.apply_migrations(chain[:-1], empty_database)
     with psycopg.connect(empty_database, autocommit=True) as conn:
         tenant = create(conn)
@@ -505,17 +506,18 @@ def test_project_risk_migration_preserves_existing_project(empty_database):
                 (project_id, tenant.org_id, bu.id, actor, actor),
             )
             before = conn.execute("SELECT * FROM project").fetchall()
-            seeds = {table: conn.execute(f"SELECT * FROM {table} ORDER BY id").fetchall()
-                     for table in ("identity", "organization")}
+            seeds = {
+                table: conn.execute(f"SELECT * FROM {table} ORDER BY id").fetchall()
+                for table in ("identity", "organization")
+            }
         chain[-1].upgrade(conn)
-        assert conn.execute("SELECT relrowsecurity,relforcerowsecurity FROM pg_class "
-                            "WHERE relname='project_risk'").fetchone() == (True, True)
+        assert conn.execute(
+            "SELECT relrowsecurity,relforcerowsecurity FROM pg_class WHERE relname='project_risk'"
+        ).fetchone() == (True, True)
         assert conn.execute("SELECT * FROM project").fetchall() == before
         chain[-1].downgrade(conn)
         assert conn.execute("SELECT * FROM project").fetchall() == before
-        assert conn.execute(
-            "SELECT to_regclass('project_risk')"
-        ).fetchone() == (None,)
+        assert conn.execute("SELECT to_regclass('project_risk')").fetchone() == (None,)
         chain[-1].upgrade(conn)
         for table, rows in seeds.items():
             assert conn.execute(f"SELECT * FROM {table} ORDER BY id").fetchall() == rows
@@ -531,8 +533,9 @@ def test_import_rows_migration_preserves_batch_and_enforces_tenant_guards(empty_
     from flo.kernel.tenancy.rls import tenant_transaction
     from tests.org.test_bootstrap import admin_id, create
 
-    chain = tuple(r for r in migrate.discover_migrations(MIGRATIONS)
-                  if r.revision <= "20261009_0034")
+    chain = tuple(
+        r for r in migrate.discover_migrations(MIGRATIONS) if r.revision <= "20261009_0034"
+    )
     migrate.apply_migrations(chain[:-1], empty_database)
     with psycopg.connect(empty_database, autocommit=True) as conn:
         tenant = create(conn)
@@ -555,7 +558,8 @@ def test_import_rows_migration_preserves_batch_and_enforces_tenant_guards(empty_
         with tenant_transaction(conn, Scope(tenant.org_id)):
             conn.execute(
                 "INSERT INTO import_row(org_id,batch_id,row_no,action,raw) "
-                "VALUES(%s,%s,2,'create','{}')", (tenant.org_id, batch),
+                "VALUES(%s,%s,2,'create','{}')",
+                (tenant.org_id, batch),
             )
             with pytest.raises(CheckViolation), conn.transaction():
                 conn.execute("UPDATE import_row SET action='warning' WHERE batch_id=%s", (batch,))
@@ -566,7 +570,8 @@ def test_import_rows_migration_preserves_batch_and_enforces_tenant_guards(empty_
                 with pytest.raises(ForeignKeyViolation), conn.transaction():
                     conn.execute(
                         f"INSERT INTO {table}(org_id,batch_id,row_no,{columns}) "
-                        f"VALUES(%s,%s,3,{values})", (other.org_id, batch),
+                        f"VALUES(%s,%s,3,{values})",
+                        (other.org_id, batch),
                     )
         role = "import_row_rls_" + uuid4().hex
         conn.execute(
@@ -575,8 +580,9 @@ def test_import_rows_migration_preserves_batch_and_enforces_tenant_guards(empty_
         try:
             conn.execute(sql.SQL("GRANT USAGE ON SCHEMA public TO {}").format(sql.Identifier(role)))
             conn.execute(
-                sql.SQL("GRANT SELECT,INSERT ON import_row,import_result TO {}")
-                .format(sql.Identifier(role))
+                sql.SQL("GRANT SELECT,INSERT ON import_row,import_result TO {}").format(
+                    sql.Identifier(role)
+                )
             )
             conn.execute(sql.SQL("SET ROLE {}").format(sql.Identifier(role)))
             with tenant_transaction(conn, Scope(other.org_id)):
@@ -588,8 +594,11 @@ def test_import_rows_migration_preserves_batch_and_enforces_tenant_guards(empty_
             ):
                 with pytest.raises(InsufficientPrivilege):
                     with tenant_transaction(conn, Scope(other.org_id)):
-                        conn.execute(f"INSERT INTO {table}(org_id,batch_id,row_no,{columns}) "
-                                     f"VALUES(%s,%s,4,{values})", (tenant.org_id, batch))
+                        conn.execute(
+                            f"INSERT INTO {table}(org_id,batch_id,row_no,{columns}) "
+                            f"VALUES(%s,%s,4,{values})",
+                            (tenant.org_id, batch),
+                        )
         finally:
             conn.execute("RESET ROLE")
             conn.execute(sql.SQL("DROP OWNED BY {}").format(sql.Identifier(role)))
@@ -619,28 +628,33 @@ def test_import_async_migration_preserves_data_and_plants_key_guards(empty_datab
         actor = admin_id(conn)
         id = uuid4()
         with tenant_transaction(conn, Scope(tenant.org_id)):
-            conn.execute("INSERT INTO import_batch(id,org_id,template,template_version,"
-                         "uploader_id,"
-                         "file_name,file_sha256,file_size,counts) "
-                         "VALUES(%s,%s,'probe',1,%s,'seed.csv',%s,1,'{}')",
-                         (id, tenant.org_id, actor, "a" * 64))
+            conn.execute(
+                "INSERT INTO import_batch(id,org_id,template,template_version,"
+                "uploader_id,"
+                "file_name,file_sha256,file_size,counts) "
+                "VALUES(%s,%s,'probe',1,%s,'seed.csv',%s,1,'{}')",
+                (id, tenant.org_id, actor, "a" * 64),
+            )
             before = conn.execute("SELECT * FROM import_batch").fetchall()
         chain[-1].upgrade(conn)
         with tenant_transaction(conn, Scope(tenant.org_id)):
             assert conn.execute(
                 "SELECT external_key,progress,cancel_requested,error_class "
-                "FROM import_batch WHERE id=%s", (id,),
+                "FROM import_batch WHERE id=%s",
+                (id,),
             ).fetchone() == (None, {}, False, None)
             for key in ("", "k" * 129):
                 with pytest.raises(CheckViolation), conn.transaction():
                     conn.execute("UPDATE import_batch SET external_key=%s WHERE id=%s", (key, id))
             conn.execute("UPDATE import_batch SET external_key='seed' WHERE id=%s", (id,))
             with pytest.raises(UniqueViolation), conn.transaction():
-                conn.execute("INSERT INTO import_batch(id,org_id,template,template_version,"
-                         "uploader_id,"
-                             "file_name,file_sha256,file_size,counts,external_key) "
-                             "VALUES(%s,%s,'probe',1,%s,'other.csv',%s,1,'{}','seed')",
-                             (uuid4(), tenant.org_id, actor, "b" * 64))
+                conn.execute(
+                    "INSERT INTO import_batch(id,org_id,template,template_version,"
+                    "uploader_id,"
+                    "file_name,file_sha256,file_size,counts,external_key) "
+                    "VALUES(%s,%s,'probe',1,%s,'other.csv',%s,1,'{}','seed')",
+                    (uuid4(), tenant.org_id, actor, "b" * 64),
+                )
         chain[-1].downgrade(conn)
         with tenant_transaction(conn, Scope(tenant.org_id)):
             assert conn.execute("SELECT * FROM import_batch").fetchall() == before
@@ -656,8 +670,9 @@ def test_workflow_permissions_roundtrip_preserves_definition_and_versions(empty_
     from flo.modules.approvals.service import WorkflowService
     from tests.org.test_bootstrap import admin_id, create
 
-    revisions = tuple(r for r in migrate.discover_migrations(MIGRATIONS)
-                      if r.revision <= "20261009_0038")
+    revisions = tuple(
+        r for r in migrate.discover_migrations(MIGRATIONS) if r.revision <= "20261009_0038"
+    )
     migrate.apply_migrations(revisions, empty_database)
     with psycopg.connect(empty_database, autocommit=True) as conn:
         org = create(conn)
@@ -709,8 +724,7 @@ def test_requisition_migration_roundtrip_preserves_existing_data_and_plants_guar
     from tests.org.test_bootstrap import admin_id, create, settings
 
     revisions = tuple(
-        r for r in migrate.discover_migrations(MIGRATIONS)
-        if r.revision <= "20261009_0039"
+        r for r in migrate.discover_migrations(MIGRATIONS) if r.revision <= "20261009_0039"
     )
     migrate.apply_migrations(revisions[:-1], empty_database)
     with (
@@ -729,9 +743,7 @@ def test_requisition_migration_roundtrip_preserves_existing_data_and_plants_guar
                     code=code,
                     name=code,
                     effective_from=date(2000, 1, 1),
-                    attributes={"account_type": "expense"}
-                    if kind == "ledger_account"
-                    else {},
+                    attributes={"account_type": "expense"} if kind == "ledger_account" else {},
                 ),
             )
         from types import SimpleNamespace
@@ -769,31 +781,21 @@ def test_requisition_migration_roundtrip_preserves_existing_data_and_plants_guar
         from psycopg import sql
 
         conn.execute(
-            sql.SQL("CREATE ROLE {} NOLOGIN NOSUPERUSER NOBYPASSRLS").format(
-                sql.Identifier(role)
-            )
+            sql.SQL("CREATE ROLE {} NOLOGIN NOSUPERUSER NOBYPASSRLS").format(sql.Identifier(role))
         )
         try:
-            conn.execute(
-                sql.SQL("GRANT USAGE ON SCHEMA public TO {}").format(
-                    sql.Identifier(role)
-                )
-            )
+            conn.execute(sql.SQL("GRANT USAGE ON SCHEMA public TO {}").format(sql.Identifier(role)))
             conn.execute(
                 sql.SQL("GRANT SELECT,INSERT,UPDATE ON requisition TO {}").format(
                     sql.Identifier(role)
                 )
             )
             conn.execute(
-                sql.SQL("ALTER TABLE requisition OWNER TO {}").format(
-                    sql.Identifier(role)
-                )
+                sql.SQL("ALTER TABLE requisition OWNER TO {}").format(sql.Identifier(role))
             )
             conn.execute(sql.SQL("SET ROLE {}").format(sql.Identifier(role)))
             with tenant_transaction(conn, scope):
-                assert conn.execute("SELECT id FROM requisition").fetchall() == [
-                    (req.id,)
-                ]
+                assert conn.execute("SELECT id FROM requisition").fetchall() == [(req.id,)]
             with tenant_transaction(conn, Scope(foreign.org_id)):
                 assert conn.execute("SELECT id FROM requisition").fetchall() == []
             with (
@@ -859,18 +861,10 @@ def test_requisition_migration_roundtrip_preserves_existing_data_and_plants_guar
 
         with pytest.raises(Rollback), conn.transaction():
             revisions[-1].downgrade(conn)
-            assert conn.execute("SELECT to_regclass('requisition')").fetchone() == (
-                None,
-            )
+            assert conn.execute("SELECT to_regclass('requisition')").fetchone() == (None,)
             raise Rollback
-        assert (
-            conn.execute("SELECT * FROM requisition ORDER BY id").fetchall()
-            == saved_req
-        )
-        assert (
-            conn.execute("SELECT * FROM project ORDER BY id").fetchall()
-            == saved_project
-        )
+        assert conn.execute("SELECT * FROM requisition ORDER BY id").fetchall() == saved_req
+        assert conn.execute("SELECT * FROM project ORDER BY id").fetchall() == saved_project
         # Committed removal of a new table preserves the pre-story tenant/project rows.
         revisions[-1].downgrade(conn)
         assert conn.execute("SELECT * FROM project ORDER BY id").fetchall() == before
@@ -878,9 +872,154 @@ def test_requisition_migration_roundtrip_preserves_existing_data_and_plants_guar
             assert conn.execute(f"SELECT * FROM {table} ORDER BY id").fetchall() == rows
         revisions[-1].upgrade(conn)
         assert conn.execute("SELECT * FROM requisition ORDER BY id").fetchall() == []
-        assert conn.execute(
-            "SELECT generated_by_requisition_id FROM project"
-        ).fetchall() == [(None,), (None,)]
+        assert conn.execute("SELECT generated_by_requisition_id FROM project").fetchall() == [
+            (None,),
+            (None,),
+        ]
+
+
+def test_collaboration_migration_roundtrip_preserves_data_and_plants_guards(empty_database):
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = tuple(
+        r for r in migrate.discover_migrations(MIGRATIONS) if r.revision <= "20261009_0041"
+    )
+    migrate.apply_migrations(revisions[:-1], empty_database)
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        tenant = create(conn)
+        other = create(conn, "OTHER", "other@example.test")
+        actor = admin_id(conn)
+        before = {
+            table: conn.execute(f"SELECT * FROM {table} ORDER BY id").fetchall()
+            for table in ("organization", "identity", "project", "requisition")
+        }
+        revisions[-1].upgrade(conn)
+        note, attachment, version = uuid4(), uuid4(), uuid4()
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            conn.execute(
+                "INSERT INTO note(id,org_id,document_type,document_id,author_id,body,visibility) "
+                "VALUES(%s,%s,'project',%s,%s,'seed','internal')",
+                (note, tenant.org_id, uuid4(), actor),
+            )
+            conn.execute(
+                "INSERT INTO note_revision(org_id,note_id,body,visibility,edited_by) "
+                "VALUES(%s,%s,'prior','internal',%s)",
+                (tenant.org_id, note, actor),
+            )
+            conn.execute(
+                "INSERT INTO attachment(id,org_id,document_type,document_id,created_by) "
+                "VALUES(%s,%s,'project',%s,%s)",
+                (attachment, tenant.org_id, uuid4(), actor),
+            )
+            conn.execute(
+                "INSERT INTO attachment_version(id,org_id,attachment_id,version,original_filename,"
+                "display_name,storage_key,media_type,size_bytes,sha256,scan_status,uploaded_by) "
+                "VALUES(%s,%s,%s,1,'seed.pdf','seed.pdf',%s,'application/pdf',5,%s,'pending',%s)",
+                (version, tenant.org_id, attachment, str(uuid4()), "a" * 64, actor),
+            )
+        tables = ("note", "note_revision", "attachment", "attachment_version")
+        role = "collaboration_probe_" + uuid4().hex
+        conn.execute(
+            sql.SQL("CREATE ROLE {} NOLOGIN NOSUPERUSER NOBYPASSRLS").format(sql.Identifier(role))
+        )
+        try:
+            conn.execute(sql.SQL("GRANT USAGE ON SCHEMA public TO {}").format(sql.Identifier(role)))
+            conn.execute(
+                sql.SQL(
+                    "GRANT SELECT,INSERT,UPDATE,DELETE ON "
+                    "note,note_revision,attachment,attachment_version TO {}"
+                ).format(sql.Identifier(role))
+            )
+            conn.execute(
+                sql.SQL("GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO {}").format(
+                    sql.Identifier(role)
+                )
+            )
+            conn.execute(sql.SQL("SET ROLE {}").format(sql.Identifier(role)))
+            with tenant_transaction(conn, Scope(tenant.org_id)):
+                conn.execute("UPDATE attachment_version SET scan_status='clean'")
+                for statement in (
+                    "DELETE FROM attachment_version",
+                    "UPDATE attachment_version SET media_type='text/plain'",
+                    "DELETE FROM note_revision",
+                    "UPDATE note_revision SET body='tamper'",
+                ):
+                    with (
+                        pytest.raises(psycopg.errors.ObjectNotInPrerequisiteState),
+                        conn.transaction(),
+                    ):
+                        conn.execute(statement)
+                for statement in (
+                    "UPDATE attachment_version SET size_bytes=0",
+                    "UPDATE attachment_version SET scan_status='invented'",
+                ):
+                    with (
+                        pytest.raises(
+                            (
+                                psycopg.errors.ObjectNotInPrerequisiteState,
+                                psycopg.errors.CheckViolation,
+                            )
+                        ),
+                        conn.transaction(),
+                    ):
+                        conn.execute(statement)
+                for table in tables:
+                    with pytest.raises(psycopg.errors.InsufficientPrivilege), conn.transaction():
+                        conn.execute(
+                            f"INSERT INTO {table} SELECT "
+                            f"(jsonb_populate_record(NULL::{table},to_jsonb(t) || "
+                            "jsonb_build_object('org_id',%s::uuid))).* "
+                            f"FROM {table} t",
+                            (other.org_id,),
+                        )
+            with tenant_transaction(conn, Scope(other.org_id)):
+                for table in tables:
+                    assert conn.execute(f"SELECT * FROM {table}").fetchall() == []
+        finally:
+            conn.execute("RESET ROLE")
+            conn.execute(sql.SQL("DROP OWNED BY {}").format(sql.Identifier(role)))
+            conn.execute(sql.SQL("DROP ROLE {}").format(sql.Identifier(role)))
+        saved = {
+            table: conn.execute(f"SELECT * FROM {table} ORDER BY id").fetchall() for table in tables
+        }
+
+        class Rollback(Exception):
+            pass
+
+        with pytest.raises(Rollback), conn.transaction():
+            revisions[-1].downgrade(conn)
+            assert conn.execute("SELECT to_regclass('note')").fetchone() == (None,)
+            raise Rollback
+        for table, rows in saved.items():
+            assert conn.execute(f"SELECT * FROM {table} ORDER BY id").fetchall() == rows
+        revisions[-1].downgrade(conn)
+        for table, rows in before.items():
+            assert conn.execute(f"SELECT * FROM {table} ORDER BY id").fetchall() == rows
+        revisions[-1].upgrade(conn)
+        # New-table downgrade removes story data; replaying the retained snapshot proves
+        # the same notes, revisions and versions survive serialization and re-creation.
+        from psycopg.types.json import Jsonb
+
+        for table in tables:
+            columns = [
+                r[0]
+                for r in conn.execute(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_name=%s ORDER BY ordinal_position",
+                    (table,),
+                ).fetchall()
+            ]
+            for row in saved[table]:
+                values = {
+                    k: str(v) if v is not None else None for k, v in zip(columns, row, strict=True)
+                }
+                conn.execute(
+                    f"INSERT INTO {table} SELECT (jsonb_populate_record(NULL::{table},%s)).*",
+                    (Jsonb(values),),
+                )
+            assert conn.execute(f"SELECT * FROM {table} ORDER BY id").fetchall() == saved[table]
 
 
 def test_requisition_lines_migration_roundtrip_preserves_lines_and_header(empty_database):
@@ -894,7 +1033,9 @@ def test_requisition_lines_migration_roundtrip_preserves_lines_and_header(empty_
     from flo.modules.requisitions.service import RequisitionService
     from tests.org.test_bootstrap import admin_id, create, settings
 
-    revisions = migrate.discover_migrations(MIGRATIONS)
+    revisions = tuple(
+        r for r in migrate.discover_migrations(MIGRATIONS) if r.revision <= "20261009_0040"
+    )
     migrate.apply_migrations(revisions[:-1], empty_database)
     with (
         psycopg.connect(empty_database, autocommit=True) as conn,

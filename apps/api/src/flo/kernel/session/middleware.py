@@ -105,6 +105,7 @@ class BrowserSecurityHeadersMiddleware:
                     (name, value)
                     for name, value in message.get("headers", [])
                     if name.lower() not in names
+                    or (name.lower() == b"content-security-policy" and value == b"sandbox")
                 ]
                 headers.extend(SECURITY_HEADERS.items())
                 message = {**message, "headers": headers}

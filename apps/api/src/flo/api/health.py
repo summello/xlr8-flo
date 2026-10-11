@@ -23,6 +23,8 @@ from flo.api.auth import (
 from flo.api.auth import router as auth_router
 from flo.api.authz_factory import production_authorization_resolver
 from flo.api.budget import router as budget_router
+from flo.api.collaboration import router as collaboration_router
+from flo.api.document_types import register_document_types
 from flo.api.fiscal import router as fiscal_router
 from flo.api.fx import router as fx_router
 from flo.api.imports import router as imports_router
@@ -106,6 +108,8 @@ app.include_router(master_router)
 app.include_router(fiscal_router)
 app.include_router(fx_router)
 app.include_router(projects_router)
+register_document_types()
+app.include_router(collaboration_router)
 app.include_router(requisitions_router)
 app.include_router(budget_router)
 app.include_router(imports_router)

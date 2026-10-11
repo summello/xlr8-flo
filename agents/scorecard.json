@@ -2397,6 +2397,37 @@
       },
       "recap": "Implemented graph validation and publish rejection with organization-configured approval depth. Added read-only validation, warning acknowledgement, tenant isolation coverage, and regenerated API contracts.",
       "title": "Graph validation: cycle detection, unreachable steps, duplicate approvals, depth limit"
+    },
+    {
+      "story": "E09-S10",
+      "kind": "security",
+      "size": "L",
+      "tags": [
+        "migration",
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a12bd0-35db-72b0-96fd-e2e74d41e5ac",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Added timestamped, versioned notes and private attachments for requisitions and projects, with document permissions, signature checks, immutable history, and audited downloads. Basic-check files can be downloaded internally; unscanned or quarantined files cannot.",
+      "title": "Notes and attachments on all business documents, upload validation, quarantine"
     }
   ]
 }

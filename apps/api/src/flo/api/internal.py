@@ -301,6 +301,9 @@ def get_quota_collectors(
 
 
 def _run_jobs_tick(settings: Settings) -> TickReport:
+    from flo.api.document_types import register_document_types
+
+    register_document_types()
     if settings.database_url is None:
         raise RuntimeError("DATABASE_URL is not configured")
     database_url = settings.database_url.get_secret_value()

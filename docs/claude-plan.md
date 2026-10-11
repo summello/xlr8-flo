@@ -522,7 +522,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E08-S03** Import batch record, idempotent re-import by external key, async with progress | E08 | engine | M | IMP-008, IMP-009, IMP-012, PERF-004 | ~~E08-S02~~ |
 | ✅ | **E08-S04** Project and budget import templates end to end | E08 | crud | M | PROJ-001, IMP-001 | ~~E08-S03~~, ~~E07-S03~~ |
 
-#### M2 — Governed demand · 5/25 done
+#### M2 — Governed demand · 6/25 done
 
 > Requisitions that reserve real money, and the approval engine that authorizes them.
 
@@ -536,21 +536,21 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E09-S06** Approval reserves budget and generates the sub-project, one transaction | E09 | ledger | L | REQ-002, REQ-003, REQ-004, PROJ-003, ACC-001, WF-003 | E09-S05, ~~E07-S04~~, E10-S05 |
 | ⬜ | **E09-S07** Release on reject, withdraw, cancel, expire or reduce — exactly once | E09 | ledger | M | REQ-013, FIN-011, ACC-006 | E09-S06 |
 | ⬜ | **E09-S08** Controlled return, amendment and resubmission preserving prior values | E09 | engine | M | REQ-012, APR-015, DATA-002 | E09-S05, E09-S07, E10-S07 |
-| ⬜ | **E09-S09** Linked-record graph: RFQs, bids, awards, POs, approvals, notes, ledger entries | E09 | api | M | REQ-009, WF-001 | E09-S06, E09-S10, E10-S07, E09-S08 |
-| 👀 | **E09-S10** Notes and attachments on all business documents, upload validation, quarantine | E09 | security | L | COL-001, COL-002, COL-003, COL-004, COL-005, COL-006, COL-007, COL-008, D-14 | ~~E03-S06~~, ~~E09-S01~~ |
+| ⬜ | **E09-S09** Linked-record graph: RFQs, bids, awards, POs, approvals, notes, ledger entries | E09 | api | M | REQ-009, WF-001 | E09-S06, ~~E09-S10~~, E10-S07, E09-S08 |
+| ✅ | **E09-S10** Notes and attachments on all business documents, upload validation, quarantine | E09 | security | L | COL-001, COL-002, COL-003, COL-004, COL-005, COL-006, COL-007, COL-008, D-14 | ~~E03-S06~~, ~~E09-S01~~ |
 | ⬜ | **E09-S11** Requisition screens: create, lines, submit, track, quantity rollup | E09 | ui | L | REQ-015, UX-003, UX-004 | E09-S09, ~~E04-S03~~, E09-S08, E10-S06 |
 | ⬜ | **E09-S12** Resubmit and amendment screens: review changes, funding effect, version lineage | E09 | ui | L | REQ-012, APR-015, DATA-002, UX-003 | E09-S08, E09-S11 |
 | ✅ | **E10-S01** Workflow definition schema, versioning, active-document version pinning | E10 | migration | L | APR-011, ACC-007 | ~~E03-S04~~ |
 | ✅ | **E10-S02** Condition evaluator over any document attribute including amount and custom fields | E10 | engine | L | APR-005, APR-010 | ~~E10-S01~~ |
 | ✅ | **E10-S03** Graph validation: cycle detection, unreachable steps, duplicate approvals, depth limit | E10 | engine | M | APR-006, APR-007, APR-008, APR-012 | ~~E10-S01~~, ~~E10-S02~~ |
-| ⬜ | **E10-S04** Approver eligibility resolution scoped to organization and BU/OU | E10 | engine | M | APR-004, APR-019, USR-007 | ~~E10-S02~~, ~~E02-S05~~, ~~E10-S03~~ |
+| 🔨 | **E10-S04** Approver eligibility resolution scoped to organization and BU/OU | E10 | engine | M | APR-004, APR-019, USR-007 | ~~E10-S02~~, ~~E02-S05~~, ~~E10-S03~~ |
 | ⬜ | **E10-S05** Execution engine: instances, tasks, any-one/all/quorum groups, live membership | E10 | engine | L | APR-009, APR-018, WF-002 | E10-S04 |
 | ⬜ | **E10-S06** Decisions: approve, reject, return, comment, withdraw; full attribution recorded | E10 | engine | M | APR-013, APR-014, AUD-001 | E10-S05 |
 | ⬜ | **E10-S07** Stale-version guard and material-change resubmission policy | E10 | concurrency | M | APR-015, APR-016, DATA-002, WF-001 | E10-S06 |
 | ⬜ | **E10-S08** Delegation, out-of-office, due dates, reminders and escalation | E10 | engine | L | APR-017 | E10-S06 |
 | ⬜ | **E10-S09** Routing explainability: which rule matched and why this approver | E10 | api | M | APR-021 | E10-S05, E10-S06, E10-S08 |
 | ⬜ | **E10-S10** Approval inbox: pending, overdue, completed, delegated views | E10 | ui | L | APR-020 | E10-S06, ~~E04-S03~~, E10-S08, E10-S09 |
-| ⬜ | **E10-S11** Visual workflow builder, drag-and-drop canvas | E10 | ui | L | APR-001 | ~~E10-S03~~, ~~E04-S02~~ |
+| 🔨 | **E10-S11** Visual workflow builder, drag-and-drop canvas | E10 | ui | L | APR-001 | ~~E10-S03~~, ~~E04-S02~~ |
 | ⬜ | **E10-S12** Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11) | E10 | ui | L | APR-011, APR-021, ACC-007 | E10-S11, E10-S05 |
 | ⬜ | **E10-S13** Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes | E10 | engine | M | APR-003, PROJ-002, VEN-005, BUD-007 | E10-S07 |
 
@@ -562,7 +562,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 |---|---|---|---|---|---|---|
 | ⬜ | **E11-S01** Vendor profile, searchable list, global and BU/OU scope, local disable | E11 | crud | M | VEN-001, VEN-008, VEN-009, ORG-003 | ~~E05-S01~~ |
 | ⬜ | **E11-S02** Typed contacts: billing, service/delivery, additional types | E11 | crud | S | VEN-002 | E11-S01 |
-| ⬜ | **E11-S03** Vendor documents with issue/expiry, verification status, expiry notification | E11 | crud | M | VEN-003, VEN-011, OBS-004 | E11-S01, E09-S10 |
+| ⬜ | **E11-S03** Vendor documents with issue/expiry, verification status, expiry notification | E11 | crud | M | VEN-003, VEN-011, OBS-004 | E11-S01, ~~E09-S10~~ |
 | ⬜ | **E11-S04** Field-level access control and masking for tax and banking data | E11 | security | M | VEN-014, CUS-008, PRIV-001 | E11-S01, ~~E02-S05~~ |
 | ⬜ | **E11-S05** Onboarding request, configurable questionnaire, weights and scoring | E11 | engine | L | VEN-004, VEN-006 | E11-S01 |
 | ⬜ | **E11-S06** Duplicate identifier detection, approval on create/activate/suspend/reactivate | E11 | engine | M | VEN-005, VEN-010, VEN-012 | E11-S05, E10-S13 |
@@ -587,7 +587,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E13-S08** PO PDF reproducible from stored snapshot and template version | E13 | engine | L | PO-014, DATA-005 | E13-S06 |
 | ⬜ | **E13-S09** Email transmission via outbox, recipient/time/result/version recorded, retry without duplication | E13 | engine | L | PO-004, PO-012, PO-015, ARCH-006, ACC-002 | E13-S08, ~~E03-S06~~ |
 | ⬜ | **E13-S10** Deliverability: SPF/DKIM/DMARC verification, bounce and complaint handling, suppression list | E13 | engine | M | EML-001, EML-002, EML-003, EML-006 | E13-S09 |
-| ⬜ | **E13-S11** Internal vs vendor-facing notes and attachments, enforced by test | E13 | security | M | PO-017, EML-005, COL-002 | E13-S09, E09-S10 |
+| ⬜ | **E13-S11** Internal vs vendor-facing notes and attachments, enforced by test | E13 | security | M | PO-017, EML-005, COL-002 | E13-S09, ~~E09-S10~~ |
 
 #### M4 — Full Phase-1 scope · 0/34 done
 
