@@ -8,7 +8,7 @@ Loaded into every agent session. Updated by `flo done` (status) and by Opus at e
 | | |
 |---|---|
 | Milestone | **M2 — Governed demand** |
-| Stories | 58 / 168 done |
+| Stories | 58 / 169 done |
 | Branch | milestone/M2-governed-demand |
 | In flight | — |
 | Blocked | — |
@@ -48,6 +48,7 @@ Multi-tenant SaaS. Free-tier infrastructure until 10 paying customers or 200 MAU
 - Modular monolith with `import-linter`-enforced boundaries (D-15)
 - First sellable release is **M3**, the full money loop including RFQ (D-16)
 - **One public origin**, `xlr8flo.summello.com`; Cloudflare path-splits `/api/*` to Cloud Run, the rest to Pages. No CORS anywhere — if a story needs it, D-17 has been violated (D-17)
+- **M2 (10 Oct 2026, full text in `docs/m2-decisions.md`):** a project-linked requisition **reserves at submit** (D-M2-15, D-21), with at most one live reservation per requisition, tracked in funding rounds (`docs/m2-conventions.md` L). Approval keeps it and generates the sub-project; a standalone request reserves at approval (D-M2-5). Return-for-changes keeps the reservation; reject (to draft or permanent), withdraw, cancel and expiry release it once. Approval-group membership is **live** (D-M2-2, D-M2-9). The material-change list is fixed: amount, project, ledger account, catalogue item, line count (D-M2-13, canvas 79). Only the requester withdraws, until sourcing starts (canvas 78). Workflow conditions use the estimate only (canvas 83). Approval depth is 1..50, default 10.
 
 ## Rejected, with reasons — do not re-propose
 
@@ -76,6 +77,9 @@ Multi-tenant SaaS. Free-tier infrastructure until 10 paying customers or 200 MAU
 | Free agent endpoints | Both OpenCode Zen previews died — `ox-alpha` withdrawn, then `nemotron-ultra` failing every request. **Route every agent through OpenRouter instead.** Test a suspect endpoint with a one-word prompt (`Reply with exactly: PONG`) before blaming the model or the prompt. |
 | Review verdicts | Reviewers hand-write JSON against a schema that lives in prose, and nothing validates it at write time. `"approved"` for `"approve"` once read as a *rejection* and would have blocked a story on a typo. `flo gate` now normalises the obvious spellings via `verdict_of()` and fails unreadable ones loudly as malformed. |
 | opencode sandbox | A reviewer run **dies outright** on a rejected permission — it does not degrade. Reading a dotfile (`apps/web/.env.production`) and writing a backup to `/tmp` each killed a qwen review mid-experiment. Reviewer prompts must say: scratch files inside the worktree only, `git checkout -- <file>` to restore after planting a violation, never open dotfiles. Inline any dotfile the reviewer needs into the packet. |
+| Two Opus sessions, one worktree | On 10 Oct two sessions started the M2 design pass in the same worktree; one committed 41 s before the other. Before writing in a shared worktree, check `git log` for commits you did not make and `ListAgents` for a busy peer. Split by epic, each on its own branch and worktree, and name one owner per shared file (`docs/m2-*.md`, the roadmap, this file). |
+| `/Volumes/Omnissiah` unmounted | `uv`, `gh` and `opencode` fail through the `XDG_CACHE_HOME` and `UV_CACHE_DIR` environment variables, which point at that volume. Override both to `~/.cache` for the command. |
+| Design specs on unmerged branches | Page specs and DECISIONS live on `canvas-*` branches until merged. A UI packet that cites a spec missing from the milestone sends its author to a file that is not there. Merge the design branch (design-system/ only) before the design pass. |
 | Parallel reviewers | Two reviewers in one worktree corrupt each other — both are told to plant violations and revert them. Run them sequentially, or give the second its own `git worktree add --detach` at the same commit (remember `npm ci` there, and copy the verdict back into the story worktree, since `flo gate` only reads that one). |
 
 ## Fleet routing changes — evidence, not impressions
@@ -155,11 +159,28 @@ standing rule holds: push, never merge.
 
 ## Latest handoff
 
-`docs/handoff-2026-10-09.md` (9 Oct 2026): where M1 stands, the E05-S05 dispatch steps, the packet pre-flight technique, and what is open for the operator. Read it before dispatching any story.
+**M2 design pass (10 Oct 2026): all 25 packets are written** (`design/E09-S01..S12.md`, `design/E10-S01..S13.md`, on `docs/m2-design` until merged into `milestone/M2-governed-demand`). Two Opus sessions split the pass by epic. Before authoring or reviewing any M2 story:
+
+1. **Read order:** this file → `docs/m1-conventions.md` → **`docs/m2-conventions.md`** (G modules, H document-adapter registry, I permissions, J statuses, K live membership, L funding rounds, M settings, O `If-Match`) → **`docs/m2-decisions.md`** (D-M2-1..15) → `docs/author-traps.md` → your packet. For UI stories, also MASTER.md and the page spec the packet names (`design-system/pages/requisition-create.md`, `requisitions.md`, `approval-inbox.md`, `approval-workflow-builder.md`, now on the milestone).
+2. **Two lanes:** E09 (requisitions) and E10 (approvals) run in parallel until E09-S05, which needs E10-S05. `flo next` and the roadmap deps give the order.
+3. **Frozen cross-lane contracts; do not change one in a story:** the `DocumentAdapter` protocol and `OutcomeContext` (E10-S05 Contract); `approvals.service.start(..., resume_from)`, `withdraw`, `preview_route`, `instances_for`, `approval_state` and `assert_current_approval` ("latest instance" = greatest `(started_at, id)`, E10-S07); the material digest (E10-S07 item 2). `approvals` never imports `requisitions`.
+4. **Shared file, first merge creates it:** `api/document_types.py::register_document_types()` is created by whichever of E09-S05 and E10-S13 merges first; the other adds to it.
+5. **Packet authority:** a packet beats a page spec on API paths and money rules. The canvas copy that shows a reservation at submission is **current** (D-M2-15); the copy that says group membership is "snapshotted" or the depth is 25 is **stale** (record it in `notes.followup`, never copy it).
+6. **Pre-flight:** qwen runs over every packet before authoring, and Opus settles the findings on `docs/m2-design` before the first story starts. On M1 it caught a real import-contract break (E08-S03), and every codex block was a gap between the packet and the code.
+7. **Fleet process since 10 Oct:** `agents/scripts/{begin,author,review,finish}.sh`. `finish.sh` merges the milestone into the story before gating (two lanes once broke M1 together). Each worktree has its own test database (`flo db reset`). Review is risk-scaled: gated tags get Opus, everything else gets qwen. nemotron is capped at size M and ox is review-only.
+8. **Codex's ChatGPT usage cap is the binding throughput limit** (it hit about 15:00 on 10 Oct, after about 7 runs). Resume with `author.sh STORY .scratch/STORY.cont`, and never switch authors on a money story.
+
+M1 handoff: `docs/handoff-2026-10-09.md` (9 Oct 2026): where M1 stands, the E05-S05 dispatch steps, the packet pre-flight technique, and what is open for the operator. Read it before dispatching any story.
 
 ## Open questions for the human
 
-_(none — add here rather than guessing)_
+Raised by the M2 design pass (details in `docs/m2-decisions.md` Follow-ups). Each packet implements the conservative reading meanwhile; do not block on them.
+- **Decision 99 vs D-M2-5:** should a standalone request's approval draw on the organization's available budget instead of creating new budget? (E09-S06)
+- **Who may assign a standalone request to an existing project?** The packet's reading: the final approver holds `requisition.approve` there. (E09-S06)
+- **MASTER §2.3** has no requisition tones for `rejected`, `withdrawn` and `expired`. E09-S11 uses danger, neutral and danger. (MASTER amendment)
+- **M1 permissions gap:** no baseline role holds `project.read` or `master.read`. (E09-S03 works around it with requisition lookups.)
+- **No UI story** owns the delegation screen (STORY-NOTES §3). The resubmit and amendment screens are E09-S12.
+- Whether a PO commits against the parent project or the requisition-generated sub-project (M3).
 
 ## Session handoff — 25 Aug 2026
 

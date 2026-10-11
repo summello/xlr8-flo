@@ -56,3 +56,41 @@ Password reset (request, set, expired link; E02-S03 is back end only), recovery-
 ## 4. Requisitions: E09-S11 should cite the page files
 
 E09-S11 (create and edit, validation summary, list, detail) should carry, under Conventions: `Read design-system/pages/requisition-create.md and design-system/pages/requisitions.md. They are the layout, copy, states, validation messages and tests for these screens.` The operator decision that **a requisition over its funding cannot be submitted** (DECISIONS 33) must appear as an acceptance criterion with the two-concurrent-submissions test in real Postgres. Open questions are listed at the end of each page file; copy them into `notes.blocked` unchanged. The linked-record graph (E09-S09) and return/amend/resubmit (E09-S08) remain gaps with no UI.
+
+---
+
+## 3. Approvals: stories the canvas needs
+
+Written 9 Oct 2026. Page specs: `design-system/pages/approval-inbox.md`, `approval-workflow-builder.md`. The engine stories exist (E10-S01 to S09, E09-S08); several screens have **no UI story**. Requests, in order:
+
+1. **E10-S10 gains scope.** It lists inbox views only. Add: the decision panel with the routing explanation (reads E10-S09), the result state and `Next`, and the stale-version and reason refusals (reads E10-S06, E10-S07). Cite `approval-inbox.md` sections 1 and 2.
+2. **Approval delegation UI** (new, after E10-S08): availability screen, eligible-delegate picker, revoke, organization tab for administrators, attribution list. Cite section 5. Needs an operator answer on revoke behaviour and re-delegation first.
+3. **Withdraw, return and resubmit UI** (new, after E09-S08 and E10-S06): the withdraw dialog, the returned banner, the resubmit diff with the funding check. Cite sections 3 and 4. Needs the material-change rule decided.
+4. **E10-S11 gains scope.** The packet should require the outline (APR-002) in the same story, cycle prevention on connect, the problems tab, publish dialog and Route Preview, and add a list and version-history screen (`approval-workflow-builder.md` sections 1 and 5). Route Preview needs a read endpoint that evaluates a draft against sample attributes and returns the matched rules; that is not in E10-S09 today.
+
+**Operator decisions needed (the canvas shows each as an assumption):** who may withdraw and until when; what is a material change; revoke returns undecided tasks or leaves them; re-delegation; duplicate approvals allowed with intent; conditions beyond the estimate before Phase 2.
+
+## 5. Budget Transfer: stories the canvas needs (DECISIONS 6e and 6f)
+
+Page spec: `design-system/pages/budget-transfer.md`. **E07-S07 and E07-S08 are engine stories; there is no UI story.**
+
+1. **A UI story for the transfer pages** (list, create with the Type switch, detail, reversal) citing the page spec, BUD-001 to 008, 011, APR-003, ACC-002. Depends on E07-S07, E07-S08, E10-S06 (decisions) and the ledger sheet.
+2. **BUD-003 and requirements 7.3 need a decision-log entry (Opus) before E07-S08 is built.** Decided 9 Oct 2026 (DECISIONS 96): ancestors are **recounted** from the two project entries; the two projects are the only ledger entries. The requirement says "balanced, linked ledger entries for every affected level". Proposed entry for `docs/claude-plan.md` section 1: *"BUD-003 and 7.3 are met by one transaction that (a) locks the two project funding rows in ascending id order, (b) validates availability, (c) inserts the balanced, linked entries on the two projects under one transfer id, and (d) recomputes the roll-up of every ancestor on both paths inside the same transaction, returning it level by level. Ancestor levels are derived, never separately persisted, so they cannot drift (invariant 9)."* Until the entry exists, the story writes `notes.blocked`.
+3. **Allocation and adjustment (BUD-001) have no story.** They share the transfer form (decision 67). They need the engine (an allocation from the unallocated pool, an adjustment up or down on one project), the approval workflow coverage (APR-003) and the same ledger linkage.
+4. **A reversal story:** a new linked transfer through the same route, refused if the target lacks the funds (decision 76); the original is never touched.
+5. **Organization settings:** evidence required (off, Cross Hierarchy only, always) and the policy flag for transfers across levels. Both need a settings story and an audit entry on change.
+6. **Answered 9 Oct 2026 (DECISIONS 98 to 103):** reversal is Finance Administrator only, one `BT-` prefix, allocations draw on available budget, allocation and adjustment reuse the transfer workflow, the policy flag is `Allow Cross-Level Transfers`. **New story needed: approval thresholds configurable by tenant, entity and user** (a settings screen, resolution order, an audit entry on change, and the routing explanation naming the scope that matched). Notification copy is drafted in the page spec section 10.
+
+## 6. Bid comparison: stories the canvas needs (DECISIONS 6g)
+
+Page spec: `design-system/pages/rfq-comparison.md`. E12-S10 is the UI story and cites it.
+
+1. **E12-S10 should cite the page spec** and requirements SRC-006 to 011, 014, 016, A11Y-009, RPT-013. Depends on E12-S06, E12-S04, E12-S07, E12-S05.
+2. **The comparison engine (E12-S06) must return both award bases** (Lowest Cost Supplier per line, Best Average Cost for one vendor among full bids), landed cost per vendor and per line, the normalized figures with rate, source and effective date, and the markers' inputs. The page computes nothing.
+3. **Sealed bids (E12-S05):** no figure may leave the server before the deadline, for any role. A test must prove it.
+4. **An award UI story is missing** (E12-S08 is an engine story). `Start Award` hands off to it: split by line, scope and reserved-funds guard (SRC-016), non-lowest justification (SRC-014).
+5. **A 5-vendor limit per RFQ** must be enforced on invitation (E12-S02), not only shown.
+6. **Compliance requirements** need a home (per RFQ or per template) and a waiver rule; scoring and conflict-of-interest declarations (E12-S07) feed the Scoring tab.
+7. **Answered 10 Oct 2026 (DECISIONS 112 to 119):** freight pro rata by line value, rate warning after 7 days with a refresh for any sourcing role, a sealed round hidden from everyone, ties and overrides, compliance requirements per RFQ with an audited waiver. **Open:** how a split award interacts with vendor minimum order values.
+8. **New story needed: a tokens story that contrast-measures MASTER 7.13 in dark mode** before any button code is written.
+

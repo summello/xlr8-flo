@@ -918,7 +918,8 @@ epics:
         t: Requisition header, scoped numbering, project-linked and standalone
         k: crud
         s: M
-        tags: []
+        tags:
+          - migration
         reqs:
           - REQ-001
           - REQ-010
@@ -932,6 +933,7 @@ epics:
         k: crud
         s: M
         tags:
+          - migration
           - money
         reqs:
           - REQ-006
@@ -944,7 +946,8 @@ epics:
           purchased items'
         k: engine
         s: M
-        tags: []
+        tags:
+          - migration
         reqs:
           - REQ-007
           - REQ-008
@@ -971,13 +974,19 @@ epics:
         t: Requisition lifecycle state machine
         k: engine
         s: L
-        tags: []
+        tags:
+          - concurrency
+          - migration
+          - money
         reqs:
           - REQ-005
           - REQ-016
           - WF-002
         dep:
           - E09-S04
+          - E09-S03
+          - E10-S05
+          - E10-S06
         st: todo
       - id: E09-S06
         t: Approval reserves budget and generates the sub-project, one transaction
@@ -1003,6 +1012,7 @@ epics:
         k: ledger
         s: M
         tags:
+          - migration
           - money
         reqs:
           - REQ-013
@@ -1015,13 +1025,16 @@ epics:
         t: Controlled return, amendment and resubmission preserving prior values
         k: engine
         s: M
-        tags: []
+        tags:
+          - migration
         reqs:
           - REQ-012
           - APR-015
           - DATA-002
         dep:
           - E09-S05
+          - E09-S07
+          - E10-S07
         st: todo
       - id: E09-S09
         t: 'Linked-record graph: RFQs, bids, awards, POs, approvals, notes, ledger
@@ -1034,6 +1047,9 @@ epics:
           - WF-001
         dep:
           - E09-S06
+          - E09-S10
+          - E10-S07
+          - E09-S08
         st: todo
       - id: E09-S10
         t: Notes and attachments on all business documents, upload validation,
@@ -1041,6 +1057,7 @@ epics:
         k: security
         s: L
         tags:
+          - migration
           - security
         reqs:
           - COL-001
@@ -1054,6 +1071,7 @@ epics:
           - D-14
         dep:
           - E03-S06
+          - E09-S01
         st: todo
       - id: E09-S11
         t: 'Requisition screens: create, lines, submit, track, quantity rollup'
@@ -1068,6 +1086,24 @@ epics:
         dep:
           - E09-S09
           - E04-S03
+          - E09-S08
+          - E10-S06
+        st: todo
+      - id: E09-S12
+        t: 'Resubmit and amendment screens: review changes, funding effect, version
+          lineage'
+        k: ui
+        s: L
+        tags:
+          - ui
+        reqs:
+          - REQ-012
+          - APR-015
+          - DATA-002
+          - UX-003
+        dep:
+          - E09-S08
+          - E09-S11
         st: todo
 
   - id: E10
@@ -1112,6 +1148,7 @@ epics:
           - APR-012
         dep:
           - E10-S01
+          - E10-S02
         st: todo
       - id: E10-S04
         t: Approver eligibility resolution scoped to organization and BU/OU
@@ -1126,13 +1163,14 @@ epics:
         dep:
           - E10-S02
           - E02-S05
+          - E10-S03
         st: todo
       - id: E10-S05
-        t: 'Execution engine: instances, tasks, any-one/all/quorum groups, membership
-          snapshot'
+        t: 'Execution engine: instances, tasks, any-one/all/quorum groups, live membership'
         k: engine
         s: L
         tags:
+          - auth
           - concurrency
         reqs:
           - APR-009
@@ -1173,7 +1211,8 @@ epics:
         t: Delegation, out-of-office, due dates, reminders and escalation
         k: engine
         s: L
-        tags: []
+        tags:
+          - migration
         reqs:
           - APR-017
         dep:
@@ -1188,11 +1227,13 @@ epics:
           - APR-021
         dep:
           - E10-S05
+          - E10-S06
+          - E10-S08
         st: todo
       - id: E10-S10
         t: 'Approval inbox: pending, overdue, completed, delegated views'
         k: ui
-        s: M
+        s: L
         tags:
           - ui
         reqs:
@@ -1200,6 +1241,8 @@ epics:
         dep:
           - E10-S06
           - E04-S03
+          - E10-S08
+          - E10-S09
         st: todo
       - id: E10-S11
         t: Visual workflow builder, drag-and-drop canvas
@@ -1214,23 +1257,27 @@ epics:
           - E04-S02
         st: todo
       - id: E10-S12
-        t: Keyboard/list workflow editor with identical capability to the canvas
+        t: 'Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11)'
         k: ui
         s: L
         tags:
           - ui
         reqs:
-          - APR-002
-          - A11Y-003
+          - APR-011
+          - APR-021
+          - ACC-007
         dep:
           - E10-S11
+          - E10-S05
         st: todo
       - id: E10-S13
         t: Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget
           changes
         k: engine
         s: M
-        tags: []
+        tags:
+          - migration
+          - money
         reqs:
           - APR-003
           - PROJ-002
