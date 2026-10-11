@@ -25,7 +25,7 @@ from flo.modules.org.schemas import (
     OrgAddressCreate,
     OrgUnitCreate,
 )
-from flo.modules.org.service import NumberingService, OrgService
+from flo.modules.org.service import NumberingService, OrgService, today
 from flo.modules.projects.schemas import ProjectCreate
 from flo.modules.projects.service import ProjectService
 from flo.modules.requisitions.schemas import RequisitionCreate
@@ -359,7 +359,7 @@ def test_codes_and_delivery_address_guards(header_db):
     unrelated = unit(db, "UNRELATED")
     foreign = unit(db, "FOREIGN", org=db[2])
     org = org_svc(db)
-    ledger = org.assert_usable("ledger_account", "L", date.today())
+    ledger = org.assert_usable("ledger_account", "L", today())
     org.update_master("ledger_account", ledger.id, MasterPatch(active=False))
 
     def address(unit_id, kind="ship_to", org_id=None, closed=False):
@@ -371,7 +371,7 @@ def test_codes_and_delivery_address_guards(header_db):
                 city="City",
                 country="US",
                 effective_from=date(2000, 1, 1),
-                effective_to=date.today() - timedelta(days=1) if closed else None,
+                effective_to=today() - timedelta(days=1) if closed else None,
             ),
         )
 
