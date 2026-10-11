@@ -28,8 +28,9 @@ from flo.modules.requisitions.schemas import (
     RequisitionRead,
     RequisitionSort,
     RequisitionStatus,
+    SubmissionCheck,
 )
-from flo.modules.requisitions.service import RequisitionService
+from flo.modules.requisitions.service import RequisitionService, check_submission
 
 router = APIRouter(prefix="/api/v1/requisitions", tags=["requisitions"])
 
@@ -220,3 +221,8 @@ def delete_line(
     )
     response.headers["ETag"] = f'"{result.version}"'
     return result
+
+
+@router.get("/{id}/submission-check", response_model=SubmissionCheck)
+def submission_check(id: UUID, context: ReadContext, connection: Connection) -> SubmissionCheck:
+    return check_submission(connection, current_scope(), id, lock=False)

@@ -41,6 +41,7 @@ from flo.modules.budget.schemas import (
     AdjustmentCreate,
     AllocationCreate,
     AllocationResult,
+    BalanceRead,
     LedgerEntryRead,
 )
 from flo.modules.budget.transfers import post_legs
@@ -58,9 +59,10 @@ __all__ = [
     "balance_query",
     "budget_summary",
     "commit",
-    "get_balance",
     "entry_by_idempotency_key",
+    "get_balance",
     "ledger_query",
+    "lock_balance",
     "post_entry",
     "record_actual",
     "release_commitment",
@@ -300,3 +302,14 @@ def entry_by_idempotency_key(
             {"key": key},
         )
         return LedgerEntryRead(**asdict(entry)) if entry else None
+
+
+def lock_balance(
+    conn: psycopg.Connection[tuple[object, ...]], scope: Scope, project_id: UUID
+) -> BalanceRead:
+    """Lock funding in the caller's transaction before validation or posting."""
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        balance = LedgerRepository(conn, scope).balance(project_id, lock=True)
+        if balance is None:
+            raise ProblemError(ErrorCode.NOT_FOUND)
+        return balance

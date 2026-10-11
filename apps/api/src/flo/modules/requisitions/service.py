@@ -35,8 +35,10 @@ from flo.modules.requisitions.schemas import (
     RequisitionStatus,
     invalid,
 )
+from flo.modules.requisitions.schemas import SubmissionInvalid as SubmissionInvalid
+from flo.modules.requisitions.validation import check_submission as check_submission
 
-__all__ = ["RequisitionService"]
+__all__ = ["RequisitionService", "SubmissionInvalid", "check_submission"]
 
 
 class RequisitionService:

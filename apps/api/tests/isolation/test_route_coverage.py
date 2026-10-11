@@ -64,6 +64,13 @@ COVERED = {
     ): "collaboration/test_attachments.py::test_foreign_tenant_every_collaboration_route",
     (
         "GET",
+        "/api/v1/requisitions/{id}/submission-check",
+    ): (
+        "requisitions/test_submission_check.py::"
+        "test_submission_check_foreign_tenant_and_permission_outcomes"
+    ),
+    (
+        "GET",
         "/api/v1/requisitions/{id}/lines",
     ): "requisitions/test_lines.py::test_foreign_tenant_line_routes_and_permissions",
     (

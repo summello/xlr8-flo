@@ -192,3 +192,36 @@ class LineWriteResult(BaseModel):
     estimate: str
     currency: str
     version: int
+
+
+class SubmissionProblem(BaseModel):
+    category: Literal["required", "master_data", "project", "lines", "funds", "routing"]
+    field: str
+    message: str
+
+
+class FundingCheck(BaseModel):
+    available: str
+    this_requisition: str
+    already_reserved: str
+    available_after: str
+    currency: str
+    advisory: bool
+
+
+class SubmissionCheck(BaseModel):
+    ready: bool
+    problems: list[SubmissionProblem]
+    funding: FundingCheck | None
+
+
+class SubmissionInvalid(ProblemError):
+    def __init__(self, problems: list[SubmissionProblem]) -> None:
+        self.problems = problems
+        super().__init__(
+            ErrorCode.VALIDATION_FAILED,
+            detail=f"Fix {len(problems)} things before you submit. Nothing was submitted. "
+            "Everything you entered is kept.",
+            checks={"problem": "submission_invalid"},
+            errors=tuple(ProblemFieldError(field=p.field, message=p.message) for p in problems),
+        )

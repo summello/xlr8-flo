@@ -1568,6 +1568,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/requisitions/{id}/submission-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Submission Check */
+        get: operations["submission_check_api_v1_requisitions__id__submission_check_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workflows": {
         parameters: {
             query?: never;
@@ -2112,6 +2129,21 @@ export interface components {
              * @enum {string}
              */
             status: "open" | "closed";
+        };
+        /** FundingCheck */
+        FundingCheck: {
+            /** Advisory */
+            advisory: boolean;
+            /** Already Reserved */
+            already_reserved: string;
+            /** Available */
+            available: string;
+            /** Available After */
+            available_after: string;
+            /** Currency */
+            currency: string;
+            /** This Requisition */
+            this_requisition: string;
         };
         /** FxLastRun */
         FxLastRun: {
@@ -3819,6 +3851,26 @@ export interface components {
             unit_code?: string | null;
             /** Unit Id */
             unit_id?: string | null;
+        };
+        /** SubmissionCheck */
+        SubmissionCheck: {
+            funding: components["schemas"]["FundingCheck"] | null;
+            /** Problems */
+            problems: components["schemas"]["SubmissionProblem"][];
+            /** Ready */
+            ready: boolean;
+        };
+        /** SubmissionProblem */
+        SubmissionProblem: {
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "required" | "master_data" | "project" | "lines" | "funds" | "routing";
+            /** Field */
+            field: string;
+            /** Message */
+            message: string;
         };
         /** SummaryCurrency */
         SummaryCurrency: {
@@ -8810,6 +8862,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LineWriteResult"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    submission_check_api_v1_requisitions__id__submission_check_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionCheck"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

@@ -969,7 +969,7 @@ epics:
         dep:
           - E09-S02
           - E07-S06
-        st: in_progress
+        st: done
       - id: E09-S05
         t: Requisition lifecycle state machine
         k: engine

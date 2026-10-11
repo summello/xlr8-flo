@@ -1008,6 +1008,44 @@
         "title": "FiscalPeriod",
         "type": "object"
       },
+      "FundingCheck": {
+        "properties": {
+          "advisory": {
+            "title": "Advisory",
+            "type": "boolean"
+          },
+          "already_reserved": {
+            "title": "Already Reserved",
+            "type": "string"
+          },
+          "available": {
+            "title": "Available",
+            "type": "string"
+          },
+          "available_after": {
+            "title": "Available After",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "this_requisition": {
+            "title": "This Requisition",
+            "type": "string"
+          }
+        },
+        "required": [
+          "available",
+          "this_requisition",
+          "already_reserved",
+          "available_after",
+          "currency",
+          "advisory"
+        ],
+        "title": "FundingCheck",
+        "type": "object"
+      },
       "FxLastRun": {
         "properties": {
           "error_class": {
@@ -6188,6 +6226,69 @@
           "scope"
         ],
         "title": "SettingSource",
+        "type": "object"
+      },
+      "SubmissionCheck": {
+        "properties": {
+          "funding": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FundingCheck"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "problems": {
+            "items": {
+              "$ref": "#/components/schemas/SubmissionProblem"
+            },
+            "title": "Problems",
+            "type": "array"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ready",
+          "problems",
+          "funding"
+        ],
+        "title": "SubmissionCheck",
+        "type": "object"
+      },
+      "SubmissionProblem": {
+        "properties": {
+          "category": {
+            "enum": [
+              "required",
+              "master_data",
+              "project",
+              "lines",
+              "funds",
+              "routing"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "field",
+          "message"
+        ],
+        "title": "SubmissionProblem",
         "type": "object"
       },
       "SummaryCurrency": {
@@ -15908,6 +16009,75 @@
           }
         },
         "summary": "Put Line",
+        "tags": [
+          "requisitions"
+        ]
+      }
+    },
+    "/api/v1/requisitions/{id}/submission-check": {
+      "get": {
+        "operationId": "submission_check_api_v1_requisitions__id__submission_check_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionCheck"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Submission Check",
         "tags": [
           "requisitions"
         ]
