@@ -30,6 +30,8 @@ from flo.kernel.identity import (
 )
 from flo.kernel.identity.hashing import build_argon2_hasher
 from flo.kernel.identity.reset import PasswordResetService, ResetConnection
+from flo.kernel.identity.throttle import LoginThrottle
+from flo.kernel.session.client_address import throttle_client_value
 from flo.kernel.session.csrf import CSRF_COOKIE_NAME, rotate_csrf_cookie
 from flo.kernel.session.middleware import clear_session_cookie, set_session_cookie
 from flo.kernel.session.stepup import requires_recent_auth
@@ -42,6 +44,12 @@ from flo.kernel.session.store import (
     SessionStore,
     SessionStoreFactory,
     request_device,
+)
+from flo.modules.identity.service import (
+    IdentityAuthorizationConnection,
+    OrganizationMembership,
+    list_identity_memberships,
+    select_identity_organization,
 )
 
 router = APIRouter(prefix="/api/v1/auth", tags=["authentication"])
@@ -178,6 +186,14 @@ def get_session_store(
         idle_timeout=timedelta(seconds=settings.session_idle_timeout_seconds),
         absolute_timeout=timedelta(seconds=settings.session_absolute_timeout_seconds),
     )
+
+
+def get_login_throttle(
+    connection: Annotated[psycopg.Connection[tuple[object, ...]], Depends(get_auth_connection)],
+    settings: Annotated[Settings, Depends(get_auth_settings)],
+) -> LoginThrottle:
+    """Bind global pre-authentication failure windows to the request connection."""
+    return LoginThrottle(cast(ResetConnection, connection), settings)
 
 
 def get_password_reset_service(
@@ -335,6 +351,17 @@ async def reset_password(
     return Response(status_code=204)
 
 
+@router.get("/csrf", status_code=204)
+@public_route
+def csrf_bootstrap() -> Response:
+    """Intentionally public bootstrap, marked public for the uniform-404 guard.
+
+    No identity or tenant data is read. Middleware arms a distinct readable token.
+    """
+
+    return Response(status_code=204)
+
+
 @router.post("/login", status_code=204)
 @public_route
 async def login(
@@ -343,13 +370,18 @@ async def login(
     provider: Annotated[IdentityProvider, Depends(get_identity_provider)],
     store: Annotated[SessionStore, Depends(get_session_store)],
     mfa: Annotated[MfaService, Depends(get_mfa_service)],
+    throttle: Annotated[LoginThrottle, Depends(get_login_throttle)],
 ) -> Response:
     """Authenticate credentials and rotate any already authenticated session."""
 
+    client_value = throttle_client_value(request)
+    await throttle.check(body.email, client_value)
     result = await provider.authenticate(body.email, body.password)
     if not result.authenticated or result.identity_id is None:
+        throttle.record_failure(body.email, client_value)
         raise ProblemError(ErrorCode.UNAUTHORIZED)
 
+    throttle.record_success(body.email)
     device = request_device(request)
     requires_mfa = mfa.access_requirement(result.identity_id).value != "none"
     existing = getattr(request.state, "session", None)
@@ -558,3 +590,52 @@ def revoke_session(
     if session.id == session_id:
         _delete_auth_cookies(response)
     return response
+
+
+class OrganizationListResponse(BaseModel):
+    current_org_id: UUID | None
+    items: list[OrganizationMembership]
+
+
+class OrganizationSelectionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    org_id: UUID
+
+
+@router.get("/organizations", response_model=OrganizationListResponse)
+@public_route
+def organizations(
+    session: Annotated[SessionRecord, Depends(current_session)],
+    connection: Annotated[psycopg.Connection[tuple[object, ...]], Depends(get_auth_connection)],
+) -> OrganizationListResponse:
+    return OrganizationListResponse(
+        current_org_id=session.org_id,
+        items=list_identity_memberships(
+            cast(IdentityAuthorizationConnection, connection), session.identity_id
+        ),
+    )
+
+
+@router.post("/organization", status_code=204)
+@public_route
+def select_organization(
+    body: OrganizationSelectionRequest,
+    session: Annotated[SessionRecord, Depends(current_session)],
+    connection: Annotated[psycopg.Connection[tuple[object, ...]], Depends(get_auth_connection)],
+) -> Response:
+    """Request a session switch; org_id is checked against the caller's memberships."""
+    select_identity_organization(
+        cast(IdentityAuthorizationConnection, connection), session, body.org_id
+    )
+    return Response(status_code=204)
+
+
+class CurrentIdentityResponse(BaseModel):
+    identity_id: UUID
+
+
+@router.get("/me", response_model=CurrentIdentityResponse)
+@public_route
+def me(session: Annotated[SessionRecord, Depends(current_session)]) -> CurrentIdentityResponse:
+    """Return only the current session's identity; normal MFA and org gates apply."""
+    return CurrentIdentityResponse(identity_id=session.identity_id)

@@ -1086,6 +1086,1162 @@
       },
       "recap": "Added the transactional migration runner, packaged revisions into the API image, wired create-or-update Cloud Run job execution and guarded manual deploys, and fixed the permitted 0007 parent metadata.",
       "title": "Production migration runner, packaged in the image, run by flo-migrate"
+    },
+    {
+      "story": "E05-S01",
+      "kind": "crud",
+      "size": "M",
+      "tags": [],
+      "author": "opencode-nemotron",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "opencode-ox",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone; the M1 assignment table still lists a free reviewer"
+        }
+      ],
+      "sessions": {
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E05-S01 and model~nvidia/nemotron-3-ultra-550b-a55b:free"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "dbfe4938-296f-4d21-81ae-13d6551bb13d",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented E05-S01 including migration 20260826_0013, org-scoped repositories, seven guarded endpoints, replacing nearest-scope settings resolution, audit no-op semantics, and generated OpenAPI client. Organization-row locking serializes structure and setting writes. API pytest: 398 passed, no skips; ruff and mypy --strict src/flo green; real migration chain validated; import-linter 4 kept; web lint/typecheck green and vitest 59 passed. No new dependencies. No submit/gate/done/push/merge performed.",
+      "title": "Organization and BU/OU with unique codes, settings precedence"
+    },
+    {
+      "story": "E05-S02",
+      "kind": "crud",
+      "size": "S",
+      "tags": [],
+      "author": "opencode-nemotron",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E05-S02 and model~nvidia/nemotron-3-ultra-550b-a55b:free"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "dbfe4938-296f-4d21-81ae-13d6551bb13d",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented effective-dated address creation, as-of reads, one-way close, transactional audit, tenant-scoped authorization, database exclusion/RLS, reversible revision 0014 and generated OpenAPI client. Reuses organization locking to serialize address writes; downgrade retains shared btree_gist extension. Verification: flo check green (all nine checks, including coverage, Playwright/axe and gitleaks); API strict mypy, ruff and migration-chain check green; web vitest 59 passed. Final full direct pytest: 433 passed, 1 skipped (existing money round-trip requires explicit DATABASE_URL and runs under flo check). All 24 address cases pass. Foreign address lookup precedes authorization, including wrong-permission callers.",
+      "title": "Bill To / Ship To addresses with effective dates"
+    },
+    {
+      "story": "E05-S03",
+      "kind": "crud",
+      "size": "L",
+      "tags": [],
+      "author": "opencode-nemotron",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E05-S03 and model~nvidia/nemotron-3-ultra-550b-a55b:free"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "dbfe4938-296f-4d21-81ae-13d6551bb13d",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented master data, permissions, scoped routes, migration 0015 after 0014, generated client and real-Postgres regression coverage. No new dependency or UI. Currency exposes bundled code/exponent; duplicate deactivation is a no-op without a second audit write.",
+      "title": "Master data: departments, ledger accounts, UoM, tax codes, payment terms, categories"
+    },
+    {
+      "story": "E05-S04",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a10e5e-a333-76c0-aba7-8a36713059f5",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "dbfe4938-296f-4d21-81ae-13d6551bb13d",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented fiscal calendar and period APIs, org.service exports, migration 20260826_0016, database-enforced immutable transition history, scoped permissions, 15-minute step-up, idempotency and posting locks. Removed the competing fiscal_year_start_month setting. Regenerated OpenAPI client. flo check: all nine checks green (ruff, strict mypy, import boundaries, full Postgres pytest, eslint, tsc, vitest, Playwright/axe, gitleaks). API suite: 560 tests collected, including 69 fiscal tests. Web unit suite: 59 passing. Migration chain validated with MIGRATIONS_DIR=../../migrations; next head is 20260826_0016 after 0015. Lazy generation audits as system; explicit operations audit as the session user. No dependencies added. No submit, gate, done, push or merge run.",
+      "title": "Fiscal calendar and period open/close with authorization and audit"
+    },
+    {
+      "story": "E06-S01",
+      "kind": "crud",
+      "size": "M",
+      "tags": [],
+      "author": "opencode-nemotron",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E06-S01 and model~nvidia/nemotron-3-ultra-550b-a55b:free"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "dbfe4938-296f-4d21-81ae-13d6551bb13d",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented root project endpoints, independent scoped numbering, tenant repositories, optimistic PATCH locking, accounting-code/currency/member validation, scope registration, audit, isolation route mappings, reversible migration 20260826_0017, and regenerated client. Ruff, strict mypy (86 files), web lint/typecheck, 59 web tests, four import contracts, and migration-chain validation pass. Full Postgres pytest has only the hardcoded-chain expectation failure noted above. No new dependencies. No submit/gate/done/push/merge.",
+      "title": "Project entity, scoped numbering sequence, department and ledger account"
+    },
+    {
+      "story": "E06-S02",
+      "kind": "engine",
+      "size": "L",
+      "tags": [],
+      "author": "opencode-nemotron",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E06-S02 and model~nvidia/nemotron-3-ultra-550b-a55b:free"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "dbfe4938-296f-4d21-81ae-13d6551bb13d",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented bounded hierarchy traversals, parent-aware creation and parent project scope registration, read-authorized children/tree routes, reversible revision 20260826_0018, isolation entries and regenerated OpenAPI client. API: 634 passed, 1 existing DATABASE_URL-dependent money round-trip skipped; ruff and strict mypy pass. Web: lint/types pass, 59 tests pass. Migration chain and 4 import contracts pass. max_depth is relative to the requested subtree root. No dependency added; no submit/gate/done/push/merge run.",
+      "title": "Five-level hierarchy with recursive CTE traversal and depth guard"
+    },
+    {
+      "story": "E07-S01",
+      "kind": "migration",
+      "size": "L",
+      "tags": [
+        "money",
+        "migration"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a10e9f-cf38-7950-a5e1-07442eb608ba",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "dbfe4938-296f-4d21-81ae-13d6551bb13d",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented unpartitioned ledger revision 20260826_0019 after validated 0018, immutable Decimal row and SQL/Python rule mirror. No endpoints or dependencies. Existing budget.transfer permission and grants preserved across downgrade. Validation: full pytest 685 passed, 1 existing skip (kernel money round-trip requires DATABASE_URL); 51 ledger cases passed on Postgres, including concurrent reversal. Ruff, strict mypy (90 files), migration --check, tenancy, money-float and import-linter (4 contracts) passed. No web changes or OpenAPI regeneration needed.",
+      "title": "Ledger schema, append-only triggers, entry types, partitioning, source linkage"
+    },
+    {
+      "story": "E07-S02",
+      "kind": "ledger",
+      "size": "L",
+      "tags": [
+        "money",
+        "concurrency"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a10eb9-d777-7143-bb37-a25e47f119c3",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "dbfe4938-296f-4d21-81ae-13d6551bb13d",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented migration 20260826_0020, transactional posting/rollup and balance reads, project creation initialization, and real PostgreSQL invariant/concurrency tests. Currency amounts use kernel HALF_UP quantization. No endpoint, dependency, or web changes; existing operator amendments in design/E07-S02.md are left untouched. Final verification: full API pytest 733 passed, zero skipped; ruff, mypy --strict (93 source files), import-linter (4 contracts), money-float lint, and migration-chain validation green.",
+      "title": "project_balance rollup maintained in-transaction with the ledger write"
+    },
+    {
+      "story": "E07-S03",
+      "kind": "ledger",
+      "size": "M",
+      "tags": [
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a10eff-31ac-7901-a38d-270eb0748312",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "dbfe4938-296f-4d21-81ae-13d6551bb13d",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented direct allocation and signed adjustment commands using existing ledger posting and project status reader. Parent funding hook remains a no-op per packet; approval and transfers remain out of scope. Registered default-false evidence policy and append-only RLS evidence table in revision 0021. Checks use the worktree venv, a temporary uv cache and explicit MIGRATIONS_DIR=../../migrations. No dependency added. Submit, gate, done, push and merge not run. Final checks: full pytest 771 passed, 1 pre-existing DATABASE_URL-dependent money round-trip skipped; story tests 39 passed on real PostgreSQL; ruff and strict mypy green; migration chain check green; four import contracts kept; web lint/typecheck green and 59 vitest tests passed. Commit: 025bbdd.",
+      "title": "Allocation command with authorization, reason, effective date and audit"
+    },
+    {
+      "story": "E07-S04",
+      "kind": "ledger",
+      "size": "L",
+      "tags": [
+        "money",
+        "concurrency"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a11717-8e0d-78f3-a746-660e790266e9",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "f145f7ca-a28e-4b66-bc45-fd4e8ea242d4",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented service-only reserve/release primitives, revision 20260826_0022, linked release payload, remaining view, and generated API client. Full pytest: 782 passed, 1 skipped (money DB round-trip requires DATABASE_URL); final release tests: 12 passed. Ruff, strict mypy, migration chain, import contracts, web lint/typecheck and 59 web tests pass. No dependencies or endpoints added. Pre-existing design/conventions edits preserved and excluded from implementation commit.",
+      "title": "Reservation and release primitives, exactly-once release guarantee"
+    },
+    {
+      "story": "E07-S05",
+      "kind": "ledger",
+      "size": "L",
+      "tags": [
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a1183c-c1e9-7e70-8a5e-170093d1f729",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "f145f7ca-a28e-4b66-bc45-fd4e8ea242d4",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Added service-only commitments, actuals and explicit reversals with atomic conversions, immutable conversion linkage, commitment remaining and recursive tenant-safe lineage views. Reused the existing ledger posting transaction and reservation remaining view; regenerated the ledger response client and updated older migration fixtures for the extended chain.",
+      "title": "Commitment, actual and reversal primitives with source-document lineage"
+    },
+    {
+      "story": "E07-S06",
+      "kind": "api",
+      "size": "M",
+      "tags": [
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a1184a-06b4-70c2-a42b-cb89dd2491d7",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "f145f7ca-a28e-4b66-bc45-fd4e8ea242d4",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented fiscal-period ledger balances, current-life reconciliation with single-statement snapshot, bounded keyset drill-down, authorization/isolation cases, and regenerated OpenAPI client. Commit c1dd42a. No dependency or migration changes. Existing test edited: isolation/test_route_coverage.py (three named route entries). Verification: story tests 42 passed; standalone full pytest 859 passed, 1 skipped (DATABASE_URL-dependent money round-trip; flo check supplies DATABASE_URL); vitest 59 passed; Playwright/axe 112 passed; Ruff, strict mypy (98 files), all four import contracts, migration chain, secret scan and full flo check green. No submit, gate, done, push or merge performed.",
+      "title": "Balance query API: MTD/QTD/YTD/fiscal/life-to-date/range, reconcile to entries"
+    },
+    {
+      "story": "E07-S07",
+      "kind": "ledger",
+      "size": "M",
+      "tags": [
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a11886-4a41-7652-b75a-9efb5edc21d1",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "f145f7ca-a28e-4b66-bc45-fd4e8ea242d4",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented sibling transfers with ordered balance locks, atomic ledger legs, group audit, evidence and replay, dual project authorization, and single-leg reversal rejection. Parent comparison mutation was caught by test_cousin_guard (201 instead of 409), then restored. No dependency or migration added; existing transfer ledger schema reused. Verification: flo check green on all nine checks; final offline pytest 902 passed/1 DATABASE_URL-dependent skip, and that money round-trip passed separately using flo local DB configuration. New story tests: 43. Web: 59 vitest and 112 Playwright/axe passed. Strict mypy and ruff green; real migration chain check green with FLO_MIGRATIONS_DIR=../../migrations.",
+      "title": "Same-level transfer, atomic, one transfer_group_id"
+    },
+    {
+      "story": "E05-S09",
+      "kind": "security",
+      "size": "L",
+      "tags": [
+        "auth",
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a118a3-964a-7b92-a2db-9267688e293c",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "f145f7ca-a28e-4b66-bc45-fd4e8ea242d4",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented packet including round-5 central 401 mapping. Final full pytest: 920 passed, one existing money round-trip test skipped for missing DATABASE_URL (run separately against fixture URL). Ruff, strict mypy, migration chain and 4 import contracts green. Removed 401 mapping physically: named regression failed with 500, restored. No new endpoints, dependencies or OpenAPI schema changes.",
+      "title": "Identity belongs to an organization: membership, org_id on the session, seeded first tenant and bootstrap command"
+    },
+    {
+      "story": "E06-S03",
+      "kind": "engine",
+      "size": "L",
+      "tags": [],
+      "author": "opencode-nemotron",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E06-S03 and model~nvidia/nemotron-3-ultra-550b-a55b:free"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "f145f7ca-a28e-4b66-bc45-fd4e8ea242d4",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented lifecycle routes, scoped dynamic authorization, balance-first transitions, closure overrides, append-only/RLS status events, and signed posting guard. Migration 20261008_0025 preserves existing project.approve permission and grants. Backend full suite: 1049 passed, 1 skipped; skipped DATABASE_URL-dependent money round-trip verified separately: 1 passed. Lifecycle targeted regression: 169 passed. Web: 59 passed; lint/typecheck green. Ruff, strict mypy, migration chain, import contracts, and staged gitleaks scan green. Planted always-true permits, ignored transfer sign, and status-read-before-balance-lock each caused the named test to fail; originals restored. No submit, gate, done, push, or merge.",
+      "title": "Project lifecycle state machine with permission and budget-effect enforcement"
+    },
+    {
+      "story": "E06-S04",
+      "kind": "ledger",
+      "size": "L",
+      "tags": [
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a1192c-038f-75b3-9d48-33a508706853",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "f145f7ca-a28e-4b66-bc45-fd4e8ea242d4",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented the amended single allocation command, two-sided parent authorization, currency-grouped aggregates, and registry-based funding-mode guard. No schema migration or dependency required. Local task.json is intentionally excluded from commits. Validation: ruff and strict mypy passed; full pytest 1127 passed, 1 skipped; the skipped DATABASE_URL-dependent money round-trip passed separately using an in-memory local URL. Web lint/typecheck passed, vitest 59 passed; migration chain check and all 4 import contracts passed.",
+      "title": "Roll-down and roll-up funding modes, set per BU/OU and inherited"
+    },
+    {
+      "story": "E07-S08",
+      "kind": "ledger",
+      "size": "L",
+      "tags": [
+        "money",
+        "concurrency"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a11953-cd81-72f0-b1fc-d4af22146da9",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "f145f7ca-a28e-4b66-bc45-fd4e8ea242d4",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented root-policy cross-hierarchy transfers and shared leg posting for sibling transfers and roll-down allocations. Existing funding_policy.mode_for already resolves the root BU/OU policy and is reused unchanged. Shared replay-check removal was plant-verified: existing sibling replay, existing roll-down allocation replay, and cross-hierarchy replay tests all failed (3 failed), then the check was restored. No migration, dependency, route or schema change. Validation: full pytest 1176 passed, 1 skipped (including 48 new cases); unchanged sibling/funding regression 62 passed; ruff and mypy --strict green (103 source files); import-linter 4 contracts kept; real tracked migration chain validated with MIGRATIONS_DIR=../../migrations; staged gitleaks scan clean. No UI changes; web checks not run. No submit, gate, done, push or merge run.",
+      "title": "Cross-hierarchy transfer up-then-down through both ancestries, one transaction"
+    },
+    {
+      "story": "E07-S09",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a119a2-1e69-7d21-8c45-ff95c00bcecb",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "f145f7ca-a28e-4b66-bc45-fd4e8ea242d4",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Completed reconciliation reports, queue registration, scoped reads and origin-only trigger requiring Idempotency-Key without replay; no kernel or conventions change. Full real-Postgres pytest: 1200 passed, 1 skipped; story tests: 24 passed. Ruff, strict mypy (104 files), import boundaries, migration-chain check, generated client, web lint/typecheck and 59 web tests green. Recurring nightly enqueue remains the packet-authorized followup.",
+      "title": "Nightly reconciliation job: recompute from ledger, report drift, never correct"
+    },
+    {
+      "story": "E08-S01",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a119ec-f594-7a82-80b7-1eafcf6e12ab",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "f145f7ca-a28e-4b66-bc45-fd4e8ea242d4",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented E08-S01 authoritative amendments: structural upload and mapping only; upload keys are ignored, each upload creates a distinct batch; UUID-only storage keys; test_fixture registered only by pytest. CSV version metadata uses a pre-header comment; XLSX version metadata uses core description. Headers and row count are persisted in counts JSONB. No dependency added, no production templates or UI introduced. Verification: flo check green (ruff, strict mypy, boundaries, full pytest with coverage, eslint, tsc, vitest, Playwright/axe and redacted gitleaks). Full API: 1289 passed, zero skipped, 93% coverage; focused story/isolation: 88 passed; web unit: 59 passed. Migration chain check green. Commit: 675ea71. No submit, gate, done, push or merge run.",
+      "title": "Import framework: template versioning, column mapping, type and reference validation"
+    },
+    {
+      "story": "E05-S10",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "auth",
+        "ui"
+      ],
+      "author": "opencode-nemotron",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E05-S10 and model~nvidia/nemotron-3-ultra-550b-a55b:free"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "0ab077c4-d7d7-482d-85e6-9ceeeaf74311",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented auth routes, existing-session probe guard, CSRF first-response seeding and bootstrap, MFA enrollment with memory-only QR/secret/codes, logout and Sessions panel. Backend: 1312 passed, 1 existing skip; ruff/mypy and real migration-chain validation green. Web lint/typecheck/vitest: 69 passed. Final full Playwright regression: 148 passed, including axe in both themes, keyboard enrollment, native-fetch expiry, and planted violations. Import contracts: 4 kept. No migration or backend authorization change. Review round 1 fixes: only login 401 uses uniform credential copy; service failures preserve email with distinct copy. Deterministic reduced-motion axe coverage plus motion-enabled finished-card case. Added rotated CSRF cookie preservation and both requested plants. Ruff, strict mypy (112 files), web lint/typecheck green; pytest 1314 passed, 1 skipped; vitest 69 passed. Full Playwright: 151 passed, frame-budget failed under concurrent Postgres load; isolated frame-budget rerun passed (1/1).",
+      "title": "Sign-in screen: CSRF bootstrap, login, MFA challenge, logout, error and locked states"
+    },
+    {
+      "story": "E05-S05",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a11d31-e4c1-7310-a19b-3232533efa4f",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "332a41fa-e50e-41ed-8a9e-4cde6648200f",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented ECB ingest, immutable global rates, exact/weekend conversion, guarded base-currency setter, generated client and UTC cron triggers (including previously unscheduled nightly budget reconciliation). Validation: ruff clean; strict mypy 114 source files; 4 import contracts kept; migration chain and money-float gate clean; full API pytest 1349 passed/1 skipped, with the skipped existing money round-trip separately passing using an in-memory local connection; web lint/typecheck clean, Vitest 77 passed, Playwright 152 passed. No live ECB fetch (offline environment), no dependency, no submission/push/merge. task.json remains ignored per repository policy. Round 2: strict UTF-8/NUL rejection before decoded declaration scan, EUR/ECB defaults, internal exception failed-run recording, module-level error imports. Validation: full API suite 1359 passed/0 skipped; final parser selection 11 passed (including 3 additional undecodable-byte cases); ruff, strict mypy (114 files), 4 import contracts, and migration chain check green. Web unchanged.",
+      "title": "FX: ECB daily rate ingest, rate table, effective dating, missing-rate block"
+    },
+    {
+      "story": "E05-S11",
+      "kind": "security",
+      "size": "M",
+      "tags": [
+        "auth",
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a11dd6-1c7a-7b13-97c1-fb9e8b689e7e",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "332a41fa-e50e-41ed-8a9e-4cde6648200f",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented login throttling, trusted Worker visitor addresses, reversible migration 0029, and guard mutation tests. Full real-Postgres pytest: 1390 passed, zero skips (10 existing deprecation warnings). Focused regressions: 28 passed; web: 78 passed. Ruff, strict mypy (116 source files), 4 import contracts, and migration --check pass. OpenAPI regenerated with no diff. No dependency added; no submit, gate, done, push, or merge run. Session metadata now records visitor-derived /24 IPv4 or /48 IPv6 prefixes, unchanged privacy rules.",
+      "title": "Login throttling: per-identity and per-client failure limits, trusted client IP behind Cloudflare"
+    },
+    {
+      "story": "E05-S12",
+      "kind": "security",
+      "size": "L",
+      "tags": [
+        "auth",
+        "security",
+        "migration",
+        "ui"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a11ecb-67de-7b93-8cd6-c3dfd613d595",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "332a41fa-e50e-41ed-8a9e-4cde6648200f",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented packet and amendments 1\u20134; selection bypasses replay, MFA gate remains first, session rotations preserve choice except LOGIN. Real production-app and Postgres plants cover membership checks, duplicate session joins, rotation, MFA ordering and allow-list entries, replay bypass, body exception, label constraints and downgrade guard. UI specs cover chooser keyboard, both-theme axe, responsive sizes, recoverable selection errors, switcher icon/text and hard-reload stale-memory plant. Validation: ruff, mypy --strict (117 source files), import-linter (4 contracts), real migration-chain --check, web lint/typecheck and gitleaks all green. Full pytest: 1413 passed, 1 optional explicit-DATABASE_URL test skipped and then passed separately against disposable Postgres. Final guard rerun: 48 passed. Vitest: 81 passed. Full Playwright: 161 passed. Commits: 1c5d4fe (backend), 4b3f11b (web). Working tree clean; no submit, gate, done, push or merge.",
+      "title": "Multi-organization membership: (identity_id, org_id) key, chosen organization on the session, chooser, switcher, tenant label"
+    },
+    {
+      "story": "E05-S13",
+      "kind": "security",
+      "size": "M",
+      "tags": [
+        "auth",
+        "security",
+        "migration"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a11f3e-e705-7ed3-abe3-6ef223ff3544",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "332a41fa-e50e-41ed-8a9e-4cde6648200f",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented E05-S13 invitation issue/list/resend/withdraw/token validation and acceptance with hashed single-use lookup, locked state transitions, tenant memberships, RBAC/MFA/session issuance, audited outbox mail and payload discard. Checks: full pytest 1459 passed, 1 skipped; skipped Postgres money round-trip subsequently passed in the 16-test money suite with local DATABASE_URL configured. Invitation/migration focused suite 46 passed; Vitest 82 passed; Playwright/axe 161 passed. Ruff, strict mypy (120 files), import-linter (4 contracts), migration --check, and staged gitleaks passed. No dependency added. Operator/profile/UI follow-ups are recorded. Ready for review; no submit/gate/done/push/merge performed.",
+      "title": "Invitation acceptance: issue, validate, accept, withdraw and resend with a hashed single-use token"
+    },
+    {
+      "story": "E05-S14",
+      "kind": "ui",
+      "size": "S",
+      "tags": [
+        "auth",
+        "ui"
+      ],
+      "author": "opencode-nemotron",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E05-S14 and model~nvidia/nemotron-3-ultra-550b-a55b:free"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "332a41fa-e50e-41ed-8a9e-4cde6648200f",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented public invitation lookup/accept, uniform unavailable DOM, expired lifetime setting, in-memory sign-in/MFA/chooser detour, reusable auth primitives, referrer protection, generated types, and browser/unit/API regressions. Manual API hardcode-7 and referrer-header violations failed their guards and were restored; committed browser plants cover expiry copy, chooser hard reload, editable email, token URL persistence and organization leakage. Final validation: ruff/mypy green; pytest 1459 passed, 1 skipped; web lint/typecheck green; vitest 86 passed; Playwright full 198 passed and final invitation 42 passed, native paste/privacy recheck 3 passed; boundaries 4 kept; migration chain valid; staged secret scan clean. Round 2: added aria-hidden matching invitation checking aside with shared token-based reserved geometry; fixed summary singular/plural by actual field count. Removed CLS follow-up. Web lint/typecheck green, Vitest 86 passed, full Playwright 207 passed including delayed CLS at 375/1440 and source-mutation placeholder-removal failure proof. No API changes; API checks omitted as directed.",
+      "title": "Invitation acceptance screen: /invite/:token, uniform unavailable state, MFA handoff"
+    },
+    {
+      "story": "E06-S05",
+      "kind": "crud",
+      "size": "M",
+      "tags": [],
+      "author": "opencode-nemotron",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E06-S05 and model~nvidia/nemotron-3-ultra-550b-a55b:free"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "332a41fa-e50e-41ed-8a9e-4cde6648200f",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented schedule migration 0032, phases/milestones, manual health/progress/actual dates and computed variance; production authorization, audit, tenant isolation, and generated API client. Full pytest: 1478 passed, 1 skipped; skipped money round-trip subsequently passed with explicit local database setting. Final targeted: 35 passed. Web: 86 vitest and 207 Playwright passed. Ruff, strict mypy, migration-chain check, all 4 import contracts and gitleaks passed. Required closed-project, direct-child and composite-FK removal plants each failed their named test and were restored. Existing tests/fixtures minimally updated under m1-conventions C. No submit, gate, done, push or merge.",
+      "title": "Phases, milestones, planned vs actual dates, owner, sponsor, health, percent complete"
+    },
+    {
+      "story": "E06-S06",
+      "kind": "crud",
+      "size": "M",
+      "tags": [],
+      "author": "opencode-nemotron",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "assigned",
+          "to": "opus",
+          "reason": "AGENTS.md section 1 (25 Aug 2026): per-story review is Opus alone"
+        }
+      ],
+      "sessions": {
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E06-S06 and model~nvidia/nemotron-3-ultra-550b-a55b:free"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "332a41fa-e50e-41ed-8a9e-4cde6648200f",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Committed bb7dd31 (E06-S06: add tenant-scoped project risk management). PROJ-016 implemented per amendments; revision 20261009_0033 follows validated 0032. All flo check commands green against a disposable local Postgres database with URL configuration: 1499 pytest tests, 86 Vitest tests and 207 Playwright/axe checks. Ruff, strict mypy, import boundaries, web lint/types, migration-chain check and gitleaks green. Focused risk/migration run: 20 passed. Required project_closed, closed_reason and FOR UPDATE removal plants each failed their corresponding test, then were restored. Disposable check database removed; verified shared-test residue cleaned, extensions preserved. No dependency added, no implementation blocker. No submit, gate, done, push or merge.",
+      "title": "Project risks with likelihood, impact, owner, mitigation, due date, status"
+    },
+    {
+      "story": "E08-S02",
+      "kind": "engine",
+      "size": "L",
+      "tags": [],
+      "author": "codex",
+      "reviewers": [
+        "qwen"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "qwen": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E08-S02"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "unavailable: OpenRouter has no session concept - pass the generation id to `flo session qwen <id>`"
+        }
+      },
+      "recap": "Added inline dry-run validation, paged previews and safe CSV issue downloads through a template handler registry. Commit re-plans under an advisory lock, supports atomic rollback or partial savepoints, and records committed identifiers and returns recovery instructions.",
+      "title": "Dry-run preview, row/column error report, atomic or explicitly partial commit"
+    },
+    {
+      "story": "E08-S03",
+      "kind": "engine",
+      "size": "M",
+      "tags": [],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "qwen",
+          "to": "opus",
+          "role": "review",
+          "reason": "10 Oct 2026: untagged story adds migration 0035 and moves the production authorization resolver (api/authz_factory.py); Opus reviews authorization wiring and migrations (AGENTS.md 1, 3.3)."
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E08-S03"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "f99e76bc-9224-410c-ab96-dac139bf2f2b",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented keyed upload replay, scoped history, resumable background imports, safe cancellation, and single outbox completion/failure emails. All 1,554 API tests and the full flo check passed, and all 15 distinct plants failed as expected before restoration.",
+      "title": "Import batch record, idempotent re-import by external key, async with progress"
+    },
+    {
+      "story": "E06-S07",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "codex",
+      "reviewers": [
+        "qwen"
+      ],
+      "rounds": 2,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "qwen": {
+          "ran_tests": true,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [
+        {
+          "from": "opencode-nemotron",
+          "to": "codex",
+          "role": "author",
+          "reason": "10 Oct 2026: nemotron ended exit 0 with nothing committed, flo check never run, tests unwritten, and edits outside packet scope (api/auth.py, modules/identity/service.py). Its diff is kept at .scratch/E06-S07.nemotron.patch; codex starts from a clean tree."
+        }
+      ],
+      "sessions": {
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-E06-S07 and model~nvidia/nemotron-3-ultra-550b-a55b:free"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "unavailable: OpenRouter has no session concept - pass the generation id to `flo session qwen <id>`"
+        }
+      },
+      "recap": "Implemented project list, creation and detail screens with shared-grid saved views, schedule and risk forms, transitions and exact money display. Added scoped list projections, session identity and transition metadata with Postgres and browser regression coverage.",
+      "title": "Project list and detail screens, filter/sort/group/search, saved views"
+    },
+    {
+      "story": "E08-S04",
+      "kind": "crud",
+      "size": "M",
+      "tags": [
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E08-S04"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "f99e76bc-9224-410c-ab96-dac139bf2f2b",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented service-backed project and budget imports, immutable project references, recipient-credit idempotency, and the four authorized framework fixes. Full flo check and the final accepted-code metadata regression are green; all required violation plants were observed failing and restored.",
+      "title": "Project and budget import templates end to end"
+    },
+    {
+      "story": "E06-S08",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "codex",
+      "reviewers": [
+        "qwen"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "qwen": {
+          "ran_tests": true,
+          "findings": 2,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-E06-S08"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "unavailable: OpenRouter has no session concept - pass the generation id to `flo session qwen <id>`"
+        }
+      },
+      "recap": "Implemented project dashboards and currency-separated budget roll-ups with keyboard hierarchy, chart/table comparisons, ledger drill-down and fact-backed risk indicators. Generated API contracts and regression tests cover permissions, tenant isolation, decimal thresholds, drift and accessibility.",
+      "title": "Project dashboard with hierarchy visual and drill-down to ledger entries"
     }
   ]
 }

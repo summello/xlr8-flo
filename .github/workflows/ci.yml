@@ -226,8 +226,11 @@ jobs:
       - name: Generated API client is current (AGENTS.md 3.4)
         run: |
           set -euo pipefail
-          python -m pip install -e apps/api
-          npm --prefix apps/web run generate:api
+          # Build from uv.lock, not an unpinned pip resolve: the committed client is generated
+          # from the locked pydantic, and a newer one emits a different JSON schema for Decimal.
+          python -m pip install uv==0.11.28
+          uv sync --frozen --project apps/api
+          PATH="$PWD/apps/api/.venv/bin:$PATH" npm --prefix apps/web run generate:api
           git diff --exit-code apps/web/src/api/generated \
             || { echo "::error::generated client is stale - run npm run generate:api"; exit 1; }
 

@@ -1,6 +1,7 @@
 export type GridDensity = "comfortable" | "compact";
 
 export type GridViewDefinition = {
+  extra?: { group_by?: "status" | "bu"; status?: string; bu_id?: string };
   columnOrder: string[];
   columnPinning: { end: string[]; start: string[] };
   columnSizing: Record<string, number>;
@@ -61,7 +62,11 @@ function isView(value: unknown): value is GridViewDefinition {
     isStringArray(value.columnPinning.end) &&
     Object.values(value.columnSizing).every((size) => typeof size === "number") &&
     Object.values(value.columnVisibility).every((visible) => typeof visible === "boolean") &&
-    validSort
+    validSort &&
+    (value.extra === undefined || (isRecord(value.extra) &&
+      (value.extra.group_by === undefined || value.extra.group_by === "status" || value.extra.group_by === "bu") &&
+      (value.extra.status === undefined || typeof value.extra.status === "string") &&
+      (value.extra.bu_id === undefined || typeof value.extra.bu_id === "string")))
   );
 }
 

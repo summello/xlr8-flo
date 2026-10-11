@@ -55,6 +55,7 @@ def session_database() -> Iterator[SessionDatabase]:
     session_migration = load_migration(SESSION_MIGRATION, "session_test_migration")
     mfa_migration = load_migration(MFA_MIGRATION, "session_test_mfa")
     access_migration = load_migration(ACCESS_MIGRATION, "session_test_access")
+    connection.execute("DROP TABLE IF EXISTS login_attempt")
     connection.execute("DROP TABLE IF EXISTS user_role")
     connection.execute("DROP TABLE IF EXISTS role_permission")
     connection.execute("DROP TABLE IF EXISTS permission")
@@ -67,9 +68,15 @@ def session_database() -> Iterator[SessionDatabase]:
     connection.execute("DROP TABLE IF EXISTS session_security_event")
     connection.execute("DROP TABLE IF EXISTS auth_session")
     connection.execute("DROP FUNCTION IF EXISTS reject_session_security_event_mutation()")
+    connection.execute("DROP TABLE IF EXISTS identity_membership")
     connection.execute("DROP TABLE IF EXISTS identity")
     identity_migration.upgrade(connection)
+    connection.execute(
+        "CREATE TABLE identity_membership (identity_id uuid PRIMARY KEY REFERENCES identity(id), "
+        "org_id uuid NOT NULL)"
+    )
     session_migration.upgrade(connection)
+    connection.execute("ALTER TABLE auth_session ADD COLUMN org_id uuid")
     mfa_migration.upgrade(connection)
     connection.execute("CREATE TABLE role (id uuid, org_id uuid, PRIMARY KEY (org_id, id))")
     connection.execute("CREATE TABLE permission (code text PRIMARY KEY)")
@@ -95,6 +102,7 @@ def session_database() -> Iterator[SessionDatabase]:
             mfa_migration,
         )
     finally:
+        connection.execute("DROP TABLE IF EXISTS login_attempt")
         connection.execute("DROP TABLE IF EXISTS user_role")
         connection.execute("DROP TABLE IF EXISTS role_permission")
         connection.execute("DROP TABLE IF EXISTS permission")
@@ -107,5 +115,6 @@ def session_database() -> Iterator[SessionDatabase]:
         connection.execute("DROP TABLE IF EXISTS session_security_event")
         connection.execute("DROP TABLE IF EXISTS auth_session")
         connection.execute("DROP FUNCTION IF EXISTS reject_session_security_event_mutation()")
+        connection.execute("DROP TABLE IF EXISTS identity_membership")
         connection.execute("DROP TABLE IF EXISTS identity")
         connection.close()

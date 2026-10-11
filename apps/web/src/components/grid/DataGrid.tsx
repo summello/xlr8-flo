@@ -47,7 +47,7 @@ import GridSkeleton from "./states/Skeleton";
 
 const MAX_LOADED_ROWS = GRID_PAGE_SIZE * 4;
 
-type GridPage<TData> = {
+export type GridPage<TData> = {
   lastCursor: string | null;
   nextCursor: string | null;
   previousCursor: string | null;
@@ -75,6 +75,9 @@ type DataGridProps<TData extends RowData> = {
   onEmptyAction: () => void;
   onOpenRow: (row: TData, origin: HTMLElement) => void;
   parseRow?: (value: unknown) => TData;
+  loadPage?: (query: GridQuery, signal: AbortSignal) => Promise<GridPage<TData>>;
+  viewExtra?: GridViewDefinition["extra"];
+  onViewExtra?: (extra: GridViewDefinition["extra"]) => void;
   recordLabel: string;
   sortableColumnIds: readonly string[];
   userId: string;
@@ -192,6 +195,9 @@ export default function DataGrid<TData extends RowData>({
   onEmptyAction,
   onOpenRow,
   parseRow,
+  loadPage,
+  viewExtra,
+  onViewExtra,
   recordLabel,
   sortableColumnIds,
   userId,
@@ -290,7 +296,9 @@ export default function DataGrid<TData extends RowData>({
     const controller = new AbortController();
     setLoading(loadMode === "replace" ? "initial" : "partial");
     setError(null);
-    fetchPage<TData>(endpoint, query, controller.signal, parseRow)
+    (loadPage === undefined
+      ? fetchPage<TData>(endpoint, query, controller.signal, parseRow)
+      : loadPage(query, controller.signal).then(page => parsePage<TData>(page, parseRow)))
       .then((page) => {
         setGridWindow((current) => mergeWindow(current, page, loadMode));
         setLoading(null);
@@ -301,7 +309,16 @@ export default function DataGrid<TData extends RowData>({
         setError(reason instanceof Error ? reason.message : "The request failed unexpectedly.");
       });
     return () => controller.abort();
-  }, [commitUrl, endpoint, loadMode, parseRow, query]);
+  }, [commitUrl, endpoint, loadMode, loadPage, parseRow, query]);
+
+  const extraKey = JSON.stringify([viewExtra?.group_by, viewExtra?.status, viewExtra?.bu_id]);
+  const previousExtraKey = useRef(extraKey);
+  useEffect(() => {
+    if (viewExtra === undefined || previousExtraKey.current === extraKey) return;
+    previousExtraKey.current = extraKey;
+    setLoadMode("replace");
+    setQuery(current => ({ ...current, cursor: null }));
+  }, [extraKey, viewExtra]);
 
   const virtualItems = rowVirtualizer.getVirtualItems();
   useEffect(() => {
@@ -443,6 +460,7 @@ export default function DataGrid<TData extends RowData>({
   };
 
   const applyView = (view: GridViewDefinition) => {
+    onViewExtra?.(view.extra);
     setColumnOrder(view.columnOrder);
     setColumnPinning(view.columnPinning);
     setColumnSizing(view.columnSizing);
@@ -464,6 +482,7 @@ export default function DataGrid<TData extends RowData>({
       id: crypto.randomUUID(),
       name,
       sort: query.sort,
+      ...(viewExtra === undefined ? {} : { extra: viewExtra }),
     };
     setViews((current) => [...current, view]);
   };

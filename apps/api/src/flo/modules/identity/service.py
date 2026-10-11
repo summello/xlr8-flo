@@ -4,30 +4,38 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from datetime import datetime
-from typing import Protocol, cast
+from typing import Literal, Protocol, cast
 from uuid import UUID, uuid4
 
 from psycopg import sql
+from pydantic import BaseModel
 
 from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.db.repo import ScopedRepo
+from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.identity import IdentityId
-from flo.kernel.session.store import SessionConnection, revoke_all_sessions
+from flo.kernel.session.store import SessionConnection, SessionRecord, revoke_all_sessions
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import tenant_transaction
 from flo.modules.identity.models import (
     BASELINE_ROLE_PERMISSIONS,
     BASELINE_ROLES,
     MFA_REQUIRED_ROLE_CODES,
-    AuthorizationTarget,
     PermissionCode,
     Role,
     RoleCode,
-    ScopeType,
     UserRole,
     permission_code,
-    role_code,
+)
+from flo.modules.identity.models import (
+    AuthorizationTarget as AuthorizationTarget,
+)
+from flo.modules.identity.models import (
+    ScopeType as ScopeType,
+)
+from flo.modules.identity.models import (
+    role_code as role_code,
 )
 
 type DatabaseRow = Sequence[object] | Mapping[str, object]
@@ -652,3 +660,152 @@ class IdentityAuthorizationService:
                 after_fields=("email", "status"),
             )
             return True
+
+
+def register_business_unit_scope(
+    connection: IdentityAuthorizationConnection, scope: Scope, unit_id: UUID
+) -> None:
+    """Register either unit kind directly under its org in the caller's transaction."""
+    RoleRepository(connection, scope).register_scope(
+        ScopeType.BU, unit_id, ScopeType.ORG, scope.org_id, roll_down=True
+    )
+
+
+def register_project_scope(
+    connection: IdentityAuthorizationConnection,
+    scope: Scope,
+    project_id: UUID,
+    parent_kind: Literal["bu", "project"],
+    parent_id: UUID,
+) -> None:
+    """Register containment in the existing project creation transaction."""
+    RoleRepository(connection, scope).register_scope(
+        ScopeType.PROJECT, project_id, ScopeType(parent_kind), parent_id, roll_down=True
+    )
+
+
+def user_exists(connection: IdentityAuthorizationConnection, scope: Scope, user_id: UUID) -> bool:
+    """Membership is evidenced by a role assignment in the session organization."""
+    repository = RoleRepository(connection, scope)
+    return (
+        connection.execute(
+            """SELECT 1 FROM identity WHERE id = %(user_id)s AND EXISTS (
+        SELECT 1 FROM user_role WHERE org_id = %(org_id)s AND user_id = identity.id)""",
+            repository.scoped_params({"user_id": user_id}),
+        ).fetchone()
+        is not None
+    )
+
+
+def identity_organization(connection: IdentityAuthorizationConnection, email: str) -> UUID | None:
+    """Resolve global membership before tenant context exists."""
+    row = connection.execute(
+        """SELECT membership.org_id FROM identity
+        JOIN identity_membership membership ON membership.identity_id = identity.id
+        WHERE identity.email = %(email)s""",
+        {"email": email.casefold()},
+    ).fetchone()
+    return None if row is None else cast(UUID, _value(row, 0, "org_id"))
+
+
+def add_identity_membership(
+    connection: IdentityAuthorizationConnection, identity_id: IdentityId, org_id: UUID
+) -> None:
+    """Add one organization membership; the database rejects duplicate membership."""
+    connection.execute(
+        "INSERT INTO identity_membership (identity_id, org_id) VALUES (%(identity)s, %(org)s)",
+        {"identity": identity_id, "org": org_id},
+    )
+
+
+class OrganizationMembership(BaseModel):
+    org_id: UUID
+    name: str
+    tenant_label: str | None
+    last_used_at: datetime | None
+
+
+def list_identity_memberships(
+    connection: IdentityAuthorizationConnection, identity_id: IdentityId
+) -> list[OrganizationMembership]:
+    """Read only the caller's global display links before tenant selection."""
+    rows = connection.execute(
+        """SELECT m.org_id, c.display_name, c.tenant_label, m.last_used_at
+        FROM identity_membership m JOIN organization_code c ON c.org_id = m.org_id
+        WHERE m.identity_id = %(identity)s
+        ORDER BY m.last_used_at DESC NULLS LAST, c.display_name, m.org_id""",
+        {"identity": identity_id},
+    ).fetchall()
+    return [
+        OrganizationMembership(
+            org_id=cast(UUID, _value(row, 0, "org_id")),
+            name=cast(str, _value(row, 1, "display_name")),
+            tenant_label=cast(str | None, _value(row, 2, "tenant_label")),
+            last_used_at=cast(datetime | None, _value(row, 3, "last_used_at")),
+        )
+        for row in rows
+    ]
+
+
+def select_identity_organization(
+    connection: IdentityAuthorizationConnection, session: SessionRecord, org_id: UUID
+) -> None:
+    """Choose an owned membership atomically; repeated selection is a no-op."""
+    with connection.transaction():
+        membership = connection.execute(
+            """SELECT 1 FROM identity_membership
+            WHERE identity_id = %(identity)s AND org_id = %(org)s FOR SHARE""",
+            {"identity": session.identity_id, "org": org_id},
+        ).fetchone()
+        if membership is None:
+            raise ProblemError(ErrorCode.NOT_FOUND)
+        row = connection.execute(
+            """SELECT org_id FROM auth_session WHERE id = %(session)s
+            AND identity_id = %(identity)s AND revoked_at IS NULL FOR UPDATE""",
+            {"session": session.id, "identity": session.identity_id},
+        ).fetchone()
+        if row is None:
+            raise ProblemError(ErrorCode.UNAUTHORIZED)
+        if _value(row, 0, "org_id") == org_id:
+            return
+        connection.execute(
+            "UPDATE auth_session SET org_id = %(org)s WHERE id = %(session)s",
+            {"org": org_id, "session": session.id},
+        )
+        connection.execute(
+            """UPDATE identity_membership SET last_used_at = now()
+            WHERE identity_id = %(identity)s AND org_id = %(org)s""",
+            {"identity": session.identity_id, "org": org_id},
+        )
+        connection.execute(
+            """INSERT INTO session_security_event
+            (session_id, identity_id, event_type, occurred_at, ip_prefix, user_agent)
+            VALUES (%(session)s, %(identity)s, 'organization_switched', now(), %(ip)s, %(ua)s)""",
+            {
+                "session": session.id,
+                "identity": session.identity_id,
+                "ip": session.ip_prefix,
+                "ua": session.user_agent,
+            },
+        )
+
+
+def identity_email(connection: IdentityAuthorizationConnection, identity_id: UUID) -> str | None:
+    """Read the globally resolved uploader address without mutating identity."""
+    row = connection.execute(
+        "SELECT email FROM identity WHERE id=%(id)s", {"id": identity_id}
+    ).fetchone()
+    return None if row is None else cast(str, _value(row, 0, "email"))
+
+
+def user_id_by_email(
+    connection: IdentityAuthorizationConnection, scope: Scope, email: str
+) -> UUID | None:
+    repository = RoleRepository(connection, scope)
+    with tenant_transaction(connection, scope):
+        row = connection.execute(
+            "SELECT id FROM identity WHERE lower(email)=%(email)s AND EXISTS "
+            "(SELECT 1 FROM user_role WHERE org_id=%(org_id)s AND user_id=identity.id)",
+            repository.scoped_params({"email": email.casefold()}),
+        ).fetchone()
+        return None if row is None else cast(UUID, _value(row, 0, "id"))

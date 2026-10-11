@@ -39,6 +39,10 @@ IDEMPOTENCY_KEY_EXEMPT_PATHS = frozenset(
     }
 )
 
+IDEMPOTENCY_BYPASS_PATHS = frozenset(
+    {"/api/v1/imports", "/api/v1/auth/organization", "/api/v1/invitations/accept"}
+)
+
 _logger = logging.getLogger(__name__)
 
 type ConnectionFactory = Callable[[], AbstractContextManager[IdempotencyConnection]]
@@ -216,6 +220,11 @@ class IdempotencyMiddleware:
 
     async def __call__(self, scope: ASGIScope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http" or scope.get("method") != "POST":
+            await self._app(scope, receive, send)
+            return
+
+        # D-M1-19 and E05-S12: uploads and session selections must never replay.
+        if str(scope.get("path", "")).rstrip("/") in IDEMPOTENCY_BYPASS_PATHS:
             await self._app(scope, receive, send)
             return
 

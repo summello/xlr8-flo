@@ -7,7 +7,8 @@ Loaded into every Claude Code session via `CLAUDE.md`. Rules in `AGENTS.md` appl
 Claude **Pro**. You are the scarcest agent in a four-agent fleet. Spend accordingly:
 
 - **Do** batch design for a whole milestone in one pass.
-- **Do** review every story. Since 25 Aug 2026 you are the only per-story reviewer; qwen and deepseek review the milestone diff before the PR to `main`.
+- **Do** review every gated story (money, auth, security, migration, concurrency) and every train's combined diff. Since 10 Oct 2026 ungated stories are reviewed by qwen (AGENTS.md §1); qwen and deepseek still review the milestone diff before the PR leaves draft.
+- **Do** keep milestone CI green. The draft PR is open from the first story; a red run stops merges until you fix it (AGENTS.md §2.4).
 - **Do** arbitrate escalations and review the milestone diff before a PR to `main`.
 - **Do not** author routine code. OpenCode is free and unmetered — that is what it is for.
 - **Do not** re-read files `flo` already put in the task packet.
@@ -46,7 +47,7 @@ UI/UX pass — measured against `design-system/MASTER.md` §8, not taste:
 - Errors say what happened, what was preserved, how to recover (UX-005).
 - Loading, empty, partial and error states all exist (UX-004).
 - Locale-correct dates, numbers, currency, with canonical values preserved (UX-007).
-- Tokens only — a hardcoded colour, spacing, radius or duration is a `blocker`, because it is how a design system dies.
+- Tokens only — a hardcoded colour, spacing, radius or duration is a `blocker`, because it is how a design system dies. So is a value traced to `design-system/canvas/` (a board or `xlr8flo.css`) instead of MASTER or `tokens.css`: the canvas is a drawing, and where it disagrees with MASTER it is stale (AGENTS.md, "Authority for UI values"). Check the diff against MASTER, not against the board.
 - Contrast measured in **both** themes. Borders and interaction states are the usual dark-mode casualties.
 - Two clicks to common work; progressive disclosure held (tables summarize, side sheets reveal, pages commit).
 

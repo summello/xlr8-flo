@@ -37,6 +37,8 @@ test("system and explicit theme states resolve in both directions", async ({ pag
 
 test("the token baseline is accessible and paints its own background", async ({ page }) => {
   await page.goto("/");
+  // goto resolves before the SPA mounts; under load the count below ran on an empty shell.
+  await expect(page.locator("a, button, input, select, textarea, [tabindex]").first()).toBeVisible();
 
   const paint = await page.locator("body").evaluate((body) => ({
     background: getComputedStyle(body).backgroundColor,

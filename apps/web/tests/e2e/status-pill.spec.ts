@@ -8,6 +8,7 @@ const galleryPath = "/_dev/status-gallery";
 
 test("gallery renders every closed document status with derived tone, icon, and text", async ({ page }) => {
   await page.goto(galleryPath);
+  await page.locator(".app-shell").waitFor();
 
   await expect(page).toHaveTitle("Status gallery");
   const selections = statusSelections();
@@ -27,6 +28,7 @@ test("gallery renders every closed document status with derived tone, icon, and 
 
 test("greyscale keeps every status identifiable by its icon and text", async ({ page }) => {
   await page.goto(galleryPath);
+  await page.locator(".app-shell").waitFor();
   await page.locator("html").evaluate((root) => {
     root.style.filter = "saturate(0)";
   });
@@ -42,6 +44,7 @@ test("greyscale keeps every status identifiable by its icon and text", async ({ 
 
 test("pill geometry resolves from the square status tokens rather than tag geometry", async ({ page }) => {
   await page.goto(galleryPath);
+  await page.locator(".app-shell").waitFor();
   const geometry = await page.locator(".status-pill").first().evaluate((pill) => {
     const root = getComputedStyle(document.documentElement);
     const style = getComputedStyle(pill);
@@ -71,6 +74,7 @@ test("pill geometry resolves from the square status tokens rather than tag geome
 
 test("keyboard-only entry reaches and visibly focuses the gallery main content", async ({ page }) => {
   await page.goto(galleryPath);
+  await page.locator(".app-shell").waitFor();
   await page.keyboard.press("Tab");
   const skipLink = page.getByRole("link", { name: "Skip to main content" });
   await expect(skipLink).toBeFocused();
@@ -87,6 +91,7 @@ for (const theme of ["light", "dark"] as const) {
       localStorage.setItem("xlr8flo.theme", selectedTheme);
     }, theme);
     await page.goto(galleryPath);
+    await page.locator(".app-shell").waitFor();
 
     const pill = page.locator('.status-pill[data-tone="success"]').first();
     const colours = await pill.evaluate((element) => {
@@ -118,6 +123,7 @@ for (const width of [375, 768, 1024, 1440]) {
   test(`status gallery has no horizontal page scroll at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(galleryPath);
+    await page.locator(".app-shell").waitFor();
 
     const dimensions = await page.evaluate(() => ({
       clientWidth: document.documentElement.clientWidth,
@@ -126,3 +132,8 @@ for (const width of [375, 768, 1024, 1440]) {
     expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
   });
 }
+
+// These pre-auth-story fixtures represent a signed-in operator.
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/v1/auth/sessions", route => route.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
+});

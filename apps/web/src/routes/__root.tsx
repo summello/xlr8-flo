@@ -1,4 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+import Screens from "./sign-in";
+import InviteScreen from "./invite";
+import { destination, probe, safeReturn, organizationName } from "../features/auth/api";
+import { apiClient } from "../api/client";
 
 import AppShell, { type ShellRoute } from "../components/shell/AppShell";
 import type { Phase } from "../components/command/registry";
@@ -6,6 +11,12 @@ import FormGallery from "./_dev/form-gallery";
 import GridGallery from "./_dev/grid-gallery";
 import StatusGallery from "./_dev/status-gallery";
 import EffectiveAccessExplorer from "./admin/users/$id";
+import ProjectList from "./projects/list";
+import NewProject from "./projects/new";
+import ProjectDetail from "./projects/detail";
+import Dashboard from "./projects/dashboard";
+import BudgetOverview from "./budget";
+import type { Project } from "../components/projects/api";
 import type { RoutePath } from "./route-paths";
 
 type RouteDefinition = {
@@ -16,10 +27,14 @@ type RouteDefinition = {
   title: string;
 };
 
+const AUTH_PATHS: readonly string[] = ["/invite", "/sign-in", "/sign-in/mfa", "/sign-in/mfa/enroll", "/sign-in/organization"];
+
 const ORGANIZATION = ["/organization", "Northstar Capital"] as const;
 const BUSINESS_UNIT = ["/organization/infrastructure", "Infrastructure BU"] as const;
 const PROJECT = ["/projects/north-plant-renewal", "North plant renewal"] as const;
 const SUB_PROJECT = ["/projects/north-plant-renewal/cooling", "Cooling system upgrade"] as const;
+const PROJECT_PATH = /^\/projects\/([0-9a-f-]{36})$/;
+const DASHBOARD_PATH = /^\/projects\/([0-9a-f-]{36})\/dashboard$/;
 const ADMIN_USER_PATH = /^\/admin\/users\/([^/]+)$/;
 
 const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
@@ -46,29 +61,22 @@ const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
   },
   "/projects": {
     activeHref: "/projects",
-    description: "Project screens arrive with the budget spine milestone.",
+    description: "Search, filter and manage capital projects.",
     hierarchy: [ORGANIZATION, BUSINESS_UNIT, ["/projects", "Projects"]],
     phase: "plan",
     title: "Projects",
   },
   "/projects/new": {
     activeHref: "/projects",
-    description: "The project form arrives with the project management story.",
+    description: "Create a project and submit it for approval.",
     hierarchy: [ORGANIZATION, BUSINESS_UNIT, ["/projects", "Projects"], ["/projects/new", "Create"]],
     phase: "plan",
     title: "Create project",
   },
-  "/projects/north-plant-renewal": {
-    activeHref: "/projects",
-    description: "The project overview arrives with the project management story.",
-    hierarchy: [ORGANIZATION, BUSINESS_UNIT, PROJECT],
-    phase: "plan",
-    title: "North plant renewal",
-  },
   "/budget": {
     activeHref: "/budget",
-    description: "Budget screens arrive with the budget spine milestone.",
-    hierarchy: [ORGANIZATION, BUSINESS_UNIT, PROJECT, ["/budget", "Budget"]],
+    description: "Organization and unit budgets, grouped by currency.",
+    hierarchy: [ORGANIZATION, ["/budget", "Budget"]],
     phase: "plan",
     title: "Budget",
   },
@@ -159,6 +167,10 @@ const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
 };
 
 function routeFor(path: string): ShellRoute {
+  if (PROJECT_PATH.test(path) || DASHBOARD_PATH.test(path)) return {
+    activeHref: "/projects", path, phase: "plan", title: DASHBOARD_PATH.test(path) ? "Project Dashboard" : "Project", description: "Project details and actions.",
+    breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/projects", label: "Projects" }],
+  };
   const adminUser = path.match(ADMIN_USER_PATH)?.[1];
   if (adminUser !== undefined) {
     return {
@@ -190,25 +202,103 @@ function activateRoute(path: string): ShellRoute {
 }
 
 export default function RootRoute() {
+  const [projectHeading, setProjectHeading] = useState<{ id: string; title: string; unit: string; number: string; buId: string } | null>(null);
+  const onProjectLoaded = useCallback((project: Project, unit: string) => {
+    document.title = project.name;
+    setProjectHeading({ id: project.id, title: project.name, unit, number: project.number, buId: project.bu_id });
+  }, []);
+  const verified = useRef(false);
+  const [allowed, setAllowed] = useState(false);
+  const [approvedRoute, setApprovedRoute] = useState<ShellRoute | null>(null);
+  const [tenantName, setTenantName] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
   const [route, setRoute] = useState(() => activateRoute(window.location.pathname));
 
   useEffect(() => {
-    const onPopState = () => setRoute(activateRoute(window.location.pathname));
+    const onPopState = () => { setAllowed(false); setFailed(false); setRoute(activateRoute(window.location.pathname)); };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
   const navigate = useCallback((href: string) => {
+    setAllowed(false);
+    if (AUTH_PATHS.includes(new URL(href, window.location.origin).pathname)) { verified.current = false; setApprovedRoute(null); }
+    setFailed(false);
     if (window.location.pathname !== href) window.history.pushState(null, "", href);
-    setRoute(activateRoute(href));
+    setRoute(activateRoute(new URL(href, window.location.origin).pathname));
   }, []);
-  const adminUserId = route.path.match(ADMIN_USER_PATH)?.[1];
+  useEffect(() => {
+    if (route.path === "/invite" || /^\/invite\/[^/]+$/.test(route.path)) return;
+    let active = true;
+    void probe().then(access => {
+      if (!active) return;
+      const auth = AUTH_PATHS.includes(route.path);
+      if (access === 'error') { setFailed(true); return; }
+      if (!auth) {
+        if (access === 'verified') { verified.current = true; setApprovedRoute(route); setAllowed(true);
+          void apiClient.GET('/api/v1/auth/organizations').then(({ data }) => {
+            if (!active || !data) return;
+            const current = data.items.find(item => item.org_id === data.current_org_id);
+            if (current) setTenantName(organizationName(current));
+          });
+        }
+        else navigate(`${destination(access, '/')}?return=${encodeURIComponent(safeReturn(window.location.pathname + window.location.search + window.location.hash))}`);
+      } else if (route.path !== '/sign-in' && access === 'signin') {
+        navigate(`/sign-in?return=${encodeURIComponent(safeReturn(new URLSearchParams(window.location.search).get('return')))}`);
+      } else if (route.path === '/sign-in' && access !== 'signin') {
+        const back = safeReturn(new URLSearchParams(window.location.search).get('return'));
+        navigate(destination(access, back) + (access === 'verified' ? '' : `?return=${encodeURIComponent(back)}`));
+      }
+    });
+    return () => { active = false; };
+  }, [route, navigate]);
+  useEffect(() => {
+    const ended = (response: Response) => {
+      if (verified.current && response.status === 401 && !AUTH_PATHS.includes(window.location.pathname)) {
+        navigate(`/sign-in?ended=1&return=${encodeURIComponent(safeReturn(window.location.pathname + window.location.search + window.location.hash))}`);
+      }
+    };
+    const middleware = { onResponse({ response }: { response: Response }) { ended(response); } };
+    apiClient.use(middleware);
+    // Existing features use native fetch as well as the generated client. Observe
+    // same-origin API responses from both without changing their request contracts.
+    const original = window.fetch;
+    const observed: typeof window.fetch = async (...args) => {
+      const response = await original(...args);
+      const input = args[0];
+      const url = new URL(input instanceof Request ? input.url : String(input), window.location.href);
+      if (url.origin === window.location.origin && url.pathname.startsWith('/api/')) ended(response);
+      return response;
+    };
+    window.fetch = observed;
+    return () => {
+      apiClient.eject(middleware);
+      if (window.fetch === observed) window.fetch = original;
+    };
+  }, [navigate]);
+  if (route.path === "/invite" || /^\/invite\/[^/]+$/.test(route.path)) return <InviteScreen navigate={navigate} />;
+  if (AUTH_PATHS.includes(route.path)) return <Screens key={route.path} path={route.path} navigate={navigate} probeFailed={failed} />;
+  if (failed) return <main><h1>We could not reach the server</h1><p>Your page is kept. Check your connection and try again.</p><button onClick={() => window.location.reload()}>Try again</button></main>;
+  if (!allowed && !approvedRoute) return <main role="status">Checking your session</main>;
+  // Keep the last authorized shell mounted during the probe; no new route is rendered early.
+  const shellRoute = allowed ? route : approvedRoute!;
+  const projectId = shellRoute.path.match(PROJECT_PATH)?.[1];
+  const dashboardId = shellRoute.path.match(DASHBOARD_PATH)?.[1];
+  const loadedHeading = projectHeading?.id === (projectId ?? dashboardId) ? projectHeading : null;
+  const displayedRoute = loadedHeading ? { ...shellRoute, title: loadedHeading.title,
+    breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: `/organization/${loadedHeading.buId}`, label: loadedHeading.unit }, { href: shellRoute.path, label: `${loadedHeading.number} ${loadedHeading.title}` }] } : shellRoute;
+  const adminUserId = shellRoute.path.match(ADMIN_USER_PATH)?.[1];
 
   return (
-    <AppShell navigate={navigate} route={route}>
-      {route.path === "/_dev/status-gallery" ? <StatusGallery /> : undefined}
-      {route.path === "/_dev/grid" ? <GridGallery /> : undefined}
-      {route.path === "/_dev/forms" ? <FormGallery /> : undefined}
+    <AppShell navigate={navigate} route={{ ...displayedRoute, breadcrumbs: displayedRoute.breadcrumbs.map(item => ({ ...item, label: item.href === "/organization" && tenantName ? tenantName : item.label })) }}>
+      {shellRoute.path === "/projects" ? <ProjectList navigate={navigate} /> : undefined}
+      {shellRoute.path === "/projects/new" ? <NewProject navigate={navigate} /> : undefined}
+      {dashboardId ? <Dashboard key={`${dashboardId}-${window.location.search}`} id={dashboardId} navigate={navigate} onLoaded={onProjectLoaded} /> : undefined}
+      {shellRoute.path === "/budget" ? <BudgetOverview key={window.location.search} navigate={navigate} /> : undefined}
+      {projectId ? <ProjectDetail key={projectId} id={projectId} onLoaded={onProjectLoaded} /> : undefined}
+      {shellRoute.path === "/_dev/status-gallery" ? <StatusGallery /> : undefined}
+      {shellRoute.path === "/_dev/grid" ? <GridGallery /> : undefined}
+      {shellRoute.path === "/_dev/forms" ? <FormGallery /> : undefined}
       {adminUserId === undefined ? undefined : <EffectiveAccessExplorer userId={adminUserId} />}
     </AppShell>
   );

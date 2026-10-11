@@ -15,6 +15,11 @@ function directive(name: string): string {
 }
 
 describe("document security headers", () => {
+  it("protects invitation asset referrers with a later path rule", () => {
+    expect(headers).toMatch(/\/invite\/\*\n\s+Referrer-Policy: no-referrer(?:\n|$)/);
+    expect(headers.indexOf('/invite/*')).toBeGreaterThan(headers.indexOf('strict-origin-when-cross-origin'));
+  });
+
   it("applies to every document path", () => {
     expect(headers).toMatch(/^\/\*$/m);
   });

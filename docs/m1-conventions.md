@@ -36,10 +36,42 @@ permission with a grant in scope → 403; foreign tenant → 404).
 
 - Amounts on the wire are decimal **strings**; JSON numbers for money are a 422.
 - **Idempotency-Key applies to state-changing `POST` only** (AGENTS.md 3.1; the kernel middleware ignores other methods and this story set does not change it). `PUT` and `DELETE` are idempotent by semantics (a repeated `PUT` stores the same value; a repeated `DELETE` of something already absent is 204 and writes nothing), `PATCH` uses `If-Match` where the packet says so. Where a packet shows `(Idempotency-Key)` on a non-POST route, ignore that annotation. Each write audits in the same transaction.
-- **File scope:** a packet's *Files* list names the main files. Creating additional files **inside the module directories it names and under `tests/`** is allowed, and so is registering a new router where existing routers are included, and the regenerated OpenAPI client. Editing other modules or `kernel/` is **not** allowed unless the packet names that file; if you believe you need to, write `notes.blocked` with the exact reason.
+- **Internal origin-secret job triggers still require the `Idempotency-Key` header but are not replayed.** `/internal/*` POSTs carry no tenant session, so the tenant-scoped middleware demands the header (400 if missing) and then skips claim and replay, as for `/internal/jobs/tick`. Such an endpoint is allowed only when the job is safe to repeat (each call may create new report or run rows but never changes a balance or any posted history); its docstring says so, and its tests prove that two calls, with the same key and with different keys, leave every non-report table byte-identical. Any internal trigger that mutates business data needs its own replay contract in its packet.
+- **File scope:** a packet's *Files* list names the main files. Creating additional files **inside the module directories it names and under `tests/`** is allowed, and so is registering a new router where existing routers are included, and the regenerated OpenAPI client. Editing other modules or `kernel/` is **not** allowed unless the packet names that file; if you believe you need to, write `notes.blocked` with the exact reason. **Existing tests and shared test fixtures:** when your change necessarily breaks an existing test or fixture (a removed stub, a new NOT NULL or CHECK rule, a migration chain extended past what a fixture applies), you **may and must** update that test or fixture in the same story so full pytest stays green; keep the edit minimal, never weaken an assertion to make it pass, and list each edited existing test in the commit body.
 - A new route needs an entry in `apps/api/tests/isolation/test_route_coverage.py::COVERED`
   pointing at a real, named foreign-tenant test.
-- Migrations: next revision after the current head, reversible, with a data-preservation test.
+- Migrations: next revision after the current head, reversible, with a data-preservation test. **Revision id = the current head's date prefix + the next 4-digit number** (head `20261008_0024` makes the next `20261008_0025`, file `migrations/20261008_0025_<name>.py`); any packet that spells `20260826_<next 4-digit number>` means exactly this, because filenames must sort after the head.
 - If something is genuinely undecided after reading the packet **and** this file, write
   `notes.blocked` with the specific question and stop. Do not guess at a money, state or
   authorization rule, but do not block on anything these two documents answer.
+
+## D. Error responses — do not extend the taxonomy
+
+`kernel/errors` is a closed taxonomy and **no M1 story edits it** (except where a packet says so).
+The problem names written in packets (`duplicate_code`, `PeriodClosed`, `StaleVersion`, ...) are
+**labels**. Raise `ProblemError` with the existing code that matches the status, put the plain-language
+explanation in `detail` (it must say what happened and what to do), and carry the label in
+`checks={"problem": "<label as snake_case>"}`. Tests assert status, code and `checks["problem"]`.
+
+| Status | `ErrorCode` | Typical labels |
+|---|---|---|
+| 409 (state or uniqueness conflict) | `CONFLICT` | duplicate_code, PeriodClosed, StaleVersion, InvalidTransition, ClosingBlocked, TransferNotEligible, FundFromParent, ProjectNotFunding, ReleaseExceedsReservation, FundingModeLocked, NotValidated, HasErrors, StaleValidation, ImportKeyConflict, TransferInvariantViolation, address_overlap, ParentInsufficient |
+| 409 (money) | `INSUFFICIENT_BUDGET` | InsufficientBudget |
+| 422 (bad values) | `VALIDATION_FAILED` (with `errors` field entries where a field is at fault) | depth limit, CurrencyMismatch, FxRateMissing, unknown kind or key, attribute-schema errors, formula-in-file, structure errors |
+| 422 (key reused for different content) | `IDEMPOTENCY_KEY_REUSED` | idempotency_conflict |
+| 400 | `BAD_REQUEST` | malformed request not about field values |
+| 403 / 404 | `FORBIDDEN` / `NOT_FOUND` | see section A |
+
+If a packet needs a status with no entry (E08-S01's 413 and 415 are the only ones), it names the
+taxonomy addition explicitly.
+
+## E. Cross-module imports
+
+The import-linter contract allows `flo.modules.<a>` to import `flo.modules.<b>.service` and
+`flo.modules.<b>.schemas`, and nothing else of `<b>` (not `models`, `repo`, `db`, or the package
+root). Import the service function, not the package. Kernel imports are always fine.
+
+## F. Known fixed edits every migration story makes
+
+`apps/api/tests/kernel/test_migrate.py` hardcodes the list of revisions; a story that adds a migration appends its revision id to that list (this is allowed in every packet's file scope).
+

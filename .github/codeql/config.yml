@@ -5,6 +5,15 @@
 # its queries does not survive contact with this codebase.
 name: xlr8flo
 
+# The design canvas is reference material, not product code: ~120 board files of
+# inline demo script plus Playwright specs that run only against those boards. It is
+# not built, not deployed and not imported by apps/. Scanning it produced 282 alerts on
+# the first M1 PR (280 js/useless-expression in the boards) and drowned the real
+# findings in the app. Nothing under apps/, kernel or infra is excluded; if canvas
+# code is ever promoted into apps/, it is scanned from that point.
+paths-ignore:
+  - design-system/canvas
+
 query-filters:
   # py/ineffectual-statement flags the `...` body of every method on every
   # `typing.Protocol`. This is a ports-and-adapters codebase — `IdentityProvider`,

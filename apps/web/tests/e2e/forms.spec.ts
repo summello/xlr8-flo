@@ -22,6 +22,7 @@ test("every primitive keeps its visible label, persistent help, and blur validat
   page,
 }) => {
   await page.goto("/_dev/forms");
+  await page.locator(".app-shell").waitFor();
 
   for (const label of ["Email", "Password", "Approval mode", "Reviewer", "Budget"]) {
     const field = page.getByLabel(label);
@@ -41,6 +42,7 @@ test("every primitive keeps its visible label, persistent help, and blur validat
 
 test("invalid submit focuses the first field and the summary anchors return focus", async ({ page }) => {
   await page.goto("/_dev/forms");
+  await page.locator(".app-shell").waitFor();
   await page.getByRole("button", { name: "Submit fixture" }).focus();
   await page.keyboard.press("Enter");
 
@@ -55,6 +57,7 @@ test("invalid submit focuses the first field and the summary anchors return focu
 
 test("a generated 422 maps to its field while preserving every entered value", async ({ page }) => {
   await page.goto("/_dev/forms");
+  await page.locator(".app-shell").waitFor();
   await completeForm(page, "locked@example.com");
 
   await expect(page.getByLabel("Email")).toBeFocused();
@@ -87,6 +90,7 @@ test("keyboard-only submission completes without emitting a mouse or pointer eve
     (window as Window & { __formMouseEvents?: string[] }).__formMouseEvents = events;
   });
   await page.goto("/_dev/forms");
+  await page.locator(".app-shell").waitFor();
   await completeForm(page, "active@example.com");
 
   await expect(page.getByRole("status")).toContainText("Form submitted");
@@ -95,4 +99,9 @@ test("keyboard-only submission completes without emitting a mouse or pointer eve
       () => (window as Window & { __formMouseEvents?: string[] }).__formMouseEvents ?? [],
     ),
   ).toEqual([]);
+});
+
+// These pre-auth-story fixtures represent a signed-in operator.
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/v1/auth/sessions", route => route.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
 });

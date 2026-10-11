@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="en">
+  <body>
+    <p>{{ inviter_name }} invited you to join {{ org_name }}{% if tenant_label %}, {{ tenant_label }}{% endif %} on XLR8 FLO.</p>
+    <p>Your role: {{ role_name }}. Access: {{ access_words }}.</p>
+    <p><a href="{{ link }}">Accept your invitation</a></p>
+    <p>This single-use link expires on {{ expires_at }}.</p>
+  </body>
+</html>

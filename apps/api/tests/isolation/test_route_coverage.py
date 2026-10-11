@@ -9,11 +9,223 @@ from fastapi import APIRouter
 
 from flo.api.admin_users import router as admin_users_router
 from flo.api.auth import router as auth_router
+from flo.api.budget import router as budget_router
+from flo.api.fiscal import router as fiscal_router
+from flo.api.imports import router as imports_router
+from flo.api.invitations import router as invitations_router
+from flo.api.master import router as master_router
+from flo.api.org import router as org_router
+from flo.api.projects import router as projects_router
 
 TESTS = Path(__file__).resolve().parents[1]
 
 # (method, path) -> "file::test" that proves a foreign id returns 404.
 COVERED = {
+    (
+        "GET",
+        "/api/v1/projects/{id}/risk-indicators",
+    ): "projects/test_risk_indicators.py::test_foreign_dashboard_reads",
+    ("GET", "/api/v1/budget/summary"): "budget/test_summary.py::test_foreign_summary_unit",
+    (
+        "POST",
+        "/api/v1/imports/{id}/cancel",
+    ): "imports/test_async_import.py::test_history_and_cancel_foreign_tenant_routes_and_guards",
+    (
+        "GET",
+        "/api/v1/imports",
+    ): "imports/test_async_import.py::test_history_and_cancel_foreign_tenant_routes_and_guards",
+    (
+        "POST",
+        "/api/v1/imports/{id}/validate",
+    ): "imports/test_validation.py::test_foreign_batch_routes",
+    (
+        "POST",
+        "/api/v1/imports/{id}/commit",
+    ): "imports/test_validation.py::test_foreign_batch_routes",
+    (
+        "GET",
+        "/api/v1/imports/{id}/preview",
+    ): "imports/test_validation.py::test_foreign_batch_routes",
+    (
+        "GET",
+        "/api/v1/imports/{id}/errors.csv",
+    ): "imports/test_validation.py::test_foreign_batch_routes",
+    (
+        "GET",
+        "/api/v1/auth/me",
+    ): "projects/test_list_ui.py::test_auth_me_unauthenticated_and_session_identity_isolation",
+    (
+        "GET",
+        "/api/v1/projects/{id}/risks",
+    ): "projects/test_risks.py::test_risk_foreign_tenant_routes",
+    (
+        "POST",
+        "/api/v1/projects/{id}/risks",
+    ): "projects/test_risks.py::test_risk_foreign_tenant_routes",
+    (
+        "PATCH",
+        "/api/v1/projects/{id}/risks/{risk_id}",
+    ): "projects/test_risks.py::test_risk_foreign_tenant_routes",
+    (
+        "POST",
+        "/api/v1/invitations",
+    ): "identity/test_invitations.py::test_admin_tenant_isolation_and_guards",
+    (
+        "GET",
+        "/api/v1/invitations",
+    ): "identity/test_invitations.py::test_admin_tenant_isolation_and_guards",
+    (
+        "POST",
+        "/api/v1/invitations/{id}/resend",
+    ): "identity/test_invitations.py::test_admin_tenant_isolation_and_guards",
+    (
+        "POST",
+        "/api/v1/invitations/{id}/withdraw",
+    ): "identity/test_invitations.py::test_admin_tenant_isolation_and_guards",
+    (
+        "GET",
+        "/api/v1/invitations/by-token",
+    ): "identity/test_invitations.py::test_uniform_bytes_for_all_unavailable_states_on_both_routes",
+    (
+        "POST",
+        "/api/v1/invitations/accept",
+    ): (
+        "identity/test_invitations.py::"
+        "test_existing_account_accept_into_b_preserves_a_and_never_replays"
+    ),
+    (
+        "GET",
+        "/api/v1/auth/organizations",
+    ): "isolation/test_multi_org.py::test_selection_isolation_and_no_replay",
+    (
+        "POST",
+        "/api/v1/auth/organization",
+    ): "isolation/test_multi_org.py::test_selection_isolation_and_no_replay",
+    (
+        "PUT",
+        "/api/v1/org/tenant-label",
+    ): "isolation/test_multi_org.py::test_tenant_label_authorization_validation_and_isolation",
+    (
+        "GET",
+        "/api/v1/fx/rates",
+    ): "org/test_fx.py::test_fx_reads_foreign_org_inputs_do_not_change_reference_data",
+    (
+        "GET",
+        "/api/v1/fx/status",
+    ): "org/test_fx.py::test_fx_reads_foreign_org_inputs_do_not_change_reference_data",
+    (
+        "PUT",
+        "/api/v1/org/base-currency",
+    ): "org/test_fx.py::test_base_currency_set_repeat_lock_and_foreign_org",
+    (
+        "POST",
+        "/internal/jobs/fx-ingest",
+    ): "org/test_fx.py::test_internal_fx_production_stack_repeats_failures_and_guards",
+    ("GET", "/api/v1/auth/csrf"): "session/test_http.py::test_csrf_bootstrap_ignores_foreign_org",
+    (
+        "GET",
+        "/api/v1/imports/templates",
+    ): "imports/test_upload.py::test_template_collection_and_download_are_guarded",
+    (
+        "GET",
+        "/api/v1/imports/templates/{name}/file",
+    ): "imports/test_upload.py::test_template_collection_and_download_are_guarded",
+    ("POST", "/api/v1/imports"): "imports/test_upload.py::test_upload_uses_session_tenant",
+    ("GET", "/api/v1/imports/{id}"): "imports/test_upload.py::test_get_foreign_batch",
+    ("PUT", "/api/v1/imports/{id}/mapping"): "imports/test_upload.py::test_put_foreign_batch",
+    (
+        "GET",
+        "/api/v1/budget/reconciliation/status",
+    ): "budget/test_reconcile.py::test_reconciliation_status_tenant_isolation",
+    (
+        "GET",
+        "/api/v1/budget/reconciliation/drift",
+    ): "budget/test_reconcile.py::test_foreign_reconciliation_drift",
+    (
+        "POST",
+        "/internal/jobs/budget-reconcile",
+    ): "budget/test_reconcile.py::test_internal_trigger_rejects_tenant_session",
+    ("GET", "/api/v1/projects/{project_id}/balance/aggregate"): (
+        "budget/test_funding_modes.py::test_foreign_aggregate"
+    ),
+    (
+        "POST",
+        "/api/v1/projects/{id}/transitions",
+    ): "projects/test_lifecycle.py::test_transition_foreign_project",
+    (
+        "GET",
+        "/api/v1/projects/{id}/transitions/available",
+    ): "projects/test_lifecycle.py::test_available_foreign_project",
+    (
+        "POST",
+        "/api/v1/budget/transfers",
+    ): "budget/test_transfer_same_level.py::test_foreign_transfer",
+    (
+        "GET",
+        "/api/v1/projects/{project_id}/balance",
+    ): "budget/test_balance_queries.py::test_foreign_balance",
+    (
+        "GET",
+        "/api/v1/projects/{project_id}/balance/reconcile",
+    ): "budget/test_balance_queries.py::test_foreign_reconcile",
+    (
+        "GET",
+        "/api/v1/projects/{project_id}/ledger",
+    ): "budget/test_balance_queries.py::test_foreign_ledger",
+    (
+        "POST",
+        "/api/v1/projects/{project_id}/budget/allocations",
+    ): "budget/test_allocation.py::test_foreign_allocation",
+    (
+        "POST",
+        "/api/v1/projects/{project_id}/budget/adjustments",
+    ): "budget/test_allocation.py::test_foreign_adjustment",
+    (
+        "GET",
+        "/api/v1/projects/{id}/children",
+    ): "projects/test_hierarchy.py::test_children_foreign_project",
+    (
+        "GET",
+        "/api/v1/projects/{id}/tree",
+    ): "projects/test_risk_indicators.py::test_foreign_dashboard_reads",
+    ("POST", "/api/v1/projects"): "projects/test_projects.py::test_create_foreign_bu",
+    ("GET", "/api/v1/projects"): "projects/test_projects.py::test_list_tenant_isolation",
+    ("GET", "/api/v1/projects/{id}"): "projects/test_projects.py::test_get_foreign_project",
+    ("PATCH", "/api/v1/projects/{id}"): "projects/test_projects.py::test_patch_foreign_project",
+    ("PUT", "/api/v1/fiscal/calendar"): "org/test_fiscal.py::test_collection_tenant_isolation",
+    ("GET", "/api/v1/fiscal/periods"): "org/test_fiscal.py::test_collection_tenant_isolation",
+    (
+        "POST",
+        "/api/v1/fiscal/years/{fiscal_year}:generate",
+    ): "org/test_fiscal.py::test_collection_tenant_isolation",
+    ("POST", "/api/v1/fiscal/periods/{id}:close"): "org/test_fiscal.py::test_foreign_period_id",
+    ("POST", "/api/v1/fiscal/periods/{id}:reopen"): "org/test_fiscal.py::test_foreign_period_id",
+    ("GET", "/api/v1/master/currency"): "org/test_master.py::test_collection_tenant_isolation",
+    ("GET", "/api/v1/master/{kind}"): "org/test_master.py::test_collection_tenant_isolation",
+    ("POST", "/api/v1/master/{kind}"): "org/test_master.py::test_collection_tenant_isolation",
+    ("PATCH", "/api/v1/master/{kind}/{id}"): "org/test_master.py::test_foreign_master_id",
+    ("POST", "/api/v1/master/{kind}/{id}:deactivate"): "org/test_master.py::test_foreign_master_id",
+    (
+        "POST",
+        "/api/v1/org/units/{unit_id}/addresses",
+    ): "org/test_addresses.py::test_foreign_unit_addresses",
+    (
+        "GET",
+        "/api/v1/org/units/{unit_id}/addresses",
+    ): "org/test_addresses.py::test_foreign_unit_addresses",
+    (
+        "PATCH",
+        "/api/v1/org/units/{unit_id}/addresses/{id}",
+    ): "org/test_addresses.py::test_foreign_address_id",
+    ("POST", "/api/v1/org/units"): "org/test_units.py::test_create_foreign_parent",
+    ("GET", "/api/v1/org/units"): "org/test_units.py::test_list_tenant_filter_and_cursor",
+    ("GET", "/api/v1/org/units/{id}"): "org/test_units.py::test_get_foreign_unit",
+    ("PATCH", "/api/v1/org/units/{id}"): "org/test_units.py::test_patch_foreign_unit",
+    ("PUT", "/api/v1/org/settings/{key}"): "org/test_settings.py::test_put_foreign_unit",
+    ("DELETE", "/api/v1/org/settings/{key}"): "org/test_settings.py::test_delete_foreign_unit",
+    ("GET", "/api/v1/org/units/{id}/settings/{key}/effective"): (
+        "org/test_settings.py::test_effective_foreign_unit"
+    ),
     ("GET", "/api/v1/admin/users/{user_id}/effective-access"): (
         "authz/test_effective_access.py::test_effective_access_conceals_a_foreign_tenant_subject"
     ),
@@ -29,6 +241,30 @@ COVERED = {
     ("DELETE", "/api/v1/auth/sessions/{session_id}"): (
         "session/test_http.py::test_unknown_or_foreign_session_id_is_not_found_and_logout_clears_cookies"
     ),
+    (
+        "GET",
+        "/api/v1/projects/{id}/phases",
+    ): "projects/test_schedule.py::test_schedule_foreign_tenant_routes",
+    (
+        "POST",
+        "/api/v1/projects/{id}/phases",
+    ): "projects/test_schedule.py::test_schedule_foreign_tenant_routes",
+    (
+        "PATCH",
+        "/api/v1/projects/{id}/phases/{phase_id}",
+    ): "projects/test_schedule.py::test_schedule_foreign_tenant_routes",
+    (
+        "GET",
+        "/api/v1/projects/{id}/milestones",
+    ): "projects/test_schedule.py::test_schedule_foreign_tenant_routes",
+    (
+        "POST",
+        "/api/v1/projects/{id}/milestones",
+    ): "projects/test_schedule.py::test_schedule_foreign_tenant_routes",
+    (
+        "PATCH",
+        "/api/v1/projects/{id}/milestones/{mid}",
+    ): "projects/test_schedule.py::test_schedule_foreign_tenant_routes",
 }
 
 
@@ -54,14 +290,43 @@ def missing_cases(routes: set[tuple[str, str]], covered: dict[tuple[str, str], s
 
 
 def test_every_id_route_has_a_named_foreign_tenant_case() -> None:
-    assert missing_cases(id_routes(admin_users_router, auth_router), COVERED) == []
+    assert (
+        missing_cases(
+            id_routes(
+                admin_users_router,
+                auth_router,
+                org_router,
+                master_router,
+                fiscal_router,
+                projects_router,
+                budget_router,
+                imports_router,
+                invitations_router,
+            ),
+            COVERED,
+        )
+        == []
+    )
 
 
 def test_gate_fails_on_an_uncovered_route_and_on_a_dangling_reference() -> None:
     dangling = {("GET", "/api/v1/admin/users/{user_id}/new"): "authz/test_enforcement.py::nope"}
     extra = COVERED | dangling
     widget = {("GET", "/api/v1/widgets/{widget_id}")}
-    routes = id_routes(admin_users_router, auth_router) | widget
+    routes = (
+        id_routes(
+            admin_users_router,
+            auth_router,
+            org_router,
+            master_router,
+            fiscal_router,
+            projects_router,
+            budget_router,
+            imports_router,
+            invitations_router,
+        )
+        | widget
+    )
     problems = missing_cases(routes, extra)
     assert "no isolation case: GET /api/v1/widgets/{widget_id}" in problems
     assert any("covering test not found" in problem for problem in problems)

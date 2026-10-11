@@ -21,8 +21,17 @@ from flo.api.auth import (
     production_session_store_factory,
 )
 from flo.api.auth import router as auth_router
+from flo.api.authz_factory import production_authorization_resolver
+from flo.api.budget import router as budget_router
+from flo.api.fiscal import router as fiscal_router
+from flo.api.fx import router as fx_router
+from flo.api.imports import router as imports_router
 from flo.api.internal import router as internal_router
+from flo.api.invitations import router as invitations_router
+from flo.api.master import router as master_router
+from flo.api.org import router as org_router
 from flo.api.origin_auth import require_origin_secret
+from flo.api.projects import router as projects_router
 from flo.kernel.authz import PermissionResolverFactory, install_authorization, public_route
 from flo.kernel.config import Settings, enforce_argon2_memory_limit
 from flo.kernel.errors import ErrorCode, ProblemError, install_problem_details
@@ -35,10 +44,8 @@ from flo.kernel.session import (
     install_session_authentication,
 )
 from flo.kernel.storage import create_storage
-from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.middleware import install_tenant_context
-from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
-from flo.modules.identity.resolver import AuthorizationConnection, AuthorizationResolver
+from flo.kernel.tenancy.selection import OrganizationSelectionMiddleware
 
 HealthProbe = Callable[[Settings], Awaitable[None]]
 
@@ -92,22 +99,14 @@ app = FastAPI(
 app.include_router(internal_router)
 app.include_router(auth_router)
 app.include_router(admin_users_router)
-
-
-@contextmanager
-def production_authorization_resolver(scope: Scope) -> Iterator[AuthorizationResolver]:
-    """Open one uncached, tenant-scoped resolver for one authorization check."""
-
-    settings = Settings()
-    try:
-        connection = psycopg.connect(_database_url(settings), autocommit=False)
-    except psycopg.Error as exc:
-        raise ProblemError(ErrorCode.SERVICE_UNAVAILABLE) from exc
-    try:
-        with tenant_transaction(cast(RlsSession, connection), scope):
-            yield AuthorizationResolver(cast(AuthorizationConnection, connection), scope)
-    finally:
-        connection.close()
+app.include_router(org_router)
+app.include_router(master_router)
+app.include_router(fiscal_router)
+app.include_router(fx_router)
+app.include_router(projects_router)
+app.include_router(budget_router)
+app.include_router(imports_router)
+app.include_router(invitations_router)
 
 
 install_authorization(
@@ -135,6 +134,7 @@ def production_idempotency_connection() -> Iterator[IdempotencyConnection]:
 # correlation then serializes their failures, and browser headers wrap every path.
 install_idempotency(app, production_idempotency_connection)
 install_tenant_context(app)
+app.add_middleware(OrganizationSelectionMiddleware)
 install_mfa_access_gate(app, production_mfa_service_factory())
 install_session_authentication(app, production_session_store_factory())
 install_csrf_protection(app)

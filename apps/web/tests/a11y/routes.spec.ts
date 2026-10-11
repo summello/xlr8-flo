@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+import { stubDashboard } from "../e2e/dashboard-fixture";
+import { projectId } from "../e2e/projects-fixture";
 import { ROUTE_PATHS } from "../../src/routes/route-paths";
 
 expect(ROUTE_PATHS, "MISSING: forms-kit route in the shared route manifest").toContain(
@@ -8,18 +10,22 @@ expect(ROUTE_PATHS, "MISSING: forms-kit route in the shared route manifest").toC
 );
 
 for (const theme of ["light", "dark"] as const) {
-  for (const route of ROUTE_PATHS) {
+  for (const route of [...ROUTE_PATHS, `/projects/${projectId}/dashboard`]) {
     test(`${route} passes axe in ${theme} theme`, async ({ page }) => {
       await page.addInitScript((selectedTheme) => {
         localStorage.setItem("xlr8flo.theme", selectedTheme);
       }, theme);
       await page.goto(route);
+      await page.locator(".app-shell").waitFor();
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+      if (route === "/projects") await expect(page.locator("tr[data-grid-row]").first()).toBeVisible();
+      if (route === "/projects/new") await expect(page.locator(".project-form")).toBeVisible();
       if (route === "/_dev/grid") {
         await expect(page.locator("tr[data-grid-row]").first()).toBeVisible();
       }
 
+      if (route === "/budget" || route.endsWith("/dashboard")) await expect(page.locator(".dashboard-kpi").first()).toBeVisible();
       const results = await new AxeBuilder({ page }).analyze();
       expect(results.violations).toEqual([]);
     });
@@ -31,6 +37,7 @@ test("reduced motion preserves the form's information and complete keyboard outc
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/_dev/forms");
+  await page.locator(".app-shell").waitFor();
 
   expect(await page.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches)).toBe(
     true,
@@ -59,4 +66,10 @@ test("reduced motion preserves the form's information and complete keyboard outc
   await page.keyboard.press("Enter");
 
   await expect(page.getByRole("status")).toContainText("Form submitted");
+});
+
+// These pre-auth-story fixtures represent a signed-in operator.
+test.beforeEach(async ({ page }) => {
+  await stubDashboard(page);
+  await page.route("**/api/v1/auth/sessions", route => route.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
 });

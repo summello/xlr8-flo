@@ -25,6 +25,7 @@ from psycopg.errors import RaiseException
 from flo.api.auth import (
     current_session,
     get_identity_provider,
+    get_login_throttle,
     get_mfa_service,
     get_session_store,
     router,
@@ -76,6 +77,7 @@ def load_migration(path: Path, name: str) -> ModuleType:
 
 
 def drop_mfa_objects(connection: psycopg.Connection[tuple[object, ...]]) -> None:
+    connection.execute("DROP TABLE IF EXISTS login_attempt")
     connection.execute("DROP TABLE IF EXISTS user_role")
     connection.execute("DROP TABLE IF EXISTS role_permission")
     connection.execute("DROP TABLE IF EXISTS permission")
@@ -88,6 +90,7 @@ def drop_mfa_objects(connection: psycopg.Connection[tuple[object, ...]]) -> None
     connection.execute("DROP TABLE IF EXISTS session_security_event")
     connection.execute("DROP TABLE IF EXISTS auth_session")
     connection.execute("DROP FUNCTION IF EXISTS reject_session_security_event_mutation()")
+    connection.execute("DROP TABLE IF EXISTS identity_membership")
     connection.execute("DROP TABLE IF EXISTS identity")
 
 
@@ -126,7 +129,12 @@ def mfa_database() -> Iterator[MfaDatabase]:
     access_migration = load_migration(ACCESS_MIGRATION, "mfa_test_access")
     drop_mfa_objects(connection)
     identity_migration.upgrade(connection)
+    connection.execute(
+        "CREATE TABLE identity_membership (identity_id uuid PRIMARY KEY REFERENCES identity(id), "
+        "org_id uuid NOT NULL)"
+    )
     session_migration.upgrade(connection)
+    connection.execute("ALTER TABLE auth_session ADD COLUMN org_id uuid")
     mfa_migration.upgrade(connection)
     connection.execute("CREATE TABLE role (id uuid, org_id uuid, PRIMARY KEY (org_id, id))")
     connection.execute("CREATE TABLE permission (code text PRIMARY KEY)")
@@ -491,6 +499,20 @@ def build_app(
         IdentityProvider, FakeProvider(database.identity_id)
     )
     app.dependency_overrides[get_session_store] = lambda: store
+
+    from flo.kernel.config import Settings
+    from flo.kernel.identity.throttle import LoginThrottle
+    from flo.kernel.migrate import discover_migrations
+
+    database.connection.execute("DROP TABLE IF EXISTS login_attempt")
+    next(
+        revision for revision in discover_migrations(ROOT / "migrations")
+        if revision.revision == "20261009_0029"
+    ).upgrade(database.connection)
+    app.dependency_overrides[get_login_throttle] = lambda: LoginThrottle(
+        database.connection, Settings()
+    )
+
     app.dependency_overrides[get_mfa_service] = lambda: mfa
 
     @contextmanager
