@@ -1012,6 +1012,7 @@ epics:
         k: ledger
         s: M
         tags:
+          - migration
           - money
         reqs:
           - REQ-013
