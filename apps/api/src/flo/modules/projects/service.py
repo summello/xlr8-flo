@@ -13,7 +13,7 @@ import psycopg
 from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.config import Settings
-from flo.kernel.errors import ErrorCode, ProblemError
+from flo.kernel.errors import ErrorCode, ProblemError, conflict
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.identity.service import (
@@ -29,7 +29,7 @@ from flo.modules.org.service import (
     list_currencies,
 )
 from flo.modules.projects.hierarchy import Hierarchy
-from flo.modules.projects.lifecycle import Lifecycle, conflict, invalid
+from flo.modules.projects.lifecycle import Lifecycle, invalid
 from flo.modules.projects.models import COLUMNS, FIELDS, ProjectRepository
 from flo.modules.projects.risk_indicators import risk_indicators as compute_risk_indicators
 from flo.modules.projects.risks import Risks
@@ -381,7 +381,7 @@ class ProjectService:
                 (COALESCE(b.reserved,0)+COALESCE(b.committed,0)+COALESCE(b.actual,0))::text,
                 COALESCE(b.available,0)::text, p.currency,
                 CASE WHEN b.allocated <> 0 THEN
-                round((b.reserved+b.committed+b.actual)*100/b.allocated,1)::text END,
+                round((b.allocated-b.available)*100/b.allocated,1)::text END,
                 COALESCE(b.reserved,0)::text, COALESCE(b.committed,0)::text,
                 COALESCE(b.actual,0)::text
                 FROM bounded w JOIN project p ON p.id=w.id AND p.org_id=%(org_id)s

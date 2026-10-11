@@ -7,7 +7,7 @@ from uuid import UUID
 
 from psycopg.types.json import Jsonb
 
-from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError
+from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError, conflict
 from flo.modules.projects.models import ProjectRepository
 from flo.modules.projects.schemas import ProjectStatus, TransitionAvailable, TransitionCreate
 
@@ -22,10 +22,6 @@ TRANSITIONS = {
     ("active", "abandoned"): ("project.complete", True),
     ("deferred", "abandoned"): ("project.complete", True),
 }
-
-
-def conflict(label: str, detail: str) -> ProblemError:
-    return ProblemError(ErrorCode.CONFLICT, detail=detail, checks={"problem": label})
 
 
 # Lives here, not in service.py, so risks.py can import it without an import cycle.
