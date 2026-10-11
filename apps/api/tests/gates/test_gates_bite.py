@@ -93,8 +93,34 @@ def assert_release_workflow_policy(source: str) -> None:
     assert "--source" not in deploy
     assert "credentials_json" not in source
     assert "workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}" in source
-    assert "grep -RIlE -- 'sk-|-----BEGIN' apps/web/dist" in source
+    assert f"grep -RIlE -- '{SPA_SECRET_MARKER}' apps/web/dist" in source
     assert 'grep -RIlF -- "$GCP_PROJECT" apps/web/dist' in source
+
+
+SPA_SECRET_MARKER = r"(^|[^A-Za-z0-9])sk-[A-Za-z0-9_-]{20,}|-----BEGIN"
+
+
+@pytest.mark.parametrize(
+    ("bundle", "flagged"),
+    [
+        ('fetch(`/api/v1/projects/${id}/risk-indicators`)', False),
+        ("task-list-item-with-a-very-long-class-name-here", False),
+        ('const key="sk-proj-abcdefghijklmnopqrstuvwx"', True),
+        ("sk-abcdefghijklmnopqrstuvwxyz0123", True),
+        ("-----BEGIN PRIVATE KEY-----", True),
+    ],
+)
+def test_spa_secret_marker_flags_keys_and_not_words_containing_sk(
+    tmp_path: Path, bundle: str, flagged: bool
+) -> None:
+    (tmp_path / "index.js").write_text(bundle, encoding="utf-8")
+    result = subprocess.run(
+        ["grep", "-RIlE", "--", SPA_SECRET_MARKER, str(tmp_path)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert (result.returncode == 0) is flagged
 
 
 def assert_migration_workflow_policy(source: str) -> None:
