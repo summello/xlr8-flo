@@ -157,6 +157,10 @@ upheld), and its pre-flight audit caught E08-S03's resolver wiring before codex 
 instruction to space them out so the repository does not read as bot-driven. Outside M0 the
 standing rule holds: push, never merge.
 
+## M1 shipped (11 Oct 2026)
+
+M1 (32/32) merged to `main` as `e51bea9` (PR #15, merge commit); migrations 0027 to 0036 ran in the deploy job. The first deploy migrated and shipped the API, then stopped at the SPA upload: the bundle guard's bare `sk-` grep matched `/risk-indicators`. PR #17 tightened it to a key shape (`sk-` at a word start plus 20 key characters, or a PEM header) with a planted test, and the re-run deployed the SPA and Worker (smoke: `/readyz` 200, bundle served). Lesson: a deploy guard that greps source text needs a test that plants both a true and a false positive, and a story that adds an API path should be checked against it. Not done before merge, by the operator's call: the Neon staging rehearsal of 0027 to 0036; the 19 decisions in `docs/m1-decisions-to-confirm.md` are still unconfirmed (reversible by follow-up story). Still open on M1: two minors carried (ratio rounding outside `kernel/money.py`; five `_audit` wrappers, which M2 approvals would make six); the fleet re-route from `agents/SCORECARD.md` owed at milestone end (claude.md section 5).
+
 ## Latest handoff
 
 **M2 design pass (10 Oct 2026): all 25 packets are written** (`design/E09-S01..S12.md`, `design/E10-S01..S13.md`, on `docs/m2-design` until merged into `milestone/M2-governed-demand`). Two Opus sessions split the pass by epic. Before authoring or reviewing any M2 story:
