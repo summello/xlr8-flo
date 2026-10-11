@@ -84,6 +84,8 @@ routing rules (L stories exceed nemotron's M cap, UI included). Run `flo assign 
 | `migrations/` head, `tests/kernel/test_migrate.py` | every migration story (E09-S01, S02, S03, S05, S07, S08, S10; E10-S01, S05, S06, S07, S08, S13) | next revision after the head **at start**; the second lane to merge re-points `down_revision`; append the revision to the test list |
 | `modules/identity/models.py`, `tests/authz/test_models.py`, `test_migration.py`, `conftest.py` | E10-S01, E10-S08, E09-S05 | new permissions ship in a permissions-only migration (convention I) |
 | `kernel/authz.py` | E10-S04 (holders protocol), E10-S05 (`require_resolved`, `require_member`) | E09 stories read it; convention P |
+| `kernel/session/middleware.py` | E09-S10 only (a handler-supplied `Content-Security-Policy: sandbox` is kept in addition to the fixed header; anything else is still replaced) | the one authorised kernel security edit in E09; Opus reviews it with its planted test in `tests/session/` |
+| `modules/identity/service.py` | E10-S06, E09-S05 (`emails_by_id`, read-only) | whichever merges first adds it |
 | `api/health.py` router includes | every story that adds a router | one include line each; trivial conflicts |
 | `api/internal.py` | E10-S08, E10-S13, E09-S05, S07, S10 | one registration call each |
 | `api/document_types.py` | E09-S05, E09-S10, E10-S13 | created by whichever merges first; the others add an adapter |
