@@ -3,6 +3,7 @@
 # submit + done (done runs the gate). Output goes to .scratch/STORY.finish.log; on failure
 # the failing check stages and gate lines are printed, not just the last line.
 set -e
+. "$(dirname "$0")/env.sh"
 S="$1"; R="$(cd "$(dirname "$0")/../.." && pwd)"; W="$R-$S"; L="$R/.scratch/$S.finish.log"
 cd "$R"
 export PATH="$W/apps/api/.venv/bin:$PATH"
