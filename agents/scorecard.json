@@ -2549,6 +2549,42 @@
       },
       "recap": "Added the approval execution engine: instances and tasks with a pinned workflow version, a route walk over conditions, any/all/quorum completion over live membership with one decision per person, preview and resume, and the instance route behind new require_resolved and require_member guards. Finished by the M2 runner from Codex's partial tree after the Codex cap.",
       "title": "Execution engine: instances, tasks, any-one/all/quorum groups, live membership"
+    },
+    {
+      "story": "E10-S11",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "qwen",
+          "to": "opus",
+          "reason": "operator instruction 12 Oct 2026: qwen and deepseek review only when all of M2 is complete"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a12d6f-fcb6-7aa1-a794-f3dfd1353cbd",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Added the approval workflow builder at /admin/approval-workflows/:id with one shared graph reducer behind the canvas, the Outline and the Inspector, so the keyboard-only path builds the same graph as dragging. It reads attribute options from the server catalogue, shows E10-S03 validation in a Problems panel, and gates publish on errors and acknowledged warnings. The runner finished the story after the Codex cap (fixed a type error and a focus-after-render bug).",
+      "title": "Visual workflow builder, drag-and-drop canvas"
     }
   ]
 }

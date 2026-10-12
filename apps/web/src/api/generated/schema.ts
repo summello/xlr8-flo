@@ -1671,6 +1671,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workflows/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Workflow Catalog
+         * @description Expose the registered document catalogue to authorized workflow readers.
+         */
+        get: operations["workflow_catalog_api_v1_workflows_catalog_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workflows/{id}": {
         parameters: {
             query?: never;
@@ -9429,6 +9449,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkflowRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    workflow_catalog_api_v1_workflows_catalog_get: {
+        parameters: {
+            query: {
+                document_type: "project" | "requisition" | "budget_change" | "vendor" | "rfq" | "award" | "po";
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: "text" | "code" | "decimal" | "date" | "boolean" | "money" | "code_list";
+                    };
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

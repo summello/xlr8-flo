@@ -13,6 +13,7 @@ import StatusGallery from "./_dev/status-gallery";
 import EffectiveAccessExplorer from "./admin/users/$id";
 import ProjectList from "./projects/list";
 import NewProject from "./projects/new";
+import WorkflowBuilder from "./admin/approval-workflows/[id]";
 import ProjectDetail from "./projects/detail";
 import Dashboard from "./projects/dashboard";
 import BudgetOverview from "./budget";
@@ -33,6 +34,7 @@ const ORGANIZATION = ["/organization", "Northstar Capital"] as const;
 const BUSINESS_UNIT = ["/organization/infrastructure", "Infrastructure BU"] as const;
 const PROJECT = ["/projects/north-plant-renewal", "North plant renewal"] as const;
 const SUB_PROJECT = ["/projects/north-plant-renewal/cooling", "Cooling system upgrade"] as const;
+const WORKFLOW_PATH = /^\/admin\/approval-workflows\/([0-9a-f-]{36})$/;
 const PROJECT_PATH = /^\/projects\/([0-9a-f-]{36})$/;
 const DASHBOARD_PATH = /^\/projects\/([0-9a-f-]{36})\/dashboard$/;
 const ADMIN_USER_PATH = /^\/admin\/users\/([^/]+)$/;
@@ -167,6 +169,7 @@ const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
 };
 
 function routeFor(path: string): ShellRoute {
+  if (WORKFLOW_PATH.test(path)) return { activeHref: "/administration", path, phase: "demand", title: "Approval Workflow", description: "Design and check approval routes.", breadcrumbs: [{ href: "/administration", label: "Administration" }, { href: path, label: "Approval Workflow" }] };
   if (PROJECT_PATH.test(path) || DASHBOARD_PATH.test(path)) return {
     activeHref: "/projects", path, phase: "plan", title: DASHBOARD_PATH.test(path) ? "Project Dashboard" : "Project", description: "Project details and actions.",
     breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/projects", label: "Projects" }],
@@ -282,6 +285,7 @@ export default function RootRoute() {
   if (!allowed && !approvedRoute) return <main role="status">Checking your session</main>;
   // Keep the last authorized shell mounted during the probe; no new route is rendered early.
   const shellRoute = allowed ? route : approvedRoute!;
+  const workflowId = shellRoute.path.match(WORKFLOW_PATH)?.[1];
   const projectId = shellRoute.path.match(PROJECT_PATH)?.[1];
   const dashboardId = shellRoute.path.match(DASHBOARD_PATH)?.[1];
   const loadedHeading = projectHeading?.id === (projectId ?? dashboardId) ? projectHeading : null;
@@ -295,6 +299,7 @@ export default function RootRoute() {
       {shellRoute.path === "/projects/new" ? <NewProject navigate={navigate} /> : undefined}
       {dashboardId ? <Dashboard key={`${dashboardId}-${window.location.search}`} id={dashboardId} navigate={navigate} onLoaded={onProjectLoaded} /> : undefined}
       {shellRoute.path === "/budget" ? <BudgetOverview key={window.location.search} navigate={navigate} /> : undefined}
+      {workflowId ? <WorkflowBuilder key={workflowId} id={workflowId} /> : undefined}
       {projectId ? <ProjectDetail key={projectId} id={projectId} onLoaded={onProjectLoaded} /> : undefined}
       {shellRoute.path === "/_dev/status-gallery" ? <StatusGallery /> : undefined}
       {shellRoute.path === "/_dev/grid" ? <GridGallery /> : undefined}

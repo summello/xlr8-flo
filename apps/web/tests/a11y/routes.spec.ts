@@ -73,3 +73,14 @@ test.beforeEach(async ({ page }) => {
   await stubDashboard(page);
   await page.route("**/api/v1/auth/sessions", route => route.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
 });
+
+for (const theme of ["light", "dark"] as const) {
+  test(`workflow builder route passes axe in ${theme}`, async ({ page }) => {
+    const { stubBuilder, workflowId } = await import("../e2e/workflow-builder-fixture");
+    await page.addInitScript(t => localStorage.setItem("xlr8flo.theme", t), theme);
+    await stubBuilder(page);
+    await page.goto(`/admin/approval-workflows/${workflowId}`);
+    await page.getByRole("button", { name: "Add Condition" }).waitFor();
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  });
+}

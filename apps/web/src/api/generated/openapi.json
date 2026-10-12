@@ -17265,6 +17265,97 @@
         ]
       }
     },
+    "/api/v1/workflows/catalog": {
+      "get": {
+        "description": "Expose the registered document catalogue to authorized workflow readers.",
+        "operationId": "workflow_catalog_api_v1_workflows_catalog_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "document_type",
+            "required": true,
+            "schema": {
+              "enum": [
+                "project",
+                "requisition",
+                "budget_change",
+                "vendor",
+                "rfq",
+                "award",
+                "po"
+              ],
+              "title": "Document Type",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "enum": [
+                      "text",
+                      "code",
+                      "decimal",
+                      "date",
+                      "boolean",
+                      "money",
+                      "code_list"
+                    ],
+                    "type": "string"
+                  },
+                  "title": "Response Workflow Catalog Api V1 Workflows Catalog Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Workflow Catalog",
+        "tags": [
+          "workflows"
+        ]
+      }
+    },
     "/api/v1/workflows/{id}": {
       "get": {
         "operationId": "get_workflow_api_v1_workflows__id__get",

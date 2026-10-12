@@ -12,13 +12,14 @@ from flo.kernel.authz import require
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.approvals.schemas import (
     DocumentType,
+    FieldType,
     WorkflowCreate,
     WorkflowPage,
     WorkflowRead,
     WorkflowVersionRead,
     WorkflowVersionWrite,
 )
-from flo.modules.approvals.service import WorkflowService
+from flo.modules.approvals.service import WorkflowService, field_catalog
 from flo.modules.approvals.validation import PublishWrite, ValidationReport
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.org.service import OrgService
@@ -67,6 +68,12 @@ def list_workflows(
     cursor: str | None = None,
 ) -> WorkflowPage:
     return WorkflowService(connection, current_scope(), context.user_id).list(document_type, cursor)
+
+
+@router.get("/catalog", response_model=dict[str, FieldType])
+def workflow_catalog(document_type: DocumentType, context: ListContext) -> dict[str, FieldType]:
+    """Expose the registered document catalogue to authorized workflow readers."""
+    return dict(field_catalog(document_type))
 
 
 @router.get("/{id}", response_model=WorkflowRead)

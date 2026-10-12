@@ -1192,7 +1192,7 @@ epics:
           - AUD-001
         dep:
           - E10-S05
-        st: todo
+        st: in_progress
       - id: E10-S07
         t: Stale-version guard and material-change resubmission policy
         k: concurrency
@@ -1255,7 +1255,7 @@ epics:
         dep:
           - E10-S03
           - E04-S02
-        st: review
+        st: done
       - id: E10-S12
         t: 'Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11)'
         k: ui
