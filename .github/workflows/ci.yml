@@ -189,7 +189,9 @@ jobs:
           sudo install -m 0755 gitleaks /usr/local/bin/gitleaks
           rm gitleaks.tar.gz gitleaks
 
-      - run: pytest -q apps/api --cov=flo --cov-report=term-missing
+      # --durations: the 25-minute suite is fixture-bound (migrations per test); this is the evidence
+      # for the template-database fix (pipeline plan step 6, 13 Oct 2026).
+      - run: pytest -q apps/api --cov=flo --cov-report=term-missing --durations=40
 
       - name: Cross-tenant isolation suite (TEN-010)
         run: |
