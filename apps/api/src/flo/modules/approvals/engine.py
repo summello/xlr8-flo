@@ -3,7 +3,7 @@
 import hashlib
 import json
 from collections.abc import Mapping, Sequence
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any, Literal, cast
 from uuid import UUID, uuid4
@@ -81,6 +81,34 @@ TASK_FIELDS = (
 _RULE: TypeAdapter[Any] = TypeAdapter(Approvers)
 
 
+@dataclass(frozen=True)
+class VersionResolution:
+    version: WorkflowVersionRead
+    definition_id: UUID
+    definition_name: str
+    scope_type: Literal["org", "bu"]
+    scope_id: UUID
+    scope_name: str
+    scope_kind: Literal["org", "bu", "ou"]
+
+    @property
+    def bound_scope(self) -> str:
+        return f"{self.scope_type}:{self.scope_id}"
+
+    @property
+    def reason(self) -> str:
+        if self.scope_type == "org":
+            return (
+                f"Published version {self.version.version} bound to {self.scope_name} "
+                "(organization level)."
+            )
+        kind = "business unit" if self.scope_kind == "bu" else "organizational unit"
+        return (
+            f"Published version {self.version.version} bound to {self.scope_name} ({kind}) "
+            "— nearer than the organization-level workflow."
+        )
+
+
 def adapter_for(document_type: str) -> DocumentAdapter:
     conditions.approve_permission(document_type)  # actionable registry error
     return cast(DocumentAdapter, conditions._adapters[document_type])
@@ -116,25 +144,62 @@ def resolve_version(
     bu_id: UUID | None,
 ) -> WorkflowVersionRead | None:
     """Nearest published live definition; retirement does not affect stored versions."""
+    resolved = resolve_version_reason(conn, scope, document_type, bu_id)
+    return resolved.version if resolved else None
+
+
+def resolve_version_reason(
+    conn: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    document_type: str,
+    bu_id: UUID | None,
+    *,
+    pinned_version_id: UUID | None = None,
+) -> VersionResolution | None:
+    """Resolve once and retain the binding facts that explain the choice.
+
+    ``pinned_version_id`` reads the same facts for an already-recorded instance, so
+    explainability survives a later publish or retirement without re-routing history.
+    """
     with tenant_transaction(cast(RlsSession, conn), scope):
+        live_filter = (
+            "d.document_type=%(type)s AND d.retired_at IS NULL AND v.status='published' "
+            "AND ((d.scope_type='bu' AND d.scope_id=%(bu)s) OR "
+            "(d.scope_type='org' AND d.scope_id=%(org_id)s))"
+        )
+        pinned_filter = "v.id=%(pinned)s AND d.document_type=%(type)s"
         row = (
             WorkflowRepository(conn, scope)
             .execute(
                 f"SELECT {', '.join('v.' + field for field in VERSION_FIELDS)} "
+                ",d.id,d.name,d.scope_type,d.scope_id,"
+                "CASE WHEN d.scope_type='org' THEN o.name ELSE u.name END,"
+                "CASE WHEN d.scope_type='org' THEN 'org' ELSE u.kind END "
                 "FROM workflow_definition d JOIN workflow_version v "
                 "ON v.org_id=d.org_id AND v.definition_id=d.id "
-                "WHERE d.org_id=%(org_id)s AND d.document_type=%(type)s AND d.retired_at IS NULL "
-                "AND v.status='published' AND ((d.scope_type='bu' AND d.scope_id=%(bu)s) "
-                "OR (d.scope_type='org' AND d.scope_id=%(org_id)s)) "
+                "JOIN organization o ON o.id=d.org_id "
+                "LEFT JOIN org_unit u ON u.org_id=d.org_id AND u.id=d.scope_id "
+                "WHERE d.org_id=%(org_id)s AND "
+                + (pinned_filter if pinned_version_id is not None else live_filter)
+                + " "
                 "ORDER BY (d.scope_type='bu') DESC LIMIT 1",
-                {"type": document_type, "bu": bu_id},
+                {"type": document_type, "bu": bu_id, "pinned": pinned_version_id},
             )
             .fetchone()
         )
-        return (
-            WorkflowVersionRead.model_validate(dict(zip(VERSION_FIELDS, row, strict=True)))
-            if row
-            else None
+        if row is None:
+            return None
+        width = len(VERSION_FIELDS)
+        return VersionResolution(
+            version=WorkflowVersionRead.model_validate(
+                dict(zip(VERSION_FIELDS, row[:width], strict=True))
+            ),
+            definition_id=cast(UUID, row[width]),
+            definition_name=str(row[width + 1]),
+            scope_type=cast(Literal["org", "bu"], row[width + 2]),
+            scope_id=cast(UUID, row[width + 3]),
+            scope_name=str(row[width + 4]),
+            scope_kind=cast(Literal["org", "bu", "ou"], row[width + 5]),
         )
 
 

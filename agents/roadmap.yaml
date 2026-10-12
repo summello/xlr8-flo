@@ -1229,7 +1229,7 @@ epics:
           - E10-S05
           - E10-S06
           - E10-S08
-        st: todo
+        st: done
       - id: E10-S10
         t: 'Approval inbox: pending, overdue, completed, delegated views'
         k: ui

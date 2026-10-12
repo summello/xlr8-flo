@@ -187,6 +187,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/approvals/instances/{id}/explanation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Explanation */
+        get: operations["read_explanation_api_v1_approvals_instances__id__explanation_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/approvals/instances/{id}/withdraw": {
         parameters: {
             query?: never;
@@ -2031,6 +2048,42 @@ export interface components {
              */
             entries: components["schemas"]["LedgerEntryRead"][];
         };
+        /** ApprovalExplanation */
+        ApprovalExplanation: {
+            /** Decisions */
+            decisions: components["schemas"]["ExplanationDecision"][];
+            /** Excluded */
+            excluded: components["schemas"]["ExplanationExclusion"][];
+            /**
+             * Kind
+             * @default approval
+             * @constant
+             */
+            kind?: "approval";
+            /** Members */
+            members: components["schemas"]["ExplanationMember"][];
+            /**
+             * Members As Of
+             * @enum {string}
+             */
+            members_as_of: "as_of_now" | "at_decision";
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "any" | "all" | "quorum";
+            /** Name */
+            name: string;
+            /** Node Id */
+            node_id: string;
+            /** Rule */
+            rule: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "completed" | "carried";
+        };
         /** AttachmentRead */
         AttachmentRead: {
             /** Deleted At */
@@ -2234,6 +2287,23 @@ export interface components {
              * @enum {string}
              */
             mode: "atomic" | "partial";
+        };
+        /** ConditionExplanation */
+        ConditionExplanation: {
+            /** Evaluated */
+            evaluated: components["schemas"]["ExplanationEvaluation"][];
+            /**
+             * Kind
+             * @default condition
+             * @constant
+             */
+            kind?: "condition";
+            /** Name */
+            name: string;
+            /** Node Id */
+            node_id: string;
+            /** Taken */
+            taken: string;
         };
         /** CurrencyAggregate */
         CurrencyAggregate: {
@@ -2494,6 +2564,92 @@ export interface components {
             email: string;
             /** Reason */
             reason: string;
+        };
+        /** Explanation */
+        Explanation: {
+            /**
+             * Instance Id
+             * Format: uuid
+             */
+            instance_id: string;
+            /** Steps */
+            steps: (components["schemas"]["ConditionExplanation"] | components["schemas"]["ApprovalExplanation"])[];
+            /** Why This Workflow */
+            why_this_workflow: string;
+            workflow: components["schemas"]["ExplanationWorkflow"];
+        };
+        /** ExplanationDecision */
+        ExplanationDecision: {
+            /** Actor */
+            actor: string;
+            /**
+             * Decided At
+             * Format: date-time
+             */
+            decided_at: string;
+            /** On Behalf Of */
+            on_behalf_of: string | null;
+            /** Outcome */
+            outcome: string;
+        };
+        /** ExplanationEvaluation */
+        ExplanationEvaluation: {
+            /** Edge To */
+            edge_to: string;
+            /** Leaves */
+            leaves: components["schemas"]["ExplanationLeaf"][];
+            /** Result */
+            result: boolean;
+        };
+        /** ExplanationExclusion */
+        ExplanationExclusion: {
+            /** Detail */
+            detail: string;
+            /** Email */
+            email: string;
+            /** Reason */
+            reason: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+        };
+        /** ExplanationLeaf */
+        ExplanationLeaf: {
+            /** Actual */
+            actual: string;
+            /** Expected */
+            expected: string;
+            /** Field */
+            field: string;
+            /** Op */
+            op: string;
+            /** Result */
+            result: boolean;
+        };
+        /** ExplanationMember */
+        ExplanationMember: {
+            /** Basis */
+            basis: string;
+            /** Email */
+            email: string;
+            /** User Id */
+            user_id: string | null;
+        };
+        /** ExplanationWorkflow */
+        ExplanationWorkflow: {
+            /** Bound Scope */
+            bound_scope: string;
+            /**
+             * Definition Id
+             * Format: uuid
+             */
+            definition_id: string;
+            /** Name */
+            name: string;
+            /** Version */
+            version: number;
         };
         /** FiscalPeriod */
         FiscalPeriod: {
@@ -5187,6 +5343,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DecisionRead"][];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    read_explanation_api_v1_approvals_instances__id__explanation_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Explanation"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

@@ -2675,6 +2675,40 @@
       },
       "recap": "Fixed delegated and escalated repeat-approval bypasses, made daily digests safe across same-day runs, and queued reminder work per organization. Added HTTP authorization, replay, migration preservation and guard-plant regressions for the review findings.",
       "title": "Delegation, out-of-office, due dates, reminders and escalation"
+    },
+    {
+      "story": "E10-S09",
+      "kind": "api",
+      "size": "M",
+      "tags": [],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "qwen",
+          "to": "opus",
+          "reason": "operator instruction 12 Oct 2026: qwen and deepseek review only when all of M2 is complete"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a13138-1e45-78b1-85e6-f79fc653aa76",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Added GET /approvals/instances/{id}/explanation: passed steps come from the recorded route and decision-time members, the open step from live membership, with plain-language bases, exclusions and the workflow binding reason. Non-readers get 404, approval.admin 200.",
+      "title": "Routing explainability: which rule matched and why this approver"
     }
   ]
 }

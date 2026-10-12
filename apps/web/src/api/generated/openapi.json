@@ -269,6 +269,89 @@
         "title": "AllocationResult",
         "type": "object"
       },
+      "ApprovalExplanation": {
+        "additionalProperties": false,
+        "properties": {
+          "decisions": {
+            "items": {
+              "$ref": "#/components/schemas/ExplanationDecision"
+            },
+            "title": "Decisions",
+            "type": "array"
+          },
+          "excluded": {
+            "items": {
+              "$ref": "#/components/schemas/ExplanationExclusion"
+            },
+            "title": "Excluded",
+            "type": "array"
+          },
+          "kind": {
+            "const": "approval",
+            "default": "approval",
+            "title": "Kind",
+            "type": "string"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/ExplanationMember"
+            },
+            "title": "Members",
+            "type": "array"
+          },
+          "members_as_of": {
+            "enum": [
+              "as_of_now",
+              "at_decision"
+            ],
+            "title": "Members As Of",
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "any",
+              "all",
+              "quorum"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "node_id": {
+            "title": "Node Id",
+            "type": "string"
+          },
+          "rule": {
+            "title": "Rule",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "open",
+              "completed",
+              "carried"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "node_id",
+          "name",
+          "mode",
+          "rule",
+          "status",
+          "members_as_of",
+          "members",
+          "excluded",
+          "decisions"
+        ],
+        "title": "ApprovalExplanation",
+        "type": "object"
+      },
       "AttachmentRead": {
         "properties": {
           "deleted_at": {
@@ -772,6 +855,44 @@
           "mode"
         ],
         "title": "CommitBody",
+        "type": "object"
+      },
+      "ConditionExplanation": {
+        "additionalProperties": false,
+        "properties": {
+          "evaluated": {
+            "items": {
+              "$ref": "#/components/schemas/ExplanationEvaluation"
+            },
+            "title": "Evaluated",
+            "type": "array"
+          },
+          "kind": {
+            "const": "condition",
+            "default": "condition",
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "node_id": {
+            "title": "Node Id",
+            "type": "string"
+          },
+          "taken": {
+            "title": "Taken",
+            "type": "string"
+          }
+        },
+        "required": [
+          "node_id",
+          "name",
+          "evaluated",
+          "taken"
+        ],
+        "title": "ConditionExplanation",
         "type": "object"
       },
       "CurrencyAggregate": {
@@ -1476,6 +1597,235 @@
           "reason"
         ],
         "title": "ExcludedApprover",
+        "type": "object"
+      },
+      "Explanation": {
+        "additionalProperties": false,
+        "properties": {
+          "instance_id": {
+            "format": "uuid",
+            "title": "Instance Id",
+            "type": "string"
+          },
+          "steps": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ConditionExplanation"
+                },
+                {
+                  "$ref": "#/components/schemas/ApprovalExplanation"
+                }
+              ]
+            },
+            "title": "Steps",
+            "type": "array"
+          },
+          "why_this_workflow": {
+            "title": "Why This Workflow",
+            "type": "string"
+          },
+          "workflow": {
+            "$ref": "#/components/schemas/ExplanationWorkflow"
+          }
+        },
+        "required": [
+          "instance_id",
+          "workflow",
+          "why_this_workflow",
+          "steps"
+        ],
+        "title": "Explanation",
+        "type": "object"
+      },
+      "ExplanationDecision": {
+        "additionalProperties": false,
+        "properties": {
+          "actor": {
+            "title": "Actor",
+            "type": "string"
+          },
+          "decided_at": {
+            "format": "date-time",
+            "title": "Decided At",
+            "type": "string"
+          },
+          "on_behalf_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Behalf Of"
+          },
+          "outcome": {
+            "title": "Outcome",
+            "type": "string"
+          }
+        },
+        "required": [
+          "actor",
+          "on_behalf_of",
+          "outcome",
+          "decided_at"
+        ],
+        "title": "ExplanationDecision",
+        "type": "object"
+      },
+      "ExplanationEvaluation": {
+        "additionalProperties": false,
+        "properties": {
+          "edge_to": {
+            "title": "Edge To",
+            "type": "string"
+          },
+          "leaves": {
+            "items": {
+              "$ref": "#/components/schemas/ExplanationLeaf"
+            },
+            "title": "Leaves",
+            "type": "array"
+          },
+          "result": {
+            "title": "Result",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "edge_to",
+          "result",
+          "leaves"
+        ],
+        "title": "ExplanationEvaluation",
+        "type": "object"
+      },
+      "ExplanationExclusion": {
+        "additionalProperties": false,
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "email",
+          "reason",
+          "detail"
+        ],
+        "title": "ExplanationExclusion",
+        "type": "object"
+      },
+      "ExplanationLeaf": {
+        "additionalProperties": false,
+        "properties": {
+          "actual": {
+            "title": "Actual",
+            "type": "string"
+          },
+          "expected": {
+            "title": "Expected",
+            "type": "string"
+          },
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "op": {
+            "title": "Op",
+            "type": "string"
+          },
+          "result": {
+            "title": "Result",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "field",
+          "op",
+          "expected",
+          "actual",
+          "result"
+        ],
+        "title": "ExplanationLeaf",
+        "type": "object"
+      },
+      "ExplanationMember": {
+        "additionalProperties": false,
+        "properties": {
+          "basis": {
+            "title": "Basis",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          }
+        },
+        "required": [
+          "user_id",
+          "email",
+          "basis"
+        ],
+        "title": "ExplanationMember",
+        "type": "object"
+      },
+      "ExplanationWorkflow": {
+        "additionalProperties": false,
+        "properties": {
+          "bound_scope": {
+            "title": "Bound Scope",
+            "type": "string"
+          },
+          "definition_id": {
+            "format": "uuid",
+            "title": "Definition Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "definition_id",
+          "name",
+          "version",
+          "bound_scope"
+        ],
+        "title": "ExplanationWorkflow",
         "type": "object"
       },
       "FiscalPeriod": {
@@ -9099,6 +9449,75 @@
           }
         },
         "summary": "Decision Trail",
+        "tags": [
+          "approvals"
+        ]
+      }
+    },
+    "/api/v1/approvals/instances/{id}/explanation": {
+      "get": {
+        "operationId": "read_explanation_api_v1_approvals_instances__id__explanation_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Explanation"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Read Explanation",
         "tags": [
           "approvals"
         ]

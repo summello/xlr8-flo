@@ -97,11 +97,17 @@ from flo.modules.approvals.engine import (
     resolve_version as resolve_version,
 )
 from flo.modules.approvals.engine import (
+    resolve_version_reason as resolve_version_reason,
+)
+from flo.modules.approvals.engine import (
     start as start,
 )
 from flo.modules.approvals.engine import (
     step_complete as step_complete,
 )
+from flo.modules.approvals.explain import Explanation as Explanation
+from flo.modules.approvals.explain import explain as explain
+from flo.modules.approvals.explain import explanation_document as explanation_document
 from flo.modules.approvals.material import (
     approval_state as approval_state,
 )
@@ -171,6 +177,10 @@ __all__ = [
     "ValidationReport",
     "validate_graph",
     "resolve_version",
+    "resolve_version_reason",
+    "Explanation",
+    "explain",
+    "explanation_document",
     "AttributeProvider",
     "ConditionError",
     "DocumentAdapter",

@@ -33,6 +33,7 @@ from flo.modules.approvals.schemas import (
     WithdrawWrite,
 )
 from flo.modules.approvals.service import (
+    Explanation,
     PickerPage,
     adapter_for,
     approver_picker,
@@ -40,6 +41,8 @@ from flo.modules.approvals.service import (
     decide,
     decisions_for,
     eligible_delegates,
+    explain,
+    explanation_document,
     get_instance,
     list_delegations,
     reassign_task,
@@ -102,9 +105,31 @@ def instance_permission(id: UUID, connection: Connection) -> tuple[str, TargetPr
 InstanceContext = Annotated[AuthorizationContext, Depends(require_resolved(instance_permission))]
 
 
+def explanation_permission(
+    id: UUID, connection: Connection, request: Request
+) -> tuple[str, TargetProtocol]:
+    scope = current_scope()
+    document_type, document_id = explanation_document(connection, scope, id)
+    organization = cast(TargetProtocol, AuthorizationTarget.organization(scope.org_id))
+    if permits(request, "approval.admin", organization):
+        return "approval.admin", organization
+    adapter = adapter_for(document_type)
+    return adapter.read_permission, adapter.snapshot(connection, scope, document_id).target
+
+
+ExplanationContext = Annotated[
+    AuthorizationContext, Depends(require_resolved(explanation_permission))
+]
+
+
 @router.get("/instances/{id}", response_model=InstanceRead)
 def read_instance(id: UUID, context: InstanceContext, connection: Connection) -> InstanceRead:
     return get_instance(connection, current_scope(), id)
+
+
+@router.get("/instances/{id}/explanation", response_model=Explanation)
+def read_explanation(id: UUID, context: ExplanationContext, connection: Connection) -> Explanation:
+    return explain(connection, current_scope(), id)
 
 
 def task_permission(task_id: UUID, connection: Connection) -> tuple[str, TargetProtocol]:

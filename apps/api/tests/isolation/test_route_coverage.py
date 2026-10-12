@@ -26,6 +26,10 @@ TESTS = Path(__file__).resolve().parents[1]
 # (method, path) -> "file::test" that proves a foreign id returns 404.
 COVERED = {
     (
+        "GET",
+        "/api/v1/approvals/instances/{id}/explanation",
+    ): "approvals/test_explanation.py::test_explanation_foreign_tenant_admin_and_concealment",
+    (
         "POST",
         "/api/v1/approvals/tasks/{task_id}/decisions",
     ): "approvals/test_decisions.py::test_approval_routes_foreign_tenant",
