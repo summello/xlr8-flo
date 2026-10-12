@@ -160,6 +160,31 @@ def runbook_html(doc):
     branch = m["branch"]
     state = {"ready_to_merge": "Ready to Merge", "on_train": "On Train"}.get(m["state"], m["state"])
     note = f' - {html.escape(m["note"])}' if m.get("note") else ""
+    # Commands are named before the list: adjacent literals inside a list read as a missing comma.
+    migrate_check = (
+        'cd ~/Workbench/xlr8flo/apps/api\n'
+        'export MIGRATIONS_DIR="$PWD/../../migrations"\n'
+        'uv run python -m flo.kernel.migrate --check; echo "exit code: $?"'
+    )
+    migrate_twice = (
+        'for run in apply "apply again"; do\n  echo "== $run"\n'
+        '  DATABASE_URL="$(security find-generic-password -a "$USER" -s '
+        'FLO_STAGING_DATABASE_URL -w)" \\\n    uv run python -m flo.kernel.migrate; '
+        'echo "exit code: $?"\ndone'
+    )
+    watch_deploy = (
+        "gh run watch $(gh run list --branch main --limit 1 --json databaseId "
+        "--jq '.[0].databaseId')"
+    )
+    list_revisions = (
+        "gcloud run revisions list --service=flo-api --region=us-central1 "
+        "--sort-by='~metadata.creationTimestamp' "
+        "--format='table(metadata.name,status.conditions[0].status,metadata.creationTimestamp)'"
+    )
+    roll_back = (
+        "gcloud run services update-traffic flo-api --region=us-central1 "
+        "--to-revisions=PREVIOUS_REVISION=100"
+    )
     steps = [
         _step("Confirm it is ready", "you",
               "The board should say <b>Ready to Merge</b> for this milestone, and the pull "
@@ -179,13 +204,7 @@ def runbook_html(doc):
               "step. The commands below are the core of it; create the <code>staging</code> "
               "branch from production in the Neon console first, with pooling on.",
               ['security add-generic-password -U -a "$USER" -s FLO_STAGING_DATABASE_URL -w',
-               'cd ~/Workbench/xlr8flo/apps/api\n'
-               'export MIGRATIONS_DIR="$PWD/../../migrations"\n'
-               'uv run python -m flo.kernel.migrate --check; echo "exit code: $?"',
-               'for run in apply "apply again"; do\n  echo "== $run"\n'
-               '  DATABASE_URL="$(security find-generic-password -a "$USER" -s '
-               'FLO_STAGING_DATABASE_URL -w)" \\\n    uv run python -m flo.kernel.migrate; '
-               'echo "exit code: $?"\ndone'],
+               migrate_check, migrate_twice],
               "the check and both applies print <code>exit code: 0</code>, and the second apply "
               "changes nothing.",
               "any other number: stop, send Claude the last 15 lines, and do not merge. Delete "
@@ -207,9 +226,7 @@ def runbook_html(doc):
         _step("Watch the deploy", "you",
               "Migrations run first, then the API, then the website and edge Worker. The run "
               "ends with the <code>deploy</code> job.",
-              ["gh run list --branch main --limit 3",
-               "gh run watch $(gh run list --branch main --limit 1 --json databaseId "
-               "--jq '.[0].databaseId')"],
+              ["gh run list --branch main --limit 3", watch_deploy],
               "every job, including <code>deploy</code>, finishes with a tick. The board only calls a "
               "story <b>Deployed</b> once this run is green.",
               "<code>deploy</code> fails: tell Claude. The API may already be live, so say "
@@ -234,11 +251,7 @@ def runbook_html(doc):
               "so every production migration must stay compatible with the previous revision. "
               "For the website or Worker use Cloudflare, Workers &amp; Pages, flo-web, "
               "Deployments, Rollback.",
-              ["gcloud run revisions list --service=flo-api --region=us-central1 "
-               "--sort-by='~metadata.creationTimestamp' "
-               "--format='table(metadata.name,status.conditions[0].status,metadata.creationTimestamp)'",
-               "gcloud run services update-traffic flo-api --region=us-central1 "
-               "--to-revisions=PREVIOUS_REVISION=100"],
+              [list_revisions, roll_back],
               "<code>/readyz</code> returns 200 on the previous revision."),
     ]
     head = (f'<div class="rbhead"><h2 style="margin:0">Release {html.escape(mid)} '

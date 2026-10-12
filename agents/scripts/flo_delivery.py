@@ -266,6 +266,7 @@ def main_history(root, main_ref):
         cache_file.parent.mkdir(parents=True, exist_ok=True)
         cache_file.write_text(json.dumps(cache))
     except OSError:
+        # the cache only saves gh calls; a read-only checkout just refetches next time
         pass
     return history
 
@@ -364,6 +365,7 @@ def gather(root, use_gh=True, fetch=False, history=None):
                     try:
                         reviews.append(json.loads(f.read_text()))
                     except (OSError, ValueError):
+                        # an unreadable or half-written review file counts as no review yet
                         pass
                 facts["committed"] = (ahead or "0").strip() != "0" and approvals_ok(reviews, task)
             stories[sid] = {
@@ -444,6 +446,7 @@ def fetch_due(root, every=120):
         if time.time() - stamp.stat().st_mtime < every:
             return False
     except OSError:
+        # no stamp yet: first fetch ever, so it is due
         pass
     stamp.write_text(str(time.time()))
     return True

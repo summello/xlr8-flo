@@ -1247,6 +1247,19 @@ def _board_once(fetch=True, use_gh=True):
     pct = len(done) / len(all_s) * 100 if all_s else 0
     cnt = doc["counts"]
 
+    # Named first: adjacent string literals inside a list literal read as a missing comma.
+    legend = (
+        '<p class="hint" style="padding:10px 0 0"><span id="age" class="fresh"></span> '
+        '&middot; Deployed = on main with a green deploy run. Merged = in its milestone '
+        'branch (or on main, deploy not green yet). Committed = reviewed, waiting for '
+        '<span class="mono">flo done</span>.</p>'
+    )
+    tabs_nav = (
+        '<nav class="tabs" role="tablist" aria-label="Board views">'
+        '<button role="tab" data-tab="delivery" aria-selected="true">Delivery</button>'
+        '<button role="tab" data-tab="release" aria-selected="false">Release steps</button>'
+        '</nav>'
+    )
     parts = ["<!doctype html>", '<html lang="en"><head><meta charset="utf-8">',
              '<meta name="viewport" content="width=device-width,initial-scale=1">',
              "<title>XLR8 FLO Board</title>", R.FAVICON,
@@ -1269,10 +1282,7 @@ def _board_once(fetch=True, use_gh=True):
              f'<div class="stat"><span class="eb">To do</span><b>{cnt["todo"]}</b></div>',
              f'<div class="stat"><span class="eb">On you</span><b>{len(pending)}</b></div>',
              "</header>",
-             '<p class="hint" style="padding:10px 0 0"><span id="age" class="fresh"></span> '
-             '&middot; Deployed = on main with a green deploy run. Merged = in its milestone '
-             'branch (or on main, deploy not green yet). Committed = reviewed, waiting for '
-             '<span class="mono">flo done</span>.</p>',
+             legend,
              (f'<p class="hint" style="padding:6px 0 0"><span class="pill blk"><i></i>'
               f'Latest deploy on main failed</span> Stories on main stay Merged until a deploy '
               f'run succeeds. <span class="mono">gh run list --branch main --limit 3</span></p>'
@@ -1280,10 +1290,7 @@ def _board_once(fetch=True, use_gh=True):
               '<p class="hint" style="padding:6px 0 0"><span class="pill dsg"><i></i>Deploy runs '
               'not readable</span> GitHub could not be reached, so Deployed means on main only.</p>'
               if doc.get("deploy_check") == "unavailable" else ""),
-             '<nav class="tabs" role="tablist" aria-label="Board views">'
-             '<button role="tab" data-tab="delivery" aria-selected="true">Delivery</button>'
-             '<button role="tab" data-tab="release" aria-selected="false">Release steps</button>'
-             '</nav>',
+             tabs_nav,
              '<div class="tab" id="tab-delivery">']
 
     parts += ['<section><h2>Progress</h2><div class="card chart">', _burnup(rm, sc), "</div></section>"]
@@ -1451,6 +1458,8 @@ def cmd_board(argv):
         try:
             _board_once(fetch=fetch, use_gh=use_gh)
         except SystemExit:
+            # a refresh that dies (die() on an unreadable repo) must not end the watch loop;
+            # the next tick retries
             pass
         time.sleep(every)
 
