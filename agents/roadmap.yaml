@@ -1217,7 +1217,7 @@ epics:
           - APR-017
         dep:
           - E10-S06
-        st: in_progress
+        st: done
       - id: E10-S09
         t: 'Routing explainability: which rule matched and why this approver'
         k: api
@@ -1269,7 +1269,7 @@ epics:
         dep:
           - E10-S11
           - E10-S05
-        st: in_progress
+        st: review
       - id: E10-S13
         t: Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget
           changes
@@ -1285,7 +1285,7 @@ epics:
           - BUD-007
         dep:
           - E10-S07
-        st: todo
+        st: in_progress
 
   # ──────────────────── M3 — First sellable release ────────────────────
 

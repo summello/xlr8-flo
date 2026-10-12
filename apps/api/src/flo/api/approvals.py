@@ -3,29 +3,47 @@
 from typing import Annotated, Literal, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
+from flo.api.admin_users import organization_target
 from flo.api.authz_factory import production_authorization_resolver
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
-from flo.kernel.authz import HoldersResolverFactory, require, require_resolved
+from flo.kernel.authz import (
+    HoldersResolverFactory,
+    permits,
+    require,
+    require_member,
+    require_resolved,
+)
 from flo.kernel.errors import ErrorCode, ProblemError
+from flo.kernel.identity import IdentityId
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.approvals.schemas import (
     DecisionRead,
     DecisionResult,
     DecisionWrite,
+    DelegationCreate,
+    DelegationPage,
+    DelegationRead,
     DocumentType,
     InstanceRead,
+    ReassignWrite,
+    TaskRead,
     WithdrawWrite,
 )
 from flo.modules.approvals.service import (
     PickerPage,
     adapter_for,
     approver_picker,
+    create_delegation,
     decide,
     decisions_for,
+    eligible_delegates,
     get_instance,
+    list_delegations,
+    reassign_task,
+    revoke_delegation,
     task_instance,
     withdraw_instance,
 )
@@ -122,3 +140,92 @@ def decision_trail(
     id: UUID, context: InstanceContext, connection: Connection
 ) -> list[DecisionRead]:
     return decisions_for(connection, current_scope(), id)
+
+
+DelegateContext = Annotated[
+    AuthorizationContext, Depends(require("approval.delegate", organization_target))
+]
+AdminContext = Annotated[
+    AuthorizationContext, Depends(require("approval.admin", organization_target))
+]
+MemberUser = Annotated[IdentityId, Depends(require_member())]
+
+
+def _is_admin(request: Request) -> bool:
+    return permits(
+        request,
+        "approval.admin",
+        cast(TargetProtocol, AuthorizationTarget.organization(current_scope().org_id)),
+    )
+
+
+@router.post("/delegations", status_code=201, response_model=DelegationRead)
+def create_delegation_route(
+    body: DelegationCreate, context: DelegateContext, connection: Connection
+) -> DelegationRead:
+    factory: HoldersResolverFactory = production_authorization_resolver
+    with factory(current_scope()) as resolver:
+        return create_delegation(
+            connection, current_scope(), actor_id=context.user_id, body=body, resolver=resolver
+        )
+
+
+# Registered before the id routes so "eligible-delegates" is never read as a delegation id.
+@router.get("/delegations/eligible-delegates", response_model=PickerPage)
+def eligible_delegates_route(
+    context: DelegateContext, connection: Connection, document_type: DocumentType | None = None
+) -> PickerPage:
+    factory: HoldersResolverFactory = production_authorization_resolver
+    with factory(current_scope()) as resolver:
+        return eligible_delegates(
+            connection,
+            current_scope(),
+            context.user_id,
+            None if document_type is None else [document_type],
+            resolver,
+        )
+
+
+@router.get("/delegations", response_model=DelegationPage)
+def list_delegations_route(
+    user: MemberUser,
+    connection: Connection,
+    request: Request,
+    view: Literal["mine", "covering", "organization"] = "mine",
+    cursor: str | None = None,
+) -> DelegationPage:
+    if view == "organization" and not _is_admin(request):
+        raise ProblemError(ErrorCode.FORBIDDEN)
+    return list_delegations(connection, current_scope(), actor_id=user, view=view, cursor=cursor)
+
+
+@router.post("/delegations/{id}/revoke", response_model=DelegationRead)
+def revoke_delegation_route(
+    id: UUID, user: MemberUser, connection: Connection, request: Request
+) -> DelegationRead:
+    # Authority-reducing: the service checks owner-or-approval.admin in the same transaction.
+    return revoke_delegation(
+        connection,
+        current_scope(),
+        actor_id=user,
+        delegation_id=id,
+        is_admin=lambda: _is_admin(request),
+    )
+
+
+@router.post("/tasks/{task_id}/reassign", response_model=TaskRead)
+def reassign_route(
+    task_id: UUID, body: ReassignWrite, context: AdminContext, connection: Connection
+) -> TaskRead:
+    factory: HoldersResolverFactory = production_authorization_resolver
+    with factory(current_scope()) as resolver:
+        instance_id = reassign_task(
+            connection,
+            current_scope(),
+            actor_id=context.user_id,
+            task_id=task_id,
+            body=body,
+            resolver=resolver,
+        )
+    instance = get_instance(connection, current_scope(), instance_id)
+    return next(t for t in instance.tasks if t.id == task_id)

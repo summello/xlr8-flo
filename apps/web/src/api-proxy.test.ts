@@ -195,6 +195,8 @@ it.each([
   [16, 30, "/internal/jobs/fx-ingest"],
   [18, 30, "/internal/jobs/fx-ingest"],
   [2, 30, "/internal/jobs/budget-reconcile"],
+  [7, 30, "/internal/jobs/approval-reminders"],
+  [7, 0, null],
   [12, 0, null],
   [16, 31, null],
 ])("schedules UTC %i:%i internal work", async (hour, minute, path) => {

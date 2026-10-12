@@ -45,6 +45,32 @@ COVERED = {
         "GET",
         "/api/v1/approvals/eligible-approvers",
     ): "approvals/test_eligibility.py::test_picker_foreign_scope_and_authorization",
+    ("POST", "/api/v1/approvals/delegations"): (
+        "approvals/test_delegation.py::"
+        "test_delegation_routes_unauthenticated_forbidden_and_foreign_scope"
+    ),
+    ("GET", "/api/v1/approvals/delegations"): (
+        "approvals/test_delegation.py::"
+        "test_delegation_routes_unauthenticated_forbidden_and_foreign_scope"
+    ),
+    ("GET", "/api/v1/approvals/delegations/eligible-delegates"): (
+        "approvals/test_delegation.py::"
+        "test_delegation_routes_unauthenticated_forbidden_and_foreign_scope"
+    ),
+    (
+        "POST",
+        "/api/v1/approvals/delegations/{id}/revoke",
+    ): (
+        "approvals/test_delegation.py::"
+        "test_revoke_http_foreign_and_unknown_ids_have_identical_problem_bodies"
+    ),
+    (
+        "POST",
+        "/api/v1/approvals/tasks/{task_id}/reassign",
+    ): (
+        "approvals/test_delegation.py::"
+        "test_delegation_routes_unauthenticated_forbidden_and_foreign_scope"
+    ),
     (
         "GET",
         "/api/v1/workflows/{id}/versions/{version}/validation",

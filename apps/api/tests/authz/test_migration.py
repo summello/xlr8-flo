@@ -78,3 +78,21 @@ def test_workflow_permission_migration_is_applied_independently(authorization_da
             "SELECT code FROM permission WHERE code LIKE 'workflow.%'"
         ).fetchall()
     } == {"workflow.read", "workflow.manage"}
+
+
+def test_approval_permission_migration_grants_delegate_and_admin_by_role(authorization_database):
+    from .conftest import ROOT, load_migration
+
+    migration = load_migration(
+        ROOT / "migrations/20261009_0047_approval_permissions.py", "authz_approval_roundtrip"
+    )
+    conn = authorization_database.connection
+    migration.downgrade(conn)
+    assert conn.execute("SELECT code FROM permission WHERE code LIKE 'approval.%'").fetchall() == []
+    migration.upgrade(conn)
+    assert {
+        row[0]
+        for row in conn.execute(
+            "SELECT code FROM permission WHERE code LIKE 'approval.%'"
+        ).fetchall()
+    } == {"approval.delegate", "approval.admin"}

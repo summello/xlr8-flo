@@ -1,0 +1,7 @@
+<!doctype html>
+<html lang="en"><body>
+<p>Approvals waiting for you:</p>
+<ul>
+{% for item in items %}<li>{{ item.document_type }} {{ item.number }}: due {{ item.due }}{% if item.overdue %} (overdue){% endif %}</li>
+{% endfor %}</ul>
+</body></html>

@@ -2645,6 +2645,36 @@
       },
       "recap": "Added the stale-version guard on every decision (the document's current version, not the version at start), the canonical material digest, approval_state / requires_resubmission / supersede / assert_current_approval over the in-force instance, and stored the approved material digest and version at approval. Finished by the M2 runner from Codex's partial tree after the Codex cap.",
       "title": "Stale-version guard and material-change resubmission policy"
+    },
+    {
+      "story": "E10-S08",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "migration"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a12f2a-8d4e-7462-b160-19d865f40240",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Fixed delegated and escalated repeat-approval bypasses, made daily digests safe across same-day runs, and queued reminder work per organization. Added HTTP authorization, replay, migration preservation and guard-plant regressions for the review findings.",
+      "title": "Delegation, out-of-office, due dates, reminders and escalation"
     }
   ]
 }

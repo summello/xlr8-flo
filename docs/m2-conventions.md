@@ -152,6 +152,10 @@ setting the gate's marker and both answering through the same outcome rules as `
   filters strictly by the caller's identity and by live eligibility, so it can return nothing the
   caller could not reach through `require_resolved`. A route that returns another user's data
   never uses it.
+  Exception (E10-S08 amendment 1): a mutation that only **reduces** authority, such as revoking a
+  delegation, may use it when the service performs an explicit ownership-or-permission check in
+  the same transaction (404 for absent or foreign, 403 otherwise). Route and per-role tests are
+  named in the packet.
 
 `DocumentAdapter` therefore carries **`read_permission: str`** (for example `requisition.view`)
 instead of a `can_read()` callable; read routes use `require_resolved` with `read_permission`, and

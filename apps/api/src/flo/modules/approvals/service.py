@@ -44,6 +44,21 @@ from flo.modules.approvals.decisions import (
 from flo.modules.approvals.decisions import (
     withdraw_instance as withdraw_instance,
 )
+from flo.modules.approvals.delegation import (
+    create_delegation as create_delegation,
+)
+from flo.modules.approvals.delegation import (
+    eligible_delegates as eligible_delegates,
+)
+from flo.modules.approvals.delegation import (
+    list_delegations as list_delegations,
+)
+from flo.modules.approvals.delegation import (
+    reassign_task as reassign_task,
+)
+from flo.modules.approvals.delegation import (
+    revoke_delegation as revoke_delegation,
+)
 from flo.modules.approvals.eligibility import (
     EligibleSet as EligibleSet,
 )
@@ -124,6 +139,11 @@ from flo.modules.identity.service import (
 from flo.modules.org.service import OrgService
 
 __all__ = [
+    "create_delegation",
+    "eligible_delegates",
+    "list_delegations",
+    "reassign_task",
+    "revoke_delegation",
     "material_digest",
     "approval_state",
     "requires_resubmission",

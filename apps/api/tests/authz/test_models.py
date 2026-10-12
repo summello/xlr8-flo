@@ -32,6 +32,8 @@ EXPECTED_ROLES = {
 }
 
 EXPECTED_PERMISSIONS = {
+    "approval.admin",
+    "approval.delegate",
     "workflow.read",
     "workflow.manage",
     "admin.access.read",

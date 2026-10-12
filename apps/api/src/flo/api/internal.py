@@ -29,6 +29,9 @@ from flo.kernel.jobs.runner import RunnerConnection
 from flo.kernel.outbox import OutboxDispatcher, email_handler
 from flo.kernel.outbox.dispatcher import DispatcherConnection
 from flo.kernel.storage import create_storage
+from flo.modules.approvals.reminders import job_handler as reminders_job_handler
+from flo.modules.approvals.reminders import run_all as run_approval_reminders
+from flo.modules.approvals.schemas import ReminderReport
 from flo.modules.budget.reconcile import job_handler, reconcile_all
 from flo.modules.imports.jobs import handlers as import_handlers
 from flo.modules.org.fx import MAX_BYTES, FeedFailure, Fetcher, ingest
@@ -36,8 +39,7 @@ from flo.modules.org.schemas import FxIngestReport
 
 _logger = logging.getLogger(__name__)
 _METADATA_TOKEN_URL = (
-    "http://metadata.google.internal/computeMetadata/v1/instance/"
-    "service-accounts/default/token"
+    "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token"
 )
 _DECIMAL_MB = 1_000_000
 _DECIMAL_GB = 1_000_000_000
@@ -313,6 +315,7 @@ def _run_jobs_tick(settings: Settings) -> TickReport:
             cast(RunnerConnection, connection),
             {
                 "budget-reconcile": job_handler(lambda: psycopg.connect(database_url)),
+                "approval.reminders": reminders_job_handler(lambda: psycopg.connect(database_url)),
                 **import_handlers(
                     lambda: psycopg.connect(database_url),
                     cast(PermissionResolverFactory, production_authorization_resolver),
@@ -356,9 +359,7 @@ def get_tick_processor(
 
 def _alert(metric: str, current: int, policy: QuotaPolicy) -> QuotaAlert | None:
     crossed = tuple(
-        threshold
-        for threshold in policy.thresholds
-        if current * 100 >= policy.limit * threshold
+        threshold for threshold in policy.thresholds if current * 100 >= policy.limit * threshold
     )
     if not crossed:
         return None
@@ -472,6 +473,29 @@ async def budget_reconcile(
 ) -> ReconcileTriggerReport:
     """Require origin secret and Idempotency-Key; no replay, repeats only append reports."""
     return await asyncio.to_thread(_run_budget_reconcile, settings)
+
+
+def _run_approval_reminders(settings: Settings) -> ReminderReport:
+    from flo.api.document_types import register_document_types
+
+    register_document_types()
+    if settings.database_url is None:
+        raise RuntimeError("DATABASE_URL is not configured")
+    with psycopg.connect(settings.database_url.get_secret_value()) as connection:
+        return run_approval_reminders(connection)
+
+
+@router.post(
+    "/internal/jobs/approval-reminders",
+    response_model=ReminderReport,
+    include_in_schema=False,
+)
+@public_route
+async def approval_reminders(
+    settings: Annotated[Settings, Depends(get_internal_settings)],
+) -> ReminderReport:
+    """Require origin secret and Idempotency-Key; one digest per person per day, never replayed."""
+    return await asyncio.to_thread(_run_approval_reminders, settings)
 
 
 def fetch_fx(url: str) -> bytes:

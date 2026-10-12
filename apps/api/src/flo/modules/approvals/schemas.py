@@ -545,6 +545,63 @@ class DecisionResult(Contract):
     instance: InstanceRead
 
 
+class DelegationCreate(Contract):
+    delegate_id: UUID
+    starts_at: datetime
+    ends_at: datetime
+    document_types: list[DocumentType] | None = Field(default=None, min_length=1, max_length=7)
+    reason: str = Field(min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def valid_period(self) -> Self:
+        self.reason = self.reason.strip()
+        if not self.reason:
+            raise decision_invalid("reason", "Say why you are delegating.")
+        if self.starts_at.tzinfo is None or self.ends_at.tzinfo is None:
+            raise decision_invalid("starts_at", "Send times with a time zone.")
+        if self.starts_at >= self.ends_at:
+            raise decision_invalid("ends_at", "The end must be after the start.")
+        if (self.ends_at - self.starts_at).days > 366:
+            raise decision_invalid("ends_at", "A delegation can last at most 366 days.")
+        return self
+
+
+class DelegationRead(Contract):
+    id: UUID
+    delegator_email: str
+    delegate_email: str
+    starts_at: datetime
+    ends_at: datetime
+    document_types: list[str] | None
+    reason: str
+    created_at: datetime
+    revoked_at: datetime | None
+    state: Literal["scheduled", "active", "ended", "revoked"]
+
+
+class DelegationPage(Contract):
+    rows: list[DelegationRead]
+    next_cursor: str | None
+
+
+class ReassignWrite(Contract):
+    user_ids: list[UUID] = Field(min_length=1, max_length=50)
+    reason: str = Field(min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def reason_present(self) -> Self:
+        self.reason = self.reason.strip()
+        if not self.reason:
+            raise decision_invalid("reason", "Say why this task is being reassigned.")
+        return self
+
+
+class ReminderReport(Contract):
+    organizations: int
+    digests: int
+    escalated: int
+
+
 class ApprovalState(Contract):
     status: Literal[
         "none", "running", "approved", "rejected", "returned", "withdrawn", "superseded"

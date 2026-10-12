@@ -122,6 +122,8 @@ PERMISSION_CODES: tuple[PermissionCode, ...] = tuple(
     permission_code(value)
     for value in (
         "admin.access.read",
+        "approval.admin",
+        "approval.delegate",
         "asset.create",
         "asset.edit",
         "asset.view",
@@ -227,6 +229,7 @@ BASELINE_ROLE_PERMISSIONS: dict[RoleCode, frozenset[PermissionCode]] = {
     role_code("approver"): frozenset(
         permission_code(value)
         for value in (
+            "approval.delegate",
             "project.view",
             "record.read",
             "requisition.approve",

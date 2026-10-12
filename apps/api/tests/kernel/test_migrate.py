@@ -135,6 +135,8 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261009_0043",
         "20261009_0044",
         "20261009_0045",
+        "20261009_0046",
+        "20261009_0047",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -1358,7 +1360,9 @@ def test_approval_material_migration_roundtrip_preserves_seeded_instances(empty_
     from flo.modules.approvals.service import WorkflowService
     from tests.org.test_bootstrap import admin_id, create
 
-    revisions = migrate.discover_migrations(MIGRATIONS)
+    revisions = tuple(
+        r for r in migrate.discover_migrations(MIGRATIONS) if r.revision <= "20261009_0045"
+    )
     target = revisions[-1]
     assert target.revision == "20261009_0045"
     migrate.apply_migrations(revisions[:-1], empty_database)
@@ -1416,3 +1420,103 @@ def test_approval_material_migration_roundtrip_preserves_seeded_instances(empty_
                 "SELECT approved_material_digest FROM approval_instance"
             ).fetchone() == (None,)
             assert conn.execute("SELECT * FROM approval_task").fetchall() == tasks
+
+
+def test_delegation_migration_roundtrip_and_overlap_guard(empty_database):
+    from datetime import UTC, datetime, timedelta
+    from uuid import uuid4
+
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.approvals.schemas import WorkflowCreate, WorkflowVersionWrite
+    from flo.modules.approvals.service import WorkflowService
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = tuple(
+        r for r in migrate.discover_migrations(MIGRATIONS) if r.revision <= "20261009_0046"
+    )
+    target = revisions[-1]
+    assert target.revision == "20261009_0046"
+    migrate.apply_migrations(revisions[:-1], empty_database)
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("delegation-migration"),
+    ):
+        org = create(conn)
+        owner = admin_id(conn)
+        scope = Scope(org.org_id)
+        service = WorkflowService(conn, scope, owner)
+        row = service.create(
+            WorkflowCreate(document_type="requisition", name="R", scope_type="org")
+        )
+        service.create_version(
+            row.id,
+            WorkflowVersionWrite(
+                graph={
+                    "nodes": [{"id": "start", "kind": "start"}, {"id": "end", "kind": "end"}],
+                    "edges": [{"from": "start", "to": "end"}],
+                }
+            ),
+        )
+        version = service.publish(row.id, 1)
+        instance, task = uuid4(), uuid4()
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO approval_instance(id,org_id,document_type,document_id,"
+                "workflow_version_id,document_version,material_digest,requester_id,status) "
+                "VALUES(%s,%s,'requisition',%s,%s,1,'digest',%s,'running')",
+                (instance, scope.org_id, uuid4(), version.id, owner),
+            )
+            conn.execute(
+                "INSERT INTO approval_task(id,org_id,instance_id,node_id,name,approver_rule,"
+                "mode,allow_repeat,status) VALUES(%s,%s,%s,'one','Finance','{}',"
+                "'\"any\"',false,'open')",
+                (task, scope.org_id, instance),
+            )
+            tasks_before = conn.execute("SELECT * FROM approval_task ORDER BY id").fetchall()
+        target.upgrade(conn)
+        start = datetime(2026, 10, 12, tzinfo=UTC)
+        other = uuid4()
+        conn.execute(
+            "INSERT INTO identity(id,email,password_hash) "
+            "VALUES (%s,'d@example.test','$argon2id$test-placeholder')",
+            (other,),
+        )
+
+        def insert(starts, ends):
+            with tenant_transaction(conn, Scope(org.org_id)):
+                conn.execute(
+                    "INSERT INTO approval_delegation(id,org_id,delegator_id,delegate_id,"
+                    "starts_at,ends_at,reason) VALUES (%s,%s,%s,%s,%s,%s,'away')",
+                    (uuid4(), org.org_id, owner, other, starts, ends),
+                )
+
+        insert(start, start + timedelta(days=2))
+        insert(start + timedelta(days=2), start + timedelta(days=4))  # back to back is fine
+        with pytest.raises(psycopg.errors.ExclusionViolation):
+            insert(start + timedelta(days=1), start + timedelta(days=3))
+        with tenant_transaction(conn, Scope(org.org_id)):
+            before = conn.execute("SELECT * FROM approval_delegation ORDER BY id").fetchall()
+        target.downgrade(conn)
+        assert conn.execute("SELECT to_regclass('approval_delegation')").fetchone() == (None,)
+        target.upgrade(conn)
+        with tenant_transaction(conn, Scope(org.org_id)):
+            columns = [
+                r[0]
+                for r in conn.execute(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_name='approval_task' AND column_name NOT IN "
+                    "('escalated_at','escalation_rule','reminded_on') ORDER BY ordinal_position"
+                ).fetchall()
+            ]
+            assert (
+                conn.execute(
+                    sql.SQL("SELECT {} FROM approval_task ORDER BY id").format(
+                        sql.SQL(",").join(map(sql.Identifier, columns))
+                    )
+                ).fetchall()
+                == tasks_before
+            )
+            assert conn.execute("SELECT count(*) FROM approval_delegation").fetchone() == (0,)
+        assert len(before) == 2

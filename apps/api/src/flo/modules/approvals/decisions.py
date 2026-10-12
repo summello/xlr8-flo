@@ -16,7 +16,7 @@ from flo.kernel.identity import IdentityId
 from flo.kernel.outbox.store import OutboxConnection, OutboxStore
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
-from flo.modules.approvals import engine
+from flo.modules.approvals import delegation, engine
 from flo.modules.approvals.models import WorkflowRepository
 from flo.modules.approvals.schemas import (
     DecisionRead,
@@ -107,18 +107,20 @@ def _insert(
     version: int,
     members: list[str],
     reject_mode: str | None = None,
+    on_behalf_of: UUID | None = None,
 ) -> UUID:
     id = uuid4()
     repo.execute(
-        "INSERT INTO approval_decision(id,org_id,instance_id,task_id,actor_id,authority,"
-        "outcome,reject_mode,comment,document_version,members_at_decision) VALUES "
-        "(%(id)s,%(org_id)s,%(instance)s,%(task)s,%(actor)s,%(authority)s,%(outcome)s,"
-        "%(reject_mode)s,%(comment)s,%(version)s,%(members)s)",
+        "INSERT INTO approval_decision(id,org_id,instance_id,task_id,actor_id,on_behalf_of,"
+        "authority,outcome,reject_mode,comment,document_version,members_at_decision) VALUES "
+        "(%(id)s,%(org_id)s,%(instance)s,%(task)s,%(actor)s,%(behalf)s,%(authority)s,"
+        "%(outcome)s,%(reject_mode)s,%(comment)s,%(version)s,%(members)s)",
         {
             "id": id,
             "instance": instance["id"],
             "task": task_id,
             "actor": actor_id,
+            "behalf": on_behalf_of,
             "authority": authority,
             "outcome": outcome,
             "reject_mode": reject_mode,
@@ -222,12 +224,14 @@ def decide(
         resolver = AuthorizationResolver(cast(AuthorizationConnection, conn), scope)
         version = engine._version(repo, cast(UUID, instance["workflow_version_id"]))
         node = next(n for n in version.graph.nodes if n.id == task["node_id"])
-        members = [
-            m.user_id
-            for m in engine.current_members(conn, scope, instance, node, snapshot, resolver).members
-        ]
-        if actor_id not in members:
+        effective = delegation.effective_members(
+            conn, scope, instance, task, node, snapshot, resolver
+        )
+        members = effective.base
+        acting_for = None if actor_id in members else effective.delegates.get(actor_id)
+        if actor_id not in members and acting_for is None:
             raise ProblemError(ErrorCode.FORBIDDEN, detail="You are not an approver for this step.")
+        principal = acting_for or actor_id
         if body.assign_project_id is not None:
             next_node = engine._walk(version.graph, node.id, snapshot, [])
             if not adapter.accepts_project_assignment or next_node.kind != "end":
@@ -239,24 +243,27 @@ def decide(
             body.outcome != "comment"
             and repo.execute(
                 "SELECT id FROM approval_decision WHERE org_id=%(org_id)s AND task_id=%(task)s "
-                "AND actor_id=%(actor)s AND outcome IN ('approve','reject','return')",
-                {"task": task_id, "actor": actor_id},
+                "AND (actor_id IN (%(actor)s,%(principal)s) OR on_behalf_of=%(principal)s) "
+                "AND outcome IN ('approve','reject','return')",
+                {"task": task_id, "actor": actor_id, "principal": principal},
             ).fetchone()
             is not None
         ):
             raise engine.conflict("already_decided", "You have already decided on this task.")
         before_status = str(instance["status"])
-        emails = emails_by_id(cast(IdentityAuthorizationConnection, conn), members)
+        listed = [*members, *effective.delegates]
+        emails = emails_by_id(cast(IdentityAuthorizationConnection, conn), listed)
         id = _insert(
             repo,
             instance,
             task_id=task_id,
             actor_id=actor_id,
-            authority="member",
+            on_behalf_of=acting_for,
+            authority="delegate" if acting_for else "member",
             outcome=body.outcome,
             comment=body.comment,
             version=snapshot.version,
-            members=sorted(emails.get(m, "(removed user)") for m in members),
+            members=sorted(emails.get(m, "(removed user)") for m in listed),
             reject_mode=body.reject_mode,
         )
         context = OutcomeContext(
@@ -270,9 +277,16 @@ def decide(
         )
         if body.outcome == "approve":
             evidence = [
-                dict(zip(("id", "task_id", "user_id", "outcome", "decided_at"), r, strict=True))
+                dict(
+                    zip(
+                        ("id", "task_id", "user_id", "outcome", "decided_at", "actor_id"),
+                        r,
+                        strict=True,
+                    )
+                )
                 for r in repo.execute(
-                    "SELECT id,task_id,actor_id,outcome,decided_at FROM approval_decision "
+                    "SELECT id,task_id,COALESCE(on_behalf_of,actor_id),outcome,decided_at,actor_id "
+                    "FROM approval_decision "
                     "WHERE org_id=%(org_id)s AND instance_id=%(id)s",
                     {"id": instance_id},
                 ).fetchall()

@@ -5,11 +5,12 @@ import json
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
-from typing import Literal, cast
+from typing import Any, Literal, cast
 from uuid import UUID, uuid4
 
 import psycopg
 from psycopg.types.json import Jsonb
+from pydantic import TypeAdapter
 
 from flo.kernel.authz import AuthorizationTarget, PermissionHoldersResolver
 from flo.kernel.errors import ErrorCode, ProblemError
@@ -20,6 +21,7 @@ from flo.modules.approvals import conditions
 from flo.modules.approvals.eligibility import EligibleSet, eligible_approvers
 from flo.modules.approvals.models import VERSION_FIELDS, WorkflowRepository
 from flo.modules.approvals.schemas import (
+    Approvers,
     DocumentAdapter,
     DocumentSnapshot,
     ExcludedApprover,
@@ -70,7 +72,13 @@ TASK_FIELDS = (
     "created_at",
     "due_at",
     "completed_at",
+    "escalated_at",
+    "escalation_rule",
+    "reminded_on",
 )
+
+
+_RULE: TypeAdapter[Any] = TypeAdapter(Approvers)
 
 
 def adapter_for(document_type: str) -> DocumentAdapter:
@@ -336,13 +344,21 @@ def _open(
     assert node.approvers is not None
     repo.execute(
         "INSERT INTO approval_task(id,org_id,instance_id,node_id,name,approver_rule,mode,"
-        "allow_repeat,status,due_at) VALUES(%(id)s,%(org_id)s,%(instance)s,%(node)s,"
-        "%(name)s,%(rule)s,%(mode)s,%(repeat)s,'open',%(due)s)",
+        "allow_repeat,status,due_at,escalation_rule) VALUES(%(id)s,%(org_id)s,%(instance)s,"
+        "%(node)s,%(name)s,%(rule)s,%(mode)s,%(repeat)s,'open',%(due)s,%(escalation)s)",
         {
             "id": uuid4(),
             "instance": instance["id"],
             "node": node.id,
             "name": step.label,
+            "escalation": Jsonb(
+                {
+                    "after_days": node.escalate_after_days,
+                    "approvers": node.escalate_to.model_dump(mode="json"),
+                }
+            )
+            if node.escalate_after_days and node.escalate_to
+            else None,
             "rule": Jsonb(node.approvers.model_dump(mode="json")),
             "mode": Jsonb(node.mode.model_dump() if isinstance(node.mode, Quorum) else node.mode),
             "repeat": node.allow_repeat,
@@ -645,10 +661,11 @@ def advance(
                     decided_by=sorted(
                         {str(context.actor_id)}
                         | {
-                            str(d["user_id"])
+                            str(user)
                             for d in decisions
                             if d.get("task_id") == task_id
                             and d["outcome"] in {"approve", "reject", "return"}
+                            for user in (d["user_id"], d.get("actor_id", d["user_id"]))
                         }
                     ),
                 )
@@ -688,6 +705,11 @@ def get_instance(
                 continue
             node = nodes[str(entry["node_id"])]
             task = tasks.get(node.id)
+            if task is not None:
+                # An admin reassignment replaces the rule for this task only (E10-S08).
+                node = node.model_copy(
+                    update={"approvers": _RULE.validate_python(task["approver_rule"])}
+                )
             route.append(
                 _step(
                     repo,
