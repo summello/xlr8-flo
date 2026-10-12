@@ -24,6 +24,7 @@ from flo.modules.org.service import (
     today,
 )
 from flo.modules.projects.service import ProjectService, is_requisition_generated
+from flo.modules.requisitions.catalogue import record_event, record_requested
 from flo.modules.requisitions.models import READ_FIELDS, READ_SQL, RequisitionRepository
 from flo.modules.requisitions.schemas import (
     Direction,
@@ -38,7 +39,13 @@ from flo.modules.requisitions.schemas import (
 from flo.modules.requisitions.schemas import SubmissionInvalid as SubmissionInvalid
 from flo.modules.requisitions.validation import check_submission as check_submission
 
-__all__ = ["RequisitionService", "SubmissionInvalid", "check_submission"]
+__all__ = [
+    "RequisitionService",
+    "SubmissionInvalid",
+    "check_submission",
+    "record_event",
+    "record_requested",
+]
 
 
 class RequisitionService:

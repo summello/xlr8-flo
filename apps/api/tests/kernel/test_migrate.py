@@ -131,6 +131,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261009_0039",
         "20261009_0040",
         "20261009_0041",
+        "20261009_0042",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -1028,8 +1029,7 @@ def test_requisition_lines_migration_roundtrip_preserves_lines_and_header(empty_
     from flo.kernel.tenancy.rls import tenant_transaction
     from flo.modules.org.schemas import BaseCurrencyPut, MasterCreate, OrgUnitCreate
     from flo.modules.org.service import OrgService
-    from flo.modules.requisitions.lines import LineService
-    from flo.modules.requisitions.schemas import LineCreate, RequisitionCreate
+    from flo.modules.requisitions.schemas import RequisitionCreate
     from flo.modules.requisitions.service import RequisitionService
     from tests.org.test_bootstrap import admin_id, create, settings
 
@@ -1066,13 +1066,18 @@ def test_requisition_lines_migration_roundtrip_preserves_lines_and_header(empty_
                 attributes={"dimension": "count"},
             ),
         )
-        LineService(conn, scope, actor).write(
-            row.id,
-            "1",
-            body=LineCreate(
-                line_type="item", description="Pump", quantity="3", unit_price="0.10", uom_code="EA"
-            ),
-        )
+        # Written with SQL: the service now also selects columns later revisions add.
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO requisition_line (id,org_id,requisition_id,line_no,line_type,"
+                "description,quantity,uom_code,unit_price,amount,currency) VALUES "
+                "(gen_random_uuid(),%s,%s,1,'item','Pump',3,'EA',0.10,0.30,'USD')",
+                (scope.org_id, row.id),
+            )
+            conn.execute(
+                "UPDATE requisition SET estimate=0.30,version=2,last_line_no=1 WHERE id=%s",
+                (row.id,),
+            )
         saved = conn.execute("SELECT * FROM requisition_line").fetchall()
         header = conn.execute("SELECT * FROM requisition").fetchall()
 
@@ -1098,3 +1103,99 @@ def test_requisition_lines_migration_roundtrip_preserves_lines_and_header(empty_
         )
         with tenant_transaction(conn, scope):
             assert conn.execute("SELECT last_line_no FROM requisition").fetchone() == (0,)
+
+
+def test_catalogue_migration_roundtrip_preserves_items_events_and_lines(empty_database):
+    from uuid import uuid4
+
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.org.schemas import BaseCurrencyPut, MasterCreate, OrgUnitCreate
+    from flo.modules.org.service import OrgService
+    from flo.modules.requisitions.catalogue import record_event
+    from flo.modules.requisitions.lines import LineService
+    from flo.modules.requisitions.schemas import LineCreate, RequisitionCreate
+    from flo.modules.requisitions.service import RequisitionService
+    from tests.org.test_bootstrap import admin_id, create, settings
+
+    revisions = tuple(
+        r for r in migrate.discover_migrations(MIGRATIONS) if r.revision <= "20261009_0042"
+    )
+    migrate.apply_migrations(revisions[:-1], empty_database)
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("catalogue-migration"),
+    ):
+        tenant = create(conn)
+        scope = Scope(tenant.org_id)
+        actor = admin_id(conn)
+        org = OrgService(conn, scope, actor)
+        org.set_base_currency(BaseCurrencyPut(currency="USD"))
+        bu = org.create_unit(OrgUnitCreate(code="BU", name="BU", kind="bu"))
+        org.create_master(
+            "uom",
+            MasterCreate(
+                code="EA",
+                name="Each",
+                effective_from=date(2000, 1, 1),
+                attributes={"dimension": "count"},
+            ),
+        )
+        row = RequisitionService(conn, scope, actor, settings(conn)).create(
+            RequisitionCreate(title="Preserved", bu_id=bu.id)
+        )
+        revisions[-1].upgrade(conn)
+        LineService(conn, scope, actor).write(
+            row.id,
+            "1",
+            body=LineCreate(
+                line_type="item", description="Pump", quantity="3", unit_price="0.10", uom_code="EA"
+            ),
+        )
+        lines_before = conn.execute(
+            "SELECT id,line_no,description,quantity,unit_price,amount FROM requisition_line"
+        ).fetchall()
+        item = record_event(
+            conn,
+            scope,
+            bu_id=bu.id,
+            line_type="item",
+            description="Pump",
+            uom_code="EA",
+            category_code=None,
+            event="requested",
+            source_type="requisition_line",
+            source_id=uuid4(),
+            quantity="3",
+            unit_price="0.1000",
+            currency="USD",
+        )
+        items = conn.execute("SELECT * FROM catalogue_item").fetchall()
+        events = conn.execute("SELECT * FROM catalogue_event").fetchall()
+        assert [r[0] for r in items] == [item] and len(events) == 1
+
+        class Rollback(Exception):
+            pass
+
+        with pytest.raises(Rollback), conn.transaction():
+            revisions[-1].downgrade(conn)
+            revisions[-1].upgrade(conn)
+            raise Rollback
+        assert conn.execute("SELECT * FROM catalogue_item").fetchall() == items
+        assert conn.execute("SELECT * FROM catalogue_event").fetchall() == events
+        # Removing the feature keeps every pre-existing line and header.
+        revisions[-1].downgrade(conn)
+        assert (
+            conn.execute(
+                "SELECT id,line_no,description,quantity,unit_price,amount FROM requisition_line"
+            ).fetchall()
+            == lines_before
+        )
+        assert conn.execute("SELECT to_regclass('catalogue_item')").fetchone() == (None,)
+        revisions[-1].upgrade(conn)
+        assert conn.execute("SELECT to_regclass('catalogue_event')").fetchone()[0] == (
+            "catalogue_event"
+        )
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT count(*) FROM catalogue_item").fetchone() == (0,)

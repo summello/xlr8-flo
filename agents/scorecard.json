@@ -2488,6 +2488,36 @@
       },
       "recap": "Addressed Opus review findings: organization separation-of-duty coverage, matching validation/publish scope checks, injected permission and role resolvers, and per-user grant filtering. Unregistered adapters still fail closed with an actionable message and an operator follow-up.",
       "title": "Approver eligibility resolution scoped to organization and BU/OU"
+    },
+    {
+      "story": "E09-S03",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "migration"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S03"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Added a BU/OU-scoped catalogue built from append-only events with record_event and record_requested, a scoped suggestion search, add-from-catalogue on lines, and one requisition-scoped lookup endpoint for the create form's selects. Written by the M2 runner after the Codex cap; reviewed separately.",
+      "title": "Catalogue: BU/OU-scoped suggestions from prior requested, sourced and purchased items"
     }
   ]
 }

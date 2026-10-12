@@ -16,12 +16,14 @@ from flo.modules.identity.models import AuthorizationContext, AuthorizationTarge
 from flo.modules.org.service import OrgService
 from flo.modules.projects.service import ProjectService
 from flo.modules.requisitions.lines import LineService
+from flo.modules.requisitions.lookups import LookupService
 from flo.modules.requisitions.schemas import (
     Direction,
     LineCreate,
     LinesRead,
     LinesReplace,
     LineWriteResult,
+    LookupRows,
     RequisitionCreate,
     RequisitionPage,
     RequisitionPatch,
@@ -108,6 +110,37 @@ def list_requisitions(
         direction=direction,
         cursor=cursor,
     )
+
+
+OrgCreateContext = Annotated[
+    AuthorizationContext, Depends(require("requisition.create", organization_target))
+]
+
+
+# Registered before "/{id}" so "lookups" is never parsed as a requisition id.
+@router.get("/lookups/{kind}", response_model=LookupRows)
+def lookups(
+    kind: str,
+    context: OrgCreateContext,
+    connection: Connection,
+    request: Request,
+    q: str = "",
+    bu_id: UUID | None = None,
+    limit: int = 20,
+) -> LookupRows:
+    def can_raise(kind: ScopeType, id: UUID) -> bool:
+        return permits(
+            request,
+            "requisition.create",
+            cast(TargetProtocol, AuthorizationTarget(kind, id)),
+        )
+
+    return LookupService(
+        connection,
+        current_scope(),
+        lambda id: can_raise(ScopeType.PROJECT, id),
+        lambda id: can_raise(ScopeType.BU, id),
+    ).options(kind, q, bu_id, limit)
 
 
 @router.get("/{id}", response_model=RequisitionRead)

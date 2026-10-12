@@ -503,6 +503,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/catalogue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search Catalogue */
+        get: operations["search_catalogue_api_v1_catalogue_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/documents/{document_type}/{document_id}/attachments": {
         parameters: {
             query?: never;
@@ -1530,6 +1547,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/requisitions/lookups/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lookups */
+        get: operations["lookups_api_v1_requisitions_lookups__kind__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/requisitions/{id}": {
         parameters: {
             query?: never;
@@ -1981,6 +2015,53 @@ export interface components {
              * @description Fiscal first month (1–12).
              */
             start_month: number;
+        };
+        /** CatalogueItemRead */
+        CatalogueItemRead: {
+            /**
+             * Bu Id
+             * Format: uuid
+             */
+            bu_id: string;
+            /** Category Code */
+            category_code: string | null;
+            /** Currency */
+            currency: string;
+            /** Description */
+            description: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Last Event
+             * @enum {string}
+             */
+            last_event: "requested" | "sourced" | "purchased" | "supplied" | "serviced";
+            /**
+             * Last Event At
+             * Format: date-time
+             */
+            last_event_at: string;
+            /** Last Unit Price */
+            last_unit_price: string;
+            /** Last Vendor Id */
+            last_vendor_id: string | null;
+            /** Last Vendor Name */
+            last_vendor_name: string | null;
+            /**
+             * Line Type
+             * @enum {string}
+             */
+            line_type: "item" | "service";
+            /** Uom Code */
+            uom_code: string;
+        };
+        /** CatalogueRows */
+        CatalogueRows: {
+            /** Rows */
+            rows: components["schemas"]["CatalogueItemRead"][];
         };
         /** ChildrenPage */
         ChildrenPage: {
@@ -2561,21 +2642,20 @@ export interface components {
         LedgerType: "allocation" | "reservation" | "commitment" | "actual" | "release" | "reversal" | "transfer" | "adjustment";
         /** LineCreate */
         LineCreate: {
+            /** Catalogue Item Id */
+            catalogue_item_id?: string | null;
             /** Category Code */
             category_code?: string | null;
             /** Description */
-            description: string;
-            /**
-             * Line Type
-             * @enum {string}
-             */
-            line_type: "item" | "service";
+            description?: string | null;
+            /** Line Type */
+            line_type?: ("item" | "service") | null;
             /** Quantity */
-            quantity: string;
+            quantity?: string | null;
             /** Unit Price */
-            unit_price: string;
+            unit_price?: string | null;
             /** Uom Code */
-            uom_code: string;
+            uom_code?: string | null;
         };
         /** LineRead */
         LineRead: {
@@ -2585,6 +2665,8 @@ export interface components {
             awarded_qty: string;
             /** Cancelled Qty */
             cancelled_qty: string;
+            /** Catalogue Item Id */
+            catalogue_item_id?: string | null;
             /** Category Code */
             category_code: string | null;
             /** Currency */
@@ -2653,6 +2735,25 @@ export interface components {
             email: string;
             /** Password */
             password: string;
+        };
+        /** LookupOption */
+        LookupOption: {
+            /**
+             * Disabled
+             * @default false
+             */
+            disabled?: boolean;
+            /** Label */
+            label: string;
+            /** Note */
+            note?: string | null;
+            /** Value */
+            value: string;
+        };
+        /** LookupRows */
+        LookupRows: {
+            /** Rows */
+            rows: components["schemas"]["LookupOption"][];
         };
         /** MappingPut */
         MappingPut: {
@@ -3560,23 +3661,22 @@ export interface components {
         };
         /** ReplacementLine */
         ReplacementLine: {
+            /** Catalogue Item Id */
+            catalogue_item_id?: string | null;
             /** Category Code */
             category_code?: string | null;
             /** Description */
-            description: string;
+            description?: string | null;
             /** Line Id */
             line_id?: string | null;
-            /**
-             * Line Type
-             * @enum {string}
-             */
-            line_type: "item" | "service";
+            /** Line Type */
+            line_type?: ("item" | "service") | null;
             /** Quantity */
-            quantity: string;
+            quantity?: string | null;
             /** Unit Price */
-            unit_price: string;
+            unit_price?: string | null;
             /** Uom Code */
-            uom_code: string;
+            uom_code?: string | null;
         };
         /** RequisitionCreate */
         RequisitionCreate: {
@@ -5336,6 +5436,51 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TransferRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    search_catalogue_api_v1_catalogue_get: {
+        parameters: {
+            query: {
+                bu_id: string;
+                q: string;
+                line_type?: ("item" | "service") | null;
+                limit?: number;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogueRows"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */
@@ -8622,6 +8767,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RequisitionRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    lookups_api_v1_requisitions_lookups__kind__get: {
+        parameters: {
+            query?: {
+                q?: string;
+                bu_id?: string | null;
+                limit?: number;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LookupRows"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

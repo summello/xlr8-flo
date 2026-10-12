@@ -96,6 +96,14 @@ COVERED = {
         "/api/v1/requisitions/{id}/lines/{line_id}",
     ): "requisitions/test_lines.py::test_foreign_tenant_line_routes_and_permissions",
     (
+        "GET",
+        "/api/v1/catalogue",
+    ): "requisitions/test_catalogue.py::test_http_search_and_foreign_unit_is_404",
+    (
+        "GET",
+        "/api/v1/requisitions/lookups/{kind}",
+    ): "requisitions/test_lookups.py::test_unknown_kind_422_and_route_reachable",
+    (
         "POST",
         "/api/v1/requisitions",
     ): "requisitions/test_header.py::test_foreign_tenant_routes_and_list_isolation",

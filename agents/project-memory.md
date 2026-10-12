@@ -8,9 +8,9 @@ Loaded into every agent session. Updated by `flo done` (status) and by Opus at e
 | | |
 |---|---|
 | Milestone | **M2 — Governed demand** |
-| Stories | 66 / 169 done |
+| Stories | 67 / 169 done |
 | Branch | milestone/M2-governed-demand |
-| In flight | E09-S03, E10-S11 |
+| In flight | E10-S05, E10-S11 |
 | Blocked | — |
 <!-- STATE:END -->
 

@@ -121,12 +121,13 @@ class RequisitionPage(BaseModel):
 
 class LineCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    line_type: Literal["item", "service"]
-    description: str = Field(min_length=1, max_length=500)
-    quantity: str
-    uom_code: str
-    unit_price: str
+    line_type: Literal["item", "service"] | None = None
+    description: str | None = Field(default=None, min_length=1, max_length=500)
+    quantity: str | None = None
+    uom_code: str | None = None
+    unit_price: str | None = None
     category_code: str | None = None
+    catalogue_item_id: UUID | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -139,9 +140,33 @@ class LineCreate(BaseModel):
                     )
         return value
 
+    @model_validator(mode="after")
+    def catalogue_or_typed(self) -> "LineCreate":
+        typed = ("line_type", "description", "uom_code", "category_code")
+        if self.catalogue_item_id is not None:
+            if any(getattr(self, field) is not None for field in typed):
+                raise invalid(
+                    "catalogue_item_id",
+                    "A catalogue line takes its type, description and unit from the item.",
+                    "catalogue_exclusive",
+                )
+        elif any(
+            getattr(self, field) is None
+            for field in ("line_type", "description", "uom_code", "quantity", "unit_price")
+        ):
+            raise invalid(
+                "catalogue_item_id",
+                "Choose a catalogue item or enter the line type, description, quantity, "
+                "unit and price.",
+                "line_incomplete",
+            )
+        return self
+
     @field_validator("quantity", "unit_price")
     @classmethod
-    def decimal_string(cls, value: str) -> str:
+    def decimal_string(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
         if not re.fullmatch(r"[0-9]{1,14}(?:\.[0-9]{1,4})?", value) or Decimal(value) <= 0:
             raise ValueError(
                 "Enter a positive decimal string with at most 14 integer digits and 4 decimals."
@@ -172,6 +197,7 @@ class LineRead(BaseModel):
     amount: str
     currency: str
     category_code: str | None
+    catalogue_item_id: UUID | None = None
     requested_qty: str
     sourced_qty: str
     awarded_qty: str
@@ -192,6 +218,36 @@ class LineWriteResult(BaseModel):
     estimate: str
     currency: str
     version: int
+
+
+class CatalogueItemRead(BaseModel):
+    id: UUID
+    line_type: Literal["item", "service"]
+    description: str
+    uom_code: str
+    category_code: str | None
+    last_unit_price: str
+    currency: str
+    last_event: Literal["requested", "sourced", "purchased", "supplied", "serviced"]
+    last_event_at: datetime
+    last_vendor_id: UUID | None
+    last_vendor_name: str | None
+    bu_id: UUID
+
+
+class CatalogueRows(BaseModel):
+    rows: list[CatalogueItemRead]
+
+
+class LookupOption(BaseModel):
+    value: str
+    label: str
+    disabled: bool = False
+    note: str | None = None
+
+
+class LookupRows(BaseModel):
+    rows: list[LookupOption]
 
 
 class SubmissionProblem(BaseModel):

@@ -8,6 +8,7 @@ from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.money import quantize
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.org.service import MasterCodeUnusable, assert_usable, today
+from flo.modules.requisitions.catalogue import CatalogueService
 from flo.modules.requisitions.schemas import (
     LineCreate,
     LineRead,
@@ -29,6 +30,7 @@ FIELDS = (
     "amount",
     "currency",
     "category_code",
+    "catalogue_item_id",
     "sourced_qty",
     "awarded_qty",
     "ordered_qty",
@@ -77,9 +79,34 @@ class LineService(RequisitionService):
                 version=header.version,
             )
 
-    def _values(self, body: LineCreate, currency: str, index: int) -> dict[str, object]:
+    def _values(
+        self, body: LineCreate, currency: str, index: int, bu_id: UUID | None = None
+    ) -> dict[str, object]:
         values = body.model_dump(exclude={"line_id"})
-        for field, kind in [("uom_code", "uom"), ("category_code", body.line_type + "_category")]:
+        if body.catalogue_item_id is not None:
+            assert bu_id is not None
+            item = CatalogueService(self.connection, self.scope).item(body.catalogue_item_id, bu_id)
+            if item is None:
+                raise invalid(
+                    f"lines/{index}/catalogue_item_id",
+                    "Choose an item from the suggestions for this unit.",
+                )
+            if item.currency != currency:
+                raise invalid(
+                    f"lines/{index}/catalogue_item_id",
+                    f"This item is priced in {item.currency}; the request is in {currency}.",
+                    "currency_mismatch",
+                )
+            values.update(
+                line_type=item.line_type,
+                description=item.description,
+                uom_code=item.uom_code,
+                category_code=item.category_code,
+                quantity=body.quantity or "1",
+                unit_price=body.unit_price or item.last_unit_price,
+            )
+        line_type = cast(str, values["line_type"])
+        for field, kind in [("uom_code", "uom"), ("category_code", line_type + "_category")]:
             code = cast(str | None, values[field])
             if code is not None:
                 try:
@@ -94,7 +121,10 @@ class LineService(RequisitionService):
                     ) from exc
         with localcontext() as context:
             context.prec = 40
-            amount = quantize(Decimal(body.quantity) * Decimal(body.unit_price), currency)
+            amount = quantize(
+                Decimal(cast(str, values["quantity"])) * Decimal(cast(str, values["unit_price"])),
+                currency,
+            )
         if amount > LIMIT:
             raise invalid(
                 f"lines/{index}/quantity",
@@ -154,13 +184,13 @@ class LineService(RequisitionService):
                         raise invalid(
                             f"lines/{index}/line_id", "Choose an existing, distinct line."
                         )
-                    desired[key] = self._values(line, header.currency, index)
+                    desired[key] = self._values(line, header.currency, index, header.bu_id)
             elif delete:
                 desired.pop(cast(UUID, line_id))
             else:
                 assert body is not None
                 line_id = line_id or uuid4()
-                desired[line_id] = self._values(body, header.currency, 0)
+                desired[line_id] = self._values(body, header.currency, 0, header.bu_id)
             if len(desired) > 500:
                 raise invalid("lines", "A requisition can contain at most 500 lines.")
             total = sum((Decimal(str(value["amount"])) for value in desired.values()), Decimal(0))

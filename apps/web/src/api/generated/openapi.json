@@ -608,6 +608,126 @@
         "title": "CalendarPut",
         "type": "object"
       },
+      "CatalogueItemRead": {
+        "properties": {
+          "bu_id": {
+            "format": "uuid",
+            "title": "Bu Id",
+            "type": "string"
+          },
+          "category_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Code"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_event": {
+            "enum": [
+              "requested",
+              "sourced",
+              "purchased",
+              "supplied",
+              "serviced"
+            ],
+            "title": "Last Event",
+            "type": "string"
+          },
+          "last_event_at": {
+            "format": "date-time",
+            "title": "Last Event At",
+            "type": "string"
+          },
+          "last_unit_price": {
+            "title": "Last Unit Price",
+            "type": "string"
+          },
+          "last_vendor_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Vendor Id"
+          },
+          "last_vendor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Vendor Name"
+          },
+          "line_type": {
+            "enum": [
+              "item",
+              "service"
+            ],
+            "title": "Line Type",
+            "type": "string"
+          },
+          "uom_code": {
+            "title": "Uom Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "line_type",
+          "description",
+          "uom_code",
+          "category_code",
+          "last_unit_price",
+          "currency",
+          "last_event",
+          "last_event_at",
+          "last_vendor_id",
+          "last_vendor_name",
+          "bu_id"
+        ],
+        "title": "CatalogueItemRead",
+        "type": "object"
+      },
+      "CatalogueRows": {
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/CatalogueItemRead"
+            },
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rows"
+        ],
+        "title": "CatalogueRows",
+        "type": "object"
+      },
       "ChildrenPage": {
         "properties": {
           "next_cursor": {
@@ -2189,6 +2309,18 @@
       "LineCreate": {
         "additionalProperties": false,
         "properties": {
+          "catalogue_item_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalogue Item Id"
+          },
           "category_code": {
             "anyOf": [
               {
@@ -2201,39 +2333,67 @@
             "title": "Category Code"
           },
           "description": {
-            "maxLength": 500,
-            "minLength": 1,
-            "title": "Description",
-            "type": "string"
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
           },
           "line_type": {
-            "enum": [
-              "item",
-              "service"
+            "anyOf": [
+              {
+                "enum": [
+                  "item",
+                  "service"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Line Type",
-            "type": "string"
+            "title": "Line Type"
           },
           "quantity": {
-            "title": "Quantity",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
           },
           "unit_price": {
-            "title": "Unit Price",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Price"
           },
           "uom_code": {
-            "title": "Uom Code",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uom Code"
           }
         },
-        "required": [
-          "line_type",
-          "description",
-          "quantity",
-          "uom_code",
-          "unit_price"
-        ],
         "title": "LineCreate",
         "type": "object"
       },
@@ -2250,6 +2410,18 @@
           "cancelled_qty": {
             "title": "Cancelled Qty",
             "type": "string"
+          },
+          "catalogue_item_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalogue Item Id"
           },
           "category_code": {
             "anyOf": [
@@ -2442,6 +2614,56 @@
           "password"
         ],
         "title": "LoginRequest",
+        "type": "object"
+      },
+      "LookupOption": {
+        "properties": {
+          "disabled": {
+            "default": false,
+            "title": "Disabled",
+            "type": "boolean"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value",
+          "label"
+        ],
+        "title": "LookupOption",
+        "type": "object"
+      },
+      "LookupRows": {
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/LookupOption"
+            },
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rows"
+        ],
+        "title": "LookupRows",
         "type": "object"
       },
       "MappingPut": {
@@ -5177,6 +5399,18 @@
       "ReplacementLine": {
         "additionalProperties": false,
         "properties": {
+          "catalogue_item_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalogue Item Id"
+          },
           "category_code": {
             "anyOf": [
               {
@@ -5189,10 +5423,17 @@
             "title": "Category Code"
           },
           "description": {
-            "maxLength": 500,
-            "minLength": 1,
-            "title": "Description",
-            "type": "string"
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
           },
           "line_id": {
             "anyOf": [
@@ -5207,33 +5448,54 @@
             "title": "Line Id"
           },
           "line_type": {
-            "enum": [
-              "item",
-              "service"
+            "anyOf": [
+              {
+                "enum": [
+                  "item",
+                  "service"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Line Type",
-            "type": "string"
+            "title": "Line Type"
           },
           "quantity": {
-            "title": "Quantity",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
           },
           "unit_price": {
-            "title": "Unit Price",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Price"
           },
           "uom_code": {
-            "title": "Uom Code",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uom Code"
           }
         },
-        "required": [
-          "line_type",
-          "description",
-          "quantity",
-          "uom_code",
-          "unit_price"
-        ],
         "title": "ReplacementLine",
         "type": "object"
       },
@@ -9084,6 +9346,114 @@
         "summary": "Transfer Budget",
         "tags": [
           "budget"
+        ]
+      }
+    },
+    "/api/v1/catalogue": {
+      "get": {
+        "operationId": "search_catalogue_api_v1_catalogue_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "bu_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Bu Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "line_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "item",
+                    "service"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Line Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 4,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogueRows"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Search Catalogue",
+        "tags": [
+          "catalogue"
         ]
       }
     },
@@ -15547,6 +15917,111 @@
           }
         },
         "summary": "Create Requisition",
+        "tags": [
+          "requisitions"
+        ]
+      }
+    },
+    "/api/v1/requisitions/lookups/{kind}": {
+      "get": {
+        "operationId": "lookups_api_v1_requisitions_lookups__kind__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "bu_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Bu Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LookupRows"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Lookups",
         "tags": [
           "requisitions"
         ]
