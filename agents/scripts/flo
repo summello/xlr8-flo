@@ -1270,8 +1270,16 @@ def _board_once(fetch=True, use_gh=True):
              f'<div class="stat"><span class="eb">On you</span><b>{len(pending)}</b></div>',
              "</header>",
              '<p class="hint" style="padding:10px 0 0"><span id="age" class="fresh"></span> '
-             '&middot; Deployed = on main. Merged = in its milestone branch. Committed = '
-             'reviewed, waiting for <span class="mono">flo done</span>.</p>',
+             '&middot; Deployed = on main with a green deploy run. Merged = in its milestone '
+             'branch (or on main, deploy not green yet). Committed = reviewed, waiting for '
+             '<span class="mono">flo done</span>.</p>',
+             (f'<p class="hint" style="padding:6px 0 0"><span class="pill blk"><i></i>'
+              f'Latest deploy on main failed</span> Stories on main stay Merged until a deploy '
+              f'run succeeds. <span class="mono">gh run list --branch main --limit 3</span></p>'
+              if (doc.get("main") or {}).get("deploy") == "failure" else
+              '<p class="hint" style="padding:6px 0 0"><span class="pill dsg"><i></i>Deploy runs '
+              'not readable</span> GitHub could not be reached, so Deployed means on main only.</p>'
+              if doc.get("deploy_check") == "unavailable" else ""),
              '<nav class="tabs" role="tablist" aria-label="Board views">'
              '<button role="tab" data-tab="delivery" aria-selected="true">Delivery</button>'
              '<button role="tab" data-tab="release" aria-selected="false">Release steps</button>'

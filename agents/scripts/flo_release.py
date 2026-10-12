@@ -64,6 +64,27 @@ margin:8px 0 0}
 .expect.bad{border-left-color:var(--dgr)}
 .expect b{color:var(--fg)}
 .rbhead{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;margin-bottom:14px}
+.chart{overflow-x:auto}
+@media(max-width:640px){
+.w{padding:22px 14px 60px}
+header{gap:14px}
+.burn td.r:nth-child(n+4){display:none}
+.burn th{white-space:normal}
+.track{width:64px}
+td.meta,.cnt{display:none}
+td.id{width:auto}
+td{padding:8px 10px}
+.tabs button{padding:10px 10px}
+.rb>li{padding:14px}
+.rb>li::before{position:static;margin-bottom:8px}
+.rbhead{gap:6px}
+.note{margin-left:0}
+.next .row{flex-wrap:wrap}
+.next .cmd{margin-left:0}
+.two .card{overflow-x:auto}
+.sc th,.sc td{padding:8px 10px}
+.you .row{flex-wrap:wrap}
+}
 """
 
 SCRIPT = """
@@ -189,7 +210,8 @@ def runbook_html(doc):
               ["gh run list --branch main --limit 3",
                "gh run watch $(gh run list --branch main --limit 1 --json databaseId "
                "--jq '.[0].databaseId')"],
-              "every job, including <code>deploy</code>, finishes with a tick.",
+              "every job, including <code>deploy</code>, finishes with a tick. The board only calls a "
+              "story <b>Deployed</b> once this run is green.",
               "<code>deploy</code> fails: tell Claude. The API may already be live, so say "
               "which step failed (<code>gh run view &lt;id&gt; --log-failed</code>)."),
         _step("Smoke test production", "you",
@@ -205,7 +227,8 @@ def runbook_html(doc):
               "turns to Deployed.",
               ["git fetch origin && git merge origin/main"],
               "this board shows the milestone as <b>Deployed</b> and every story as "
-              "Deployed. The command is for whoever owns the next milestone branch."),
+              "Deployed (on <code>main</code> with a green deploy run). The command is for "
+              "whoever owns the next milestone branch."),
         _step("If something is wrong: roll back", "you",
               "Moves API traffic to the previous revision. It does not undo database changes, "
               "so every production migration must stay compatible with the previous revision. "

@@ -100,6 +100,25 @@ def ci_from_runs(runs, head_sha=None):
     return "success"
 
 
+def deploy_verdict(story_id, history):
+    """Did this story's code reach production? history: main's CI runs, newest first, each
+    {sha, status, conclusion, deploy, ids}. `deploy` is success | failure | pending | skipped.
+
+    A story shipped if ANY run containing its commit deployed successfully, whatever happened to
+    later runs. Failed runs only count while none succeeded. A story no run in the window contains
+    predates it, so it is treated as shipped. A run whose deploy job was skipped (a change that
+    needs no deploy) ships nothing and fails nothing.
+    """
+    covering = [r for r in history if story_id in r["ids"]]
+    if not covering:
+        return "success"
+    outcomes = [r["deploy"] for r in covering]
+    for want in ("success", "pending", "failure"):
+        if want in outcomes:
+            return want
+    return "success" if any(r["conclusion"] == "success" for r in covering) else "pending"
+
+
 def approvals_ok(reviews, task):
     """Reviewer floor and the Opus final, as `flo gate` applies them (min_reviewers is 1)."""
     ok = [r for r in reviews
@@ -191,6 +210,66 @@ def gh_ci(root, branch, head_sha):
         return None
 
 
+def _deploy_of(jobs):
+    for j in jobs:
+        if j.get("name") == "deploy":
+            c = j.get("conclusion")
+            if c in ("success", "skipped"):
+                return c
+            if c in ("failure", "cancelled", "timed_out", "startup_failure"):
+                return "failure"
+            return "pending"
+    return "skipped"
+
+
+def main_history(root, main_ref):
+    """CI runs on main, newest first, with their deploy-job result. None when gh is unavailable."""
+    out = _run(["gh", "run", "list", "--branch", "main", "--workflow", "ci.yml", "--limit", "10",
+                "--json", "databaseId,headSha,status,conclusion"], root, timeout=25)
+    try:
+        runs = json.loads(out) if out else None
+    except ValueError:
+        runs = None
+    if runs is None:
+        return None
+    cache_file = Path(root) / ".flo" / "runs.json"
+    try:
+        cache = json.loads(cache_file.read_text())
+    except (OSError, ValueError):
+        cache = {}
+    done = cache.setdefault("runs", {})
+    ids = cache.setdefault("ids", {})
+    history = []
+    for r in runs:
+        key = str(r["databaseId"])
+        if key not in done:
+            raw = _run(["gh", "run", "view", key, "--json", "jobs"], root, timeout=25)
+            try:
+                jobs = json.loads(raw)["jobs"] if raw else None
+            except (ValueError, KeyError):
+                jobs = None
+            if jobs is None:
+                continue
+            verdict = _deploy_of(jobs) if r["status"] == "completed" else "pending"
+            if r["status"] == "completed":
+                done[key] = verdict
+            else:
+                done.pop(key, None)
+        else:
+            verdict = done[key]
+        sha = r["headSha"]
+        if sha not in ids:
+            ids[sha] = sorted(_subjects(root, sha))
+        history.append({"sha": sha, "status": r["status"], "conclusion": r.get("conclusion"),
+                        "deploy": verdict, "ids": set(ids[sha])})
+    try:
+        cache_file.parent.mkdir(parents=True, exist_ok=True)
+        cache_file.write_text(json.dumps(cache))
+    except OSError:
+        pass
+    return history
+
+
 def gh_pr(root, branch):
     out = _run(["gh", "pr", "list", "--head", branch, "--state", "all", "--limit", "1", "--json",
                 "number,state,isDraft,url,mergeStateStatus"], root, timeout=25)
@@ -203,9 +282,16 @@ def gh_pr(root, branch):
 
 # ── gather ────────────────────────────────────────────────────────────────────
 
-def gather(root, use_gh=True, fetch=False):
-    """Read refs, worktrees and (optionally) GitHub, and return the status document."""
+def gather(root, use_gh=True, fetch=False, history=None):
+    """Read refs, worktrees and (optionally) GitHub, and return the status document.
+
+    `history` injects main's CI runs (tests); otherwise they are read from GitHub when use_gh.
+    """
     root = Path(root)
+    try:
+        prev = json.loads((root / ".flo" / "status.json").read_text())
+    except (OSError, ValueError):
+        prev = {}
     if fetch:
         _run(["git", "fetch", "--quiet", "--prune", "origin"], root, timeout=60)
     ms_refs = _refs(root, ["refs/heads/milestone", "refs/remotes/origin/milestone"])
@@ -235,7 +321,12 @@ def gather(root, use_gh=True, fetch=False):
                 "epics": {}, "milestones": {}, "counts": counts([])}
 
     merged = set().union(*[_subjects(root, r) for r in ms_refs]) if ms_refs else set()
-    deployed = _subjects(root, main_ref)
+    on_main = _subjects(root, main_ref)
+    if history is None and use_gh:
+        history = main_history(root, main_ref)
+    # on main is not enough: its deploy run must have succeeded (when we can see the runs)
+    verdict = {sid: (deploy_verdict(sid, history) if history is not None else None) for sid in on_main}
+    deployed = {sid for sid in on_main if history is None or verdict[sid] == "success"}
     packets = set()
     for ref in [main_ref, *ms_refs, *doc_refs]:
         packets |= _ls_design(root, ref)
@@ -253,7 +344,7 @@ def gather(root, use_gh=True, fetch=False):
             sid = s["id"]
             facts = {
                 "deployed": sid in deployed,
-                "merged": sid in merged or rank.get(sid, 0) >= 2,
+                "merged": sid in merged or sid in on_main or rank.get(sid, 0) >= 2,
                 "packet": sid in packets,
                 "in_progress": rank.get(sid, 0) == 1 or sid in wt,
             }
@@ -281,6 +372,7 @@ def gather(root, use_gh=True, fetch=False):
                 "dep": s.get("dep", []), "state": story_state(facts), "blocked": blocked,
                 "author": task.get("author"), "reviewers": task.get("reviewers"),
                 "rounds": task.get("rounds"), "branch": branch,
+                "on_main": sid in on_main, "deploy": verdict.get(sid),
             }
 
     milestones, epics, ci_of = {}, {}, {}
@@ -293,8 +385,19 @@ def gather(root, use_gh=True, fetch=False):
             head = (_run(["git", "rev-parse", f"origin/{m['branch']}"], root) or "").strip() or None
             ci = gh_ci(root, m["branch"], head)
             pr = gh_pr(root, m["branch"])
+        was = (prev.get("milestones") or {}).get(m["id"]) or {}
+        if use_gh and started and not all(s == "deployed" for s in states):
+            ci = ci if ci is not None else was.get("ci")
+            pr = pr if pr is not None else was.get("pr")
+        elif not use_gh:
+            ci, pr = was.get("ci"), was.get("pr")
         ci_of[m["id"]] = ci
         state, note = group_state(states, ci)
+        mine = [stories[i] for i in ids]
+        if mine and all(v["on_main"] for v in mine) and not all(v["state"] == "deployed" for v in mine):
+            bad = {v["deploy"] for v in mine if v["state"] != "deployed"}
+            state = "on_train"
+            note = "on main; deploy " + ("failed" if "failure" in bad else "running")
         milestones[m["id"]] = {
             "name": m["name"], "branch": m["branch"], "state": state, "note": note,
             "total": len(ids), "counts": counts(states), "ci": ci, "pr": pr,
@@ -307,8 +410,15 @@ def gather(root, use_gh=True, fetch=False):
             "name": e["name"], "milestone": e["milestone"], "state": state, "note": note,
             "total": len(ids), "counts": counts(states),
         }
+    main = None
+    if history:
+        newest = next((r for r in history if r["deploy"] != "skipped"), history[0])
+        main = {"head": history[0]["sha"][:8], "deploy": newest["deploy"],
+                "status": history[0]["status"]}
     return {
         "version": 1,
+        "deploy_check": "ok" if history is not None else "unavailable",
+        "main": main,
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "root": str(root),
         "stories": stories, "epics": epics, "milestones": milestones,
