@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+import { stubWorkflows } from "../e2e/workflow-list-fixture";
 import { stubDashboard } from "../e2e/dashboard-fixture";
 import { projectId } from "../e2e/projects-fixture";
 import { ROUTE_PATHS } from "../../src/routes/route-paths";
@@ -15,6 +16,7 @@ for (const theme of ["light", "dark"] as const) {
       await page.addInitScript((selectedTheme) => {
         localStorage.setItem("xlr8flo.theme", selectedTheme);
       }, theme);
+      if (route === "/admin/approval-workflows") await stubWorkflows(page);
       await page.goto(route);
       await page.locator(".app-shell").waitFor();
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();

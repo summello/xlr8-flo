@@ -1269,7 +1269,7 @@ epics:
         dep:
           - E10-S11
           - E10-S05
-        st: review
+        st: done
       - id: E10-S13
         t: Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget
           changes

@@ -2540,6 +2540,11 @@
             "title": "Route",
             "type": "array"
           },
+          "separation_of_duty_applied": {
+            "default": true,
+            "title": "Separation Of Duty Applied",
+            "type": "boolean"
+          },
           "started_at": {
             "format": "date-time",
             "title": "Started At",
@@ -7460,12 +7465,24 @@
       "RoutePreview": {
         "additionalProperties": false,
         "properties": {
+          "path_edge_indices": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Path Edge Indices",
+            "type": "array"
+          },
           "problems": {
             "items": {
               "$ref": "#/components/schemas/RouteProblem"
             },
             "title": "Problems",
             "type": "array"
+          },
+          "separation_of_duty_applied": {
+            "default": true,
+            "title": "Separation Of Duty Applied",
+            "type": "boolean"
           },
           "steps": {
             "items": {
@@ -7599,6 +7616,17 @@
               }
             ],
             "title": "Quorum"
+          },
+          "reached_via": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reached Via"
           },
           "rule": {
             "title": "Rule",
@@ -8638,6 +8666,11 @@
       "WorkflowRead": {
         "additionalProperties": false,
         "properties": {
+          "applies_to": {
+            "default": "",
+            "title": "Applies To",
+            "type": "string"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -8661,14 +8694,65 @@
             "title": "Document Type",
             "type": "string"
           },
+          "draft_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Draft Version"
+          },
+          "edited_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edited At"
+          },
+          "edited_by_name": {
+            "default": "Unknown",
+            "title": "Edited By Name",
+            "type": "string"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
             "type": "string"
           },
+          "in_flight": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": 0,
+            "title": "In Flight"
+          },
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "published_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published Version"
           },
           "retired_at": {
             "anyOf": [
@@ -8719,6 +8803,11 @@
       "WorkflowVersionRead": {
         "additionalProperties": false,
         "properties": {
+          "author_name": {
+            "default": "Unknown",
+            "title": "Author Name",
+            "type": "string"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -8741,6 +8830,18 @@
             "format": "uuid",
             "title": "Id",
             "type": "string"
+          },
+          "in_flight": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": 0,
+            "title": "In Flight"
           },
           "published_at": {
             "anyOf": [
@@ -8802,10 +8903,27 @@
       "WorkflowVersionSummary": {
         "additionalProperties": false,
         "properties": {
+          "author_name": {
+            "default": "Unknown",
+            "title": "Author Name",
+            "type": "string"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
             "type": "string"
+          },
+          "in_flight": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": 0,
+            "title": "In Flight"
           },
           "published_at": {
             "anyOf": [
@@ -19201,6 +19319,16 @@
             }
           },
           {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Search",
+              "type": "string"
+            }
+          },
+          {
             "in": "header",
             "name": "X-FLO-Origin-Secret",
             "required": false,
@@ -19893,6 +20021,119 @@
           }
         },
         "summary": "Publish Version",
+        "tags": [
+          "workflows"
+        ]
+      }
+    },
+    "/api/v1/workflows/{id}/versions/{version}/route-preview": {
+      "get": {
+        "operationId": "route_preview_api_v1_workflows__id__versions__version__route_preview_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "title": "Version",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "amount",
+            "required": true,
+            "schema": {
+              "title": "Amount",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "currency",
+            "required": true,
+            "schema": {
+              "title": "Currency",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "bu_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Bu Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoutePreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Route Preview",
         "tags": [
           "workflows"
         ]

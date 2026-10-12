@@ -1,0 +1,41 @@
+.wfl, .wfl-sheet { color: var(--fg); font-size: var(--text-body); }
+.wfl button, .wfl input, .wfl select, .wfl-sheet button, .wfl-sheet input, .wfl-sheet select { font: inherit; padding: var(--space-2) var(--space-3); color: var(--fg); background: var(--surface); border: 1px solid var(--border-control); border-radius: var(--radius-control); max-width: 100%; }
+.wfl :focus-visible, .wfl-sheet :focus-visible { outline: 2px solid var(--ring); outline-offset: var(--space-1); }
+.wfl svg, .wfl-sheet svg { width: var(--icon-inline); height: var(--icon-inline); vertical-align: middle; }
+.wfl-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); padding: var(--space-4); }
+.wfl table, .wfl-sheet table { width: 100%; border-collapse: collapse; }
+.wfl th, .wfl td, .wfl-sheet th, .wfl-sheet td { text-align: left; padding: var(--space-2); border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+.wfl td p { color: var(--fg-secondary); margin: 0; }
+.wfl header, .wfl nav { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; margin-block: var(--space-3); }
+.wfl-pill { display: inline-flex; align-items: center; gap: var(--pill-gap); padding-inline: var(--pill-pad-x); height: var(--pill-h); border-radius: var(--pill-radius); font-size: var(--text-caption); font-weight: var(--weight-label); color: var(--status-neutral); background: var(--status-neutral-tint); }
+.wfl-pill[data-state=published] { color: var(--status-info); background: var(--status-info-tint); }
+.wfl-scrim { position: fixed; inset: 0; background: var(--scrim); z-index: var(--z-sheet); }
+.wfl-sheet { position: fixed; inset: 0 0 0 auto; width: min(100%, var(--sheet-w)); overflow: auto; padding: var(--space-5); background: var(--surface); z-index: var(--z-sheet); box-shadow: var(--shadow-xl); }
+.wfl-sheet li { margin-block: var(--space-4); }
+.wfl-sheet [role=alert], .wfl [role=alert] { color: var(--status-danger); }
+.wfl-sheet td s { display: block; }
+.wfl-loading { min-height: var(--sheet-w); background: var(--sunken); }
+@media (max-width: 1023px) { .wfl button, .wfl input, .wfl select, .wfl-sheet button, .wfl-sheet input, .wfl-sheet select { min-height: var(--touch-target); } }
+@media (max-width: 767px) { .wfl table, .wfl tbody, .wfl tr, .wfl th, .wfl td, .wfl-sheet table, .wfl-sheet tbody, .wfl-sheet tr, .wfl-sheet td { display: block; } .wfl thead, .wfl-sheet thead { display: none; } .wfl td::before, .wfl-sheet td::before { content: attr(data-label) ': '; font-weight: var(--weight-heading); } .wfl input, .wfl-sheet input, .wfl-sheet select { font-size: var(--text-input-mobile); } }
+
+.wfl .wfl-pill svg, .wfl-sheet .wfl-pill svg { width: var(--pill-icon); height: var(--pill-icon); }
+.wfl th p { font-weight: var(--weight-body); font-size: var(--text-caption); color: var(--fg-secondary); }
+.wfl-card { container-type: inline-size; }
+@container (max-width: 899px) { .wfl table th:nth-child(2), .wfl table td:nth-child(2), .wfl table th:nth-child(5), .wfl table td:nth-child(5) { display: none; } }
+/* The shared Field keeps its programmatic required state; the sheet supplies the visual tag. */
+.wfl-sheet .field-required { display: inline-flex; margin-inline-start: var(--space-2); font-size: 0; }
+.wfl-sheet .field-required::after { content: 'Required'; font-size: var(--text-caption); font-weight: var(--weight-label); height: var(--pill-h); padding-inline: var(--pill-pad-x); border-radius: var(--pill-radius); color: var(--status-neutral); background: var(--status-neutral-tint); }
+.wfl-sheet .form-field:has(input:required:valid) .field-required::after { content: 'Done'; color: var(--status-success); background: var(--status-success-tint); }
+.wfl-sheet .form-field:has(input:required:invalid) input:not(:focus) { border-inline-start-width: var(--space-1); border-inline-start-color: var(--phase-plan); }
+.wfl-sheet [role=alert], .wfl-sheet .field-help, .wfl [role=alert] { font-size: var(--text-input-mobile); }
+.wfl-sheet .form-field { position: relative; }
+.wfl-sheet .form-field .wfl-complete { display: none; position: absolute; inset: 0 var(--space-2) auto auto; width: var(--pill-icon); height: var(--pill-icon); color: var(--status-success); }
+.wfl-sheet .form-field:has(input:required:valid) .wfl-complete { display: block; }
+.wfl-pill { white-space: nowrap; }
+.wfl-sheet h2 { font-size: var(--text-title); font-weight: var(--weight-title); margin-block-end: var(--space-2); }
+.wfl-sheet h3 { font-size: var(--text-heading); font-weight: var(--weight-heading); margin-block: var(--space-4); }
+.wfl-sheet .project-money { display: flex; justify-content: flex-end; }
+.wfl-sheet .diff td { font-size: var(--text-caption); }
+.wfl-pill { font-variant-numeric: tabular-nums; }
+.wfl td:nth-child(5), .wfl th:nth-child(5) { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.wfl-sheet p, .wfl-sheet li { overflow-wrap: anywhere; }

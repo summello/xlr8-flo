@@ -13,6 +13,7 @@ from flo.kernel.tenancy.context import current_scope
 from flo.modules.approvals.schemas import (
     DocumentType,
     FieldType,
+    RoutePreview,
     WorkflowCreate,
     WorkflowPage,
     WorkflowRead,
@@ -66,8 +67,11 @@ def list_workflows(
     connection: Connection,
     document_type: DocumentType | None = None,
     cursor: str | None = None,
+    search: str = "",
 ) -> WorkflowPage:
-    return WorkflowService(connection, current_scope(), context.user_id).list(document_type, cursor)
+    return WorkflowService(connection, current_scope(), context.user_id).list(
+        document_type, cursor, search
+    )
 
 
 @router.get("/catalog", response_model=dict[str, FieldType])
@@ -134,3 +138,18 @@ def validate_version(
     id: UUID, version: int, context: ReadContext, connection: Connection
 ) -> ValidationReport:
     return WorkflowService(connection, current_scope(), context.user_id).validation(id, version)
+
+
+@router.get("/{id}/versions/{version}/route-preview", response_model=RoutePreview)
+def route_preview(
+    id: UUID,
+    version: int,
+    context: ReadContext,
+    connection: Connection,
+    amount: str,
+    currency: str,
+    bu_id: UUID | None = None,
+) -> RoutePreview:
+    return WorkflowService(connection, current_scope(), context.user_id).route_preview(
+        id, version, amount, currency, bu_id
+    )

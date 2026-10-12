@@ -50,7 +50,7 @@ def eligible_approvers(
     document_type: str,
     rule: Approvers,
     target: AuthorizationTarget,
-    requester_id: UUID,
+    requester_id: UUID | None,
     resolver: PermissionHoldersResolver,
 ) -> EligibleSet:
     with tenant_transaction(cast(RlsSession, conn), scope):
@@ -114,7 +114,7 @@ def eligible_approvers(
                 .effective_setting(unit_id, "approval.separation_of_duty")
                 .value
             )
-        if separation and requester_id in selected:
+        if separation and requester_id is not None and requester_id in selected:
             selected.remove(IdentityId(requester_id))
             excluded.append(Excluded(user_id=requester_id, reason="separation_of_duty"))
         scope_label = f"{target.scope_type.value}:{target.scope_id}"

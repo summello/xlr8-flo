@@ -211,6 +211,8 @@ class WorkflowVersionSummary(Contract):
     status: VersionStatus
     created_at: datetime
     published_at: datetime | None
+    author_name: str = "Unknown"
+    in_flight: int | None = 0
 
 
 class WorkflowRead(Contract):
@@ -222,6 +224,12 @@ class WorkflowRead(Contract):
     created_by: UUID
     created_at: datetime
     retired_at: datetime | None
+    applies_to: str = ""
+    published_version: int | None = None
+    draft_version: int | None = None
+    in_flight: int | None = 0
+    edited_at: datetime | None = None
+    edited_by_name: str = "Unknown"
     versions: list[WorkflowVersionSummary] = Field(default_factory=list)
 
 
@@ -428,6 +436,7 @@ class ExcludedApprover(Contract):
 
 
 class RouteStep(Contract):
+    reached_via: str | None = None
     node_id: str
     label: str
     mode: Literal["any", "all", "quorum"]
@@ -446,6 +455,8 @@ class RouteProblem(Contract):
 
 
 class RoutePreview(Contract):
+    path_edge_indices: list[int] = Field(default_factory=list)
+    separation_of_duty_applied: bool = True
     workflow_version_id: UUID | None
     workflow_version: int | None
     steps: list[RouteStep]
@@ -466,6 +477,7 @@ class TaskRead(Contract):
 
 
 class InstanceRead(Contract):
+    separation_of_duty_applied: bool = True
     id: UUID
     document_type: str
     document_id: UUID

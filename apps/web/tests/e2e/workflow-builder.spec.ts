@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { stubBuilder, workflowId, approverId } from "./workflow-builder-fixture";
-async function keyPress(page: Page, name: string) { await page.locator(".wf-toolbar button").first().waitFor(); const b = page.getByRole("button", { name, exact: true }); await b.focus(); await page.keyboard.press("Enter"); if (["Check","Publish"].includes(name)) await expect(page.locator(".wf-builder header button").first()).toHaveAttribute("aria-busy","false"); }
+async function keyPress(page: Page, name: string) { await page.locator(".wf-toolbar button").first().waitFor(); const b = page.getByRole("button", { name, exact: true }); await b.focus(); await page.keyboard.press("Enter"); if (["Check","Publish"].includes(name)) await expect(page.locator(".wf-builder > header").getByRole("button", { name, exact: true, includeHidden: true })).toHaveAttribute("aria-busy","false"); }
 async function keyboardBuild(page: Page) {
     await keyPress(page, "Add Condition");
     await expect(page.getByRole("heading", { name: "Inspector: Condition" })).toBeFocused();

@@ -625,6 +625,7 @@ def test_instance_route_foreign_tenant_and_roles(setup):
             body = response.json()
             assert body["workflow_version"] == 1 and body["workflow_version_id"] == str(v1.id)
             assert set(body) == {
+                "separation_of_duty_applied",
                 "id",
                 "document_type",
                 "document_id",
@@ -639,6 +640,7 @@ def test_instance_route_foreign_tenant_and_roles(setup):
                 "started_at",
                 "finished_at",
             }
+            assert body["separation_of_duty_applied"] is True
             assert (await browser.get(f"/api/v1/approvals/instances/{uuid4()}")).status_code == 404
             # Real baseline roles: read granted to approver, requestor, auditor and administrator.
             auth = IdentityAuthorizationService(db[0], Scope(db[1]), db[3])

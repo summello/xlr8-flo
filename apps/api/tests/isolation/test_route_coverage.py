@@ -55,6 +55,10 @@ COVERED = {
     ): "approvals/test_decisions.py::test_approval_routes_foreign_tenant",
     (
         "GET",
+        "/api/v1/workflows/{id}/versions/{version}/route-preview",
+    ): "approvals/test_route_preview.py::test_foreign_tenant_route_preview_and_scope_are_404",
+    (
+        "GET",
         "/api/v1/approvals/instances/{id}",
     ): "approvals/test_engine.py::test_instance_route_foreign_tenant_and_roles",
     (

@@ -2741,6 +2741,42 @@
       },
       "recap": "Implemented atomic submit/reserve, requester withdraw and administrator cancel with immutable status history, permission-scoped reservation cards and closure hooks. Verified both final-approve/withdraw lock orders while retaining the E09-S06 approval-effects placeholder.",
       "title": "Requisition lifecycle state machine"
+    },
+    {
+      "story": "E10-S12",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "qwen",
+          "to": "opus",
+          "reason": "operator instruction 12 Oct 2026: qwen and deepseek review only when all of M2 is complete"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a1305b-c6f8-78f0-8f45-9dbcb7f7a181",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "85904ffc-1341-4f73-b873-f03a9d8baaf8",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Fixed route-preview scope authorization and required explicit eligibility requester/resolver arguments. Corrected locale dates, branch money/null wording and document labels, and added regressions for the review findings.",
+      "title": "Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11)"
     }
   ]
 }

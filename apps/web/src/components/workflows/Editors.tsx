@@ -8,6 +8,8 @@ type Props = {
     selected: string;
     select: (id: string, edit?: boolean) => void;
     dispatch: Dispatch<Operation>;
+    previewEdges?: number[];
+    previewSteps?: string[];
     issues: components["schemas"]["Issue"][];
 };
 export function Connections({ graph, node, dispatch }: {
@@ -23,7 +25,7 @@ export function Outline({ graph, select, dispatch }: Props) {
     return <table className="wf-outline"><caption>Workflow outline</caption><thead><tr>{["Node", "Type", "Summary", "Goes To", "Actions"].map(h => <th key={h}>{h}</th>)}</tr></thead>
     <tbody>{routeOrder(graph).map(n => <tr key={n.id}><th scope="row">{n.name || n.id}</th><td>{n.kind}</td><td>{summary(n)}</td><td><Connections graph={graph} node={n} dispatch={dispatch}/></td><td><button onClick={() => select(n.id, true)}>Edit {n.name || n.id}</button><button onClick={() => dispatch({ type: "delete", id: n.id })}><Trash aria-hidden="true"/>Delete {n.name || n.id}</button></td></tr>)}</tbody></table>;
 }
-export function Canvas({ graph, selected, select, dispatch, issues }: Props) {
+export function Canvas({ graph, selected, select, dispatch, issues, previewEdges = [], previewSteps = [] }: Props) {
     const drag = useRef<{
         id: string;
         x: number;
@@ -40,7 +42,7 @@ export function Canvas({ graph, selected, select, dispatch, issues }: Props) {
     // The node is ten grid units wide (workflows.css), so label anchors follow the token.
     const node = grid() * 10;
     return <div className="wf-board" aria-label="Workflow canvas"><div className="wf-plane" style={{ width: Math.max(1000, ...graph.nodes.map(n => position(n.id).x + 240)), height: Math.max(480, ...graph.nodes.map(n => position(n.id).y + 200)) }}>
-    <svg className="wf-lines" aria-hidden="true"><defs><marker id="wf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z"/></marker></defs>{graph.edges.map((e, i) => { const a = position(e.from), b = position(e.to); return <g key={i}><path d={`M ${a.x + 100} ${a.y + 90} L ${b.x + 100} ${b.y}`} markerEnd="url(#wf-arrow)"/>{edgeOutput(e) !== "next" && <text x={a.x + (edgeOutput(e) === "yes" ? node * 0.25 : node * 0.75)} y={a.y + 120} textAnchor="middle">{edgeOutput(e) === "yes" ? "Yes" : "No"}</text>}</g>; })}</svg>
+    <svg className="wf-lines" aria-hidden="true"><defs><marker id="wf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z"/></marker></defs>{graph.edges.map((e, i) => { const a = position(e.from), b = position(e.to); return <g key={i} strokeWidth={previewEdges.includes(i) ? "var(--space-1)" : 1}><path d={`M ${a.x + 100} ${a.y + 90} L ${b.x + 100} ${b.y}`} markerEnd="url(#wf-arrow)"/>{edgeOutput(e) !== "next" && <text x={a.x + (edgeOutput(e) === "yes" ? node * 0.25 : node * 0.75)} y={a.y + 120} textAnchor="middle">{edgeOutput(e) === "yes" ? "Yes" : "No"}</text>}</g>; })}</svg>
     {routeOrder(graph).map(n => {
             const Icon = icons[n.kind];
             const p = position(n.id);
@@ -59,7 +61,7 @@ export function Canvas({ graph, selected, select, dispatch, issues }: Props) {
                 e.preventDefault();
                 dispatch({ type: "delete", id: n.id });
             } }}>
-        <span><Icon aria-hidden="true"/>{n.kind}</span><strong>{n.name || n.id}</strong><span>{summary(n)}</span>{problems.map((i, j) => <span key={j}><WarningCircle aria-hidden="true"/>{i.code.replaceAll("_", " ")}</span>)}
+        <span><Icon aria-hidden="true"/>{n.kind}</span><strong>{previewSteps.includes(n.id) ? `${previewSteps.indexOf(n.id) + 1}. ` : ""}{n.name || n.id}</strong><span>{summary(n)}</span>{problems.map((i, j) => <span key={j}><WarningCircle aria-hidden="true"/>{i.code.replaceAll("_", " ")}</span>)}
       </button>
       <button aria-label={`Connect output from ${n.name || n.id}`} onClick={() => select(n.id, true)}><ArrowRight aria-hidden="true"/>Connect output to…</button>
       {outputs(n).map(output => <span key={output} className="wf-port" aria-hidden="true" onPointerDown={e => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); port.current = { from: n.id, output }; }} onPointerUp={e => { const source = port.current; port.current = null; const target = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>("[data-node]")?.dataset.node; if (source && target)

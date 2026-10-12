@@ -6,6 +6,7 @@ import type { paths, components } from "../../../api/generated/schema";
 import { writeHeaders } from "../../../features/auth/api";
 import { Canvas, Connections, Outline } from "../../../components/workflows/Editors";
 import { operate, type Graph, type Node, type Operation } from "../../../components/workflows/graph-reducer";
+import Preview from "../../../components/workflows/preview/Preview";
 import Field from "../../../components/form/Field";
 import Input from "../../../components/form/Input";
 import Select from "../../../components/form/Select";
@@ -18,6 +19,10 @@ const blank: Graph = { nodes: [{ id: "start", kind: "start", name: "Start" }, { 
 export default function WorkflowBuilder({ id }: {
     id: string;
 }) {
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const [previewGraph, setPreviewGraph] = useState<Graph>();
+    const [previewSteps, setPreviewSteps] = useState<string[]>([]);
+    const [previewEdges, setPreviewEdges] = useState<number[]>([]);
     const [workflow, setWorkflow] = useState<Workflow>();
     const [version, setVersion] = useState<Version>();
     const [graph, setGraph] = useState<Graph>(blank);
@@ -193,7 +198,7 @@ export default function WorkflowBuilder({ id }: {
         setBusy(false);
     } }
     const issues = [...(report.errors ?? []), ...(report.warnings ?? [])], readonly = version?.status !== "draft";
-    return <section className="wf-builder" aria-label="Approval workflow builder"><header><h2>{workflow?.name ?? "Approval workflow"}</h2><p>{workflow ? `Applies to ${workflow.document_type} · ${version?.status ?? "Draft"} version ${version?.version ?? ""}` : "Loading workflow…"}</p><p>Approval depth limit: {depth}. In-flight count: Not available.</p><button onClick={() => void check()} aria-busy={busy}>Check</button><button className="form-submit" onClick={() => void check(true)} aria-busy={busy}>Publish</button></header>
+    return <section className="wf-builder" aria-label="Approval workflow builder"><header><h2>{workflow?.name ?? "Approval workflow"}</h2><p>{workflow ? `Applies to ${workflow.document_type} · ${version?.status ?? "Draft"} version ${version?.version ?? ""}` : "Loading workflow…"}</p><p>Approval depth limit: {depth}. In-flight count: Not available.</p><button onClick={() => { if (current.current !== saved.current) void check().then(() => { if (current.current === saved.current) setPreviewOpen(true); }); else setPreviewOpen(true); }}>Route Preview</button>{!readonly && <><button onClick={() => void check()} aria-busy={busy}>Check</button><button className="form-submit" onClick={() => void check(true)} aria-busy={busy}>Publish</button></>}</header>
  {error && <div role="alert" tabIndex={-1} ref={alert}><WarningCircle aria-hidden="true"/>{error}{stale ? <button onClick={() => void load()}>Reload draft</button> : !workflow ? <button onClick={() => void load()}>Retry loading workflow</button> : null}</div>}<p role="status">{status}</p>
  {loading ? <div className="wf-loading" role="status">Loading workflow and draft…</div> : workflow && <div className="wf-columns"><section className="wf-card"><h3 ref={heading} tabIndex={-1}>Workflow</h3>
  <div role="tablist" aria-label="Workflow view">{(["canvas", "outline"] as const).map(v => <button key={v} role="tab" id={`wf-${v}-tab`} aria-controls="wf-editor" aria-selected={view === v} tabIndex={view === v ? 0 : -1} onClick={() => setView(v)} onKeyDown={e => { if (["ArrowLeft", "ArrowRight"].includes(e.key)) {
@@ -204,7 +209,7 @@ export default function WorkflowBuilder({ id }: {
         } }}>{v === "canvas" ? "Canvas" : "Outline"}</button>)}</div>
  <fieldset disabled={readonly}><legend>Build workflow</legend><div className="wf-toolbar"><button onClick={() => add("condition")}>Add Condition</button><button onClick={() => add("approval")}>Add Approval Step</button>{!graph.nodes.some(n => n.kind === "start") && <button onClick={() => add("start")}>Add Start</button>}<button onClick={() => add("end")}>Add End</button><button onClick={() => { if (node)
             dispatch({ type: "delete", id: node.id }); }}><Trash aria-hidden="true"/>Delete Selected</button></div>{graph.nodes.every(n => ["start", "end"].includes(n.kind)) && <p>Nothing Between Start and End</p>}
- <div role="tabpanel" id="wf-editor" aria-labelledby={`wf-${view}-tab`}>{view === "canvas" ? <Canvas graph={graph} selected={selected} select={select} dispatch={dispatch} issues={issues}/> : <Outline graph={graph} selected={selected} select={select} dispatch={dispatch} issues={issues}/>}</div></fieldset></section>
+ <div role="tabpanel" id="wf-editor" aria-labelledby={`wf-${view}-tab`}>{view === "canvas" ? <Canvas graph={graph} selected={selected} select={select} dispatch={dispatch} issues={issues} previewEdges={previewGraph === graph ? previewEdges : []} previewSteps={previewGraph === graph ? previewSteps : []}/> : <Outline graph={graph} selected={selected} select={select} dispatch={dispatch} issues={issues}/>}</div></fieldset></section>
  <section className="wf-card wf-inspector"><div role="tablist" aria-label="Workflow details">{(["inspector", "problems"] as const).map(p => <button key={p} role="tab" id={`wf-${p}-tab`} aria-controls="wf-details" aria-selected={panel === p} tabIndex={panel === p ? 0 : -1} onClick={() => setPanel(p)} onKeyDown={e => { if (["ArrowLeft", "ArrowRight"].includes(e.key)) {
             e.preventDefault();
             const next = p === "inspector" ? "problems" : "inspector";
@@ -223,6 +228,7 @@ export default function WorkflowBuilder({ id }: {
  <Field label="Escalate To" help="Choose an eligible person, or leave escalation unset."><Select value={node.escalate_to?.type === "users" ? node.escalate_to.user_ids[0] : ""} onChange={e => dispatch({ type: "update", id: node.id, fields: { escalate_to: e.target.value ? { type: "users", user_ids: [e.target.value] } : null } })}><option value="">Not set</option>{people.map(p => <option key={p.user_id} value={p.user_id}>{p.email}</option>)}</Select></Field></>}
  {node && <Connections node={node} graph={graph} dispatch={dispatch}/>}</fieldset></>}
  </div></section></div>}
+ {previewOpen && workflow && version && <Preview workflow={workflow} version={version.version} onClose={() => setPreviewOpen(false)} onRoute={r => { setPreviewGraph(graph); setPreviewEdges(r.path_edge_indices ?? []); setPreviewSteps(r.steps.map(s => s.node_id)); }} />}
  <Dialog.Root open={dialog} onOpenChange={setDialog}><Dialog.Portal><Dialog.Overlay className="wf-scrim"/><Dialog.Content className="wf-dialog" onOpenAutoFocus={e => { e.preventDefault(); document.getElementById("wf-keep")?.focus(); }}><Dialog.Title>Publish Version {version?.version}?</Dialog.Title><Dialog.Description>New submissions use this version. In-flight documents keep their existing version, routing and history. In-flight count: Not available. A published version cannot be edited; publishing is recorded in the audit history.</Dialog.Description>{(report.warnings ?? []).map((w, i) => <p key={i}><WarningCircle aria-hidden="true"/>{w.detail}</p>)}<Dialog.Close asChild><button id="wf-keep">Keep Editing</button></Dialog.Close><button onClick={() => void publish()}>{(report.warnings ?? []).length ? "Acknowledge warnings and Publish" : "Confirm Publish"}</button></Dialog.Content></Dialog.Portal></Dialog.Root>
  </section>;
 }

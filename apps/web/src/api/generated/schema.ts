@@ -1965,6 +1965,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workflows/{id}/versions/{version}/route-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Route Preview */
+        get: operations["route_preview_api_v1_workflows__id__versions__version__route_preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workflows/{id}/versions/{version}/validation": {
         parameters: {
             query?: never;
@@ -2961,6 +2978,11 @@ export interface components {
             requester_email: string;
             /** Route */
             route: components["schemas"]["RouteStep"][];
+            /**
+             * Separation Of Duty Applied
+             * @default true
+             */
+            separation_of_duty_applied?: boolean;
             /**
              * Started At
              * Format: date-time
@@ -4535,8 +4557,15 @@ export interface components {
         };
         /** RoutePreview */
         RoutePreview: {
+            /** Path Edge Indices */
+            path_edge_indices?: number[];
             /** Problems */
             problems: components["schemas"]["RouteProblem"][];
+            /**
+             * Separation Of Duty Applied
+             * @default true
+             */
+            separation_of_duty_applied?: boolean;
             /** Steps */
             steps: components["schemas"]["RouteStep"][];
             /** Workflow Version */
@@ -4575,6 +4604,8 @@ export interface components {
             node_id: string;
             /** Quorum */
             quorum: number | null;
+            /** Reached Via */
+            reached_via?: string | null;
             /** Rule */
             rule: string;
             state: components["schemas"]["RouteStepState"];
@@ -4933,6 +4964,11 @@ export interface components {
         /** WorkflowRead */
         WorkflowRead: {
             /**
+             * Applies To
+             * @default
+             */
+            applies_to?: string;
+            /**
              * Created At
              * Format: date-time
              */
@@ -4947,13 +4983,29 @@ export interface components {
              * @enum {string}
              */
             document_type: "project" | "requisition" | "budget_change" | "vendor" | "rfq" | "award" | "po";
+            /** Draft Version */
+            draft_version?: number | null;
+            /** Edited At */
+            edited_at?: string | null;
+            /**
+             * Edited By Name
+             * @default Unknown
+             */
+            edited_by_name?: string;
             /**
              * Id
              * Format: uuid
              */
             id: string;
+            /**
+             * In Flight
+             * @default 0
+             */
+            in_flight?: number | null;
             /** Name */
             name: string;
+            /** Published Version */
+            published_version?: number | null;
             /** Retired At */
             retired_at: string | null;
             /**
@@ -4971,6 +5023,11 @@ export interface components {
         };
         /** WorkflowVersionRead */
         WorkflowVersionRead: {
+            /**
+             * Author Name
+             * @default Unknown
+             */
+            author_name?: string;
             /**
              * Created At
              * Format: date-time
@@ -4992,6 +5049,11 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /**
+             * In Flight
+             * @default 0
+             */
+            in_flight?: number | null;
             /** Published At */
             published_at: string | null;
             /** Published By */
@@ -5009,10 +5071,20 @@ export interface components {
         /** WorkflowVersionSummary */
         WorkflowVersionSummary: {
             /**
+             * Author Name
+             * @default Unknown
+             */
+            author_name?: string;
+            /**
              * Created At
              * Format: date-time
              */
             created_at: string;
+            /**
+             * In Flight
+             * @default 0
+             */
+            in_flight?: number | null;
             /** Published At */
             published_at: string | null;
             /**
@@ -10477,6 +10549,7 @@ export interface operations {
             query?: {
                 document_type?: ("project" | "requisition" | "budget_change" | "vendor" | "rfq" | "award" | "po") | null;
                 cursor?: string | null;
+                search?: string;
             };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
@@ -10849,6 +10922,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkflowVersionRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    route_preview_api_v1_workflows__id__versions__version__route_preview_get: {
+        parameters: {
+            query: {
+                amount: string;
+                currency: string;
+                bu_id?: string | null;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoutePreview"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

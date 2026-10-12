@@ -2,7 +2,9 @@
 
 import base64
 import json
+import re
 from datetime import datetime
+from decimal import Decimal
 from typing import cast
 from uuid import UUID, uuid4
 
@@ -14,6 +16,7 @@ from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
 from flo.kernel.authz import PermissionHoldersResolver
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError
+from flo.kernel.money import Money
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.approvals.conditions import (
@@ -125,12 +128,13 @@ from flo.modules.approvals.schemas import (
     DocumentAdapter as DocumentAdapter,
 )
 from flo.modules.approvals.schemas import (
+    DocumentSnapshot,
     DocumentType,
+    RoutePreview,
     WorkflowCreate,
     WorkflowPage,
     WorkflowRead,
     WorkflowVersionRead,
-    WorkflowVersionSummary,
     WorkflowVersionWrite,
     invalid,
     parse_graph,
@@ -247,28 +251,9 @@ class WorkflowService:
     def get(self, id: UUID) -> WorkflowRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             row = self._definition(id)
-            summaries = self.repo.execute(
-                "SELECT version,status,created_at,published_at FROM workflow_version "
-                "WHERE org_id=%(org_id)s AND definition_id=%(id)s ORDER BY version",
-                {"id": id},
-            ).fetchall()
-            return WorkflowRead.model_validate(
-                row
-                | {
-                    "versions": [
-                        WorkflowVersionSummary.model_validate(
-                            dict(
-                                zip(
-                                    ("version", "status", "created_at", "published_at"),
-                                    v,
-                                    strict=True,
-                                )
-                            )
-                        )
-                        for v in summaries
-                    ]
-                }
-            )
+            from flo.modules.approvals.versions import enrich
+
+            return enrich(self.repo, WorkflowRead.model_validate(row))
 
     def create(self, body: WorkflowCreate) -> WorkflowRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
@@ -453,7 +438,77 @@ class WorkflowService:
                 self._audit("workflow.retire", id, before, self._definition(id))
             return self.get(id)
 
-    def list(self, document_type: DocumentType | None, cursor: str | None) -> WorkflowPage:
+    def route_preview(
+        self, id: UUID, version: int, amount: str, currency: str, bu_id: UUID | None
+    ) -> RoutePreview:
+        if re.fullmatch(r"[0-9]{1,14}(\.[0-9]{1,4})?", amount) is None:
+            raise invalid(
+                "/amount", "Enter an estimate with up to 14 digits and four decimal places."
+            )
+        try:
+            money = Money(Decimal(amount), currency)
+        except ValueError as exc:
+            raise invalid("/currency", "Choose a valid currency code.") from exc
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            definition = self.get(id)
+            selected = self.get_version(id, version)
+            unit_id = bu_id or (definition.scope_id if definition.scope_type == "bu" else None)
+            if unit_id is not None:
+                chain = OrgService(self.connection, self.scope).unit_chain(unit_id)
+                if definition.scope_type == "bu" and definition.scope_id not in chain:
+                    raise ProblemError(ErrorCode.NOT_FOUND)
+            target = (
+                AuthorizationTarget(ScopeType.BU, unit_id)
+                if unit_id
+                else AuthorizationTarget.organization(self.scope.org_id)
+            )
+            report = validate_graph(
+                self.connection,
+                self.scope,
+                definition.document_type,
+                selected.graph.model_dump(mode="json", by_alias=True, exclude_none=True),
+                target=target,
+                resolver=self.resolver,
+            )
+            structural = [
+                issue
+                for issue in report.errors
+                if issue.code not in {"missing_approvers", "duplicate_approval"}
+            ]
+            if structural:
+                from flo.modules.approvals.schemas import RouteProblem
+
+                return RoutePreview(
+                    workflow_version_id=selected.id,
+                    workflow_version=selected.version,
+                    separation_of_duty_applied=False,
+                    steps=[],
+                    problems=[
+                        RouteProblem(
+                            code="route_blocked", step_label=issue.node_id, message=issue.detail
+                        )
+                        for issue in structural
+                    ],
+                )
+            # The snapshot contract needs an ID; the sentinel never reaches eligibility.
+            # Administrative previews pass requester_id=None to the engine.
+            snapshot = DocumentSnapshot(
+                1, UUID(int=0), cast(TargetProtocol, target), {"amount": money}, {}
+            )
+            return preview_route(
+                self.connection,
+                self.scope,
+                document_type=definition.document_type,
+                document_id=id,
+                resolver=self.resolver,
+                version=selected,
+                synthetic_snapshot=snapshot,
+                requester_id=None,
+            )
+
+    def list(
+        self, document_type: DocumentType | None, cursor: str | None, search: str = ""
+    ) -> WorkflowPage:
         key = None
         cursor_id = None
         if cursor is not None:
@@ -461,7 +516,7 @@ class WorkflowService:
                 decoded = json.loads(base64.urlsafe_b64decode(cursor).decode())
                 key = datetime.fromisoformat(decoded["created_at"])
                 cursor_id = UUID(decoded["id"])
-                if decoded["document_type"] != document_type:
+                if decoded["document_type"] != document_type or decoded.get("search", "") != search:
                     raise ValueError("filter mismatch")
             except (ValueError, KeyError, TypeError, UnicodeError) as exc:
                 raise invalid("/cursor", "Invalid cursor. Restart paging.") from exc
@@ -469,14 +524,23 @@ class WorkflowService:
             records = self.repo.execute(
                 f"SELECT {', '.join(DEFINITION_FIELDS)} FROM workflow_definition "
                 "WHERE org_id=%(org_id)s AND (%(type)s::text IS NULL OR document_type=%(type)s) "
+                "AND position(lower(%(search)s) in lower(name)) > 0 "
                 "AND (%(key)s::timestamptz IS NULL OR (created_at,id) > "
                 "(%(key)s,%(cursor_id)s::uuid)) ORDER BY created_at,id LIMIT 51",
-                {"type": document_type, "key": key, "cursor_id": cursor_id},
+                {"type": document_type, "key": key, "cursor_id": cursor_id, "search": search},
             ).fetchall()
+            from flo.modules.approvals.versions import enrich
+
             rows = [
-                WorkflowRead.model_validate(dict(zip(DEFINITION_FIELDS, row, strict=True)))
+                enrich(
+                    self.repo,
+                    WorkflowRead.model_validate(dict(zip(DEFINITION_FIELDS, row, strict=True))),
+                )
                 for row in records[:50]
             ]
+            # Lineage belongs to the detail sheet, not every row of the paged list.
+            for row in rows:
+                row.versions = []
             next_cursor = None
             if len(records) > 50:
                 last = rows[-1]
@@ -486,6 +550,7 @@ class WorkflowService:
                             "created_at": last.created_at.isoformat(),
                             "id": str(last.id),
                             "document_type": document_type,
+                            "search": search,
                         }
                     ).encode()
                 ).decode()

@@ -13,6 +13,7 @@ import StatusGallery from "./_dev/status-gallery";
 import EffectiveAccessExplorer from "./admin/users/$id";
 import ProjectList from "./projects/list";
 import NewProject from "./projects/new";
+import WorkflowList from "./admin/approval-workflows/list";
 import WorkflowBuilder from "./admin/approval-workflows/[id]";
 import ProjectDetail from "./projects/detail";
 import Dashboard from "./projects/dashboard";
@@ -54,6 +55,7 @@ const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
     phase: "foundation",
     title: "Organization",
   },
+  "/admin/approval-workflows": { activeHref: "/administration", description: "Versioned approval workflows", hierarchy: [ORGANIZATION, ["/admin/approval-workflows", "Approval Workflows"]], phase: "foundation", title: "Approval Workflows" },
   "/administration": {
     activeHref: "/administration",
     description: "Administration screens arrive with the foundation milestone.",
@@ -299,6 +301,7 @@ export default function RootRoute() {
       {shellRoute.path === "/projects/new" ? <NewProject navigate={navigate} /> : undefined}
       {dashboardId ? <Dashboard key={`${dashboardId}-${window.location.search}`} id={dashboardId} navigate={navigate} onLoaded={onProjectLoaded} /> : undefined}
       {shellRoute.path === "/budget" ? <BudgetOverview key={window.location.search} navigate={navigate} /> : undefined}
+      {shellRoute.path === "/admin/approval-workflows" ? <WorkflowList navigate={navigate} /> : undefined}
       {workflowId ? <WorkflowBuilder key={workflowId} id={workflowId} /> : undefined}
       {projectId ? <ProjectDetail key={projectId} id={projectId} onLoaded={onProjectLoaded} /> : undefined}
       {shellRoute.path === "/_dev/status-gallery" ? <StatusGallery /> : undefined}

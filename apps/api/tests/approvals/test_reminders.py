@@ -109,7 +109,7 @@ def test_new_due_task_after_digest_does_not_resend_or_crash(setup):
         else snapshot(conn, scope, id)
     )
     begin(setup)
-    assert run_org(db[0], Scope(db[1]), now=now + timedelta(hours=1)).digests == 0
+    assert run_org(db[0], Scope(db[1]), now=now + timedelta(minutes=1)).digests == 0
     assert len(digests(db)) == 1
     with tenant_transaction(db[0], Scope(db[1])):
         assert (

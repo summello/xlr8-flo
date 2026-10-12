@@ -3,7 +3,7 @@
 import hashlib
 import json
 from collections.abc import Mapping, Sequence
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any, Literal, cast
 from uuid import UUID, uuid4
@@ -20,6 +20,7 @@ from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.approvals import conditions
 from flo.modules.approvals.eligibility import EligibleSet, eligible_approvers
 from flo.modules.approvals.models import VERSION_FIELDS, WorkflowRepository
+from flo.modules.approvals.preview import walk
 from flo.modules.approvals.schemas import (
     Approvers,
     DocumentAdapter,
@@ -38,7 +39,6 @@ from flo.modules.approvals.schemas import (
     TaskRead,
     WorkflowGraph,
     WorkflowVersionRead,
-    parse_condition,
 )
 from flo.modules.identity.service import AuthorizationConnection, AuthorizationResolver
 from flo.modules.identity.service import AuthorizationTarget as IdentityTarget
@@ -267,7 +267,7 @@ def current_members(
         str(instance["document_type"]),
         node.approvers,
         cast(IdentityTarget, snapshot.target),
-        cast(UUID, instance["requester_id"]),
+        cast(UUID | None, instance["requester_id"]),
         resolver,
     )
     if not node.allow_repeat:
@@ -310,6 +310,10 @@ def _step(
     due_at: datetime | None,
 ) -> RouteStep:
     assert node.mode is not None
+    recorded = cast(list[dict[str, object]], instance["route"])
+    prefix = recorded[
+        : next((i for i, e in enumerate(recorded) if e.get("node_id") == node.id), len(recorded))
+    ]
     eligible = current_members(repo.connection, repo.scope, instance, node, snapshot, resolver)
     emails = _emails(
         repo, [m.user_id for m in eligible.members] + [e.user_id for e in eligible.excluded]
@@ -341,55 +345,17 @@ def _step(
         ),
         state=state,
         due_at=due_at,
+        reached_via=next(
+            (cast(str | None, e["reached_via"]) for e in reversed(prefix) if "reached_via" in e),
+            None,
+        ),
     )
 
 
 def _walk(
     graph: WorkflowGraph, from_node: str, snapshot: DocumentSnapshot, route: list[dict[str, object]]
 ) -> Node:
-    nodes = {n.id: n for n in graph.nodes}
-    node = nodes[from_node]
-    while node.kind != "end":
-        edges = [e for e in graph.edges if e.from_ == node.id]
-        chosen = None
-        if node.kind == "condition":
-            for edge in edges:
-                if edge.when is None:
-                    continue
-                try:
-                    evaluation = conditions.evaluate(
-                        parse_condition(edge.when), snapshot.attributes
-                    )
-                except conditions.ConditionError as exc:
-                    raise conflict(
-                        "route_blocked",
-                        f"Approval routing is blocked at {exc.field}. Ask a workflow "
-                        f"administrator.",
-                    ) from exc
-                route.append(
-                    {
-                        "condition_node_id": node.id,
-                        "to": edge.to,
-                        "result": evaluation.result,
-                        "trace": [asdict(t) for t in evaluation.trace],
-                    }
-                )
-                if evaluation.result:
-                    chosen = edge
-                    break
-            chosen = chosen or next((e for e in edges if e.default), None)
-        else:
-            chosen = edges[0] if edges else None
-        if chosen is None:
-            raise conflict(
-                "route_blocked",
-                f"Approval routing is blocked at {node.name or node.id}. Ask a "
-                f"workflow administrator.",
-            )
-        node = nodes[chosen.to]
-        if node.kind == "approval":
-            return node
-    return node
+    return walk(graph, snapshot.attributes, from_node, route).node
 
 
 def _open(
@@ -481,17 +447,23 @@ def preview_route(
     document_type: str,
     document_id: UUID,
     resolver: PermissionHoldersResolver,
+    requester_id: UUID | None = None,
+    version: WorkflowVersionRead | None = None,
+    synthetic_snapshot: DocumentSnapshot | None = None,
 ) -> RoutePreview:
     with tenant_transaction(cast(RlsSession, conn), scope):
-        snapshot = adapter_for(document_type).snapshot(conn, scope, document_id)
+        snapshot = synthetic_snapshot or adapter_for(document_type).snapshot(
+            conn, scope, document_id
+        )
         bu: UUID | None = None
         scope_type = getattr(snapshot.target.scope_type, "value", "")
         if scope_type == "bu":
             bu = snapshot.target.scope_id
         elif scope_type == "project":
             bu = _business_unit(WorkflowRepository(conn, scope), snapshot.target)
-        version = resolve_version(conn, scope, document_type, bu)
+        version = version or resolve_version(conn, scope, document_type, bu)
         result = RoutePreview(
+            separation_of_duty_applied=synthetic_snapshot is None,
             workflow_version_id=version.id if version else None,
             workflow_version=version.version if version else None,
             steps=[],
@@ -510,13 +482,17 @@ def preview_route(
         route: list[dict[str, object]] = []
         instance = {
             "document_type": document_type,
-            "requester_id": snapshot.requester_id,
+            "requester_id": requester_id
+            if synthetic_snapshot is not None
+            else snapshot.requester_id,
             "route": route,
         }
         node = next(n for n in version.graph.nodes if n.kind == "start")
         while node.kind != "end":
             try:
-                node = _walk(version.graph, node.id, snapshot, route)
+                walked = walk(version.graph, snapshot.attributes, node.id, route)
+                node = walked.node
+                result.path_edge_indices.extend(walked.path_edge_indices)
             except ProblemError as exc:
                 result.problems.append(
                     RouteProblem(
