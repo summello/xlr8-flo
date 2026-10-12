@@ -9,7 +9,7 @@ name: CodeQL
 
 on:
   push:
-    branches: [main, 'milestone/**']
+    branches: [main, 'milestone/**', 'story/**']
   pull_request:
   schedule:
     # Weekly, so newly published advisories are caught against unchanged code.

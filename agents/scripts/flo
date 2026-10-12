@@ -20,7 +20,7 @@ Stdlib only, except PyYAML for the two config files.
   flo budget                per-agent spend and remaining capacity
   flo roadmap [--check]     regenerate docs/claude-plan.md §5 (or verify it)
   flo board                 regenerate board.html - drilldown status view (gitignored)\n  flo ack     [KEY|all]     confirm a 'waiting on you' item (list keys with no argument)\n  flo unack   <KEY|all>     reopen a confirmed item
-  flo check                 run everything CI runs, locally, on a fresh per-worktree database
+  flo check [--light]       everything CI runs, locally (stops at the first red); --light is\n                            the story gate: no full pytest/e2e, only the tests the story touched\n  flo reap    <STORY_ID>    drop a merged story's worktree once its CI is green
   flo db      [url|reset]   this worktree's test database (reset drops and recreates it)
   flo up [--reset]          start local Postgres + MinIO + Mailpit; optionally reset data
   flo down                  stop the local stack
@@ -266,13 +266,18 @@ def cmd_submit(argv):
     if not argv:
         die("usage: flo submit <STORY_ID>")
     sid = argv[0]
+    wt = worktree_path(sid)
+    if not checked(wt, "light"):
+        die("flo check --light is red — fix before submitting; two of four agents are rate-limited")
     pkt = packet_of(sid)
-    if not run_check(worktree_path(sid)):
-        die("flo check is red — fix before submitting; two of four agents are rate-limited")
-    rec = detect_session(pkt["author"], worktree_path(sid))
+    rec = detect_session(pkt["author"], wt)
     if rec["id"]:
         pkt.setdefault("sessions", {})[pkt["author"]] = rec
-        (worktree_path(sid) / "task.json").write_text(json.dumps(pkt, indent=2) + "\n")
+    # Hosted CI runs the full suite on this exact commit while the reviewers work, so the
+    # gate can ask GitHub instead of re-running 25 minutes of pytest on a loaded workstation.
+    pkt["submitted_sha"] = git("rev-parse", "HEAD", cwd=wt)
+    git("push", "-u", "origin", pkt["branch"], cwd=wt)
+    (wt / "task.json").write_text(json.dumps(pkt, indent=2) + "\n")
     set_status(sid, "review")
     print(f"{sid} ready for review. Reviewers must run:\n")
     for r in pkt["reviewers"]:
@@ -399,8 +404,14 @@ def cmd_gate(argv):
     pkt, wt = packet_of(sid), worktree_path(sid)
     fails = []
 
-    if not run_check(wt):
-        fails.append("flo check is red (ruff/mypy/import-linter/eslint/tsc/pytest/vitest/playwright/axe/gitleaks)")
+    if not checked(wt, "light"):
+        fails.append("flo check --light is red (ruff/mypy/import-linter/eslint/tsc/vitest/gitleaks/story tests)")
+    if pkt["opus_final"]:
+        # Gated stories wait for the full suite on GitHub; everything else merges on the light
+        # gate and the milestone CI catches the rest (AGENTS.md §2.4, 13 Oct 2026).
+        fail = story_ci_failure(pkt, wt)
+        if fail:
+            fails.append(fail)
 
     revs = reviews_for(sid)
     counted = [r for r in revs if r.get("ran_tests") is True]
@@ -506,8 +517,23 @@ def cmd_done(argv):
     git("add", "agents/roadmap.yaml", "docs/claude-plan.md", "agents/project-memory.md",
         "agents/scorecard.json", "agents/SCORECARD.md")
     git("commit", "-m", msg)
-    git("worktree", "remove", str(worktree_path(sid)), "--force")
+    # The worktree outlives the merge: the author's session is keyed to this path, and a red
+    # story CI run is fixed by resuming that session here. `flo reap` removes it once CI is green.
     print(f"{sid} merged into {pkt['milestone_branch']}; roadmap and memory updated in the same commit")
+    print(f"worktree kept until story CI is green: flo reap {sid}")
+
+
+def cmd_reap(argv):
+    if not argv:
+        die("usage: flo reap <STORY_ID> [--force]")
+    sid, wt = argv[0], worktree_path(argv[0])
+    pkt = packet_of(sid)
+    fail = story_ci_failure(pkt, wt)
+    if fail and "--force" not in argv:
+        die(f"{sid}: {fail} — the worktree stays so its author session can fix it")
+    git("worktree", "remove", str(wt), "--force")
+    git("push", "origin", "--delete", pkt["branch"], check=False)
+    print(f"{sid}: worktree and remote story branch removed")
 
 
 def set_status(sid, status):
@@ -1331,18 +1357,22 @@ def cmd_board(argv):
 # ── shells ───────────────────────────────────────────────────────────────────
 
 CHECKS = [
+    # Cheapest first: run_check stops at the first red, so a lint slip never costs a pytest run.
     ("ruff", ["ruff", "check", "apps/api"]),
     ("mypy", ["mypy", "--strict", "apps/api/src/flo"]),
     ("boundaries", ["lint-imports"]),
-    # Same flags CI runs. Without them a green `flo check` can still fail CI on a
-    # missing pytest-cov, which is exactly how E01-S01 reached a red pull request.
-    ("pytest", ["pytest", "-q", "apps/api", "--cov=flo", "--cov-report=term-missing"]),
     ("eslint", ["npm", "--prefix", "apps/web", "run", "lint"]),
     ("tsc", ["npm", "--prefix", "apps/web", "run", "typecheck"]),
     ("vitest", ["npm", "--prefix", "apps/web", "run", "test"]),
-    ("e2e+axe", ["npm", "--prefix", "apps/web", "run", "test:e2e"]),
     ("secrets", ["gitleaks", "detect", "--no-banner"]),
+    # Same flags CI runs. Without them a green `flo check` can still fail CI on a
+    # missing pytest-cov, which is exactly how E01-S01 reached a red pull request.
+    ("pytest", ["pytest", "-q", "apps/api", "--cov=flo", "--cov-report=term-missing"]),
+    ("e2e+axe", ["npm", "--prefix", "apps/web", "run", "test:e2e"]),
 ]
+# The story gate (13 Oct 2026): everything but the two full suites, which hosted CI runs on the
+# story branch instead, plus the tests the story itself touched (story_checks).
+HEAVY = {"pytest", "e2e+axe"}
 
 # Every current M0 check is delivered and therefore mandatory. Temporary exemptions must
 # name both their reason and the story that removes them; docs/ops/ci-gates.md mirrors this.
@@ -1374,16 +1404,42 @@ def cmd_db(argv):
     print(fresh_test_database(Path.cwd()) if action == "reset" else test_database_url(Path.cwd()))
 
 
-def run_check(cwd=None):
+def story_checks(cwd):
+    """The story's own tests: the ones its diff adds or edits, against the milestone it merged."""
+    task = Path(cwd) / "task.json"
+    if not task.exists():
+        return []
+    base = git("merge-base", "HEAD", json.loads(task.read_text())["milestone_branch"],
+               cwd=cwd, check=False)
+    if not base:
+        return []
+    changed = [f for f in git("diff", "--name-only", "--diff-filter=d", base, "HEAD",
+                              cwd=cwd).splitlines()]
+    py = [f for f in changed if f.startswith("apps/api/tests/") and Path(f).name.startswith("test_")
+          and f.endswith(".py")]
+    if any(f.startswith("apps/api/migrations/") for f in changed):
+        py.append("apps/api/tests/kernel/test_migrate.py")
+    web = [f.removeprefix("apps/web/") for f in changed
+           if re.match(r"apps/web/(e2e/.+\.e2e\.ts|tests/(a11y|e2e)/.+\.spec\.ts)$", f)]
+    out = []
+    if py:
+        out.append(("story pytest", ["pytest", "-q", *sorted(set(py))]))
+    if web:
+        out.append(("story e2e", ["npm", "--prefix", "apps/web", "run", "test:e2e", "--", *web]))
+    return out
+
+
+def run_check(cwd=None, profile="full"):
     cwd = cwd or ROOT
-    ok = True
     venv_bin = Path(cwd) / "apps" / "api" / ".venv" / "bin"
-    for name, cmd in CHECKS:
+    steps = CHECKS if profile == "full" else (
+        [c for c in CHECKS if c[0] not in HEAVY] + story_checks(cwd))
+    for name, cmd in steps:
         command_environment = os.environ.copy()
         if venv_bin.is_dir():
             # lint-imports and friends live in the story venv; the codex sandbox has no other PATH
             command_environment["PATH"] = f"{venv_bin}{os.pathsep}{command_environment['PATH']}"
-        if name == "pytest" and "DATABASE_URL" not in command_environment:
+        if "pytest" in name and "DATABASE_URL" not in command_environment:
             url = fresh_test_database(cwd)
             command_environment["DATABASE_URL"] = url
             command_environment["TEST_DATABASE_URL"] = url
@@ -1405,12 +1461,57 @@ def run_check(cwd=None):
         print(f"  {'✓' if not r.returncode else '✗'}  {name}")
         if r.returncode:
             print((r.stdout + r.stderr).strip()[-2000:])
-            ok = False
-    return ok
+            return False
+    return True
+
+
+def checked(wt, profile):
+    """run_check once per tree: submit records a green tree, and the gate on an identical,
+    clean tree reuses it instead of running the same deterministic checks again."""
+    tree = git("rev-parse", "HEAD^{tree}", cwd=wt)
+    clean = not git("status", "--porcelain", cwd=wt)
+    task = Path(wt) / "task.json"
+    pkt = json.loads(task.read_text()) if task.exists() else {}
+    if clean and pkt.get("check") == {"tree": tree, "profile": profile}:
+        print(f"  ✓  check --{profile} (cached: tree {tree[:10]} unchanged since it went green)")
+        return True
+    if not run_check(wt, profile):
+        return False
+    if clean and task.exists():
+        pkt = json.loads(task.read_text())
+        pkt["check"] = {"tree": tree, "profile": profile}
+        task.write_text(json.dumps(pkt, indent=2) + "\n")
+    return True
+
+
+def story_ci_failure(pkt, wt):
+    """None when GitHub's CI is green on the submitted commit and the story has not changed
+    since; otherwise the reason. Merges of the milestone branch are not story changes."""
+    sha = pkt.get("submitted_sha")
+    if not sha:
+        return "no submitted_sha in task.json — run flo submit (it pushes the story branch)"
+    if git("log", "--first-parent", "--no-merges", "--format=%h", f"{sha}..HEAD", cwd=wt):
+        return f"story commits after {sha[:10]} were never CI'd — run flo submit again"
+    runs = gh_runs(pkt["branch"])
+    run = next((r for r in runs if r.get("headSha") == sha), None)
+    if run is None:
+        return f"no CI run for {sha[:10]} on {pkt['branch']} yet"
+    if run.get("status") != "completed":
+        return f"story CI still {run.get('status')} on {sha[:10]}"
+    if run.get("conclusion") != "success":
+        return f"story CI {run.get('conclusion')} on {sha[:10]}: gh run view {run.get('databaseId')} --log-failed"
+    return None
+
+
+def gh_runs(branch):
+    r = subprocess.run(["gh", "run", "list", "--workflow", "CI", "--branch", branch, "--limit", "10",
+                        "--json", "headSha,status,conclusion,databaseId"],
+                       cwd=ROOT, capture_output=True, text=True)
+    return json.loads(r.stdout) if r.returncode == 0 and r.stdout.strip() else []
 
 
 def cmd_check(argv):
-    sys.exit(0 if run_check(Path.cwd()) else 1)
+    sys.exit(0 if checked(Path.cwd(), "light" if "--light" in argv else "full") else 1)
 
 
 COMPOSE = ROOT / "compose.yaml"
@@ -1521,7 +1622,7 @@ COMMANDS = {
     "review": cmd_review, "gate": cmd_gate, "final": cmd_final, "escalate": cmd_escalate,
     "done": cmd_done, "design": cmd_design, "status": cmd_status, "budget": cmd_budget,
     "roadmap": cmd_roadmap, "score": cmd_score, "session": cmd_session, "board": cmd_board,
-    "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "db": cmd_db, "up": cmd_up, "down": cmd_down,
+    "reap": cmd_reap, "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "db": cmd_db, "up": cmd_up, "down": cmd_down,
 }
 
 if __name__ == "__main__":

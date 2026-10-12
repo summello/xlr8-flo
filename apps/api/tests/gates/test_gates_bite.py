@@ -13,6 +13,7 @@ from collections.abc import Sequence
 from importlib.machinery import SourceFileLoader
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 import pytest
 
@@ -1001,7 +1002,11 @@ def test_run_check_fails_when_required_tool_is_missing(
     assert exit_status.value.code == 1
     gate_output = capsys.readouterr().out
     assert "missing-executable" in gate_output
-    assert "exit-127" in gate_output
+    assert "exit-127" not in gate_output  # fail-fast: nothing runs after the first red
+
+    monkeypatch.setattr(flo, "CHECKS", [("exit-127", [sys.executable, str(exit_127)])])
+    assert flo.run_check(tmp_path) is False
+    assert "exit-127" in capsys.readouterr().out
 
 
 def test_run_check_honours_only_named_missing_tool_opt_out(
@@ -1132,6 +1137,136 @@ def test_run_check_leaves_a_configured_database_alone(
     )
 
     assert flo.run_check(tmp_path) is True
+
+
+def story_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """A git repo with a milestone branch and a story branch checked out, like a worktree."""
+    for key, value in {"GIT_AUTHOR_NAME": "gate", "GIT_COMMITTER_NAME": "gate",
+                       "GIT_AUTHOR_EMAIL": "gate@example.invalid",
+                       "GIT_COMMITTER_EMAIL": "gate@example.invalid"}.items():
+        monkeypatch.setenv(key, value)
+    repo = tmp_path / "wt"
+    repo.mkdir()
+
+    def sh(*args: str) -> None:
+        subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True)
+
+    sh("init", "--quiet", "-b", "milestone/M9")
+    (repo / ".gitignore").write_text("task.json\n")
+    (repo / "README").write_text("base\n")
+    sh("add", ".")
+    sh("commit", "--quiet", "-m", "base")
+    sh("checkout", "--quiet", "-b", "story/E99-S01")
+    (repo / "task.json").write_text(json.dumps(
+        {"milestone_branch": "milestone/M9", "branch": "story/E99-S01"}))
+    return repo
+
+
+def commit(repo: Path, path: str, text: str = "x\n") -> str:
+    (repo / path).parent.mkdir(parents=True, exist_ok=True)
+    (repo / path).write_text(text)
+    subprocess.run(["git", "add", path], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "--quiet", "-m", path], cwd=repo, check=True,
+                   capture_output=True)
+    return subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo, check=True,
+                          capture_output=True, text=True).stdout.strip()
+
+
+def test_gate_reuses_a_green_tree_and_reruns_when_it_changes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """submit and done ran the same 35-minute check on one tree; the second must be a cache hit,
+    and any change to the tree, committed or not, must run it again."""
+    flo = load_flo()
+    repo = story_repo(tmp_path, monkeypatch)
+    runs: list[str] = []
+
+    def run_check(cwd: Path, profile: str = "full") -> bool:
+        runs.append(profile)
+        return True
+
+    monkeypatch.setattr(flo, "run_check", run_check)
+
+    assert flo.checked(repo, "light") and flo.checked(repo, "light")
+    assert runs == ["light"]
+    assert flo.checked(repo, "full") and runs == ["light", "full"]  # a profile is not a substitute
+
+    commit(repo, "apps/api/src/changed.py")
+    assert flo.checked(repo, "full") and runs == ["light", "full", "full"]
+
+    (repo / "README").write_text("dirty\n")
+    assert flo.checked(repo, "full") and flo.checked(repo, "full")
+    assert runs == ["light", "full", "full", "full", "full"]  # never cached while dirty
+
+
+def test_gated_story_needs_green_ci_on_the_commit_it_submitted(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    flo = load_flo()
+    repo = story_repo(tmp_path, monkeypatch)
+    sha = commit(repo, "apps/api/src/story.py")
+    pkt = {"branch": "story/E99-S01", "submitted_sha": sha}
+    runs: list[dict[str, object]] = []
+    monkeypatch.setattr(flo, "gh_runs", lambda branch: runs)
+
+    assert "no submitted_sha" in flo.story_ci_failure({"branch": "b"}, repo)
+    assert "no CI run" in flo.story_ci_failure(pkt, repo)
+    runs[:] = [{"headSha": "0" * 40, "status": "completed", "conclusion": "success"}]
+    assert "no CI run" in flo.story_ci_failure(pkt, repo)  # green on another commit is not green
+    runs[:] = [{"headSha": sha, "status": "in_progress", "conclusion": ""}]
+    assert "still in_progress" in flo.story_ci_failure(pkt, repo)
+    runs[:] = [{"headSha": sha, "status": "completed", "conclusion": "failure", "databaseId": 7}]
+    assert "failure" in flo.story_ci_failure(pkt, repo)
+    runs[:] = [{"headSha": sha, "status": "completed", "conclusion": "success"}]
+    assert flo.story_ci_failure(pkt, repo) is None
+
+    # finish merges the milestone in; other stories' commits arriving that way are not story changes
+    subprocess.run(["git", "checkout", "--quiet", "milestone/M9"], cwd=repo, check=True)
+    commit(repo, "apps/api/src/other_story.py")
+    subprocess.run(["git", "checkout", "--quiet", "story/E99-S01"], cwd=repo, check=True)
+    subprocess.run(["git", "merge", "--quiet", "--no-edit", "milestone/M9"], cwd=repo, check=True,
+                   capture_output=True)
+    assert flo.story_ci_failure(pkt, repo) is None
+
+    commit(repo, "apps/api/src/after_review.py")
+    assert "never CI'd" in flo.story_ci_failure(pkt, repo)
+
+
+def test_light_profile_skips_full_suites_and_runs_the_story_tests(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    flo = load_flo()
+    repo = story_repo(tmp_path, monkeypatch)
+    commit(repo, "apps/api/tests/budget/test_story.py")
+    commit(repo, "apps/api/tests/budget/helpers.py")
+    commit(repo, "apps/api/migrations/20991231_0099_story.py")
+    commit(repo, "apps/web/tests/e2e/story.spec.ts")
+    commit(repo, "apps/web/src/Story.tsx")
+
+    assert flo.story_checks(repo) == [
+        ("story pytest", ["pytest", "-q", "apps/api/tests/budget/test_story.py",
+                          "apps/api/tests/kernel/test_migrate.py"]),
+        ("story e2e", ["npm", "--prefix", "apps/web", "run", "test:e2e", "--",
+                       "tests/e2e/story.spec.ts"]),
+    ]
+
+    ran: list[str] = []
+    monkeypatch.setenv("DATABASE_URL", "postgresql://ci/flo_test")
+    monkeypatch.setattr(flo, "CHECKS", [("ruff", ["ruff"]), ("pytest", ["pytest"]),
+                                        ("e2e+axe", ["e2e"])])
+
+    real_run = subprocess.run
+
+    def record(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        if cmd[0] == "git":
+            return real_run(cmd, **kwargs)
+        ran.append(" ".join(cmd))
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+
+    monkeypatch.setattr(flo.subprocess, "run", record)
+    assert flo.run_check(repo, "light") is True
+    assert ran[0] == "ruff" and "pytest" not in ran and "e2e" not in ran
+    assert any(r.startswith("pytest -q apps/api/tests/budget/test_story.py") for r in ran)
 
 
 @pytest.mark.parametrize(

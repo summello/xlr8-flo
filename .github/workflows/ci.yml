@@ -2,11 +2,12 @@ name: CI
 
 on:
   push:
-    branches: [main, 'milestone/**']
+    branches: [main, 'milestone/**', 'story/**']
   pull_request:
   workflow_dispatch:
 
-# Free tier is 2000 minutes/month (OPS-001). Superseded runs are cancelled.
+# The repository is public, so hosted minutes are unmetered. Story branches run the full suite
+# here in place of the local gate (AGENTS.md §2.4). Superseded pull-request runs are cancelled.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
