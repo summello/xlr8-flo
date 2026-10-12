@@ -2585,6 +2585,36 @@
       },
       "recap": "Added the approval workflow builder at /admin/approval-workflows/:id with one shared graph reducer behind the canvas, the Outline and the Inspector, so the keyboard-only path builds the same graph as dragging. It reads attribute options from the server catalogue, shows E10-S03 validation in a Problems panel, and gates publish on errors and acknowledged warnings. The runner finished the story after the Codex cap (fixed a type error and a focus-after-render bug).",
       "title": "Visual workflow builder, drag-and-drop canvas"
+    },
+    {
+      "story": "E10-S06",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a12e4d-4e45-7a62-b3a1-e08e944177c8",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Fixed all seven review findings: decisions record the adapter version, terminal routes close, duplicate decisions are refused, and rationale and audit evidence are normalized. Rollback coverage now exercises approve, reject, return and withdraw through both service and route.",
+      "title": "Decisions: approve, reject, return, comment, withdraw; full attribution recorded"
     }
   ]
 }

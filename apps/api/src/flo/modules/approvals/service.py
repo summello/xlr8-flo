@@ -27,6 +27,23 @@ from flo.modules.approvals.conditions import (
     register_attribute_provider,
     register_document_type,
 )
+
+# Frozen document-module entry points and the decision route's service boundary.
+from flo.modules.approvals.decisions import (
+    decide as decide,
+)
+from flo.modules.approvals.decisions import (
+    decisions_for as decisions_for,
+)
+from flo.modules.approvals.decisions import (
+    task_instance as task_instance,
+)
+from flo.modules.approvals.decisions import (
+    withdraw as withdraw,
+)
+from flo.modules.approvals.decisions import (
+    withdraw_instance as withdraw_instance,
+)
 from flo.modules.approvals.eligibility import (
     EligibleSet as EligibleSet,
 )
@@ -91,6 +108,11 @@ from flo.modules.identity.service import (
 from flo.modules.org.service import OrgService
 
 __all__ = [
+    "decide",
+    "decisions_for",
+    "task_instance",
+    "withdraw",
+    "withdraw_instance",
     "WorkflowService",
     "start",
     "advance",

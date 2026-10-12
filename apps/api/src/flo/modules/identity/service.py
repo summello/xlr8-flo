@@ -815,3 +815,15 @@ def user_id_by_email(
             repository.scoped_params({"email": email.casefold()}),
         ).fetchone()
         return None if row is None else cast(UUID, _value(row, 0, "id"))
+
+
+def emails_by_id(
+    connection: IdentityAuthorizationConnection, ids: Sequence[UUID]
+) -> dict[UUID, str]:
+    """Read attribution without depending on today's membership or a live identity."""
+    return {
+        cast(UUID, _value(row, 0, "id")): str(_value(row, 1, "email"))
+        for row in connection.execute(
+            "SELECT id,email FROM identity WHERE id=ANY(%(ids)s)", {"ids": list(ids)}
+        ).fetchall()
+    }

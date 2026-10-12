@@ -1192,7 +1192,7 @@ epics:
           - AUD-001
         dep:
           - E10-S05
-        st: in_progress
+        st: done
       - id: E10-S07
         t: Stale-version guard and material-change resubmission policy
         k: concurrency
@@ -1269,7 +1269,7 @@ epics:
         dep:
           - E10-S11
           - E10-S05
-        st: todo
+        st: in_progress
       - id: E10-S13
         t: Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget
           changes

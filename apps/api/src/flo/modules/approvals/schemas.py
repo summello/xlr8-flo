@@ -479,3 +479,67 @@ class InstanceRead(Contract):
     tasks: list[TaskRead]
     started_at: datetime
     finished_at: datetime | None
+
+
+class DecisionWrite(Contract):
+    outcome: Literal["approve", "reject", "return", "comment"]
+    reject_mode: Literal["return_to_draft", "permanent"] | None = None
+    comment: str | None = Field(default=None, min_length=1, max_length=4000)
+    document_version: int
+    assign_project_id: UUID | None = None
+
+    @model_validator(mode="after")
+    def validate_action(self) -> Self:
+        if self.comment is not None:
+            self.comment = self.comment.strip()
+            if not self.comment:
+                raise decision_invalid("comment", "Supply a rationale for this action.")
+        if (self.outcome == "reject") != (self.reject_mode is not None):
+            raise decision_invalid("reject_mode", "Choose a rejection mode only when rejecting.")
+        if self.outcome in {"reject", "return", "comment"} and self.comment is None:
+            raise decision_invalid("comment", "Supply a rationale for this action.")
+        if self.assign_project_id is not None and self.outcome != "approve":
+            raise decision_invalid("assign_project_id", "Assign a project only when approving.")
+        return self
+
+
+def decision_invalid(field: str, message: str) -> ProblemError:
+    return ProblemError(
+        ErrorCode.VALIDATION_FAILED,
+        detail="Correct the decision and retry.",
+        errors=(ProblemFieldError(field=field, message=message),),
+    )
+
+
+class WithdrawWrite(Contract):
+    comment: str | None = Field(default=None, min_length=1, max_length=4000)
+
+    @model_validator(mode="after")
+    def validate_comment(self) -> Self:
+        if self.comment is not None:
+            self.comment = self.comment.strip()
+            if not self.comment:
+                raise decision_invalid("comment", "Supply a rationale for this action.")
+        return self
+
+
+class DecisionRead(Contract):
+    id: UUID
+    instance_id: UUID
+    task_id: UUID | None
+    node_id: str | None
+    step_label: str | None
+    actor_email: str
+    on_behalf_of_email: str | None
+    authority: Literal["member", "delegate", "admin", "requester"]
+    outcome: Literal["approve", "reject", "return", "comment", "withdraw"]
+    reject_mode: Literal["return_to_draft", "permanent"] | None
+    comment: str | None
+    document_version: int
+    members_at_decision: list[str]
+    decided_at: datetime
+
+
+class DecisionResult(Contract):
+    decision: DecisionRead
+    instance: InstanceRead

@@ -133,6 +133,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261009_0041",
         "20261009_0042",
         "20261009_0043",
+        "20261009_0044",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -1278,3 +1279,70 @@ def test_approval_instance_migration_roundtrip_preserves_running_instance_and_ta
         target.upgrade(conn)
         with tenant_transaction(conn, scope):
             assert conn.execute("SELECT count(*) FROM approval_instance").fetchone() == (0,)
+
+
+def test_approval_decisions_migration_roundtrip_preserves_seeded_instances(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.approvals.schemas import WorkflowCreate, WorkflowVersionWrite
+    from flo.modules.approvals.service import WorkflowService
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    target = revisions[-1]
+    assert target.revision == "20261009_0044"
+    migrate.apply_migrations(revisions[:-1], empty_database)
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("decision-migration"),
+    ):
+        org = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(org.org_id)
+        service = WorkflowService(conn, scope, actor)
+        row = service.create(
+            WorkflowCreate(document_type="requisition", name="R", scope_type="org")
+        )
+        service.create_version(
+            row.id,
+            WorkflowVersionWrite(
+                graph={
+                    "nodes": [{"id": "start", "kind": "start"}, {"id": "end", "kind": "end"}],
+                    "edges": [{"from": "start", "to": "end"}],
+                }
+            ),
+        )
+        version = service.publish(row.id, 1)
+        instance, task = uuid4(), uuid4()
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO approval_instance(id,org_id,document_type,document_id,"
+                "workflow_version_id,document_version,material_digest,requester_id,status) "
+                "VALUES(%s,%s,'requisition',%s,%s,1,'digest',%s,'running')",
+                (instance, scope.org_id, uuid4(), version.id, actor),
+            )
+            conn.execute(
+                "INSERT INTO approval_task(id,org_id,instance_id,node_id,name,approver_rule,"
+                "mode,allow_repeat,status) VALUES(%s,%s,%s,'one','Finance','{}',"
+                "'\"any\"',false,'open')",
+                (task, scope.org_id, instance),
+            )
+            before = conn.execute("SELECT * FROM approval_instance").fetchall()
+            tasks = conn.execute("SELECT * FROM approval_task").fetchall()
+            target.upgrade(conn)
+            conn.execute(
+                "INSERT INTO approval_decision(id,org_id,instance_id,task_id,actor_id,authority,"
+                "outcome,comment,document_version,members_at_decision) "
+                "VALUES(%s,%s,%s,%s,%s,'member','comment','Evidence',1,'[]')",
+                (uuid4(), scope.org_id, instance, task, actor),
+            )
+            assert conn.execute("SELECT count(*) FROM approval_decision").fetchone() == (1,)
+            target.downgrade(conn)
+            assert conn.execute("SELECT to_regclass('approval_decision')").fetchone() == (None,)
+            assert conn.execute("SELECT * FROM approval_instance").fetchall() == before
+            assert conn.execute("SELECT * FROM approval_task").fetchall() == tasks
+            target.upgrade(conn)
+            assert conn.execute("SELECT count(*) FROM approval_decision").fetchone() == (0,)
+            assert conn.execute("SELECT * FROM approval_instance").fetchall() == before
+            assert conn.execute("SELECT * FROM approval_task").fetchall() == tasks

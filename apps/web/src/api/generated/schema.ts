@@ -118,6 +118,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/approvals/instances/{id}/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Decision Trail */
+        get: operations["decision_trail_api_v1_approvals_instances__id__decisions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/approvals/instances/{id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Withdraw Approval */
+        post: operations["withdraw_approval_api_v1_approvals_instances__id__withdraw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/approvals/tasks/{task_id}/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record Decision */
+        post: operations["record_decision_api_v1_approvals_tasks__task_id__decisions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/attachments/{id}": {
         parameters: {
             query?: never;
@@ -2137,6 +2188,73 @@ export interface components {
              * Format: uuid
              */
             identity_id: string;
+        };
+        /** DecisionRead */
+        DecisionRead: {
+            /** Actor Email */
+            actor_email: string;
+            /**
+             * Authority
+             * @enum {string}
+             */
+            authority: "member" | "delegate" | "admin" | "requester";
+            /** Comment */
+            comment: string | null;
+            /**
+             * Decided At
+             * Format: date-time
+             */
+            decided_at: string;
+            /** Document Version */
+            document_version: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Instance Id
+             * Format: uuid
+             */
+            instance_id: string;
+            /** Members At Decision */
+            members_at_decision: string[];
+            /** Node Id */
+            node_id: string | null;
+            /** On Behalf Of Email */
+            on_behalf_of_email: string | null;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "approve" | "reject" | "return" | "comment" | "withdraw";
+            /** Reject Mode */
+            reject_mode: ("return_to_draft" | "permanent") | null;
+            /** Step Label */
+            step_label: string | null;
+            /** Task Id */
+            task_id: string | null;
+        };
+        /** DecisionResult */
+        DecisionResult: {
+            decision: components["schemas"]["DecisionRead"];
+            instance: components["schemas"]["InstanceRead"];
+        };
+        /** DecisionWrite */
+        DecisionWrite: {
+            /** Assign Project Id */
+            assign_project_id?: string | null;
+            /** Comment */
+            comment?: string | null;
+            /** Document Version */
+            document_version: number;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "approve" | "reject" | "return" | "comment";
+            /** Reject Mode */
+            reject_mode?: ("return_to_draft" | "permanent") | null;
         };
         /**
          * DeniedExampleResponse
@@ -4331,6 +4449,11 @@ export interface components {
             /** Warnings */
             warnings?: components["schemas"]["Issue"][];
         };
+        /** WithdrawWrite */
+        WithdrawWrite: {
+            /** Comment */
+            comment?: string | null;
+        };
         /** WorkflowCreate */
         WorkflowCreate: {
             /**
@@ -4708,6 +4831,140 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InstanceRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    decision_trail_api_v1_approvals_instances__id__decisions_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionRead"][];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    withdraw_approval_api_v1_approvals_instances__id__withdraw_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WithdrawWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstanceRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    record_decision_api_v1_approvals_tasks__task_id__decisions_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionResult"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

@@ -831,6 +831,233 @@
         "title": "CurrentIdentityResponse",
         "type": "object"
       },
+      "DecisionRead": {
+        "additionalProperties": false,
+        "properties": {
+          "actor_email": {
+            "title": "Actor Email",
+            "type": "string"
+          },
+          "authority": {
+            "enum": [
+              "member",
+              "delegate",
+              "admin",
+              "requester"
+            ],
+            "title": "Authority",
+            "type": "string"
+          },
+          "comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "decided_at": {
+            "format": "date-time",
+            "title": "Decided At",
+            "type": "string"
+          },
+          "document_version": {
+            "title": "Document Version",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "instance_id": {
+            "format": "uuid",
+            "title": "Instance Id",
+            "type": "string"
+          },
+          "members_at_decision": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Members At Decision",
+            "type": "array"
+          },
+          "node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Node Id"
+          },
+          "on_behalf_of_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Behalf Of Email"
+          },
+          "outcome": {
+            "enum": [
+              "approve",
+              "reject",
+              "return",
+              "comment",
+              "withdraw"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "reject_mode": {
+            "anyOf": [
+              {
+                "enum": [
+                  "return_to_draft",
+                  "permanent"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reject Mode"
+          },
+          "step_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step Label"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          }
+        },
+        "required": [
+          "id",
+          "instance_id",
+          "task_id",
+          "node_id",
+          "step_label",
+          "actor_email",
+          "on_behalf_of_email",
+          "authority",
+          "outcome",
+          "reject_mode",
+          "comment",
+          "document_version",
+          "members_at_decision",
+          "decided_at"
+        ],
+        "title": "DecisionRead",
+        "type": "object"
+      },
+      "DecisionResult": {
+        "additionalProperties": false,
+        "properties": {
+          "decision": {
+            "$ref": "#/components/schemas/DecisionRead"
+          },
+          "instance": {
+            "$ref": "#/components/schemas/InstanceRead"
+          }
+        },
+        "required": [
+          "decision",
+          "instance"
+        ],
+        "title": "DecisionResult",
+        "type": "object"
+      },
+      "DecisionWrite": {
+        "additionalProperties": false,
+        "properties": {
+          "assign_project_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assign Project Id"
+          },
+          "comment": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "document_version": {
+            "title": "Document Version",
+            "type": "integer"
+          },
+          "outcome": {
+            "enum": [
+              "approve",
+              "reject",
+              "return",
+              "comment"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "reject_mode": {
+            "anyOf": [
+              {
+                "enum": [
+                  "return_to_draft",
+                  "permanent"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reject Mode"
+          }
+        },
+        "required": [
+          "outcome",
+          "document_version"
+        ],
+        "title": "DecisionWrite",
+        "type": "object"
+      },
       "DeniedExampleResponse": {
         "description": "A missing permission paired with an actionable explanation.",
         "properties": {
@@ -7395,6 +7622,26 @@
         "title": "ValidationReport",
         "type": "object"
       },
+      "WithdrawWrite": {
+        "additionalProperties": false,
+        "properties": {
+          "comment": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          }
+        },
+        "title": "WithdrawWrite",
+        "type": "object"
+      },
       "WorkflowCreate": {
         "additionalProperties": false,
         "properties": {
@@ -8267,6 +8514,237 @@
           }
         },
         "summary": "Read Instance",
+        "tags": [
+          "approvals"
+        ]
+      }
+    },
+    "/api/v1/approvals/instances/{id}/decisions": {
+      "get": {
+        "operationId": "decision_trail_api_v1_approvals_instances__id__decisions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DecisionRead"
+                  },
+                  "title": "Response Decision Trail Api V1 Approvals Instances  Id  Decisions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Decision Trail",
+        "tags": [
+          "approvals"
+        ]
+      }
+    },
+    "/api/v1/approvals/instances/{id}/withdraw": {
+      "post": {
+        "operationId": "withdraw_approval_api_v1_approvals_instances__id__withdraw_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WithdrawWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstanceRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Withdraw Approval",
+        "tags": [
+          "approvals"
+        ]
+      }
+    },
+    "/api/v1/approvals/tasks/{task_id}/decisions": {
+      "post": {
+        "operationId": "record_decision_api_v1_approvals_tasks__task_id__decisions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Task Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Record Decision",
         "tags": [
           "approvals"
         ]
