@@ -543,3 +543,13 @@ class DecisionRead(Contract):
 class DecisionResult(Contract):
     decision: DecisionRead
     instance: InstanceRead
+
+
+class ApprovalState(Contract):
+    status: Literal[
+        "none", "running", "approved", "rejected", "returned", "withdrawn", "superseded"
+    ]
+    instance_id: UUID | None = None
+    approved_version: int | None = None
+    approved_material_digest: str | None = None
+    running_instance_id: UUID | None = None

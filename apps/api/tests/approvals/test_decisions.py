@@ -825,7 +825,7 @@ def test_assignment_requires_approve_even_on_supported_final_step(case, outcome)
     assert not decisions_for(setup[0][0], Scope(setup[0][1]), instance.id)
 
 
-def test_snapshot_version_is_recorded_instead_of_client_version(case):
+def test_stale_client_version_is_refused(case):
     setup, _ = case
     published(setup)
     instance = begin(setup)
@@ -834,11 +834,11 @@ def test_snapshot_version_is_recorded_instead_of_client_version(case):
         async with client(app) as browser:
             await login(browser)
             response = await post(browser, decision_path(instance), body(document_version=99))
-            assert response.status_code == 200
-            assert response.json()["decision"]["document_version"] == 1
+            assert response.status_code == 409
+            assert response.json()["checks"]["problem"] == "stale_version"
 
     asyncio.run(run())
-    assert decisions_for(setup[0][0], Scope(setup[0][1]), instance.id)[0].document_version == 1
+    assert not decisions_for(setup[0][0], Scope(setup[0][1]), instance.id)
 
 
 @pytest.mark.parametrize("outcome", ["approve", "reject", "return"])

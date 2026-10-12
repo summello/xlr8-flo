@@ -987,7 +987,7 @@ epics:
           - E09-S03
           - E10-S05
           - E10-S06
-        st: todo
+        st: in_progress
       - id: E09-S06
         t: Approval reserves budget and generates the sub-project, one transaction
         k: ledger
@@ -1206,7 +1206,7 @@ epics:
           - WF-001
         dep:
           - E10-S06
-        st: todo
+        st: done
       - id: E10-S08
         t: Delegation, out-of-office, due dates, reminders and escalation
         k: engine
@@ -1217,7 +1217,7 @@ epics:
           - APR-017
         dep:
           - E10-S06
-        st: todo
+        st: in_progress
       - id: E10-S09
         t: 'Routing explainability: which rule matched and why this approver'
         k: api

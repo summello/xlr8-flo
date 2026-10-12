@@ -213,6 +213,12 @@ def decide(
             )
         adapter = engine.adapter_for(str(instance["document_type"]))
         snapshot = adapter.snapshot(conn, scope, cast(UUID, instance["document_id"]))
+        if body.document_version != snapshot.version:
+            raise engine.conflict(
+                "stale_version",
+                "This document changed after you opened it. "
+                "Reload it and review the current version.",
+            )
         resolver = AuthorizationResolver(cast(AuthorizationConnection, conn), scope)
         version = engine._version(repo, cast(UUID, instance["workflow_version_id"]))
         node = next(n for n in version.graph.nodes if n.id == task["node_id"])

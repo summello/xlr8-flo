@@ -74,6 +74,7 @@ from flo.modules.approvals.engine import (
 from flo.modules.approvals.engine import (
     instances_for as instances_for,
 )
+from flo.modules.approvals.engine import material_digest as material_digest
 from flo.modules.approvals.engine import (
     preview_route as preview_route,
 )
@@ -85,6 +86,18 @@ from flo.modules.approvals.engine import (
 )
 from flo.modules.approvals.engine import (
     step_complete as step_complete,
+)
+from flo.modules.approvals.material import (
+    approval_state as approval_state,
+)
+from flo.modules.approvals.material import (
+    assert_current_approval as assert_current_approval,
+)
+from flo.modules.approvals.material import (
+    requires_resubmission as requires_resubmission,
+)
+from flo.modules.approvals.material import (
+    supersede as supersede,
 )
 from flo.modules.approvals.models import DEFINITION_FIELDS, WorkflowRepository
 from flo.modules.approvals.schemas import (
@@ -111,6 +124,11 @@ from flo.modules.identity.service import (
 from flo.modules.org.service import OrgService
 
 __all__ = [
+    "material_digest",
+    "approval_state",
+    "requires_resubmission",
+    "supersede",
+    "assert_current_approval",
     "decide",
     "decisions_for",
     "task_instance",

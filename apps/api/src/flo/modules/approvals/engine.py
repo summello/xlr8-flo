@@ -48,6 +48,8 @@ INSTANCE_FIELDS = (
     "workflow_version_id",
     "document_version",
     "material_digest",
+    "approved_material_digest",
+    "approved_version",
     "requester_id",
     "status",
     "current_node_id",
@@ -354,13 +356,17 @@ def _open(
 def _save(repo: WorkflowRepository, instance: Mapping[str, object]) -> None:
     repo.execute(
         "UPDATE approval_instance SET route=%(route)s,current_node_id=%(node)s,"
-        "status=%(status)s,finished_at=%(finished)s WHERE org_id=%(org_id)s AND id=%(id)s",
+        "status=%(status)s,finished_at=%(finished)s,"
+        "approved_material_digest=%(approved_digest)s,approved_version=%(approved_version)s "
+        "WHERE org_id=%(org_id)s AND id=%(id)s",
         {
             "id": instance["id"],
             "route": Jsonb(instance["route"]),
             "node": instance["current_node_id"],
             "status": instance["status"],
+            "approved_version": instance.get("approved_version"),
             "finished": instance["finished_at"],
+            "approved_digest": instance["approved_material_digest"],
         },
     )
 
@@ -373,7 +379,14 @@ def _outcome(
         raise ProblemError(
             ErrorCode.VALIDATION_FAILED, detail="This document does not accept project assignment."
         )
-    instance.update(status="approved", current_node_id=None, finished_at=datetime.now(UTC))
+    snapshot = adapter.snapshot(repo.connection, repo.scope, cast(UUID, instance["document_id"]))
+    instance.update(
+        status="approved",
+        current_node_id=None,
+        finished_at=datetime.now(UTC),
+        approved_version=snapshot.version,
+        approved_material_digest=material_digest(snapshot),
+    )
     _save(repo, instance)
     adapter.on_outcome(
         repo.connection, repo.scope, cast(UUID, instance["document_id"]), Outcome.APPROVED, context
@@ -710,7 +723,14 @@ def get_instance(
             {
                 k: v
                 for k, v in instance.items()
-                if k not in {"requester_id", "route", "material_digest"}
+                if k
+                not in {
+                    "requester_id",
+                    "route",
+                    "material_digest",
+                    "approved_material_digest",
+                    "approved_version",
+                }
             }
             | {
                 "workflow_version": version.version,
