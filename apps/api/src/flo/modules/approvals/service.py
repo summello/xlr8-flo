@@ -61,12 +61,15 @@ from flo.modules.approvals.engine import (
     preview_route as preview_route,
 )
 from flo.modules.approvals.engine import (
+    resolve_version as resolve_version,
+)
+from flo.modules.approvals.engine import (
     start as start,
 )
 from flo.modules.approvals.engine import (
     step_complete as step_complete,
 )
-from flo.modules.approvals.models import DEFINITION_FIELDS, VERSION_FIELDS, WorkflowRepository
+from flo.modules.approvals.models import DEFINITION_FIELDS, WorkflowRepository
 from flo.modules.approvals.schemas import (
     DocumentAdapter as DocumentAdapter,
 )
@@ -417,35 +420,6 @@ class WorkflowService:
                     ).encode()
                 ).decode()
             return WorkflowPage(rows=rows, next_cursor=next_cursor)
-
-
-def resolve_version(
-    conn: psycopg.Connection[tuple[object, ...]],
-    scope: Scope,
-    document_type: str,
-    bu_id: UUID | None,
-) -> WorkflowVersionRead | None:
-    """Nearest published live definition; retirement does not affect stored versions."""
-    with tenant_transaction(cast(RlsSession, conn), scope):
-        row = (
-            WorkflowRepository(conn, scope)
-            .execute(
-                f"SELECT {', '.join('v.' + field for field in VERSION_FIELDS)} "
-                "FROM workflow_definition d JOIN workflow_version v "
-                "ON v.org_id=d.org_id AND v.definition_id=d.id "
-                "WHERE d.org_id=%(org_id)s AND d.document_type=%(type)s AND d.retired_at IS NULL "
-                "AND v.status='published' AND ((d.scope_type='bu' AND d.scope_id=%(bu)s) "
-                "OR (d.scope_type='org' AND d.scope_id=%(org_id)s)) "
-                "ORDER BY (d.scope_type='bu') DESC LIMIT 1",
-                {"type": document_type, "bu": bu_id},
-            )
-            .fetchone()
-        )
-        return (
-            WorkflowVersionRead.model_validate(dict(zip(VERSION_FIELDS, row, strict=True)))
-            if row
-            else None
-        )
 
 
 def validate_graph(

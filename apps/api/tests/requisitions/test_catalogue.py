@@ -20,7 +20,6 @@ from tests.requisitions.test_header import (  # noqa: F401  (fixtures)
     draft,
     empty_database,
     header_db,
-    headers,
     login,
     send,
     unit,
