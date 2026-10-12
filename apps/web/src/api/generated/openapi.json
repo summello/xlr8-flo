@@ -1057,6 +1057,25 @@
         "title": "EffectiveSetting",
         "type": "object"
       },
+      "ExcludedApprover": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "reason"
+        ],
+        "title": "ExcludedApprover",
+        "type": "object"
+      },
       "FiscalPeriod": {
         "properties": {
           "closed_at": {
@@ -1693,6 +1712,113 @@
           "issues"
         ],
         "title": "ImportRowRead",
+        "type": "object"
+      },
+      "InstanceRead": {
+        "additionalProperties": false,
+        "properties": {
+          "current_node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Node Id"
+          },
+          "document_id": {
+            "format": "uuid",
+            "title": "Document Id",
+            "type": "string"
+          },
+          "document_type": {
+            "title": "Document Type",
+            "type": "string"
+          },
+          "document_version": {
+            "title": "Document Version",
+            "type": "integer"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "requester_email": {
+            "title": "Requester Email",
+            "type": "string"
+          },
+          "route": {
+            "items": {
+              "$ref": "#/components/schemas/RouteStep"
+            },
+            "title": "Route",
+            "type": "array"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "approved",
+              "rejected",
+              "returned",
+              "withdrawn",
+              "superseded"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/TaskRead"
+            },
+            "title": "Tasks",
+            "type": "array"
+          },
+          "workflow_version": {
+            "title": "Workflow Version",
+            "type": "integer"
+          },
+          "workflow_version_id": {
+            "format": "uuid",
+            "title": "Workflow Version Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "document_type",
+          "document_id",
+          "workflow_version",
+          "workflow_version_id",
+          "document_version",
+          "status",
+          "requester_email",
+          "current_node_id",
+          "route",
+          "tasks",
+          "started_at",
+          "finished_at"
+        ],
+        "title": "InstanceRead",
         "type": "object"
       },
       "InvitationAccept": {
@@ -6401,6 +6527,95 @@
         "title": "RoleApprovers",
         "type": "object"
       },
+      "RouteStep": {
+        "additionalProperties": false,
+        "properties": {
+          "approver_emails": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Approver Emails",
+            "type": "array"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "excluded": {
+            "items": {
+              "$ref": "#/components/schemas/ExcludedApprover"
+            },
+            "title": "Excluded",
+            "type": "array"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "any",
+              "all",
+              "quorum"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "node_id": {
+            "title": "Node Id",
+            "type": "string"
+          },
+          "quorum": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quorum"
+          },
+          "rule": {
+            "title": "Rule",
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/RouteStepState"
+          }
+        },
+        "required": [
+          "node_id",
+          "label",
+          "mode",
+          "quorum",
+          "rule",
+          "approver_emails",
+          "excluded",
+          "state",
+          "due_at"
+        ],
+        "title": "RouteStep",
+        "type": "object"
+      },
+      "RouteStepState": {
+        "enum": [
+          "upcoming",
+          "open",
+          "completed",
+          "carried"
+        ],
+        "title": "RouteStepState",
+        "type": "string"
+      },
       "ScopeType": {
         "description": "The only scopes to which a role can be granted.",
         "enum": [
@@ -6626,6 +6841,109 @@
           "available"
         ],
         "title": "SummaryCurrency",
+        "type": "object"
+      },
+      "TaskRead": {
+        "additionalProperties": false,
+        "properties": {
+          "approver_emails": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Approver Emails",
+            "type": "array"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "any",
+              "all",
+              "quorum"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "node_id": {
+            "title": "Node Id",
+            "type": "string"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome"
+          },
+          "quorum": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quorum"
+          },
+          "status": {
+            "enum": [
+              "open",
+              "completed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "node_id",
+          "label",
+          "mode",
+          "quorum",
+          "status",
+          "outcome",
+          "approver_emails",
+          "due_at",
+          "completed_at"
+        ],
+        "title": "TaskRead",
         "type": "object"
       },
       "TemplateColumnRead": {
@@ -7880,6 +8198,75 @@
           }
         },
         "summary": "Eligible Picker",
+        "tags": [
+          "approvals"
+        ]
+      }
+    },
+    "/api/v1/approvals/instances/{id}": {
+      "get": {
+        "operationId": "read_instance_api_v1_approvals_instances__id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstanceRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Read Instance",
         "tags": [
           "approvals"
         ]

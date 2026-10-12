@@ -101,6 +101,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/approvals/instances/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Instance */
+        get: operations["read_instance_api_v1_approvals_instances__id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/attachments/{id}": {
         parameters: {
             query?: never;
@@ -2197,6 +2214,13 @@ export interface components {
             source: components["schemas"]["SettingSource"];
             value: components["schemas"]["JsonValue"];
         };
+        /** ExcludedApprover */
+        ExcludedApprover: {
+            /** Email */
+            email: string;
+            /** Reason */
+            reason: string;
+        };
         /** FiscalPeriod */
         FiscalPeriod: {
             /** Closed At */
@@ -2421,6 +2445,50 @@ export interface components {
             };
             /** Row No */
             row_no: number;
+        };
+        /** InstanceRead */
+        InstanceRead: {
+            /** Current Node Id */
+            current_node_id: string | null;
+            /**
+             * Document Id
+             * Format: uuid
+             */
+            document_id: string;
+            /** Document Type */
+            document_type: string;
+            /** Document Version */
+            document_version: number;
+            /** Finished At */
+            finished_at: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Requester Email */
+            requester_email: string;
+            /** Route */
+            route: components["schemas"]["RouteStep"][];
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "running" | "approved" | "rejected" | "returned" | "withdrawn" | "superseded";
+            /** Tasks */
+            tasks: components["schemas"]["TaskRead"][];
+            /** Workflow Version */
+            workflow_version: number;
+            /**
+             * Workflow Version Id
+             * Format: uuid
+             */
+            workflow_version_id: string;
         };
         /** InvitationAccept */
         InvitationAccept: {
@@ -3932,6 +4000,34 @@ export interface components {
              */
             type: "role";
         };
+        /** RouteStep */
+        RouteStep: {
+            /** Approver Emails */
+            approver_emails: string[];
+            /** Due At */
+            due_at: string | null;
+            /** Excluded */
+            excluded: components["schemas"]["ExcludedApprover"][];
+            /** Label */
+            label: string;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "any" | "all" | "quorum";
+            /** Node Id */
+            node_id: string;
+            /** Quorum */
+            quorum: number | null;
+            /** Rule */
+            rule: string;
+            state: components["schemas"]["RouteStepState"];
+        };
+        /**
+         * RouteStepState
+         * @enum {string}
+         */
+        RouteStepState: "upcoming" | "open" | "completed" | "carried";
         /**
          * ScopeType
          * @description The only scopes to which a role can be granted.
@@ -4018,6 +4114,38 @@ export interface components {
             currency: string;
             /** Reserved */
             reserved: string;
+        };
+        /** TaskRead */
+        TaskRead: {
+            /** Approver Emails */
+            approver_emails: string[];
+            /** Completed At */
+            completed_at: string | null;
+            /** Due At */
+            due_at: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Label */
+            label: string;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "any" | "all" | "quorum";
+            /** Node Id */
+            node_id: string;
+            /** Outcome */
+            outcome: string | null;
+            /** Quorum */
+            quorum: number | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "completed" | "cancelled";
         };
         /** TemplateColumnRead */
         TemplateColumnRead: {
@@ -4518,6 +4646,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PickerPage"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    read_instance_api_v1_approvals_instances__id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstanceRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

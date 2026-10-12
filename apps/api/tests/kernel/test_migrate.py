@@ -132,6 +132,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261009_0040",
         "20261009_0041",
         "20261009_0042",
+        "20261009_0043",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -1199,3 +1200,81 @@ def test_catalogue_migration_roundtrip_preserves_items_events_and_lines(empty_da
         )
         with tenant_transaction(conn, scope):
             assert conn.execute("SELECT count(*) FROM catalogue_item").fetchone() == (0,)
+
+
+def test_approval_instance_migration_roundtrip_preserves_running_instance_and_tasks(
+    empty_database,
+):
+    from uuid import uuid4
+
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.approvals.schemas import WorkflowCreate, WorkflowVersionWrite
+    from flo.modules.approvals.service import WorkflowService
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = tuple(
+        r
+        for r in migrate.discover_migrations(MIGRATIONS)
+        if r.path.name.split("_", 2)[2].startswith(("approval_instances", "catalogue"))
+        or r.revision <= "20261009_0041"
+    )
+    target = next(r for r in revisions if "approval_instances" in r.path.name)
+    migrate.apply_migrations([r for r in revisions if r is not target], empty_database)
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("approval-instance-migration"),
+    ):
+        org = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(org.org_id)
+        graph = {
+            "nodes": [{"id": "start", "kind": "start"}, {"id": "end", "kind": "end"}],
+            "edges": [{"from": "start", "to": "end"}],
+        }
+        service = WorkflowService(conn, scope, actor)
+        row = service.create(
+            WorkflowCreate(document_type="requisition", name="R", scope_type="org")
+        )
+        service.create_version(row.id, WorkflowVersionWrite(graph=graph))
+        service.publish(row.id, 1)
+        versions_before = conn.execute("SELECT * FROM workflow_version ORDER BY id").fetchall()
+        target.upgrade(conn)
+        version_id = versions_before[0][0]
+        instance, task, document = uuid4(), uuid4(), uuid4()
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO approval_instance(id,org_id,document_type,document_id,"
+                "workflow_version_id,document_version,material_digest,requester_id,status,"
+                "current_node_id) VALUES (%s,%s,'requisition',%s,%s,1,'digest',%s,'running','n1')",
+                (instance, org.org_id, document, version_id, actor),
+            )
+            conn.execute(
+                "INSERT INTO approval_task(id,org_id,instance_id,node_id,name,approver_rule,"
+                "mode,allow_repeat,status) VALUES (%s,%s,%s,'n1','Finance','{}'::jsonb,"
+                "'\"any\"'::jsonb,false,'open')",
+                (task, org.org_id, instance),
+            )
+            instances = conn.execute("SELECT * FROM approval_instance").fetchall()
+            tasks = conn.execute("SELECT * FROM approval_task").fetchall()
+
+        class Rollback(Exception):
+            pass
+
+        with pytest.raises(Rollback), conn.transaction():
+            target.downgrade(conn)
+            target.upgrade(conn)
+            raise Rollback
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT * FROM approval_instance").fetchall() == instances
+            assert conn.execute("SELECT * FROM approval_task").fetchall() == tasks
+        # The downgrade removes only this story's tables; workflow versions are untouched.
+        target.downgrade(conn)
+        assert conn.execute("SELECT * FROM workflow_version ORDER BY id").fetchall() == (
+            versions_before
+        )
+        assert conn.execute("SELECT to_regclass('approval_instance')").fetchone() == (None,)
+        target.upgrade(conn)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT count(*) FROM approval_instance").fetchone() == (0,)

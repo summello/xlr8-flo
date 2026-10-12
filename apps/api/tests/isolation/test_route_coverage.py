@@ -8,6 +8,7 @@ from pathlib import Path
 from fastapi import APIRouter
 
 from flo.api.admin_users import router as admin_users_router
+from flo.api.approvals import router as approvals_router
 from flo.api.auth import router as auth_router
 from flo.api.budget import router as budget_router
 from flo.api.collaboration import router as collaboration_router
@@ -24,6 +25,10 @@ TESTS = Path(__file__).resolve().parents[1]
 
 # (method, path) -> "file::test" that proves a foreign id returns 404.
 COVERED = {
+    (
+        "GET",
+        "/api/v1/approvals/instances/{id}",
+    ): "approvals/test_engine.py::test_instance_route_foreign_tenant_and_roles",
     (
         "GET",
         "/api/v1/approvals/eligible-approvers",
@@ -432,6 +437,7 @@ def test_every_id_route_has_a_named_foreign_tenant_case() -> None:
                 budget_router,
                 imports_router,
                 invitations_router,
+                approvals_router,
                 workflows_router,
                 requisitions_router,
                 collaboration_router,
@@ -457,6 +463,7 @@ def test_gate_fails_on_an_uncovered_route_and_on_a_dangling_reference() -> None:
             budget_router,
             imports_router,
             invitations_router,
+            approvals_router,
             workflows_router,
             requisitions_router,
             collaboration_router,

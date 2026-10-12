@@ -8,11 +8,11 @@ from fastapi import APIRouter, Depends
 from flo.api.authz_factory import production_authorization_resolver
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
-from flo.kernel.authz import HoldersResolverFactory, require
+from flo.kernel.authz import HoldersResolverFactory, require, require_resolved
 from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.tenancy.context import current_scope
-from flo.modules.approvals.schemas import DocumentType
-from flo.modules.approvals.service import PickerPage, approver_picker
+from flo.modules.approvals.schemas import DocumentType, InstanceRead
+from flo.modules.approvals.service import PickerPage, adapter_for, approver_picker, get_instance
 from flo.modules.identity.models import AuthorizationContext
 from flo.modules.identity.service import AuthorizationTarget, ScopeType
 from flo.modules.org.service import OrgService
@@ -56,3 +56,18 @@ def eligible_picker(
             q,
             resolver,
         )
+
+
+def instance_permission(id: UUID, connection: Connection) -> tuple[str, TargetProtocol]:
+    scope = current_scope()
+    instance = get_instance(connection, scope, id)
+    adapter = adapter_for(instance.document_type)
+    return adapter.read_permission, adapter.snapshot(connection, scope, instance.document_id).target
+
+
+InstanceContext = Annotated[AuthorizationContext, Depends(require_resolved(instance_permission))]
+
+
+@router.get("/instances/{id}", response_model=InstanceRead)
+def read_instance(id: UUID, context: InstanceContext, connection: Connection) -> InstanceRead:
+    return get_instance(connection, current_scope(), id)

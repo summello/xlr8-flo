@@ -113,6 +113,28 @@ def permits(request: Request, permission: str, target: AuthorizationTarget) -> b
         return resolver.check(user_id, permission, target).allowed
 
 
+def _decide(request: Request, permission: str, target: AuthorizationTarget) -> AuthorizationContext:
+    user_id = _identity_id(request)
+    try:
+        scope = current_scope()
+    except TenantScopeMissing as exc:
+        raise ProblemError(ErrorCode.UNAUTHORIZED) from exc
+
+    with _factory(request)(scope) as resolver:
+        decision = resolver.check(user_id, permission, target)
+    if decision.allowed:
+        return decision.context
+
+    target_is_concealed = (
+        target.record_id is not None
+        or getattr(target.scope_type, "value", None) != "org"
+        or target.scope_id != scope.org_id
+    )
+    if not decision.scope_matched and target_is_concealed:
+        raise ProblemError(ErrorCode.NOT_FOUND)
+    raise ProblemError(ErrorCode.FORBIDDEN)
+
+
 def require(
     permission: str,
     target: TargetResolver,
@@ -123,27 +145,40 @@ def require(
         request: Request,
         resolved_target: AuthorizationTarget = Depends(target),
     ) -> AuthorizationContext:
+        return _decide(request, permission, resolved_target)
+
+    setattr(enforce, _REQUIRE_MARKER, permission)
+    return enforce
+
+
+def require_resolved(
+    resolve: Callable[..., tuple[str, AuthorizationTarget]],
+) -> Callable[..., AuthorizationContext]:
+    """Resolve the document's permission and scope before the common decision."""
+
+    def enforce(
+        request: Request, resolved: tuple[str, AuthorizationTarget] = Depends(resolve)
+    ) -> AuthorizationContext:
+        return _decide(request, *resolved)
+
+    setattr(enforce, _REQUIRE_MARKER, "resolved")
+    return enforce
+
+
+def require_member() -> Callable[..., IdentityId]:
+    """Authenticated selected-organization membership for self-scoped lists."""
+
+    def enforce(request: Request) -> IdentityId:
         user_id = _identity_id(request)
         try:
             scope = current_scope()
         except TenantScopeMissing as exc:
             raise ProblemError(ErrorCode.UNAUTHORIZED) from exc
+        if getattr(getattr(request.state, "session", None), "org_id", None) != scope.org_id:
+            raise ProblemError(ErrorCode.UNAUTHORIZED)
+        return user_id
 
-        with _factory(request)(scope) as resolver:
-            decision = resolver.check(user_id, permission, resolved_target)
-        if decision.allowed:
-            return decision.context
-
-        target_is_concealed = (
-            resolved_target.record_id is not None
-            or getattr(resolved_target.scope_type, "value", None) != "org"
-            or resolved_target.scope_id != scope.org_id
-        )
-        if not decision.scope_matched and target_is_concealed:
-            raise ProblemError(ErrorCode.NOT_FOUND)
-        raise ProblemError(ErrorCode.FORBIDDEN)
-
-    setattr(enforce, _REQUIRE_MARKER, permission)
+    setattr(enforce, _REQUIRE_MARKER, "member")
     return enforce
 
 

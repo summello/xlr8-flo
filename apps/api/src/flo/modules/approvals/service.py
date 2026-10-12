@@ -19,7 +19,6 @@ from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.approvals.conditions import (
     AttributeProvider,
     ConditionError,
-    DocumentAdapter,
     Evaluation,
     LeafTrace,
     approve_permission,
@@ -40,7 +39,37 @@ from flo.modules.approvals.eligibility import (
 from flo.modules.approvals.eligibility import (
     eligible_approvers as eligible_approvers,
 )
+from flo.modules.approvals.engine import (
+    active_instance as active_instance,
+)
+from flo.modules.approvals.engine import (
+    adapter_for as adapter_for,
+)
+from flo.modules.approvals.engine import (
+    advance as advance,
+)
+from flo.modules.approvals.engine import (
+    current_members as current_members,
+)
+from flo.modules.approvals.engine import (
+    get_instance as get_instance,
+)
+from flo.modules.approvals.engine import (
+    instances_for as instances_for,
+)
+from flo.modules.approvals.engine import (
+    preview_route as preview_route,
+)
+from flo.modules.approvals.engine import (
+    start as start,
+)
+from flo.modules.approvals.engine import (
+    step_complete as step_complete,
+)
 from flo.modules.approvals.models import DEFINITION_FIELDS, VERSION_FIELDS, WorkflowRepository
+from flo.modules.approvals.schemas import (
+    DocumentAdapter as DocumentAdapter,
+)
 from flo.modules.approvals.schemas import (
     DocumentType,
     WorkflowCreate,
@@ -63,6 +92,15 @@ from flo.modules.org.service import OrgService
 
 __all__ = [
     "WorkflowService",
+    "start",
+    "advance",
+    "preview_route",
+    "get_instance",
+    "active_instance",
+    "instances_for",
+    "step_complete",
+    "adapter_for",
+    "current_members",
     "EligibleSet",
     "PickerPage",
     "approver_picker",

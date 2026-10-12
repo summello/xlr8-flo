@@ -19,6 +19,8 @@ from flo.kernel.authz import (
     install_authorization,
     public_route,
     require,
+    require_member,
+    require_resolved,
     route_authorization_failures,
 )
 from flo.kernel.errors import install_problem_details
@@ -64,9 +66,10 @@ def build_app(
     @contextmanager
     def resolver_factory(resolver_scope: Scope) -> Iterator[PermissionResolver]:
         with tenant_transaction(database.connection, resolver_scope):
-            yield cast(PermissionResolver, AuthorizationResolver(
-                database.authorization_connection, resolver_scope
-            ))
+            yield cast(
+                PermissionResolver,
+                AuthorizationResolver(database.authorization_connection, resolver_scope),
+            )
 
     install_authorization(app, cast(PermissionResolverFactory, resolver_factory))
 
@@ -86,6 +89,22 @@ def build_app(
             "record": str(context.target.record_id),
             "created_by": None if context.created_by is None else str(context.created_by),
         }
+
+    def resolved(record_id: UUID) -> tuple[str, AuthorizationTarget]:
+        return "requisition.create", record_target(record_id)
+
+    @app.get("/resolved/{record_id}")
+    def read_resolved(
+        context: AuthorizationContext = Depends(require_resolved(resolved)),
+    ) -> dict[str, str | None]:
+        return {
+            "record": str(context.target.record_id),
+            "created_by": None if context.created_by is None else str(context.created_by),
+        }
+
+    @app.get("/member")
+    def member(user: IdentityId = Depends(require_member())) -> dict[str, str]:
+        return {"user": str(user)}
 
     @app.get("/public")
     @public_route
@@ -152,6 +171,32 @@ def test_bu_authorization_returns_404_outside_scope_and_403_for_missing_action(
             )
 
     allowed, foreign, foreign_org = run(requests())
+
+    async def resolved_requests() -> tuple[
+        httpx.Response, httpx.Response, httpx.Response, httpx.Response
+    ]:
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="https://testserver"
+        ) as client:
+            return (
+                await client.get(f"/resolved/{allowed_record}"),
+                await client.get(f"/resolved/{foreign_record}"),
+                await client.get(f"/resolved/{foreign_org_record}"),
+                await client.get("/member"),
+            )
+
+    # require_resolved decides exactly as require does over the convention-A table.
+    r_allowed, r_foreign, r_foreign_org, member = run(resolved_requests())
+    assert (r_allowed.status_code, r_allowed.json()) == (allowed.status_code, allowed.json())
+    assert (r_foreign.status_code, r_foreign.json()["type"]) == (
+        foreign.status_code,
+        foreign.json()["type"],
+    )
+    assert (r_foreign_org.status_code, r_foreign_org.json()["type"]) == (
+        foreign_org.status_code,
+        foreign_org.json()["type"],
+    )
+    assert member.status_code == 200 and member.json() == {"user": str(user_id)}
     assert allowed.status_code == 200
     assert allowed.json() == {"record": str(allowed_record), "created_by": str(user_id)}
     assert foreign.status_code == 404
@@ -174,6 +219,14 @@ def test_bu_authorization_returns_404_outside_scope_and_403_for_missing_action(
     denied = run(denied_request())
     assert denied.status_code == 403
     assert denied.json()["type"] == "https://xlr8flo.app/errors/forbidden"
+
+    async def denied_resolved() -> httpx.Response:
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="https://testserver"
+        ) as client:
+            return await client.get(f"/resolved/{allowed_record}")
+
+    assert run(denied_resolved()).status_code == 403
 
 
 def test_route_guard_rejects_a_planted_unclassified_route_then_passes() -> None:
@@ -216,3 +269,36 @@ def test_route_guard_descends_into_included_routers_and_bites() -> None:
     clean = FastAPI()
     clean.include_router(clean_router)
     assert route_authorization_failures(clean) == []
+
+
+def test_require_member_rejects_sessions_without_the_selected_organization() -> None:
+    """Plant: reducing require_member to the identity check must fail this test."""
+
+    def app_with(session: object | None, scope_org: UUID) -> FastAPI:
+        app = FastAPI()
+
+        @app.middleware("http")
+        async def bind(request: Request, call_next: RequestResponseEndpoint) -> Response:
+            request.state.session = session
+            with use_scope(Scope(scope_org)):
+                return await call_next(request)
+
+        @app.get("/member")
+        def member(user: IdentityId = Depends(require_member())) -> dict[str, str]:
+            return {"user": str(user)}
+
+        install_problem_details(app)
+        return app
+
+    org, other, user = uuid4(), uuid4(), IdentityId(uuid4())
+
+    async def get(app: FastAPI) -> int:
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="https://testserver"
+        ) as client:
+            return (await client.get("/member")).status_code
+
+    assert run(get(app_with(StubSession(user, org), org))) == 200
+    assert run(get(app_with(None, org))) == 401  # no session
+    assert run(get(app_with(StubSession(user, other), org))) == 401  # other organization
+    assert run(get(app_with(StubSession(user, None), org))) == 401  # no selected organization

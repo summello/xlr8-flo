@@ -2,11 +2,15 @@
 
 import json
 import re
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Annotated, Literal, Self
+from enum import StrEnum
+from typing import Annotated, Literal, Protocol, Self
 from uuid import UUID
 
+import psycopg
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -20,8 +24,10 @@ from pydantic import (
     model_validator,
 )
 
+from flo.kernel.authz import AuthorizationTarget
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError
 from flo.kernel.money import Money, currency_exponent
+from flo.kernel.tenancy.context import Scope
 
 DocumentType = Literal["project", "requisition", "budget_change", "vendor", "rfq", "award", "po"]
 VersionStatus = Literal["draft", "published", "superseded"]
@@ -343,3 +349,133 @@ def parse_condition(value: object) -> Condition:
                 for error in exc.errors()
             ),
         ) from exc
+
+
+# Execution contracts shared by every document adapter.
+
+
+class Outcome(StrEnum):
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    RETURNED = "returned"
+    WITHDRAWN = "withdrawn"
+
+
+@dataclass(frozen=True)
+class OutcomeContext:
+    actor_id: UUID
+    decision_id: UUID | None
+    assign_project_id: UUID | None
+    permitted: Callable[[str, AuthorizationTarget], bool]
+    reject_mode: Literal["return_to_draft", "permanent"] | None = None
+
+
+@dataclass(frozen=True)
+class DocumentSnapshot:
+    version: int
+    requester_id: UUID
+    target: AuthorizationTarget
+    attributes: dict[str, AttributeValue]
+    material: dict[str, str]
+
+
+@dataclass(frozen=True)
+class DocumentSummary:
+    number: str
+    title: str
+    amount: Money | None
+    requester_id: UUID
+    href: str
+    note: str | None
+
+
+class DocumentAdapter(Protocol):
+    document_type: str
+    approve_permission: str
+    read_permission: str
+    accepts_project_assignment: bool
+
+    def fields(self) -> Mapping[str, FieldType]: ...
+    def snapshot(
+        self, conn: psycopg.Connection[tuple[object, ...]], scope: Scope, document_id: UUID
+    ) -> DocumentSnapshot: ...
+    def summaries(
+        self,
+        conn: psycopg.Connection[tuple[object, ...]],
+        scope: Scope,
+        document_ids: Sequence[UUID],
+    ) -> Mapping[UUID, DocumentSummary]: ...
+    def on_outcome(
+        self,
+        conn: psycopg.Connection[tuple[object, ...]],
+        scope: Scope,
+        document_id: UUID,
+        outcome: Outcome,
+        context: OutcomeContext,
+    ) -> None: ...
+
+
+class RouteStepState(StrEnum):
+    UPCOMING = "upcoming"
+    OPEN = "open"
+    COMPLETED = "completed"
+    CARRIED = "carried"
+
+
+class ExcludedApprover(Contract):
+    email: str
+    reason: str
+
+
+class RouteStep(Contract):
+    node_id: str
+    label: str
+    mode: Literal["any", "all", "quorum"]
+    quorum: int | None
+    rule: str
+    approver_emails: list[str]
+    excluded: list[ExcludedApprover]
+    state: RouteStepState
+    due_at: datetime | None
+
+
+class RouteProblem(Contract):
+    code: Literal["no_workflow", "no_eligible_approver", "route_blocked"]
+    step_label: str | None
+    message: str
+
+
+class RoutePreview(Contract):
+    workflow_version_id: UUID | None
+    workflow_version: int | None
+    steps: list[RouteStep]
+    problems: list[RouteProblem]
+
+
+class TaskRead(Contract):
+    id: UUID
+    node_id: str
+    label: str
+    mode: Literal["any", "all", "quorum"]
+    quorum: int | None
+    status: Literal["open", "completed", "cancelled"]
+    outcome: str | None
+    approver_emails: list[str]
+    due_at: datetime | None
+    completed_at: datetime | None
+
+
+class InstanceRead(Contract):
+    id: UUID
+    document_type: str
+    document_id: UUID
+    workflow_version: int
+    workflow_version_id: UUID
+    document_version: int
+    status: Literal["running", "approved", "rejected", "returned", "withdrawn", "superseded"]
+    requester_email: str
+    current_node_id: str | None
+    route: list[RouteStep]
+    tasks: list[TaskRead]
+    started_at: datetime
+    finished_at: datetime | None
