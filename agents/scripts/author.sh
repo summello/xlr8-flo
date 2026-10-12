@@ -17,12 +17,26 @@ From apps/api: uv run --offline pytest -q, uv run --offline ruff check ., uv run
 UI authority, in order: design-system/MASTER.md and tokens.css, then design-system/pages/<page>.md, then design-system/canvas which is a drawing for layout, copy and interaction ONLY. Never copy a value from the canvas; record a stale board in notes.followup.
 Rules: Decimal only for money; lock before validate; org_id only from the session; foreign-tenant ids return 404; every state-changing POST honours Idempotency-Key; every new endpoint gets a real named test in apps/api/tests/isolation/test_route_coverage.py (COVERED); no new dependency; never print or write a secret; keep to the files the packet names. Every gate, contract or guard you add needs a test that plants a real violation and proves it fails.
 Blocking: follow docs/author-traps.md "Blocking". Block only on money, state transitions, authorization or an open requirement, and leave partial work uncommitted when you do. Everything else: conservative choice, notes.followup, keep going.
-Done means: apps/api/.venv/bin/python agents/scripts/flo check is green from the worktree root (it builds its own fresh database), and every guard you added was planted and seen to fail. Fill task.json traceability (requirement id -> test name) and notes.recap (one or two plain sentences).
+Done means: apps/api/.venv/bin/python agents/scripts/flo check --light is green from the worktree root (lint, types, boundaries, web checks, secrets, and the tests your diff touches; the full suite runs on GitHub after submit), and every guard you added was planted and seen to fail. Fill task.json traceability (requirement id -> test name) and notes.recap (one or two plain sentences).
 Commit in this worktree with messages starting "$S:". Do NOT run flo submit, flo done, flo gate, push, or merge. Finish with a short report: files changed, test counts, plants and their results, followups.
 EOP
 [ -n "$2" ] && cat "$2" >> "$P"
 cd "$W"
 case "$A" in
+  sonnet)
+    # One session per story with a pre-assigned id on the least-loaded Claude account; a second
+    # launch (continuation, review round, CI fix) resumes that same session (flo account).
+    set -- $("$W/apps/api/.venv/bin/python" "$R/agents/scripts/flo" account "$S")
+    MODE="$1"; CFG="$2"; SID="$3"; ACCT="$4"
+    { printf 'ROLE xlr8flo-worker %s account %s. Use the xlr8flo-worker skill.\n\n' "$S" "$ACCT"; cat "$P"; } > "$P.role"
+    if [ "$MODE" = new ]; then
+      RUN="claude -p --model sonnet --effort high --session-id $SID -n 'xlr8flo-worker $S' --permission-mode auto"
+    else
+      RUN="claude -p --resume $SID --permission-mode auto"
+    fi
+    nohup sh -c "CLAUDE_CONFIG_DIR='$CFG' $RUN \"\$(cat '$P.role')\" > '$D/$S.log' 2>&1; echo \"exit \$?\" >> '$D/$S.log'" > /dev/null 2>&1 &
+    echo "session $SID on account $ACCT ($MODE)"
+    ;;
   codex)
     nohup sh -c "codex exec -s workspace-write --skip-git-repo-check \"\$(cat '$P')\" > '$D/$S.log' 2>&1; echo \"exit \$?\" >> '$D/$S.log'" > /dev/null 2>&1 &
     ;;

@@ -20,7 +20,7 @@ Stdlib only, except PyYAML for the two config files.
   flo budget                per-agent spend and remaining capacity
   flo roadmap [--check]     regenerate docs/claude-plan.md §5 (or verify it)
   flo board                 regenerate board.html - drilldown status view (gitignored)\n  flo ack     [KEY|all]     confirm a 'waiting on you' item (list keys with no argument)\n  flo unack   <KEY|all>     reopen a confirmed item
-  flo check [--light]       everything CI runs, locally (stops at the first red); --light is\n                            the story gate: no full pytest/e2e, only the tests the story touched\n  flo reap    <STORY_ID>    drop a merged story's worktree once its CI is green
+  flo check [--light]       everything CI runs, locally (stops at the first red); --light is\n                            the story gate: no full pytest/e2e, only the tests the story touched\n  flo reap    <STORY_ID>    drop a merged story's worktree once its CI is green\n  flo account <STORY_ID>    account + session id for a multi-account author (sonnet)
   flo db      [url|reset]   this worktree's test database (reset drops and recreates it)
   flo up [--reset]          start local Postgres + MinIO + Mailpit; optionally reset data
   flo down                  stop the local stack
@@ -32,6 +32,7 @@ import re
 import subprocess
 import sys
 import time
+import uuid
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -174,6 +175,8 @@ def cmd_assign(argv):
         cap = cfg.get("max_author_size")
         if cap and size_rank[st["s"]] > size_rank[cap]:
             return False
+        if cfg.get("accounts") and not free_accounts(name, cfg):
+            return False  # every worker slot on every account is busy: overflow to the next author
         if cfg.get("monthly_budget_usd"):
             spent = sp.get(name, 0.0)
             usable = cfg["monthly_budget_usd"] - cfg.get("reserve_for_review_usd", 0)
@@ -190,20 +193,100 @@ def cmd_assign(argv):
         prefers = bool(tags & set(c.get("prefer_tags", [])))
         return (0 if prefers else 1, scarcity[c.get("metered", "none")])
 
-    author = sorted(cands, key=rank)[0]
-    # 10 Oct 2026: review is scaled to risk. A gated story is Opus's alone; an ungated one
-    # goes to the first ungated reviewer with budget left, and Opus reviews the train diff.
+    # 13 Oct 2026: an explicit author_priority (sonnet, then the overflow lanes) replaces the
+    # scarcity heuristic when it is set.
+    prio = pol.get("author_priority")
+    author = (next(n for n in prio + sorted(cands, key=rank) if n in cands) if prio
+              else sorted(cands, key=rank)[0])
+    # Every story gets one reviewer from ungated_reviewers that is not its author (codex, then
+    # qwen). A gated story additionally needs Opus (opus_final), in a fresh session.
     opus_final = bool(tags & set(pol["opus_final_required_tags"]))
-    if opus_final:
-        reviewers = ["opus"]
-    else:
-        reviewers = [n for n in pol["ungated_reviewers"]
-                     if n != author and sp.get(n, 0.0) < agents[n].get("monthly_budget_usd", float("inf"))][:1]
+    reviewers = [n for n in pol["ungated_reviewers"]
+                 if n != author and sp.get(n, 0.0) < agents[n].get("monthly_budget_usd", float("inf"))][:1]
     if len(reviewers) < pol["min_reviewers"]:
         die(f"only {len(reviewers)} reviewer(s) available; minimum is {pol['min_reviewers']} — story waits")
     out = {"author": author, "reviewers": reviewers, "opus_final": opus_final}
     print(json.dumps(out, indent=2))
     return out
+
+
+def worker_load(name):
+    """Active stories per account for an agent that runs on several accounts (sonnet)."""
+    load = {}
+    for _, s in stories(roadmap()):
+        if s["st"] not in ACTIVE:
+            continue
+        task = worktree_path(s["id"]) / "task.json"
+        if not task.exists():
+            continue
+        pkt = json.loads(task.read_text())
+        acct = ((pkt.get("sessions") or {}).get(name) or {}).get("account")
+        if pkt.get("author") == name and acct:
+            load[acct] = load.get(acct, 0) + 1
+    return load
+
+
+def free_accounts(name, cfg):
+    load = worker_load(name)
+    cap = cfg.get("max_workers_per_account", 1)
+    return sorted((a for a in cfg["accounts"] if load.get(a, 0) < cap), key=lambda a: load.get(a, 0))
+
+
+def cmd_account(argv):
+    """Pick the account a multi-account author runs a story on, and its session id.
+
+    Prints `new|resume <config_dir> <session_id>`. The least-loaded account with a free slot
+    wins; a tie goes to the account not used last. A story that already has a session keeps it,
+    so a continuation, a review round or a CI fix resumes the same conversation.
+    """
+    if not argv:
+        die("usage: flo account <STORY_ID>")
+    sid = argv[0]
+    pkt, task = packet_of(sid), worktree_path(sid) / "task.json"
+    name = pkt["author"]
+    cfg = load_yaml(FLEET)["agents"][name]
+    rec = (pkt.get("sessions") or {}).get(name) or {}
+    if rec.get("id") and rec.get("account"):
+        print(f"resume {Path(cfg['accounts'][rec['account']]).expanduser()} {rec['id']} {rec['account']}")
+        return
+    free = free_accounts(name, cfg)
+    if not free:
+        die(f"{name}: every account is at max_workers_per_account — the story waits")
+    load, s = worker_load(name), state()
+    last = s.get("last_account", {}).get(name)
+    tied = [a for a in free if load.get(a, 0) == load.get(free[0], 0)]
+    acct = next((a for a in tied if a != last), tied[0])
+    s.setdefault("last_account", {})[name] = acct
+    save_state(s)
+    rec = {"agent": name, "id": str(uuid.uuid4()), "source": "launch:--session-id",
+           "account": acct, "cwd": str(worktree_path(sid)), "role": "xlr8flo-worker"}
+    pkt.setdefault("sessions", {})[name] = rec
+    task.write_text(json.dumps(pkt, indent=2) + "\n")
+    print(f"new {Path(cfg['accounts'][acct]).expanduser()} {rec['id']} {acct}")
+
+
+def cmd_codex_usage(argv):
+    """Append Codex's cap reading after a review to .scratch/codex-usage.jsonl, so the pilot can
+    say what one review costs and how soon four lanes reach the cap. Source: the rate_limits
+    lines Codex writes into its own session logs (what its /status shows)."""
+    if len(argv) < 2:
+        die("usage: flo codex-usage <STORY_ID> <started-iso>")
+    root = Path.home() / ".codex" / "sessions"
+    files = sorted(root.glob("*/*/*/rollout-*.jsonl"), key=lambda f: f.stat().st_mtime)[-8:]
+    lines = [ln for f in files for ln in f.read_text().splitlines()[-300:] if '"rate_limits"' in ln]
+    # Codex also logs a per-model "premium" limit with null windows; only the account's
+    # five-hour and weekly windows answer how close the cap is.
+    readings = [j for j in map(json.loads, lines)
+                if ((j.get("payload") or {}).get("rate_limits") or {}).get("primary")]
+    latest = max(readings, key=lambda j: j.get("timestamp", ""), default={})
+    limits = (latest.get("payload") or {}).get("rate_limits") or {}
+    rec = {"story": argv[0], "start": argv[1], "end": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+           "five_hour": limits.get("primary"), "weekly": limits.get("secondary")}
+    out = ROOT / ".scratch" / "codex-usage.jsonl"
+    out.parent.mkdir(exist_ok=True)
+    with out.open("a") as f:
+        f.write(json.dumps(rec) + "\n")
+    print(json.dumps(rec))
 
 
 # ── story lifecycle ──────────────────────────────────────────────────────────
@@ -271,7 +354,7 @@ def cmd_submit(argv):
         die("flo check --light is red — fix before submitting; two of four agents are rate-limited")
     pkt = packet_of(sid)
     rec = detect_session(pkt["author"], wt)
-    if rec["id"]:
+    if rec["id"] and not ((pkt.get("sessions") or {}).get(pkt["author"]) or {}).get("id"):
         pkt.setdefault("sessions", {})[pkt["author"]] = rec
     # Hosted CI runs the full suite on this exact commit while the reviewers work, so the
     # gate can ask GitHub instead of re-running 25 minutes of pytest on a loaded workstation.
@@ -419,7 +502,8 @@ def cmd_gate(argv):
     need = fleet["policy"]["min_reviewers"]
     if len(counted) < need:
         fails.append(f"{len(counted)}/{need} reviews with ran_tests=true")
-    allowed = set(pkt["reviewers"]) | {s.get("to") for s in pkt.get("substitutions", [])}
+    allowed = (set(pkt["reviewers"]) | {s.get("to") for s in pkt.get("substitutions", [])}
+               | ({"opus"} if pkt["opus_final"] else set()))
     unexpected = {r["reviewer"] for r in counted} - allowed
     if unexpected:
         fails.append(f"unassigned reviewer(s) {sorted(unexpected)} — record a substitution in task.json")
@@ -1622,7 +1706,7 @@ COMMANDS = {
     "review": cmd_review, "gate": cmd_gate, "final": cmd_final, "escalate": cmd_escalate,
     "done": cmd_done, "design": cmd_design, "status": cmd_status, "budget": cmd_budget,
     "roadmap": cmd_roadmap, "score": cmd_score, "session": cmd_session, "board": cmd_board,
-    "reap": cmd_reap, "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "db": cmd_db, "up": cmd_up, "down": cmd_down,
+    "reap": cmd_reap, "account": cmd_account, "codex-usage": cmd_codex_usage, "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "db": cmd_db, "up": cmd_up, "down": cmd_down,
 }
 
 if __name__ == "__main__":

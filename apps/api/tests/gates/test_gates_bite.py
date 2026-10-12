@@ -1065,34 +1065,51 @@ def test_each_worktree_gets_its_own_test_database(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("kind", "tags", "author", "reviewers"),
+    ("kind", "tags", "busy", "author", "reviewers"),
     [
-        ("crud", ["money"], "codex", ["opus"]),  # a gated tag keeps the free author off it
-        ("crud", [], "opencode-nemotron", ["qwen"]),
-        ("ui", ["auth"], "codex", ["opus"]),
-        ("engine", [], "codex", ["qwen"]),  # engines never go to a free author
+        ("crud", ["money"], {}, "sonnet", ["codex"]),  # gated: codex reviews, opus_final adds Opus
+        ("crud", [], {}, "sonnet", ["codex"]),
+        ("crud", [], {"A": 1}, "sonnet", ["codex"]),  # one account full, the other still free
+        ("crud", [], {"A": 1, "B": 1}, "opencode-nemotron", ["codex"]),  # overflow lane
+        ("engine", [], {"A": 1, "B": 1}, "codex", ["qwen"]),  # codex never reviews itself
+        ("crud", ["money"], {"A": 1, "B": 1}, "codex", ["qwen"]),  # gated keeps the free author off
     ],
 )
-def test_assignment_scales_review_to_risk(
-    monkeypatch: pytest.MonkeyPatch, kind: str, tags: list[str], author: str, reviewers: list[str]
+def test_assignment_routes_authors_by_priority_and_free_slots(
+    monkeypatch: pytest.MonkeyPatch,
+    kind: str,
+    tags: list[str],
+    busy: dict[str, int],
+    author: str,
+    reviewers: list[str],
 ) -> None:
-    """Review is Opus's only on gated stories; everything else must still get one reviewer."""
+    """Sonnet authors while an account has a free slot; every story gets one reviewer that is
+    not its author, and a gated story also needs Opus."""
     flo = load_flo()
     story = {"id": "E99-S01", "t": "planted", "k": kind, "s": "M", "tags": tags}
     monkeypatch.setattr(
         flo, "roadmap", lambda: {"epics": [{"id": "E99", "milestone": "M9", "stories": [story]}]}
     )
     monkeypatch.setattr(flo, "state", lambda: {})
+    monkeypatch.setattr(flo, "worker_load", lambda name: busy)
     # The routing-relevant slice of agents/agents.yaml, inline: CI's venv has no PyYAML.
     gated = ["money", "auth", "security", "migration", "concurrency"]
     fleet = {
         "policy": {
             "min_reviewers": 1,
             "opus_final_required_tags": gated,
-            "ungated_reviewers": ["qwen", "kimi"],
+            "ungated_reviewers": ["codex", "qwen"],
+            "author_priority": ["sonnet", "opencode-nemotron", "codex"],
         },
         "agents": {
             "opus": {"metered": "rate", "roles": ["final_review"], "allowed_kinds": []},
+            "sonnet": {
+                "metered": "rate",
+                "roles": ["author"],
+                "allowed_kinds": ["engine", "crud", "ui"],
+                "accounts": {"A": "~/a", "B": "~/b"},
+                "max_workers_per_account": 1,
+            },
             "codex": {
                 "metered": "rate",
                 "roles": ["author", "review"],
@@ -1108,8 +1125,6 @@ def test_assignment_scales_review_to_risk(
             },
             "qwen": {"metered": "spend", "roles": ["author", "review"], "allowed_kinds": [],
                      "monthly_budget_usd": 20},
-            "kimi": {"metered": "spend", "roles": ["author", "review"], "allowed_kinds": [],
-                     "monthly_budget_usd": 20},
         },
     }
     monkeypatch.setattr(flo, "load_yaml", lambda path: fleet)
@@ -1117,7 +1132,39 @@ def test_assignment_scales_review_to_risk(
     out = flo.cmd_assign(["E99-S01"])
 
     assert (out["author"], out["reviewers"]) == (author, reviewers)
-    assert out["opus_final"] is (reviewers == ["opus"])
+    assert out["opus_final"] is bool(tags)
+
+
+def test_account_picker_balances_load_and_resumes_a_recorded_session(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    flo = load_flo()
+    task = tmp_path / "task.json"
+    task.write_text(json.dumps({"author": "sonnet"}))
+    cfg = {"accounts": {"A": "~/a", "B": "~/b"}, "max_workers_per_account": 2}
+    saved: dict[str, Any] = {"last_account": {"sonnet": "B"}}
+    load = {"A": 1}
+    monkeypatch.setattr(flo, "worktree_path", lambda sid: tmp_path)
+    monkeypatch.setattr(flo, "load_yaml", lambda path: {"agents": {"sonnet": cfg}})
+    monkeypatch.setattr(flo, "worker_load", lambda name: load)
+    monkeypatch.setattr(flo, "state", lambda: saved)
+    monkeypatch.setattr(flo, "save_state", saved.update)
+
+    flo.cmd_account(["E99-S01"])
+    kind, config_dir, session, account = capsys.readouterr().out.split()
+    # B is less loaded, even though it went last
+    assert (kind, config_dir, account) == ("new", str(Path("~/b").expanduser()), "B")
+    rec = json.loads(task.read_text())["sessions"]["sonnet"]
+    assert (rec["account"], rec["id"]) == ("B", session)
+
+    flo.cmd_account(["E99-S01"])  # a second launch of the same story resumes, never forks
+    assert capsys.readouterr().out.split() == [
+        "resume", str(Path("~/b").expanduser()), session, "B"]
+
+    task.write_text(json.dumps({"author": "sonnet"}))
+    load.update({"A": 2, "B": 2})
+    with pytest.raises(SystemExit):
+        flo.cmd_account(["E99-S01"])
 
 
 def test_run_check_leaves_a_configured_database_alone(
