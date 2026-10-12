@@ -987,7 +987,7 @@ epics:
           - E09-S03
           - E10-S05
           - E10-S06
-        st: in_progress
+        st: done
       - id: E09-S06
         t: Approval reserves budget and generates the sub-project, one transaction
         k: ledger

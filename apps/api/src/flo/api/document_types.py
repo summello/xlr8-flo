@@ -7,10 +7,15 @@ import psycopg
 
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
 from flo.kernel.tenancy.context import Scope
+from flo.modules.approvals.service import register_document_type
 from flo.modules.collaboration.service import DocumentAccess, register_document_access
 from flo.modules.identity.service import AuthorizationTarget, ScopeType
-from flo.modules.projects.service import ProjectService
-from flo.modules.requisitions.service import RequisitionService
+from flo.modules.projects.service import ProjectService, register_open_document_counter
+from flo.modules.requisitions.service import (
+    RequisitionAdapter,
+    RequisitionService,
+    open_document_count,
+)
 
 
 def requisition_access(
@@ -36,6 +41,8 @@ def project_access(
 
 
 def register_document_types() -> None:
+    register_document_type(RequisitionAdapter())
+    register_open_document_counter(open_document_count)
     register_document_access(
         DocumentAccess("requisition", "requisition.view", "requisition.edit", requisition_access)
     )

@@ -187,12 +187,24 @@ def test_submit_required_fields(project_db, field):
     assert exc.value.code == ErrorCode.VALIDATION_FAILED
 
 
-def test_open_document_hook_blocks(project_db, monkeypatch):
+def test_open_document_hook_blocks(project_db):
+    from flo.modules.projects.service import (
+        register_open_document_counter,
+        unregister_open_document_counter,
+    )
+
     row = project(project_db, "active")
-    monkeypatch.setattr("flo.modules.projects.lifecycle.open_documents", lambda id: 2)
-    with pytest.raises(ProblemError) as exc:
-        transition(project_db, row, "completed")
-    assert "2 open documents" in exc.value.detail
+
+    def counter(conn, scope, id):
+        return 2
+
+    register_open_document_counter(counter)
+    try:
+        with pytest.raises(ProblemError) as exc:
+            transition(project_db, row, "completed")
+        assert "2 open documents" in exc.value.detail
+    finally:
+        unregister_open_document_counter(counter)
 
 
 def test_available_matches_post(project_db):

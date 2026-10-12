@@ -137,6 +137,8 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261009_0045",
         "20261009_0046",
         "20261009_0047",
+        "20261009_0048",
+        "20261009_0049",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -1520,3 +1522,96 @@ def test_delegation_migration_roundtrip_and_overlap_guard(empty_database):
             )
             assert conn.execute("SELECT count(*) FROM approval_delegation").fetchone() == (0,)
         assert len(before) == 2
+
+
+def test_requisition_lifecycle_permissions_roundtrip_preserves_existing_data(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.org.schemas import BaseCurrencyPut, OrgUnitCreate
+    from flo.modules.org.service import OrgService
+    from flo.modules.requisitions.schemas import RequisitionCreate
+    from flo.modules.requisitions.service import RequisitionService
+    from tests.org.test_bootstrap import admin_id, create, settings
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261009_0044"], empty_database
+    )
+    table = next(r for r in revisions if r.revision == "20261009_0048")
+    permissions = next(r for r in revisions if r.revision == "20261009_0049")
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("requisition-lifecycle-migration"),
+    ):
+        tenant = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(tenant.org_id)
+        org = OrgService(conn, scope, actor)
+        org.set_base_currency(BaseCurrencyPut(currency="USD"))
+        bu = org.create_unit(OrgUnitCreate(code="BU", name="BU", kind="bu"))
+        row = RequisitionService(conn, scope, actor, settings(conn)).create(
+            RequisitionCreate(title="Preserve", bu_id=bu.id)
+        )
+        # The catalogue has the new codes, so model a pre-upgrade tenant explicitly.
+        conn.execute(
+            "DELETE FROM role_permission WHERE permission_code IN "
+            "('requisition.submit','requisition.withdraw','requisition.cancel')"
+        )
+        conn.execute(
+            "DELETE FROM permission WHERE code IN "
+            "('requisition.submit','requisition.withdraw','requisition.cancel')"
+        )
+        before = conn.execute("SELECT id,title,status,version FROM requisition").fetchall()
+        grants = conn.execute(
+            "SELECT org_id,role_id,permission_code FROM role_permission ORDER BY 1,2,3"
+        ).fetchall()
+        for _ in range(2):
+            table.upgrade(conn)
+            permissions.upgrade(conn)
+            with tenant_transaction(conn, scope):
+                codes = {
+                    r[0]
+                    for r in conn.execute(
+                        "SELECT rp.permission_code FROM role_permission rp JOIN role r "
+                        "ON r.id=rp.role_id WHERE r.org_id=%s AND r.code='requestor'",
+                        (tenant.org_id,),
+                    ).fetchall()
+                }
+                assert {"requisition.submit", "requisition.withdraw"} <= codes
+                assert "requisition.cancel" not in codes
+                conn.execute(
+                    "INSERT INTO requisition_status_event(org_id,requisition_id,from_status,"
+                    "to_status,actor_id,funding_round) VALUES(%s,%s,'draft','withdrawn',%s,0)",
+                    (tenant.org_id, row.id, actor),
+                )
+            assert (
+                conn.execute("SELECT id,title,status,version FROM requisition").fetchall() == before
+            )
+            assert conn.execute("SELECT count(*) FROM requisition_status_event").fetchone() == (1,)
+            saved_events = conn.execute("SELECT * FROM requisition_status_event").fetchall()
+            saved_grants = conn.execute("SELECT * FROM role_permission ORDER BY 1,2,3").fetchall()
+            with pytest.raises(RuntimeError, match="migration rollback plant"), conn.transaction():
+                permissions.downgrade(conn)
+                table.downgrade(conn)
+                table.upgrade(conn)
+                permissions.upgrade(conn)
+                raise RuntimeError("migration rollback plant")
+            assert conn.execute("SELECT * FROM requisition_status_event").fetchall() == saved_events
+            assert (
+                conn.execute("SELECT * FROM role_permission ORDER BY 1,2,3").fetchall()
+                == saved_grants
+            )
+            permissions.downgrade(conn)
+            table.downgrade(conn)
+            assert (
+                conn.execute("SELECT id,title,status,version FROM requisition").fetchall() == before
+            )
+            assert (
+                conn.execute(
+                    "SELECT org_id,role_id,permission_code FROM role_permission ORDER BY 1,2,3"
+                ).fetchall()
+                == grants
+            )
+        table.upgrade(conn)
+        permissions.upgrade(conn)

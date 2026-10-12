@@ -352,6 +352,25 @@
         "title": "ApprovalExplanation",
         "type": "object"
       },
+      "ApprovalRead": {
+        "properties": {
+          "instance_id": {
+            "format": "uuid",
+            "title": "Instance Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "instance_id",
+          "status"
+        ],
+        "title": "ApprovalRead",
+        "type": "object"
+      },
       "AttachmentRead": {
         "properties": {
           "deleted_at": {
@@ -6627,6 +6646,16 @@
       },
       "RequisitionRead": {
         "properties": {
+          "approval": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApprovalRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "bu_id": {
             "format": "uuid",
             "title": "Bu Id",
@@ -6770,6 +6799,16 @@
             "title": "Requester Id",
             "type": "string"
           },
+          "reservation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReservationRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "standalone": {
             "title": "Standalone",
             "type": "boolean"
@@ -6847,6 +6886,118 @@
           "expired"
         ],
         "type": "string"
+      },
+      "RequisitionTransitionAvailable": {
+        "properties": {
+          "allowed": {
+            "title": "Allowed",
+            "type": "boolean"
+          },
+          "blocked_reasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Blocked Reasons",
+            "type": "array"
+          },
+          "to": {
+            "$ref": "#/components/schemas/RequisitionStatus"
+          }
+        },
+        "required": [
+          "to",
+          "allowed",
+          "blocked_reasons"
+        ],
+        "title": "RequisitionTransitionAvailable",
+        "type": "object"
+      },
+      "RequisitionTransitionCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "to": {
+            "$ref": "#/components/schemas/RequisitionStatus"
+          }
+        },
+        "required": [
+          "to"
+        ],
+        "title": "RequisitionTransitionCreate",
+        "type": "object"
+      },
+      "ReservationRead": {
+        "properties": {
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "entry_id": {
+            "title": "Entry Id",
+            "type": "integer"
+          },
+          "funding_round": {
+            "title": "Funding Round",
+            "type": "integer"
+          },
+          "project_available": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Available"
+          },
+          "released": {
+            "title": "Released",
+            "type": "string"
+          },
+          "remaining": {
+            "title": "Remaining",
+            "type": "string"
+          },
+          "reserved": {
+            "title": "Reserved",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entry_id",
+          "reserved",
+          "released",
+          "remaining",
+          "currency",
+          "funding_round",
+          "project_available"
+        ],
+        "title": "ReservationRead",
+        "type": "object"
       },
       "RiskCreate": {
         "additionalProperties": false,
@@ -7306,6 +7457,92 @@
         "title": "RoleApprovers",
         "type": "object"
       },
+      "RoutePreview": {
+        "additionalProperties": false,
+        "properties": {
+          "problems": {
+            "items": {
+              "$ref": "#/components/schemas/RouteProblem"
+            },
+            "title": "Problems",
+            "type": "array"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/RouteStep"
+            },
+            "title": "Steps",
+            "type": "array"
+          },
+          "workflow_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workflow Version"
+          },
+          "workflow_version_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workflow Version Id"
+          }
+        },
+        "required": [
+          "workflow_version_id",
+          "workflow_version",
+          "steps",
+          "problems"
+        ],
+        "title": "RoutePreview",
+        "type": "object"
+      },
+      "RouteProblem": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "no_workflow",
+              "no_eligible_approver",
+              "route_blocked"
+            ],
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "step_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step Label"
+          }
+        },
+        "required": [
+          "code",
+          "step_label",
+          "message"
+        ],
+        "title": "RouteProblem",
+        "type": "object"
+      },
       "RouteStep": {
         "additionalProperties": false,
         "properties": {
@@ -7521,6 +7758,87 @@
         "title": "SettingSource",
         "type": "object"
       },
+      "StatusEventRead": {
+        "properties": {
+          "actor_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Email"
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "decision_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Id"
+          },
+          "from_status": {
+            "$ref": "#/components/schemas/RequisitionStatus"
+          },
+          "funding_round": {
+            "title": "Funding Round",
+            "type": "integer"
+          },
+          "ledger_entry_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ledger Entry Id"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "system": {
+            "title": "System",
+            "type": "boolean"
+          },
+          "to_status": {
+            "$ref": "#/components/schemas/RequisitionStatus"
+          }
+        },
+        "required": [
+          "at",
+          "from_status",
+          "to_status",
+          "actor_email",
+          "system",
+          "reason",
+          "funding_round",
+          "ledger_entry_id",
+          "decision_id"
+        ],
+        "title": "StatusEventRead",
+        "type": "object"
+      },
       "SubmissionCheck": {
         "properties": {
           "funding": {
@@ -7543,6 +7861,16 @@
           "ready": {
             "title": "Ready",
             "type": "boolean"
+          },
+          "route": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoutePreview"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -18064,6 +18392,79 @@
         ]
       }
     },
+    "/api/v1/requisitions/{id}/events": {
+      "get": {
+        "operationId": "requisition_events_api_v1_requisitions__id__events_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/StatusEventRead"
+                  },
+                  "title": "Response Requisition Events Api V1 Requisitions  Id  Events Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Requisition Events",
+        "tags": [
+          "requisitions"
+        ]
+      }
+    },
     "/api/v1/requisitions/{id}/lines": {
       "get": {
         "operationId": "get_lines_api_v1_requisitions__id__lines_get",
@@ -18581,6 +18982,174 @@
           }
         },
         "summary": "Submission Check",
+        "tags": [
+          "requisitions"
+        ]
+      }
+    },
+    "/api/v1/requisitions/{id}/transitions": {
+      "post": {
+        "operationId": "transition_requisition_api_v1_requisitions__id__transitions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequisitionTransitionCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequisitionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Transition Requisition",
+        "tags": [
+          "requisitions"
+        ]
+      }
+    },
+    "/api/v1/requisitions/{id}/transitions/available": {
+      "get": {
+        "operationId": "available_transitions_api_v1_requisitions__id__transitions_available_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RequisitionTransitionAvailable"
+                  },
+                  "title": "Response Available Transitions Api V1 Requisitions  Id  Transitions Available Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Available Transitions",
         "tags": [
           "requisitions"
         ]

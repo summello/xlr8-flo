@@ -1,5 +1,7 @@
 """Draft header contracts; currency and estimate are derived."""
 
+from __future__ import annotations
+
 import re
 from datetime import date, datetime
 from decimal import Decimal
@@ -9,6 +11,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError
+from flo.modules.approvals.schemas import RoutePreview
 
 type RequisitionStatus = Literal[
     "draft",
@@ -111,6 +114,8 @@ class RequisitionRead(BaseModel):
     decided_at: datetime | None
     created_at: datetime
     updated_at: datetime
+    reservation: ReservationRead | None = None
+    approval: ApprovalRead | None = None
 
 
 class RequisitionPage(BaseModel):
@@ -141,7 +146,7 @@ class LineCreate(BaseModel):
         return value
 
     @model_validator(mode="after")
-    def catalogue_or_typed(self) -> "LineCreate":
+    def catalogue_or_typed(self) -> LineCreate:
         typed = ("line_type", "description", "uom_code", "category_code")
         if self.catalogue_item_id is not None:
             if any(getattr(self, field) is not None for field in typed):
@@ -269,6 +274,7 @@ class SubmissionCheck(BaseModel):
     ready: bool
     problems: list[SubmissionProblem]
     funding: FundingCheck | None
+    route: RoutePreview | None = None
 
 
 class SubmissionInvalid(ProblemError):
@@ -281,3 +287,54 @@ class SubmissionInvalid(ProblemError):
             checks={"problem": "submission_invalid"},
             errors=tuple(ProblemFieldError(field=p.field, message=p.message) for p in problems),
         )
+
+
+class RequisitionTransitionCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    to: RequisitionStatus
+    reason: str | None = None
+    note: str | None = Field(default=None, min_length=1, max_length=1000)
+
+    @model_validator(mode="after")
+    def submission_note(self) -> RequisitionTransitionCreate:
+        if self.note is not None and self.to != "approval_pending":
+            raise invalid("note", "Notes are only accepted when submitting.")
+        if self.note is not None and not self.note.strip():
+            raise invalid("note", "Enter a plain-text note.")
+        return self
+
+
+class RequisitionTransitionAvailable(BaseModel):
+    to: RequisitionStatus
+    allowed: bool
+    blocked_reasons: list[str]
+
+
+class StatusEventRead(BaseModel):
+    at: datetime
+    from_status: RequisitionStatus
+    to_status: RequisitionStatus
+    actor_email: str | None
+    system: bool
+    reason: str | None
+    funding_round: int
+    ledger_entry_id: int | None
+    decision_id: UUID | None
+
+
+class ReservationRead(BaseModel):
+    entry_id: int
+    reserved: str
+    released: str
+    remaining: str
+    currency: str
+    funding_round: int
+    project_available: str | None
+
+
+class ApprovalRead(BaseModel):
+    instance_id: UUID
+    status: str
+
+
+RequisitionRead.model_rebuild()

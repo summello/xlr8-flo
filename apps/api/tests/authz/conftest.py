@@ -106,6 +106,9 @@ def authorization_database() -> Iterator[AuthorizationDatabase]:
     audit_migration.upgrade(connection)
     rbac_migration.upgrade(connection)
     load_migration(
+        ROOT / "migrations/20261009_0049_requisition_permissions.py", "req_permissions"
+    ).upgrade(connection)
+    load_migration(
         ROOT / "migrations/20261009_0038_workflow_permissions.py", "authz_workflow_permissions"
     ).upgrade(connection)
     load_migration(

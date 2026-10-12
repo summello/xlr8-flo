@@ -5,9 +5,11 @@ from decimal import Decimal
 from typing import cast, get_args
 from uuid import UUID
 
+import psycopg
 from psycopg.types.json import Jsonb
 
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError, conflict
+from flo.kernel.tenancy.context import Scope
 from flo.modules.projects.models import ProjectRepository
 from flo.modules.projects.schemas import ProjectStatus, TransitionAvailable, TransitionCreate
 
@@ -34,9 +36,22 @@ def invalid(field: str, message: str, label: str = "invalid_project") -> Problem
     )
 
 
-def open_documents(project_id: UUID) -> int:
-    """M1 hook; requisitions and POs supply open-document counts in M2/M3."""
-    return 0
+_open_document_counters: list[
+    Callable[[psycopg.Connection[tuple[object, ...]], Scope, UUID], int]
+] = []
+
+
+def register_open_document_counter(
+    fn: Callable[[psycopg.Connection[tuple[object, ...]], Scope, UUID], int],
+) -> None:
+    if fn not in _open_document_counters:
+        _open_document_counters.append(fn)
+
+
+def unregister_open_document_counter(
+    fn: Callable[[psycopg.Connection[tuple[object, ...]], Scope, UUID], int],
+) -> None:
+    _open_document_counters.remove(fn)
 
 
 class Lifecycle:
@@ -68,7 +83,10 @@ class Lifecycle:
         blocked = {
             "reserved": str(balance[0]) if balance is not None else "0",
             "committed": str(balance[1]) if balance is not None else "0",
-            "open_documents": open_documents(project_id),
+            "open_documents": sum(
+                fn(self.repo.connection, self.repo.scope, project_id)
+                for fn in _open_document_counters
+            ),
             "currency": project["currency"],
         }
         return project, blocked

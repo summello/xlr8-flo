@@ -27,6 +27,9 @@ from tests.projects.conftest import project_db as project_db
 
 MIGRATION = load_migration(ROOT / "migrations/20260826_0022_reservation_release.py", "release")
 LINEAGE = load_migration(ROOT / "migrations/20260826_0023_ledger_lineage.py", "release_lineage")
+LIFECYCLE = load_migration(
+    ROOT / "migrations/20261009_0048_requisition_lifecycle.py", "release_requisition_lifecycle"
+)
 
 
 def reservation(db, project, amount=Decimal(100)):
@@ -218,8 +221,12 @@ def test_migration_preserves_rows_and_append_only(posting_db, project):
         "DELETE FROM ledger_entry",
         "TRUNCATE ledger_entry",
     ]:
-        with pytest.raises(psycopg.errors.ObjectNotInPrerequisiteState):
-            db.connection.execute(statement)
+        with db.connection.transaction(force_rollback=True):
+            # Remove only the later FK dependents so this plant reaches the ledger guard.
+            if statement == "TRUNCATE ledger_entry":
+                LIFECYCLE.downgrade(db.connection)
+            with pytest.raises(psycopg.errors.ObjectNotInPrerequisiteState):
+                db.connection.execute(statement)
 
 
 def test_link_constraint_and_migration_preflight_reject_violation(posting_db, project):
@@ -300,3 +307,20 @@ def test_concurrent_reserves_use_atomic_overspend_guard(posting_db, project):
     assert results.count("insufficient") == 1
     assert balance(db, project).reserved == Decimal(60)
     assert balance(db, project).available == Decimal(40)
+
+
+def test_reservation_state_reads_original_and_remaining_scoped(posting_db, project):
+    from flo.modules.budget.schemas import ReservationState
+    from flo.modules.budget.service import reservation_remaining
+
+    db = posting_db
+    allocation = post(db, project)
+    entry = reservation(db, project)
+    release(db, entry, amount=Decimal(40))
+    assert reservation_remaining(db.connection, Scope(db.org_a), entry.id) == ReservationState(
+        project.id, Decimal(100), Decimal(60), "USD"
+    )
+    for scope, id in [(Scope(db.org_b), entry.id), (Scope(db.org_a), allocation.id)]:
+        with pytest.raises(ProblemError) as error:
+            reservation_remaining(db.connection, scope, id)
+        assert error.value.code == ErrorCode.NOT_FOUND

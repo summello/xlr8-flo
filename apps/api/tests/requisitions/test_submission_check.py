@@ -379,6 +379,7 @@ def test_returned_draft_reserved_remaining_and_need_override(lines_db):
         ledger_account_code="L",
     )
     entry = reserve(db[0], Scope(db[1]), amount=Decimal(80), idempotency_key=uuid4().hex, **args)
+    change(db, "requisition", row.id, "reservation_entry_id=%s,funding_round=1", (entry.id,))
     release_reservation(
         db[0],
         Scope(db[1]),
@@ -492,7 +493,7 @@ def test_resubmit_need_fifty_thousand_against_sixty_thousand(lines_db):
     row, _ = complete(db, p, "150000")
     with tenant_transaction(db[0], Scope(db[1])):
         db[0].execute("UPDATE project_balance SET allocated=160000 WHERE project_id=%s", (p.id,))
-    reserve(
+    entry = reserve(
         db[0],
         Scope(db[1]),
         project_id=p.id,
@@ -506,6 +507,7 @@ def test_resubmit_need_fifty_thousand_against_sixty_thousand(lines_db):
         ledger_account_code="L",
         idempotency_key=uuid4().hex,
     )
+    change(db, "requisition", row.id, "reservation_entry_id=%s,funding_round=1", (entry.id,))
     result = check(db, row, lock=True, need=Decimal(50000))
     assert result.ready and result.funding.available == "60000.0000"
     assert result.funding.already_reserved == "100000.0000"

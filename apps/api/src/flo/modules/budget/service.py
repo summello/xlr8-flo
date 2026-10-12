@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from dataclasses import asdict
+from decimal import Decimal
 from typing import cast
 from uuid import UUID
 
@@ -37,21 +38,25 @@ from flo.modules.budget.reservations import (
 from flo.modules.budget.reservations import (
     reserve as reserve,
 )
+
+# The module boundary (AGENTS.md 3.3): other modules import these from here, never from
+# ledger, postings, reservations, transfers or queries directly.
 from flo.modules.budget.schemas import (
     AdjustmentCreate,
     AllocationCreate,
     AllocationResult,
     BalanceRead,
     LedgerEntryRead,
+    ReservationState,
 )
 from flo.modules.budget.transfers import post_legs
 from flo.modules.budget.transfers import transfer as transfer
 from flo.modules.org.service import OrgService
 from flo.modules.projects.service import ProjectService
 
-# The module boundary (AGENTS.md 3.3): other modules import these from here, never from
-# ledger, postings, reservations, transfers or queries directly.
 __all__ = [
+    "ReservationState",
+    "reservation_remaining",
     "InsufficientBudget",
     "adjust",
     "aggregate_balance",
@@ -313,3 +318,25 @@ def lock_balance(
         if balance is None:
             raise ProblemError(ErrorCode.NOT_FOUND)
         return balance
+
+
+def reservation_remaining(
+    conn: psycopg.Connection[tuple[object, ...]], scope: Scope, reservation_entry_id: int
+) -> ReservationState:
+    """Read one scoped reservation and its live remainder, including released rounds."""
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        row = (
+            LedgerRepository(conn, scope)
+            .execute(
+                "SELECT e.project_id,e.amount,v.remaining,e.currency FROM ledger_entry e "
+                "JOIN reservation_remaining v ON v.org_id=e.org_id AND v.reservation_entry_id=e.id "
+                "WHERE e.org_id=%(org_id)s AND e.id=%(id)s AND e.entry_type='reservation'",
+                {"id": reservation_entry_id},
+            )
+            .fetchone()
+        )
+        if row is None:
+            raise ProblemError(ErrorCode.NOT_FOUND)
+        return ReservationState(
+            cast(UUID, row[0]), cast(Decimal, row[1]), cast(Decimal, row[2]), str(row[3])
+        )

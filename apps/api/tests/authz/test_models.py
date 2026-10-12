@@ -62,6 +62,9 @@ EXPECTED_PERMISSIONS = {
     "record.read",
     "report.view",
     "requisition.approve",
+    "requisition.submit",
+    "requisition.withdraw",
+    "requisition.cancel",
     "requisition.create",
     "requisition.edit",
     "requisition.view",
@@ -93,9 +96,9 @@ def test_baseline_role_and_permission_catalogs_are_complete_by_name() -> None:
 
 
 def test_every_command_palette_permission_exists_in_the_server_catalog() -> None:
-    registry = (
-        ROOT / "apps" / "web" / "src" / "components" / "command" / "registry.ts"
-    ).read_text(encoding="utf-8")
+    registry = (ROOT / "apps" / "web" / "src" / "components" / "command" / "registry.ts").read_text(
+        encoding="utf-8"
+    )
     declared = set(re.findall(r'requiredPermissions: \["([a-z0-9_.]+)"\]', registry))
     assert declared == {
         "organization.admin",

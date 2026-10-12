@@ -31,6 +31,18 @@ COVERED = {
     ): "approvals/test_explanation.py::test_explanation_foreign_tenant_admin_and_concealment",
     (
         "POST",
+        "/api/v1/requisitions/{id}/transitions",
+    ): "requisitions/test_lifecycle.py::test_foreign_lifecycle_routes",
+    (
+        "GET",
+        "/api/v1/requisitions/{id}/events",
+    ): "requisitions/test_lifecycle.py::test_foreign_lifecycle_routes",
+    (
+        "GET",
+        "/api/v1/requisitions/{id}/transitions/available",
+    ): "requisitions/test_lifecycle.py::test_foreign_lifecycle_routes",
+    (
+        "POST",
         "/api/v1/approvals/tasks/{task_id}/decisions",
     ): "approvals/test_decisions.py::test_approval_routes_foreign_tenant",
     (

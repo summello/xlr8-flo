@@ -149,6 +149,9 @@ PERMISSION_CODES: tuple[PermissionCode, ...] = tuple(
         "record.read",
         "report.view",
         "requisition.approve",
+        "requisition.submit",
+        "requisition.withdraw",
+        "requisition.cancel",
         "requisition.create",
         "requisition.edit",
         "requisition.view",
@@ -220,6 +223,8 @@ BASELINE_ROLE_PERMISSIONS: dict[RoleCode, frozenset[PermissionCode]] = {
         for value in (
             "project.view",
             "record.read",
+            "requisition.submit",
+            "requisition.withdraw",
             "requisition.create",
             "requisition.edit",
             "requisition.view",

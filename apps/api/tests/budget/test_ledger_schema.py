@@ -23,6 +23,9 @@ from tests.projects.conftest import body, service, unit
 from tests.projects.conftest import project_db as project_db
 
 MIGRATION = load_migration(ROOT / "migrations/20260826_0019_ledger.py", "ledger_schema")
+LIFECYCLE = load_migration(
+    ROOT / "migrations/20261009_0048_requisition_lifecycle.py", "ledger_requisition_lifecycle"
+)
 
 
 @pytest.fixture
@@ -71,25 +74,30 @@ def test_append_only_rejects_mutation(ledger_db, tenant_database, operation, own
     db = ledger_db
     insert(db, entry(db))
     role = tenant_database.owner
-    if owner:
-        db.connection.execute(
-            sql.SQL("ALTER TABLE ledger_entry OWNER TO {}").format(sql.Identifier(role))
-        )
-        db.connection.execute(sql.SQL("SET ROLE {}").format(sql.Identifier(role)))
-    try:
-        with pytest.raises(psycopg.errors.ObjectNotInPrerequisiteState) as failure:
-            with tenant_transaction(db.connection, Scope(db.org_a)):
-                db.connection.execute(
-                    {
-                        "UPDATE": "UPDATE ledger_entry SET reason = 'changed'",
-                        "DELETE": "DELETE FROM ledger_entry",
-                        "TRUNCATE": "TRUNCATE ledger_entry",
-                    }[operation]
-                )
-        assert failure.value.sqlstate == "55000"
-    finally:
-        db.connection.execute("RESET ROLE")
-        db.connection.execute("ALTER TABLE ledger_entry OWNER TO CURRENT_USER")
+    with db.connection.transaction(force_rollback=True):
+        # Exercise the ledger's own truncate trigger at its schema revision, rather than
+        # a later requisition FK (or a cascading status-history truncate trigger).
+        if operation == "TRUNCATE":
+            LIFECYCLE.downgrade(db.connection)
+        if owner:
+            db.connection.execute(
+                sql.SQL("ALTER TABLE ledger_entry OWNER TO {}").format(sql.Identifier(role))
+            )
+            db.connection.execute(sql.SQL("SET ROLE {}").format(sql.Identifier(role)))
+        try:
+            with pytest.raises(psycopg.errors.ObjectNotInPrerequisiteState) as failure:
+                with tenant_transaction(db.connection, Scope(db.org_a)):
+                    db.connection.execute(
+                        {
+                            "UPDATE": "UPDATE ledger_entry SET reason = 'changed'",
+                            "DELETE": "DELETE FROM ledger_entry",
+                            "TRUNCATE": "TRUNCATE ledger_entry",
+                        }[operation]
+                    )
+            assert failure.value.sqlstate == "55000"
+        finally:
+            db.connection.execute("RESET ROLE")
+            db.connection.execute("ALTER TABLE ledger_entry OWNER TO CURRENT_USER")
 
 
 @pytest.mark.parametrize(
@@ -272,6 +280,7 @@ def test_up_down_preserves_preexisting_rows(project_db):
         lineage_migration = load_migration(
             ROOT / "migrations/20260826_0023_ledger_lineage.py", "lineage_preserve"
         )
+        LIFECYCLE.downgrade(db.connection)
         lineage_migration.downgrade(db.connection)
         release_migration.downgrade(db.connection)
         balance_migration.downgrade(db.connection)
@@ -306,6 +315,7 @@ def test_up_down_preserves_preexisting_rows(project_db):
         balance_migration.upgrade(db.connection)
         release_migration.upgrade(db.connection)
         lineage_migration.upgrade(db.connection)
+        LIFECYCLE.upgrade(db.connection)
 
 
 def entry_without_create(db):

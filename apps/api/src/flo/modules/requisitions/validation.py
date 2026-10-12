@@ -12,7 +12,7 @@ from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.money import currency_exponent, quantize
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
-from flo.modules.budget.service import get_balance, lock_balance
+from flo.modules.budget.service import get_balance, lock_balance, reservation_remaining
 from flo.modules.org.service import MasterCodeUnusable, OrgService, assert_usable, today
 from flo.modules.projects.service import ProjectService, depth_of, is_requisition_generated
 from flo.modules.requisitions.models import RequisitionRepository
@@ -56,6 +56,7 @@ def check_submission(
             "currency",
             "estimate",
             "status",
+            "reservation_entry_id",
         )
         row = repo.execute(
             "SELECT " + ",".join(fields) + " FROM requisition "
@@ -204,17 +205,14 @@ def check_submission(
         funding = None
         if not standalone and project_id is not None:
             balance = get_balance(conn, scope, project_id)
-            # ponytail: source-tagged remaining view until E09-S05 exports ReservationState;
-            # replace this scoped read with that budget service when it lands.
-            held = repo.execute(
-                "SELECT COALESCE(sum(v.remaining),0) FROM reservation_remaining v "
-                "JOIN ledger_entry e ON e.org_id=v.org_id AND e.id=v.reservation_entry_id "
-                "WHERE e.org_id=%(org_id)s AND e.source_type='requisition' "
-                "AND e.source_id=%(id)s AND e.project_id=%(project)s",
-                {"id": requisition_id, "project": project_id},
-            ).fetchone()
-            assert held is not None
-            reserved = cast(Decimal, held[0])
+            held = (
+                reservation_remaining(conn, scope, cast(int, values["reservation_entry_id"]))
+                if values["reservation_entry_id"] is not None
+                else None
+            )
+            reserved = (
+                held.remaining if held is not None and held.project_id == project_id else Decimal(0)
+            )
             estimate = cast(Decimal, values["estimate"])
             remaining_need = estimate - reserved if need is None else need
             after = balance.available - remaining_need

@@ -2709,6 +2709,38 @@
       },
       "recap": "Added GET /approvals/instances/{id}/explanation: passed steps come from the recorded route and decision-time members, the open step from live membership, with plain-language bases, exclusions and the workflow binding reason. Non-readers get 404, approval.admin 200.",
       "title": "Routing explainability: which rule matched and why this approver"
+    },
+    {
+      "story": "E09-S05",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "concurrency",
+        "migration",
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a13062-4adc-7ec0-8215-28f750eedfe0",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "4861b1f3-4497-4dc5-9e52-282fcf7446ab",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented atomic submit/reserve, requester withdraw and administrator cancel with immutable status history, permission-scoped reservation cards and closure hooks. Verified both final-approve/withdraw lock orders while retaining the E09-S06 approval-effects placeholder.",
+      "title": "Requisition lifecycle state machine"
     }
   ]
 }

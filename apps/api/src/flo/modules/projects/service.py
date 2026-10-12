@@ -30,6 +30,12 @@ from flo.modules.org.service import (
 )
 from flo.modules.projects.hierarchy import Hierarchy
 from flo.modules.projects.lifecycle import Lifecycle, invalid
+from flo.modules.projects.lifecycle import (
+    register_open_document_counter as register_open_document_counter,
+)
+from flo.modules.projects.lifecycle import (
+    unregister_open_document_counter as unregister_open_document_counter,
+)
 from flo.modules.projects.models import COLUMNS, FIELDS, ProjectRepository
 from flo.modules.projects.risk_indicators import risk_indicators as compute_risk_indicators
 from flo.modules.projects.risks import Risks
@@ -718,6 +724,8 @@ def get_by_external_ref(
 
 
 __all__ = [
+    "register_open_document_counter",
+    "unregister_open_document_counter",
     "ProjectService",
     "get_status",
     "ancestors",

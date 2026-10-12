@@ -30,9 +30,18 @@ from flo.modules.requisitions.schemas import (
     RequisitionRead,
     RequisitionSort,
     RequisitionStatus,
+    RequisitionTransitionAvailable,
+    RequisitionTransitionCreate,
+    StatusEventRead,
     SubmissionCheck,
 )
-from flo.modules.requisitions.service import RequisitionService, check_submission
+from flo.modules.requisitions.service import (
+    RequisitionService,
+    available,
+    check_submission,
+    events,
+    routing_check,
+)
 
 router = APIRouter(prefix="/api/v1/requisitions", tags=["requisitions"])
 
@@ -145,9 +154,16 @@ def lookups(
 
 @router.get("/{id}", response_model=RequisitionRead)
 def get_requisition(
-    id: UUID, context: ReadContext, connection: Connection, response: Response
+    id: UUID, context: ReadContext, connection: Connection, response: Response, request: Request
 ) -> RequisitionRead:
-    row = RequisitionService(connection, current_scope(), context.user_id).get(id)
+    row = RequisitionService(connection, current_scope(), context.user_id).detail(
+        id,
+        lambda project_id: permits(
+            request,
+            "budget.view",
+            cast(TargetProtocol, AuthorizationTarget(ScopeType.PROJECT, project_id)),
+        ),
+    )
     response.headers["ETag"] = f'"{row.version}"'
     return row
 
@@ -169,6 +185,11 @@ def patch_requisition(
         lambda project_id: permits(
             request,
             "requisition.create",
+            cast(TargetProtocol, AuthorizationTarget(ScopeType.PROJECT, project_id)),
+        ),
+        can_view_budget=lambda project_id: permits(
+            request,
+            "budget.view",
             cast(TargetProtocol, AuthorizationTarget(ScopeType.PROJECT, project_id)),
         ),
     )
@@ -258,4 +279,55 @@ def delete_line(
 
 @router.get("/{id}/submission-check", response_model=SubmissionCheck)
 def submission_check(id: UUID, context: ReadContext, connection: Connection) -> SubmissionCheck:
-    return check_submission(connection, current_scope(), id, lock=False)
+    return routing_check(
+        connection,
+        current_scope(),
+        id,
+        check_submission(connection, current_scope(), id, lock=False),
+    )
+
+
+@router.post("/{id}/transitions", response_model=RequisitionRead)
+def transition_requisition(
+    id: UUID,
+    body: RequisitionTransitionCreate,
+    context: ReadContext,
+    connection: Connection,
+    request: Request,
+    response: Response,
+    version: Annotated[str | None, Header(alias="If-Match")] = None,
+) -> RequisitionRead:
+    # Resolve permission at the locked record's current project, including a concurrent draft move.
+    row = RequisitionService(connection, current_scope(), context.user_id).transition(
+        id,
+        body,
+        version,
+        lambda permission: permits(request, permission, requisition_target(id, connection)),
+        lambda project_id: permits(
+            request,
+            "budget.view",
+            cast(TargetProtocol, AuthorizationTarget(ScopeType.PROJECT, project_id)),
+        ),
+    )
+    response.headers["ETag"] = f'"{row.version}"'
+    return row
+
+
+@router.get("/{id}/transitions/available", response_model=list[RequisitionTransitionAvailable])
+def available_transitions(
+    id: UUID, context: ReadContext, connection: Connection, request: Request
+) -> list[RequisitionTransitionAvailable]:
+    return available(
+        connection,
+        current_scope(),
+        id,
+        context.user_id,
+        lambda permission: permits(request, permission, requisition_target(id, connection)),
+    )
+
+
+@router.get("/{id}/events", response_model=list[StatusEventRead])
+def requisition_events(
+    id: UUID, context: ReadContext, connection: Connection
+) -> list[StatusEventRead]:
+    return events(connection, current_scope(), id)

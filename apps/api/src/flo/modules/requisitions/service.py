@@ -24,7 +24,17 @@ from flo.modules.org.service import (
     today,
 )
 from flo.modules.projects.service import ProjectService, is_requisition_generated
+from flo.modules.requisitions.approval import RequisitionAdapter as RequisitionAdapter
+from flo.modules.requisitions.approval import open_document_count as open_document_count
 from flo.modules.requisitions.catalogue import record_event, record_requested
+from flo.modules.requisitions.lifecycle import assert_completable as assert_completable
+from flo.modules.requisitions.lifecycle import available as available
+from flo.modules.requisitions.lifecycle import events as events
+from flo.modules.requisitions.lifecycle import (
+    register_downstream_counter as register_downstream_counter,
+)
+from flo.modules.requisitions.lifecycle import routing_check as routing_check
+from flo.modules.requisitions.lifecycle import transition as transition
 from flo.modules.requisitions.models import READ_FIELDS, READ_SQL, RequisitionRepository
 from flo.modules.requisitions.schemas import (
     Direction,
@@ -34,12 +44,21 @@ from flo.modules.requisitions.schemas import (
     RequisitionRead,
     RequisitionSort,
     RequisitionStatus,
+    RequisitionTransitionCreate,
     invalid,
 )
 from flo.modules.requisitions.schemas import SubmissionInvalid as SubmissionInvalid
 from flo.modules.requisitions.validation import check_submission as check_submission
 
 __all__ = [
+    "RequisitionAdapter",
+    "open_document_count",
+    "transition",
+    "available",
+    "events",
+    "routing_check",
+    "assert_completable",
+    "register_downstream_counter",
     "RequisitionService",
     "SubmissionInvalid",
     "check_submission",
@@ -74,6 +93,58 @@ class RequisitionService:
         if row is None:
             raise ProblemError(ErrorCode.NOT_FOUND)
         return RequisitionRead.model_validate(dict(zip(READ_FIELDS, row, strict=True)))
+
+    def detail(self, id: UUID, can_view_budget: Callable[[UUID], bool]) -> RequisitionRead:
+        from flo.modules.budget.service import get_balance, reservation_remaining
+        from flo.modules.requisitions.lifecycle import read_row
+        from flo.modules.requisitions.schemas import ApprovalRead, ReservationRead
+
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            result = self._get(id)
+            row = read_row(self.repo, id)
+            if row["reservation_entry_id"] is not None:
+                held = reservation_remaining(
+                    self.connection, self.scope, cast(int, row["reservation_entry_id"])
+                )
+                result.reservation = ReservationRead(
+                    entry_id=cast(int, row["reservation_entry_id"]),
+                    reserved=format(held.amount, ".4f"),
+                    released=format(held.amount - held.remaining, ".4f"),
+                    remaining=format(held.remaining, ".4f"),
+                    currency=held.currency,
+                    funding_round=cast(int, row["funding_round"]),
+                    project_available=format(
+                        get_balance(self.connection, self.scope, held.project_id).available, ".4f"
+                    )
+                    if can_view_budget(held.project_id)
+                    else None,
+                )
+            instance = self.repo.execute(
+                "SELECT id,status FROM approval_instance WHERE org_id=%(org_id)s AND "
+                "document_type='requisition' AND document_id=%(id)s"
+                " ORDER BY started_at DESC,id DESC LIMIT 1",
+                {"id": id},
+            ).fetchone()
+            if instance:
+                result.approval = ApprovalRead(
+                    instance_id=cast(UUID, instance[0]), status=str(instance[1])
+                )
+            return result
+
+    def transition(
+        self,
+        id: UUID,
+        body: RequisitionTransitionCreate,
+        version: str | None,
+        permitted: Callable[[str], bool],
+        can_view_budget: Callable[[UUID], bool],
+    ) -> RequisitionRead:
+        # Build the reply while the command's instance, funding and document locks are held.
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            transition(
+                self.connection, self.scope, id, body, version, cast(UUID, self.actor_id), permitted
+            )
+            return self.detail(id, can_view_budget)
 
     def get(self, id: UUID) -> RequisitionRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
@@ -198,6 +269,8 @@ class RequisitionService:
         body: RequisitionPatch,
         version: str | None,
         can_create: Callable[[UUID], bool],
+        *,
+        can_view_budget: Callable[[UUID], bool] | None = None,
     ) -> RequisitionRead:
         if version is None:
             raise ProblemError(
@@ -295,7 +368,7 @@ class RequisitionService:
                 {field: getattr(before, field) for field in changed_fields},
                 {field: getattr(after, field) for field in changed_fields},
             )
-            return after
+            return self.detail(id, can_view_budget) if can_view_budget is not None else after
 
     @staticmethod
     def _duplicate_number() -> ProblemError:

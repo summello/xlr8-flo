@@ -138,3 +138,11 @@ class AggregateRead(BaseModel):
     mode: Literal["roll_down", "roll_up"]
     totals: list[CurrencyAggregate]
     node_count: int
+
+
+@dataclass(frozen=True)
+class ReservationState:
+    project_id: UUID
+    amount: Decimal
+    remaining: Decimal
+    currency: str

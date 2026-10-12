@@ -1736,6 +1736,23 @@ export interface paths {
         patch: operations["patch_requisition_api_v1_requisitions__id__patch"];
         trace?: never;
     };
+    "/api/v1/requisitions/{id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Requisition Events */
+        get: operations["requisition_events_api_v1_requisitions__id__events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/requisitions/{id}/lines": {
         parameters: {
             query?: never;
@@ -1782,6 +1799,40 @@ export interface paths {
         };
         /** Submission Check */
         get: operations["submission_check_api_v1_requisitions__id__submission_check_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/requisitions/{id}/transitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Transition Requisition */
+        post: operations["transition_requisition_api_v1_requisitions__id__transitions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/requisitions/{id}/transitions/available": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Available Transitions */
+        get: operations["available_transitions_api_v1_requisitions__id__transitions_available_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2083,6 +2134,16 @@ export interface components {
              * @enum {string}
              */
             status: "open" | "completed" | "carried";
+        };
+        /** ApprovalRead */
+        ApprovalRead: {
+            /**
+             * Instance Id
+             * Format: uuid
+             */
+            instance_id: string;
+            /** Status */
+            status: string;
         };
         /** AttachmentRead */
         AttachmentRead: {
@@ -4230,6 +4291,7 @@ export interface components {
         };
         /** RequisitionRead */
         RequisitionRead: {
+            approval?: components["schemas"]["ApprovalRead"] | null;
             /**
              * Bu Id
              * Format: uuid
@@ -4278,6 +4340,7 @@ export interface components {
              * Format: uuid
              */
             requester_id: string;
+            reservation?: components["schemas"]["ReservationRead"] | null;
             /** Standalone */
             standalone: boolean;
             status: components["schemas"]["RequisitionStatus"];
@@ -4295,6 +4358,39 @@ export interface components {
         };
         /** @enum {string} */
         RequisitionStatus: "draft" | "approval_pending" | "sourcing_in_progress" | "sourced" | "awarded" | "open_for_purchase" | "completed" | "rejected" | "withdrawn" | "cancelled" | "expired";
+        /** RequisitionTransitionAvailable */
+        RequisitionTransitionAvailable: {
+            /** Allowed */
+            allowed: boolean;
+            /** Blocked Reasons */
+            blocked_reasons: string[];
+            to: components["schemas"]["RequisitionStatus"];
+        };
+        /** RequisitionTransitionCreate */
+        RequisitionTransitionCreate: {
+            /** Note */
+            note?: string | null;
+            /** Reason */
+            reason?: string | null;
+            to: components["schemas"]["RequisitionStatus"];
+        };
+        /** ReservationRead */
+        ReservationRead: {
+            /** Currency */
+            currency: string;
+            /** Entry Id */
+            entry_id: number;
+            /** Funding Round */
+            funding_round: number;
+            /** Project Available */
+            project_available: string | null;
+            /** Released */
+            released: string;
+            /** Remaining */
+            remaining: string;
+            /** Reserved */
+            reserved: string;
+        };
         /** RiskCreate */
         RiskCreate: {
             /** Closed Reason */
@@ -4437,6 +4533,29 @@ export interface components {
              */
             type: "role";
         };
+        /** RoutePreview */
+        RoutePreview: {
+            /** Problems */
+            problems: components["schemas"]["RouteProblem"][];
+            /** Steps */
+            steps: components["schemas"]["RouteStep"][];
+            /** Workflow Version */
+            workflow_version: number | null;
+            /** Workflow Version Id */
+            workflow_version_id: string | null;
+        };
+        /** RouteProblem */
+        RouteProblem: {
+            /**
+             * Code
+             * @enum {string}
+             */
+            code: "no_workflow" | "no_eligible_approver" | "route_blocked";
+            /** Message */
+            message: string;
+            /** Step Label */
+            step_label: string | null;
+        };
         /** RouteStep */
         RouteStep: {
             /** Approver Emails */
@@ -4517,6 +4636,28 @@ export interface components {
             /** Unit Id */
             unit_id?: string | null;
         };
+        /** StatusEventRead */
+        StatusEventRead: {
+            /** Actor Email */
+            actor_email: string | null;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Decision Id */
+            decision_id: string | null;
+            from_status: components["schemas"]["RequisitionStatus"];
+            /** Funding Round */
+            funding_round: number;
+            /** Ledger Entry Id */
+            ledger_entry_id: number | null;
+            /** Reason */
+            reason: string | null;
+            /** System */
+            system: boolean;
+            to_status: components["schemas"]["RequisitionStatus"];
+        };
         /** SubmissionCheck */
         SubmissionCheck: {
             funding: components["schemas"]["FundingCheck"] | null;
@@ -4524,6 +4665,7 @@ export interface components {
             problems: components["schemas"]["SubmissionProblem"][];
             /** Ready */
             ready: boolean;
+            route?: components["schemas"]["RoutePreview"] | null;
         };
         /** SubmissionProblem */
         SubmissionProblem: {
@@ -9929,6 +10071,48 @@ export interface operations {
             };
         };
     };
+    requisition_events_api_v1_requisitions__id__events_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusEventRead"][];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     get_lines_api_v1_requisitions__id__lines_get: {
         parameters: {
             query?: never;
@@ -10177,6 +10361,95 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SubmissionCheck"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    transition_requisition_api_v1_requisitions__id__transitions_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequisitionTransitionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequisitionRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    available_transitions_api_v1_requisitions__id__transitions_available_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequisitionTransitionAvailable"][];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */
