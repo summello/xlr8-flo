@@ -99,6 +99,35 @@ def _instance(repo: WorkflowRepository, id: UUID, *, lock: bool = False) -> dict
     return dict(zip(INSTANCE_FIELDS, row, strict=True))
 
 
+def resolve_version(
+    conn: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    document_type: str,
+    bu_id: UUID | None,
+) -> WorkflowVersionRead | None:
+    """Nearest published live definition; retirement does not affect stored versions."""
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        row = (
+            WorkflowRepository(conn, scope)
+            .execute(
+                f"SELECT {', '.join('v.' + field for field in VERSION_FIELDS)} "
+                "FROM workflow_definition d JOIN workflow_version v "
+                "ON v.org_id=d.org_id AND v.definition_id=d.id "
+                "WHERE d.org_id=%(org_id)s AND d.document_type=%(type)s AND d.retired_at IS NULL "
+                "AND v.status='published' AND ((d.scope_type='bu' AND d.scope_id=%(bu)s) "
+                "OR (d.scope_type='org' AND d.scope_id=%(org_id)s)) "
+                "ORDER BY (d.scope_type='bu') DESC LIMIT 1",
+                {"type": document_type, "bu": bu_id},
+            )
+            .fetchone()
+        )
+        return (
+            WorkflowVersionRead.model_validate(dict(zip(VERSION_FIELDS, row, strict=True)))
+            if row
+            else None
+        )
+
+
 def _version(repo: WorkflowRepository, id: UUID) -> WorkflowVersionRead:
     row = repo.execute(
         f"SELECT {','.join(VERSION_FIELDS)} FROM workflow_version "
@@ -359,8 +388,6 @@ def preview_route(
     document_id: UUID,
     resolver: PermissionHoldersResolver,
 ) -> RoutePreview:
-    from flo.modules.approvals.service import resolve_version
-
     with tenant_transaction(cast(RlsSession, conn), scope):
         snapshot = adapter_for(document_type).snapshot(conn, scope, document_id)
         bu: UUID | None = None
@@ -453,8 +480,6 @@ def start(
     resolver: PermissionHoldersResolver,
     resume_from: UUID | None = None,
 ) -> InstanceRead:
-    from flo.modules.approvals.service import resolve_version
-
     with tenant_transaction(cast(RlsSession, conn), scope):
         repo = WorkflowRepository(conn, scope)
         # Lock any existing instance before the adapter touches funding/document rows (R).

@@ -55,6 +55,8 @@ class BasicChecksScanner:
                 if b"\0" not in data:
                     media = "text/csv" if extension == ".csv" else "text/plain"
             except UnicodeDecodeError:
+                # not UTF-8, so not text: media stays None and the unrecognized-type result
+                # below rejects it
                 pass
         elif extension in OFFICE and data.startswith(b"PK\x03\x04"):
             kind, main, content = OFFICE[extension]
@@ -88,6 +90,8 @@ class BasicChecksScanner:
                 ValueError,
                 zlib.error,
             ):
+                # a damaged container is not a valid Office file: media stays None and the
+                # unrecognized-type result below rejects it
                 pass
         if media is None:
             return ScanResult(
