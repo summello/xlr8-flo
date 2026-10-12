@@ -336,7 +336,12 @@ flo up            # local stack: Postgres 17, MinIO (R2 stand-in), Mailpit — n
 flo check         # everything CI runs, locally
 flo status        # roadmap state, budgets, in-flight stories
 flo budget        # per-agent spend and remaining capacity
+flo board --watch # refresh .flo/status.json and board.html from git (Mission Control does this too)
 ```
+
+Delivery status is derived from git refs and worktrees, never from one checkout's `roadmap.yaml`;
+`docs/ops/delivery-status.md` has the six story states and what refreshes them. Authors do not
+render the board: it is refreshed outside coding tasks.
 
 ### Secrets
 
