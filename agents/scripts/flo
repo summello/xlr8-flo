@@ -20,7 +20,7 @@ Stdlib only, except PyYAML for the two config files.
   flo budget                per-agent spend and remaining capacity
   flo roadmap [--check]     regenerate docs/claude-plan.md §5 (or verify it)
   flo board                 regenerate board.html - drilldown status view (gitignored)\n  flo ack     [KEY|all]     confirm a 'waiting on you' item (list keys with no argument)\n  flo unack   <KEY|all>     reopen a confirmed item
-  flo check [--light]       everything CI runs, locally (stops at the first red); --light is\n                            the story gate: no full pytest/e2e, only the tests the story touched\n  flo reap    <STORY_ID>    drop a merged story's worktree once its CI is green\n  flo account <STORY_ID>    account + session id for a multi-account author (sonnet)
+  flo check [--light]       everything CI runs, locally (stops at the first red); --light is\n                            the story gate: no full pytest/e2e, only the tests the story touched\n  flo reap    <STORY_ID>    drop a merged story's worktree once its CI is green\n  flo account <STORY_ID>    account + session id for a multi-account author (sonnet)\n  flo ci-watch              one pass: mark red story/milestone CI, reap green merged stories
   flo db      [url|reset]   this worktree's test database (reset drops and recreates it)
   flo up [--reset]          start local Postgres + MinIO + Mailpit; optionally reset data
   flo down                  stop the local stack
@@ -1587,6 +1587,47 @@ def story_ci_failure(pkt, wt):
     return None
 
 
+def cmd_ci_watch(argv):
+    """One monitoring pass (agents/scripts/ci-watch.sh loops it). A completed red run on a
+    submitted story writes .scratch/<S>.ci-red with the failing log, for the planner to resume
+    the author's session with; green clears the marker and reaps a merged story's worktree.
+    Red on a milestone branch writes .scratch/<M>.ci-red: stop the line."""
+    rm, scratch = roadmap(), ROOT / ".scratch"
+    scratch.mkdir(exist_ok=True)
+
+    def mark(key, branch, run):
+        marker = scratch / f"{key}.ci-red"
+        if marker.exists() and run["headSha"] in marker.read_text().split("\n", 1)[0]:
+            return
+        log = subprocess.run(["gh", "run", "view", str(run["databaseId"]), "--log-failed"],
+                             cwd=ROOT, capture_output=True, text=True).stdout
+        marker.write_text(f"{branch} {run['headSha']} run {run['databaseId']} "
+                          f"{run['conclusion']}\n" + "\n".join(log.splitlines()[-200:]) + "\n")
+        print(f"RED {key}: {branch} run {run['databaseId']} — {marker}")
+
+    for _, s in stories(rm):
+        task = worktree_path(s["id"]) / "task.json"
+        if not task.exists():
+            continue
+        pkt = json.loads(task.read_text())
+        sha = pkt.get("submitted_sha")
+        run = next((r for r in gh_runs(pkt["branch"]) if sha and r.get("headSha") == sha), None)
+        if not run or run.get("status") != "completed":
+            continue
+        if run.get("conclusion") == "success":
+            (scratch / f"{s['id']}.ci-red").unlink(missing_ok=True)
+            if s["st"] == "done":
+                cmd_reap([s["id"]])
+        elif run.get("conclusion") != "cancelled":
+            mark(s["id"], pkt["branch"], run)
+    for m in rm.get("milestones", []):
+        runs = [r for r in gh_runs(m["branch"]) if r.get("status") == "completed"]
+        if runs and runs[0].get("conclusion") == "success":
+            (scratch / f"{m['id']}.ci-red").unlink(missing_ok=True)
+        elif runs and runs[0].get("conclusion") != "cancelled":
+            mark(m["id"], m["branch"], runs[0])
+
+
 def gh_runs(branch):
     r = subprocess.run(["gh", "run", "list", "--workflow", "CI", "--branch", branch, "--limit", "10",
                         "--json", "headSha,status,conclusion,databaseId"],
@@ -1706,7 +1747,7 @@ COMMANDS = {
     "review": cmd_review, "gate": cmd_gate, "final": cmd_final, "escalate": cmd_escalate,
     "done": cmd_done, "design": cmd_design, "status": cmd_status, "budget": cmd_budget,
     "roadmap": cmd_roadmap, "score": cmd_score, "session": cmd_session, "board": cmd_board,
-    "reap": cmd_reap, "account": cmd_account, "codex-usage": cmd_codex_usage, "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "db": cmd_db, "up": cmd_up, "down": cmd_down,
+    "reap": cmd_reap, "account": cmd_account, "codex-usage": cmd_codex_usage, "ci-watch": cmd_ci_watch, "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "db": cmd_db, "up": cmd_up, "down": cmd_down,
 }
 
 if __name__ == "__main__":

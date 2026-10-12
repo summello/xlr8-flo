@@ -1316,6 +1316,65 @@ def test_light_profile_skips_full_suites_and_runs_the_story_tests(
     assert any(r.startswith("pytest -q apps/api/tests/budget/test_story.py") for r in ran)
 
 
+def test_ci_watch_marks_red_once_and_reaps_green_merged_stories(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The monitor is what turns 'merge without waiting for CI' into a safe rule: a red run must
+    reach the planner, and a worktree must never be dropped before its CI is green."""
+    flo = load_flo()
+    stories = [{"id": "E99-S01", "st": "done"}, {"id": "E99-S02", "st": "review"},
+               {"id": "E99-S03", "st": "done"}]
+    monkeypatch.setattr(flo, "ROOT", tmp_path)
+    monkeypatch.setattr(flo, "roadmap", lambda: {
+        "milestones": [{"id": "M9", "branch": "milestone/M9"}],
+        "epics": [{"id": "E99", "milestone": "M9", "stories": stories}]})
+    monkeypatch.setattr(flo, "worktree_path", lambda sid: tmp_path / sid)
+    for s in stories:
+        (tmp_path / s["id"]).mkdir()
+        (tmp_path / s["id"] / "task.json").write_text(json.dumps(
+            {"branch": f"story/{s['id']}", "submitted_sha": f"sha-{s['id']}"}))
+
+    def run(sha: str, conclusion: str, status: str = "completed") -> dict[str, object]:
+        return {"headSha": sha, "status": status, "conclusion": conclusion, "databaseId": 1}
+
+    runs = {
+        "story/E99-S01": [run("sha-E99-S01", "success")],
+        "story/E99-S02": [run("sha-E99-S02", "failure")],
+        "story/E99-S03": [run("sha-E99-S03", "", "in_progress")],
+        "milestone/M9": [run("m-head", "failure"), run("m-old", "success")],
+    }
+    monkeypatch.setattr(flo, "gh_runs", lambda branch: runs[branch])
+    views: list[str] = []
+
+    def gh_view(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        views.append(cmd[3])
+        return subprocess.CompletedProcess(cmd, 0, "FAILED test_story\n", "")
+
+    monkeypatch.setattr(flo.subprocess, "run", gh_view)
+    reaped: list[str] = []
+
+    def reap(argv: list[str]) -> None:
+        reaped.append(argv[0])
+        shutil.rmtree(tmp_path / argv[0])  # as flo reap removes the worktree
+
+    monkeypatch.setattr(flo, "cmd_reap", reap)
+
+    flo.cmd_ci_watch([])
+    red = tmp_path / ".scratch" / "E99-S02.ci-red"
+    assert "FAILED test_story" in red.read_text()
+    assert (tmp_path / ".scratch" / "M9.ci-red").exists()
+    assert reaped == ["E99-S01"]  # S03 is merged but its CI has not finished: keep the worktree
+
+    flo.cmd_ci_watch([])
+    assert len(views) == 2  # the same red run is not fetched and reported again
+
+    runs["story/E99-S02"] = [run("sha-E99-S02", "success")]
+    runs["milestone/M9"] = [run("m-fix", "success")]
+    flo.cmd_ci_watch([])
+    assert not red.exists() and not (tmp_path / ".scratch" / "M9.ci-red").exists()
+    assert reaped == ["E99-S01"]  # S02 is green but not merged: nothing to reap
+
+
 @pytest.mark.parametrize(
     "literal",
     ["rgb(255 255 255)", "rgba(0, 0, 0, 0.5)", "hsl(210 40% 96%)", "#fff", "#1A1F2A"],
