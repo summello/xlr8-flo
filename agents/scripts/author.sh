@@ -4,7 +4,7 @@
 # Log: .scratch/STORY.log, ending in "exit N". Run from the parent repo.
 set -e
 . "$(dirname "$0")/env.sh"
-S="$1"; R="$(cd "$(dirname "$0")/../.." && pwd)"; W="$R-$S"; D="$R/.scratch"
+S="$1"; EXTRA="${2:-}"; R="$(cd "$(dirname "$0")/../.." && pwd)"; W="$R-$S"; D="$R/.scratch"
 mkdir -p "$D"
 A="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["author"])' "$W/task.json")"
 P="$D/$S.prompt"
@@ -28,7 +28,11 @@ case "$A" in
     # launch (continuation, review round, CI fix) resumes that same session (flo account).
     set -- $("$W/apps/api/.venv/bin/python" "$R/agents/scripts/flo" account "$S")
     MODE="$1"; CFG="$2"; SID="$3"; ACCT="$4"
-    { printf 'ROLE xlr8flo-worker %s account %s. Use the xlr8flo-worker skill.\n\n' "$S" "$ACCT"; cat "$P"; } > "$P.role"
+    # A resumed session already holds the packet and its own work: send only the new input
+    # (review findings, a CI log, a continuation note), never the whole brief again.
+    { printf 'ROLE xlr8flo-worker %s account %s. Use the xlr8flo-worker skill.\n\n' "$S" "$ACCT"
+      if [ "$MODE" = new ]; then cat "$P"; elif [ -n "$EXTRA" ]; then cat "$EXTRA"
+      else echo "Continue the story from where you stopped; the tree is as you left it."; fi; } > "$P.role"
     if [ "$MODE" = new ]; then
       RUN="claude -p --model sonnet --effort high --session-id $SID -n 'xlr8flo-worker $S' --permission-mode auto"
     else
