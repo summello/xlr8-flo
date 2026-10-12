@@ -37,6 +37,12 @@ from flo.modules.identity.models import (
 from flo.modules.identity.models import (
     role_code as role_code,
 )
+from flo.modules.identity.resolver import (
+    AuthorizationConnection as AuthorizationConnection,
+)
+from flo.modules.identity.resolver import (
+    AuthorizationResolver as AuthorizationResolver,
+)
 
 type DatabaseRow = Sequence[object] | Mapping[str, object]
 

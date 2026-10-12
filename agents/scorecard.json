@@ -2458,6 +2458,36 @@
       },
       "recap": "Added read-only submission validation that reports all field, master-data, project, line and funds problems, with held-reservation figures and ordered funding locks. Added the guarded check endpoint, regenerated its client, and verified the submission guards with real Postgres tests and restored violation plants.",
       "title": "Submission validation: fields, active master data, eligibility, funds, routing"
+    },
+    {
+      "story": "E10-S04",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "auth"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a12d13-d855-7a61-bfb3-bcb904dd289b",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Addressed Opus review findings: organization separation-of-duty coverage, matching validation/publish scope checks, injected permission and role resolvers, and per-user grant filtering. Unregistered adapters still fail closed with an actionable message and an operator follow-up.",
+      "title": "Approver eligibility resolution scoped to organization and BU/OU"
     }
   ]
 }

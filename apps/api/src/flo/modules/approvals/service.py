@@ -11,6 +11,8 @@ from psycopg.types.json import Jsonb
 
 from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
 from flo.kernel.audit.writer import AuditConnection
+from flo.kernel.authz import AuthorizationTarget as TargetProtocol
+from flo.kernel.authz import PermissionHoldersResolver
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
@@ -20,10 +22,23 @@ from flo.modules.approvals.conditions import (
     DocumentAdapter,
     Evaluation,
     LeafTrace,
+    approve_permission,
     evaluate,
     field_catalog,
     register_attribute_provider,
     register_document_type,
+)
+from flo.modules.approvals.eligibility import (
+    EligibleSet as EligibleSet,
+)
+from flo.modules.approvals.eligibility import (
+    PickerPage as PickerPage,
+)
+from flo.modules.approvals.eligibility import (
+    approver_picker as approver_picker,
+)
+from flo.modules.approvals.eligibility import (
+    eligible_approvers as eligible_approvers,
 )
 from flo.modules.approvals.models import DEFINITION_FIELDS, VERSION_FIELDS, WorkflowRepository
 from flo.modules.approvals.schemas import (
@@ -38,10 +53,20 @@ from flo.modules.approvals.schemas import (
     parse_graph,
 )
 from flo.modules.approvals.validation import ValidationReport, check_graph
+from flo.modules.identity.service import (
+    AuthorizationConnection,
+    AuthorizationResolver,
+    AuthorizationTarget,
+    ScopeType,
+)
 from flo.modules.org.service import OrgService
 
 __all__ = [
     "WorkflowService",
+    "EligibleSet",
+    "PickerPage",
+    "approver_picker",
+    "eligible_approvers",
     "ValidationReport",
     "validate_graph",
     "resolve_version",
@@ -71,9 +96,13 @@ class WorkflowService:
         connection: psycopg.Connection[tuple[object, ...]],
         scope: Scope,
         actor_id: UUID | None = None,
+        resolver: PermissionHoldersResolver | None = None,
     ) -> None:
         self.connection = connection
         self.scope = scope
+        self.resolver = resolver or AuthorizationResolver(
+            cast(AuthorizationConnection, connection), scope
+        )
         self.actor_id = actor_id
         self.repo = WorkflowRepository(connection, scope)
 
@@ -228,6 +257,10 @@ class WorkflowService:
                 self.scope,
                 str(definition["document_type"]),
                 self._version(id, version)["graph"],
+                target=AuthorizationTarget(
+                    ScopeType(str(definition["scope_type"])), cast(UUID, definition["scope_id"])
+                ),
+                resolver=self.resolver,
             )
 
     def publish(
@@ -239,7 +272,14 @@ class WorkflowService:
             if before["status"] != "draft":
                 raise conflict("version_immutable")
             report = validate_graph(
-                self.connection, self.scope, str(definition["document_type"]), before["graph"]
+                self.connection,
+                self.scope,
+                str(definition["document_type"]),
+                before["graph"],
+                resolver=self.resolver,
+                target=AuthorizationTarget(
+                    ScopeType(str(definition["scope_type"])), cast(UUID, definition["scope_id"])
+                ),
             )
             graph = parse_graph(before["graph"])
             pointers = {node.id: f"/nodes/{i}" for i, node in enumerate(graph.nodes)}
@@ -375,6 +415,9 @@ def validate_graph(
     scope: Scope,
     document_type: str,
     graph: object,
+    *,
+    target: AuthorizationTarget | None = None,
+    resolver: PermissionHoldersResolver,
 ) -> ValidationReport:
     """Validate named approvers and the organization's current operational limit."""
     with tenant_transaction(cast(RlsSession, conn), scope):
@@ -389,6 +432,20 @@ def validate_graph(
                 "SELECT identity_id FROM identity_membership WHERE org_id=%(org_id)s"
             ).fetchall()
         }
+        if target is not None:
+            from flo.modules.approvals.schemas import UserApprovers
+
+            parsed = parse_graph(graph)
+            if any(
+                isinstance(rule, UserApprovers)
+                for node in parsed.nodes
+                for rule in (node.approvers, node.escalate_to)
+            ):
+                users &= set(
+                    resolver.holders(
+                        approve_permission(document_type), cast(TargetProtocol, target)
+                    )
+                )
         setting = repo.execute(
             "SELECT value FROM org_setting WHERE org_id=%(org_id)s AND unit_id IS NULL "
             "AND key='approval.max_depth'"

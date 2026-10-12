@@ -15,6 +15,7 @@ from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 
 from flo.api.admin_users import router as admin_users_router
+from flo.api.approvals import router as approvals_router
 from flo.api.auth import (
     _database_url,
     production_mfa_service_factory,
@@ -115,6 +116,7 @@ app.include_router(budget_router)
 app.include_router(imports_router)
 app.include_router(invitations_router)
 app.include_router(workflows_router)
+app.include_router(approvals_router)
 
 
 install_authorization(

@@ -93,6 +93,7 @@ for kind, same, _, _ in SAMPLES + [("code_list", ("ENG",), (), None)]:
 def test_operator_type_matrix(kind, op, actual, expected, result):
     class Adapter:
         document_type = "condition-test"
+        approve_permission = "requisition.approve"
 
         def fields(self):
             return {"test": kind}
@@ -247,6 +248,7 @@ def test_custom_provider_hook(monkeypatch):
 
     class Requisition:
         document_type = "requisition"
+        approve_permission = "requisition.approve"
 
         def fields(self) -> dict[str, FieldType]:
             return {"amount": "money"}
@@ -301,6 +303,7 @@ def test_provider_namespace_guard(monkeypatch):
 
     class Adapter:
         document_type = "test"
+        approve_permission = "requisition.approve"
 
         def fields(self):
             return {"custom.unowned": "code", "amount": "money"}

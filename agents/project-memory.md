@@ -8,9 +8,9 @@ Loaded into every agent session. Updated by `flo done` (status) and by Opus at e
 | | |
 |---|---|
 | Milestone | **M2 — Governed demand** |
-| Stories | 65 / 169 done |
+| Stories | 66 / 169 done |
 | Branch | milestone/M2-governed-demand |
-| In flight | E09-S03, E10-S04, E10-S11 |
+| In flight | E09-S03, E10-S11 |
 | Blocked | — |
 <!-- STATE:END -->
 
@@ -153,9 +153,15 @@ endpoint has been withdrawn before and the cap would have routed E06-S08 to it, 
 review-only. Same day: qwen's E06-S07 review caught a dead `/projects/<id>/ledger` link (major,
 upheld), and its pre-flight audit caught E08-S03's resolver wiring before codex started.
 
+**11 Oct 2026 — M1 retro re-route, from SCORECARD.md (58 stories).** Authors: codex 48 stories, 96% clean, 1.06 rounds, 0 escapes; nemotron 10, 100%, 1.00, 0 (all size M or smaller, which is why the cap stays). Reviewers: qwen 15 findings in 8 reviews (1.9), deepseek 6 in 6 (1.0), kimi 0 in 2, nemotron 0 in 5; no escapes anywhere, and no reviewer has raised a blocker yet, so precision is still undefined. Changes: (1) `ungated_reviewers` is now `[qwen, deepseek]`: kimi has the 0.0 pattern of a rubber stamp and deepseek has a real record; (2) nemotron's roles are `[author]` only (its notes already said it reviews nothing; the list now agrees); (3) deepseek gets a $20 monthly cap since it is now a primary reviewer, not only a release reviewer. Not changed: codex stays off crud/docs by `avoid_tags` routing, not by kind (7 of its 48 are chore at 1.29 rounds, all M0). Revisit at the M2 retro with M2's blocker counts: if qwen still raises none on the 8 ungated M2 stories, its 1.9 findings per review are minors and the train diff is doing the catching.
+
 **Merge authority:** the operator has delegated GitHub merges for M0 to Opus, with the
 instruction to space them out so the repository does not read as bot-driven. Outside M0 the
 standing rule holds: push, never merge.
+
+## M1 shipped (11 Oct 2026)
+
+M1 (32/32) merged to `main` as `e51bea9` (PR #15, merge commit); migrations 0027 to 0036 ran in the deploy job. The first deploy migrated and shipped the API, then stopped at the SPA upload: the bundle guard's bare `sk-` grep matched `/risk-indicators`. PR #17 tightened it to a key shape (`sk-` at a word start plus 20 key characters, or a PEM header) with a planted test, and the re-run deployed the SPA and Worker (smoke: `/readyz` 200, bundle served). Lesson: a deploy guard that greps source text needs a test that plants both a true and a false positive, and a story that adds an API path should be checked against it. Not done before merge, by the operator's call: the Neon staging rehearsal of 0027 to 0036; the 19 decisions in `docs/m1-decisions-to-confirm.md` are still unconfirmed (reversible by follow-up story). Still open on M1: two minors carried (ratio rounding outside `kernel/money.py`; five `_audit` wrappers, which M2 approvals would make six); the fleet re-route from `agents/SCORECARD.md` owed at milestone end (claude.md section 5).
 
 ## Latest handoff
 

@@ -50,6 +50,7 @@ class ConditionError(ValueError):
 
 class DocumentAdapter(Protocol):
     document_type: str
+    approve_permission: str
 
     def fields(self) -> Mapping[str, FieldType]: ...
 
@@ -74,6 +75,21 @@ _providers: dict[str, AttributeProvider] = {}
 
 def register_document_type(adapter: DocumentAdapter) -> None:
     _adapters[adapter.document_type] = adapter
+
+
+def approve_permission(document_type: str) -> str:
+    """Use the registered document contract; never invent a generic permission."""
+    adapter = _adapters.get(document_type)
+    if adapter is None:
+        from flo.modules.approvals.schemas import invalid
+
+        raise invalid(
+            "/document_type",
+            f"Approval integration for {document_type} is not available yet. "
+            "Approver selection and users-rule workflow validation or publishing require "
+            "a registered document adapter. Contact your operator to enable this integration.",
+        )
+    return adapter.approve_permission
 
 
 def register_attribute_provider(provider: AttributeProvider) -> None:

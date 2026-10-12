@@ -15,7 +15,7 @@ policy:
   # `ui` left this list deliberately: MASTER-token and a11y checks are mechanical and run
   # in flo check; Opus's UI pass moves to the train diff.
   opus_final_required_tags: [money, auth, security, migration, concurrency]
-  ungated_reviewers: [qwen, kimi]
+  ungated_reviewers: [qwen, deepseek]   # 11 Oct 2026: kimi 0.0 findings in 2 reviews; deepseek 1.0 in 6
 
 # Per-milestone overrides. A milestone may concentrate authorship on one agent when
 # the cost of getting it wrong is a rewrite rather than a patch. Reviewers are NOT
@@ -115,7 +115,7 @@ agents:
     cli: "opencode run --model openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"
     plan: openrouter-credits
     metered: none                # :free variant — no credit drawdown
-    roles: [author, review]
+    roles: [author]              # 11 Oct 2026: 0.0 findings in 5 reviews; it authors, others review
     allowed_kinds: [crud, ui, api, chore, docs, test]   # 10 Oct 2026: engine, migration → codex
     avoid_tags: [money, auth, security, migration, concurrency]   # gated stories → codex
     max_author_size: M           # 10 Oct 2026: E06-S07 (ui, L) ended exit 0 with nothing committed,
@@ -188,6 +188,8 @@ agents:
     cli: "opencode run --model openrouter/deepseek/deepseek-v4-pro-0813"
     plan: openrouter-credits
     metered: spend
+    monthly_budget_usd: 20       # 11 Oct 2026: now a primary ungated reviewer, so it gets a cap
+    reserve_for_review_usd: 20
     roles: [review]              # review only - authoring stays with codex for M0
     allowed_kinds: []
     fallback: [qwen, kimi]

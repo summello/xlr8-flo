@@ -1164,7 +1164,7 @@ epics:
           - E10-S02
           - E02-S05
           - E10-S03
-        st: in_progress
+        st: done
       - id: E10-S05
         t: 'Execution engine: instances, tasks, any-one/all/quorum groups, live membership'
         k: engine

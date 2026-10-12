@@ -16,6 +16,10 @@ from flo.modules.identity.models import (
 )
 from flo.modules.identity.resolver import AuthorizationResolver
 from flo.modules.identity.service import IdentityAuthorizationService
+from tests.approvals.test_eligibility import eligibility_tree as eligibility_tree
+from tests.approvals.test_eligibility import workflow_db as workflow_db
+from tests.kernel.test_migrate import empty_database as empty_database
+from tests.org.test_bootstrap import bootstrap_db as bootstrap_db
 
 from .conftest import AuthorizationDatabase
 
@@ -455,3 +459,97 @@ def test_privileged_role_grants_maintain_global_mfa_count_transactionally(
     assert database.connection.execute(
         "SELECT privileged_role_grants FROM identity WHERE id = %s", (user_id,)
     ).fetchone() == (0,)
+
+
+# Reuse the exact approval fixture, including a disabled project roll-down edge.
+
+
+def test_holders_equals_check_for_every_user_and_target(eligibility_tree):
+    db, targets, users = eligibility_tree
+    conn, org, _, actor = db
+    scope = Scope(org)
+    users = users | {"admin": actor}
+    with tenant_transaction(conn, scope):
+        resolver = AuthorizationResolver(conn, scope)
+        assert users["bu"] not in resolver.holders("requisition.approve", targets["a1"])
+        for permission in ("requisition.approve", "project.approve", "budget.approve"):
+            for target in targets.values():
+                expected = {
+                    user
+                    for user in users.values()
+                    if user != users["inactive"]
+                    and resolver.check(user, permission, target).allowed
+                }
+                actual = resolver.holders(permission, target)
+                assert set(actual) == expected
+                assert actual == sorted(actual)
+        assert (
+            resolver.holders("requisition.approve", AuthorizationTarget.organization(db[2])) == []
+        )
+
+
+def test_holders_caps_large_groups_in_identity_order(eligibility_tree):
+    db, targets, users = eligibility_tree
+    conn, org, _, actor = db
+    scope = Scope(org)
+    role = IdentityAuthorizationService(conn, scope, actor).seed_baseline_roles()[
+        role_code("approver")
+    ]
+    with tenant_transaction(conn, scope):
+        rows = conn.execute(
+            "INSERT INTO identity(id,email,password_hash) "
+            "SELECT gen_random_uuid(),'large-group-' || i || '@example.test',%s "
+            "FROM generate_series(1,1001) i RETURNING id",
+            ("$argon2id$test-placeholder",),
+        ).fetchall()
+        ids = [row[0] for row in rows]
+        conn.execute(
+            "INSERT INTO user_role(id,org_id,user_id,role_id,scope_type,scope_id,granted_by) "
+            "SELECT gen_random_uuid(),%s,u,%s,'bu',%s,%s FROM unnest(%s::uuid[]) u",
+            (org, role.id, targets["b"].scope_id, actor, ids),
+        )
+        resolver = AuthorizationResolver(conn, scope)
+        assert (
+            resolver.holders("requisition.approve", targets["b"])
+            == sorted(ids + [actor, users["org"]])[:1000]
+        )
+        assert (
+            resolver.role_holders("approver", targets["b"]) == sorted(ids + [users["org"]])[:1000]
+        )
+
+
+def test_approval_protocols_reject_incomplete_implementations(tmp_path):
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    source = tmp_path / "holders_contract.py"
+    source.write_text(
+        "from flo.kernel.authz import HoldersResolverFactory, PermissionResolverFactory\n"
+        "from flo.api.authz_factory import production_authorization_resolver\n"
+        "production: HoldersResolverFactory = production_authorization_resolver\n"
+        "def plant(check_only: PermissionResolverFactory) -> HoldersResolverFactory:\n"
+        "    return check_only\n"
+        "from collections.abc import Mapping\n"
+        "from flo.modules.approvals.conditions import DocumentAdapter\n"
+        "from flo.modules.approvals.schemas import FieldType\n"
+        "class IncompleteAdapter:\n"
+        "    document_type = 'requisition'\n"
+        "    def fields(self) -> Mapping[str, FieldType]:\n"
+        "        return {}\n"
+        "adapter: DocumentAdapter = IncompleteAdapter()\n"
+    )
+    env = os.environ.copy()
+    env["MYPYPATH"] = str(Path(__file__).resolve().parents[2] / "src")
+    result = subprocess.run(
+        [sys.executable, "-m", "mypy", "--strict", "--follow-imports=silent", str(source)],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert "holders_contract.py:5: error:" in result.stdout
+    assert "holders_contract.py:13: error:" in result.stdout
+    assert "approve_permission" in result.stdout
+    assert "Found 2 errors in 1 file" in result.stdout

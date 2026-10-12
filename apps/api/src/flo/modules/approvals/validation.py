@@ -163,7 +163,11 @@ def check_graph(
                 issue("missing_approvers", id, "Role does not exist in this organization.")
             if isinstance(rule, UserApprovers):
                 if not rule.user_ids or not set(rule.user_ids) <= users:
-                    issue("missing_approvers", id, "Users must be members of this organization.")
+                    issue(
+                        "missing_approvers",
+                        id,
+                        "Users must be eligible in the workflow organization and scope.",
+                    )
                 if rule is node.approvers and isinstance(node.mode, Quorum):
                     if len(set(rule.user_ids)) < node.mode.quorum:
                         issue("quorum_unreachable", id, "Quorum exceeds the number of users.")

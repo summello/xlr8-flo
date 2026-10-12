@@ -49,9 +49,18 @@ class PermissionResolver(Protocol):
     ) -> AuthorizationDecision: ...
 
 
-type PermissionResolverFactory = Callable[
-    [Scope], AbstractContextManager[PermissionResolver]
-]
+type PermissionResolverFactory = Callable[[Scope], AbstractContextManager[PermissionResolver]]
+
+
+class PermissionHoldersResolver(PermissionResolver, Protocol):
+    """Live permission membership for approval eligibility."""
+
+    def holders(self, permission: str, target: AuthorizationTarget) -> list[IdentityId]: ...
+
+    def role_holders(self, role_code: str, target: AuthorizationTarget) -> list[IdentityId]: ...
+
+
+type HoldersResolverFactory = Callable[[Scope], AbstractContextManager[PermissionHoldersResolver]]
 
 _PUBLIC_MARKER = "__flo_explicitly_public__"
 _REQUIRE_MARKER = "__flo_required_permission__"

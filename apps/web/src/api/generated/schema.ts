@@ -84,6 +84,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/approvals/eligible-approvers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Eligible Picker */
+        get: operations["eligible_picker_api_v1_approvals_eligible_approvers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/attachments/{id}": {
         parameters: {
             query?: never;
@@ -3261,6 +3278,21 @@ export interface components {
         };
         /** @enum {string} */
         PhaseStatus: "planned" | "in_progress" | "done" | "skipped";
+        /** PickerPage */
+        PickerPage: {
+            /** Rows */
+            rows: components["schemas"]["PickerRow"][];
+        };
+        /** PickerRow */
+        PickerRow: {
+            /** Email */
+            email: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+        };
         /** Position */
         Position: {
             /** X */
@@ -4342,6 +4374,51 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    eligible_picker_api_v1_approvals_eligible_approvers_get: {
+        parameters: {
+            query: {
+                document_type: "project" | "requisition" | "budget_change" | "vendor" | "rfq" | "award" | "po";
+                scope_type: "org" | "bu";
+                scope_id: string;
+                q?: string | null;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PickerPage"];
+                };
             };
             /** @description Client error expressed as RFC 9457 problem details. */
             "4XX": {
