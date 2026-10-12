@@ -5,7 +5,7 @@ from infra/SETUP.md and the neondb-staging-rehearse skill, with the pull-request
 branch filled in from the live status document so nothing has to be edited before pasting.
 """
 
-# ruff: noqa: ISC004  (command strings are prose; implicit concatenation keeps them readable)
+
 from __future__ import annotations
 
 import html
