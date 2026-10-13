@@ -478,12 +478,21 @@ def called_signatures(wt, rng, added_files):
 
 
 def cmd_review(argv):
+    """flo review <S> [--since <sha> --prior <verdict.json>]: with --since, a re-review packet that
+    carries the reviewer's previous findings and only the story's changes since that commit."""
     if not argv:
-        die("usage: flo review <STORY_ID>")
+        die("usage: flo review <STORY_ID> [--since <sha> --prior <verdict.json>]")
     sid = argv[0]
+    opts = dict(zip(argv[1::2], argv[2::2]))
+    since, prior = opts.get("--since"), opts.get("--prior")
     pkt, wt = packet_of(sid), worktree_path(sid)
     rng = f"{pkt['milestone_branch']}...{pkt['branch']}"
     names = [n for n in git("diff", "--name-only", rng, cwd=wt, check=False).splitlines() if n]
+    if since:
+        # the story's own files only: submit merges the milestone in, which is not under review
+        rng = f"{since}..HEAD"
+        changed = set(git("diff", "--name-only", rng, cwd=wt, check=False).split())
+        names = [n for n in names if n in changed]
     generated = [n for n in names if n.rsplit("/", 1)[-1] in GENERATED_FILES]
     # Reviewers run in sandboxes that refuse to open dotfiles, and the refusal kills the
     # run rather than degrading it. Inline them instead of letting the reviewer try.
@@ -492,12 +501,18 @@ def cmd_review(argv):
     print(f"=== REVIEW PACKET {sid} — {pkt['title']} ===")
     print(f"kind {pkt['kind']} · size {pkt['size']} · tags {', '.join(pkt['tags']) or 'none'}")
     print(f"requirements: {', '.join(pkt['requirements'])}\n")
-    print("--- design packet ---")
-    print((ROOT / pkt["design"]).read_text())
-
-    print("--- diff vs milestone branch ---")
+    if since:
+        print(f"--- RE-REVIEW since {since[:10]}: your previous findings ---")
+        print(Path(prior).read_text() if prior and Path(prior).exists() else "(none recorded)")
+        print("\nThe design packet is not repeated; your findings above and the requirement ids")
+        print("define the scope. Open design/ only to settle a disputed acceptance criterion.\n")
+        print("--- the story's changes since your last review ---")
+    else:
+        print("--- design packet ---")
+        print((ROOT / pkt["design"]).read_text())
+        print("--- diff vs milestone branch ---")
     excludes = [f":(exclude){n}" for n in generated]
-    print(git("diff", rng, "--", ".", *excludes, cwd=wt, check=False))
+    print(git("diff", rng, "--", *(names or ["."]), *excludes, cwd=wt, check=False))
 
     added_files = set(git("diff", "--name-only", "--diff-filter=A", rng, cwd=wt, check=False).split())
     sigs = called_signatures(wt, rng, added_files)
@@ -520,13 +535,15 @@ def cmd_review(argv):
             print(f"--- end {n} ---\n")
 
     print("--- how to review ---")
-    deep = pkt["opus_final"]
-    plants = ("every plant the design packet prescribes, every gate, contract or guard the "
+    deep = pkt["opus_final"] and not since
+    plants = ("a plant only for a guard or test added since your last review, to prove a fix; "
+              "do not re-plant anything unchanged" if since else
+              "every plant the design packet prescribes, every gate, contract or guard the "
               "diff adds, and at most 2 exploratory plants of your own" if deep else
               "every gate, contract or guard the diff adds, and at most 1 exploratory plant")
     print(f"""\
-Budget: this is {'a gated (money/auth/security/migration/concurrency)' if deep else 'an ungated'}
-review. Aim for about {60 if deep else 30} commands in total. When the steps below are done,
+Budget: this is {'a re-review: confirm each previous finding is fixed and review only the changes above' if since else 'a gated (money/auth/security/migration/concurrency) review' if deep else 'an ungated review'}.
+Aim for about {20 if since else 45 if deep else 25} commands in total. When the steps below are done,
 write the verdict and stop; do not widen the review.
 
 1. cd {wt}
@@ -542,9 +559,8 @@ write the verdict and stop; do not widen the review.
      (cd apps/api && .venv/bin/pytest -x -q <one test file> 2>&1 | tail -20)
      (cd apps/web && npx playwright test <one spec> --grep '<test>' --reporter=line 2>&1 | tail -20)
 3. Plants: {plants}. A gate you have not seen fail is not reviewed.
-     <edit the guarded file>                         # break it
-     <run the ONE test file that should catch it>    # must fail
-     git checkout -- <file>                          # restore at once
+   Each plant is ONE command that breaks, tests and restores, so it costs one turn:
+     perl -0pi -e 's/<guard>/<broken>/' <file> && (cd apps/api && .venv/bin/pytest -x -q <one test file> 2>&1 | tail -5); git checkout -- <file>
 4. Confirm each requirement id above is satisfied by what the diff does, not by what
    it says. Cite the id in any finding it belongs to.
 5. Finalise the verdict file, then stop. Exactly this shape; verdict is "approve" or

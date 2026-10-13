@@ -12,7 +12,14 @@ case "$A" in
   *) echo "review.sh: unknown reviewer $A" >&2; exit 1 ;;
 esac
 P="$D/$S.$A.review.prompt"; X="$D/xdg-$A"; mkdir -p "$X"
-"$W/apps/api/.venv/bin/python" "$R/agents/scripts/flo" review "$S" > "$P"
+# A second review by the same reviewer gets its own previous findings and the changes since the
+# commit it reviewed, not the whole story again (13 Oct: a full re-review re-planted everything).
+SHA="$D/$S.$A.sha"; PRIOR="$D/$S.$A.prior.json"; ARGS=""
+if [ -f "$SHA" ] && [ -f "$W/reviews/$S.$A.json" ]; then
+  cp "$W/reviews/$S.$A.json" "$PRIOR"; ARGS="--since $(cat "$SHA") --prior $PRIOR"
+fi
+"$W/apps/api/.venv/bin/python" "$R/agents/scripts/flo" review "$S" $ARGS > "$P"
+git -C "$W" rev-parse HEAD > "$SHA"
 printf '\nYour agent id is %s. Write reviews/%s.%s.json and stop.\n' "$A" "$S" "$A" >> "$P"
 cd "$W"
 if [ "$A" = opus ]; then
@@ -33,13 +40,14 @@ if [ "$A" = codex ]; then
   # Hard stop: the packet's budget is advisory to the model, this is not. Gated 15 min, else 10;
   # the reviewer keeps a draft verdict current, so a stopped run still leaves one.
   CAP=$(python3 -c 'import json,sys; print(900 if json.load(open(sys.argv[1]))["opus_final"] else 600)' "$W/task.json")
+  [ -n "$ARGS" ] && CAP=480
   nohup sh -c "mkdir -p '$D/$S.aside' && mv reviews/*.json '$D/$S.aside/' 2>/dev/null; \
     codex exec -m $1 -c model_reasoning_effort=$2 -c project_doc_max_bytes=0 -s workspace-write --skip-git-repo-check \"\$(cat '$P')\" > '$D/$S.$A.log' 2>&1 & CP=\$!; \
     ( sleep $CAP; kill \$CP 2>/dev/null && echo 'stopped at the time cap' >> '$D/$S.$A.log' ) & KP=\$!; \
     wait \$CP; echo \"exit \$?\" >> '$D/$S.$A.log'; kill \$KP 2>/dev/null; \
     mv -n '$D/$S.aside/'*.json reviews/ 2>/dev/null; rmdir '$D/$S.aside'; \
     '$W/apps/api/.venv/bin/python' '$R/agents/scripts/flo' codex-usage '$S' '$T0' > /dev/null" > /dev/null 2>&1 &
-  echo "review launched: $S by codex ($1, $2)"
+  echo "review launched: $S by codex ($1, $2)${ARGS:+, re-review}"
   exit 0
 fi
 # another reviewer's verdict is not evidence: move existing verdicts out of reach for the run
