@@ -443,3 +443,51 @@ class ChangeSet(BaseModel):
 
 
 RequisitionRead.model_rebuild()
+
+
+type Tone = Literal["neutral", "info", "success", "warning", "danger"]
+
+
+class LinkedRecord(BaseModel):
+    key: str
+    kind: str
+    id: str
+    label: str
+    state: str
+    state_tone: Tone
+    href: str
+    at: datetime
+    relation: str | None = None
+    amount: str | None = None
+    currency: str | None = None
+
+
+class LinkAccess(BaseModel):
+    """How a link node is authorized: `permission` held at the `scope_type` target."""
+
+    permission: str = Field(min_length=1)
+    scope_type: Literal["project", "bu"]
+    target_id: UUID
+
+
+class LinkedNode(LinkedRecord):
+    """What a link provider returns: a node plus the access that lets a caller see it.
+
+    `access` is required, so a provider cannot hand back a node without declaring how it is
+    authorized. `links` strips it from the response.
+    """
+
+    access: LinkAccess
+
+
+class LinkEdge(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    from_: str = Field(alias="from")
+    to: str
+    relation: str
+
+
+class LinksRead(BaseModel):
+    nodes: list[LinkedRecord]
+    edges: list[LinkEdge]
+    partial: bool = False

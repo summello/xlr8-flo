@@ -40,6 +40,9 @@ from flo.modules.requisitions.lifecycle import (
 )
 from flo.modules.requisitions.lifecycle import routing_check as routing_check
 from flo.modules.requisitions.lifecycle import transition as transition
+from flo.modules.requisitions.links import assert_current_upstream as assert_current_upstream
+from flo.modules.requisitions.links import links as links
+from flo.modules.requisitions.links import register_link_provider as register_link_provider
 from flo.modules.requisitions.models import READ_FIELDS, READ_SQL, RequisitionRepository
 from flo.modules.requisitions.schemas import (
     Direction,
@@ -63,6 +66,9 @@ __all__ = [
     "events",
     "routing_check",
     "assert_completable",
+    "assert_current_upstream",
+    "links",
+    "register_link_provider",
     "register_downstream_counter",
     "register_sourcing_probe",
     "expire_org",

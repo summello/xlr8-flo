@@ -17,10 +17,10 @@ from flo.modules.budget import funding_policy
 from flo.modules.budget.aggregate import aggregate_balance as aggregate_balance
 from flo.modules.budget.change_requests import get_request as get_request
 from flo.modules.budget.change_requests import request_change as request_change
+from flo.modules.budget.ledger import ENTRY_FIELDS, LedgerRepository, invalid, read_entry
 from flo.modules.budget.ledger import (
     InsufficientBudget as InsufficientBudget,
 )
-from flo.modules.budget.ledger import LedgerRepository, invalid
 from flo.modules.budget.ledger import (
     get_balance as get_balance,
 )
@@ -68,6 +68,7 @@ __all__ = [
     "balance_query",
     "budget_summary",
     "commit",
+    "entries_for_source",
     "entry_by_idempotency_key",
     "get_balance",
     "ledger_query",
@@ -311,6 +312,27 @@ def entry_by_idempotency_key(
             {"key": key},
         )
         return LedgerEntryRead(**asdict(entry)) if entry else None
+
+
+def entries_for_source(
+    connection: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    source_type: str,
+    source_id: UUID,
+) -> list[LedgerEntryRead]:
+    """Every entry a source document posted, oldest first (the ledger_source index)."""
+    with tenant_transaction(cast(RlsSession, connection), scope):
+        rows = (
+            LedgerRepository(connection, scope)
+            .execute(
+                f"SELECT {', '.join(ENTRY_FIELDS)} FROM ledger_entry "
+                "WHERE org_id=%(org_id)s AND source_type=%(type)s AND source_id=%(id)s "
+                "ORDER BY posted_at,id",
+                {"type": source_type, "id": source_id},
+            )
+            .fetchall()
+        )
+        return [LedgerEntryRead(**asdict(read_entry(row))) for row in rows]
 
 
 def lock_balance(

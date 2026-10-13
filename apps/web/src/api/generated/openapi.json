@@ -4436,6 +4436,139 @@
         "title": "LinesReplace",
         "type": "object"
       },
+      "LinkEdge": {
+        "properties": {
+          "from": {
+            "title": "From",
+            "type": "string"
+          },
+          "relation": {
+            "title": "Relation",
+            "type": "string"
+          },
+          "to": {
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "relation"
+        ],
+        "title": "LinkEdge",
+        "type": "object"
+      },
+      "LinkedRecord": {
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "href": {
+            "title": "Href",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "relation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relation"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "state_tone": {
+            "$ref": "#/components/schemas/Tone"
+          }
+        },
+        "required": [
+          "key",
+          "kind",
+          "id",
+          "label",
+          "state",
+          "state_tone",
+          "href",
+          "at"
+        ],
+        "title": "LinkedRecord",
+        "type": "object"
+      },
+      "LinksRead": {
+        "properties": {
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/LinkEdge"
+            },
+            "title": "Edges",
+            "type": "array"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/LinkedRecord"
+            },
+            "title": "Nodes",
+            "type": "array"
+          },
+          "partial": {
+            "default": false,
+            "title": "Partial",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "nodes",
+          "edges"
+        ],
+        "title": "LinksRead",
+        "type": "object"
+      },
       "LoginRequest": {
         "additionalProperties": false,
         "description": "Credentials accepted by the local identity-provider boundary.",
@@ -9185,6 +9318,16 @@
         ],
         "title": "TenantLabelPut",
         "type": "object"
+      },
+      "Tone": {
+        "enum": [
+          "neutral",
+          "info",
+          "success",
+          "warning",
+          "danger"
+        ],
+        "type": "string"
       },
       "TransferCreate": {
         "additionalProperties": false,
@@ -20990,6 +21133,75 @@
           }
         },
         "summary": "Put Line",
+        "tags": [
+          "requisitions"
+        ]
+      }
+    },
+    "/api/v1/requisitions/{id}/links": {
+      "get": {
+        "operationId": "requisition_links_api_v1_requisitions__id__links_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinksRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Requisition Links",
         "tags": [
           "requisitions"
         ]

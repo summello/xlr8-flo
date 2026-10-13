@@ -3001,6 +3001,46 @@
       },
       "recap": "Every submission and applied amendment is now an immutable requisition_revision; a returned requisition resumes at its step on a non-material edit and restarts on a material one, and an approved requisition is amended through a draft/pending amendment whose reservation moves only when the amendment is approved. Adds revision, change-set and amendment routes, the revision trigger and one-open-amendment index, and the adapter branches that present and settle a pending amendment.",
       "title": "Controlled return, amendment and resubmission preserving prior values"
+    },
+    {
+      "story": "E09-S09",
+      "kind": "api",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 3,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "18123d6f-7af8-4f1e-8567-3e151874895e",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S09",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a13610-588e-7a91-b67e-19aca034a9cd",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Added GET /requisitions/{id}/links serving provider-computed, per-node read-filtered nodes and edges, plus assert_current_upstream (WF-001) and budget.entries_for_source. Providers fail soft with partial:true; M3 kinds plug in via register_link_provider.",
+      "title": "Linked-record graph: RFQs, bids, awards, POs, approvals, notes, ledger entries"
     }
   ]
 }

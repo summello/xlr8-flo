@@ -1050,7 +1050,7 @@ epics:
           - E09-S10
           - E10-S07
           - E09-S08
-        st: in_progress
+        st: done
       - id: E09-S10
         t: Notes and attachments on all business documents, upload validation,
           quarantine

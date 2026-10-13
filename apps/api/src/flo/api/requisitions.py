@@ -29,6 +29,7 @@ from flo.modules.requisitions.schemas import (
     LinesRead,
     LinesReplace,
     LineWriteResult,
+    LinksRead,
     LookupRows,
     RequisitionCreate,
     RequisitionPage,
@@ -47,6 +48,7 @@ from flo.modules.requisitions.service import (
     available,
     check_submission,
     events,
+    links,
     routing_check,
 )
 
@@ -354,6 +356,22 @@ def _budget_view(request: Request) -> Callable[[UUID], bool]:
         request,
         "budget.view",
         cast(TargetProtocol, AuthorizationTarget(ScopeType.PROJECT, project_id)),
+    )
+
+
+@router.get("/{id}/links", response_model=LinksRead)
+def requisition_links(
+    id: UUID, context: ReadContext, connection: Connection, request: Request
+) -> LinksRead:
+    return links(
+        connection,
+        current_scope(),
+        id,
+        lambda permission, scope_type, target_id: permits(
+            request,
+            permission,
+            cast(TargetProtocol, AuthorizationTarget(ScopeType(scope_type), target_id)),
+        ),
     )
 
 

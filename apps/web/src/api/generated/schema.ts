@@ -1944,6 +1944,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/requisitions/{id}/links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Requisition Links */
+        get: operations["requisition_links_api_v1_requisitions__id__links_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/requisitions/{id}/revisions": {
         parameters: {
             query?: never;
@@ -3780,6 +3797,54 @@ export interface components {
             /** Lines */
             lines: components["schemas"]["ReplacementLine"][];
         };
+        /** LinkEdge */
+        LinkEdge: {
+            /** From */
+            from: string;
+            /** Relation */
+            relation: string;
+            /** To */
+            to: string;
+        };
+        /** LinkedRecord */
+        LinkedRecord: {
+            /** Amount */
+            amount?: string | null;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Currency */
+            currency?: string | null;
+            /** Href */
+            href: string;
+            /** Id */
+            id: string;
+            /** Key */
+            key: string;
+            /** Kind */
+            kind: string;
+            /** Label */
+            label: string;
+            /** Relation */
+            relation?: string | null;
+            /** State */
+            state: string;
+            state_tone: components["schemas"]["Tone"];
+        };
+        /** LinksRead */
+        LinksRead: {
+            /** Edges */
+            edges: components["schemas"]["LinkEdge"][];
+            /** Nodes */
+            nodes: components["schemas"]["LinkedRecord"][];
+            /**
+             * Partial
+             * @default false
+             */
+            partial?: boolean;
+        };
         /**
          * LoginRequest
          * @description Credentials accepted by the local identity-provider boundary.
@@ -5288,6 +5353,8 @@ export interface components {
             /** Tenant Label */
             tenant_label: string | null;
         };
+        /** @enum {string} */
+        Tone: "neutral" | "info" | "success" | "warning" | "danger";
         /** TransferCreate */
         TransferCreate: {
             /** Amount */
@@ -11349,6 +11416,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LineWriteResult"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    requisition_links_api_v1_requisitions__id__links_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinksRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

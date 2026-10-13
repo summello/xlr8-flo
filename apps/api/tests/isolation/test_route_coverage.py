@@ -43,6 +43,10 @@ COVERED = {
     ): "requisitions/test_lifecycle.py::test_foreign_lifecycle_routes",
     (
         "GET",
+        "/api/v1/requisitions/{id}/links",
+    ): "requisitions/test_links.py::test_foreign_tenant_and_ungranted_links_are_404",
+    (
+        "GET",
         "/api/v1/requisitions/{id}/revisions",
     ): AMENDMENT_ROUTES,
     (
