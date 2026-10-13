@@ -307,6 +307,22 @@ Screens added around the built comparison: RFQ list, start an RFQ from approved 
 - **Fixed in one batch (P0 and P1):** (1) award verdict beside `Total Awarded` and in the action bar; (2) New RFQ header cells did not sit over their columns (a seventh, hidden header shifted them); (3) the late-bid callout contradicted itself (`Blocked` with an `Accept` button inside): one callout, one footer action; (4) mixed date formats and a 12-hour time: a date field and a 24-hour time field; (5) four open justification textareas on an over-scope award: one line each; (6) 4.32:1 captions on a sunken ground in light mode; (7) ticket ids in user copy; (8) no shortcut for the common case: `Set All to Lowest`; (9) no score range beside the score field.
 - **Left, with reasons (recorded in `pages/sourcing.md` section 7):** the detail page has seven cards (each is a different question; a fold for History and Linked Records was weighed and refused, they are the audit trail); the footer wrap of the shared decision panel at 375 (follow-up on the Approval Inbox page); 18px checkboxes sit inside 44px labels (measured on the input, not the label); the unconfirmed focus ring on one text input in light mode at one tab stop (same as Vendors); money fractions and `USD` at 11px are the system's money style; sort eligible vendors first in the invitee picker (P3).
 
+## 6j. Purchase Orders (screen list and questions; answers logged 13 Oct 2026, page not built yet)
+
+Screens proposed and accepted: PO list, create from awarded lines, PO editor, PO detail, issue (confirmation and signature moment 5), transmission log, change order, cancel or reduce, PDF preview, PO decision (inbox variant), sending domain status. Page spec when built: `design-system/pages/purchase-orders.md`.
+
+**Operator answers, 13 Oct 2026** ("Yes to all except 7 and 5"; each accepted answer is the recommendation made):
+
+162. **(6j-1) A PO commits against the project that holds the requisition's reservation at issue,** whichever it is. The budget card names it. Drawn as a labelled assumption: E09-S13 is open.
+163. **(6j-2) "Authorized project items" (PO-001's second path) are not in M3.** Only the award path is drawn, which keeps SRC-018 intact.
+164. **(6j-3) Tax and freight are entered per line;** freight may also be entered per document and is shared pro rata by line value (as DECISIONS 116). Rounding is per line; document totals are sums of rounded lines.
+165. **(6j-4) Bill To comes from the organization or unit address; Ship To is chosen from the delivery locations the requisition uses.** No one-off typed Ship To in M3.
+166. **(6j-6) A change order needs reapproval for the requisition's material changes** (amount, project, ledger account, item, line count; D-M2-13).
+167. **(6j-8) A PO in a vendor's currency commits at the rate stored with the award,** fixed at issue and shown with its date; a change order revalues only changed lines. Drawn as an assumption.
+168. **(6j-9) The PO email goes to the vendor's `Service and Delivery` contact** (6h-8). The requester gets an internal notification on issue, not a copy of the vendor email.
+169. **(6j-7) Fulfilment nomenclature is `Delivered` and `Accepted`, not `Fulfilled`** (operator). `Partially Delivered`, `Delivered` and `Accepted` are future states in M3 (goods receipt arrives in M4). The linked requisition's status when its lines are accepted is `Fulfilled` or `Completed`, the operator's open choice: recommendation `Completed`, the status REQ-005 already has. **Note for Opus:** PO-007 in `docs/requirements.md` still says `Partially Fulfilled` and `Fulfilled`, and MASTER 2.3 maps `partially_fulfilled` and `fulfilled`; a requirement is not changed on a board (AGENTS.md rule 4), so the wording is flagged here.
+170. **(6j-5) Supplier-facing document: pending the operator's answer.** Stated intent: the supplier gets an email whose body is a high-level summary of the PO, with a PDF or HTML attachment that is a simplified version of the buyer's PO, with no chartfields and no budget information. Open: PDF only or PDF and HTML, and whether other uploaded files may be sent at all in M3 (D-M2-8).
+
 ## 7. Findings to feed back into MASTER.md (amended 9 Oct 2026, see 97)
 
 - **The MASTER amendment is deferred until after Budget Transfer (item 84), which is now built: the next session can draft it for the operator.** It would fold in the items below plus the ancestry state rows (6f item 86).
