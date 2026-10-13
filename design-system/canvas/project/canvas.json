@@ -2649,6 +2649,626 @@
       "w": 1440,
       "x": 1520,
       "y": 18834
+    },
+    "VendorList.dc.html": {
+      "expand": "fill",
+      "h": 1027,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor List, 1440",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "VenListW1920.dc.html": {
+      "expand": "fill",
+      "h": 945,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor List, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 0
+    },
+    "VenListW1024.dc.html": {
+      "expand": "fill",
+      "h": 1043,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor List, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 0
+    },
+    "VenListW768.dc.html": {
+      "expand": "fill",
+      "h": 1323,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor List, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 0
+    },
+    "VenListW375.dc.html": {
+      "expand": "fill",
+      "h": 2531,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor List, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 0
+    },
+    "VenListLoading.dc.html": {
+      "expand": "fill",
+      "h": 941,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor List, Loading",
+      "w": 1440,
+      "x": 0,
+      "y": 2611
+    },
+    "VenListEmpty.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor List, Empty",
+      "w": 1440,
+      "x": 1520,
+      "y": 2611
+    },
+    "VenListError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor List, Error",
+      "w": 1440,
+      "x": 3040,
+      "y": 2611
+    },
+    "VenListPartial.dc.html": {
+      "expand": "fill",
+      "h": 1080,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor List, Partial, Scores Delayed",
+      "w": 1440,
+      "x": 4560,
+      "y": 2611
+    },
+    "VenListAttention.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor List, Needs Attention",
+      "w": 1440,
+      "x": 6080,
+      "y": 2611
+    },
+    "VendorProfile.dc.html": {
+      "expand": "fill",
+      "h": 2124,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, 1440",
+      "w": 1440,
+      "x": 0,
+      "y": 3931
+    },
+    "VenProfW1920.dc.html": {
+      "expand": "fill",
+      "h": 2060,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 3931
+    },
+    "VenProfW1024.dc.html": {
+      "expand": "fill",
+      "h": 2522,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 3931
+    },
+    "VenProfW768.dc.html": {
+      "expand": "fill",
+      "h": 3077,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 3931
+    },
+    "VenProfW375.dc.html": {
+      "expand": "fill",
+      "h": 4367,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 3931
+    },
+    "VenProfLoading.dc.html": {
+      "expand": "fill",
+      "h": 1386,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, Loading",
+      "w": 1440,
+      "x": 0,
+      "y": 8378
+    },
+    "VenProfError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, Error",
+      "w": 1440,
+      "x": 1520,
+      "y": 8378
+    },
+    "VenProfPartial.dc.html": {
+      "expand": "fill",
+      "h": 1891,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, Partial, Documents Failed",
+      "w": 1440,
+      "x": 3040,
+      "y": 8378
+    },
+    "VenProfNotEligible.dc.html": {
+      "expand": "fill",
+      "h": 2124,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, Not Eligible, Expired Document",
+      "w": 1440,
+      "x": 4560,
+      "y": 8378
+    },
+    "VenProfDisabledHere.dc.html": {
+      "expand": "fill",
+      "h": 2124,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, Disabled in the Viewer's Unit",
+      "w": 1440,
+      "x": 6080,
+      "y": 8378
+    },
+    "VenProfSuspended.dc.html": {
+      "expand": "fill",
+      "h": 2124,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, Suspended With Open RFQs",
+      "w": 1440,
+      "x": 0,
+      "y": 10582
+    },
+    "VenProfNoDocs.dc.html": {
+      "expand": "fill",
+      "h": 2124,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, Required Documents Missing",
+      "w": 1440,
+      "x": 1520,
+      "y": 10582
+    },
+    "VenProfPending.dc.html": {
+      "expand": "fill",
+      "h": 1929,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, Pending, Viewed by the Requester",
+      "w": 1440,
+      "x": 3040,
+      "y": 10582
+    },
+    "VenProfRestricted.dc.html": {
+      "expand": "fill",
+      "h": 2108,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, Tax and Banking Restricted",
+      "w": 1440,
+      "x": 4560,
+      "y": 10582
+    },
+    "VenProfRevealed.dc.html": {
+      "expand": "fill",
+      "h": 2148,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, Tax and Banking Revealed",
+      "w": 1440,
+      "x": 6080,
+      "y": 10582
+    },
+    "VenProfLongName.dc.html": {
+      "expand": "fill",
+      "h": 4392,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, Long Legal Name, 375",
+      "w": 375,
+      "x": 0,
+      "y": 12810
+    },
+    "VenDlgSuspend.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, Suspend Dialog",
+      "w": 1440,
+      "x": 0,
+      "y": 17442
+    },
+    "VenDlgSuspendMissing.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, Suspend Dialog, Reason Missing",
+      "w": 1440,
+      "x": 1520,
+      "y": 17442
+    },
+    "VenDlgSuspendError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, Suspend Dialog, Failed",
+      "w": 1440,
+      "x": 3040,
+      "y": 17442
+    },
+    "VenDlgReactivate.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, Reactivate Dialog",
+      "w": 1440,
+      "x": 4560,
+      "y": 17442
+    },
+    "VenDlgAvail.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, Change Availability Dialog",
+      "w": 1440,
+      "x": 6080,
+      "y": 17442
+    },
+    "VenDlgDisable.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, Disable Here Dialog",
+      "w": 1440,
+      "x": 0,
+      "y": 18422
+    },
+    "VenSheetDoc.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, Document Sheet",
+      "w": 1440,
+      "x": 1520,
+      "y": 18422
+    },
+    "VenSheetDocMissing.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, Document Sheet, Missing",
+      "w": 1440,
+      "x": 3040,
+      "y": 18422
+    },
+    "VenSheetDocReject.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, Document Sheet, Rejecting",
+      "w": 1440,
+      "x": 4560,
+      "y": 18422
+    },
+    "VenSheetScore.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, Scorecard Sheet",
+      "w": 1440,
+      "x": 0,
+      "y": 19402
+    },
+    "VenSheetScoreAdd.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Profile, Scorecard Sheet, Adding a Score",
+      "w": 1440,
+      "x": 1520,
+      "y": 19402
+    },
+    "VendorRequest.dc.html": {
+      "expand": "fill",
+      "h": 1933,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Request, 1440",
+      "w": 1440,
+      "x": 0,
+      "y": 20542
+    },
+    "VenReqW1920.dc.html": {
+      "expand": "fill",
+      "h": 1933,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Request, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 20542
+    },
+    "VenReqW1024.dc.html": {
+      "expand": "fill",
+      "h": 1917,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Request, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 20542
+    },
+    "VenReqW768.dc.html": {
+      "expand": "fill",
+      "h": 2045,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Request, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 20542
+    },
+    "VenReqW375.dc.html": {
+      "expand": "fill",
+      "h": 2595,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Request, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 20542
+    },
+    "VenReqLoading.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Request, Loading",
+      "w": 1440,
+      "x": 0,
+      "y": 23217
+    },
+    "VenReqPartial.dc.html": {
+      "expand": "fill",
+      "h": 1677,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Request, Partial, Questionnaire Failed",
+      "w": 1440,
+      "x": 1520,
+      "y": 23217
+    },
+    "VenReqError.dc.html": {
+      "expand": "fill",
+      "h": 2021,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Request, Submit Failed",
+      "w": 1440,
+      "x": 3040,
+      "y": 23217
+    },
+    "VenReqErrors.dc.html": {
+      "expand": "fill",
+      "h": 2299,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Request, Validation Summary",
+      "w": 1440,
+      "x": 4560,
+      "y": 23217
+    },
+    "VenReqDup.dc.html": {
+      "expand": "fill",
+      "h": 2075,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Request, Duplicate Found",
+      "w": 1440,
+      "x": 6080,
+      "y": 23217
+    },
+    "VenReqDupMgr.dc.html": {
+      "expand": "fill",
+      "h": 2167,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Request, Duplicate, Manager Override",
+      "w": 1440,
+      "x": 0,
+      "y": 25596
+    },
+    "VenReqSubmitted.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Request, Submitted",
+      "w": 1440,
+      "x": 1520,
+      "y": 25596
+    },
+    "VendorQuestionnaires.dc.html": {
+      "expand": "fill",
+      "h": 1035,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Questionnaires, 1440",
+      "w": 1440,
+      "x": 0,
+      "y": 28003
+    },
+    "VenQuestW1920.dc.html": {
+      "expand": "fill",
+      "h": 1051,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Questionnaires, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 28003
+    },
+    "VenQuestW1024.dc.html": {
+      "expand": "fill",
+      "h": 1813,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Questionnaires, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 28003
+    },
+    "VenQuestW768.dc.html": {
+      "expand": "fill",
+      "h": 1431,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Questionnaires, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 28003
+    },
+    "VenQuestW375.dc.html": {
+      "expand": "fill",
+      "h": 2381,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Questionnaires, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 28003
+    },
+    "VenQuestLoading.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Questionnaires, Loading",
+      "w": 1440,
+      "x": 0,
+      "y": 30464
+    },
+    "VenQuestEmpty.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Questionnaires, Empty",
+      "w": 1440,
+      "x": 1520,
+      "y": 30464
+    },
+    "VenQuestError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Questionnaires, Error",
+      "w": 1440,
+      "x": 3040,
+      "y": 30464
+    },
+    "VenQuestPartial.dc.html": {
+      "expand": "fill",
+      "h": 1118,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Questionnaires, Partial, Usage Delayed",
+      "w": 1440,
+      "x": 4560,
+      "y": 30464
+    },
+    "VenQuestWeights.dc.html": {
+      "expand": "fill",
+      "h": 1157,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Questionnaires, Weights Do Not Total 100",
+      "w": 1440,
+      "x": 6080,
+      "y": 30464
+    },
+    "VenQuestPublish.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "vendors",
+      "title": "Vendor Questionnaires, Publish Dialog",
+      "w": 1440,
+      "x": 0,
+      "y": 31701
+    },
+    "ApprSheetVendor.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Vendor Onboarding",
+      "w": 1440,
+      "x": 3040,
+      "y": 18834
+    },
+    "ApprSheetVendorLow.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Vendor Below Threshold With Duplicate",
+      "w": 1440,
+      "x": 4560,
+      "y": 18834
     }
   },
   "createdOnFiles": {
@@ -3110,6 +3730,51 @@
       "w": 240,
       "x": 0,
       "y": 6781
+    },
+    "vn1": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "vendors",
+      "text": "Vendors: Vendor List",
+      "w": 240,
+      "x": 0,
+      "y": -120
+    },
+    "vn2": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "vendors",
+      "text": "Vendors: Vendor Profile",
+      "w": 240,
+      "x": 0,
+      "y": 3811
+    },
+    "vn3": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "vendors",
+      "text": "Vendors: Status, Scope and Document Dialogs",
+      "w": 240,
+      "x": 0,
+      "y": 17322
+    },
+    "vn4": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "vendors",
+      "text": "Vendors: Request a Vendor",
+      "w": 240,
+      "x": 0,
+      "y": 20422
+    },
+    "vn5": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "vendors",
+      "text": "Vendors: Questionnaire Administration",
+      "w": 240,
+      "x": 0,
+      "y": 27883
     }
   },
   "order": [
@@ -3377,7 +4042,69 @@
     "CmpStale.dc.html",
     "CmpOver.dc.html",
     "ApprSheetTransfer.dc.html",
-    "ApprSheetTransferFunds.dc.html"
+    "ApprSheetTransferFunds.dc.html",
+    "VendorList.dc.html",
+    "VenListW1920.dc.html",
+    "VenListW1024.dc.html",
+    "VenListW768.dc.html",
+    "VenListW375.dc.html",
+    "VenListLoading.dc.html",
+    "VenListEmpty.dc.html",
+    "VenListError.dc.html",
+    "VenListPartial.dc.html",
+    "VenListAttention.dc.html",
+    "VendorProfile.dc.html",
+    "VenProfW1920.dc.html",
+    "VenProfW1024.dc.html",
+    "VenProfW768.dc.html",
+    "VenProfW375.dc.html",
+    "VenProfLoading.dc.html",
+    "VenProfError.dc.html",
+    "VenProfPartial.dc.html",
+    "VenProfNotEligible.dc.html",
+    "VenProfDisabledHere.dc.html",
+    "VenProfSuspended.dc.html",
+    "VenProfNoDocs.dc.html",
+    "VenProfPending.dc.html",
+    "VenProfRestricted.dc.html",
+    "VenProfRevealed.dc.html",
+    "VenProfLongName.dc.html",
+    "VenDlgSuspend.dc.html",
+    "VenDlgSuspendMissing.dc.html",
+    "VenDlgSuspendError.dc.html",
+    "VenDlgReactivate.dc.html",
+    "VenDlgAvail.dc.html",
+    "VenDlgDisable.dc.html",
+    "VenSheetDoc.dc.html",
+    "VenSheetDocMissing.dc.html",
+    "VenSheetDocReject.dc.html",
+    "VenSheetScore.dc.html",
+    "VenSheetScoreAdd.dc.html",
+    "VendorRequest.dc.html",
+    "VenReqW1920.dc.html",
+    "VenReqW1024.dc.html",
+    "VenReqW768.dc.html",
+    "VenReqW375.dc.html",
+    "VenReqLoading.dc.html",
+    "VenReqPartial.dc.html",
+    "VenReqError.dc.html",
+    "VenReqErrors.dc.html",
+    "VenReqDup.dc.html",
+    "VenReqDupMgr.dc.html",
+    "VenReqSubmitted.dc.html",
+    "VendorQuestionnaires.dc.html",
+    "VenQuestW1920.dc.html",
+    "VenQuestW1024.dc.html",
+    "VenQuestW768.dc.html",
+    "VenQuestW375.dc.html",
+    "VenQuestLoading.dc.html",
+    "VenQuestEmpty.dc.html",
+    "VenQuestError.dc.html",
+    "VenQuestPartial.dc.html",
+    "VenQuestWeights.dc.html",
+    "VenQuestPublish.dc.html",
+    "ApprSheetVendor.dc.html",
+    "ApprSheetVendorLow.dc.html"
   ],
   "pages": [
     {
@@ -3411,6 +4138,10 @@
     {
       "id": "rfq-comparison",
       "name": "RFQ Comparison"
+    },
+    {
+      "id": "vendors",
+      "name": "Vendors"
     },
     {
       "id": "design-system",

@@ -143,11 +143,37 @@
 
       <dl class="kv" style="margin:0">
         <dt class="t-label">Requested By</dt><dd style="margin:0">{{sheet.by}}</dd>
-        <dt class="t-label">Project</dt><dd style="margin:0"><a href="#" class="u">{{sheet.proj}}</a></dd>
+        <sc-if value="{{sheet.notVendor}}" hint-placeholder-val="{{ true }}"><dt class="t-label">Project</dt><dd style="margin:0"><a href="#" class="u">{{sheet.proj}}</a></dd></sc-if>
         <dt class="t-label">Amount</dt><dd style="margin:0"><sc-if value="{{sheet.hasAmt}}" hint-placeholder-val="{{ true }}"><span class="amt"><span class="metric" style="font-size:22px;line-height:28px"><span class="w">{{sheet.aw}}</span><span class="d">{{sheet.ad}}</span></span><span class="cur">USD</span></span></sc-if><sc-if value="{{sheet.noAmt}}" hint-placeholder-val="{{ false }}">Not applicable</sc-if></dd>
         <dt class="t-label">{{sheet.needLabel}}</dt><dd style="margin:0">{{sheet.needed}}</dd>
         <dt class="t-label">Version</dt><dd style="margin:0">{{sheet.verText}}</dd>
       </dl>
+      <sc-if value="{{sheet.isVendor}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="sh-vn">
+          <h3 class="t-label" id="sh-vn" style="margin-bottom:8px">Onboarding Evidence</h3>
+          <div class="card" style="box-shadow:none"><div class="card-b" style="display:flex;flex-direction:column;gap:12px">
+            <div>
+              <div class="t-label">Questionnaire Score</div>
+              <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><span class="metric">{{sheet.vn.score}}</span><span class="t-caption">of 100, threshold {{sheet.vn.threshold}}</span></div>
+              <span class="{{sheet.vn.scoreCls}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{sheet.vn.scoreD}}"></path></svg><span>{{sheet.vn.scoreText}}</span></span>
+              <details class="fold" style="margin-top:8px"><summary class="t-dense" style="font-weight:560;cursor:pointer;min-height:24px">Score by Question <span class="t-caption" style="font-weight:400">answers and points</span></summary>
+                <dl class="kv" style="margin:8px 0 0;grid-template-columns:minmax(0,1fr) auto"><sc-for list="{{sheet.vn.qs}}" as="q" hint-placeholder-count="4"><dt style="overflow-wrap:anywhere">{{q.q}}<div class="t-caption">{{q.a}}</div></dt><dd class="num" style="margin:0;text-align:right">{{q.pts}}</dd></sc-for></dl>
+              </details>
+            </div>
+            <div style="border-top:1px solid var(--border);padding-top:12px">
+              <div class="t-label" style="margin-bottom:6px">Duplicate Check</div>
+              <span class="{{sheet.vn.dupCls}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{sheet.vn.dupD}}"></path></svg><span>{{sheet.vn.dupText}}</span></span>
+              <sc-if value="{{sheet.vn.dupNote}}" hint-placeholder-val="{{ false }}"><p class="t-caption" style="margin:4px 0 0">{{sheet.vn.dupNote}}</p></sc-if>
+            </div>
+            <div style="border-top:1px solid var(--border);padding-top:12px">
+              <div class="t-label" style="margin-bottom:6px">Documents</div>
+              <ul class="sig-why" style="margin:0;font-size:13px;line-height:20px;color:var(--fg)"><sc-for list="{{sheet.vn.docs}}" as="d" hint-placeholder-count="3"><li>{{d.t}} <span class="t-caption">{{d.s}}</span></li></sc-for></ul>
+              <sc-if value="{{sheet.vn.hasMissing}}" hint-placeholder-val="{{ true }}"><p class="t-caption" style="margin:6px 0 0">Not supplied yet: {{sheet.vn.missing}}. The vendor will not be eligible until they are.</p></sc-if>
+            </div>
+            <p class="t-caption" style="margin:0">A score below the threshold is a fact for you to weigh. It does not block approval.</p>
+          </div></div>
+        </section>
+      </sc-if>
       <sc-if value="{{sheet.isTransfer}}" hint-placeholder-val="{{ false }}">
         <section aria-labelledby="sh-post">
           <h3 class="t-label" id="sh-post" style="margin-bottom:8px">What Posts If You Approve</h3>
@@ -332,6 +358,8 @@ class Component extends DCLogic {
       { id: 'REQ-00424', title: 'Conveyor Belt Replacement', type: 'Capital Requisition', by: 'Sana Qureshi', proj: 'Plant 2 Dock Upgrade', amt: 84500, step: '1 of 1', due: '10 Oct 2026', dueN: 10, late: 0, tab: 'pending', kind: 'requisition', ver: 'v3', stale: true },
       { id: 'REQ-00409', title: 'Packaging Line Guarding', type: 'Capital Requisition', by: 'Dev Patel', proj: 'Plant 4 Line Retrofit', amt: 52000, step: '1 of 1', due: '11 Oct 2026', dueN: 11, late: 0, tab: 'pending', kind: 'requisition', ver: 'v2', changes: true },
       { id: 'BT-00031', title: 'Transfer Plant 4 To Plant 2', type: 'Budget Transfer', by: 'Luis Moreno', proj: 'Plant 4 Line Retrofit', amt: 40000, step: '2 of 2', due: '12 Oct 2026', dueN: 12, late: 0, tab: 'pending', kind: 'transfer', ver: 'v1' },
+      { id: 'V-00151', title: 'Tessellate Safety', type: 'Vendor Onboarding', by: 'dev.patel@northwind.example', proj: 'Plant 4', amt: null, step: '1 of 2', due: '14 Oct 2026', dueN: 14, late: 0, tab: 'pending', kind: 'vendor', ver: 'v1' },
+      { id: 'V-00184', title: 'Brightline Hoists', type: 'Vendor Onboarding', by: 'sana.qureshi@northwind.example', proj: 'Plant 2', amt: null, step: '1 of 2', due: '15 Oct 2026', dueN: 15, late: 0, tab: 'pending', kind: 'vendor', ver: 'v1' },
       { id: 'AWD-00094', title: 'Servo Drive Award', type: 'Award', by: 'Priya Raman', proj: 'Plant 4 Line Retrofit', amt: 128640, step: '1 of 2', due: '13 Oct 2026', dueN: 13, late: 0, tab: 'pending', kind: 'award', ver: 'v1' },
       { id: 'PO-00251', title: 'Conveyor Spares', type: 'Purchase Order', by: 'Priya Raman', proj: 'Plant 2 Dock Upgrade', amt: 18420.5, step: '1 of 1', due: '14 Oct 2026', dueN: 14, late: 0, tab: 'pending', kind: 'purchase order', ver: 'v1' },
       { id: 'REQ-00398', title: 'Forklift Battery Pack', type: 'Capital Requisition', by: 'Sana Qureshi', proj: 'Plant 2 Dock Upgrade', amt: 22800, step: '1 of 1', due: '6 Oct 2026', dueN: 6, late: 0, tab: 'completed', out: 'approved', kind: 'requisition', ver: 'v1', note: 'Within the plan and the quote is current.' },
@@ -443,10 +471,16 @@ class Component extends DCLogic {
         { field: 'Conveyor Belt, Line 1', was: '2 ea', now: '3 ea', delta: '1 more' },
         { field: 'Estimate', was: '84,500.00 USD', now: '126,750.00 USD', delta: 'Up 42,250.00 USD (50%)' }
       ] : [];
+      const VNM = {
+        'V-00151': { score: 84, threshold: 70, qs: [['What does the company make or supply?', 'Safety engineering and machine guarding', 'Read'], ['Years trading', '5 years', '10 of 20'], ['Do you hold an ISO 9001 certificate?', 'Yes', '25 of 25'], ['Largest order in the last 12 months', 'Under 100,000 USD', '5 of 20'], ['Regions you can deliver to', 'North America, Europe', '10 of 15'], ['Insurance cover renews on', '19 Sep 2027', '20 of 20']], dup: [true, 'No match on tax ID or registration number', ''], docs: [['Tax Registration', 'Supplied, not yet verified'], ['Certificate of Incorporation', 'Supplied, not yet verified'], ['Insurance Certificate', 'Supplied, not yet verified']], missing: 'Banking Verification, Safety Certification' },
+        'V-00184': { score: 58, threshold: 70, qs: [['What does the company make or supply?', 'Overhead hoists and lifting gear', 'Read'], ['Years trading', '2 years', '0 of 20'], ['Do you hold an ISO 9001 certificate?', 'No', '0 of 25'], ['Largest order in the last 12 months', '100,000 to 1,000,000 USD', '12 of 20'], ['Regions you can deliver to', 'Europe', '5 of 15'], ['Insurance cover renews on', '30 Jun 2027', '20 of 20']], dup: [false, 'Registration number matches an existing vendor', 'Cobalt Cooling, V-00122, Active. The requester was offered that vendor and chose to continue; a vendor manager entered a reason: separate legal entity, same address.'], docs: [['Tax Registration', 'Supplied, verified'], ['Certificate of Incorporation', 'Supplied, not yet verified'], ['Insurance Certificate', 'Supplied, verified'], ['Banking Verification', 'Supplied, not yet verified'], ['Safety Certification', 'Supplied, verified']], missing: '' }
+      };
+      const vnRaw = VNM[cur.id] || null;
+      const vn = vnRaw ? { score: vnRaw.score, threshold: vnRaw.threshold, scoreCls: 'sig ' + (vnRaw.score >= vnRaw.threshold ? 'is-ok' : 'is-warn'), scoreD: vnRaw.score >= vnRaw.threshold ? 'M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6' : 'M12 3l10 18H2zM12 10v5M12 18h.01', scoreText: vnRaw.score >= vnRaw.threshold ? 'At or above the threshold' : 'Below the threshold by ' + (vnRaw.threshold - vnRaw.score) + ' points', qs: vnRaw.qs.map((x) => ({ q: x[0], a: x[1], pts: x[2] })), dupCls: 'sig ' + (vnRaw.dup[0] ? 'is-ok' : 'is-warn'), dupD: vnRaw.dup[0] ? 'M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6' : 'M12 3l10 18H2zM12 10v5M12 18h.01', dupText: vnRaw.dup[1], dupNote: vnRaw.dup[2], docs: vnRaw.docs.map((d) => ({ t: d[0], s: d[1] })), hasMissing: !!vnRaw.missing, missing: vnRaw.missing } : null;
       sheet = {
         id: cur.id, type: cur.type, ver: cur.ver, title: cur.title, kind: cur.kind,
         pillCls: 'pill ' + v.pill.c, pd: v.pill.d, pillText: v.pill.t, focusClose: !result,
-        notes, by: cur.by, proj: cur.proj, hasAmt: !!a, noAmt: !a, aw: a ? a[0] : '', ad: a ? a[1] : '', needed: TRF[cur.id] ? TRF[cur.id].eff : '6 Nov 2026', needLabel: TRF[cur.id] ? 'Effective Date' : 'Needed By', isTransfer: !!TRF[cur.id], tr: trView(cur.id),
+        notes, by: cur.by, proj: cur.proj, hasAmt: !!a, noAmt: !a, aw: a ? a[0] : '', ad: a ? a[1] : '', needed: cur.kind === 'vendor' ? (cur.id === 'V-00184' ? 'Plant 2 only' : 'Plant 4 only') : TRF[cur.id] ? TRF[cur.id].eff : '6 Nov 2026', needLabel: cur.kind === 'vendor' ? 'Availability Requested' : TRF[cur.id] ? 'Effective Date' : 'Needed By', isVendor: cur.kind === 'vendor', notVendor: cur.kind !== 'vendor', vn, isTransfer: !!TRF[cur.id], tr: trView(cur.id),
         verText: (cur.stale && loadedNow ? 'v3, loaded 09:40' : cur.stale ? 'v2 (you have it), v3 is current' : cur.ver + ', submitted 6 Oct 2026, 09:12'),
         hasDiff: showDiff, diff: DIFF, diffSummary: cur.changes ? 'Three changes. The estimate rose, so this is a material change: routing restarted and your earlier return no longer applies.' : 'Two changes. The estimate rose by half, so routing restarted from the first step.',
         whyOk: !partial, whyErr: partial,

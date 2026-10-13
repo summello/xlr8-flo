@@ -759,3 +759,34 @@ button.cmp-gbtn .t-caption { text-transform: none; letter-spacing: 0; font-weigh
 .cmp-chev { transition: transform var(--dur-fast) var(--ease-out); }
 .cmp-gbtn[aria-expanded="true"] .cmp-chev { transform: rotate(90deg); }
 @media (max-width: 1023px) { button.cmp-gbtn { min-height: 44px; } }
+
+/* Vendors (HANDOFF-vendors). Tokens only. A signal is an icon plus words; the icon takes the tone, the words never depend on it (A11Y-004, TAG-003). */
+.sig { display: inline-flex; align-items: flex-start; gap: 6px; font-size: 13px; line-height: 18px; font-weight: 560; }
+.sig svg { flex: none; margin-top: 2px; }
+.sig.is-ok svg { color: var(--st-success-fg); }
+.sig.is-warn svg { color: var(--st-warning-fg); }
+.sig.is-bad svg { color: var(--st-danger-fg); }
+.sig.is-info svg { color: var(--st-info-fg); }
+.sig.is-n svg { color: var(--st-neutral-fg); }
+.sig-why { margin: 2px 0 0; padding: 0; list-style: none; font-size: 12px; line-height: 16px; font-weight: 400; color: var(--fg-secondary); }
+.elig { display: flex; flex-direction: column; gap: 4px; }
+.elig .sig { font-size: 14px; line-height: 20px; }
+.mask { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
+.mask.is-open { letter-spacing: 0; }
+.btn.danger { color: var(--st-danger-fg); }   /* MASTER 7.13: danger text plus icon plus verb */
+.btn.danger.fill { background: var(--st-danger-fg); border-color: var(--st-danger-fg); color: var(--surface); }   /* only the confirm button of a confirmation dialog */
+.btn.danger.fill:is(:hover, .is-hover) { background: var(--st-danger-fg); filter: brightness(0.92); }
+@container main (min-width: 760px) { .v-w { grid-column: span 7; } .v-n { grid-column: span 5; } }   /* a pair that never goes three-up: always fills 12 */
+@container main (min-width: 1100px) { .v-w { grid-column: span 8; } .v-n { grid-column: span 4; } }
+.cols-ven { grid-template-columns: minmax(0, 1.8fr) 152px minmax(0, 1.3fr) 150px 176px 84px 76px; column-gap: 20px; }
+.cols-vdoc { grid-template-columns: minmax(0, 1.5fr) 104px 168px minmax(0, 1.2fr) 112px 64px; }
+.cols-vcon { grid-template-columns: minmax(0, 1.2fr) 150px minmax(0, 1.3fr) 130px 148px; }
+.cols-vsc { grid-template-columns: 104px 96px 56px minmax(0, 1.4fr) minmax(0, 1fr) 120px; }
+.cols-vq { grid-template-columns: 72px minmax(0, 1.8fr) 140px 76px 76px 128px; }
+@container card (max-width: 899px) {
+  .cols-ven { grid-template-columns: minmax(0, 1fr) 140px minmax(0, 1fr) 168px; }
+  .cols-vdoc { grid-template-columns: minmax(0, 1fr) 132px minmax(0, 1fr) 64px; }
+  .cols-vcon { grid-template-columns: minmax(0, 1fr) 128px minmax(0, 1fr) 148px; }
+  .cols-vsc { grid-template-columns: 92px 84px 56px minmax(0, 1fr) 104px; }
+  .cols-vq { grid-template-columns: 72px minmax(0, 1fr) 120px 112px; }
+}
