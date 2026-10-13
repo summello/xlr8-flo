@@ -111,7 +111,7 @@ agents:
     accounts:
       A: default                 # claude / claude-personal
       B: ~/.claude-summello      # claude-summello
-    max_workers_per_account: 1   # 13 Oct 2026 pilot: 1 per account for six stories, then 2.
+    max_workers_per_account: 2   # 13 Oct 2026: raised from the pilot's 1 when the operator handed B four stories (B at 8% used).
                                  # Drop an account back to 1 if it caps more than once a day.
     roles: [author]
     allowed_kinds: [ledger, concurrency, migration, security, engine, api, chore, ui, crud, docs, test]
