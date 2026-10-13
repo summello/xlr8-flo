@@ -36,7 +36,7 @@ case "$A" in
     if [ "$MODE" = new ]; then
       RUN="claude -p --model sonnet --effort high --session-id $SID -n 'xlr8flo-worker $S' --permission-mode auto"
     else
-      RUN="claude -p --resume $SID --permission-mode auto"
+      RUN="claude -p --model sonnet --effort high --resume $SID --permission-mode auto"
     fi
     # "-" is the default login: unset the variable rather than point it at ~/.claude.
     if [ "$CFG" = - ]; then ENV="env -u CLAUDE_CONFIG_DIR"; else ENV="env CLAUDE_CONFIG_DIR='$CFG'"; fi
