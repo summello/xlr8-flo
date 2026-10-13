@@ -48,7 +48,7 @@ test.describe('inbox', () => {
   test('tabs carry counts, arrow keys move between them, and the figures agree', async ({ page }) => {
     await open(page, INBOX);
     const counts = await page.locator('[role=tab] .t-caption').allInnerTexts();
-    expect(counts).toEqual(['9', '2', '5', '3']);
+    expect(counts).toEqual(['11', '2', '5', '3']);        // 9 plus the two vendor onboarding requests added with the Vendors page
     await page.getByRole('tab', { name: /Pending/ }).focus();
     await page.keyboard.press('ArrowRight');
     await expect(page.getByRole('tab', { name: /Overdue/ })).toHaveAttribute('aria-selected', 'true');
@@ -69,7 +69,7 @@ test.describe('inbox', () => {
     await expect(page.getByText('No Approvals Match')).toBeVisible();
     await expect(page.getByLabel('Search')).toHaveValue('conveyor');
     await page.getByRole('button', { name: 'Clear filters' }).first().click();
-    await expect(page.locator('[role=row].cols-appr:not(.head):not(.total)')).toHaveCount(9);
+    await expect(page.locator('[role=row].cols-appr:not(.head):not(.total)')).toHaveCount(11);
   });
 
   test('sorting by amount sets aria-sort and orders the rows', async ({ page }) => {
@@ -149,7 +149,7 @@ test.describe('decision panel', () => {
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Close' }).first()).toBeFocused();           // focus follows to the next document
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('tab', { name: /Pending/ }).locator('.t-caption')).toHaveText('8');
+    await expect(page.getByRole('tab', { name: /Pending/ }).locator('.t-caption')).toHaveText('10');
     await page.getByRole('tab', { name: /Completed/ }).click();
     await expect(page.getByRole('tab', { name: /Completed/ }).locator('.t-caption')).toHaveText('6');
     await expect(rowOf(page, 'REQ-00418')).toContainText('Approved');
