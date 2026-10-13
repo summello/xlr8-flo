@@ -1141,7 +1141,7 @@ def test_account_picker_balances_load_and_resumes_a_recorded_session(
     flo = load_flo()
     task = tmp_path / "task.json"
     task.write_text(json.dumps({"author": "sonnet"}))
-    cfg = {"accounts": {"A": "~/a", "B": "~/b"}, "max_workers_per_account": 2}
+    cfg = {"accounts": {"A": "default", "B": "~/b"}, "max_workers_per_account": 2}
     saved: dict[str, Any] = {"last_account": {"sonnet": "B"}}
     load = {"A": 1}
     monkeypatch.setattr(flo, "worktree_path", lambda sid: tmp_path)
@@ -1160,6 +1160,11 @@ def test_account_picker_balances_load_and_resumes_a_recorded_session(
     flo.cmd_account(["E99-S01"])  # a second launch of the same story resumes, never forks
     assert capsys.readouterr().out.split() == [
         "resume", str(Path("~/b").expanduser()), session, "B"]
+
+    task.write_text(json.dumps({"author": "sonnet"}))
+    load.update({"B": 2})
+    flo.cmd_account(["E99-S01"])  # A is the default login: CLAUDE_CONFIG_DIR must be unset, not set
+    assert capsys.readouterr().out.split()[1:4:2] == ["-", "A"]
 
     task.write_text(json.dumps({"author": "sonnet"}))
     load.update({"A": 2, "B": 2})
