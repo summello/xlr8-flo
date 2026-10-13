@@ -653,6 +653,24 @@
         "title": "AmendmentSubmit",
         "type": "object"
       },
+      "AmountTotal": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          }
+        },
+        "required": [
+          "currency",
+          "amount"
+        ],
+        "title": "AmountTotal",
+        "type": "object"
+      },
       "ApprovalExplanation": {
         "additionalProperties": false,
         "properties": {
@@ -7624,6 +7642,13 @@
           "total": {
             "title": "Total",
             "type": "integer"
+          },
+          "totals": {
+            "items": {
+              "$ref": "#/components/schemas/AmountTotal"
+            },
+            "title": "Totals",
+            "type": "array"
           }
         },
         "required": [
@@ -19620,6 +19645,18 @@
                 }
               ],
               "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
             }
           },
           {

@@ -4,7 +4,7 @@ from collections.abc import Callable
 from typing import Annotated, Literal, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, Request, Response
+from fastapi import APIRouter, Depends, Header, Query, Request, Response
 
 from flo.api.admin_users import organization_target
 from flo.api.auth import get_auth_settings
@@ -121,6 +121,7 @@ def list_requisitions(
     sort: RequisitionSort = "number",
     direction: Direction = "asc",
     cursor: str | None = None,
+    page_size: Annotated[int, Query(ge=1, le=50)] = 50,
 ) -> RequisitionPage:
     # ponytail: BU-only grants cannot list; add granted_scopes filtering
     # when a tenant uses BU-only grants.
@@ -133,6 +134,7 @@ def list_requisitions(
         sort=sort,
         direction=direction,
         cursor=cursor,
+        page_size=page_size,
     )
 
 

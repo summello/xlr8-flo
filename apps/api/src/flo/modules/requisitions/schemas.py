@@ -119,10 +119,17 @@ class RequisitionRead(BaseModel):
     amendment: AmendmentRef | None = None
 
 
+class AmountTotal(BaseModel):
+    currency: str
+    amount: str
+
+
 class RequisitionPage(BaseModel):
     rows: list[RequisitionRead]
     total: int
     next_cursor: str | None
+    # The estimate summed over the whole filtered set (not the page), one entry per currency.
+    totals: list[AmountTotal] = Field(default_factory=list)
 
 
 class LineCreate(BaseModel):

@@ -3,7 +3,7 @@ import type { components } from "../../api/generated/schema";
 import { apiClient } from "../../api/client";
 import { failure, label } from "../projects/api";
 import Money from "../ui/Money";
-import { scaled } from "./decimal";
+import { scaled } from "../../lib/decimal";
 type Bucket = components["schemas"]["LedgerBucket"];
 export default function Ledger({ id, bucket }: { id: string; bucket?: Bucket }) {
   const [page, setPage] = useState<components["schemas"]["LedgerPage"] | null>(null);

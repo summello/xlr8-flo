@@ -2,7 +2,7 @@ import { useId, useState } from "react";
 import type { components } from "../../api/generated/schema";
 import { formatMoney } from "../../lib/money";
 import Money from "../ui/Money";
-import { chartUnits, share } from "./decimal";
+import { chartUnits, share } from "../../lib/decimal";
 type Node = components["schemas"]["TreeNode"];
 const buckets = ["allocated", "reserved", "committed", "actual", "available"] as const;
 export default function BarChart({ nodes }: { nodes: Node[] }) {

@@ -437,6 +437,10 @@ def test_foreign_tenant_routes_and_list_isolation(header_db):
             assert [row["id"] for row in result.json()["rows"]] == [str(own.id)]
             result = await send(browser, "GET", "?bu_id=" + str(foreign_bu.id))
             assert result.json()["rows"] == [] and result.json()["total"] == 0
+            assert result.json()["totals"] == []
+            # A foreign tenant's estimate never reaches this tenant's filtered total.
+            own_totals = (await send(browser, "GET")).json()["totals"]
+            assert all(t["amount"] == "0.0000" for t in own_totals)
 
     asyncio.run(scenario())
     with pytest.raises(ProblemError) as error:
@@ -761,5 +765,41 @@ def test_standalone_origin_keeps_bu_authorization_after_project_assignment(heade
             result = await send(browser, "GET", "/" + str(row.id))
             assert result.status_code == 200 and result.json()["standalone"]
             assert result.json()["project_id"] == str(assigned.id)
+
+    asyncio.run(scenario())
+
+
+def test_list_page_size_and_filtered_totals_per_currency(header_db):
+    db = header_db
+    p = project(db, unit(db, "TOT"))
+    for i in range(5):
+        svc(db).create(RequisitionCreate(title=f"Total {i}", project_id=p.id))
+    with tenant_transaction(db[0], Scope(db[1])):
+        db[0].execute(
+            "UPDATE requisition SET estimate = 10.5000 * (1 + (number::text <> '')::int) "
+            "WHERE org_id=%s AND title LIKE 'Total %%'",
+            (db[1],),
+        )
+        db[0].execute(
+            "UPDATE requisition SET status='cancelled', estimate=1.2500 "
+            "WHERE org_id=%s AND title='Total 0'",
+            (db[1],),
+        )
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            page = (await send(browser, "GET", "?q=Total&page_size=2&sort=title")).json()
+            assert len(page["rows"]) == 2 and page["total"] == 5 and page["next_cursor"]
+            # The sum covers the whole filtered set, not the page: 4 x 21.0000 + 1.2500.
+            assert page["totals"] == [{"currency": p.currency, "amount": "85.2500"}]
+            drafts = (await send(browser, "GET", "?q=Total&status=draft&page_size=2")).json()
+            assert drafts["total"] == 4 and drafts["totals"][0]["amount"] == "84.0000"
+            nxt = await send(
+                browser, "GET", "?q=Total&page_size=2&sort=title&cursor=" + page["next_cursor"]
+            )
+            assert len(nxt.json()["rows"]) == 2
+            for bad in ("0", "51"):
+                assert (await send(browser, "GET", "?page_size=" + bad)).status_code == 422
 
     asyncio.run(scenario())

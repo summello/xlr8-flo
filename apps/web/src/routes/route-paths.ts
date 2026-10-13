@@ -8,6 +8,7 @@ export const ROUTE_PATHS = [
   "/budget",
   "/reporting",
   "/requisitions",
+  "/requisitions/new",
   "/approvals",
   "/approvals/availability",
   "/vendors",

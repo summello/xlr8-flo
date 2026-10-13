@@ -2409,6 +2409,13 @@ export interface components {
             /** Note */
             note?: string | null;
         };
+        /** AmountTotal */
+        AmountTotal: {
+            /** Amount */
+            amount: string;
+            /** Currency */
+            currency: string;
+        };
         /** ApprovalExplanation */
         ApprovalExplanation: {
             /** Decisions */
@@ -4831,6 +4838,8 @@ export interface components {
             rows: components["schemas"]["RequisitionRead"][];
             /** Total */
             total: number;
+            /** Totals */
+            totals?: components["schemas"]["AmountTotal"][];
         };
         /** RequisitionPatch */
         RequisitionPatch: {
@@ -10642,6 +10651,7 @@ export interface operations {
                 sort?: "number" | "title" | "estimate" | "needed_by" | "updated_at";
                 direction?: "asc" | "desc";
                 cursor?: string | null;
+                page_size?: number;
             };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;

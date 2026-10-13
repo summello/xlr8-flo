@@ -3041,6 +3041,48 @@
       },
       "recap": "Added GET /requisitions/{id}/links serving provider-computed, per-node read-filtered nodes and edges, plus assert_current_upstream (WF-001) and budget.entries_for_source. Providers fail soft with partial:true; M3 kinds plug in via register_link_provider.",
       "title": "Linked-record graph: RFQs, bids, awards, POs, approvals, notes, ledger entries"
+    },
+    {
+      "story": "E09-S11",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 4,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "081d1552-9879-4743-a60c-98bf8df2ed27",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S11",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1370a-a2ec-77e2-881d-9b90cd1b0b6c",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds the requisition screens (list with tabs, create/edit with lines, funding check, catalogue, attachments, submit with a focused error summary, and a detail page with lifecycle, reservation, history, linked records, line rollup, returned banner and withdraw dialog), plus a general unsaved-changes guard and exact BigInt line arithmetic in lib/decimal.ts. Verified by 47 stubbed Playwright cases, axe in both themes, and new vitest suites; no backend change.",
+      "title": "Requisition screens: create, lines, submit, track, quantity rollup"
     }
   ]
 }

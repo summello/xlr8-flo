@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 
 import { stubWorkflows } from "../e2e/workflow-list-fixture";
 import { stubApprovals } from "../e2e/approvals-fixture";
+import { stubRequisitions } from "../e2e/requisitions-fixture";
 import { stubDashboard } from "../e2e/dashboard-fixture";
 import { projectId } from "../e2e/projects-fixture";
 import { ROUTE_PATHS } from "../../src/routes/route-paths";
@@ -22,12 +23,15 @@ for (const theme of ["light", "dark"] as const) {
       }, theme);
       if (route === "/admin/approval-workflows") await stubWorkflows(page);
       if (route.startsWith("/approvals")) await stubApprovals(page);
+      if (route.startsWith("/requisitions")) await stubRequisitions(page);
       await page.goto(route);
       await page.locator(".app-shell").waitFor();
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
       if (route === "/projects") await expect(page.locator("tr[data-grid-row]").first()).toBeVisible();
       if (route === "/projects/new") await expect(page.locator(".project-form")).toBeVisible();
+      if (route === "/requisitions/new") await expect(page.locator("#req-title")).toBeVisible();
+      if (route === "/requisitions") await expect(page.getByRole("tab", { name: /^Mine/ })).toBeVisible();
       if (route === "/_dev/grid") {
         await expect(page.locator("tr[data-grid-row]").first()).toBeVisible();
       }

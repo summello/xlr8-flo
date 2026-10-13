@@ -45,6 +45,7 @@ from flo.modules.requisitions.links import links as links
 from flo.modules.requisitions.links import register_link_provider as register_link_provider
 from flo.modules.requisitions.models import READ_FIELDS, READ_SQL, RequisitionRepository
 from flo.modules.requisitions.schemas import (
+    AmountTotal,
     Direction,
     RequisitionCreate,
     RequisitionPage,
@@ -424,7 +425,10 @@ class RequisitionService:
         sort: RequisitionSort = "number",
         direction: Direction = "asc",
         cursor: str | None = None,
+        page_size: int = 50,
     ) -> RequisitionPage:
+        if not 1 <= page_size <= 50:
+            raise invalid("page_size", "Choose a page size from 1 to 50.")
         if sort not in (
             "number",
             "title",
@@ -485,20 +489,27 @@ class RequisitionService:
                 "SELECT count(*) FROM requisition r WHERE " + filters, params
             ).fetchone()
             assert count is not None
+            sums = self.repo.execute(
+                "SELECT r.currency, sum(r.estimate) FROM requisition r WHERE "
+                + filters
+                + " GROUP BY r.currency ORDER BY r.currency",
+                params,
+            ).fetchall()
             rows = self.repo.execute(
                 READ_SQL
                 + " WHERE "
                 + filters
                 + boundary
-                + f" ORDER BY r.{sort} {direction} NULLS LAST,r.id {direction} LIMIT 51",
+                + f" ORDER BY r.{sort} {direction} NULLS LAST,r.id {direction}"
+                + f" LIMIT {page_size + 1}",
                 params,
             ).fetchall()
             records = [
                 RequisitionRead.model_validate(dict(zip(READ_FIELDS, row, strict=True)))
-                for row in rows[:50]
+                for row in rows[:page_size]
             ]
             next_cursor = None
-            if len(rows) > 50:
+            if len(rows) > page_size:
                 last = records[-1]
                 key = getattr(last, sort)
                 next_cursor = base64.urlsafe_b64encode(
@@ -511,4 +522,12 @@ class RequisitionService:
                         }
                     ).encode()
                 ).decode()
-            return RequisitionPage(rows=records, total=int(str(count[0])), next_cursor=next_cursor)
+            return RequisitionPage(
+                rows=records,
+                total=int(str(count[0])),
+                next_cursor=next_cursor,
+                totals=[
+                    AmountTotal(currency=str(c), amount=format(cast(Decimal, a), ".4f"))
+                    for c, a in sums
+                ],
+            )
