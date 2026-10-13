@@ -285,7 +285,11 @@ def cmd_codex_usage(argv):
                 if ((j.get("payload") or {}).get("rate_limits") or {}).get("primary")]
     latest = max(readings, key=lambda j: j.get("timestamp", ""), default={})
     limits = (latest.get("payload") or {}).get("rate_limits") or {}
+    # The model and effort Codex actually ran, not the ones asked for: config.toml once overrode them.
+    ctx = [json.loads(ln) for f in files for ln in f.read_text().splitlines() if '"turn_context"' in ln]
+    ran = (max(ctx, key=lambda j: j.get("timestamp", ""), default={}).get("payload") or {})
     rec = {"story": argv[0], "start": argv[1], "end": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+           "model": ran.get("model"), "effort": ran.get("effort"),
            "five_hour": limits.get("primary"), "weekly": limits.get("secondary")}
     out = ROOT / ".scratch" / "codex-usage.jsonl"
     out.parent.mkdir(exist_ok=True)
