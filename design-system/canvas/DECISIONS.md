@@ -284,6 +284,29 @@ Screens added around the built comparison: RFQ list, start an RFQ from approved 
 149. **(6i-7) No split-award-versus-minimum-order warning is drawn.** The vendor carries no minimum order value (6h-9); it stays open (119).
 150. **(6i-8) The non-lowest justification is an organization setting, on by default** (SRC-014 "when configured").
 
+**Design decisions made while building** *(Claude)*:
+
+151. **The comparison is not redrawn; the new screens wrap it.** The list, detail and award draft link into the built comparison, and `Start Award` lands on the award draft with its basis carried across.
+152. **The line picker and the invitee picker are checkbox rows, not drag.** A quantity field is the whole split mechanism (REQ-014), so no drag path is needed.
+153. **The eligibility signal is the Vendors one.** `Override` is offered only to `rfq.approve` on the unit, asks for a reason, and is recorded beside the vendor; the sixth invitee is refused with the limit in words even with an override.
+154. **A published RFQ is amended, never edited.** The amend screen shows `What Changed` as words and a struck `was`, a required reason, and `Who Will Be Told` by contact; each invitee row says which version it holds.
+155. **A keyed bid carries two times:** `Vendor Sent It On` (date and a 24-hour time, evidenced) decides lateness; `Keyed By Us` never changes. A late bid is kept out unless a lead accepts it with a reason, in one footer action (`Accept Late Bid and Save`).
+156. **The award verdict sits beside the total and in the pinned bar,** not a screen below the lines, so the figure that decides the submit is never carried from one place to another. `Set All to Lowest` is the keyboard shortcut for the common case.
+157. **Non-lowest justification is one line per line,** a text input marked Required, so three open textareas do not take the page.
+158. **The release of unused reserved funds is labelled an assumption on the board,** and no ticket id appears in user copy.
+159. **Captions on a sunken ground step up to the secondary colour** (`.row.group`, `.notice`), the same fix as DECISIONS section 7.
+160. **New classes in `xlr8flo.css` (tokens only):** `.cols-rfq .cols-rln .cols-rit .cols-rinv .cols-rdi .cols-rbl .cols-rev .cols-raw`. Everything else is reused (`.sig`, `.elig`, `.diff`, `.stepper`, `.sheet.wide`, `.dialog`, `.total-bar`, `.action-bar`, `.fold`, `.v-chk`, `.v-w`, `.v-n`). No new Design System section: no new component.
+161. **The inbox gains one pending award row set:** `AWD-00095` and `AWD-00096`, so `approvals.spec.mjs` counts moved again (see below). The `Start RFQ` action is on `RequisitionDetail` for a requisition in sourcing.
+
+**Self-review with impeccable (13 Oct 2026, two isolated assessments: design review A, detector with browser evidence B).**
+
+- **Specificity:** the generic parts (list, tabs, draft editor, scoring grid) are right for Operate. What only capital procurement carries: the justification per non-lowest line, the scope and funds check with the released amount, requisition lines with a quantity to source against an open quantity, sealed bids with `Keyed By Us` and no portal, the conflict declaration before scoring, the award evidence block on the approver's panel.
+- **Heuristics (A), 0 to 4:** visibility 3, real-world match 3, control 3, consistency 2, error prevention 3, recognition rather than recall 2, flexibility 2, minimalism 3, error recovery 3, help 3: **26/40**. The three below 3 are fixed below.
+- **Cognitive load:** one P0 memory bridge on a money figure: the over-scope verdict was a screen below the lines and the total, and not in the pinned bar. Fixed.
+- **Detector (B):** `repeating-stripes-gradient` from the shared, unused `.hatch` class on every board: **false positive**. No overflow at 1440 or 375, no duplicate ids, no control without an accessible name, no dark-mode contrast failure.
+- **Fixed in one batch (P0 and P1):** (1) award verdict beside `Total Awarded` and in the action bar; (2) New RFQ header cells did not sit over their columns (a seventh, hidden header shifted them); (3) the late-bid callout contradicted itself (`Blocked` with an `Accept` button inside): one callout, one footer action; (4) mixed date formats and a 12-hour time: a date field and a 24-hour time field; (5) four open justification textareas on an over-scope award: one line each; (6) 4.32:1 captions on a sunken ground in light mode; (7) ticket ids in user copy; (8) no shortcut for the common case: `Set All to Lowest`; (9) no score range beside the score field.
+- **Left, with reasons (recorded in `pages/sourcing.md` section 7):** the detail page has seven cards (each is a different question; a fold for History and Linked Records was weighed and refused, they are the audit trail); the footer wrap of the shared decision panel at 375 (follow-up on the Approval Inbox page); 18px checkboxes sit inside 44px labels (measured on the input, not the label); the unconfirmed focus ring on one text input in light mode at one tab stop (same as Vendors); money fractions and `USD` at 11px are the system's money style; sort eligible vendors first in the invitee picker (P3).
+
 ## 7. Findings to feed back into MASTER.md (amended 9 Oct 2026, see 97)
 
 - **The MASTER amendment is deferred until after Budget Transfer (item 84), which is now built: the next session can draft it for the operator.** It would fold in the items below plus the ancestry state rows (6f item 86).

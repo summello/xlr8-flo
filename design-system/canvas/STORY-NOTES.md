@@ -109,3 +109,18 @@ Page spec: `design-system/pages/vendors.md`. **E11-S01 to S07 are back-end stori
 9. **Answered 13 Oct 2026 (DECISIONS 6h):** status vocabulary, expired required document makes a vendor not eligible, reveal for vendor managers and finance, local disable without approval, below-threshold informs, duplicates block with manager override, Service and Delivery contact receives RFQs and POs, no minimum order value yet, manual scoring in M3. **Open:** required document types and their configuration, reveal timeout, category scoring beyond four, drag reordering.
 10. **Needs an operator-approved MASTER amendment:** the `vendor` status map and the `signal` and `eligibility` components (page spec section 9).
 
+## 8. Sourcing: stories the canvas needs (DECISIONS 6i)
+
+Page spec: `design-system/pages/sourcing.md`. Only E12-S10 (comparison) is a UI story today; E12-S08 and S09 are blocked on money rules. Requests, in order:
+
+1. **RFQ list and RFQ detail UI** (new, after E12-S01, S03): list with tabs and counts, detail with lifecycle, versions, invitees and the sealed bids card. Cite spec sections 4.1 and 4.4 and SRC-004, SRC-015.
+2. **New RFQ from approved lines UI** (new, after E12-S01): the line picker, the open-quantity guard at the field, lines from several requisitions that share unit and currency, `Start RFQ` on the requisition detail. Cite SRC-001, SRC-003, REQ-014, REQ-015.
+3. **RFQ editor, invitations and amend UI** (new, after E12-S02, S03): compliance requirements, attachment visibility, the eligibility picker (cap of 5, override with a reason), publish confirmation, amend with diff, reason and who is told, extend deadline. Needs the vendor **eligibility signal** story from Vendors section 7 first. Cite SRC-002, SRC-004, SRC-005, VEN-012.
+4. **Record a bid UI** (new, after E12-S04, S05): the vendor's sent time with evidence, keyed time, lines in the vendor's currency, `Not Quoted`, compliance answers, late bid blocked and accepted only by override with a reason. Cite SRC-006, SRC-008, SRC-010.
+5. **Evaluation UI** (new, after E12-S07): conflict declaration first, scores and comments, sealed until the deadline, recusal. Cite SRC-011.
+6. **Award draft UI** (new, after E12-S08; **blocked on the money rule**): per-line vendor and quantity, justification for non-lowest lines, scope and reserved-funds check, over scope refused with the figure. Cite SRC-012 to 014, SRC-016. This is the award UI story that section 6 item 4 asked for.
+7. **Award decision panel** (extends E10-S10): `Award Evidence` in decision-panel order. Cite spec section 4.8.
+8. **Cancel and supersede dialogs** (new, after E12-S09; **blocked**): consequence for invitees, bids, open quantities and budget; history kept. Cite SRC-017, WF-005.
+9. **Answered 13 Oct 2026 (DECISIONS 6i):** page renamed Sourcing, status vocabulary, several requisitions per RFQ, the vendor's sent time decides lateness, sourcing lead is `rfq.approve` on the unit, award approval only when a workflow is published, unused reservation released once at approval (assumption), no minimum-order warning, non-lowest justification on by default. **Open:** the reservation rule (E09-S13), cancel budget effect (E12-S09), separation of duty on an override, criteria and weights ownership.
+10. **Needs an operator-approved MASTER amendment:** the RFQ and award status maps.
+

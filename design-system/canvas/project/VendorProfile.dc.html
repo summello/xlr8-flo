@@ -390,7 +390,7 @@ class Component extends DCLogic {
       hd('Foundation'), link('Organization', I.org, 'p-foundation'), link('Administration', I.admin, 'p-foundation'),
       hd('Plan'), link('Projects', I.proj, 'p-plan', act === 'Projects'), link('Budget', I.budget, 'p-plan'), link('Reporting', I.rep, 'p-plan'),
       hd('Demand'), link('Requisitions', I.req, 'p-demand', act === 'Requisitions'), link('Approvals', I.appr, 'p-demand'),
-      hd('Commit'), link('Vendors', I.vend, 'p-commit'), link('Sourcing', I.src, 'p-commit'), link('Purchase orders', I.po, 'p-commit'), link('Assets', I.asset, 'p-commit'),
+      hd('Commit'), link('Vendors', I.vend, 'p-commit', act === 'Vendors'), link('Sourcing', I.src, 'p-commit', act === 'Sourcing'), link('Purchase orders', I.po, 'p-commit'), link('Assets', I.asset, 'p-commit'),
       hd('Support'), link('Help', I.help, '')
     ];
     return {
@@ -492,6 +492,7 @@ class Component extends DCLogic {
     const availText = (v) => (v.scope === 'Global' ? 'Global' : v.scope.split(',').length + (v.scope.split(',').length === 1 ? ' Unit' : ' Units')) + (v.off.length ? ', ' + v.off.length + ' Disabled' : '');
     return { days, dmy, dm, IC, STATUS, REQ, V, UNIT, elig, docSum, availText, TODAY };
   }
+
 
   renderVals() {
     const st = this.state || {};

@@ -44,6 +44,7 @@
           <div><span class="{{pillCls}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{pd}}"></path></svg>{{statusText}}</span></div>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+          <sc-if value="{{canStartRfq}}" hint-placeholder-val="{{ false }}"><a href="RfqStart.dc.html" class="btn primary">Start RFQ</a></sc-if>
           <sc-if value="{{canEdit}}" hint-placeholder-val="{{ false }}"><a href="#" class="btn">Edit draft</a></sc-if>
           <sc-if value="{{isReturned}}" hint-placeholder-val="{{ false }}"><a href="RequisitionResubmit.dc.html" class="btn primary">Edit and Resubmit</a></sc-if>
           <sc-if value="{{canWithdraw}}" hint-placeholder-val="{{ true }}"><button class="btn" type="button" onClick="{{withdraw}}">{{withdrawLabel}}</button></sc-if>
@@ -321,6 +322,7 @@ class Component extends DCLogic {
         const first = f[0], last = f[f.length - 1], at = document.activeElement;
         if (e.shiftKey && at === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && at === last) { e.preventDefault(); first.focus(); }
       },
+      canStartRfq: status === 'sourcing' && view !== 'error',
       pageOk: view !== 'error', pageError: view === 'error', stages, whereText: WHERE, history: HIST, links, lineRows,
       reserved: status !== 'draft' && status !== 'withdrawn', notReserved: status === 'draft',
       sum: cs('sum'), res: cs('res'), hist: cs('hist'), link: cs('link'), lines: cs('lines'),

@@ -792,3 +792,32 @@ button.cmp-gbtn .t-caption { text-transform: none; letter-spacing: 0; font-weigh
   .cols-vsc { grid-template-columns: 88px 76px 52px minmax(0, 1fr) 92px; }
   .cols-vq { grid-template-columns: 72px minmax(0, 1fr) 120px 112px; }
 }
+
+/* Sourcing (HANDOFF-sourcing). Tokens only. */
+.cols-rfq { grid-template-columns: 112px minmax(0, 1.6fr) 164px 84px 150px 152px minmax(0, 1fr); column-gap: 20px; }
+@container card (max-width: 899px) {
+  .cols-rfq { grid-template-columns: 100px minmax(0, 1fr) 160px 150px 132px; }
+}
+.cols-rln { grid-template-columns: minmax(0, 1.6fr) 96px 120px 88px 148px 190px; column-gap: 16px; }
+.cols-rit { grid-template-columns: minmax(0, 1.2fr) 110px minmax(0, 1.4fr); }
+.cols-rinv { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.6fr) minmax(0, 1fr) 190px; column-gap: 20px; }
+@container card (max-width: 899px) {
+  .cols-rln { grid-template-columns: minmax(0, 1fr) 88px 190px; }
+  .cols-rit { grid-template-columns: minmax(0, 1fr) 110px; }
+  .cols-rinv { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) 170px; }
+}
+.cols-rdi { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.2fr) 150px 170px 190px 128px; column-gap: 20px; }
+.cols-rbl { grid-template-columns: minmax(0, 1.2fr) 56px 128px 76px 124px; column-gap: 12px; }
+@container card (max-width: 899px) {
+  .cols-rdi { grid-template-columns: minmax(0, 1fr) 96px 150px 150px 112px; column-gap: 12px; }
+}
+@container card (max-width: 620px) {
+  .cols-rbl { grid-template-columns: minmax(0, 1fr) 64px 140px 120px; }
+}
+.cols-rev { grid-template-columns: minmax(0, 1.2fr) 80px 110px minmax(0, 2fr); column-gap: 16px; }
+.cols-raw { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) 108px 168px minmax(0, 1.3fr); column-gap: 20px; }
+@container card (max-width: 899px) {
+  .cols-rev { grid-template-columns: minmax(0, 1fr) 100px minmax(0, 1.4fr); }
+  .cols-raw { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 96px 150px; }
+}
+.row.group .t-caption, .notice .t-caption { color: var(--fg-secondary); }   /* --fg-muted measures 4.31:1 on --sunken (DECISIONS section 7) */
