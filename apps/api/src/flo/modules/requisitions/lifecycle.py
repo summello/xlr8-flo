@@ -274,6 +274,7 @@ def transition(
             if before["reservation_entry_id"] is not None
             else None
         )
+        check: SubmissionCheck | None = None
         if body.to == "approval_pending":
             moved = held is not None and held.project_id != before["project_id"]
             remaining = held.remaining if held and not moved else Decimal(0)
@@ -308,6 +309,8 @@ def transition(
             cast(revisions.Snapshot, previous["snapshot"]), working
         ):
             raise conflict("nothing_changed", "Not resubmitted. Nothing has changed.")
+        if check is None:  # only a submission reaches here; withdraw returned above
+            raise conflict("invalid_transition", "This requisition cannot move to that status.")
         check = routing_check(conn, scope, id, check)
         if check.problems:
             raise SubmissionInvalid(check.problems)

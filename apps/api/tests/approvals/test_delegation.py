@@ -540,8 +540,9 @@ def test_revoke_http_foreign_and_unknown_ids_have_identical_problem_bodies(setup
                 assert result.status_code == 404
                 body = result.json()
                 # Request path and correlation are request metadata, not existence information.
-                assert body.pop("instance") == f"/api/v1/approvals/delegations/{id}/revoke"
-                assert body.pop("correlation_id")
+                instance, correlation = body.pop("instance"), body.pop("correlation_id")
+                assert instance == f"/api/v1/approvals/delegations/{id}/revoke"
+                assert correlation
                 bodies.append(body)
             assert bodies[0] == bodies[1]
 
