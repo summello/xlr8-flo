@@ -1110,6 +1110,20 @@ epics:
           - E09-S08
           - E09-S11
         st: done
+      - id: E09-S14
+        t: 'M2 exit criterion end to end: a requisition through a multi-level conditional
+          workflow to approval, sub-project and reservation'
+        k: test
+        s: S
+        tags: []
+        reqs:
+          - WF-002
+          - WF-003
+          - REQ-002
+          - ACC-001
+        dep:
+          - E09-S12
+        st: todo
       - id: E09-S13
         t: 'Standalone requisition funding, who may assign one to a project, and master-code
           re-check at approval (operator requirements pending; before the M2 PR)'
