@@ -105,8 +105,9 @@ jobs:
           # Two merge commits from the M2 design branches were written with a
           # lowercase subject before the rule was checked on them. They are
           # pinned by hash so history is not rewritten; every new commit is
-          # still held to the rule.
-          pinned='1b625dd f691f82'
+          # still held to the rule. Three fleet-tooling commits on 13 Oct used feat(fleet):, a type the
+          # rule does not allow; pinned the same way rather than force-pushing a shared milestone.
+          pinned='1b625dd f691f82 d3f2625 2b9889b 5f42029'
           while read -r sha subject; do
             case " $pinned " in
               *" ${sha:0:7} "*) continue ;;
