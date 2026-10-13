@@ -25,6 +25,7 @@ Stdlib only, except PyYAML for the two config files.
   flo up [--reset]          start local Postgres + MinIO + Mailpit; optionally reset data
   flo down                  stop the local stack
 """
+import ast
 import hashlib
 import json
 import os
@@ -395,6 +396,87 @@ GENERATED_FILES = (
 )
 
 
+def _module_file(wt, module):
+    """flo.a.b -> apps/api/src/flo/a/b.py (or its package); tests.a -> apps/api/tests/a.py."""
+    base = wt / "apps" / "api" / ("src" if module.split(".")[0] == "flo" else "")
+    path = base.joinpath(*module.split("."))
+    for f in (path.with_suffix(".py"), path / "__init__.py"):
+        if f.is_file():
+            return f
+    return None
+
+
+def _signature(node):
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        ret = f" -> {ast.unparse(node.returns)}" if node.returns else ""
+        return f"def {node.name}({ast.unparse(node.args)}){ret}"
+    bases = ", ".join(ast.unparse(b) for b in node.bases)
+    fields = [ast.unparse(st.target) + ": " + ast.unparse(st.annotation)
+              for st in node.body if isinstance(st, ast.AnnAssign)]
+    methods = [st.name for st in node.body
+               if isinstance(st, (ast.FunctionDef, ast.AsyncFunctionDef)) and not st.name.startswith("_")]
+    out = f"class {node.name}({bases})" if bases else f"class {node.name}"
+    if fields:
+        out += " { " + "; ".join(fields[:10]) + (" ..." if len(fields) > 10 else "") + " }"
+    if methods:
+        out += " methods: " + ", ".join(methods[:6]) + (" ..." if len(methods) > 6 else "")
+    return out
+
+
+def _find_def(wt, module, name, hops=2):
+    f = _module_file(wt, module)
+    if f is None:
+        return None
+    tree = ast.parse(f.read_text())
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and node.name == name:
+            # an enum, protocol or exception with no fields says nothing a name does not
+            if isinstance(node, ast.ClassDef) and not any(isinstance(st, ast.AnnAssign) for st in node.body) \
+                    and {ast.unparse(b).split("[")[0] for b in node.bases} & {"StrEnum", "Enum", "Protocol", "Exception"}:
+                return None
+            sig = _signature(node)
+            sig = sig if len(sig) <= 160 else sig[:157] + "..."
+            return f"{sig}  — {f.relative_to(wt)}:{node.lineno}"
+    if hops:  # a re-export: follow the package's own import of the name
+        for node in tree.body:
+            if isinstance(node, ast.ImportFrom) and node.module and any(a.name == name for a in node.names):
+                return _find_def(wt, node.module, name, hops - 1)
+    return None
+
+
+def called_signatures(wt, rng, added_files):
+    """Signatures of repository functions and classes the diff's Python uses but does not add,
+    so a reviewer does not search the tree for them. ponytail: Python only, by-name imports;
+    add TypeScript and attribute calls if reviews keep searching for those."""
+    diff = git("diff", "-U0", rng, "--", "*.py", cwd=wt, check=False)
+    added = "\n".join(l[1:] for l in diff.splitlines() if l.startswith("+") and not l.startswith("+++"))
+    files = {l[6:] for l in diff.splitlines() if l.startswith("+++ b/")}
+    out = {}
+    for rel in sorted(files):
+        f = wt / rel
+        if not f.is_file():
+            continue
+        try:
+            tree = ast.parse(f.read_text())
+        except SyntaxError:
+            continue
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.ImportFrom) and node.module
+                    and node.module.split(".")[0] in ("flo", "tests")):
+                continue
+            for a in node.names:
+                used = a.asname or a.name
+                if used in out or not re.search(rf"\b{re.escape(used)}\b", added):
+                    continue
+                target = _module_file(wt, node.module)
+                if target is None or str(target.relative_to(wt)) in added_files:
+                    continue
+                sig = _find_def(wt, node.module, a.name)
+                if sig:
+                    out[used] = sig
+    return sorted(set(out.values()))
+
+
 def cmd_review(argv):
     if not argv:
         die("usage: flo review <STORY_ID>")
@@ -416,6 +498,12 @@ def cmd_review(argv):
     print("--- diff vs milestone branch ---")
     excludes = [f":(exclude){n}" for n in generated]
     print(git("diff", rng, "--", ".", *excludes, cwd=wt, check=False))
+
+    added_files = set(git("diff", "--name-only", "--diff-filter=A", rng, cwd=wt, check=False).split())
+    sigs = called_signatures(wt, rng, added_files)
+    if sigs:
+        print("--- code the diff calls into (signatures; open the file only if you need the body) ---")
+        print("\n".join(sigs) + "\n")
 
     if generated:
         print("--- generated files, body omitted ---")
