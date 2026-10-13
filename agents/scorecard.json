@@ -3083,6 +3083,48 @@
       },
       "recap": "Adds the requisition screens (list with tabs, create/edit with lines, funding check, catalogue, attachments, submit with a focused error summary, and a detail page with lifecycle, reservation, history, linked records, line rollup, returned banner and withdraw dialog), plus a general unsaved-changes guard and exact BigInt line arithmetic in lib/decimal.ts. Verified by 47 stubbed Playwright cases, axe in both themes, and new vitest suites; no backend change.",
       "title": "Requisition screens: create, lines, submit, track, quantity rollup"
+    },
+    {
+      "story": "E09-S12",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "a49c1aad-83ff-46dc-8c7d-dfe263c1cd41",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S12",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a13724-e590-73b0-b03f-7186f7f30230",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds the resubmit, amend and amend-review screens on the S08 routes: a server-driven diff, materiality, funding effect, note and version lineage, with the four failure alerts, plus an amendment editor with If-Match saves, a discard dialog and the shared navigation guard. Detail page gets Review and Resubmit and Amend/Continue amendment entry points.",
+      "title": "Resubmit and amendment screens: review changes, funding effect, version lineage"
     }
   ]
 }

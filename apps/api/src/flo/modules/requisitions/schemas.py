@@ -427,6 +427,8 @@ class ChangeRow(BaseModel):
     was: str | None
     now: str | None
     change: Literal["changed", "added", "removed"]
+    # The server names what was and now hold, so no client infers it from other columns.
+    value_type: Literal["money", "quantity", "text", "date", "code"] = "text"
     delta: ChangeDelta | None = None
 
 

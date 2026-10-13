@@ -23,6 +23,9 @@ import ApprovalAvailability from "./approvals/availability";
 import RequisitionList from "./requisitions/list";
 import NewRequisition from "./requisitions/new";
 import EditRequisition from "./requisitions/edit";
+import ResubmitRequisition from "./requisitions/resubmit";
+import AmendRequisition from "./requisitions/amend";
+import AmendReview from "./requisitions/amend-review";
 import RequisitionDetail from "./requisitions/detail";
 import { confirmLeave, consumeRestoring, installHistoryIndex, settlePop } from "../lib/navigation-guard";
 import type { Project } from "../components/projects/api";
@@ -47,6 +50,9 @@ const PROJECT_PATH = /^\/projects\/([0-9a-f-]{36})$/;
 const DASHBOARD_PATH = /^\/projects\/([0-9a-f-]{36})\/dashboard$/;
 const REQUISITION_PATH = /^\/requisitions\/([0-9a-f-]{36})$/;
 const REQUISITION_EDIT_PATH = /^\/requisitions\/([0-9a-f-]{36})\/edit$/;
+const REQUISITION_RESUBMIT_PATH = /^\/requisitions\/([0-9a-f-]{36})\/resubmit$/;
+const REQUISITION_AMEND_PATH = /^\/requisitions\/([0-9a-f-]{36})\/amend$/;
+const REQUISITION_AMEND_REVIEW_PATH = /^\/requisitions\/([0-9a-f-]{36})\/amend\/review$/;
 const ADMIN_USER_PATH = /^\/admin\/users\/([^/]+)$/;
 
 const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
@@ -199,6 +205,11 @@ function routeFor(path: string): ShellRoute {
     activeHref: "/projects", path, phase: "plan", title: DASHBOARD_PATH.test(path) ? "Project Dashboard" : "Project", description: "Project details and actions.",
     breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/projects", label: "Projects" }],
   };
+  const screen = REQUISITION_RESUBMIT_PATH.test(path) ? ["Review Changes Before Resubmitting", "Review Changes"] : REQUISITION_AMEND_PATH.test(path) ? ["Amend Requisition", "Amend"] : REQUISITION_AMEND_REVIEW_PATH.test(path) ? ["Review Amendment", "Review Amendment"] : null;
+  if (screen) return {
+    activeHref: "/requisitions", path, phase: "demand", title: screen[0]!, description: "Review what changed, what it does to funding, and send it.",
+    breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/requisitions", label: "Requisitions" }, { href: path, label: screen[1]! }],
+  };
   if (REQUISITION_PATH.test(path) || REQUISITION_EDIT_PATH.test(path)) return {
     activeHref: "/requisitions", path, phase: "demand", title: REQUISITION_EDIT_PATH.test(path) ? "Edit Requisition" : "Requisition", description: "Requisition details and actions.",
     breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/requisitions", label: "Requisitions" }, { href: path, label: REQUISITION_EDIT_PATH.test(path) ? "Edit" : "Requisition" }],
@@ -328,6 +339,9 @@ export default function RootRoute() {
     breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: `/organization/${loadedHeading.buId}`, label: loadedHeading.unit }, { href: shellRoute.path, label: `${loadedHeading.number} ${loadedHeading.title}` }] } : shellRoute;
   const requisitionId = shellRoute.path.match(REQUISITION_PATH)?.[1];
   const requisitionEditId = shellRoute.path.match(REQUISITION_EDIT_PATH)?.[1];
+  const resubmitId = shellRoute.path.match(REQUISITION_RESUBMIT_PATH)?.[1];
+  const amendId = shellRoute.path.match(REQUISITION_AMEND_PATH)?.[1];
+  const amendReviewId = shellRoute.path.match(REQUISITION_AMEND_REVIEW_PATH)?.[1];
   const titledRoute = requisitionHeading?.path === shellRoute.path ? { ...displayedRoute, title: requisitionHeading.title, breadcrumbs: displayedRoute.breadcrumbs.map((item, i, all) => i === all.length - 1 ? { ...item, label: requisitionHeading.title } : item) } : displayedRoute;
   const adminUserId = shellRoute.path.match(ADMIN_USER_PATH)?.[1];
 
@@ -338,6 +352,9 @@ export default function RootRoute() {
       {shellRoute.path === "/requisitions/new" ? <NewRequisition navigate={navigate} /> : undefined}
       {requisitionId ? <RequisitionDetail key={requisitionId} id={requisitionId} navigate={navigate} onLoaded={onRequisitionLoaded} /> : undefined}
       {requisitionEditId ? <EditRequisition key={requisitionEditId} id={requisitionEditId} navigate={navigate} onLoaded={onRequisitionLoaded} /> : undefined}
+      {resubmitId ? <ResubmitRequisition key={resubmitId} id={resubmitId} navigate={navigate} /> : undefined}
+      {amendId ? <AmendRequisition key={amendId} id={amendId} navigate={navigate} /> : undefined}
+      {amendReviewId ? <AmendReview key={amendReviewId} id={amendReviewId} navigate={navigate} /> : undefined}
       {shellRoute.path === "/projects/new" ? <NewProject navigate={navigate} /> : undefined}
       {dashboardId ? <Dashboard key={`${dashboardId}-${window.location.search}`} id={dashboardId} navigate={navigate} onLoaded={onProjectLoaded} /> : undefined}
       {shellRoute.path === "/approvals" ? <ApprovalInbox navigate={navigate} /> : undefined}

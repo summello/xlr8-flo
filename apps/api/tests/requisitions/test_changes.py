@@ -155,3 +155,22 @@ def test_http_changes_revisions_and_unknown_revision(lifecycle_db):
             ] == [(1, "submission", "applied", "First go")]
 
     asyncio.run(scenario())
+
+
+def test_every_row_names_its_value_type(lifecycle_db):
+    db, _ = lifecycle_db
+    row, _ = complete(db, price="60")
+    command(db, row)
+    outcome(db, row, Outcome.RETURNED)
+    reprice(db, row, "80", quantity="3")
+    current = RequisitionService(db[0], Scope(db[1])).get(row.id)
+    RequisitionService(db[0], Scope(db[1]), db[3]).update(
+        row.id,
+        RequisitionPatch(justification="Other", needed_by="2031-02-03"),
+        str(current.version),
+        lambda p: True,
+    )
+    kinds = {r.field.rsplit("/", 1)[-1]: r.value_type for r in changes(db, row.id).rows}
+    assert kinds["quantity"] == "quantity"  # a quantity never reads as money
+    assert kinds["unit_price"] == kinds["amount"] == kinds["estimate"] == "money"
+    assert kinds["justification"] == "text" and kinds["needed_by"] == "date"

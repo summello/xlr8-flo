@@ -3,7 +3,8 @@ import { expect, test } from "@playwright/test";
 
 import { stubWorkflows } from "../e2e/workflow-list-fixture";
 import { stubApprovals } from "../e2e/approvals-fixture";
-import { stubRequisitions } from "../e2e/requisitions-fixture";
+import { instanceId, requisition, reqId, reservation, stubRequisitions } from "../e2e/requisitions-fixture";
+import { amendmentRead, quantityChange, stubChanges } from "../e2e/requisition-changes-fixture";
 import { stubDashboard } from "../e2e/dashboard-fixture";
 import { projectId } from "../e2e/projects-fixture";
 import { ROUTE_PATHS } from "../../src/routes/route-paths";
@@ -37,6 +38,29 @@ for (const theme of ["light", "dark"] as const) {
       }
 
       if (route === "/budget" || route.endsWith("/dashboard")) await expect(page.locator(".dashboard-kpi").first()).toBeVisible();
+      const results = await new AxeBuilder({ page }).analyze();
+      expect(results.violations).toEqual([]);
+    });
+  }
+}
+
+for (const theme of ["light", "dark"] as const) {
+  for (const route of ["resubmit", "amend", "amend/review"]) {
+    test(`/requisitions/<id>/${route} passes axe in ${theme} theme`, async ({ page }) => {
+      await page.addInitScript((selectedTheme) => { localStorage.setItem("xlr8flo.theme", selectedTheme); }, theme);
+      const resubmit = route === "resubmit";
+      await stubChanges(page, {
+        row: requisition(resubmit
+          ? { estimate: "196000.0000", reservation: reservation("196000.0000"), approval: { instance_id: instanceId, status: "returned" }, version: 3 }
+          : { status: "sourcing_in_progress", estimate: "20.0000", reservation: reservation("20.0000"), version: 5 }),
+        changes: resubmit ? quantityChange : { ...quantityChange, to: "amendment", routing: "not_applicable" },
+        amendment: resubmit ? null : amendmentRead(),
+      });
+      await page.goto(`/requisitions/${reqId}/${route}`);
+      await page.locator(".app-shell").waitFor();
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+      await expect(page.getByRole("heading", { name: route === "amend" ? "Amendment Details" : "What Changed" })).toBeVisible();
       const results = await new AxeBuilder({ page }).analyze();
       expect(results.violations).toEqual([]);
     });

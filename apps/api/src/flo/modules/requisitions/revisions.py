@@ -48,6 +48,23 @@ LINE_LABELS = {
     "catalogue_item_id": "catalogue item",
 }
 LINE_MONEY = {"unit_price", "amount"}
+_VALUE_TYPE: dict[str, Literal["money", "quantity", "text", "date", "code"]] = {
+    "title": "text",
+    "justification": "text",
+    "needed_by": "date",
+    "description": "text",
+    "quantity": "quantity",
+    "unit_price": "money",
+    "amount": "money",
+    "estimate": "money",
+}
+
+
+def _value_type(key: str) -> Literal["money", "quantity", "text", "date", "code"]:
+    """Header and line identifiers (departments, accounts, units, types) are codes."""
+    return _VALUE_TYPE.get(key, "code")
+
+
 REVISION_FIELDS = (
     "id",
     "revision_no",
@@ -437,7 +454,16 @@ def diff_rows(
         if was != now:
             if key == "project_id":
                 was, now = project_label(was), project_label(now)
-            rows.append(ChangeRow(field=key, label=label, was=was, now=now, change="changed"))
+            rows.append(
+                ChangeRow(
+                    field=key,
+                    label=label,
+                    was=was,
+                    now=now,
+                    change="changed",
+                    value_type="text" if key == "project_id" else _value_type(key),
+                )
+            )
     if Decimal(base["estimate"]) != Decimal(work["estimate"]):
         rows.append(
             ChangeRow(
@@ -446,6 +472,7 @@ def diff_rows(
                 was=_money_text(base["estimate"], currency),
                 now=_money_text(work["estimate"], currency),
                 change="changed",
+                value_type="money",
                 delta=_delta(base["estimate"], work["estimate"], currency),
             )
         )
@@ -482,6 +509,7 @@ def diff_rows(
                         was=_money_text(was, currency) if money else was,
                         now=_money_text(now, currency) if money else now,
                         change="changed",
+                        value_type=_value_type(key),
                         delta=_delta(was, now, currency) if money else None,
                     )
                 )

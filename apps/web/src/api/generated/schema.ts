@@ -2744,6 +2744,12 @@ export interface components {
             label: string;
             /** Now */
             now: string | null;
+            /**
+             * Value Type
+             * @default text
+             * @enum {string}
+             */
+            value_type?: "money" | "quantity" | "text" | "date" | "code";
             /** Was */
             was: string | null;
         };

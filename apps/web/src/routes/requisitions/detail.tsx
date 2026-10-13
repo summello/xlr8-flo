@@ -1,4 +1,4 @@
-import { ArrowRight, PencilSimple, Trash } from "@phosphor-icons/react";
+import { ArrowRight, NotePencil, PencilSimple, Trash } from "@phosphor-icons/react";
 import { useState } from "react";
 import { apiClient } from "../../api/client";
 import StatusPill from "../../components/status/StatusPill";
@@ -71,6 +71,8 @@ export default function RequisitionDetail({ id, navigate, onLoaded }: { id: stri
         {row.status === "draft" && !returned && <a className="req-link-button" href={`/requisitions/${id}/edit`} onClick={e => { e.preventDefault(); navigate(`/requisitions/${id}/edit`); }}><PencilSimple aria-hidden="true" weight="regular" />Edit draft</a>}
         {row.status === "draft" && !held && can("withdrawn")?.allowed && <button type="button" className="req-destructive" onClick={() => void discard()}><Trash aria-hidden="true" weight="regular" />Discard draft</button>}
         {withdrawReady && (row.status !== "draft" || held) && can("withdrawn")?.allowed && <WithdrawDialog row={row} mode="withdraw" approvers={approvers} onDone={next => changed(next, "Requisition withdrawn.")} onStale={main.reload} />}
+        {row.status === "sourcing_in_progress" && (!row.amendment || row.amendment.status === "draft") && <a className="req-link-button" href={`/requisitions/${id}/amend`} onClick={e => { e.preventDefault(); navigate(`/requisitions/${id}/amend`); }}><NotePencil aria-hidden="true" weight="regular" />{row.amendment ? "Continue amendment" : "Amend"}</a>}
+        {row.amendment?.status === "pending" && <p className="req-pill" data-tone="info">Amendment pending approval</p>}
         {can("cancelled")?.allowed && <WithdrawDialog row={row} mode="cancel" approvers={approvers} onDone={next => changed(next, "Requisition cancelled.")} onStale={main.reload} />}
       </div>
       {withdrawBlocked && <p className="field-help">Withdraw is not available: {withdrawBlocked}</p>}
@@ -81,7 +83,10 @@ export default function RequisitionDetail({ id, navigate, onLoaded }: { id: stri
       <h2 id="returned-title">Returned for Changes</h2>
       {returnDecision ? <p>{returnDecision.actor_email} returned it on {formatDateTime(returnDecision.decided_at)}{returnDecision.comment ? <>: <q>{returnDecision.comment}</q></> : "."}</p> : <p>An approver returned it for changes.</p>}
       <p>The reservation is held while you amend.</p>
-      <a className="form-submit" href={`/requisitions/${id}/edit`} onClick={e => { e.preventDefault(); navigate(`/requisitions/${id}/edit`); }}>Edit and Resubmit <ArrowRight aria-hidden="true" weight="regular" /></a>
+      <div className="req-actions">
+        <a className="req-link-button" href={`/requisitions/${id}/edit`} onClick={e => { e.preventDefault(); navigate(`/requisitions/${id}/edit`); }}>Edit and Resubmit</a>
+        <a className="form-submit" href={`/requisitions/${id}/resubmit`} onClick={e => { e.preventDefault(); navigate(`/requisitions/${id}/resubmit`); }}>Review and Resubmit <ArrowRight aria-hidden="true" weight="regular" /></a>
+      </div>
     </section>}
     <Stepper status={row.status} events={events.data} />
     <div className="req-grid-detail">

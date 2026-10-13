@@ -1467,6 +1467,18 @@
             ],
             "title": "Now"
           },
+          "value_type": {
+            "default": "text",
+            "enum": [
+              "money",
+              "quantity",
+              "text",
+              "date",
+              "code"
+            ],
+            "title": "Value Type",
+            "type": "string"
+          },
           "was": {
             "anyOf": [
               {
