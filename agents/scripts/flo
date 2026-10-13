@@ -478,10 +478,13 @@ def called_signatures(wt, rng, added_files):
 
 
 def cmd_codex_guard(argv):
-    """flo codex-guard <worktree> <max_calls> <pid>: stop a Codex review once its session has made
-    more than max_calls tool calls. The packet's budget is advisory to the model; this is not.
-    Reads only rollouts written after the guard started whose session ran in that worktree."""
+    """flo codex-guard <worktree> <max_calls> <pid> [max_seconds]: stop a Codex review past
+    max_calls tool calls, past max_seconds of wall-clock time (sleep(1) pauses while the machine
+    sleeps, wall time does not), or when its session log has not moved for 5 minutes (a dead
+    connection after wake hung E09-S08's review on 13 Oct). Reads only rollouts written after the
+    guard started whose session ran in that worktree."""
     wt, cap, pid = argv[0], int(argv[1]), int(argv[2])
+    deadline = time.time() + (int(argv[3]) if len(argv) > 3 else 900)
     root, t0, mine = Path.home() / ".codex" / "sessions", time.time(), None
     while True:
         try:
@@ -492,6 +495,15 @@ def cmd_codex_guard(argv):
             for f in sorted(root.glob("*/*/*/rollout-*.jsonl"), key=lambda f: f.stat().st_mtime)[-6:]:
                 if f.stat().st_mtime >= t0 - 5 and wt in f.read_text(errors="replace")[:6000]:
                     mine = f
+        stop = None
+        if time.time() > deadline:
+            stop = "stopped at the time cap"
+        elif mine is not None and time.time() - mine.stat().st_mtime > 300:
+            stop = "stopped: no session activity for 5 minutes"
+        if stop:
+            os.kill(pid, 15)
+            print(stop)
+            return
         if mine is not None:
             calls = sum(1 for ln in mine.read_text(errors="replace").splitlines()
                         if '"type":"function_call"' in ln or '"type":"custom_tool_call"' in ln)
