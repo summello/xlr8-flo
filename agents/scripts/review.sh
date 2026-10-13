@@ -22,6 +22,8 @@ fi
 git -C "$W" rev-parse HEAD > "$SHA.new"  # becomes the baseline only if the run succeeds
 printf '\nYour agent id is %s. Write reviews/%s.%s.json and stop.\n' "$A" "$S" "$A" >> "$P"
 cd "$W"
+# a waiter polls this log for "exit N": clear the previous run's now, not when the job starts
+: > "$D/$S.$A.log"
 if [ "$A" = opus ]; then
   # A fresh session on the given account (never the planner's), with the reviewer skill.
   if [ "${3:-B}" = A ]; then ENV="env -u CLAUDE_CONFIG_DIR"; else ENV="env CLAUDE_CONFIG_DIR=$HOME/.claude-summello"; fi
