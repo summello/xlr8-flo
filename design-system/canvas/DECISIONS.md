@@ -268,6 +268,22 @@ Page `Vendors` holds 60 boards: the **vendor list**, **profile**, **request**, *
 - **Fixed in one batch (P1):** (1) a placeholder, `the vendor`, leaked into the Trading Name input and the `Done` mark contradicted an invalid email: the value is kept apart from the success text and email fields carry the same dotted-domain pattern the summary checks; (2) the scorecard sheet squeezed Rationale and spilled the scorer's email: the scorer is now a line under the rationale and Rationale takes the flexible column; (3) the duplicate on the decision panel was prose: it is a link with the matching registration number and address beside the new request's; (4) the header rule showed the Plan hue on a Commit page: `--ph-page` on the page root now sets it; (5) 18px checkbox rows were under 44px below 1024: `.v-chk`; (6) the dead `Amount: Not applicable` row is gone for a vendor.
 - **Left, with reasons (P2, P3, recorded in `pages/vendors.md` section 7):** the eight-card profile (a closed fold for Contacts and Linked Records was weighed and refused: contacts carry live checkboxes and Linked Records carries the VEN-013 caption); the five-button decision footer wrapping at 375 and the shell's top bar overlapping the sheet's close button are the shared decision-panel component and affect every document kind, so they are a follow-up on the Approval Inbox page, not a vendor fix; the 375 list tab strip wraps two long labels; the unconfirmed focus ring on one request input at one tab stop; 11px text is the system's own floor (`Required`, `Done`, sidebar group labels).
 
+## 6i. Sourcing (screen list and questions confirmed with the operator first, 13 Oct 2026)
+
+Screens added around the built comparison: RFQ list, start an RFQ from approved lines, RFQ editor (draft and amend), RFQ detail, key a bid, evaluation, award draft, award decision (inbox variant), cancel and supersede dialogs, and `Start RFQ` on the requisition detail. The comparison, by-line, cost breakdown, scoring read side, vendor bid sheets and their states (6g) are **not redrawn**. Page spec: `design-system/pages/sourcing.md`. Tests: `sourcing.spec.mjs`.
+
+**Operator answers, 13 Oct 2026** ("Yes to all", to the screen list and to the nine questions in `HANDOFF-sourcing.md` section 7 plus the page rename; each is the handoff's proposal or my recommendation):
+
+142. **(6i-0) The page `RFQ Comparison` is renamed `Sourcing`.** Its id `rfq-comparison` stays, so no link breaks.
+143. **(6i-1) Status vocabulary.** RFQ: `draft` (neutral), `published` (info), `closed` (info), `under_evaluation` (info), `awarded` (success), `cancelled` (danger). Award: `draft`, `approval_pending`, `approved`, `superseded` (warning), `cancelled`. Icon plus words. **MASTER was not amended**; the map is a proposal in the page spec.
+144. **(6i-2) One RFQ may carry lines from several requisitions** when they share business unit or operating unit and currency; a line that does not is shown disabled with the reason.
+145. **(6i-3) The vendor's sent time decides lateness.** The buyer enters it with the vendor's email attached as evidence; the keyed time is always recorded beside it.
+146. **(6i-4) The sourcing lead is `rfq.approve` on the RFQ's unit.** No new role. It waives compliance requirements and overrides late bids and ineligible vendors, with a reason, audited.
+147. **(6i-5) An award goes through approval only when an award workflow is published.** Otherwise the board says `No award workflow is published. This award is approved when you submit.` A financial-control rule the operator owns; the notice makes it visible.
+148. **(6i-6) The reserved amount an award does not use is released once, when the award is approved.** Matches the requisition detail copy. Drawn as an assumption only: E12-S08 stays blocked on E09-S13 for the engine rule.
+149. **(6i-7) No split-award-versus-minimum-order warning is drawn.** The vendor carries no minimum order value (6h-9); it stays open (119).
+150. **(6i-8) The non-lowest justification is an organization setting, on by default** (SRC-014 "when configured").
+
 ## 7. Findings to feed back into MASTER.md (amended 9 Oct 2026, see 97)
 
 - **The MASTER amendment is deferred until after Budget Transfer (item 84), which is now built: the next session can draft it for the operator.** It would fold in the items below plus the ancestry state rows (6f item 86).
