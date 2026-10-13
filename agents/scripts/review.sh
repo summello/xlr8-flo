@@ -43,7 +43,7 @@ if [ "$A" = codex ]; then
   [ -n "$ARGS" ] && CAP=480
   # One Codex review at a time across every planner and checkout: two in parallel share the
   # five-hour window and both die at the cap.
-  nohup sh -c "while pgrep -f 'codex exec -m' > /dev/null; do sleep 30; done; \
+  nohup sh -c "while pgrep -f '^codex exec' > /dev/null; do sleep 30; done; \
     mkdir -p '$D/$S.aside' && mv reviews/*.json '$D/$S.aside/' 2>/dev/null; \
     codex exec -m $1 -c model_reasoning_effort=$2 -c project_doc_max_bytes=0 -s workspace-write --skip-git-repo-check \"\$(cat '$P')\" > '$D/$S.$A.log' 2>&1 & CP=\$!; \
     ( sleep $CAP; kill \$CP 2>/dev/null && echo 'stopped at the time cap' >> '$D/$S.$A.log' ) & KP=\$!; \
