@@ -1006,7 +1006,7 @@ epics:
           - E09-S05
           - E07-S04
           - E10-S05
-        st: todo
+        st: in_progress
       - id: E09-S07
         t: Release on reject, withdraw, cancel, expire or reduce — exactly once
         k: ledger
@@ -1243,7 +1243,7 @@ epics:
           - E04-S03
           - E10-S08
           - E10-S09
-        st: todo
+        st: in_progress
       - id: E10-S11
         t: Visual workflow builder, drag-and-drop canvas
         k: ui
