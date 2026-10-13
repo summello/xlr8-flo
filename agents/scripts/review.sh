@@ -41,7 +41,10 @@ if [ "$A" = codex ]; then
   # the reviewer keeps a draft verdict current, so a stopped run still leaves one.
   CAP=$(python3 -c 'import json,sys; print(900 if json.load(open(sys.argv[1]))["opus_final"] else 600)' "$W/task.json")
   [ -n "$ARGS" ] && CAP=480
-  nohup sh -c "mkdir -p '$D/$S.aside' && mv reviews/*.json '$D/$S.aside/' 2>/dev/null; \
+  # One Codex review at a time across every planner and checkout: two in parallel share the
+  # five-hour window and both die at the cap.
+  nohup sh -c "while pgrep -f 'codex exec -m' > /dev/null; do sleep 30; done; \
+    mkdir -p '$D/$S.aside' && mv reviews/*.json '$D/$S.aside/' 2>/dev/null; \
     codex exec -m $1 -c model_reasoning_effort=$2 -c project_doc_max_bytes=0 -s workspace-write --skip-git-repo-check \"\$(cat '$P')\" > '$D/$S.$A.log' 2>&1 & CP=\$!; \
     ( sleep $CAP; kill \$CP 2>/dev/null && echo 'stopped at the time cap' >> '$D/$S.$A.log' ) & KP=\$!; \
     wait \$CP; RC=\$?; echo \"exit \$RC\" >> '$D/$S.$A.log'; kill \$KP 2>/dev/null; [ \$RC = 0 ] && mv '$SHA.new' '$SHA'; \
