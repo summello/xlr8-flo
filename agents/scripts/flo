@@ -477,6 +477,31 @@ def called_signatures(wt, rng, added_files):
     return sorted(set(out.values()))
 
 
+def cmd_codex_guard(argv):
+    """flo codex-guard <worktree> <max_calls> <pid>: stop a Codex review once its session has made
+    more than max_calls tool calls. The packet's budget is advisory to the model; this is not.
+    Reads only rollouts written after the guard started whose session ran in that worktree."""
+    wt, cap, pid = argv[0], int(argv[1]), int(argv[2])
+    root, t0, mine = Path.home() / ".codex" / "sessions", time.time(), None
+    while True:
+        try:
+            os.kill(pid, 0)
+        except OSError:
+            return
+        if mine is None:
+            for f in sorted(root.glob("*/*/*/rollout-*.jsonl"), key=lambda f: f.stat().st_mtime)[-6:]:
+                if f.stat().st_mtime >= t0 - 5 and wt in f.read_text(errors="replace")[:6000]:
+                    mine = f
+        if mine is not None:
+            calls = sum(1 for ln in mine.read_text(errors="replace").splitlines()
+                        if '"type":"function_call"' in ln or '"type":"custom_tool_call"' in ln)
+            if calls > cap:
+                os.kill(pid, 15)
+                print(f"stopped at the call cap ({calls} > {cap})")
+                return
+        time.sleep(15)
+
+
 def cmd_review(argv):
     """flo review <S> [--since <sha> --prior <verdict.json>]: with --since, a re-review packet that
     carries the reviewer's previous findings and only the story's changes since that commit."""
@@ -1895,7 +1920,7 @@ COMMANDS = {
     "review": cmd_review, "gate": cmd_gate, "final": cmd_final, "escalate": cmd_escalate,
     "done": cmd_done, "design": cmd_design, "status": cmd_status, "budget": cmd_budget,
     "roadmap": cmd_roadmap, "score": cmd_score, "session": cmd_session, "board": cmd_board,
-    "reap": cmd_reap, "account": cmd_account, "codex-usage": cmd_codex_usage, "ci-watch": cmd_ci_watch, "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "db": cmd_db, "up": cmd_up, "down": cmd_down,
+    "reap": cmd_reap, "account": cmd_account, "codex-usage": cmd_codex_usage, "codex-guard": cmd_codex_guard, "ci-watch": cmd_ci_watch, "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "db": cmd_db, "up": cmd_up, "down": cmd_down,
 }
 
 if __name__ == "__main__":
