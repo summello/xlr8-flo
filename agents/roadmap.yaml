@@ -43,6 +43,11 @@ milestones:
     branch: milestone/M5-customer-ready
     goal: Self-serve tenancy, verification, backup evidence, legal surface,
       graduation instrumentation.
+  - id: MT
+    name: Delivery tooling
+    branch: main
+    goal: Operator-facing delivery tooling that ships standalone, by pull request to
+      main, outside any product milestone.
 
 epics:
 
@@ -2488,3 +2493,21 @@ epics:
           - E19-S06
           - E18-S03
         st: todo
+
+  # ─────────────────────── MT — Delivery tooling (standalone) ───────────────────────
+
+  - id: E21
+    name: Delivery visibility
+    milestone: MT
+    stories:
+      - id: E21-S01
+        t: 'Delivery status from git: six story states, board and Mission Control read one
+          snapshot, release runbook tab'
+        k: chore
+        s: L
+        tags: []
+        reqs:
+          - SUP-005
+          - OBS-003
+        dep: []
+        st: done

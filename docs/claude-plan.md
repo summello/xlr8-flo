@@ -662,6 +662,14 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E20-S05** Administrator and operator documentation, runbooks linked from every alert | E20 | docs | M | UX-010, SUP-005, OBS-003 | E19-S07 |
 | ⬜ | **E20-S06** Graduation dashboard: MAU, customers, storage, email, requests against §7 triggers | E20 | ui | M | OPS-002, TEN-003 | E19-S06, E18-S03 |
 
+#### MT — Delivery tooling · 1/1 done
+
+> Operator-facing delivery tooling that ships standalone, by pull request to main, outside any product milestone.
+
+| | Story | Epic | Kind | Size | Requirements | Depends on |
+|---|---|---|---|---|---|---|
+| ✅ | **E21-S01** Delivery status from git: six story states, board and Mission Control read one snapshot, release runbook tab | E21 | chore | L | SUP-005, OBS-003 | — |
+
 <!-- ROADMAP:END -->
 
 ### 5.1 Epic index

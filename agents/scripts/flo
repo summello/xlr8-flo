@@ -19,7 +19,7 @@ Stdlib only, except PyYAML for the two config files.
   flo session <AGENT> [ID]  record an agent's session id for the current story
   flo budget                per-agent spend and remaining capacity
   flo roadmap [--check]     regenerate docs/claude-plan.md §5 (or verify it)
-  flo board                 regenerate board.html - drilldown status view (gitignored)\n  flo ack     [KEY|all]     confirm a 'waiting on you' item (list keys with no argument)\n  flo unack   <KEY|all>     reopen a confirmed item
+  flo board   [--watch [S]] refresh .flo/status.json and board.html from git refs, worktrees, GitHub\n  flo ack     [KEY|all]     confirm a 'waiting on you' item (list keys with no argument)\n  flo unack   <KEY|all>     reopen a confirmed item
   flo check [--light]       everything CI runs, locally (stops at the first red); --light is\n                            the story gate: no full pytest/e2e, only the tests the story touched\n  flo reap    <STORY_ID>    drop a merged story's worktree once its CI is green\n  flo account <STORY_ID>    account + session id for a multi-account author (sonnet)\n  flo ci-watch              one pass: mark red story/milestone CI, reap green merged stories
   flo db      [url|reset]   this worktree's test database (reset drops and recreates it)
   flo up [--reset]          start local Postgres + MinIO + Mailpit; optionally reset data
@@ -44,7 +44,8 @@ MEMORY = ROOT / "agents" / "project-memory.md"
 STATE = ROOT / "agents" / ".state.json"
 SCORECARD = ROOT / "agents" / "scorecard.json"
 SCORE_MD = ROOT / "agents" / "SCORECARD.md"
-BOARD = ROOT / "board.html"
+BOARD = ROOT / "board.html"  # overridden to the primary checkout by _board_once
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 TERMINAL = {"done"}
 ACTIVE = {"design", "in_progress", "review", "blocked"}
 
@@ -782,7 +783,6 @@ def cmd_done(argv):
            f"{trailers}")
     cmd_roadmap([])
     cmd_score([])
-    cmd_board([])
     git("add", "agents/roadmap.yaml", "docs/claude-plan.md", "agents/project-memory.md",
         "agents/scorecard.json", "agents/SCORECARD.md")
     git("commit", "-m", msg)
@@ -926,7 +926,12 @@ def cmd_session(argv):
 
 # ── agent scorecard ──────────────────────────────────────────────────────────
 
+_SCORES_OVERRIDE = None
+
+
 def load_scores():
+    if _SCORES_OVERRIDE is not None:
+        return _SCORES_OVERRIDE
     return json.loads(SCORECARD.read_text())
 
 
@@ -1321,7 +1326,7 @@ def _burnup(rm, recaps):
             f'{seg(o, "--sunken")}</td>'
             f'<td class="r">{d} done</td><td class="r">{l} in flight</td>'
             f'<td class="r">{o} outstanding</td><td class="r">{n} total</td></tr>')
-    return (f'<p class="hint" style="padding:0 0 10px">{done_all} of {total} stories delivered, '
+    return (f'<p class="hint" style="padding:0 0 10px">{done_all} of {total} stories merged or deployed, '
             f'{live_all} in flight, {total - done_all - live_all} outstanding. '
             f'Bar length is scaled to the largest milestone.</p>'
             f'<table class="burn"><caption class="sr">Stories completed, in flight and '
@@ -1333,7 +1338,7 @@ def _burnup(rm, recaps):
             f'Outstanding</span></p>')
 
 
-def pending_on_human(rm, fleet):
+def pending_on_human(rm, fleet, doc=None):
     """Only the things a person must resolve. Not agent work.
 
     Each item carries a stable `key` and a `sig`. Acknowledging an item stores its
@@ -1361,13 +1366,20 @@ def pending_on_human(rm, fleet):
     for m in rm["milestones"]:
         eps = [e for e in rm["epics"] if e["milestone"] == m["id"]]
         ss = [s for e in eps for s in e["stories"]]
-        if ss and all(s["st"] == "done" for s in ss):
-            merged = git("branch", "--merged", "main", check=False)
-            if m["branch"] not in merged:
-                items.append(dict(key=f"pr:{m['id']}", sig=str(len(ss)),
-                                  kind="Open the milestone PR", ref=m["id"], name=m["name"],
-                                  why=f"Every story in {m['id']} is merged into {m['branch']}. "
-                                      f"It needs a pull request to main."))
+        got = ((doc or {}).get("milestones") or {}).get(m["id"]) or {}
+        if ss and all(s["st"] == "done" for s in ss) and got.get("state") != "deployed":
+            pr = got.get("pr") or {}
+            if pr.get("state") == "OPEN":
+                kind, why = "Merge the milestone PR", (
+                    f"Every story in {m['id']} is merged into {m['branch']}; PR #{pr['number']} "
+                    f"is {'a draft' if pr.get('isDraft') else 'open'}, CI {got.get('ci') or 'unknown'}. "
+                    f"The Release steps tab lists what to do before merging.")
+            else:
+                kind, why = "Open the milestone PR", (
+                    f"Every story in {m['id']} is merged into {m['branch']}. "
+                    f"It needs a pull request to main.")
+            items.append(dict(key=f"pr:{m['id']}", sig=f"{len(ss)}:{pr.get('number', '')}",
+                              kind=kind, ref=m["id"], name=m["name"], why=why))
     # design packets missing for the milestone in progress
     cur = next((m for m in rm["milestones"]
                 if any(s["st"] != "done" for e in rm["epics"] if e["milestone"] == m["id"]
@@ -1375,7 +1387,9 @@ def pending_on_human(rm, fleet):
     if cur:
         eps = [e for e in rm["epics"] if e["milestone"] == cur["id"]]
         missing = [s["id"] for e in eps for s in e["stories"]
-                   if s["st"] == "todo" and not (ROOT / "design" / f"{s['id']}.md").exists()]
+                   if s["st"] == "todo" and ((doc or {}).get("stories") or {}).get(
+                       s["id"], {}).get("state", "todo") == "todo"
+                   and not (ROOT / "design" / f"{s['id']}.md").exists()]
         if missing:
             items.append(dict(key=f"design:{cur['id']}", sig=str(len(missing)),
                               kind="Run the design pass", ref=cur["id"], name=cur["name"],
@@ -1406,7 +1420,7 @@ def split_acked(items):
 def cmd_ack(argv):
     """flo ack <KEY|all> — acknowledge a pending item. Acknowledging is not resolving."""
     if not argv:
-        items = pending_on_human(roadmap(), load_yaml(FLEET))
+        items = _pending(load_yaml(FLEET))
         if not items:
             print("nothing pending")
             return
@@ -1415,7 +1429,7 @@ def cmd_ack(argv):
             print(f"  {it['key']:22} {it['kind']} · {it['ref']}")
         return
     rm, fleet = roadmap(), load_yaml(FLEET)
-    items = {i["key"]: i for i in pending_on_human(rm, fleet)}
+    items = {i["key"]: i for i in _pending(fleet)}
     keys = list(items) if argv[0] == "all" else [argv[0]]
     unknown = [k for k in keys if k not in items]
     if unknown:
@@ -1454,17 +1468,97 @@ def _bar(done, live, total, label, width=None):
             f'<span class="fill live" style="width:{pct(live):.2f}%"></span></span>')
 
 
-def cmd_board(argv):
-    rm, fleet = roadmap(), load_yaml(FLEET)
+def _view_roadmap(doc):
+    """The legacy roadmap shape (milestones, epics, stories with `st`) built from delivery state."""
+    legacy = {"deployed": "done", "merged": "done", "committed": "review",
+              "in_progress": "in_progress", "ready": "todo", "todo": "todo"}
+    epics = []
+    for eid, e in doc["epics"].items():
+        ss = []
+        for sid, v in doc["stories"].items():
+            if v["epic"] != eid:
+                continue
+            st = "blocked" if v.get("blocked") else legacy[v["state"]]
+            ss.append({"id": sid, "t": v["title"], "k": v["kind"], "s": v["size"],
+                       "tags": v["tags"], "dep": v["dep"], "reqs": [], "st": st})
+        epics.append({"id": eid, "name": e["name"], "milestone": e["milestone"], "stories": ss})
+    return {"milestones": [{"id": k, "name": v["name"], "branch": v["branch"]}
+                           for k, v in doc["milestones"].items()], "epics": epics}
+
+
+def _delivery(use_gh=True, fetch=False):
+    import flo_delivery as D
+
+    root = D.main_root(ROOT)
+    doc = D.gather(root, use_gh=use_gh, fetch=fetch and D.fetch_due(root))
+    if doc.get("error"):
+        die(doc["error"])
+    return root, doc
+
+
+def _pending(fleet):
+    _, doc = _delivery(use_gh=False)
+    return pending_on_human(_view_roadmap(doc), fleet, doc)
+
+
+_STATE_CLASS = {"todo": "todo", "ready": "ready", "in_progress": "inpr", "committed": "cmt",
+                "merged": "mrg", "deployed": "dep"}
+_GROUP_CLASS = {"todo": "todo", "on_train": "train", "ready_to_merge": "rtm", "deployed": "dep"}
+
+
+def _state_pill(state, blocked=False):
+    import flo_delivery as D
+
+    if blocked:
+        return '<span class="pill blk"><i></i>Blocked</span>'
+    return f'<span class="pill {_STATE_CLASS[state]}"><i></i>{D.STORY_LABEL[state]}</span>'
+
+
+def _group_pill(state, note=None):
+    import flo_delivery as D
+
+    extra = f'<span class="note">{_esc(note)}</span>' if note else ""
+    return f'<span class="pill {_GROUP_CLASS[state]}"><i></i>{D.GROUP_LABEL[state]}</span>{extra}'
+
+
+def _board_once(fetch=True, use_gh=True):
+    global BOARD, _SCORES_OVERRIDE
+    import flo_delivery as D
+    import flo_release as R
+
+    root, doc = _delivery(use_gh=use_gh, fetch=fetch)
+    D.write_status(root, doc)
+    BOARD = root / "board.html"
+    best = D.best_json(root, "agents/scorecard.json", "stories")
+    if best is not None:
+        _SCORES_OVERRIDE = best
+    rm, fleet = _view_roadmap(doc), load_yaml(FLEET)
     sc = {s["story"]: s for s in load_scores()["stories"]}
     all_s = [s for _, s in stories(rm)]
     done = [s for s in all_s if s["st"] == "done"]
     active = [s for s in all_s if s["st"] in ACTIVE]
     ready = [(e, s) for e, s in stories(rm) if s["st"] == "todo" and deps_satisfied(rm, s)]
-    pending, confirmed = split_acked(pending_on_human(rm, fleet))
+    pending, confirmed = split_acked(pending_on_human(rm, fleet, doc))
     pct = len(done) / len(all_s) * 100 if all_s else 0
+    cnt = doc["counts"]
 
-    parts = [f"<title>XLR8 FLO Board</title>", f"<style>{BOARD_CSS}</style>",
+    # Named first: adjacent string literals inside a list literal read as a missing comma.
+    legend = (
+        '<p class="hint" style="padding:10px 0 0"><span id="age" class="fresh"></span> '
+        '&middot; Deployed = on main with a green deploy run. Merged = in its milestone '
+        'branch (or on main, deploy not green yet). Committed = reviewed, waiting for '
+        '<span class="mono">flo done</span>.</p>'
+    )
+    tabs_nav = (
+        '<nav class="tabs" role="tablist" aria-label="Board views">'
+        '<button role="tab" data-tab="delivery" aria-selected="true">Delivery</button>'
+        '<button role="tab" data-tab="release" aria-selected="false">Release steps</button>'
+        '</nav>'
+    )
+    parts = ["<!doctype html>", '<html lang="en"><head><meta charset="utf-8">',
+             '<meta name="viewport" content="width=device-width,initial-scale=1">',
+             "<title>XLR8 FLO Board</title>", R.FAVICON,
+             f"<style>{BOARD_CSS}{R.CSS}</style>",
              '<link rel="preconnect" href="https://fonts.googleapis.com">',
              # Explicit +, not implicit adjacency: CodeQL reads adjacent string
              # literals inside a list as a possible missing comma, and that warning
@@ -1472,14 +1566,27 @@ def cmd_board(argv):
              ('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?'
               + 'family=Inter:wght@400;500;560;600;620;640'
               + '&family=JetBrains+Mono:wght@400;460;620&display=swap">'),
+             f'</head><body data-generated="{doc["generated_at"]}">',
              '<div class="w">', "<header>",
              f'<div><p class="eb">Delivery board</p><h1>XLR8 FLO</h1></div><div class="sp"></div>',
-             f'<div class="stat"><span class="eb">Delivered</span><b>{len(done)}/{len(all_s)}</b></div>',
-             f'<div class="stat"><span class="eb">Complete</span><b>{pct:.0f}%</b></div>',
-             f'<div class="stat"><span class="eb">In flight</span><b>{len(active)}</b></div>',
-             f'<div class="stat"><span class="eb">Ready to start</span><b>{len(ready)}</b></div>',
+             f'<div class="stat"><span class="eb">Deployed</span><b>{cnt["deployed"]}/{len(all_s)}</b></div>',
+             f'<div class="stat"><span class="eb">Merged</span><b>{cnt["merged"]}</b></div>',
+             f'<div class="stat"><span class="eb">Committed</span><b>{cnt["committed"]}</b></div>',
+             f'<div class="stat"><span class="eb">In progress</span><b>{cnt["in_progress"]}</b></div>',
+             f'<div class="stat"><span class="eb">Ready</span><b>{cnt["ready"]}</b></div>',
+             f'<div class="stat"><span class="eb">To do</span><b>{cnt["todo"]}</b></div>',
              f'<div class="stat"><span class="eb">On you</span><b>{len(pending)}</b></div>',
-             "</header>"]
+             "</header>",
+             legend,
+             (f'<p class="hint" style="padding:6px 0 0"><span class="pill blk"><i></i>'
+              f'Latest deploy on main failed</span> Stories on main stay Merged until a deploy '
+              f'run succeeds. <span class="mono">gh run list --branch main --limit 3</span></p>'
+              if (doc.get("main") or {}).get("deploy") == "failure" else
+              '<p class="hint" style="padding:6px 0 0"><span class="pill dsg"><i></i>Deploy runs '
+              'not readable</span> GitHub could not be reached, so Deployed means on main only.</p>'
+              if doc.get("deploy_check") == "unavailable" else ""),
+             tabs_nav,
+             '<div class="tab" id="tab-delivery">']
 
     parts += ['<section><h2>Progress</h2><div class="card chart">', _burnup(rm, sc), "</div></section>"]
 
@@ -1581,6 +1688,7 @@ def cmd_board(argv):
         parts.append(
             f'<details class="card ms" {opn}><summary>'
             f'<span class="caret">▸</span><span class="nm">{m["id"]} · {_esc(m["name"])}</span>'
+            + _group_pill(doc["milestones"][m["id"]]["state"], doc["milestones"][m["id"]]["note"]) +
             f'<span class="sp"></span>' + _bar(d, lv, len(ms_s), f'{m["id"]} {m["name"]}') +
             f'<span class="cnt">{d}/{len(ms_s)}</span></summary>')
         for e in eps:
@@ -1589,7 +1697,8 @@ def cmd_board(argv):
             parts.append(
                 f'<details class="epic"><summary><span class="caret">▸</span>'
                 f'<span class="mono" style="font-size:11.5px;color:var(--fg3)">{e["id"]}</span>'
-                f'<span>{_esc(e["name"])}</span><span class="sp"></span>'
+                f'<span>{_esc(e["name"])}</span>'
+                + _group_pill(doc["epics"][e["id"]]["state"]) + f'<span class="sp"></span>'
                 + _bar(ed, el, len(e["stories"]), f'{e["id"]} {e["name"]}', "88px") +
                 f'<span class="cnt">{ed}/{len(e["stories"])}</span></summary><table>')
             for s in e["stories"]:
@@ -1607,20 +1716,47 @@ def cmd_board(argv):
                     ids = " · ".join(f'{a}:{v["id"][:8]}' for a, v in sorted(sess.items()) if v.get("id"))
                     if ids:
                         body += f'<span class="recap mono" style="font-size:10.5px;opacity:.75">{_esc(ids)}</span>'
-                parts.append(f'<tr><td class="id">{s["id"]}</td><td class="st">{_pill(s["st"])}</td>'
+                parts.append(f'<tr><td class="id">{s["id"]}</td><td class="st">'
+                             f'{_state_pill(doc["stories"][s["id"]]["state"], s["st"] == "blocked")}</td>'
                              f'<td>{body}</td><td class="meta">{meta}</td></tr>')
             parts.append("</table></details>")
         parts.append("</details>")
     parts.append("</section>")
 
+    parts.append("</div>")
+    parts.append(f'<div class="tab" id="tab-release" hidden>{R.runbook_html(doc)}</div>')
     parts.append(f'<footer>Generated by <span class="mono">flo board</span> from '
-                 f'<span class="mono">agents/roadmap.yaml</span> and '
+                 f'git refs, worktrees and GitHub (<span class="mono">.flo/status.json</span>), and '
                  f'<span class="mono">agents/scorecard.json</span>. '
-                 f'Gitignored — regenerate any time, never commit.</footer></div>')
+                 f'Gitignored — regenerate any time, never commit.</footer></div>'
+                 f'<script>{R.SCRIPT}</script></body></html>')
     BOARD.write_text("\n".join(parts) + "\n")
-    print(f"board.html regenerated — {len(done)}/{len(all_s)} delivered, {len(ready)} ready, "
+    print(f"board.html regenerated — {cnt['deployed']}/{len(all_s)} deployed, {cnt['merged']} merged, "
+          f"{cnt['committed']} committed, {cnt['in_progress']} in progress, {cnt['ready']} ready, "
           f"{len(pending)} waiting on you"
           + (f", {len(confirmed)} confirmed" if confirmed else ""))
+
+
+def cmd_board(argv):
+    """flo board [--watch [SECONDS]] [--no-gh] [--no-fetch]
+
+    Refreshes .flo/status.json and board.html in the primary checkout from git refs, worktrees
+    and GitHub. Safe to run from any checkout, any time; Mission Control's handler runs it every
+    minute, and --watch does the same from a plain terminal.
+    """
+    use_gh, fetch = "--no-gh" not in argv, "--no-fetch" not in argv
+    if "--watch" not in argv:
+        return _board_once(fetch=fetch, use_gh=use_gh)
+    i = argv.index("--watch")
+    every = int(argv[i + 1]) if len(argv) > i + 1 and argv[i + 1].isdigit() else 60
+    while True:
+        try:
+            _board_once(fetch=fetch, use_gh=use_gh)
+        except SystemExit:
+            # a refresh that dies (die() on an unreadable repo) must not end the watch loop;
+            # the next tick retries
+            pass
+        time.sleep(every)
 
 
 # ── shells ───────────────────────────────────────────────────────────────────
