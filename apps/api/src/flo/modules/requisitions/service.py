@@ -508,8 +508,8 @@ class RequisitionService:
                 + filters
                 + boundary
                 + f" ORDER BY {column} {order} NULLS LAST,r.id {order}"
-                + f" LIMIT {page_size + 1}",
-                params,
+                + " LIMIT %(limit)s",
+                {**params, "limit": page_size + 1},
             ).fetchall()
             records = [
                 RequisitionRead.model_validate(dict(zip(READ_FIELDS, row, strict=True)))
