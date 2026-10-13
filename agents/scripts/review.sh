@@ -53,7 +53,7 @@ if [ "$A" = codex ]; then
     codex exec -m $1 -c model_reasoning_effort=$2 -c project_doc_max_bytes=0 -s workspace-write --skip-git-repo-check \"\$(cat '$P')\" > '$D/$S.$A.log' 2>&1 & CP=\$!; \
     ( sleep $CAP; kill \$CP 2>/dev/null && echo 'stopped at the time cap' >> '$D/$S.$A.log' ) & KP=\$!; \
     '$W/apps/api/.venv/bin/python' '$R/agents/scripts/flo' codex-guard '$W' $CALLS \$CP $CAP >> '$D/$S.$A.log' 2>&1 & \
-    wait \$CP; RC=\$?; echo \"exit \$RC\" >> '$D/$S.$A.log'; kill \$KP 2>/dev/null; [ \$RC = 0 ] && mv '$SHA.new' '$SHA'; \
+    wait \$CP; RC=\$?; echo \"exit \$RC\" >> '$D/$S.$A.log'; kill \$KP 2>/dev/null; { [ \$RC = 0 ] || grep -q '\"ran_tests\": *true' 'reviews/$S.$A.json' 2>/dev/null; } && mv '$SHA.new' '$SHA'; \
     mv -n '$D/$S.aside/'*.json reviews/ 2>/dev/null; rmdir '$D/$S.aside'; \
     '$W/apps/api/.venv/bin/python' '$R/agents/scripts/flo' codex-usage '$S' '$T0' > /dev/null" > /dev/null 2>&1 &
   echo "review launched: $S by codex ($1, $2)${ARGS:+, re-review}"
