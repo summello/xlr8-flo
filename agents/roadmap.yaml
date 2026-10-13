@@ -1109,7 +1109,7 @@ epics:
         dep:
           - E09-S08
           - E09-S11
-        st: todo
+        st: in_progress
       - id: E09-S13
         t: 'Standalone requisition funding, who may assign one to a project, and master-code
           re-check at approval (operator requirements pending; before the M2 PR)'
