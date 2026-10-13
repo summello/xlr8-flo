@@ -386,6 +386,7 @@ def cmd_submit(argv):
 GENERATED_FILES = (
     "uv.lock", "package-lock.json", "pnpm-lock.yaml", "yarn.lock",
     "poetry.lock", "Cargo.lock", "go.sum", "Gemfile.lock", "composer.lock",
+    "openapi.json", "schema.ts",  # the generated API client; the light gate checks it is current
 )
 
 
@@ -414,7 +415,7 @@ def cmd_review(argv):
     if generated:
         print("--- generated files, body omitted ---")
         for n in generated:
-            print(f"{n} — machine-generated dependency pin. Judge that it is committed, "
+            print(f"{n} — machine-generated. Judge that it is committed, "
                   f"not its contents. Open it in the worktree if you must.")
         print()
 
@@ -426,21 +427,38 @@ def cmd_review(argv):
             print(f"--- end {n} ---\n")
 
     print("--- how to review ---")
+    deep = pkt["opus_final"]
+    plants = ("every plant the design packet prescribes, every gate, contract or guard the "
+              "diff adds, and at most 2 exploratory plants of your own" if deep else
+              "every gate, contract or guard the diff adds, and at most 1 exploratory plant")
     print(f"""\
+Budget: this is {'a gated (money/auth/security/migration/concurrency)' if deep else 'an ungated'}
+review. Aim for about {60 if deep else 30} commands in total. When the steps below are done,
+write the verdict and stop; do not widen the review.
+
 1. cd {wt}
-2. Run the tests. A verdict with ran_tests=false does not count toward the floor.
-     apps/api/.venv/bin/python agents/scripts/flo check   # every CI stage, private fresh database
-   For a single test file afterwards, use the worktree's own database, never flo_test:
+   Read the diff above once. Write down the defects you suspect BEFORE running anything.
+2. Tests, once each. The full suite runs on GitHub for story/{sid}; do not run it here.
+     apps/api/.venv/bin/python agents/scripts/flo check --light   # lint, types, the story's tests
+   Then only the test files a suspicion needs, on the worktree's own database:
      export TEST_DATABASE_URL="$(apps/api/.venv/bin/python agents/scripts/flo db reset)"
-3. For EVERY gate, contract or guard in the diff: plant a violation, watch it fail,
-   then restore. A gate you have not seen fail is not reviewed.
-     <edit the guarded file>            # break it
-     <run the gate>                     # must fail
-     git checkout -- <file>             # restore
+     (cd apps/api && .venv/bin/pytest -x -q <one test file> 2>&1 | tail -20)
+     (cd apps/web && npx playwright test <one spec> --grep '<test>' --reporter=line 2>&1 | tail -20)
+3. Plants: {plants}. A gate you have not seen fail is not reviewed.
+     <edit the guarded file>                         # break it
+     <run the ONE test file that should catch it>    # must fail
+     git checkout -- <file>                          # restore at once
 4. Confirm each requirement id above is satisfied by what the diff does, not by what
    it says. Cite the id in any finding it belongs to.
 5. Write your verdict, then stop.
      reviews/{sid}.<your-agent-id>.json   # schema in AGENTS.md §2.2
+
+--- tool discipline ---
+DO   pipe every test and build command through `| tail -20`; never print a whole log
+DO   wait for a long command to finish instead of polling it
+DO   read a file once; use `sed -n 'A,Bp'` or `grep -n` for the part you need
+DO   stop after 2 failed attempts to reproduce a suspicion; report it as `major` or
+     `minor` marked "unverified", never as a blocker
 
 --- rules ---
 DO   keep every scratch file inside {wt}

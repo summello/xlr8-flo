@@ -32,6 +32,8 @@ First line of every message you send another session: `ROLE xlr8flo-planner`.
    (`opus_final`) also get a **fresh** Opus session using the `xlr8flo-reviewer` skill, on
    whichever account has headroom. Never review in this session: you wrote the packet.
    Run reviewers sequentially in one worktree.
+   **One Codex review at a time** across all stories: two in parallel shared its five-hour window
+   and both died at the cap with no verdict (13 Oct). Queue the next until the first exits.
 6. **Rounds.** `changes_requested` → resume the author's session with the findings only
    (`agents/scripts/author.sh <S> <findings-file>`; it resumes, never forks), then submit again.
    Max 3 rounds, then arbitrate per `agents/claude.md` §3.

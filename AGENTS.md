@@ -126,6 +126,12 @@ Rules while reviewing:
 - Check the requirement IDs the design cites are actually satisfied. A green test suite that tests the wrong thing is the most common agent failure mode.
 - **For every gate, contract or guard in the diff, plant a violation and watch it fail.** A regex, an `.importlinter` contract or a CI step that reports green may enforce nothing — three M0 gates did. A gate you have not seen fail is not reviewed.
 - Silence is not approval. Every review produces a file.
+- **Review has a budget** (13 Oct 2026, after two Codex reviews spent ~21M tokens each and hit the
+  cap without a verdict). Run `flo check --light` once and the test files a suspicion needs; the full
+  suite is story CI's job. Gated stories: every plant the packet prescribes plus every gate the diff
+  adds, and at most 2 exploratory plants; ungated: the diff's gates and at most 1. Two failed
+  attempts to reproduce a suspicion and it is reported as unverified, never as a blocker. `flo
+  review` prints the exact budget.
 
 ### 2.3 Rounds and arbitration
 
