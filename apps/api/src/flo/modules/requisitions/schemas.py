@@ -116,6 +116,7 @@ class RequisitionRead(BaseModel):
     updated_at: datetime
     reservation: ReservationRead | None = None
     approval: ApprovalRead | None = None
+    amendment: AmendmentRef | None = None
 
 
 class RequisitionPage(BaseModel):
@@ -335,6 +336,110 @@ class ReservationRead(BaseModel):
 class ApprovalRead(BaseModel):
     instance_id: UUID
     status: str
+
+
+class AmendmentRef(BaseModel):
+    revision_no: int
+    status: Literal["draft", "pending"]
+    can_continue: bool
+
+
+class RevisionSummary(BaseModel):
+    revision_no: int
+    kind: Literal["submission", "amendment"]
+    status: Literal["draft", "pending", "applied", "rejected", "returned", "withdrawn"]
+    created_by: UUID
+    created_at: datetime
+    note: str | None
+
+
+class AmendmentHeader(BaseModel):
+    title: str
+    justification: str | None
+    needed_by: date | None
+    department_code: str | None
+    ledger_account_code: str | None
+    delivery_address_id: UUID | None
+    project_id: UUID | None
+
+
+class AmendmentLineRead(BaseModel):
+    line_id: UUID
+    line_no: int | None
+    line_type: Literal["item", "service"]
+    description: str
+    quantity: str
+    uom_code: str
+    unit_price: str
+    amount: str
+    category_code: str | None
+    catalogue_item_id: UUID | None
+
+
+class AmendmentRead(BaseModel):
+    revision_no: int
+    status: Literal["draft", "pending", "applied", "rejected", "returned", "withdrawn"]
+    version: int
+    header: AmendmentHeader
+    lines: list[AmendmentLineRead]
+    estimate: str
+    currency: str
+
+
+class AmendmentHeaderPut(HeaderFields):
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    project_id: UUID | None = None
+
+
+class AmendmentPut(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    header: AmendmentHeaderPut = Field(default_factory=AmendmentHeaderPut)
+    lines: list[ReplacementLine] = Field(max_length=500)
+
+
+class AmendmentSubmit(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    note: str | None = Field(default=None, min_length=1, max_length=1000)
+
+    @model_validator(mode="after")
+    def plain_note(self) -> AmendmentSubmit:
+        if self.note is not None and not self.note.strip():
+            raise invalid("note", "Enter a plain-text note.")
+        return self
+
+
+class ChangeDelta(BaseModel):
+    amount: str
+    percent: str | None
+    direction: Literal["up", "down"]
+
+
+class ChangeRow(BaseModel):
+    field: str
+    label: str
+    was: str | None
+    now: str | None
+    change: Literal["changed", "added", "removed"]
+    delta: ChangeDelta | None = None
+
+
+class ChangeFunding(BaseModel):
+    reserved_now: str
+    reserved_after: str
+    outcome: Literal["unchanged", "released_once", "reserved_more", "moved"]
+    project_available_after: str | None
+    currency: str
+    note: str | None = None
+
+
+class ChangeSet(BaseModel):
+    from_revision: int
+    to: Literal["draft", "amendment"]
+    nothing_changed: bool
+    material: bool
+    routing: Literal["restarts", "same_step", "not_applicable"]
+    rows: list[ChangeRow]
+    funding: ChangeFunding | None
 
 
 RequisitionRead.model_rebuild()

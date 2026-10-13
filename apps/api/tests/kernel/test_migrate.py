@@ -141,6 +141,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261009_0049",
         "20261009_0050",
         "20261009_0051",
+        "20261009_0052",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -1683,3 +1684,89 @@ def test_project_event_system_actor_roundtrip_preserves_data_and_refuses_unsafe_
             == before
         )
         mig.upgrade(conn)
+
+
+def test_requisition_revisions_roundtrip_and_plants_the_immutability_guards(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.org.schemas import BaseCurrencyPut, OrgUnitCreate
+    from flo.modules.org.service import OrgService
+    from flo.modules.requisitions.schemas import RequisitionCreate
+    from flo.modules.requisitions.service import RequisitionService
+    from tests.org.test_bootstrap import admin_id, create, settings
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261009_0051"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261009_0052")
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("requisition-revisions-migration"),
+    ):
+        tenant = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(tenant.org_id)
+        org = OrgService(conn, scope, actor)
+        org.set_base_currency(BaseCurrencyPut(currency="USD"))
+        bu = org.create_unit(OrgUnitCreate(code="BU", name="BU", kind="bu"))
+        req = RequisitionService(conn, scope, actor, settings(conn)).create(
+            RequisitionCreate(title="Seed", bu_id=bu.id)
+        )
+        before = conn.execute("SELECT id,title,status,version FROM requisition").fetchall()
+        mig.upgrade(conn)
+        assert conn.execute("SELECT id,title,status,version FROM requisition").fetchall() == before
+        insert = (
+            "INSERT INTO requisition_revision(id,org_id,requisition_id,revision_no,kind,status,"
+            "snapshot,material_digest,created_by) VALUES(gen_random_uuid(),%s,%s,%s,%s,%s,"
+            "'{}'::jsonb,%s,%s)"
+        )
+
+        def run(statement, *args):
+            with tenant_transaction(conn, scope):
+                return conn.execute(statement, args).rowcount
+
+        digest = "a" * 64
+        run(insert, tenant.org_id, req.id, 1, "submission", "applied", digest, actor)
+        run(insert, tenant.org_id, req.id, 2, "amendment", "draft", digest, actor)
+        with pytest.raises(psycopg.errors.UniqueViolation):  # one open amendment, in the table
+            run(insert, tenant.org_id, req.id, 3, "amendment", "pending", digest, actor)
+        with pytest.raises(psycopg.errors.UniqueViolation):
+            run(insert, tenant.org_id, req.id, 2, "submission", "applied", digest, actor)
+        for refused in (
+            "UPDATE requisition_revision SET snapshot='{\"x\":1}'::jsonb WHERE revision_no=1",
+            "UPDATE requisition_revision SET status='withdrawn' WHERE revision_no=1",
+            "DELETE FROM requisition_revision WHERE revision_no=1",
+        ):
+            with pytest.raises(psycopg.errors.IntegrityConstraintViolation):
+                run(refused)
+        run("UPDATE requisition_revision SET snapshot='{\"x\":1}'::jsonb WHERE revision_no=2")
+        run("UPDATE requisition_revision SET status='pending' WHERE revision_no=2")
+        with pytest.raises(psycopg.errors.IntegrityConstraintViolation):
+            run("UPDATE requisition_revision SET snapshot='{}'::jsonb WHERE revision_no=2")
+        # A decided pending row may change nothing but status and decided_at.
+        for rewrite in (
+            "snapshot='{\"x\":2}'::jsonb",
+            "note='rewritten'",
+            "material_digest='" + "b" * 64 + "'",
+        ):
+            with pytest.raises(psycopg.errors.IntegrityConstraintViolation):
+                run(
+                    "UPDATE requisition_revision SET status='applied',decided_at=now(),"
+                    + rewrite
+                    + " WHERE revision_no=2"
+                )
+        with pytest.raises(psycopg.errors.IntegrityConstraintViolation):
+            run("DELETE FROM requisition_revision WHERE revision_no=2")
+        run("UPDATE requisition_revision SET status='applied',decided_at=now() WHERE revision_no=2")
+        with pytest.raises(psycopg.errors.IntegrityConstraintViolation):
+            run("UPDATE requisition_revision SET note='late' WHERE revision_no=2")
+        run(insert, tenant.org_id, req.id, 3, "amendment", "draft", digest, actor)
+        assert run("DELETE FROM requisition_revision WHERE revision_no=3") == 1
+        mig.downgrade(conn)
+        assert conn.execute("SELECT id,title,status,version FROM requisition").fetchall() == before
+        assert conn.execute("SELECT to_regclass('requisition_revision')").fetchone() == (None,)
+        mig.upgrade(conn)
+        assert conn.execute("SELECT id,title,status,version FROM requisition").fetchall() == before
+        assert conn.execute("SELECT count(*) FROM requisition_revision").fetchone() == (0,)

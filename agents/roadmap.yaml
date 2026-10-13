@@ -1035,7 +1035,7 @@ epics:
           - E09-S05
           - E09-S07
           - E10-S07
-        st: in_progress
+        st: done
       - id: E09-S09
         t: 'Linked-record graph: RFQs, bids, awards, POs, approvals, notes, ledger
           entries'

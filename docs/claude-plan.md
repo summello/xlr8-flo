@@ -522,7 +522,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E08-S03** Import batch record, idempotent re-import by external key, async with progress | E08 | engine | M | IMP-008, IMP-009, IMP-012, PERF-004 | ~~E08-S02~~ |
 | ✅ | **E08-S04** Project and budget import templates end to end | E08 | crud | M | PROJ-001, IMP-001 | ~~E08-S03~~, ~~E07-S03~~ |
 
-#### M2 — Governed demand · 21/26 done
+#### M2 — Governed demand · 22/26 done
 
 > Requisitions that reserve real money, and the approval engine that authorizes them.
 
@@ -535,11 +535,11 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E09-S05** Requisition lifecycle state machine | E09 | engine | L | REQ-005, REQ-016, WF-002 | ~~E09-S04~~, ~~E09-S03~~, ~~E10-S05~~, ~~E10-S06~~ |
 | ✅ | **E09-S06** Approval reserves budget and generates the sub-project, one transaction | E09 | ledger | L | REQ-002, REQ-003, REQ-004, PROJ-003, ACC-001, WF-003 | ~~E09-S05~~, ~~E07-S04~~, ~~E10-S05~~ |
 | ✅ | **E09-S07** Release on reject, withdraw, cancel, expire or reduce — exactly once | E09 | ledger | M | REQ-013, FIN-011, ACC-006 | ~~E09-S06~~ |
-| 🔨 | **E09-S08** Controlled return, amendment and resubmission preserving prior values | E09 | engine | M | REQ-012, APR-015, DATA-002 | ~~E09-S05~~, ~~E09-S07~~, ~~E10-S07~~ |
-| ⬜ | **E09-S09** Linked-record graph: RFQs, bids, awards, POs, approvals, notes, ledger entries | E09 | api | M | REQ-009, WF-001 | ~~E09-S06~~, ~~E09-S10~~, ~~E10-S07~~, E09-S08 |
+| ✅ | **E09-S08** Controlled return, amendment and resubmission preserving prior values | E09 | engine | M | REQ-012, APR-015, DATA-002 | ~~E09-S05~~, ~~E09-S07~~, ~~E10-S07~~ |
+| ⬜ | **E09-S09** Linked-record graph: RFQs, bids, awards, POs, approvals, notes, ledger entries | E09 | api | M | REQ-009, WF-001 | ~~E09-S06~~, ~~E09-S10~~, ~~E10-S07~~, ~~E09-S08~~ |
 | ✅ | **E09-S10** Notes and attachments on all business documents, upload validation, quarantine | E09 | security | L | COL-001, COL-002, COL-003, COL-004, COL-005, COL-006, COL-007, COL-008, D-14 | ~~E03-S06~~, ~~E09-S01~~ |
-| ⬜ | **E09-S11** Requisition screens: create, lines, submit, track, quantity rollup | E09 | ui | L | REQ-015, UX-003, UX-004 | E09-S09, ~~E04-S03~~, E09-S08, ~~E10-S06~~ |
-| ⬜ | **E09-S12** Resubmit and amendment screens: review changes, funding effect, version lineage | E09 | ui | L | REQ-012, APR-015, DATA-002, UX-003 | E09-S08, E09-S11 |
+| ⬜ | **E09-S11** Requisition screens: create, lines, submit, track, quantity rollup | E09 | ui | L | REQ-015, UX-003, UX-004 | E09-S09, ~~E04-S03~~, ~~E09-S08~~, ~~E10-S06~~ |
+| ⬜ | **E09-S12** Resubmit and amendment screens: review changes, funding effect, version lineage | E09 | ui | L | REQ-012, APR-015, DATA-002, UX-003 | ~~E09-S08~~, E09-S11 |
 | ⬜ | **E09-S13** Standalone requisition funding, who may assign one to a project, and master-code re-check at approval (operator requirements pending; before the M2 PR) | E09 | ledger | M | REQ-004 | E09-S12, ~~E10-S11~~ |
 | ✅ | **E10-S01** Workflow definition schema, versioning, active-document version pinning | E10 | migration | L | APR-011, ACC-007 | ~~E03-S04~~ |
 | ✅ | **E10-S02** Condition evaluator over any document attribute including amount and custom fields | E10 | engine | L | APR-005, APR-010 | ~~E10-S01~~ |

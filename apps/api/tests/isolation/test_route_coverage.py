@@ -24,6 +24,10 @@ from flo.api.workflows import router as workflows_router
 TESTS = Path(__file__).resolve().parents[1]
 
 # (method, path) -> "file::test" that proves a foreign id returns 404.
+AMENDMENT_ROUTES = (
+    "requisitions/test_amendments.py::"
+    "test_routes_conceal_foreign_tenants_and_refuse_view_only_users"
+)
 COVERED = {
     (
         "GET",
@@ -37,6 +41,38 @@ COVERED = {
         "POST",
         "/api/v1/requisitions/{id}/transitions",
     ): "requisitions/test_lifecycle.py::test_foreign_lifecycle_routes",
+    (
+        "GET",
+        "/api/v1/requisitions/{id}/revisions",
+    ): AMENDMENT_ROUTES,
+    (
+        "GET",
+        "/api/v1/requisitions/{id}/changes",
+    ): AMENDMENT_ROUTES,
+    (
+        "POST",
+        "/api/v1/requisitions/{id}/amendments",
+    ): AMENDMENT_ROUTES,
+    (
+        "GET",
+        "/api/v1/requisitions/{id}/amendments/current",
+    ): AMENDMENT_ROUTES,
+    (
+        "PUT",
+        "/api/v1/requisitions/{id}/amendments/{revision_no}",
+    ): AMENDMENT_ROUTES,
+    (
+        "DELETE",
+        "/api/v1/requisitions/{id}/amendments/{revision_no}",
+    ): AMENDMENT_ROUTES,
+    (
+        "POST",
+        "/api/v1/requisitions/{id}/amendments/{revision_no}/submit",
+    ): AMENDMENT_ROUTES,
+    (
+        "POST",
+        "/api/v1/requisitions/{id}/amendments/{revision_no}/withdraw",
+    ): AMENDMENT_ROUTES,
     (
         "GET",
         "/api/v1/requisitions/{id}/events",

@@ -1,5 +1,6 @@
 """Parse and authorize requisition header operations."""
 
+from collections.abc import Callable
 from typing import Annotated, Literal, cast
 from uuid import UUID
 
@@ -15,9 +16,14 @@ from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.org.service import OrgService
 from flo.modules.projects.service import ProjectService
+from flo.modules.requisitions import amendments, revisions
 from flo.modules.requisitions.lines import LineService
 from flo.modules.requisitions.lookups import LookupService
 from flo.modules.requisitions.schemas import (
+    AmendmentPut,
+    AmendmentRead,
+    AmendmentSubmit,
+    ChangeSet,
     Direction,
     LineCreate,
     LinesRead,
@@ -32,6 +38,7 @@ from flo.modules.requisitions.schemas import (
     RequisitionStatus,
     RequisitionTransitionAvailable,
     RequisitionTransitionCreate,
+    RevisionSummary,
     StatusEventRead,
     SubmissionCheck,
 )
@@ -75,6 +82,12 @@ ReadContext = Annotated[
 ]
 EditContext = Annotated[
     AuthorizationContext, Depends(require("requisition.edit", requisition_target))
+]
+SubmitContext = Annotated[
+    AuthorizationContext, Depends(require("requisition.submit", requisition_target))
+]
+WithdrawContext = Annotated[
+    AuthorizationContext, Depends(require("requisition.withdraw", requisition_target))
 ]
 ListContext = Annotated[
     AuthorizationContext, Depends(require("requisition.view", organization_target))
@@ -163,6 +176,7 @@ def get_requisition(
             "budget.view",
             cast(TargetProtocol, AuthorizationTarget(ScopeType.PROJECT, project_id)),
         ),
+        lambda: permits(request, "requisition.edit", requisition_target(id, connection)),
     )
     response.headers["ETag"] = f'"{row.version}"'
     return row
@@ -192,6 +206,7 @@ def patch_requisition(
             "budget.view",
             cast(TargetProtocol, AuthorizationTarget(ScopeType.PROJECT, project_id)),
         ),
+        can_edit=lambda: True,
     )
     response.headers["ETag"] = f'"{row.version}"'
     return row
@@ -308,6 +323,7 @@ def transition_requisition(
             "budget.view",
             cast(TargetProtocol, AuthorizationTarget(ScopeType.PROJECT, project_id)),
         ),
+        lambda: permits(request, "requisition.edit", requisition_target(id, connection)),
     )
     response.headers["ETag"] = f'"{row.version}"'
     return row
@@ -331,3 +347,132 @@ def requisition_events(
     id: UUID, context: ReadContext, connection: Connection
 ) -> list[StatusEventRead]:
     return events(connection, current_scope(), id)
+
+
+def _budget_view(request: Request) -> Callable[[UUID], bool]:
+    return lambda project_id: permits(
+        request,
+        "budget.view",
+        cast(TargetProtocol, AuthorizationTarget(ScopeType.PROJECT, project_id)),
+    )
+
+
+@router.get("/{id}/revisions", response_model=list[RevisionSummary])
+def list_revisions(id: UUID, context: ReadContext, connection: Connection) -> list[RevisionSummary]:
+    RequisitionService(connection, current_scope()).get(id)
+    return revisions.summaries(connection, current_scope(), id)
+
+
+@router.get("/{id}/changes", response_model=ChangeSet)
+def requisition_changes(
+    id: UUID,
+    context: ReadContext,
+    connection: Connection,
+    request: Request,
+    against: int | None = None,
+) -> ChangeSet:
+    return revisions.change_set(connection, current_scope(), id, against, _budget_view(request))
+
+
+@router.post("/{id}/amendments", status_code=201, response_model=AmendmentRead)
+def open_amendment(
+    id: UUID,
+    context: EditContext,
+    connection: Connection,
+    response: Response,
+    version: Annotated[str | None, Header(alias="If-Match")] = None,
+) -> AmendmentRead:
+    row = amendments.create(connection, current_scope(), id, version, context.user_id)
+    response.headers["ETag"] = f'"{row.version}"'
+    return row
+
+
+# Registered before the numbered routes so "current" is never parsed as a revision number.
+@router.get("/{id}/amendments/current", response_model=AmendmentRead)
+def current_amendment(
+    id: UUID, context: ReadContext, connection: Connection, response: Response
+) -> AmendmentRead:
+    row = amendments.current(connection, current_scope(), id)
+    response.headers["ETag"] = f'"{row.version}"'
+    return row
+
+
+@router.put("/{id}/amendments/{revision_no}", response_model=AmendmentRead)
+def put_amendment(
+    id: UUID,
+    revision_no: int,
+    body: AmendmentPut,
+    context: EditContext,
+    connection: Connection,
+    response: Response,
+    version: Annotated[str | None, Header(alias="If-Match")] = None,
+) -> AmendmentRead:
+    row = amendments.put(
+        connection, current_scope(), id, revision_no, body, version, context.user_id
+    )
+    response.headers["ETag"] = f'"{row.version}"'
+    return row
+
+
+@router.delete("/{id}/amendments/{revision_no}", status_code=204)
+def delete_amendment(
+    id: UUID, revision_no: int, context: EditContext, connection: Connection
+) -> Response:
+    amendments.delete(connection, current_scope(), id, revision_no, context.user_id)
+    return Response(status_code=204)
+
+
+@router.post("/{id}/amendments/{revision_no}/submit", response_model=RequisitionRead)
+def submit_amendment(
+    id: UUID,
+    revision_no: int,
+    context: SubmitContext,
+    connection: Connection,
+    request: Request,
+    response: Response,
+    body: AmendmentSubmit | None = None,
+    version: Annotated[str | None, Header(alias="If-Match")] = None,
+) -> RequisitionRead:
+    service = RequisitionService(connection, current_scope(), context.user_id)
+    amendments.submit(
+        connection,
+        current_scope(),
+        id,
+        revision_no,
+        body or AmendmentSubmit(),
+        version,
+        context.user_id,
+    )
+    row = service.detail(
+        id,
+        _budget_view(request),
+        lambda: permits(request, "requisition.edit", requisition_target(id, connection)),
+    )
+    response.headers["ETag"] = f'"{row.version}"'
+    return row
+
+
+@router.post("/{id}/amendments/{revision_no}/withdraw", response_model=RequisitionRead)
+def withdraw_amendment(
+    id: UUID,
+    revision_no: int,
+    context: WithdrawContext,
+    connection: Connection,
+    request: Request,
+    response: Response,
+) -> RequisitionRead:
+    amendments.withdraw_amendment(
+        connection,
+        current_scope(),
+        id,
+        revision_no,
+        context.user_id,
+        lambda permission: permits(request, permission, requisition_target(id, connection)),
+    )
+    row = RequisitionService(connection, current_scope(), context.user_id).detail(
+        id,
+        _budget_view(request),
+        lambda: permits(request, "requisition.edit", requisition_target(id, connection)),
+    )
+    response.headers["ETag"] = f'"{row.version}"'
+    return row

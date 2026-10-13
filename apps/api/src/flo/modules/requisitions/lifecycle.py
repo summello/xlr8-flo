@@ -23,6 +23,7 @@ from flo.modules.identity.service import (
 )
 from flo.modules.org.service import OrgService, today
 from flo.modules.projects.service import abandon_generated, generated_for
+from flo.modules.requisitions import revisions
 from flo.modules.requisitions.funding import release_live
 from flo.modules.requisitions.models import RequisitionRepository
 from flo.modules.requisitions.schemas import (
@@ -89,18 +90,6 @@ def assert_completable(
         )
 
 
-def record_submission_revision(
-    conn: psycopg.Connection[tuple[object, ...]],
-    scope: Scope,
-    requisition: dict[str, object],
-    note: str | None,
-) -> None:
-    if note is not None:
-        raise conflict(
-            "notes_unavailable", "Submission notes are not available yet. Submit without a note."
-        )
-
-
 def read_row(repo: RequisitionRepository, id: UUID, *, lock: bool = False) -> dict[str, object]:
     fields = (
         "id",
@@ -119,6 +108,7 @@ def read_row(repo: RequisitionRepository, id: UUID, *, lock: bool = False) -> di
         "title",
         "needed_by",
         "standalone",
+        "pending_amendment_id",
     )
     row = repo.execute(
         "SELECT "
@@ -312,10 +302,16 @@ def transition(
             entry = release_live(conn, scope, row, "withdrawn", actor_id=actor_id)
             write_status(conn, scope, row, "withdrawn", actor_id, body.reason, entry)
             return
+        working = revisions.live_snapshot(conn, scope, id)
+        previous = revisions.latest_applied(repo, id)
+        if previous is not None and revisions.unchanged(
+            cast(revisions.Snapshot, previous["snapshot"]), working
+        ):
+            raise conflict("nothing_changed", "Not resubmitted. Nothing has changed.")
         check = routing_check(conn, scope, id, check)
         if check.problems:
             raise SubmissionInvalid(check.problems)
-        record_submission_revision(conn, scope, row, body.note)
+        revisions.record_submission(conn, scope, id, actor_id, body.note)
         estimate = cast(Decimal, row["estimate"])
         entry_id = cast(int | None, row["reservation_entry_id"])
         if (held and held.project_id != row["project_id"]) or (
@@ -349,14 +345,32 @@ def transition(
 
         record_requested(conn, scope, id)
         write_status(conn, scope, row, "approval_pending", actor_id, body.reason, entry_id)
-        start(
-            conn,
-            scope,
-            document_type="requisition",
-            document_id=id,
-            actor_id=actor_id,
-            resolver=AuthorizationResolver(cast(AuthorizationConnection, conn), scope),
-        )
+        # A returned approval is offered for resuming at its step; approvals compares its own
+        # material digest and refuses (cannot_resume) when the change is material (REQ-012).
+        latest = revisions.latest_instance(conn, scope, id)
+        resume_from = latest[0] if latest and latest[1] == "returned" else None
+        resolver = AuthorizationResolver(cast(AuthorizationConnection, conn), scope)
+        try:
+            start(
+                conn,
+                scope,
+                document_type="requisition",
+                document_id=id,
+                actor_id=actor_id,
+                resolver=resolver,
+                resume_from=resume_from,
+            )
+        except ProblemError as exc:
+            if resume_from is None or (exc.checks or {}).get("problem") != "cannot_resume":
+                raise
+            start(
+                conn,
+                scope,
+                document_type="requisition",
+                document_id=id,
+                actor_id=actor_id,
+                resolver=resolver,
+            )
 
 
 def stop_approved(

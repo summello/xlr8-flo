@@ -61,6 +61,16 @@ def command(db, row, to="approval_pending", **kwargs):
     )
 
 
+def edit_justification(db, row, text):
+    """A non-material draft edit, so a resubmit has something to submit (REQ-012)."""
+    from flo.modules.requisitions.schemas import RequisitionPatch
+
+    current = RequisitionService(db[0], Scope(db[1])).get(row.id)
+    RequisitionService(db[0], Scope(db[1]), db[3]).update(
+        row.id, RequisitionPatch(justification=text), str(current.version), lambda p: True
+    )
+
+
 def funded(case, price="60"):
     db = case[0]
     from tests.requisitions.test_header import unit
@@ -154,6 +164,7 @@ def test_return_keeps_reservation_and_resubmit_rounds(lifecycle_db):
     db, _ = lifecycle_db
     row = funded(lifecycle_db)
     outcome(db, row, Outcome.RETURNED)
+    edit_justification(db, row, "Clarified after the return")
     command(db, row)
     after = RequisitionService(db[0], Scope(db[1])).detail(row.id, lambda p: True)
     assert (
@@ -161,6 +172,7 @@ def test_return_keeps_reservation_and_resubmit_rounds(lifecycle_db):
         and after.reservation.funding_round == 1
     )
     outcome(db, row, Outcome.REJECTED, "return_to_draft")
+    edit_justification(db, row, "Clarified after the rejection")
     command(db, row)
     after = RequisitionService(db[0], Scope(db[1])).detail(row.id, lambda p: True)
     assert after.reservation.funding_round == 2
@@ -205,10 +217,13 @@ def test_standalone_and_routing_rollback(lifecycle_db):
         (row.id,),
     ) == [(1,)]
     row, _ = complete(db)
-    with pytest.raises(ProblemError) as error:
-        command(db, row, note="Please review")
-    assert error.value.checks["problem"] == "notes_unavailable"
-    assert RequisitionService(db[0], Scope(db[1])).get(row.id).status == "draft"
+    command(db, row, note="Please review")
+    assert RequisitionService(db[0], Scope(db[1])).get(row.id).status == "approval_pending"
+    assert sql(
+        db,
+        "SELECT revision_no,kind,status,note FROM requisition_revision WHERE requisition_id=%s",
+        (row.id,),
+    ) == [(1, "submission", "applied", "Please review")]
 
 
 def test_foreign_lifecycle_routes(lifecycle_db):
@@ -627,9 +642,9 @@ def test_transition_rechecks_current_project_permission(lifecycle_db, monkeypatc
     identity.grant_role(db[3], role.id, AuthorizationTarget(ScopeType.PROJECT, old.id))
     original = RequisitionService.transition
 
-    def concurrent_move(self, id, body, version, permitted, can_view_budget):
+    def concurrent_move(self, id, body, version, permitted, can_view_budget, can_edit=None):
         change(db, "requisition", id, "project_id=%s,version=version+1", (new.id,))
-        return original(self, id, body, version, permitted, can_view_budget)
+        return original(self, id, body, version, permitted, can_view_budget, can_edit)
 
     monkeypatch.setattr(RequisitionService, "transition", concurrent_move)
 

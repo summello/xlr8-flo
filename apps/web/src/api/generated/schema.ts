@@ -1787,6 +1787,109 @@ export interface paths {
         patch: operations["patch_requisition_api_v1_requisitions__id__patch"];
         trace?: never;
     };
+    "/api/v1/requisitions/{id}/amendments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Open Amendment */
+        post: operations["open_amendment_api_v1_requisitions__id__amendments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/requisitions/{id}/amendments/current": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Current Amendment */
+        get: operations["current_amendment_api_v1_requisitions__id__amendments_current_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/requisitions/{id}/amendments/{revision_no}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Amendment */
+        put: operations["put_amendment_api_v1_requisitions__id__amendments__revision_no__put"];
+        post?: never;
+        /** Delete Amendment */
+        delete: operations["delete_amendment_api_v1_requisitions__id__amendments__revision_no__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/requisitions/{id}/amendments/{revision_no}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit Amendment */
+        post: operations["submit_amendment_api_v1_requisitions__id__amendments__revision_no__submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/requisitions/{id}/amendments/{revision_no}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Withdraw Amendment */
+        post: operations["withdraw_amendment_api_v1_requisitions__id__amendments__revision_no__withdraw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/requisitions/{id}/changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Requisition Changes */
+        get: operations["requisition_changes_api_v1_requisitions__id__changes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/requisitions/{id}/events": {
         parameters: {
             query?: never;
@@ -1836,6 +1939,23 @@ export interface paths {
         post?: never;
         /** Delete Line */
         delete: operations["delete_line_api_v1_requisitions__id__lines__line_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/requisitions/{id}/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Revisions */
+        get: operations["list_revisions_api_v1_requisitions__id__revisions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2167,6 +2287,111 @@ export interface components {
              */
             entries: components["schemas"]["LedgerEntryRead"][];
         };
+        /** AmendmentHeader */
+        AmendmentHeader: {
+            /** Delivery Address Id */
+            delivery_address_id: string | null;
+            /** Department Code */
+            department_code: string | null;
+            /** Justification */
+            justification: string | null;
+            /** Ledger Account Code */
+            ledger_account_code: string | null;
+            /** Needed By */
+            needed_by: string | null;
+            /** Project Id */
+            project_id: string | null;
+            /** Title */
+            title: string;
+        };
+        /** AmendmentHeaderPut */
+        AmendmentHeaderPut: {
+            /** Delivery Address Id */
+            delivery_address_id?: string | null;
+            /** Department Code */
+            department_code?: string | null;
+            /** Justification */
+            justification?: string | null;
+            /** Ledger Account Code */
+            ledger_account_code?: string | null;
+            /** Needed By */
+            needed_by?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Title */
+            title?: string | null;
+        };
+        /** AmendmentLineRead */
+        AmendmentLineRead: {
+            /** Amount */
+            amount: string;
+            /** Catalogue Item Id */
+            catalogue_item_id: string | null;
+            /** Category Code */
+            category_code: string | null;
+            /** Description */
+            description: string;
+            /**
+             * Line Id
+             * Format: uuid
+             */
+            line_id: string;
+            /** Line No */
+            line_no: number | null;
+            /**
+             * Line Type
+             * @enum {string}
+             */
+            line_type: "item" | "service";
+            /** Quantity */
+            quantity: string;
+            /** Unit Price */
+            unit_price: string;
+            /** Uom Code */
+            uom_code: string;
+        };
+        /** AmendmentPut */
+        AmendmentPut: {
+            header?: components["schemas"]["AmendmentHeaderPut"];
+            /** Lines */
+            lines: components["schemas"]["ReplacementLine"][];
+        };
+        /** AmendmentRead */
+        AmendmentRead: {
+            /** Currency */
+            currency: string;
+            /** Estimate */
+            estimate: string;
+            header: components["schemas"]["AmendmentHeader"];
+            /** Lines */
+            lines: components["schemas"]["AmendmentLineRead"][];
+            /** Revision No */
+            revision_no: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "pending" | "applied" | "rejected" | "returned" | "withdrawn";
+            /** Version */
+            version: number;
+        };
+        /** AmendmentRef */
+        AmendmentRef: {
+            /** Can Continue */
+            can_continue: boolean;
+            /** Revision No */
+            revision_no: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "pending";
+        };
+        /** AmendmentSubmit */
+        AmendmentSubmit: {
+            /** Note */
+            note?: string | null;
+        };
         /** ApprovalExplanation */
         ApprovalExplanation: {
             /** Decisions */
@@ -2450,6 +2675,75 @@ export interface components {
         CatalogueRows: {
             /** Rows */
             rows: components["schemas"]["CatalogueItemRead"][];
+        };
+        /** ChangeDelta */
+        ChangeDelta: {
+            /** Amount */
+            amount: string;
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "up" | "down";
+            /** Percent */
+            percent: string | null;
+        };
+        /** ChangeFunding */
+        ChangeFunding: {
+            /** Currency */
+            currency: string;
+            /** Note */
+            note?: string | null;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "unchanged" | "released_once" | "reserved_more" | "moved";
+            /** Project Available After */
+            project_available_after: string | null;
+            /** Reserved After */
+            reserved_after: string;
+            /** Reserved Now */
+            reserved_now: string;
+        };
+        /** ChangeRow */
+        ChangeRow: {
+            /**
+             * Change
+             * @enum {string}
+             */
+            change: "changed" | "added" | "removed";
+            delta?: components["schemas"]["ChangeDelta"] | null;
+            /** Field */
+            field: string;
+            /** Label */
+            label: string;
+            /** Now */
+            now: string | null;
+            /** Was */
+            was: string | null;
+        };
+        /** ChangeSet */
+        ChangeSet: {
+            /** From Revision */
+            from_revision: number;
+            funding: components["schemas"]["ChangeFunding"] | null;
+            /** Material */
+            material: boolean;
+            /** Nothing Changed */
+            nothing_changed: boolean;
+            /**
+             * Routing
+             * @enum {string}
+             */
+            routing: "restarts" | "same_step" | "not_applicable";
+            /** Rows */
+            rows: components["schemas"]["ChangeRow"][];
+            /**
+             * To
+             * @enum {string}
+             */
+            to: "draft" | "amendment";
         };
         /** ChildrenPage */
         ChildrenPage: {
@@ -4492,6 +4786,7 @@ export interface components {
         };
         /** RequisitionRead */
         RequisitionRead: {
+            amendment?: components["schemas"]["AmendmentRef"] | null;
             approval?: components["schemas"]["ApprovalRead"] | null;
             /**
              * Bu Id
@@ -4591,6 +4886,33 @@ export interface components {
             remaining: string;
             /** Reserved */
             reserved: string;
+        };
+        /** RevisionSummary */
+        RevisionSummary: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Created By
+             * Format: uuid
+             */
+            created_by: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "submission" | "amendment";
+            /** Note */
+            note: string | null;
+            /** Revision No */
+            revision_no: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "pending" | "applied" | "rejected" | "returned" | "withdrawn";
         };
         /** RiskCreate */
         RiskCreate: {
@@ -10470,6 +10792,315 @@ export interface operations {
             };
         };
     };
+    open_amendment_api_v1_requisitions__id__amendments_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AmendmentRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    current_amendment_api_v1_requisitions__id__amendments_current_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AmendmentRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    put_amendment_api_v1_requisitions__id__amendments__revision_no__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                revision_no: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AmendmentPut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AmendmentRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    delete_amendment_api_v1_requisitions__id__amendments__revision_no__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                revision_no: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    submit_amendment_api_v1_requisitions__id__amendments__revision_no__submit_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                revision_no: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AmendmentSubmit"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequisitionRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    withdraw_amendment_api_v1_requisitions__id__amendments__revision_no__withdraw_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                revision_no: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequisitionRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    requisition_changes_api_v1_requisitions__id__changes_get: {
+        parameters: {
+            query?: {
+                against?: number | null;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangeSet"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     requisition_events_api_v1_requisitions__id__events_get: {
         parameters: {
             query?: never;
@@ -10718,6 +11349,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LineWriteResult"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    list_revisions_api_v1_requisitions__id__revisions_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevisionSummary"][];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

@@ -2954,6 +2954,53 @@
       },
       "recap": "Approved requisitions can now be withdrawn (requester, until a registered sourcing probe says sourcing started) or cancelled, and a 03:30 UTC job expires them per requisition.expiry_days; each path releases through release_live once per funding round and abandons the generated sub-project (system actor on expiry via a new project_status_event.system_actor column). reduce_to is added for M3, with a 300-run concurrent property test across all paths.",
       "title": "Release on reject, withdraw, cancel, expire or reduce \u2014 exactly once"
+    },
+    {
+      "story": "E09-S08",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "migration"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "946666e3-3cd2-4c4f-b047-7c1e0b1d0e12",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S08",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a135d4-f919-7660-a4f6-1d03c370deeb",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "1b4f7384-72c5-48ef-96ac-8e83fbac7eff",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Every submission and applied amendment is now an immutable requisition_revision; a returned requisition resumes at its step on a non-material edit and restarts on a material one, and an approved requisition is amended through a draft/pending amendment whose reservation moves only when the amendment is approved. Adds revision, change-set and amendment routes, the revision trigger and one-open-amendment index, and the adapter branches that present and settle a pending amendment.",
+      "title": "Controlled return, amendment and resubmission preserving prior values"
     }
   ]
 }

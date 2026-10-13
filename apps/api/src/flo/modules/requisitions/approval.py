@@ -32,6 +32,7 @@ from flo.modules.identity.service import AuthorizationTarget, ScopeType
 from flo.modules.org.service import OrgService, today
 from flo.modules.projects.schemas import ProjectRead
 from flo.modules.projects.service import ProjectService, create_generated_project, depth_of
+from flo.modules.requisitions import revisions
 from flo.modules.requisitions.funding import release_live
 from flo.modules.requisitions.lifecycle import authorize, pending_terminal, read_row, write_status
 from flo.modules.requisitions.models import RequisitionRepository
@@ -54,11 +55,15 @@ class RequisitionAdapter:
     ) -> DocumentSnapshot:
         repo = RequisitionRepository(conn, scope)
         row = read_row(repo, document_id)
-        lines = repo.execute(
-            "SELECT catalogue_item_id FROM requisition_line WHERE "
-            "org_id=%(org_id)s AND requisition_id=%(id)s",
-            {"id": document_id},
-        ).fetchall()
+        header = revisions.live_snapshot(conn, scope, document_id)
+        amendment = None
+        if row["pending_amendment_id"] is not None:
+            # A running amendment presents its proposal and the requisition's version (WF-001).
+            amendment = repo.execute(
+                "SELECT snapshot FROM requisition_revision WHERE org_id=%(org_id)s AND id=%(id)s",
+                {"id": row["pending_amendment_id"]},
+            ).fetchone()
+        proposal = cast(revisions.Snapshot, amendment[0]) if amendment else header
         return DocumentSnapshot(
             cast(int, row["version"]),
             cast(UUID, row["requester_id"]),
@@ -69,16 +74,8 @@ class RequisitionAdapter:
                     cast(UUID, row["project_id"] or row["bu_id"]),
                 ),
             ),
-            {"amount": Money(cast(Decimal, row["estimate"]), str(row["currency"]))},
-            {
-                "amount": format(cast(Decimal, row["estimate"]), ".4f"),
-                "project_id": str(row["project_id"]) if row["project_id"] else "",
-                "ledger_account_code": str(row["ledger_account_code"] or ""),
-                "catalogue_items": ",".join(
-                    sorted(str(line[0]) if line[0] else "-" for line in lines)
-                ),
-                "line_count": str(len(lines)),
-            },
+            {"amount": Money(Decimal(proposal["estimate"]), str(row["currency"]))},
+            revisions.snapshot_material(proposal),
         )
 
     def summaries(
@@ -96,6 +93,17 @@ class RequisitionAdapter:
             )
             .fetchall()
         )
+        note_rows = (
+            RequisitionRepository(conn, scope)
+            .execute(
+                "SELECT DISTINCT ON (requisition_id) requisition_id,note FROM requisition_revision "
+                "WHERE org_id=%(org_id)s AND requisition_id=ANY(%(ids)s) AND "
+                "(kind='submission' OR status='pending') ORDER BY requisition_id,revision_no DESC",
+                {"ids": list(document_ids)},
+            )
+            .fetchall()
+        )
+        notes = {r[0]: r[1] for r in note_rows}
         return {
             cast(UUID, r[0]): DocumentSummary(
                 str(r[1]),
@@ -103,7 +111,7 @@ class RequisitionAdapter:
                 Money(cast(Decimal, r[3]), str(r[4])),
                 cast(UUID, r[5]),
                 f"/requisitions/{r[0]}",
-                None,
+                cast(str | None, notes.get(r[0])),
             )
             for r in rows
         }
@@ -117,6 +125,10 @@ class RequisitionAdapter:
         context: OutcomeContext,
     ) -> None:
         repo = RequisitionRepository(conn, scope)
+        current = read_row(repo, document_id)
+        if current["status"] == "sourcing_in_progress" and current["pending_amendment_id"]:
+            _amendment_outcome(conn, scope, repo, document_id, outcome, context)
+            return
         if outcome == Outcome.APPROVED:
             _approved(conn, scope, repo, document_id, context)
             return
@@ -151,6 +163,92 @@ class RequisitionAdapter:
             else None
         )
         write_status(conn, scope, row, to, context.actor_id, reason, ledger, context.decision_id)
+
+
+def _amendment_outcome(
+    conn: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    repo: RequisitionRepository,
+    document_id: UUID,
+    outcome: Outcome,
+    context: OutcomeContext,
+) -> None:
+    """Settle a running amendment. Lock order after the instance: project_balance, requisition.
+
+    Only approval moves money: the round's remaining is released once (reason `resubmit`) and
+    the new total reserved as round + 1, under the lock the decision already holds.
+    """
+    names = {
+        Outcome.APPROVED: ("applied", "approved"),
+        Outcome.REJECTED: ("rejected", "rejected"),
+        Outcome.RETURNED: ("returned", "returned"),
+        Outcome.WITHDRAWN: ("withdrawn", "withdrawn"),
+    }
+    if outcome not in names:
+        raise conflict("invalid_transition", "This approval outcome is unavailable.")
+    status, label = names[outcome]
+    before = read_row(repo, document_id)
+    if before["reservation_entry_id"] is not None:
+        lock_balance(
+            conn,
+            scope,
+            reservation_remaining(
+                conn, scope, cast(int, before["reservation_entry_id"])
+            ).project_id,
+        )
+    row = read_row(repo, document_id, lock=True)
+    revision = repo.execute(
+        "SELECT id,status,snapshot FROM requisition_revision WHERE org_id=%(org_id)s AND id=%(id)s"
+        " FOR UPDATE",
+        {"id": row["pending_amendment_id"]},
+    ).fetchone()
+    if revision is None or revision[1] != "pending":
+        raise conflict("invalid_transition", "This amendment is no longer pending approval.")
+    ledger_entry: int | None = None
+    if outcome == Outcome.APPROVED:
+        snap = cast(revisions.Snapshot, revision[2])
+        total = Decimal(snap["estimate"])
+        if row["reservation_entry_id"] is not None:
+            held = reservation_remaining(conn, scope, cast(int, row["reservation_entry_id"]))
+            if held.remaining != total:
+                release_live(conn, scope, row, "resubmit", actor_id=context.actor_id)
+                round_ = cast(int, row["funding_round"]) + 1
+                entry = reserve(
+                    conn,
+                    scope,
+                    project_id=held.project_id,
+                    amount=total,
+                    currency=str(row["currency"]),
+                    source_type="requisition",
+                    source_id=document_id,
+                    effective_date=today(),
+                    actor_id=context.actor_id,
+                    department_code=str(snap["header"]["department_code"]),
+                    ledger_account_code=str(snap["header"]["ledger_account_code"]),
+                    idempotency_key=f"req:{document_id}:reserve:{round_}",
+                )
+                ledger_entry = entry.id
+                repo.execute(
+                    "UPDATE requisition SET funding_round=%(round)s,reservation_entry_id=%(entry)s"
+                    " WHERE org_id=%(org_id)s AND id=%(id)s",
+                    {"id": document_id, "round": round_, "entry": entry.id},
+                )
+                row.update(funding_round=round_, reservation_entry_id=entry.id)
+        revisions.apply_snapshot(conn, scope, document_id, snap)
+    repo.execute(
+        "UPDATE requisition SET pending_amendment_id=NULL WHERE org_id=%(org_id)s AND id=%(id)s",
+        {"id": document_id},
+    )
+    revisions.set_status(repo, revision[0], status)
+    revisions.amendment_event(
+        conn,
+        scope,
+        row,
+        context.actor_id,
+        label,
+        ledger_entry_id=ledger_entry,
+        decision_id=context.decision_id,
+    )
 
 
 def _money(amount: Decimal, currency: str) -> str:

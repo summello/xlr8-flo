@@ -269,6 +269,390 @@
         "title": "AllocationResult",
         "type": "object"
       },
+      "AmendmentHeader": {
+        "properties": {
+          "delivery_address_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Address Id"
+          },
+          "department_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department Code"
+          },
+          "justification": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Justification"
+          },
+          "ledger_account_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ledger Account Code"
+          },
+          "needed_by": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Needed By"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "justification",
+          "needed_by",
+          "department_code",
+          "ledger_account_code",
+          "delivery_address_id",
+          "project_id"
+        ],
+        "title": "AmendmentHeader",
+        "type": "object"
+      },
+      "AmendmentHeaderPut": {
+        "additionalProperties": false,
+        "properties": {
+          "delivery_address_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Address Id"
+          },
+          "department_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department Code"
+          },
+          "justification": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Justification"
+          },
+          "ledger_account_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ledger Account Code"
+          },
+          "needed_by": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Needed By"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "title": "AmendmentHeaderPut",
+        "type": "object"
+      },
+      "AmendmentLineRead": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "string"
+          },
+          "catalogue_item_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalogue Item Id"
+          },
+          "category_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Code"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "line_id": {
+            "format": "uuid",
+            "title": "Line Id",
+            "type": "string"
+          },
+          "line_no": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line No"
+          },
+          "line_type": {
+            "enum": [
+              "item",
+              "service"
+            ],
+            "title": "Line Type",
+            "type": "string"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "string"
+          },
+          "unit_price": {
+            "title": "Unit Price",
+            "type": "string"
+          },
+          "uom_code": {
+            "title": "Uom Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "line_id",
+          "line_no",
+          "line_type",
+          "description",
+          "quantity",
+          "uom_code",
+          "unit_price",
+          "amount",
+          "category_code",
+          "catalogue_item_id"
+        ],
+        "title": "AmendmentLineRead",
+        "type": "object"
+      },
+      "AmendmentPut": {
+        "additionalProperties": false,
+        "properties": {
+          "header": {
+            "$ref": "#/components/schemas/AmendmentHeaderPut"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/ReplacementLine"
+            },
+            "maxItems": 500,
+            "title": "Lines",
+            "type": "array"
+          }
+        },
+        "required": [
+          "lines"
+        ],
+        "title": "AmendmentPut",
+        "type": "object"
+      },
+      "AmendmentRead": {
+        "properties": {
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "estimate": {
+            "title": "Estimate",
+            "type": "string"
+          },
+          "header": {
+            "$ref": "#/components/schemas/AmendmentHeader"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/AmendmentLineRead"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "revision_no": {
+            "title": "Revision No",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "pending",
+              "applied",
+              "rejected",
+              "returned",
+              "withdrawn"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "revision_no",
+          "status",
+          "version",
+          "header",
+          "lines",
+          "estimate",
+          "currency"
+        ],
+        "title": "AmendmentRead",
+        "type": "object"
+      },
+      "AmendmentRef": {
+        "properties": {
+          "can_continue": {
+            "title": "Can Continue",
+            "type": "boolean"
+          },
+          "revision_no": {
+            "title": "Revision No",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "pending"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "revision_no",
+          "status",
+          "can_continue"
+        ],
+        "title": "AmendmentRef",
+        "type": "object"
+      },
+      "AmendmentSubmit": {
+        "additionalProperties": false,
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "title": "AmendmentSubmit",
+        "type": "object"
+      },
       "ApprovalExplanation": {
         "additionalProperties": false,
         "properties": {
@@ -932,6 +1316,220 @@
           "rows"
         ],
         "title": "CatalogueRows",
+        "type": "object"
+      },
+      "ChangeDelta": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "string"
+          },
+          "direction": {
+            "enum": [
+              "up",
+              "down"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "percent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percent"
+          }
+        },
+        "required": [
+          "amount",
+          "percent",
+          "direction"
+        ],
+        "title": "ChangeDelta",
+        "type": "object"
+      },
+      "ChangeFunding": {
+        "properties": {
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "outcome": {
+            "enum": [
+              "unchanged",
+              "released_once",
+              "reserved_more",
+              "moved"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "project_available_after": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Available After"
+          },
+          "reserved_after": {
+            "title": "Reserved After",
+            "type": "string"
+          },
+          "reserved_now": {
+            "title": "Reserved Now",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reserved_now",
+          "reserved_after",
+          "outcome",
+          "project_available_after",
+          "currency"
+        ],
+        "title": "ChangeFunding",
+        "type": "object"
+      },
+      "ChangeRow": {
+        "properties": {
+          "change": {
+            "enum": [
+              "changed",
+              "added",
+              "removed"
+            ],
+            "title": "Change",
+            "type": "string"
+          },
+          "delta": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChangeDelta"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "now": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Now"
+          },
+          "was": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Was"
+          }
+        },
+        "required": [
+          "field",
+          "label",
+          "was",
+          "now",
+          "change"
+        ],
+        "title": "ChangeRow",
+        "type": "object"
+      },
+      "ChangeSet": {
+        "properties": {
+          "from_revision": {
+            "title": "From Revision",
+            "type": "integer"
+          },
+          "funding": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChangeFunding"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "material": {
+            "title": "Material",
+            "type": "boolean"
+          },
+          "nothing_changed": {
+            "title": "Nothing Changed",
+            "type": "boolean"
+          },
+          "routing": {
+            "enum": [
+              "restarts",
+              "same_step",
+              "not_applicable"
+            ],
+            "title": "Routing",
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ChangeRow"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "to": {
+            "enum": [
+              "draft",
+              "amendment"
+            ],
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from_revision",
+          "to",
+          "nothing_changed",
+          "material",
+          "routing",
+          "rows",
+          "funding"
+        ],
+        "title": "ChangeSet",
         "type": "object"
       },
       "ChildrenPage": {
@@ -6995,6 +7593,16 @@
       },
       "RequisitionRead": {
         "properties": {
+          "amendment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AmendmentRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "approval": {
             "anyOf": [
               {
@@ -7346,6 +7954,65 @@
           "project_available"
         ],
         "title": "ReservationRead",
+        "type": "object"
+      },
+      "RevisionSummary": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "format": "uuid",
+            "title": "Created By",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "submission",
+              "amendment"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "revision_no": {
+            "title": "Revision No",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "pending",
+              "applied",
+              "rejected",
+              "returned",
+              "withdrawn"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "revision_no",
+          "kind",
+          "status",
+          "created_by",
+          "created_at",
+          "note"
+        ],
+        "title": "RevisionSummary",
         "type": "object"
       },
       "RiskCreate": {
@@ -19201,6 +19868,607 @@
         ]
       }
     },
+    "/api/v1/requisitions/{id}/amendments": {
+      "post": {
+        "operationId": "open_amendment_api_v1_requisitions__id__amendments_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AmendmentRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Open Amendment",
+        "tags": [
+          "requisitions"
+        ]
+      }
+    },
+    "/api/v1/requisitions/{id}/amendments/current": {
+      "get": {
+        "operationId": "current_amendment_api_v1_requisitions__id__amendments_current_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AmendmentRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Current Amendment",
+        "tags": [
+          "requisitions"
+        ]
+      }
+    },
+    "/api/v1/requisitions/{id}/amendments/{revision_no}": {
+      "delete": {
+        "operationId": "delete_amendment_api_v1_requisitions__id__amendments__revision_no__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "revision_no",
+            "required": true,
+            "schema": {
+              "title": "Revision No",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Delete Amendment",
+        "tags": [
+          "requisitions"
+        ]
+      },
+      "put": {
+        "operationId": "put_amendment_api_v1_requisitions__id__amendments__revision_no__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "revision_no",
+            "required": true,
+            "schema": {
+              "title": "Revision No",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AmendmentPut"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AmendmentRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Put Amendment",
+        "tags": [
+          "requisitions"
+        ]
+      }
+    },
+    "/api/v1/requisitions/{id}/amendments/{revision_no}/submit": {
+      "post": {
+        "operationId": "submit_amendment_api_v1_requisitions__id__amendments__revision_no__submit_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "revision_no",
+            "required": true,
+            "schema": {
+              "title": "Revision No",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/AmendmentSubmit"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequisitionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Submit Amendment",
+        "tags": [
+          "requisitions"
+        ]
+      }
+    },
+    "/api/v1/requisitions/{id}/amendments/{revision_no}/withdraw": {
+      "post": {
+        "operationId": "withdraw_amendment_api_v1_requisitions__id__amendments__revision_no__withdraw_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "revision_no",
+            "required": true,
+            "schema": {
+              "title": "Revision No",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequisitionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Withdraw Amendment",
+        "tags": [
+          "requisitions"
+        ]
+      }
+    },
+    "/api/v1/requisitions/{id}/changes": {
+      "get": {
+        "operationId": "requisition_changes_api_v1_requisitions__id__changes_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "against",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Against"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeSet"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Requisition Changes",
+        "tags": [
+          "requisitions"
+        ]
+      }
+    },
     "/api/v1/requisitions/{id}/events": {
       "get": {
         "operationId": "requisition_events_api_v1_requisitions__id__events_get",
@@ -19722,6 +20990,79 @@
           }
         },
         "summary": "Put Line",
+        "tags": [
+          "requisitions"
+        ]
+      }
+    },
+    "/api/v1/requisitions/{id}/revisions": {
+      "get": {
+        "operationId": "list_revisions_api_v1_requisitions__id__revisions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RevisionSummary"
+                  },
+                  "title": "Response List Revisions Api V1 Requisitions  Id  Revisions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "List Revisions",
         "tags": [
           "requisitions"
         ]

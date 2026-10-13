@@ -5,7 +5,7 @@ import json
 from collections.abc import Callable
 from datetime import date, datetime
 from decimal import Decimal
-from typing import cast
+from typing import Any, cast
 from uuid import UUID, uuid4
 
 import psycopg
@@ -101,10 +101,16 @@ class RequisitionService:
             raise ProblemError(ErrorCode.NOT_FOUND)
         return RequisitionRead.model_validate(dict(zip(READ_FIELDS, row, strict=True)))
 
-    def detail(self, id: UUID, can_view_budget: Callable[[UUID], bool]) -> RequisitionRead:
+    def detail(
+        self,
+        id: UUID,
+        can_view_budget: Callable[[UUID], bool],
+        can_edit: Callable[[], bool] | None = None,
+    ) -> RequisitionRead:
         from flo.modules.budget.service import get_balance, reservation_remaining
         from flo.modules.requisitions.lifecycle import read_row
-        from flo.modules.requisitions.schemas import ApprovalRead, ReservationRead
+        from flo.modules.requisitions.revisions import open_amendment
+        from flo.modules.requisitions.schemas import AmendmentRef, ApprovalRead, ReservationRead
 
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             result = self._get(id)
@@ -136,6 +142,15 @@ class RequisitionService:
                 result.approval = ApprovalRead(
                     instance_id=cast(UUID, instance[0]), status=str(instance[1])
                 )
+            amendment = open_amendment(self.repo, id)
+            if amendment and row["status"] == "sourcing_in_progress":
+                result.amendment = AmendmentRef(
+                    revision_no=cast(int, amendment["revision_no"]),
+                    status=cast(Any, amendment["status"]),
+                    can_continue=amendment["status"] == "draft"
+                    and can_edit is not None
+                    and can_edit(),
+                )
             return result
 
     def transition(
@@ -145,13 +160,14 @@ class RequisitionService:
         version: str | None,
         permitted: Callable[[str], bool],
         can_view_budget: Callable[[UUID], bool],
+        can_edit: Callable[[], bool] | None = None,
     ) -> RequisitionRead:
         # Build the reply while the command's instance, funding and document locks are held.
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             transition(
                 self.connection, self.scope, id, body, version, cast(UUID, self.actor_id), permitted
             )
-            return self.detail(id, can_view_budget)
+            return self.detail(id, can_view_budget, can_edit)
 
     def get(self, id: UUID) -> RequisitionRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
@@ -280,6 +296,7 @@ class RequisitionService:
         can_create: Callable[[UUID], bool],
         *,
         can_view_budget: Callable[[UUID], bool] | None = None,
+        can_edit: Callable[[], bool] | None = None,
     ) -> RequisitionRead:
         if version is None:
             raise ProblemError(
@@ -377,7 +394,9 @@ class RequisitionService:
                 {field: getattr(before, field) for field in changed_fields},
                 {field: getattr(after, field) for field in changed_fields},
             )
-            return self.detail(id, can_view_budget) if can_view_budget is not None else after
+            return (
+                self.detail(id, can_view_budget, can_edit) if can_view_budget is not None else after
+            )
 
     @staticmethod
     def _duplicate_number() -> ProblemError:

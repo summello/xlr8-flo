@@ -24,7 +24,7 @@ from tests.requisitions.test_header import bootstrap_db as bootstrap_db
 from tests.requisitions.test_header import connection_url, project, unit
 from tests.requisitions.test_header import empty_database as empty_database
 from tests.requisitions.test_header import header_db as header_db
-from tests.requisitions.test_lifecycle import command, sql
+from tests.requisitions.test_lifecycle import command, edit_justification, sql
 from tests.requisitions.test_lifecycle import lifecycle_db as lifecycle_db
 from tests.requisitions.test_lines import lines_db as lines_db
 
@@ -272,6 +272,7 @@ def test_repeated_reject_to_draft_releases_each_funding_round_once(lifecycle_db)
         assert after.status == "draft" and after.reservation.remaining == "0.0000"
         assert len(releases(db, row.id)) == round_
         if round_ == 1:
+            edit_justification(db, row, "Reworded after the rejection")
             command(db, row)
     keys = sql(db, "SELECT idempotency_key FROM ledger_entry WHERE entry_type='release'")
     assert len(set(keys)) == 2
