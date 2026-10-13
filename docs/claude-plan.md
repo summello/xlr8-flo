@@ -536,7 +536,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E09-S06** Approval reserves budget and generates the sub-project, one transaction | E09 | ledger | L | REQ-002, REQ-003, REQ-004, PROJ-003, ACC-001, WF-003 | ~~E09-S05~~, ~~E07-S04~~, ~~E10-S05~~ |
 | ✅ | **E09-S07** Release on reject, withdraw, cancel, expire or reduce — exactly once | E09 | ledger | M | REQ-013, FIN-011, ACC-006 | ~~E09-S06~~ |
 | ✅ | **E09-S08** Controlled return, amendment and resubmission preserving prior values | E09 | engine | M | REQ-012, APR-015, DATA-002 | ~~E09-S05~~, ~~E09-S07~~, ~~E10-S07~~ |
-| ⬜ | **E09-S09** Linked-record graph: RFQs, bids, awards, POs, approvals, notes, ledger entries | E09 | api | M | REQ-009, WF-001 | ~~E09-S06~~, ~~E09-S10~~, ~~E10-S07~~, ~~E09-S08~~ |
+| 🔨 | **E09-S09** Linked-record graph: RFQs, bids, awards, POs, approvals, notes, ledger entries | E09 | api | M | REQ-009, WF-001 | ~~E09-S06~~, ~~E09-S10~~, ~~E10-S07~~, ~~E09-S08~~ |
 | ✅ | **E09-S10** Notes and attachments on all business documents, upload validation, quarantine | E09 | security | L | COL-001, COL-002, COL-003, COL-004, COL-005, COL-006, COL-007, COL-008, D-14 | ~~E03-S06~~, ~~E09-S01~~ |
 | ⬜ | **E09-S11** Requisition screens: create, lines, submit, track, quantity rollup | E09 | ui | L | REQ-015, UX-003, UX-004 | E09-S09, ~~E04-S03~~, ~~E09-S08~~, ~~E10-S06~~ |
 | ⬜ | **E09-S12** Resubmit and amendment screens: review changes, funding effect, version lineage | E09 | ui | L | REQ-012, APR-015, DATA-002, UX-003 | ~~E09-S08~~, E09-S11 |
