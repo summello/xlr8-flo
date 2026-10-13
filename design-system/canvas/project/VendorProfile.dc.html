@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;560;600;640&amp;family=JetBrains+Mono:wght@400;460;620&amp;display=swap" rel="stylesheet">
 <style>body{margin:0}</style>
 </helmet>
-<div class="{{rootCls}}" data-theme="{{theme}}" style="min-height: 100vh">
+<div class="{{rootCls}}" data-theme="{{theme}}" style="min-height: 100vh;--ph-page: var(--phase-commit)">
 <div class="{{appCls}}">
   <nav class="side" aria-label="Primary" onScroll="{{navTipHide}}">
     <div class="brand"><span class="brand-mark">FL</span><span class="brand-name">XLR8 FLO</span></div>
@@ -132,7 +132,7 @@
                     <span role="cell" data-label="Type">{{c.type}}</span>
                     <span role="cell" data-label="Email" style="overflow-wrap:anywhere">{{c.email}}</span>
                     <span role="cell" class="hide-md" data-label="Phone">{{c.phone}}</span>
-                    <span role="cell" data-label="Receives"><sc-if value="{{can.edit}}" hint-placeholder-val="{{ true }}"><label style="display:inline-flex;align-items:center;gap:8px;min-height:24px"><input type="checkbox" checked="{{c.on}}" aria-label="{{c.aria}}" onChange="{{c.toggle}}" style="width:18px;height:18px;margin:0">RFQs and POs</label></sc-if><sc-if value="{{cantEdit}}" hint-placeholder-val="{{ false }}"><span class="{{c.sigCls}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.sigD}}"></path></svg><span>{{c.recv}}</span></span></sc-if></span>
+                    <span role="cell" data-label="Receives"><sc-if value="{{can.edit}}" hint-placeholder-val="{{ true }}"><label class="v-chk"><input type="checkbox" checked="{{c.on}}" aria-label="{{c.aria}}" onChange="{{c.toggle}}" style="width:18px;height:18px;margin:0">RFQs and POs</label></sc-if><sc-if value="{{cantEdit}}" hint-placeholder-val="{{ false }}"><span class="{{c.sigCls}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.sigD}}"></path></svg><span>{{c.recv}}</span></span></sc-if></span>
                   </div>
                 </sc-for>
               </div>
@@ -316,15 +316,14 @@
         <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" type="button" onClick="{{cancelAdd}}">Cancel</button><button class="btn primary" type="button" onClick="{{saveScore}}">Save Score</button></div>
       </sc-if>
       <div role="table" aria-label="Scored orders">
-        <div class="row head cols-vsc stack" role="row"><span role="columnheader">Order</span><span role="columnheader">Category</span><span role="columnheader" class="r">Score</span><span role="columnheader">Rationale</span><span role="columnheader" class="hide-md">Scored By</span><span role="columnheader"><span class="sr-only">Dispute</span></span></div>
+        <div class="row head cols-vsc stack" role="row"><span role="columnheader">Order</span><span role="columnheader">Category</span><span role="columnheader" class="r">Score</span><span role="columnheader">Rationale and Scorer</span><span role="columnheader"><span class="sr-only">Dispute</span></span></div>
         <sc-for list="{{scoreRows}}" as="r" hint-placeholder-count="5">
           <div class="row cols-vsc stack" role="row" style="min-height:64px;padding-top:8px;padding-bottom:8px">
             <div role="cell" class="stack-main"><a href="#" class="u num" style="text-align:left;font-weight:560">{{r.po}}</a><div class="t-caption">{{r.period}}</div></div>
             <span role="cell" data-label="Category">{{r.cat}}</span>
             <span role="cell" class="num r" data-label="Score"><sc-if value="{{r.adj}}" hint-placeholder-val="{{ false }}"><s class="t-caption">{{r.was}}</s> </sc-if><b>{{r.score}}</b></span>
-            <span role="cell" data-label="Rationale" style="min-width:0">{{r.why}}<sc-if value="{{r.disputed}}" hint-placeholder-val="{{ false }}"><div class="t-caption" style="margin-top:4px">{{r.dispute}}</div></sc-if></span>
-            <span role="cell" class="hide-md t-caption" data-label="Scored By" style="overflow-wrap:anywhere">{{r.by}}</span>
-            <span role="cell"><sc-if value="{{r.canDispute}}" hint-placeholder-val="{{ true }}"><button class="btn" type="button" aria-label="{{r.aria}}" onClick="{{r.dispute_go}}">Dispute</button></sc-if></span>
+            <span role="cell" data-label="Rationale" style="min-width:0;overflow-wrap:anywhere">{{r.why}}<div class="t-caption">Scored by {{r.by}}</div><sc-if value="{{r.disputed}}" hint-placeholder-val="{{ false }}"><div class="t-caption" style="margin-top:4px">{{r.dispute}}</div></sc-if></span>
+                        <span role="cell"><sc-if value="{{r.canDispute}}" hint-placeholder-val="{{ true }}"><button class="btn" type="button" aria-label="{{r.aria}}" onClick="{{r.dispute_go}}">Dispute</button></sc-if></span>
           </div>
         </sc-for>
       </div>

@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;560;600;640&amp;family=JetBrains+Mono:wght@400;460;620&amp;display=swap" rel="stylesheet">
 <style>body{margin:0}</style>
 </helmet>
-<div class="{{rootCls}}" data-theme="{{theme}}" style="min-height: 100vh">
+<div class="{{rootCls}}" data-theme="{{theme}}" style="min-height: 100vh;--ph-page: var(--phase-commit)">
 <div class="{{appCls}}">
   <nav class="side" aria-label="Primary" onScroll="{{navTipHide}}">
     <div class="brand"><span class="brand-mark">FL</span><span class="brand-name">XLR8 FLO</span></div>
@@ -47,7 +47,7 @@
       <sc-if value="{{isDone}}" hint-placeholder-val="{{ false }}">
         <section class="card" aria-labelledby="h-done" style="padding:24px;display:flex;flex-direction:column;gap:12px" role="status">
           <h2 class="t-heading" id="h-done" tabindex="-1">Request Submitted</h2>
-          <p class="t-dense" style="margin:0"><b>{{f.trading}}</b> is waiting for <b>ap.manager@northwind.example</b>, step 1 of 2. You will be emailed when it is decided. Until then it cannot be invited to an RFQ.</p>
+          <p class="t-dense" style="margin:0"><b>{{tradingName}}</b> is waiting for <b>ap.manager@northwind.example</b>, step 1 of 2. You will be emailed when it is decided. Until then it cannot be invited to an RFQ.</p>
           <div style="display:flex;gap:8px;flex-wrap:wrap"><a href="VendorProfile.dc.html" class="btn primary">View Request</a><a href="VendorList.dc.html" class="btn">Back to Vendors</a></div>
         </section>
       </sc-if>
@@ -101,11 +101,11 @@
           <div class="card-h"><h2 class="t-heading" id="h-sc">Where It Will Be Used</h2></div>
           <div class="card-b" style="display:flex;flex-direction:column;gap:12px">
             <fieldset class="choice"><legend class="t-label">Availability Requested</legend>
-              <label><input type="radio" name="vr-av" value="global" checked="{{f.global}}" onChange="{{set.avGlobal}}">Global</label>
-              <label><input type="radio" name="vr-av" value="units" checked="{{f.units}}" onChange="{{set.avUnits}}">Selected units only</label>
+              <label class="v-chk"><input type="radio" name="vr-av" value="global" checked="{{f.global}}" onChange="{{set.avGlobal}}">Global</label>
+              <label class="v-chk"><input type="radio" name="vr-av" value="units" checked="{{f.units}}" onChange="{{set.avUnits}}">Selected units only</label>
             </fieldset>
             <sc-if value="{{f.units}}" hint-placeholder-val="{{ false }}"><fieldset class="choice"><legend class="t-label">Units</legend>
-              <label><input type="checkbox" checked="{{f.p4}}" onChange="{{set.p4}}">Plant 4</label><label><input type="checkbox" checked="{{f.p2}}" onChange="{{set.p2}}">Plant 2</label><label><input type="checkbox" checked="{{f.cs}}" onChange="{{set.cs}}">Central Stores</label>
+              <label class="v-chk"><input type="checkbox" checked="{{f.p4}}" onChange="{{set.p4}}">Plant 4</label><label class="v-chk"><input type="checkbox" checked="{{f.p2}}" onChange="{{set.p2}}">Plant 2</label><label class="v-chk"><input type="checkbox" checked="{{f.cs}}" onChange="{{set.cs}}">Central Stores</label>
             </fieldset></sc-if>
           </div>
         </section>
@@ -114,9 +114,9 @@
           <div class="card-h"><h2 class="t-heading" id="h-ct">Contacts</h2></div>
           <div class="card-b"><div class="form-grid">
             <div class="field"><label class="t-label" for="vr-bn">Billing Contact Name</label><input id="vr-bn" class="inp" type="text" value="{{f.bn}}" onChange="{{set.bn}}" autocomplete="off"></div>
-            <div class="field"><label class="t-label" for="vr-be">Billing Contact Email<span class="req-tag" aria-hidden="true"><span class="rq-need">Required</span><span class="rq-done">Done</span></span></label><input required id="vr-be" class="inp" type="email" value="{{f.be}}" onChange="{{set.be}}" aria-invalid="{{eb.be}}" aria-describedby="vr-be-e" autocomplete="off"><sc-if value="{{e.be}}" hint-placeholder-val="{{ false }}"><div class="field-err" id="vr-be-e"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg><span>{{e.be}}</span></div></sc-if></div>
+            <div class="field"><label class="t-label" for="vr-be">Billing Contact Email<span class="req-tag" aria-hidden="true"><span class="rq-need">Required</span><span class="rq-done">Done</span></span></label><input required id="vr-be" class="inp" type="email" pattern=".+@.+\..+" value="{{f.be}}" onChange="{{set.be}}" aria-invalid="{{eb.be}}" aria-describedby="vr-be-e" autocomplete="off"><sc-if value="{{e.be}}" hint-placeholder-val="{{ false }}"><div class="field-err" id="vr-be-e"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg><span>{{e.be}}</span></div></sc-if></div>
             <div class="field"><label class="t-label" for="vr-dn">Service and Delivery Contact Name</label><input id="vr-dn" class="inp" type="text" value="{{f.dn}}" onChange="{{set.dn}}" autocomplete="off"></div>
-            <div class="field"><label class="t-label" for="vr-de">Service and Delivery Contact Email<span class="req-tag" aria-hidden="true"><span class="rq-need">Required</span><span class="rq-done">Done</span></span></label><input required id="vr-de" class="inp" type="email" value="{{f.de}}" onChange="{{set.de}}" aria-invalid="{{eb.de}}" aria-describedby="vr-de-e" autocomplete="off"><sc-if value="{{e.de}}" hint-placeholder-val="{{ false }}"><div class="field-err" id="vr-de-e"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg><span>{{e.de}}</span></div></sc-if></div>
+            <div class="field"><label class="t-label" for="vr-de">Service and Delivery Contact Email<span class="req-tag" aria-hidden="true"><span class="rq-need">Required</span><span class="rq-done">Done</span></span></label><input required id="vr-de" class="inp" type="email" pattern=".+@.+\..+" value="{{f.de}}" onChange="{{set.de}}" aria-invalid="{{eb.de}}" aria-describedby="vr-de-e" autocomplete="off"><sc-if value="{{e.de}}" hint-placeholder-val="{{ false }}"><div class="field-err" id="vr-de-e"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg><span>{{e.de}}</span></div></sc-if></div>
           </div></div>
         </section>
 
@@ -128,8 +128,8 @@
               <div class="span2"><div class="field"><label class="t-label" for="vq-1">What does the company make or supply?<span class="req-tag" aria-hidden="true"><span class="rq-need">Required</span><span class="rq-done">Done</span></span></label><textarea required id="vq-1" class="inp ta" rows="2" value="{{f.q1}}" onChange="{{set.q1}}" aria-invalid="{{eb.q1}}" aria-describedby="vq-1-e"></textarea><sc-if value="{{e.q1}}" hint-placeholder-val="{{ false }}"><div class="field-err" id="vq-1-e"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg><span>{{e.q1}}</span></div></sc-if></div></div>
               <div class="field"><label class="t-label" for="vq-2">Years trading<span class="req-tag" aria-hidden="true"><span class="rq-need">Required</span><span class="rq-done">Done</span></span></label><input required id="vq-2" class="inp" type="number" min="0" value="{{f.q2}}" onChange="{{set.q2}}" aria-invalid="{{eb.q2}}" aria-describedby="vq-2-e"><sc-if value="{{e.q2}}" hint-placeholder-val="{{ false }}"><div class="field-err" id="vq-2-e"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg><span>{{e.q2}}</span></div></sc-if></div>
               <div class="field"><label class="t-label" for="vq-4">Largest order in the last 12 months<span class="req-tag" aria-hidden="true"><span class="rq-need">Required</span><span class="rq-done">Done</span></span></label><select required id="vq-4" class="btn" style="padding-right:8px" value="{{f.q4}}" onChange="{{set.q4}}" aria-invalid="{{eb.q4}}" aria-describedby="vq-4-e"><option value="">Choose</option><option>Under 100,000 USD</option><option>100,000 to 1,000,000 USD</option><option>Over 1,000,000 USD</option></select><sc-if value="{{e.q4}}" hint-placeholder-val="{{ false }}"><div class="field-err" id="vq-4-e"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg><span>{{e.q4}}</span></div></sc-if></div>
-              <div class="span2"><fieldset class="choice"><legend class="t-label">Do you hold an ISO 9001 certificate?</legend><label><input type="radio" name="vq-3" checked="{{f.q3y}}" onChange="{{set.q3y}}">Yes</label><label><input type="radio" name="vq-3" checked="{{f.q3n}}" onChange="{{set.q3n}}">No</label></fieldset></div>
-              <div class="span2"><fieldset class="choice"><legend class="t-label">Regions you can deliver to</legend><label><input type="checkbox" checked="{{f.r1}}" onChange="{{set.r1}}">North America</label><label><input type="checkbox" checked="{{f.r2}}" onChange="{{set.r2}}">Europe</label><label><input type="checkbox" checked="{{f.r3}}" onChange="{{set.r3}}">Asia Pacific</label></fieldset></div>
+              <div class="span2"><fieldset class="choice"><legend class="t-label">Do you hold an ISO 9001 certificate?</legend><label class="v-chk"><input type="radio" name="vq-3" checked="{{f.q3y}}" onChange="{{set.q3y}}">Yes</label><label class="v-chk"><input type="radio" name="vq-3" checked="{{f.q3n}}" onChange="{{set.q3n}}">No</label></fieldset></div>
+              <div class="span2"><fieldset class="choice"><legend class="t-label">Regions you can deliver to</legend><label class="v-chk"><input type="checkbox" checked="{{f.r1}}" onChange="{{set.r1}}">North America</label><label class="v-chk"><input type="checkbox" checked="{{f.r2}}" onChange="{{set.r2}}">Europe</label><label class="v-chk"><input type="checkbox" checked="{{f.r3}}" onChange="{{set.r3}}">Asia Pacific</label></fieldset></div>
               <div class="field"><label class="t-label" for="vq-6">Insurance cover renews on</label><input id="vq-6" class="inp" type="date" value="{{f.q6}}" onChange="{{set.q6}}"></div>
             </div></sc-if>
           </div>
@@ -347,7 +347,7 @@ class Component extends DCLogic {
     const showDone = st.done === true || view === 'submitted';
     const loading = view === 'loading', qPartial = view === 'partial';
     return {
-      ...this.shellVals(st), isDone: showDone, isForm: !showDone, isLoading: loading, showForm: !loading, f: { ...f, trading: f.trading || 'the vendor' },
+      ...this.shellVals(st), isDone: showDone, isForm: !showDone, isLoading: loading, showForm: !loading, f, tradingName: f.trading || 'This vendor',
       hasProblems: problems.length > 0, problems, summaryTitle: problems.length === 1 ? '1 thing needs attention' : problems.length + ' things need attention',
       e: eMap, eb: Object.fromEntries(REQD.map(([k]) => [k, eMap[k] ? 'true' : 'false'])),
       saveErr: view === 'error', qPartial, qOk: !qPartial, retry: () => this.setState({ view: 'ready' }), dup,

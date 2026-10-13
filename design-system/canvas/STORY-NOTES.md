@@ -94,3 +94,18 @@ Page spec: `design-system/pages/rfq-comparison.md`. E12-S10 is the UI story and 
 7. **Answered 10 Oct 2026 (DECISIONS 112 to 119):** freight pro rata by line value, rate warning after 7 days with a refresh for any sourcing role, a sealed round hidden from everyone, ties and overrides, compliance requirements per RFQ with an audited waiver. **Open:** how a split award interacts with vendor minimum order values.
 8. **New story needed: a tokens story that contrast-measures MASTER 7.13 in dark mode** before any button code is written.
 
+## 7. Vendors: stories the canvas needs (DECISIONS 6h)
+
+Page spec: `design-system/pages/vendors.md`. **E11-S01 to S07 are back-end stories; no vendor UI story exists.** Requests, in order:
+
+1. **Vendor list and profile UI** (new, after E11-S01, S02, S03): list with tabs and filters, profile cards, contacts, documents table and document sheet, `Missing` rows, expiry look-ahead. Cite the spec sections 3.1, 3.2, 3.6 and VEN-001 to 003, 011, OBS-004.
+2. **Eligibility as a shared server rule and a shared component** (new, before any RFQ or PO UI): the server returns `eligible` plus ordered reasons for a given unit (VEN-012); the web app has one `Eligibility` component used by the profile, the list, the RFQ invitation picker and the PO vendor field. Never recomputed in the browser.
+3. **Tax and banking masking UI** (new, after E11-S04): masked by default, audited `Reveal` for vendor managers and finance, `Restricted` for everyone else, no value in the API response, DOM, exports or logs before an audited reveal. A planted-violation test is part of the story.
+4. **Vendor request form and duplicate check UI** (new, after E11-S05, S06): the request form, live duplicate check at the field, `Use Existing Vendor`, manager override with a reason, saved drafts.
+5. **Onboarding decision panel** (extends E10-S10): the vendor evidence block, in decision-panel order (DECISIONS 65). Cite spec section 3.4.
+6. **Status, scope and local-disable dialogs** (new, after E11-S01, S06): `Suspend`, `Reactivate`, `Change Availability` go for approval; `Disable Here` and `Enable Here` take effect at once. Needs the organization setting `Allow Local Disable`.
+7. **Questionnaire administration UI** (new, after E11-S05): versioned list, editor with move buttons, weights total 100, publish dialog, preview. Versions are immutable (CUS-007).
+8. **Performance scorecard UI** (new, after E11-S07): scored orders, add score, appended disputes with adjustment. Scoring happens per PO and period by purchasing users in M3; goods receipt in M4 (E14) will automate it.
+9. **Answered 13 Oct 2026 (DECISIONS 6h):** status vocabulary, expired required document makes a vendor not eligible, reveal for vendor managers and finance, local disable without approval, below-threshold informs, duplicates block with manager override, Service and Delivery contact receives RFQs and POs, no minimum order value yet, manual scoring in M3. **Open:** required document types and their configuration, reveal timeout, category scoring beyond four, drag reordering.
+10. **Needs an operator-approved MASTER amendment:** the `vendor` status map and the `signal` and `eligibility` components (page spec section 9).
+

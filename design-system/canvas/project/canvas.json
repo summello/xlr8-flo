@@ -2650,6 +2650,26 @@
       "x": 1520,
       "y": 18834
     },
+    "ApprSheetVendor.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Vendor Onboarding",
+      "w": 1440,
+      "x": 3040,
+      "y": 18834
+    },
+    "ApprSheetVendorLow.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Vendor Below Threshold With Duplicate",
+      "w": 1440,
+      "x": 4560,
+      "y": 18834
+    },
     "VendorList.dc.html": {
       "expand": "fill",
       "h": 1027,
@@ -2792,7 +2812,7 @@
     },
     "VenProfW375.dc.html": {
       "expand": "fill",
-      "h": 4367,
+      "h": 4424,
       "is_interactive": true,
       "page": "vendors",
       "title": "Vendor Profile, 375",
@@ -2808,7 +2828,7 @@
       "title": "Vendor Profile, Loading",
       "w": 1440,
       "x": 0,
-      "y": 8378
+      "y": 8435
     },
     "VenProfError.dc.html": {
       "expand": "fill",
@@ -2818,7 +2838,7 @@
       "title": "Vendor Profile, Error",
       "w": 1440,
       "x": 1520,
-      "y": 8378
+      "y": 8435
     },
     "VenProfPartial.dc.html": {
       "expand": "fill",
@@ -2828,7 +2848,7 @@
       "title": "Vendor Profile, Partial, Documents Failed",
       "w": 1440,
       "x": 3040,
-      "y": 8378
+      "y": 8435
     },
     "VenProfNotEligible.dc.html": {
       "expand": "fill",
@@ -2838,7 +2858,7 @@
       "title": "Vendor Profile, Not Eligible, Expired Document",
       "w": 1440,
       "x": 4560,
-      "y": 8378
+      "y": 8435
     },
     "VenProfDisabledHere.dc.html": {
       "expand": "fill",
@@ -2848,7 +2868,7 @@
       "title": "Vendor Profile, Disabled in the Viewer's Unit",
       "w": 1440,
       "x": 6080,
-      "y": 8378
+      "y": 8435
     },
     "VenProfSuspended.dc.html": {
       "expand": "fill",
@@ -2858,7 +2878,7 @@
       "title": "Vendor Profile, Suspended With Open RFQs",
       "w": 1440,
       "x": 0,
-      "y": 10582
+      "y": 10639
     },
     "VenProfNoDocs.dc.html": {
       "expand": "fill",
@@ -2868,7 +2888,7 @@
       "title": "Vendor Profile, Required Documents Missing",
       "w": 1440,
       "x": 1520,
-      "y": 10582
+      "y": 10639
     },
     "VenProfPending.dc.html": {
       "expand": "fill",
@@ -2878,7 +2898,7 @@
       "title": "Vendor Profile, Pending, Viewed by the Requester",
       "w": 1440,
       "x": 3040,
-      "y": 10582
+      "y": 10639
     },
     "VenProfRestricted.dc.html": {
       "expand": "fill",
@@ -2888,7 +2908,7 @@
       "title": "Vendor Profile, Tax and Banking Restricted",
       "w": 1440,
       "x": 4560,
-      "y": 10582
+      "y": 10639
     },
     "VenProfRevealed.dc.html": {
       "expand": "fill",
@@ -2898,17 +2918,17 @@
       "title": "Vendor Profile, Tax and Banking Revealed",
       "w": 1440,
       "x": 6080,
-      "y": 10582
+      "y": 10639
     },
     "VenProfLongName.dc.html": {
       "expand": "fill",
-      "h": 4392,
+      "h": 4449,
       "is_interactive": true,
       "page": "vendors",
       "title": "Vendor Profile, Long Legal Name, 375",
       "w": 375,
       "x": 0,
-      "y": 12810
+      "y": 12867
     },
     "VenDlgSuspend.dc.html": {
       "expand": "fill",
@@ -2918,7 +2938,7 @@
       "title": "Vendor Profile, Suspend Dialog",
       "w": 1440,
       "x": 0,
-      "y": 17442
+      "y": 17556
     },
     "VenDlgSuspendMissing.dc.html": {
       "expand": "fill",
@@ -2928,7 +2948,7 @@
       "title": "Vendor Profile, Suspend Dialog, Reason Missing",
       "w": 1440,
       "x": 1520,
-      "y": 17442
+      "y": 17556
     },
     "VenDlgSuspendError.dc.html": {
       "expand": "fill",
@@ -2938,7 +2958,7 @@
       "title": "Vendor Profile, Suspend Dialog, Failed",
       "w": 1440,
       "x": 3040,
-      "y": 17442
+      "y": 17556
     },
     "VenDlgReactivate.dc.html": {
       "expand": "fill",
@@ -2948,7 +2968,7 @@
       "title": "Vendor Profile, Reactivate Dialog",
       "w": 1440,
       "x": 4560,
-      "y": 17442
+      "y": 17556
     },
     "VenDlgAvail.dc.html": {
       "expand": "fill",
@@ -2958,7 +2978,7 @@
       "title": "Vendor Profile, Change Availability Dialog",
       "w": 1440,
       "x": 6080,
-      "y": 17442
+      "y": 17556
     },
     "VenDlgDisable.dc.html": {
       "expand": "fill",
@@ -2968,7 +2988,7 @@
       "title": "Vendor Profile, Disable Here Dialog",
       "w": 1440,
       "x": 0,
-      "y": 18422
+      "y": 18536
     },
     "VenSheetDoc.dc.html": {
       "expand": "fill",
@@ -2978,7 +2998,7 @@
       "title": "Vendor Profile, Document Sheet",
       "w": 1440,
       "x": 1520,
-      "y": 18422
+      "y": 18536
     },
     "VenSheetDocMissing.dc.html": {
       "expand": "fill",
@@ -2988,7 +3008,7 @@
       "title": "Vendor Profile, Document Sheet, Missing",
       "w": 1440,
       "x": 3040,
-      "y": 18422
+      "y": 18536
     },
     "VenSheetDocReject.dc.html": {
       "expand": "fill",
@@ -2998,7 +3018,7 @@
       "title": "Vendor Profile, Document Sheet, Rejecting",
       "w": 1440,
       "x": 4560,
-      "y": 18422
+      "y": 18536
     },
     "VenSheetScore.dc.html": {
       "expand": "fill",
@@ -3008,7 +3028,7 @@
       "title": "Vendor Profile, Scorecard Sheet",
       "w": 1440,
       "x": 0,
-      "y": 19402
+      "y": 19516
     },
     "VenSheetScoreAdd.dc.html": {
       "expand": "fill",
@@ -3018,7 +3038,7 @@
       "title": "Vendor Profile, Scorecard Sheet, Adding a Score",
       "w": 1440,
       "x": 1520,
-      "y": 19402
+      "y": 19516
     },
     "VendorRequest.dc.html": {
       "expand": "fill",
@@ -3028,7 +3048,7 @@
       "title": "Vendor Request, 1440",
       "w": 1440,
       "x": 0,
-      "y": 20542
+      "y": 20656
     },
     "VenReqW1920.dc.html": {
       "expand": "fill",
@@ -3038,7 +3058,7 @@
       "title": "Vendor Request, 1920",
       "w": 1920,
       "x": 1520,
-      "y": 20542
+      "y": 20656
     },
     "VenReqW1024.dc.html": {
       "expand": "fill",
@@ -3048,27 +3068,27 @@
       "title": "Vendor Request, 1024",
       "w": 1024,
       "x": 3520,
-      "y": 20542
+      "y": 20656
     },
     "VenReqW768.dc.html": {
       "expand": "fill",
-      "h": 2045,
+      "h": 2105,
       "is_interactive": true,
       "page": "vendors",
       "title": "Vendor Request, 768",
       "w": 768,
       "x": 4624,
-      "y": 20542
+      "y": 20656
     },
     "VenReqW375.dc.html": {
       "expand": "fill",
-      "h": 2595,
+      "h": 2675,
       "is_interactive": true,
       "page": "vendors",
       "title": "Vendor Request, 375",
       "w": 375,
       "x": 5472,
-      "y": 20542
+      "y": 20656
     },
     "VenReqLoading.dc.html": {
       "expand": "fill",
@@ -3078,7 +3098,7 @@
       "title": "Vendor Request, Loading",
       "w": 1440,
       "x": 0,
-      "y": 23217
+      "y": 23411
     },
     "VenReqPartial.dc.html": {
       "expand": "fill",
@@ -3088,7 +3108,7 @@
       "title": "Vendor Request, Partial, Questionnaire Failed",
       "w": 1440,
       "x": 1520,
-      "y": 23217
+      "y": 23411
     },
     "VenReqError.dc.html": {
       "expand": "fill",
@@ -3098,7 +3118,7 @@
       "title": "Vendor Request, Submit Failed",
       "w": 1440,
       "x": 3040,
-      "y": 23217
+      "y": 23411
     },
     "VenReqErrors.dc.html": {
       "expand": "fill",
@@ -3108,7 +3128,7 @@
       "title": "Vendor Request, Validation Summary",
       "w": 1440,
       "x": 4560,
-      "y": 23217
+      "y": 23411
     },
     "VenReqDup.dc.html": {
       "expand": "fill",
@@ -3118,7 +3138,7 @@
       "title": "Vendor Request, Duplicate Found",
       "w": 1440,
       "x": 6080,
-      "y": 23217
+      "y": 23411
     },
     "VenReqDupMgr.dc.html": {
       "expand": "fill",
@@ -3128,7 +3148,7 @@
       "title": "Vendor Request, Duplicate, Manager Override",
       "w": 1440,
       "x": 0,
-      "y": 25596
+      "y": 25790
     },
     "VenReqSubmitted.dc.html": {
       "expand": "fill",
@@ -3138,7 +3158,7 @@
       "title": "Vendor Request, Submitted",
       "w": 1440,
       "x": 1520,
-      "y": 25596
+      "y": 25790
     },
     "VendorQuestionnaires.dc.html": {
       "expand": "fill",
@@ -3148,7 +3168,7 @@
       "title": "Vendor Questionnaires, 1440",
       "w": 1440,
       "x": 0,
-      "y": 28003
+      "y": 28197
     },
     "VenQuestW1920.dc.html": {
       "expand": "fill",
@@ -3158,7 +3178,7 @@
       "title": "Vendor Questionnaires, 1920",
       "w": 1920,
       "x": 1520,
-      "y": 28003
+      "y": 28197
     },
     "VenQuestW1024.dc.html": {
       "expand": "fill",
@@ -3168,7 +3188,7 @@
       "title": "Vendor Questionnaires, 1024",
       "w": 1024,
       "x": 3520,
-      "y": 28003
+      "y": 28197
     },
     "VenQuestW768.dc.html": {
       "expand": "fill",
@@ -3178,7 +3198,7 @@
       "title": "Vendor Questionnaires, 768",
       "w": 768,
       "x": 4624,
-      "y": 28003
+      "y": 28197
     },
     "VenQuestW375.dc.html": {
       "expand": "fill",
@@ -3188,7 +3208,7 @@
       "title": "Vendor Questionnaires, 375",
       "w": 375,
       "x": 5472,
-      "y": 28003
+      "y": 28197
     },
     "VenQuestLoading.dc.html": {
       "expand": "fill",
@@ -3198,7 +3218,7 @@
       "title": "Vendor Questionnaires, Loading",
       "w": 1440,
       "x": 0,
-      "y": 30464
+      "y": 30658
     },
     "VenQuestEmpty.dc.html": {
       "expand": "fill",
@@ -3208,7 +3228,7 @@
       "title": "Vendor Questionnaires, Empty",
       "w": 1440,
       "x": 1520,
-      "y": 30464
+      "y": 30658
     },
     "VenQuestError.dc.html": {
       "expand": "fill",
@@ -3218,7 +3238,7 @@
       "title": "Vendor Questionnaires, Error",
       "w": 1440,
       "x": 3040,
-      "y": 30464
+      "y": 30658
     },
     "VenQuestPartial.dc.html": {
       "expand": "fill",
@@ -3228,7 +3248,7 @@
       "title": "Vendor Questionnaires, Partial, Usage Delayed",
       "w": 1440,
       "x": 4560,
-      "y": 30464
+      "y": 30658
     },
     "VenQuestWeights.dc.html": {
       "expand": "fill",
@@ -3238,7 +3258,7 @@
       "title": "Vendor Questionnaires, Weights Short of 100",
       "w": 1440,
       "x": 6080,
-      "y": 30464
+      "y": 30658
     },
     "VenQuestPublish.dc.html": {
       "expand": "fill",
@@ -3248,27 +3268,7 @@
       "title": "Vendor Questionnaires, Publish Dialog",
       "w": 1440,
       "x": 0,
-      "y": 31701
-    },
-    "ApprSheetVendor.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "is_interactive": true,
-      "page": "approval-inbox",
-      "title": "Decision Panel, Vendor Onboarding",
-      "w": 1440,
-      "x": 3040,
-      "y": 18834
-    },
-    "ApprSheetVendorLow.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "is_interactive": true,
-      "page": "approval-inbox",
-      "title": "Decision Panel, Vendor Below Threshold With Duplicate",
-      "w": 1440,
-      "x": 4560,
-      "y": 18834
+      "y": 31895
     }
   },
   "createdOnFiles": {
@@ -3756,7 +3756,7 @@
       "text": "Vendors: Status, Scope and Document Dialogs",
       "w": 240,
       "x": 0,
-      "y": 17322
+      "y": 17436
     },
     "vn4": {
       "kind": "title1",
@@ -3765,7 +3765,7 @@
       "text": "Vendors: Request a Vendor",
       "w": 240,
       "x": 0,
-      "y": 20422
+      "y": 20536
     },
     "vn5": {
       "kind": "title1",
@@ -3774,7 +3774,7 @@
       "text": "Vendors: Questionnaire Administration",
       "w": 240,
       "x": 0,
-      "y": 27883
+      "y": 28077
     }
   },
   "order": [
@@ -4043,6 +4043,8 @@
     "CmpOver.dc.html",
     "ApprSheetTransfer.dc.html",
     "ApprSheetTransferFunds.dc.html",
+    "ApprSheetVendor.dc.html",
+    "ApprSheetVendorLow.dc.html",
     "VendorList.dc.html",
     "VenListW1920.dc.html",
     "VenListW1024.dc.html",
@@ -4102,9 +4104,7 @@
     "VenQuestError.dc.html",
     "VenQuestPartial.dc.html",
     "VenQuestWeights.dc.html",
-    "VenQuestPublish.dc.html",
-    "ApprSheetVendor.dc.html",
-    "ApprSheetVendorLow.dc.html"
+    "VenQuestPublish.dc.html"
   ],
   "pages": [
     {
