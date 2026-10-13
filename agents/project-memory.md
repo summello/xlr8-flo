@@ -10,7 +10,7 @@ Loaded into every agent session. Updated by `flo done` (status) and by Opus at e
 | Milestone | **M2 — Governed demand** |
 | Stories | 76 / 169 done |
 | Branch | milestone/M2-governed-demand |
-| In flight | — |
+| In flight | E09-S06, E10-S10 |
 | Blocked | — |
 <!-- STATE:END -->
 

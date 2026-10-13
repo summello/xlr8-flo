@@ -533,7 +533,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E09-S03** Catalogue: BU/OU-scoped suggestions from prior requested, sourced and purchased items | E09 | engine | M | REQ-007, REQ-008, XFN-009 | ~~E09-S02~~ |
 | ✅ | **E09-S04** Submission validation: fields, active master data, eligibility, funds, routing | E09 | engine | L | REQ-011, WF-002, WF-006 | ~~E09-S02~~, ~~E07-S06~~ |
 | ✅ | **E09-S05** Requisition lifecycle state machine | E09 | engine | L | REQ-005, REQ-016, WF-002 | ~~E09-S04~~, ~~E09-S03~~, ~~E10-S05~~, ~~E10-S06~~ |
-| ⬜ | **E09-S06** Approval reserves budget and generates the sub-project, one transaction | E09 | ledger | L | REQ-002, REQ-003, REQ-004, PROJ-003, ACC-001, WF-003 | ~~E09-S05~~, ~~E07-S04~~, ~~E10-S05~~ |
+| 🔨 | **E09-S06** Approval reserves budget and generates the sub-project, one transaction | E09 | ledger | L | REQ-002, REQ-003, REQ-004, PROJ-003, ACC-001, WF-003 | ~~E09-S05~~, ~~E07-S04~~, ~~E10-S05~~ |
 | ⬜ | **E09-S07** Release on reject, withdraw, cancel, expire or reduce — exactly once | E09 | ledger | M | REQ-013, FIN-011, ACC-006 | E09-S06 |
 | ⬜ | **E09-S08** Controlled return, amendment and resubmission preserving prior values | E09 | engine | M | REQ-012, APR-015, DATA-002 | ~~E09-S05~~, E09-S07, ~~E10-S07~~ |
 | ⬜ | **E09-S09** Linked-record graph: RFQs, bids, awards, POs, approvals, notes, ledger entries | E09 | api | M | REQ-009, WF-001 | E09-S06, ~~E09-S10~~, ~~E10-S07~~, E09-S08 |
@@ -549,7 +549,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E10-S07** Stale-version guard and material-change resubmission policy | E10 | concurrency | M | APR-015, APR-016, DATA-002, WF-001 | ~~E10-S06~~ |
 | ✅ | **E10-S08** Delegation, out-of-office, due dates, reminders and escalation | E10 | engine | L | APR-017 | ~~E10-S06~~ |
 | ✅ | **E10-S09** Routing explainability: which rule matched and why this approver | E10 | api | M | APR-021 | ~~E10-S05~~, ~~E10-S06~~, ~~E10-S08~~ |
-| ⬜ | **E10-S10** Approval inbox: pending, overdue, completed, delegated views | E10 | ui | L | APR-020 | ~~E10-S06~~, ~~E04-S03~~, ~~E10-S08~~, ~~E10-S09~~ |
+| 🔨 | **E10-S10** Approval inbox: pending, overdue, completed, delegated views | E10 | ui | L | APR-020 | ~~E10-S06~~, ~~E04-S03~~, ~~E10-S08~~, ~~E10-S09~~ |
 | ✅ | **E10-S11** Visual workflow builder, drag-and-drop canvas | E10 | ui | L | APR-001 | ~~E10-S03~~, ~~E04-S02~~ |
 | ✅ | **E10-S12** Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11) | E10 | ui | L | APR-011, APR-021, ACC-007 | ~~E10-S11~~, ~~E10-S05~~ |
 | ✅ | **E10-S13** Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes | E10 | engine | M | APR-003, PROJ-002, VEN-005, BUD-007 | ~~E10-S07~~ |
