@@ -148,6 +148,22 @@
         <dt class="t-label">{{sheet.needLabel}}</dt><dd style="margin:0">{{sheet.needed}}</dd>
         <dt class="t-label">Version</dt><dd style="margin:0">{{sheet.verText}}</dd>
       </dl>
+      <sc-if value="{{sheet.isPo}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="sh-po">
+          <h3 class="t-label" id="sh-po" style="margin-bottom:8px">Purchase Order Evidence</h3>
+          <div class="card" style="box-shadow:none"><div class="card-b" style="display:flex;flex-direction:column;gap:12px">
+            <div><div class="t-label">Source</div><div class="t-dense">{{sheet.po.source}}</div></div>
+            <div style="border-top:1px solid var(--border);padding-top:12px"><div class="t-label" style="margin-bottom:6px">Budget Effect When Issued</div>
+              <dl class="kv" style="margin:0;grid-template-columns:minmax(0,1fr) auto"><dt class="t-label">Commits</dt><dd class="amt" style="margin:0;text-align:right"><span class="w">{{sheet.po.cw}}</span><span class="d">{{sheet.po.cd}}</span><span class="cur">USD</span></dd><dt class="t-label">From Reservation</dt><dd class="amt" style="margin:0;text-align:right"><span class="w">{{sheet.po.rw}}</span><span class="d">{{sheet.po.rd}}</span><span class="cur">USD</span></dd><dt class="t-label">Project</dt><dd style="margin:0;text-align:right">{{sheet.po.project}}</dd></dl>
+              <p class="t-caption" style="margin:6px 0 0">Approving does not commit money. Issuing does, once.</p></div>
+            <div style="border-top:1px solid var(--border);padding-top:12px"><div class="t-label" style="margin-bottom:6px">Vendor</div>
+              <span class="{{sheet.po.eligCls}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{sheet.po.eligD}}"></path></svg><span>{{sheet.po.elig}}</span></span>
+              <p class="t-caption" style="margin:4px 0 0">{{sheet.po.eligNote}}</p></div>
+            <div style="border-top:1px solid var(--border);padding-top:12px"><div class="t-label" style="margin-bottom:6px">Award Justification</div><div class="t-dense">{{sheet.po.why}}</div></div>
+            <div style="border-top:1px solid var(--border);padding-top:12px"><div class="t-label" style="margin-bottom:6px">Will Be Sent</div><div class="t-dense">An email and the PO as a PDF to {{sheet.po.to}}, without chartfields or budget.</div></div>
+          </div></div>
+        </section>
+      </sc-if>
       <sc-if value="{{sheet.isAward}}" hint-placeholder-val="{{ false }}">
         <section aria-labelledby="sh-aw">
           <h3 class="t-label" id="sh-aw" style="margin-bottom:8px">Award Evidence</h3>
@@ -492,6 +508,12 @@ class Component extends DCLogic {
         { field: 'Estimate', was: '84,500.00 USD', now: '126,750.00 USD', delta: 'Up 42,250.00 USD (50%)' }
       ] : [];
       const OKI = 'M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6', WARNI = 'M12 3l10 18H2zM12 10v5M12 18h.01';
+      const POM = {
+        'PO-00251': { source: 'AWD-00091, approved 9 Oct 2026, lowest cost supplier, from RFQ-00064', commit: ['18,420', '.50'], res: ['18,420', '.50'], project: 'Plant 2 Dock Upgrade', ok: true, elig: 'Halden Packaging is eligible in Plant 2', note: 'Documents are current. Checked just now.', why: 'None needed: every line is the lowest supplier.', to: 'delivery@halden.example' },
+        'PO-00249': { source: 'AWD-00088, approved 30 Sep 2026, split by line, from RFQ-00060', commit: ['23,900', '.00'], res: ['23,900', '.00'], project: 'Plant 2 Dock Upgrade', ok: false, elig: 'Meridian Mechanical is not eligible in Plant 2', note: 'Suspended on 12 Oct 2026, after the award was approved. An override with a reason is needed to issue; an issued PO is not affected by a later suspension.', why: 'Boiler feed pump: Meridian instead of Northgate, 1,150.00 USD more, because Northgate cannot deliver before 20 Nov.', to: 'delivery@meridian.example' }
+      };
+      const poRaw = POM[cur.id] || null;
+      const poView = poRaw ? { source: poRaw.source, cw: poRaw.commit[0], cd: poRaw.commit[1], rw: poRaw.res[0], rd: poRaw.res[1], project: poRaw.project, eligCls: 'sig ' + (poRaw.ok ? 'is-ok' : 'is-bad'), eligD: poRaw.ok ? 'M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6' : 'M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6', elig: poRaw.elig, eligNote: poRaw.note, why: poRaw.why, to: poRaw.to } : null;
       const AWM = {
         'AWD-00095': { basis: 'Lowest Cost Supplier: each line goes to its lowest supplier, so the award is split between two vendors.', vendors: [['Siemar Automation', 'Servo drive, encoder cable, drive tuning', '175,665', '.58'], ['Apex Industrial Supply', 'Proximity sensor (partial bid, quoted this line)', '17,346', '.55']], scope: 'Within approved scope, 2,987.87 USD to spare', ok: true, release: 'Approving releases 2,987.87 USD of the 196,000.00 USD reserved on REQ-00418, once (assumption, pending E12-S08).', nl: [], notes: ['Compliance waived: On-site support within 48 hours, for Siemar Automation, by priya.raman@northwind.example, with a reason.', 'Apex Industrial Supply bid partially: no price for On-site drive tuning.', 'Evaluators: 2 scored, 1 recused for a declared conflict.'] },
         'AWD-00096': { basis: 'Best Average Cost: one vendor takes the whole RFQ.', vendors: [['Halden Packaging', 'Roof sensor, IR, 20 ea; mounting kit, 20 ea', '43,900', '.00']], scope: 'Within approved scope, 4,100.00 USD to spare', ok: true, release: 'Approving releases 4,100.00 USD of the 48,000.00 USD reserved, once (assumption, pending E12-S08).', nl: [{ line: 'Mounting kit, 20 ea', vendor: 'Halden Packaging', low: 'Northgate Controls', diff: '2,700.00', why: 'Northgate cannot deliver before 20 Nov; Halden delivers on 6 Nov, inside the needed-by date.' }], notes: ['No compliance waived.', 'Evaluators: 3 scored.'] },
@@ -508,7 +530,7 @@ class Component extends DCLogic {
       sheet = {
         id: cur.id, type: cur.type, ver: cur.ver, title: cur.title, kind: cur.kind,
         pillCls: 'pill ' + v.pill.c, pd: v.pill.d, pillText: v.pill.t, focusClose: !result,
-        notes, by: cur.by, proj: cur.proj, hasAmt: !!a, noAmt: !a, aw: a ? a[0] : '', ad: a ? a[1] : '', needed: cur.kind === 'vendor' ? (cur.id === 'V-00184' ? 'Plant 2 only' : 'Plant 4 only') : TRF[cur.id] ? TRF[cur.id].eff : '6 Nov 2026', needLabel: cur.kind === 'vendor' ? 'Availability Requested' : TRF[cur.id] ? 'Effective Date' : 'Needed By', isVendor: cur.kind === 'vendor', notVendor: cur.kind !== 'vendor', vn, isAward: !!awm, award: awm, isTransfer: !!TRF[cur.id], tr: trView(cur.id),
+        notes, by: cur.by, proj: cur.proj, hasAmt: !!a, noAmt: !a, aw: a ? a[0] : '', ad: a ? a[1] : '', needed: cur.kind === 'vendor' ? (cur.id === 'V-00184' ? 'Plant 2 only' : 'Plant 4 only') : TRF[cur.id] ? TRF[cur.id].eff : '6 Nov 2026', needLabel: cur.kind === 'vendor' ? 'Availability Requested' : TRF[cur.id] ? 'Effective Date' : 'Needed By', isVendor: cur.kind === 'vendor', notVendor: cur.kind !== 'vendor', vn, isAward: !!awm, award: awm, isPo: !!poView, po: poView, isTransfer: !!TRF[cur.id], tr: trView(cur.id),
         verText: (cur.stale && loadedNow ? 'v3, loaded 09:40' : cur.stale ? 'v2 (you have it), v3 is current' : cur.ver + ', submitted 6 Oct 2026, 09:12'),
         hasDiff: showDiff, diff: DIFF, diffSummary: cur.changes ? 'Three changes. The estimate rose, so this is a material change: routing restarted and your earlier return no longer applies.' : 'Two changes. The estimate rose by half, so routing restarted from the first step.',
         whyOk: !partial, whyErr: partial,

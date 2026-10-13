@@ -21,6 +21,7 @@
   --font-ui: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
   --shadow-xl: 0 8px 16px hsl(var(--shadow-color) / 0.08), 0 32px 72px hsl(var(--shadow-color) / 0.18);
+  --shadow-drag: 0 12px 28px hsl(var(--shadow-color) / 0.22), 0 2px 6px hsl(var(--shadow-color) / 0.12);
   --z-sticky: 10;
   --dur-instant: 0ms; --dur-fast: 120ms; --dur-base: 180ms; --dur-slow: 260ms; --dur-page: 320ms;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1); --ease-in: cubic-bezier(0.4, 0, 1, 1); --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
@@ -44,6 +45,7 @@
   --shadow-md: 0 2px 4px hsl(264 40% 2% / 0.5), 0 8px 16px hsl(264 40% 2% / 0.45);
   --shadow-lg: 0 4px 8px hsl(264 40% 2% / 0.5), 0 16px 40px hsl(264 40% 2% / 0.55);
   --shadow-xl: 0 8px 16px hsl(264 40% 2% / 0.55), 0 32px 72px hsl(264 40% 2% / 0.65);
+  --shadow-drag: 0 12px 28px hsl(264 40% 2% / 0.7), 0 2px 6px hsl(264 40% 2% / 0.5);
   --lit: inset 0 1px 0 0 oklch(1 0 0 / 0.06);
   color-scheme: dark;
 }
@@ -821,3 +823,50 @@ button.cmp-gbtn .t-caption { text-transform: none; letter-spacing: 0; font-weigh
   .cols-raw { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 96px 150px; }
 }
 .row.group .t-caption, .notice .t-caption { color: var(--fg-secondary); }   /* --fg-muted measures 4.31:1 on --sunken (DECISIONS section 7) */
+
+/* Purchase Orders (HANDOFF-purchase-orders). Tokens only. */
+.cols-pol { grid-template-columns: 112px minmax(0, 1.3fr) minmax(0, 1.1fr) 168px 176px 172px 64px; column-gap: 20px; }
+.cols-pcr { grid-template-columns: minmax(0, 1.6fr) 88px 110px 80px 160px 190px; column-gap: 16px; }
+.cols-pln { grid-template-columns: minmax(0, 1.5fr) 100px 128px 140px 112px 112px 148px; column-gap: 14px; }
+.cols-ptx { grid-template-columns: 176px 64px minmax(0, 1fr) 160px 104px; column-gap: 14px; }
+.cols-pch { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) 150px; column-gap: 16px; }
+@container card (max-width: 899px) {
+  .cols-pol { grid-template-columns: 104px minmax(0, 1fr) 160px 168px; }
+  .cols-pcr { grid-template-columns: minmax(0, 1fr) 80px 180px; }
+  .cols-pln { grid-template-columns: minmax(0, 1fr) 96px 130px 140px; }
+  .cols-ptx { grid-template-columns: 150px 56px 140px 96px; }
+  .cols-pch { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 130px; }
+}
+/* the vendor copy: what the supplier receives, as a page (PO-014, decision 170) */
+.pdf-page { display: flex; flex-direction: column; gap: 16px; padding: 28px; max-width: 760px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-card); box-shadow: var(--shadow-md); font-size: 13px; }
+.pdf-h { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-bottom: 12px; border-bottom: 1px solid var(--border-strong); }
+.pdf-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.pdf-row { display: grid; grid-template-columns: minmax(0, 1.6fr) 90px 100px 90px 110px; gap: 10px; align-items: baseline; padding: 8px 0; border-top: 1px solid var(--border); }
+.pdf-row.head { border-top: 0; border-bottom: 1px solid var(--border-strong); font-size: 12px; font-weight: 560; color: var(--fg-secondary); }
+.pdf-row .r { text-align: right; justify-self: end; }
+.pdf-tot { display: grid; grid-template-columns: 1fr auto; gap: 4px 24px; justify-content: end; margin: 0; width: min(100%, 320px); margin-left: auto; }
+.pdf-tot dd { margin: 0; text-align: right; }
+@media (max-width: 560px) { .pdf-page { padding: 16px; } .pdf-row { grid-template-columns: minmax(0, 1fr) 80px 100px; } .pdf-row > :nth-child(3), .pdf-row > :nth-child(4) { display: none; } }
+.cols-pst { grid-template-columns: minmax(0, 1fr) 160px minmax(0, 2fr); column-gap: 16px; }
+.cols-pdm { grid-template-columns: minmax(0, 1fr) 190px minmax(0, 1.6fr); column-gap: 16px; }
+.cols-psp { grid-template-columns: minmax(0, 1.4fr) 160px 120px minmax(0, 1fr); column-gap: 16px; }
+@container card (max-width: 899px) {
+  .cols-pst { grid-template-columns: minmax(0, 1fr) 150px minmax(0, 1.4fr); }
+  .cols-pdm { grid-template-columns: minmax(0, 1fr) 170px; }
+  .cols-psp { grid-template-columns: minmax(0, 1fr) 150px; }
+}
+/* Purchase order issue (MASTER 6.2, moment 5): the document lifts, a seal marks it, a trace runs to the vendor. Transform, opacity and stroke only. */
+.po-stage { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(48px, 120px) minmax(180px, 1fr); gap: 0; align-items: center; }
+.po-doc { position: relative; padding: 16px; border: 1px solid var(--border-strong); border-radius: var(--radius-card); background: var(--surface); transition: transform var(--dur-slow) var(--ease-out), box-shadow var(--dur-slow) var(--ease-out); }
+.po-doc.is-lifted { transform: translateY(-6px); box-shadow: var(--shadow-drag); }
+.po-seal { position: absolute; top: 12px; right: 12px; padding: 2px 10px; border: 1px solid var(--st-success-fg); border-radius: var(--radius-pill); font-size: 12px; font-weight: 560; color: var(--st-success-fg); opacity: 0; transform: scale(0.9); transition: opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out); }
+.po-seal.is-on { opacity: 1; transform: scale(1); }
+.po-trace { width: 100%; height: 40px; overflow: visible; }
+.po-trace path { fill: none; stroke: var(--phase-commit); stroke-width: 2; vector-effect: non-scaling-stroke; stroke-dasharray: 100; transition: stroke-dashoffset var(--dur-slow) var(--ease-out), stroke var(--dur-base) var(--ease-out); }
+.po-trace path.is-bad { stroke: var(--st-danger-fg); }
+.po-vendor { padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-card); display: flex; flex-direction: column; gap: 2px; background: var(--surface); }
+.po-vendor.is-ok { border-color: var(--st-success-fg); }
+.po-vendor.is-bad { border-color: var(--st-danger-fg); }
+@media (max-width: 760px) { .po-stage { grid-template-columns: 1fr; gap: 12px; } .po-trace { display: none; } }
+@media (max-width: 1023px) { .v-chk { min-width: 44px; justify-content: center; } .sheet-h .iconbtn { min-width: 44px; } }
+

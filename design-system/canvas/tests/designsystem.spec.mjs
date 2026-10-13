@@ -8,8 +8,8 @@ const dir = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'project');
 const canvas = JSON.parse(readFileSync(join(dir, 'canvas.json'), 'utf8'));
 
 test.describe('canvas pages', () => {
-  test('ten pages: Playground, Project Dashboard, Requisition Create, Common Screens, Approval Inbox, Approval Workflow Builder, Budget Transfer, Sourcing, Vendors, then Design System, which holds only the sheet and the theme panel', () => {
-    expect(canvas.pages.map((p) => p.name)).toEqual(['Playground', 'Project Dashboard', 'Requisition Create', 'Common Screens', 'Approval Inbox', 'Approval Workflow Builder', 'Budget Transfer', 'Sourcing', 'Vendors', 'Design System']);
+  test('eleven pages: Playground, Project Dashboard, Requisition Create, Common Screens, Approval Inbox, Approval Workflow Builder, Budget Transfer, Sourcing, Vendors, Purchase Orders, then Design System, which holds only the sheet and the theme panel', () => {
+    expect(canvas.pages.map((p) => p.name)).toEqual(['Playground', 'Project Dashboard', 'Requisition Create', 'Common Screens', 'Approval Inbox', 'Approval Workflow Builder', 'Budget Transfer', 'Sourcing', 'Vendors', 'Purchase Orders', 'Design System']);
     expect(canvas.launch.page).toBe('playground');
     const onPage = (id) => Object.entries(canvas.boards).filter(([, b]) => b.page === id).map(([f]) => f).sort();
     expect(onPage('design-system')).toEqual(['DesignSystem.dc.html', 'ThemePanel.dc.html']);

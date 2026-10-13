@@ -124,3 +124,20 @@ Page spec: `design-system/pages/sourcing.md`. Only E12-S10 (comparison) is a UI 
 9. **Answered 13 Oct 2026 (DECISIONS 6i):** page renamed Sourcing, status vocabulary, several requisitions per RFQ, the vendor's sent time decides lateness, sourcing lead is `rfq.approve` on the unit, award approval only when a workflow is published, unused reservation released once at approval (assumption), no minimum-order warning, non-lowest justification on by default. **Open:** the reservation rule (E09-S13), cancel budget effect (E12-S09), separation of duty on an override, criteria and weights ownership.
 10. **Needs an operator-approved MASTER amendment:** the RFQ and award status maps.
 
+## 9. Purchase orders: stories the canvas needs (DECISIONS 6j)
+
+Page spec: `design-system/pages/purchase-orders.md`. **E13-S01 to S11 are engine or ledger stories; there is no PO UI story, and the E13 money rules are blocked on E09-S13.** Requests, in order:
+
+1. **PO list and PO detail UI** (new, after E13-S03): tabs and counts, the lifecycle (with Delivered and Accepted as future states), the Budget card (reserved, committed, released), Linked Records. Cite spec sections 4.1 and 4.4 and PO-007, PO-013.
+2. **Create PO from awarded lines UI** (new, after E13-S01): grouped by vendor, partial ordering by quantity, the open-quantity refusal at the field. Cite PO-001, PO-009, SRC-018.
+3. **PO editor UI** (new, after E13-S01, S02): PO-002 header, tax and freight apart, the budget preview, notes and files with visibility, vendor eligibility with override. Cite PO-002, PO-016, PO-017, VEN-012.
+4. **Issue UI and signature moment 5** (new, after E13-S05): the confirmation listing what is sent and what stays, the moment with its failure frame and reduced-motion end state, idempotent issue. Cite PO-008, PO-012, MASTER 6.2.
+5. **Transmission log and resend UI** (new, after E13-S09, S10): per-send rows, bounce and suppression states, `Change Recipient`, `Resend` that sends the same version. Cite PO-004, PO-015, EML-002, EML-003, EML-006.
+6. **Vendor copy** (new, after E13-S08, S11): the PDF template (no chartfields, no budget, no internal notes), the email summary, PDF preview. A test fails if an internal field appears. Cite PO-014, PO-017.
+7. **Change order UI** (new, after E13-S06): field-level diff, signed budget effect, reapproval only for a material change. Cite PO-010, PO-011, ACC-005.
+8. **Cancel or reduce UI** (new, after E13-S07): released figure once, history kept. Cite PO-013, ACC-006.
+9. **PO decision panel** (extends E10-S10): `Purchase Order Evidence`. Cite spec section 4.10, PO-003.
+10. **Sending domain status** (new, Administration, after E13-S10): SPF, DKIM, DMARC and the suppression list. Cite EML-001, EML-003.
+11. **Answered 13 Oct 2026 (DECISIONS 6j):** commit against the project holding the reservation (assumption), award path only, tax and freight per line with freight shared pro rata, Bill To and Ship To from masters, **PDF only, uploaded files stay internal, no HTML attachment**, material changes need reapproval, vendor currency at the award's stored rate, email to the Service and Delivery contact with an internal notification to the requester, **Delivered and Accepted instead of Fulfilled, requisition becomes Completed**. **Open:** the commit-target and valuation rules (E09-S13), the PO-007 wording, automatic closing at goods receipt.
+12. **Needs an operator-approved MASTER amendment:** the PO status map with Delivered and Accepted, and the issue moment's classes.
+
