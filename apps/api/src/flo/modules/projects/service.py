@@ -121,6 +121,12 @@ class ProjectService:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             lifecycle = Lifecycle(self.repo, self.actor_id)
             before, blocked = lifecycle.snapshot(project_id, for_update=True)
+            # A competing submit loses by state after waiting for the document lock.
+            if body.to == "approval_pending" and before["status"] != "draft":
+                raise conflict(
+                    "invalid_transition",
+                    "This status transition is invalid. Choose an available action.",
+                )
             if before["version"] != expected:
                 raise conflict(
                     "stale_version", "The project changed. Reload it and retry the transition."
@@ -135,6 +141,25 @@ class ProjectService:
                 project_id,
                 before,
                 after | {"override": body.override, "blocked_by": blocked, "reason": body.reason},
+            )
+            return self._read(after)
+
+    def approval_outcome(
+        self, project_id: UUID, status: ProjectStatus, reason: str | None
+    ) -> ProjectRead:
+        """Called after the engine locks its instance, or for automatic activation."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            lifecycle = Lifecycle(self.repo, self.actor_id)
+            before, blocked = lifecycle.snapshot(project_id, for_update=True)
+            if before["status"] != "approval_pending":
+                raise conflict("invalid_transition", "The project is no longer awaiting approval.")
+            lifecycle.write(before, blocked, TransitionCreate(to=status, reason=reason))
+            after = self._get(project_id)
+            self._audit(
+                "project.activated" if status == "active" else "project.transition",
+                project_id,
+                before,
+                after | {"reason": reason},
             )
             return self._read(after)
 

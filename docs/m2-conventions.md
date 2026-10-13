@@ -177,10 +177,19 @@ Every transaction that touches approvals and money takes locks in this one order
 2. the **`project_balance`** rows, **ascending by project id** (a sub-project and its parent are locked parent-first only because ids sort that way; never in discovery order),
 3. the **requisition** (or other document) row.
 
-A document module that starts, withdraws or cancels an approval takes the instance lock **before** its
-own balance and document locks, and must not pre-lock the document before calling
-`approvals.service.withdraw`, `start` or any decision function. A path that locks in another order
-deadlocks under load (Postgres `40P01`). Each story that takes more than one of these locks names its
+A document module that withdraws or cancels an approval, or acts on a running instance in any way,
+takes the instance lock **before** its own balance and document locks, and must not pre-lock the
+document before calling `approvals.service.withdraw` or any decision function. A path that locks in
+another order deadlocks under load (Postgres `40P01`).
+
+**Submit and resubmit are the one exception (12 Oct 2026, E10-S13 amendment 1; E09-S05 amendment 1
+already worked this way).** A document being submitted is in a state with no running instance
+(`draft`, or a returned draft), so no decision, withdraw or cancel can hold an instance row that the
+submitter is about to need: the cycle cannot form. Submit may therefore take balance and document
+locks, write the status change and its status event, and only then call `approvals.service.start`,
+which is what lets the adapter's `snapshot` see the submitter and the submitted version. `start` must
+still be the **last** locking step, and a second concurrent submit of the same document must lose on
+the document lock with 409 `invalid_transition`, never deadlock. Each story that takes more than one of these locks names its
 order in its packet and ships a two-connection test that interleaves two such transactions and asserts
 neither fails with a deadlock.
 

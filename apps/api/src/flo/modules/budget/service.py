@@ -15,6 +15,8 @@ from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.budget import funding_policy
 from flo.modules.budget.aggregate import aggregate_balance as aggregate_balance
+from flo.modules.budget.change_requests import get_request as get_request
+from flo.modules.budget.change_requests import request_change as request_change
 from flo.modules.budget.ledger import (
     InsufficientBudget as InsufficientBudget,
 )
@@ -55,6 +57,8 @@ from flo.modules.org.service import OrgService
 from flo.modules.projects.service import ProjectService
 
 __all__ = [
+    "get_request",
+    "request_change",
     "ReservationState",
     "reservation_remaining",
     "InsufficientBudget",

@@ -25,6 +25,8 @@ TESTS = Path(__file__).resolve().parents[1]
 
 # (method, path) -> "file::test" that proves a foreign id returns 404.
 COVERED = {
+    ("GET", "/api/v1/budget/change-requests/{id}"):
+        "budget/test_change_requests.py::test_change_request_foreign_tenant",
     (
         "GET",
         "/api/v1/approvals/instances/{id}/explanation",

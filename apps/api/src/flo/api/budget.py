@@ -5,6 +5,9 @@ from typing import Annotated, Literal, cast
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Query, Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
+from pydantic import AfterValidator
 
 from flo.api.admin_users import organization_target
 from flo.api.org import Connection
@@ -24,6 +27,7 @@ from flo.modules.budget.schemas import (
     AllocationCreate,
     AllocationResult,
     BalanceQueryRead,
+    BudgetChangeRequestRead,
     LedgerPage,
     ReconciliationRead,
     TransferCreate,
@@ -31,13 +35,13 @@ from flo.modules.budget.schemas import (
 )
 from flo.modules.budget.service import (
     BudgetSummary,
-    adjust,
     aggregate_balance,
     allocate,
     balance_query,
     budget_summary,
+    get_request,
     ledger_query,
-    transfer,
+    request_change,
 )
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.org.service import OrgService
@@ -58,7 +62,16 @@ AllocateContext = Annotated[
 ]
 ReadContext = Annotated[AuthorizationContext, Depends(require("ledger.read", project_target))]
 AdjustContext = Annotated[AuthorizationContext, Depends(require("budget.adjust", project_target))]
-Key = Annotated[str, Header(alias="Idempotency-Key", min_length=1)]
+
+
+def _client_key(value: str) -> str:
+    # bcr:/req: are server-built ledger posting keys; a client key there could pre-empt one.
+    if value.startswith(("bcr:", "req:")):
+        raise ValueError("Idempotency-Key prefixes bcr: and req: are reserved")
+    return value
+
+
+Key = Annotated[str, Header(alias="Idempotency-Key", min_length=1), AfterValidator(_client_key)]
 
 
 @router.post(
@@ -91,6 +104,7 @@ def allocate_budget(
     "/api/v1/projects/{project_id}/budget/adjustments",
     status_code=201,
     response_model=AllocationResult,
+    responses={202: {"model": BudgetChangeRequestRead}},
 )
 def adjust_budget(
     project_id: UUID,
@@ -98,8 +112,13 @@ def adjust_budget(
     context: AdjustContext,
     connection: Connection,
     idempotency_key: Key,
-) -> AllocationResult:
-    return adjust(connection, current_scope(), project_id, body, context.user_id, idempotency_key)
+) -> AllocationResult | JSONResponse:
+    result = request_change(
+        connection, current_scope(), project_id, body, context.user_id, idempotency_key
+    )
+    if isinstance(result, BudgetChangeRequestRead):
+        return JSONResponse(status_code=202, content=jsonable_encoder(result))
+    return cast(AllocationResult, result)
 
 
 class BalanceParameters:
@@ -187,15 +206,25 @@ ReceivingContext = Annotated[
 ]
 
 
-@router.post("/api/v1/budget/transfers", status_code=201, response_model=TransferRead)
+@router.post(
+    "/api/v1/budget/transfers",
+    status_code=201,
+    response_model=TransferRead,
+    responses={202: {"model": BudgetChangeRequestRead}},
+)
 def transfer_budget(
     body: TransferCreate,
     context: GivingContext,
     receiving_context: ReceivingContext,
     connection: Connection,
     idempotency_key: Key,
-) -> TransferRead:
-    return transfer(connection, current_scope(), body, context.user_id, idempotency_key)
+) -> TransferRead | JSONResponse:
+    result = request_change(
+        connection, current_scope(), body.from_project_id, body, context.user_id, idempotency_key
+    )
+    if isinstance(result, BudgetChangeRequestRead):
+        return JSONResponse(status_code=202, content=jsonable_encoder(result))
+    return cast(TransferRead, result)
 
 
 @router.get("/api/v1/projects/{project_id}/balance/aggregate", response_model=AggregateRead)
@@ -254,3 +283,19 @@ def read_budget_summary(
     unit_id: UUID | None = None,
 ) -> BudgetSummary:
     return budget_summary(connection, current_scope(), unit_id)
+
+
+def change_request_target(id: UUID, connection: Connection) -> TargetProtocol:
+    row = get_request(connection, current_scope(), id)
+    return project_target(row.project_id, connection)
+
+
+@router.get("/api/v1/budget/change-requests/{id}", response_model=BudgetChangeRequestRead)
+def read_change_request(
+    id: UUID,
+    connection: Connection,
+    context: Annotated[
+        AuthorizationContext, Depends(require("ledger.read", change_request_target))
+    ],
+) -> BudgetChangeRequestRead:
+    return get_request(connection, current_scope(), id)

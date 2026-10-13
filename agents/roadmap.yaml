@@ -1285,7 +1285,7 @@ epics:
           - BUD-007
         dep:
           - E10-S07
-        st: in_progress
+        st: done
 
   # ──────────────────── M3 — First sellable release ────────────────────
 

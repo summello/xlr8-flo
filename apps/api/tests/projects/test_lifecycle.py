@@ -80,7 +80,11 @@ def test_submitter_cannot_approve_and_other_actor_can(project_db):
     db = project_db
     grant_permissions(db, db.actor_id, "project.submit", "project.approve")
     row = project(db)
-    assert send(db, row, "approval_pending").status_code == 200
+    submitted = send(db, row, "approval_pending")
+    assert submitted.status_code == 200 and submitted.json()["status"] == "active"
+    # Exercise the legacy manual approval path on a pre-workflow pending project.
+    row = service(db).create(body(unit(db, "LEGACY")))
+    transition(db, row, "approval_pending")
     with pytest.raises(ProblemError) as exc:
         service(db).transition(row.id, TransitionCreate(to="active"), "2", lambda p: True)
     assert exc.value.code == ErrorCode.FORBIDDEN

@@ -6,7 +6,7 @@ from decimal import Decimal
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator
 
 from flo.modules.budget.models import LedgerEntry
 
@@ -138,6 +138,21 @@ class AggregateRead(BaseModel):
     mode: Literal["roll_down", "roll_up"]
     totals: list[CurrencyAggregate]
     node_count: int
+
+
+class BudgetChangeRequestRead(BaseModel):
+    id: UUID
+    kind: Literal["adjustment", "transfer"]
+    project_id: UUID
+    payload: dict[str, JsonValue]
+    amount: Decimal
+    currency: str
+    requested_by: UUID
+    idempotency_key: str
+    status: Literal["pending", "approved", "rejected", "withdrawn"]
+    created_at: datetime
+    decided_at: datetime | None
+    result: dict[str, JsonValue] | None
 
 
 @dataclass(frozen=True)

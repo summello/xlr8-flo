@@ -40,7 +40,12 @@ def project_db(org_database) -> Iterator:
             "20261009_0034_import_rows.py",
             "20261009_0036_project_external_ref.py",
             "20261009_0039_requisitions.py",
+            "20261009_0037_workflow_definitions.py",
+            "20261009_0043_approval_instances.py",
+            "20261009_0044_approval_decisions.py",
+            "20261009_0045_approval_material.py",
             "20261009_0048_requisition_lifecycle.py",
+            "20261009_0050_budget_change_requests.py",
         ]
     ]
     with db.connection.transaction():

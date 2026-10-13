@@ -10,6 +10,7 @@ from psycopg.types.json import Jsonb
 
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError, conflict
 from flo.kernel.tenancy.context import Scope
+from flo.modules.approvals.service import active_instance
 from flo.modules.projects.models import ProjectRepository
 from flo.modules.projects.schemas import ProjectStatus, TransitionAvailable, TransitionCreate
 
@@ -154,6 +155,16 @@ class Lifecycle:
                             )
                             for f in missing
                         ),
+                    )
+                )
+        if project["status"] == "approval_pending" and body.to in {"active", "draft"}:
+            if active_instance(
+                self.repo.connection, self.repo.scope, "project", cast(UUID, project["id"])
+            ):
+                problems.append(
+                    conflict(
+                        "approval_workflow_active",
+                        "This project is waiting for its approval workflow.",
                     )
                 )
         if project["status"] == "approval_pending" and body.to == "active":

@@ -2777,6 +2777,37 @@
       },
       "recap": "Fixed route-preview scope authorization and required explicit eligibility requester/resolver arguments. Corrected locale dates, branch money/null wording and document labels, and added regressions for the review findings.",
       "title": "Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11)"
+    },
+    {
+      "story": "E10-S13",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "migration",
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a1306b-c015-7420-8f14-a9f9ad14aaac",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "85904ffc-1341-4f73-b873-f03a9d8baaf8",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Projects now start configured workflows after submission writes, or activate automatically when none applies. Budget adjustments and transfers wait for applicable approval and post atomically with stable requester-owned posting keys.",
+      "title": "Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes"
     }
   ]
 }
