@@ -178,32 +178,35 @@ def test_final_approve_withdraw_forced_orders_twenty_runs(lifecycle_db, monkeypa
                 ("withdraw" if first_action == "approve" else "approve"): second.result(timeout=15),
             }
         monkeypatch.setattr(RequisitionAdapter, "snapshot", original)
-        assert results["withdraw"] == "success"
-        assert results["approve"] in {
-            "task_closed",
-            "invalid_transition",
-            "approval_effects_unavailable",
-        }
+        loser = {"task_closed", "invalid_transition"}
         after = RequisitionService(db[0], Scope(db[1])).detail(row.id, lambda p: True)
-        assert after.status == "withdrawn" and after.approval.status == "withdrawn"
-        assert after.reservation.remaining == "0.0000"
-        assert (
-            sql(
-                db,
-                "SELECT count(*) FROM ledger_entry WHERE source_id=%s AND entry_type='release'",
-                (row.id,),
-            )[0][0]
-            == 1
-        )
-        assert (
-            sql(
-                db,
-                "SELECT count(*) FROM requisition_status_event "
-                "WHERE requisition_id=%s AND to_status='withdrawn'",
-                (row.id,),
-            )[0][0]
-            == 1
-        )
+        generated = sql(
+            db, "SELECT count(*) FROM project WHERE generated_by_requisition_id=%s", (row.id,)
+        )[0][0]
+        releases = sql(
+            db,
+            "SELECT count(*) FROM ledger_entry WHERE source_id=%s AND entry_type='release'",
+            (row.id,),
+        )[0][0]
+        if first_action == "approve":
+            assert results["approve"] == "success" and results["withdraw"] in loser
+            assert after.status == "sourcing_in_progress"
+            assert after.reservation.remaining == "60.0000"
+            assert (generated, releases) == (1, 0)
+        else:
+            assert results["withdraw"] == "success" and results["approve"] in loser
+            assert after.status == "withdrawn" and after.approval.status == "withdrawn"
+            assert after.reservation.remaining == "0.0000"
+            assert (generated, releases) == (0, 1)
+            assert (
+                sql(
+                    db,
+                    "SELECT count(*) FROM requisition_status_event "
+                    "WHERE requisition_id=%s AND to_status='withdrawn'",
+                    (row.id,),
+                )[0][0]
+                == 1
+            )
 
 
 def test_returned_requisitions_swap_projects_twenty_runs(lifecycle_db):

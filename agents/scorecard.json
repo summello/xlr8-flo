@@ -2808,6 +2808,54 @@
       },
       "recap": "Projects now start configured workflows after submission writes, or activate automatically when none applies. Budget adjustments and transfers wait for applicable approval and post atomically with stable requester-owned posting keys.",
       "title": "Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes"
+    },
+    {
+      "story": "E09-S06",
+      "kind": "ledger",
+      "size": "L",
+      "tags": [
+        "money",
+        "concurrency"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 3,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "e8de6dd6-eb91-42b7-abb3-78d730a2b73e",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S06",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a133e8-6c49-7c11-a04d-e62fd154d4c0",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "1b4f7384-72c5-48ef-96ac-8e83fbac7eff",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Final approval of a requisition now runs inside the decision's transaction: a project-linked one keeps its submit-time reservation and gets an active generated sub-project; a standalone one creates a project with an allocation and reservation, or reserves on an assigned project. projects.service gained create_generated_project and generated_for.",
+      "title": "Approval reserves budget and generates the sub-project, one transaction"
     }
   ]
 }

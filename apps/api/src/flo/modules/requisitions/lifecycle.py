@@ -90,6 +90,10 @@ def read_row(repo: RequisitionRepository, id: UUID, *, lock: bool = False) -> di
         "department_code",
         "ledger_account_code",
         "bu_id",
+        "number",
+        "title",
+        "needed_by",
+        "standalone",
     )
     row = repo.execute(
         "SELECT "
@@ -168,6 +172,8 @@ def write_status(
     reason: str | None,
     ledger_entry_id: int | None,
     decision_id: UUID | None = None,
+    audit_action: str | None = None,
+    audit_extra: dict[str, object] | None = None,
 ) -> None:
     from flo.modules.requisitions.service import RequisitionService
 
@@ -198,10 +204,11 @@ def write_status(
         },
     )
     RequisitionService(conn, scope, actor_id)._audit(
-        "requisition.submit" if to == "approval_pending" else "requisition.transition",
+        audit_action
+        or ("requisition.submit" if to == "approval_pending" else "requisition.transition"),
         cast(UUID, row["id"]),
         {"status": row["status"]},
-        {"status": to},
+        {"status": to} | (audit_extra or {}),
     )
 
 

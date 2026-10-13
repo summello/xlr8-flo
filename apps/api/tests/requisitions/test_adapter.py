@@ -67,9 +67,10 @@ def test_material_summaries_placeholder_and_foreign_reservation(lifecycle_db):
                 Scope(db[1]),
                 row.id,
                 Outcome.APPROVED,
-                OutcomeContext(db[3], None, None, lambda p, t: True),
+                OutcomeContext(db[3], None, uuid4(), lambda p, t: True),
             )
-        assert error.value.checks["problem"] == "approval_effects_unavailable"
+        assert error.value.code == ErrorCode.VALIDATION_FAILED
+        assert error.value.errors[0].field == "assign_project_id"
     with pytest.raises(ProblemError) as error:
         reservation_remaining(db[0], Scope(db[2]), row.reservation.entry_id)
     assert error.value.code == ErrorCode.NOT_FOUND
