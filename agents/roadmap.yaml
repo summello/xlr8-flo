@@ -1020,7 +1020,7 @@ epics:
           - ACC-006
         dep:
           - E09-S06
-        st: todo
+        st: in_progress
       - id: E09-S08
         t: Controlled return, amendment and resubmission preserving prior values
         k: engine
