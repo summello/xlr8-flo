@@ -24,6 +24,8 @@ Commit in this worktree with messages starting "$S:". Do NOT run flo submit, flo
 EOP
 [ -n "$EXTRA" ] && cat "$EXTRA" >> "$P"
 cd "$W"
+# a waiter polls this log for "exit N": clear the previous run's now, not when the job starts
+: > "$D/$S.log"
 case "$A" in
   sonnet)
     # One session per story with a pre-assigned id on the least-loaded Claude account; a second
