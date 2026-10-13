@@ -81,6 +81,16 @@ __all__ = [
 ]
 
 
+SORT_COLUMNS = {
+    "number": "r.number",
+    "title": "r.title",
+    "estimate": "r.estimate",
+    "needed_by": "r.needed_by",
+    "updated_at": "r.updated_at",
+}
+ORDER_SQL = {"asc": "ASC", "desc": "DESC"}
+
+
 class RequisitionService:
     def __init__(
         self,
@@ -429,13 +439,10 @@ class RequisitionService:
     ) -> RequisitionPage:
         if not 1 <= page_size <= 50:
             raise invalid("page_size", "Choose a page size from 1 to 50.")
-        if sort not in (
-            "number",
-            "title",
-            "estimate",
-            "needed_by",
-            "updated_at",
-        ) or direction not in ("asc", "desc"):
+        # Only these constant strings ever reach the SQL text; the request values pick one.
+        column = SORT_COLUMNS.get(sort)
+        order = ORDER_SQL.get(direction)
+        if column is None or order is None:
             raise invalid("sort", "Choose a supported sort and direction.")
         if requester not in (None, "me"):
             raise invalid("requester", "Choose requester=me or omit this filter.")
@@ -477,10 +484,10 @@ class RequisitionService:
             comparator = ">" if direction == "asc" else "<"
             # Nulls last in either direction, with a stable UUID tie-breaker.
             boundary = (
-                f" AND (r.{sort} IS NULL AND r.id {comparator} %(cursor_id)s"
+                f" AND ({column} IS NULL AND r.id {comparator} %(cursor_id)s"
                 if key is None
                 else (
-                    f" AND (r.{sort} IS NULL OR (r.{sort},r.id) {comparator} "
+                    f" AND ({column} IS NULL OR ({column},r.id) {comparator} "
                     "(%(key)s,%(cursor_id)s)"
                 )
             ) + ")"
@@ -500,7 +507,7 @@ class RequisitionService:
                 + " WHERE "
                 + filters
                 + boundary
-                + f" ORDER BY r.{sort} {direction} NULLS LAST,r.id {direction}"
+                + f" ORDER BY {column} {order} NULLS LAST,r.id {order}"
                 + f" LIMIT {page_size + 1}",
                 params,
             ).fetchall()
