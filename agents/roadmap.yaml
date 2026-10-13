@@ -1088,7 +1088,7 @@ epics:
           - E04-S03
           - E09-S08
           - E10-S06
-        st: in_progress
+        st: review
       - id: E09-S12
         t: 'Resubmit and amendment screens: review changes, funding effect, version
           lineage'
