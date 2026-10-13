@@ -1,5 +1,5 @@
 #!/bin/sh
-# usage: agents/scripts/begin.sh STORY   (run from the parent repo on the milestone branch)
+# usage: [FLO_ACCOUNT=A|B] agents/scripts/begin.sh STORY   (run from the parent repo on the milestone branch)
 # flo start, install the worktree's dependencies (authors have no network), launch the author.
 set -e
 . "$(dirname "$0")/env.sh"

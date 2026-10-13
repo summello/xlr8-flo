@@ -261,6 +261,11 @@ def cmd_account(argv):
     last = s.get("last_account", {}).get(name)
     tied = [a for a in free if load.get(a, 0) == load.get(free[0], 0)]
     acct = next((a for a in tied if a != last), tied[0])
+    pinned = os.environ.get("FLO_ACCOUNT")  # the planner may pin an account; it must have a slot
+    if pinned:
+        if pinned not in free:
+            die(f"{name}: account {pinned} has no free slot — the story waits")
+        acct = pinned
     s.setdefault("last_account", {})[name] = acct
     save_state(s)
     rec = {"agent": name, "id": str(uuid.uuid4()), "source": "launch:--session-id",
