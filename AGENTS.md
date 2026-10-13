@@ -1,6 +1,6 @@
 # AGENTS.md — XLR8 FLO
 
-Binding rules for every coding agent on this repository: **Claude Code (Opus)**, **Codex CLI**, **OpenCode CLI**, **OpenRouter (qwen-3-coder)**.
+Binding rules for every coding agent on this repository: **Claude Code (Opus, Sonnet)**, **Codex CLI**, **OpenCode CLI**, **OpenRouter (qwen-3-coder)**.
 
 This file is read automatically by Codex CLI and OpenCode CLI. Claude Code reads it via `CLAUDE.md`. It is the single rulebook — if another document disagrees with this one, this one wins.
 
@@ -31,22 +31,29 @@ Your packet is in your worktree at `design/<STORY_ID>.md` — packets are tracke
 
 | Agent | Authors | Reviews | Never |
 |---|---|---|---|
-| **Opus** (`claude-opus-5`, Claude Pro) | Design packets, arbitration patches, fixes for red milestone CI | **Gated stories**; every train diff; whole-milestone diff before PR | Routine authoring — it is the scarcest capacity in the fleet |
-| **Codex** (ChatGPT Plus) | Ledger, approvals engine, concurrency, migrations, security-sensitive backend, every story carrying a gated tag | Any story | Boilerplate, CRUD screens, docs — its cap is too tight to spend there |
+| **Opus** (`claude-opus-5`, Claude Pro, account A) | The planner (one session, skill `xlr8flo-planner`): design packets, assignment, dispatch, arbitration patches, fixes for red milestone CI | **Gated stories**, in a fresh session (skill `xlr8flo-reviewer`); every epic checkpoint; whole-milestone diff before PR | Routine authoring — it is the scarcest capacity in the fleet |
+| **Sonnet** (Claude Pro, accounts A and B) | Every story by default, one session per story (skill `xlr8flo-worker`), resumed for review rounds and red story CI | — | Submitting, merging or pushing — the planner does |
+| **Codex** (ChatGPT Plus) | Fallback author when no Sonnet slot is free and the story is gated or larger than nemotron takes | **Every story** (`gpt-5.6-sol`, medium effort, pinned on the command line) | Reviewing a story it authored |
 | **OpenCode-nemotron** (OpenRouter, free) | Ungated crud, ui, api, docs, chore, test — the second parallel lane | — (0.0 findings per review) | A story tagged money, auth, security, migration or concurrency (`avoid_tags`) |
 | **OpenCode-ox** (OpenRouter) | Fallback only; its endpoint has been withdrawn before | — | — |
 | **Qwen** (OpenRouter, <$20/mo) | Small stories (`size: S`) | **Ungated stories**; release review of the milestone diff | Exceeding the monthly cap in `agents/agents.yaml` |
 | **DeepSeek** (OpenRouter) | — | Release review — the milestone diff, not single stories | Authoring |
 
-**Review is scaled to risk (10 Oct 2026, operator-approved).** Every story gets exactly one
-reviewer, computed by `flo assign`:
+**Sonnet authors, Codex reviews (13 Oct 2026, operator-approved).** `flo assign` computes it:
 
+- The author is the first of `policy.author_priority` (sonnet, opencode-nemotron, codex) that may
+  take the story. Sonnet runs on two Claude accounts, at most `max_workers_per_account` stories
+  each; when both are full the story overflows to the next author.
+- Every story is reviewed by the first of `policy.ungated_reviewers` (codex, qwen, deepseek) that
+  is not its author.
 - A story tagged `money`, `auth`, `security`, `migration` or `concurrency`
-  (`policy.opus_final_required_tags`) is reviewed by **Opus alone**, who runs the tests and plants
-  the violations like any other reviewer. Codex authors it.
-- Every other story is reviewed by the first of `policy.ungated_reviewers` (qwen, then kimi) with
-  budget left. Opus then reads the **whole train's diff once** (§2.5) instead of each story.
+  (`policy.opus_final_required_tags`) is **also** reviewed by Opus, in a fresh session that has
+  never seen the author's or the planner's. Which account it runs on does not matter; headroom
+  decides. An Opus blocker on a gated story is an escape against its Codex review.
+- Opus reads each **epic's diff once** when the epic's last story merges (§2.5), with Codex.
 - Release review stays qwen and deepseek on the milestone diff, before the PR leaves draft.
+
+The 10 Oct 2026 arrangement (Opus alone on gated stories, qwen on the rest) is superseded.
 
 What this trades: an ungated crud or ui story merges on a metered model's review, and Opus sees
 it one train later. What it buys: Opus's capacity goes to the stories where a defect is a breach
@@ -69,8 +76,8 @@ flo start  E07-S03          # creates branch + worktree + task.json; prints the 
 cd ../xlr8flo-E07-S03
 cat design/E07-S03.md        # your specification — implement exactly this
 # ... implement ...
-flo check                    # lint, types, tests, boundaries, a11y — run this before you claim done
-flo submit                   # marks ready for review, prints the reviewer commands
+flo check --light            # lint, types, boundaries, web checks, secrets, and the tests your diff touches
+                             # (the planner submits; hosted CI then runs the full suite on your branch)
 ```
 
 Rules while authoring:
@@ -78,7 +85,7 @@ Rules while authoring:
 - Read the code the change touches **before** writing. Trace the real flow end to end. A small diff in the wrong place is a second bug.
 - Reuse what exists. `kernel/` already has money, clock, errors, audit, idempotency, outbox, storage, email. Re-implementing one of those is an automatic rejection.
 - Commit often inside your worktree with real messages. The branch is squashed on merge, so commit noise costs nothing and helps reviewers.
-- **Run your own regression before submitting.** `flo check` must be green. Submitting red work wastes the reviewers' capacity, and two of the four agents are rate-limited.
+- **Run your own regression before submitting.** `flo check --light` must be green, and run any other test file your change could break: the full suite runs on GitHub after submit, and a red run there comes back to your session. Submitting red work wastes the reviewers' capacity, and two of the four agents are rate-limited.
 - If you are blocked, write `notes.blocked` in `task.json` and stop. Do not guess at a financial rule, an authorization rule, or a state transition.
 
 ### 2.2 As a reviewer
@@ -150,13 +157,25 @@ sufficient — exit criteria met, full-diff review clean — never on a calendar
 
 
 ```bash
+flo submit E07-S03           # light check, push story/<id>: hosted CI runs the full suite during review
 flo gate E07-S03             # Definition of Done, machine-checked
-flo done E07-S03             # squash-merge into the milestone branch, update roadmap, drop the worktree
+flo done E07-S03             # squash-merge into the milestone branch, update roadmap; worktree kept
+flo reap E07-S03             # drop the worktree once the story's CI is green
 ```
+
+**One light gate, the full suite on hosted CI (13 Oct 2026, operator-approved).** The story gate
+runs `flo check --light` once (a green tree is cached, so `submit` and `done` on the same tree do
+not repeat it). The full pytest, e2e and axe suites run on GitHub against the submitted commit
+while the reviewers work — the repository is public, so those minutes are unmetered.
 
 `flo done` refuses unless: `flo gate` is green, the reviewer floor in `policy.min_reviewers`
 is met with `ran_tests: true` and `verdict: approve`, and — for gated stories — Opus's final
-review is recorded.
+review is recorded **and** the story's CI run is green on the submitted commit with no story
+commits since. An ungated story merges without waiting for its CI; `agents/scripts/ci-watch.sh`
+reports a red run to the planner, who resumes the author's session with the failing log
+(`agents/scripts/fix.sh`). The fix lands on the milestone branch as `<STORY>: fix CI ...`. What
+this trades: an ungated defect the light gate misses reaches the milestone branch, found by its
+own story CI within the hour, and stops the line like any red milestone run.
 
 **The milestone PR opens as a draft when the milestone's first story merges** (10 Oct 2026,
 operator-approved). Opus pushes the milestone branch and opens a **draft** PR to `main` titled
@@ -186,24 +205,34 @@ them from the parent repo:
 
 ```bash
 agents/scripts/begin.sh  E09-S01        # flo start, installs, launch the assigned author
-agents/scripts/review.sh E09-S01 qwen   # ungated stories; Opus reviews gated ones itself
-agents/scripts/finish.sh E09-S01        # submit + done; one finish at a time (lock)
+agents/scripts/submit.sh E09-S01        # merge the milestone in, light check, push story/<id>
+agents/scripts/review.sh E09-S01 codex  # every story; gated ones also get a fresh Opus session
+agents/scripts/finish.sh E09-S01        # gate + done + push; one finish at a time (lock)
+agents/scripts/ci-watch.sh &            # once, in the background: red story CI -> .scratch/<S>.ci-red
+agents/scripts/fix.sh    E09-S01        # resume the author's session with the red log
 ```
+
+- **One planner.** Exactly one session assigns, dispatches and finishes (`xlr8flo-planner`); a
+  second would race on `flo assign`, `roadmap.yaml` and the finish lock. The Opus session on the
+  other account reviews, and takes over as planner only when the first is capped.
+- **Every session names its role on its first line** (`ROLE xlr8flo-worker E09-S01 account B`);
+  `task.json` `sessions` records role, account and session id, and mission-control's drill-down
+  shows them. Resuming needs the same account and the same worktree path.
 
 - **Every worktree has its own test database** (`flo db url`); `flo check` recreates it before
   pytest, so parallel gates never collide. Never point a run at the shared `flo_test`.
-- **The gate runs on the merged result.** `finish.sh` merges the current milestone branch into the
-  story branch under the finish lock before `submit` and `done`, so a story is gated against every
+- **The gate runs on the merged result.** `submit.sh` and `finish.sh` merge the current milestone
+  branch into the story branch before the check, so a story is gated against every
   lane that merged before it. A conflict stops the finish and lists the files. Two lanes that each
   passed alone broke M1 together on 10 Oct (a renamed import and a new required field). A
   regenerated API client on both lanes is the usual conflict: regenerate it on the merged tree.
 - **Migrations chain linearly** and the runner refuses two heads. When two lanes both add a
   migration, the second to merge rebases its first revision's `down_revision` onto the new head
   and re-runs `python -m flo.kernel.migrate --check` before `finish.sh`.
-- A **train** is a run of dependent stories in one lane. Opus reviews the train's combined diff
-  once when its last story merges, with emphasis on what per-story review cannot see: drift
-  between the stories, duplicated helpers, and the ungated stories nobody else at Opus's level
-  has read.
+- An **epic checkpoint** follows the merge of an epic's last story: milestone CI green, then Codex
+  and a fresh Opus session review the epic's combined diff, with emphasis on what per-story review
+  cannot see: drift between the stories, duplicated helpers, and the ungated stories nobody else
+  at Opus's level has read. The milestone keeps one PR to `main`; merging it deploys.
 
 ---
 
@@ -283,7 +312,7 @@ Deliberate shortcuts get a `ponytail:` comment naming the ceiling and the upgrad
 
 1. Every acceptance criterion in the design packet is implemented, and every requirement ID it cites is satisfied.
 2. Authorization, audit, accessibility and error behaviour are covered — not deferred.
-3. `flo check` is green: `ruff`, `mypy --strict`, `import-linter`, `eslint`, `tsc`, `pytest`, `vitest`, `playwright`, `axe`, `gitleaks`.
+3. `flo check --light` is green (`ruff`, `mypy --strict`, `import-linter`, `eslint`, `tsc`, `vitest`, `gitleaks`, the story's own tests), and the story's hosted CI (`pytest`, `playwright`, `axe` in full) is green — before merge for a gated story, watched after merge for the rest.
 4. Migrations are reversible and tested.
 5. Logs, metrics and business monitors exist where the story adds a failure mode.
 6. Field help and tooltips are updated (XFN-008); operator docs updated in the same commit (SUP-005).

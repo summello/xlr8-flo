@@ -2,11 +2,12 @@ name: CI
 
 on:
   push:
-    branches: [main, 'milestone/**']
+    branches: [main, 'milestone/**', 'story/**']
   pull_request:
   workflow_dispatch:
 
-# Free tier is 2000 minutes/month (OPS-001). Superseded runs are cancelled.
+# The repository is public, so hosted minutes are unmetered. Story branches run the full suite
+# here in place of the local gate (AGENTS.md §2.4). Superseded pull-request runs are cancelled.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -188,7 +189,9 @@ jobs:
           sudo install -m 0755 gitleaks /usr/local/bin/gitleaks
           rm gitleaks.tar.gz gitleaks
 
-      - run: pytest -q apps/api --cov=flo --cov-report=term-missing
+      # --durations: the 25-minute suite is fixture-bound (migrations per test); this is the evidence
+      # for the template-database fix (pipeline plan step 6, 13 Oct 2026).
+      - run: pytest -q apps/api --cov=flo --cov-report=term-missing --durations=40
 
       - name: Cross-tenant isolation suite (TEN-010)
         run: |
