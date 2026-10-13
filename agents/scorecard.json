@@ -3125,6 +3125,46 @@
       },
       "recap": "Adds the resubmit, amend and amend-review screens on the S08 routes: a server-driven diff, materiality, funding effect, note and version lineage, with the four failure alerts, plus an amendment editor with If-Match saves, a discard dialog and the shared navigation guard. Detail page gets Review and Resubmit and Amend/Continue amendment entry points.",
       "title": "Resubmit and amendment screens: review changes, funding effect, version lineage"
+    },
+    {
+      "story": "E09-S14",
+      "kind": "test",
+      "size": "S",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "06d2bbe3-6dc3-4df4-a557-2441b1c26727",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S14",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1372d-d82f-7c61-a70a-06211325cd5f",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds tests/requisitions/test_exit_criterion.py: a requisition above 1000 walks two approval levels, then generates its sub-project with the submit-time reservation intact; 300 takes one level; a failing sub-project insert rolls the final approval back. Test-only, no production change.",
+      "title": "M2 exit criterion end to end: a requisition through a multi-level conditional workflow to approval, sub-project and reservation"
     }
   ]
 }
