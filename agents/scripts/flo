@@ -232,6 +232,11 @@ def free_accounts(name, cfg):
     return sorted((a for a in cfg["accounts"] if load.get(a, 0) < cap), key=lambda a: load.get(a, 0))
 
 
+def config_dir(value):
+    """`-` for the default login (CLAUDE_CONFIG_DIR unset), else the expanded folder."""
+    return "-" if value == "default" else str(Path(value).expanduser())
+
+
 def cmd_account(argv):
     """Pick the account a multi-account author runs a story on, and its session id.
 
@@ -247,7 +252,7 @@ def cmd_account(argv):
     cfg = load_yaml(FLEET)["agents"][name]
     rec = (pkt.get("sessions") or {}).get(name) or {}
     if rec.get("id") and rec.get("account"):
-        print(f"resume {Path(cfg['accounts'][rec['account']]).expanduser()} {rec['id']} {rec['account']}")
+        print(f"resume {config_dir(cfg['accounts'][rec['account']])} {rec['id']} {rec['account']}")
         return
     free = free_accounts(name, cfg)
     if not free:
@@ -262,7 +267,7 @@ def cmd_account(argv):
            "account": acct, "cwd": str(worktree_path(sid)), "role": "xlr8flo-worker"}
     pkt.setdefault("sessions", {})[name] = rec
     task.write_text(json.dumps(pkt, indent=2) + "\n")
-    print(f"new {Path(cfg['accounts'][acct]).expanduser()} {rec['id']} {acct}")
+    print(f"new {config_dir(cfg['accounts'][acct])} {rec['id']} {acct}")
 
 
 def cmd_codex_usage(argv):

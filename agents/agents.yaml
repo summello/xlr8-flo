@@ -104,11 +104,13 @@ agents:
     cli: "claude -p --model sonnet"
     plan: claude-pro (two accounts)
     metered: rate
-    # Two Claude Pro accounts, one CLAUDE_CONFIG_DIR each. The planner runs on A. Every
-    # Claude session on an account (planner, reviewer, workers) draws the same usage window.
+    # Two Claude Pro accounts. Every Claude session on an account (planner, reviewer, workers)
+    # draws the same usage window. `default` means CLAUDE_CONFIG_DIR unset (`claude-personal`):
+    # exporting it as ~/.claude is a different, logged-out login, because the keychain entry
+    # follows the variable, not the folder.
     accounts:
-      A: ~/.claude-summello
-      B: ~/.claude
+      A: default                 # claude / claude-personal
+      B: ~/.claude-summello      # claude-summello
     max_workers_per_account: 1   # 13 Oct 2026 pilot: 1 per account for six stories, then 2.
                                  # Drop an account back to 1 if it caps more than once a day.
     roles: [author]

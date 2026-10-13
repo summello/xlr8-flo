@@ -38,7 +38,9 @@ case "$A" in
     else
       RUN="claude -p --resume $SID --permission-mode auto"
     fi
-    nohup sh -c "CLAUDE_CONFIG_DIR='$CFG' $RUN \"\$(cat '$P.role')\" > '$D/$S.log' 2>&1; echo \"exit \$?\" >> '$D/$S.log'" > /dev/null 2>&1 &
+    # "-" is the default login: unset the variable rather than point it at ~/.claude.
+    if [ "$CFG" = - ]; then ENV="env -u CLAUDE_CONFIG_DIR"; else ENV="env CLAUDE_CONFIG_DIR='$CFG'"; fi
+    nohup sh -c "$ENV $RUN \"\$(cat '$P.role')\" > '$D/$S.log' 2>&1; echo \"exit \$?\" >> '$D/$S.log'" > /dev/null 2>&1 &
     echo "session $SID on account $ACCT ($MODE)"
     ;;
   codex)
