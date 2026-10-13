@@ -54,3 +54,9 @@ First line of every message you send another session: `ROLE xlr8flo-planner`.
 ## Hand-off
 Durable state is `task.json` (sessions, rounds, notes) and `.scratch/`. A message to another
 session is a nudge; the packet is the record.
+
+## Models
+The operator chooses every model and effort level (authors, reviewers, release reviewers). When one
+is unsupported, decommissioned or failing (smoke test: `Reply with exactly: PONG`), stop dispatching
+to that role and ask the operator for the replacement. Never pick a substitute yourself, including
+a fallback chain entry. A Codex-cap substitution to qwen is the one pre-approved exception.
