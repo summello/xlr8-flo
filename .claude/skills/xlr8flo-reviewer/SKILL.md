@@ -22,7 +22,7 @@ First output line: `ROLE xlr8flo-reviewer <S|epic> account <A|B>`.
    write the verdict and stop. Note suspected defects before running anything.
 2. `flo check --light` once, then only the test files a suspicion needs, on your own database
    (`flo db reset`), every command piped through `| tail -20`. Never the full suite locally:
-   story CI runs it (`gh run list --branch story/<S> --workflow CI`); read it, cite it.
+   story CI runs it (`gh run list --branch <task.json branch> --workflow CI`); read it, cite it.
 3. Plant what the budget lists (gated: the packet's plants, the diff's gates, at most 2 of your
    own; ungated: the diff's gates, at most 1). Each plant against the ONE test file that should
    catch it, then restore at once. Two failed reproductions: report as unverified, not blocker.

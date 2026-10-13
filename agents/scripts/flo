@@ -438,7 +438,7 @@ write the verdict and stop; do not widen the review.
 
 1. cd {wt}
    Read the diff above once. Write down the defects you suspect BEFORE running anything.
-2. Tests, once each. The full suite runs on GitHub for story/{sid}; do not run it here.
+2. Tests, once each. The full suite runs on GitHub for {pkt['branch']}; do not run it here.
      apps/api/.venv/bin/python agents/scripts/flo check --light   # lint, types, the story's tests
    Then only the test files a suspicion needs, on the worktree's own database:
      export TEST_DATABASE_URL="$(apps/api/.venv/bin/python agents/scripts/flo db reset)"
