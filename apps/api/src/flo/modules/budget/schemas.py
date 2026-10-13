@@ -8,7 +8,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator
 
-from flo.modules.budget.models import LedgerEntry
+from flo.modules.budget.models import LedgerEntry as LedgerEntry
 
 
 @dataclass(frozen=True, slots=True)

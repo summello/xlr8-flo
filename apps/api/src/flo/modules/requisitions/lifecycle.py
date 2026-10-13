@@ -1,7 +1,9 @@
 """Atomic requisition state changes, with instance → balance → document locking."""
 
+import logging
 from collections.abc import Callable
 from contextvars import ContextVar
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import cast, get_args
 from uuid import UUID
@@ -11,7 +13,7 @@ import psycopg
 from flo.kernel.errors import ErrorCode, ProblemError, conflict
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
-from flo.modules.approvals.service import preview_route, start, withdraw
+from flo.modules.approvals.service import active_instance, preview_route, start, withdraw
 from flo.modules.budget.service import lock_balance, reservation_remaining, reserve
 from flo.modules.identity.service import (
     AuthorizationConnection,
@@ -19,7 +21,8 @@ from flo.modules.identity.service import (
     IdentityAuthorizationConnection,
     emails_by_id,
 )
-from flo.modules.org.service import today
+from flo.modules.org.service import OrgService, today
+from flo.modules.projects.service import abandon_generated, generated_for
 from flo.modules.requisitions.funding import release_live
 from flo.modules.requisitions.models import RequisitionRepository
 from flo.modules.requisitions.schemas import (
@@ -34,6 +37,7 @@ from flo.modules.requisitions.schemas import (
 )
 from flo.modules.requisitions.validation import check_submission
 
+logger = logging.getLogger(__name__)
 pending_terminal: ContextVar[tuple[str, str] | None] = ContextVar(
     "requisition_pending_terminal", default=None
 )
@@ -42,7 +46,11 @@ TRANSITIONS = {
     ("draft", "withdrawn"): "requisition.withdraw",
     ("approval_pending", "withdrawn"): "requisition.withdraw",
     ("approval_pending", "cancelled"): "requisition.cancel",
+    ("sourcing_in_progress", "withdrawn"): "requisition.withdraw",
+    ("sourcing_in_progress", "cancelled"): "requisition.cancel",
 }
+SYSTEM_ACTOR_ID = UUID(int=0)
+EXPIRY_ACTOR = "requisition-expiry"
 _downstream: list[Callable[[psycopg.Connection[tuple[object, ...]], Scope, UUID], int]] = []
 
 
@@ -51,6 +59,23 @@ def register_downstream_counter(
 ) -> None:
     if fn not in _downstream:
         _downstream.append(fn)
+
+
+_sourcing_probes: list[Callable[[psycopg.Connection[tuple[object, ...]], Scope, UUID], bool]] = []
+
+
+def register_sourcing_probe(
+    fn: Callable[[psycopg.Connection[tuple[object, ...]], Scope, UUID], bool],
+) -> None:
+    """M3's RFQ story registers 'an RFQ exists for this requisition'; none in M2."""
+    if fn not in _sourcing_probes:
+        _sourcing_probes.append(fn)
+
+
+def sourcing_started(
+    conn: psycopg.Connection[tuple[object, ...]], scope: Scope, requisition_id: UUID
+) -> bool:
+    return any(fn(conn, scope, requisition_id) for fn in _sourcing_probes)
 
 
 def assert_completable(
@@ -242,6 +267,18 @@ def transition(
             finally:
                 pending_terminal.reset(token)
             return
+        if before["status"] == "sourcing_in_progress":
+            stop_approved(
+                conn,
+                scope,
+                id,
+                body.to,
+                body.reason,
+                actor_id,
+                version=version,
+                permitted=permitted,
+            )
+            return
         held = (
             reservation_remaining(conn, scope, cast(int, before["reservation_entry_id"]))
             if before["reservation_entry_id"] is not None
@@ -320,6 +357,114 @@ def transition(
             actor_id=actor_id,
             resolver=AuthorizationResolver(cast(AuthorizationConnection, conn), scope),
         )
+
+
+def stop_approved(
+    conn: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    id: UUID,
+    to: str,
+    reason: str | None,
+    actor_id: UUID,
+    *,
+    version: str | None = None,
+    permitted: Callable[[str], bool] | None = None,
+    system_actor: str | None = None,
+) -> bool:
+    """Withdraw, cancel or expire an approved requisition: release once, abandon its sub-project.
+
+    Lock order: any running instance (a pending amendment), project_balance, requisition.
+    With `system_actor` (the expiry job) a requisition that moved on or whose sourcing has
+    started is skipped (False) instead of refused.
+    """
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        repo = RequisitionRepository(conn, scope)
+        if active_instance(conn, scope, "requisition", id) is not None:
+            withdraw(
+                conn,
+                scope,
+                document_type="requisition",
+                document_id=id,
+                actor_id=actor_id,
+                reason=f"Requisition {to}",
+            )
+        before = read_row(repo, id)
+        if before["reservation_entry_id"] is not None:
+            held = reservation_remaining(conn, scope, cast(int, before["reservation_entry_id"]))
+            lock_balance(conn, scope, held.project_id)
+        row = read_row(repo, id, lock=True)
+        if row["status"] != "sourcing_in_progress":
+            if system_actor:
+                return False
+            raise conflict(
+                "invalid_transition",
+                "This status transition is invalid. Choose an available action.",
+            )
+        if system_actor is None:
+            check_version(row, version)
+            if permitted is not None:
+                authorize(row, to, actor_id, permitted)
+        if to != "cancelled" and sourcing_started(conn, scope, id):
+            if system_actor:
+                return False
+            raise conflict(
+                "sourcing_started",
+                f"Sourcing has started on {row['number']}. Ask Procurement to cancel it.",
+            )
+        entry = release_live(conn, scope, row, to, actor_id=actor_id)
+        sub = generated_for(conn, scope, id)
+        if sub is not None:
+            abandon_generated(
+                conn,
+                scope,
+                sub.id,
+                reason=f"Abandoned because {row['number']} was {to}",
+                actor_id=None if system_actor else actor_id,
+                system_actor=system_actor,
+            )
+        write_status(conn, scope, row, to, actor_id, reason or to, entry)
+        return True
+
+
+def expire_org(conn: psycopg.Connection[tuple[object, ...]], scope: Scope) -> int:
+    """Expire approved requisitions older than their effective `requisition.expiry_days`.
+
+    Each requisition expires in its own transaction; one failure is logged, the rest go on.
+    """
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        candidates = (
+            RequisitionRepository(conn, scope)
+            .execute(
+                "SELECT id,bu_id,decided_at FROM requisition WHERE org_id=%(org_id)s "
+                "AND status='sourcing_in_progress' AND decided_at IS NOT NULL "
+                "ORDER BY decided_at,id"
+            )
+            .fetchall()
+        )
+    org = OrgService(conn, scope)
+    expired = 0
+    for requisition_id, bu_id, decided_at in candidates:
+        try:
+            # ponytail: one settings query per requisition; batch by BU/OU
+            # when an organization has more than 1,000 open requisitions.
+            days = org.effective_setting(cast(UUID, bu_id), "requisition.expiry_days").value
+            if days is None or (
+                today() - cast(datetime, decided_at).astimezone(UTC).date()
+            ).days <= cast(int, days):
+                continue
+            if stop_approved(
+                conn,
+                scope,
+                cast(UUID, requisition_id),
+                "expired",
+                "expired",
+                SYSTEM_ACTOR_ID,
+                system_actor=EXPIRY_ACTOR,
+            ):
+                expired += 1
+        except Exception:
+            logger.exception("requisition %s expiry failed", requisition_id)
+    return expired
 
 
 def available(

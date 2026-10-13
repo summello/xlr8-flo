@@ -13,6 +13,7 @@ from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Annotated, Literal, cast
+from uuid import UUID
 
 import psycopg
 from fastapi import APIRouter, Depends
@@ -26,9 +27,11 @@ from flo.kernel.email import create_email_sender
 from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.jobs import JobRunner
 from flo.kernel.jobs.runner import RunnerConnection
+from flo.kernel.logging import correlation_context
 from flo.kernel.outbox import OutboxDispatcher, email_handler
 from flo.kernel.outbox.dispatcher import DispatcherConnection
 from flo.kernel.storage import create_storage
+from flo.kernel.tenancy.context import Scope
 from flo.modules.approvals.reminders import job_handler as reminders_job_handler
 from flo.modules.approvals.reminders import run_all as run_approval_reminders
 from flo.modules.approvals.schemas import ReminderReport
@@ -36,6 +39,7 @@ from flo.modules.budget.reconcile import job_handler, reconcile_all
 from flo.modules.imports.jobs import handlers as import_handlers
 from flo.modules.org.fx import MAX_BYTES, FeedFailure, Fetcher, ingest
 from flo.modules.org.schemas import FxIngestReport
+from flo.modules.requisitions.service import expire_org
 
 _logger = logging.getLogger(__name__)
 _METADATA_TOKEN_URL = (
@@ -473,6 +477,48 @@ async def budget_reconcile(
 ) -> ReconcileTriggerReport:
     """Require origin secret and Idempotency-Key; no replay, repeats only append reports."""
     return await asyncio.to_thread(_run_budget_reconcile, settings)
+
+
+class RequisitionExpiryReport(BaseModel):
+    organizations: int
+    expired: int
+
+
+def _run_requisition_expiry(settings: Settings) -> RequisitionExpiryReport:
+    if settings.database_url is None:
+        raise RuntimeError("DATABASE_URL is not configured")
+    from flo.api.document_types import register_document_types
+
+    register_document_types()
+    # autocommit: each requisition expires in its own tenant transaction.
+    with (
+        psycopg.connect(settings.database_url.get_secret_value(), autocommit=True) as connection,
+        correlation_context("requisition-expiry"),
+    ):
+        with connection.transaction():
+            orgs = connection.execute(
+                "SELECT DISTINCT org_id FROM identity_membership ORDER BY org_id"
+            ).fetchall()
+        expired = sum(expire_org(connection, Scope(cast(UUID, row[0]))) for row in orgs)
+        return RequisitionExpiryReport(organizations=len(orgs), expired=expired)
+
+
+@router.post(
+    "/internal/jobs/requisition-expiry",
+    response_model=RequisitionExpiryReport,
+    include_in_schema=False,
+)
+@public_route
+async def requisition_expiry(
+    settings: Annotated[Settings, Depends(get_internal_settings)],
+) -> RequisitionExpiryReport:
+    """Require origin secret and Idempotency-Key; never replayed.
+
+    Replay contract: each requisition expires in its own transaction, only from
+    `sourcing_in_progress`, with the release key `req:<id>:release:<round>:expired`, so a
+    second call expires nothing already expired and releases nothing twice.
+    """
+    return await asyncio.to_thread(_run_requisition_expiry, settings)
 
 
 def _run_approval_reminders(settings: Settings) -> ReminderReport:

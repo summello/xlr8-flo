@@ -27,11 +27,16 @@ from flo.modules.projects.service import ProjectService, is_requisition_generate
 from flo.modules.requisitions.approval import RequisitionAdapter as RequisitionAdapter
 from flo.modules.requisitions.approval import open_document_count as open_document_count
 from flo.modules.requisitions.catalogue import record_event, record_requested
+from flo.modules.requisitions.lifecycle import SYSTEM_ACTOR_ID
 from flo.modules.requisitions.lifecycle import assert_completable as assert_completable
 from flo.modules.requisitions.lifecycle import available as available
 from flo.modules.requisitions.lifecycle import events as events
+from flo.modules.requisitions.lifecycle import expire_org as expire_org
 from flo.modules.requisitions.lifecycle import (
     register_downstream_counter as register_downstream_counter,
+)
+from flo.modules.requisitions.lifecycle import (
+    register_sourcing_probe as register_sourcing_probe,
 )
 from flo.modules.requisitions.lifecycle import routing_check as routing_check
 from flo.modules.requisitions.lifecycle import transition as transition
@@ -59,6 +64,8 @@ __all__ = [
     "routing_check",
     "assert_completable",
     "register_downstream_counter",
+    "register_sourcing_probe",
+    "expire_org",
     "RequisitionService",
     "SubmissionInvalid",
     "check_submission",
@@ -205,7 +212,9 @@ class RequisitionService:
         self, action: str, id: UUID, before: dict[str, object] | None, after: dict[str, object]
     ) -> None:
         AuditWriter(cast(AuditConnection, self.connection), self.scope).write(
-            actor=AuditActor(ActorKind.USER, self.actor_id),
+            actor=AuditActor(ActorKind.USER, self.actor_id)
+            if self.actor_id != SYSTEM_ACTOR_ID
+            else AuditActor(ActorKind.JOB, None),
             action=action,
             target_type="requisition",
             target_id=id,

@@ -2906,6 +2906,54 @@
       },
       "recap": "Adds GET /api/v1/approvals/tasks (pending, overdue, completed, delegated views over live membership with server filter, sort, paging and totals) and the /approvals inbox, decision panel and /approvals/availability screens on top of the existing decision and delegation routes.",
       "title": "Approval inbox: pending, overdue, completed, delegated views"
+    },
+    {
+      "story": "E09-S07",
+      "kind": "ledger",
+      "size": "M",
+      "tags": [
+        "migration",
+        "money"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 3,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "af8db889-ea2d-43e0-b0d2-f05764536521",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S07",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1347f-0f89-7cd1-a604-9525e7670d67",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "1b4f7384-72c5-48ef-96ac-8e83fbac7eff",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Approved requisitions can now be withdrawn (requester, until a registered sourcing probe says sourcing started) or cancelled, and a 03:30 UTC job expires them per requisition.expiry_days; each path releases through release_live once per funding round and abandons the generated sub-project (system actor on expiry via a new project_status_event.system_actor column). reduce_to is added for M3, with a 300-run concurrent property test across all paths.",
+      "title": "Release on reject, withdraw, cancel, expire or reduce \u2014 exactly once"
     }
   ]
 }

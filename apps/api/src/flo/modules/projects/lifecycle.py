@@ -55,6 +55,35 @@ def unregister_open_document_counter(
     _open_document_counters.remove(fn)
 
 
+def blocked_by_holdings(
+    blocked: dict[str, object], override: bool, permitted: Callable[[str], bool], reason: str
+) -> ProblemError | None:
+    """The closing rule: reserved, committed or open documents block completed/abandoned."""
+    if not (
+        Decimal(str(blocked["reserved"])) > 0
+        or Decimal(str(blocked["committed"])) > 0
+        or cast(int, blocked["open_documents"]) > 0
+    ):
+        return None
+    if override and permitted("project.close.override"):
+        if len(reason) < 20:
+            return ProblemError(
+                ErrorCode.VALIDATION_FAILED,
+                detail="Explain the closure override in at least 20 characters.",
+                errors=(ProblemFieldError(field="reason", message="Use at least 20 characters."),),
+            )
+        return None
+    return conflict(
+        "closing_blocked",
+        (
+            f"Reserved {blocked['reserved']} {blocked['currency']}, "
+            f"committed {blocked['committed']} {blocked['currency']}, "
+            f"and {blocked['open_documents']} open documents block closure. "
+            "Release or resolve them, or use an authorized override."
+        ),
+    )
+
+
 class Lifecycle:
     def __init__(self, repo: ProjectRepository, actor_id: UUID | None) -> None:
         self.repo = repo
@@ -183,36 +212,10 @@ class Lifecycle:
                         ),
                     )
                 )
-        if body.to in {"completed", "abandoned"} and (
-            Decimal(str(blocked["reserved"])) > 0
-            or Decimal(str(blocked["committed"])) > 0
-            or cast(int, blocked["open_documents"]) > 0
-        ):
-            if body.override and permitted("project.close.override"):
-                if len(reason) < 20:
-                    problems.append(
-                        ProblemError(
-                            ErrorCode.VALIDATION_FAILED,
-                            detail="Explain the closure override in at least 20 characters.",
-                            errors=(
-                                ProblemFieldError(
-                                    field="reason", message="Use at least 20 characters."
-                                ),
-                            ),
-                        )
-                    )
-            else:
-                problems.append(
-                    conflict(
-                        "closing_blocked",
-                        (
-                            f"Reserved {blocked['reserved']} {blocked['currency']}, "
-                            f"committed {blocked['committed']} {blocked['currency']}, "
-                            f"and {blocked['open_documents']} open documents block closure. "
-                            "Release or resolve them, or use an authorized override."
-                        ),
-                    )
-                )
+        if body.to in {"completed", "abandoned"}:
+            blocker = blocked_by_holdings(blocked, body.override, permitted, reason)
+            if blocker is not None:
+                problems.append(blocker)
         return problems
 
     def available(
@@ -247,7 +250,12 @@ class Lifecycle:
         return result
 
     def write(
-        self, project: dict[str, object], blocked: dict[str, object], body: TransitionCreate
+        self,
+        project: dict[str, object],
+        blocked: dict[str, object],
+        body: TransitionCreate,
+        *,
+        system_actor: str | None = None,
     ) -> None:
         self.repo.execute(
             "UPDATE project SET status = %(to)s, version = version + 1 "
@@ -256,14 +264,15 @@ class Lifecycle:
         )
         self.repo.execute(
             "INSERT INTO project_status_event(org_id, project_id, from_status, to_status, "
-            "actor_id, reason, override, blocked_by) "
-            "VALUES (%(org_id)s, %(id)s, %(from)s, %(to)s, %(actor)s, "
+            "actor_id, system_actor, reason, override, blocked_by) "
+            "VALUES (%(org_id)s, %(id)s, %(from)s, %(to)s, %(actor)s, %(system)s, "
             "%(reason)s, %(override)s, %(blocked)s)",
             {
                 "id": project["id"],
                 "from": project["status"],
                 "to": body.to,
-                "actor": self.actor_id,
+                "actor": None if system_actor else self.actor_id,
+                "system": system_actor,
                 "reason": body.reason,
                 "override": body.override,
                 "blocked": Jsonb(blocked),

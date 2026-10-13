@@ -46,6 +46,7 @@ def project_db(org_database) -> Iterator:
             "20261009_0045_approval_material.py",
             "20261009_0048_requisition_lifecycle.py",
             "20261009_0050_budget_change_requests.py",
+            "20261009_0051_project_event_system_actor.py",
         ]
     ]
     with db.connection.transaction():

@@ -29,7 +29,7 @@ from flo.modules.org.service import (
     list_currencies,
 )
 from flo.modules.projects.hierarchy import Hierarchy
-from flo.modules.projects.lifecycle import Lifecycle, invalid
+from flo.modules.projects.lifecycle import Lifecycle, blocked_by_holdings, invalid
 from flo.modules.projects.lifecycle import (
     register_open_document_counter as register_open_document_counter,
 )
@@ -745,6 +745,50 @@ def create_generated_project(
     )
 
 
+def abandon_generated(
+    connection: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    project_id: UUID,
+    *,
+    reason: str,
+    actor_id: UUID | None,
+    system_actor: str | None = None,
+) -> bool:
+    """Abandon a requisition-generated sub-project after its requisition stopped (E09-S07).
+
+    A system consequence, so no `project.complete` grant; the closing rule still applies and
+    the sub-project must hold nothing. Returns False when it was no longer open to abandon.
+    """
+    with tenant_transaction(cast(RlsSession, connection), scope):
+        service = ProjectService(connection, scope, actor_id)
+        lifecycle = Lifecycle(service.repo, actor_id)
+        before, blocked = lifecycle.snapshot(project_id, for_update=True)
+        if before["status"] not in ("active", "deferred"):
+            return False
+        blocker = blocked_by_holdings(blocked, False, lambda _permission: False, "")
+        if blocker is not None:
+            raise blocker
+        lifecycle.write(
+            before,
+            blocked,
+            TransitionCreate(to="abandoned", reason=reason),
+            system_actor=system_actor,
+        )
+        after = service._get(project_id)
+        AuditWriter(cast(AuditConnection, connection), scope).write(
+            actor=AuditActor(ActorKind.JOB if system_actor else ActorKind.USER, actor_id),
+            action="project.transition",
+            target_type="project",
+            target_id=project_id,
+            outcome=Outcome.SUCCESS,
+            before_source=before,
+            before_fields=tuple(before),
+            after_source=after | {"reason": reason, "blocked_by": blocked},
+            after_fields=(*after, "reason", "blocked_by"),
+        )
+        return True
+
+
 def generated_for(
     connection: psycopg.Connection[tuple[object, ...]], scope: Scope, requisition_id: UUID
 ) -> ProjectRef | None:
@@ -879,6 +923,7 @@ __all__ = [
     "is_requisition_generated",
     "create_generated_project",
     "generated_for",
+    "abandon_generated",
 ]
 
 

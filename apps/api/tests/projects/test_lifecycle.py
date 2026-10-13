@@ -269,10 +269,15 @@ def test_migration_preserves_existing_rows(project_db):
     migration = load_migration(
         ROOT / "migrations/20261008_0025_project_lifecycle.py", "lifecycle-roundtrip"
     )
+    # Re-upgrading 0025 recreates project_status_event without 0051's system_actor column.
+    system_actor = load_migration(
+        ROOT / "migrations/20261009_0051_project_event_system_actor.py", "lifecycle-system-actor"
+    )
     migration.downgrade(db.connection)
     tables = ["project", "project_balance", "audit_log", "permission", "role_permission"]
     before = {t: db.connection.execute(f"SELECT * FROM {t} ORDER BY 1").fetchall() for t in tables}
     migration.upgrade(db.connection)
+    system_actor.upgrade(db.connection)
     transition(db, row, "abandoned")
     # The migration only removes its history and catalog entries, preserving project data.
     after = {
@@ -280,12 +285,13 @@ def test_migration_preserves_existing_rows(project_db):
         for t in tables
         if t not in {"permission", "role_permission"}
     }
-    migration.downgrade(db.connection)
+    migration.downgrade(db.connection)  # drops the table, 0051's column with it
     for t in after:
         assert db.connection.execute(f"SELECT * FROM {t} ORDER BY 1").fetchall() == after[t]
     for t in ["permission", "role_permission"]:
         assert db.connection.execute(f"SELECT * FROM {t} ORDER BY 1").fetchall() == before[t]
     migration.upgrade(db.connection)
+    system_actor.upgrade(db.connection)
 
 
 @pytest.mark.parametrize("status", get_args(ProjectStatus.__value__))

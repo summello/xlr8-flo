@@ -348,6 +348,10 @@ COVERED = {
         "POST",
         "/internal/jobs/budget-reconcile",
     ): "budget/test_reconcile.py::test_internal_trigger_rejects_tenant_session",
+    (
+        "POST",
+        "/internal/jobs/requisition-expiry",
+    ): "requisitions/test_expiry.py::test_internal_expiry_rejects_missing_key_and_origin",
     ("GET", "/api/v1/projects/{project_id}/balance/aggregate"): (
         "budget/test_funding_modes.py::test_foreign_aggregate"
     ),

@@ -82,6 +82,7 @@ async function runScheduledWork(environment: WorkerEnvironment, scheduledTime: n
   if (time.getUTCMinutes() === 30) {
     const path = hour === 16 || hour === 18 ? "/internal/jobs/fx-ingest"
       : hour === 2 ? "/internal/jobs/budget-reconcile"
+      : hour === 3 ? "/internal/jobs/requisition-expiry"
       : hour === 7 ? "/internal/jobs/approval-reminders" : null;
     if (path) {
       work.push(fetch(internalJobRequest(path, origin, environment)).then(response => {

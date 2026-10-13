@@ -140,6 +140,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261009_0048",
         "20261009_0049",
         "20261009_0050",
+        "20261009_0051",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -1616,3 +1617,69 @@ def test_requisition_lifecycle_permissions_roundtrip_preserves_existing_data(emp
             )
         table.upgrade(conn)
         permissions.upgrade(conn)
+
+
+def test_project_event_system_actor_roundtrip_preserves_data_and_refuses_unsafe_downgrade(
+    empty_database,
+):
+    from uuid import uuid4
+
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.modules.org.schemas import BaseCurrencyPut, OrgUnitCreate
+    from flo.modules.org.service import OrgService
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261009_0050"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261009_0051")
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("project-event-actor-migration"),
+    ):
+        tenant = create(conn)
+        actor = admin_id(conn)
+        org = OrgService(conn, Scope(tenant.org_id), actor)
+        org.set_base_currency(BaseCurrencyPut(currency="USD"))
+        bu = org.create_unit(OrgUnitCreate(code="BU", name="BU", kind="bu"))
+        project_id = uuid4()
+        conn.execute(
+            "INSERT INTO project(id,org_id,bu_id,number,name,owner_id,department_code,"
+            "ledger_account_code,currency,created_by) VALUES(%s,%s,%s,'P','P',%s,'D','L','USD',%s)",
+            (project_id, tenant.org_id, bu.id, actor, actor),
+        )
+        conn.execute(
+            "INSERT INTO project_status_event(org_id,project_id,from_status,to_status,actor_id)"
+            " VALUES(%s,%s,'draft','abandoned',%s)",
+            (tenant.org_id, project_id, actor),
+        )
+        before = conn.execute("SELECT id,project_id,actor_id FROM project_status_event").fetchall()
+        mig.upgrade(conn)
+        assert (
+            conn.execute("SELECT id,project_id,actor_id FROM project_status_event").fetchall()
+            == before
+        )
+        insert = (
+            "INSERT INTO project_status_event(org_id,project_id,from_status,to_status,"
+            "actor_id,system_actor) VALUES(%s,%s,'draft','abandoned',NULL,%s)"
+        )
+        with pytest.raises(psycopg.errors.CheckViolation):
+            conn.execute(insert, (tenant.org_id, project_id, None))
+        conn.execute(insert, (tenant.org_id, project_id, "requisition-expiry"))
+        with pytest.raises(RuntimeError, match="no actor_id"):
+            mig.downgrade(conn)
+        # The refused downgrade changed nothing: the system row survives.
+        assert conn.execute(
+            "SELECT count(*) FROM project_status_event WHERE system_actor IS NOT NULL"
+        ).fetchone() == (1,)
+        conn.execute("ALTER TABLE project_status_event DISABLE TRIGGER USER")
+        conn.execute("DELETE FROM project_status_event WHERE actor_id IS NULL")
+        conn.execute("ALTER TABLE project_status_event ENABLE TRIGGER USER")
+        mig.downgrade(conn)
+        assert (
+            conn.execute("SELECT id,project_id,actor_id FROM project_status_event").fetchall()
+            == before
+        )
+        mig.upgrade(conn)
