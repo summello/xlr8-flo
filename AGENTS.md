@@ -119,7 +119,7 @@ Write your verdict to `reviews/<STORY_ID>.<your-agent-id>.json`:
 
 Rules while reviewing:
 
-- **Run the tests.** `ran_tests: false` makes your verdict advisory only and does not count toward the reviewer floor.
+- **Run the tests.** `ran_tests: false` makes your verdict advisory only and does not count toward the reviewer floor. "The tests" means `flo check --light` once plus the test files a suspicion needs; the full suite is story CI's job, so cite its run instead of repeating it.
 - One finding per problem. State the failure, not a preference.
 - Severity: `blocker` (wrong, unsafe, or violates a cited requirement) · `major` (will break under a foreseeable condition) · `minor` (clarity, naming, dead code). Only `blocker` prevents merge.
 - **Do not rewrite the code.** Review only. The author fixes.

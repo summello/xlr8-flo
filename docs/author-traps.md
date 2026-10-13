@@ -49,10 +49,11 @@ otherwise wins.
 From the worktree root, with nothing else running against your database:
 
 ```
-apps/api/.venv/bin/python agents/scripts/flo check
+apps/api/.venv/bin/python agents/scripts/flo check --light
 ```
 
-It recreates a database private to this worktree and runs every CI stage. For quick iteration on
+It recreates a database private to this worktree and runs lint, types, boundaries, web checks,
+secrets and the tests your diff touches; the full suite runs on GitHub after submit. For quick iteration on
 one file:
 
 ```

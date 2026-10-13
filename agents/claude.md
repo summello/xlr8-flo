@@ -29,7 +29,7 @@ Write `design/<STORY_ID>.md` for every story in the milestone, in dependency ord
 
 On a gated story you review beside Codex, and an Opus blocker there is an escape against Codex's
 review. Do not read Codex's verdict before writing yours. Correctness is yours too — run the tests, and plant a
-violation against every gate the diff adds. **Your emphasis stays security and UI/UX**, because
+violation against every gate the diff adds, within the review budget `flo review` prints (AGENTS.md §2.2). **Your emphasis stays security and UI/UX**, because
 that is what an authoring model misses most reliably, but a correctness defect that reaches the
 milestone branch is now yours.
 
