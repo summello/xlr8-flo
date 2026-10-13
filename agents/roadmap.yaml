@@ -1006,7 +1006,7 @@ epics:
           - E09-S05
           - E07-S04
           - E10-S05
-        st: in_progress
+        st: review
       - id: E09-S07
         t: Release on reject, withdraw, cancel, expire or reduce — exactly once
         k: ledger
@@ -1104,6 +1104,20 @@ epics:
         dep:
           - E09-S08
           - E09-S11
+        st: todo
+      - id: E09-S13
+        t: 'Standalone requisition funding and who may assign one to a project (operator
+          requirements pending; before the M2 PR)'
+        k: ledger
+        s: M
+        tags:
+          - money
+          - auth
+        reqs:
+          - REQ-004
+        dep:
+          - E09-S12
+          - E10-S11
         st: todo
 
   - id: E10
@@ -1243,7 +1257,7 @@ epics:
           - E04-S03
           - E10-S08
           - E10-S09
-        st: in_progress
+        st: review
       - id: E10-S11
         t: Visual workflow builder, drag-and-drop canvas
         k: ui
