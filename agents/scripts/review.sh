@@ -30,8 +30,13 @@ if [ "$A" = codex ]; then
   # ~/.codex/config.toml silently ran reviews at `low` on 12 Oct.
   set -- $("$W/apps/api/.venv/bin/python" -c 'import sys,yaml; c=yaml.safe_load(open(sys.argv[1]))["agents"]["codex"]; print(c["model"], c["review_reasoning"])' "$R/agents/agents.yaml")
   T0="$(date +%Y-%m-%dT%H:%M:%S%z)"
+  # Hard stop: the packet's budget is advisory to the model, this is not. Gated 15 min, else 10;
+  # the reviewer keeps a draft verdict current, so a stopped run still leaves one.
+  CAP=$(python3 -c 'import json,sys; print(900 if json.load(open(sys.argv[1]))["opus_final"] else 600)' "$W/task.json")
   nohup sh -c "mkdir -p '$D/$S.aside' && mv reviews/*.json '$D/$S.aside/' 2>/dev/null; \
-    codex exec -m $1 -c model_reasoning_effort=$2 -s workspace-write --skip-git-repo-check \"\$(cat '$P')\" > '$D/$S.$A.log' 2>&1; echo \"exit \$?\" >> '$D/$S.$A.log'; \
+    codex exec -m $1 -c model_reasoning_effort=$2 -c project_doc_max_bytes=0 -s workspace-write --skip-git-repo-check \"\$(cat '$P')\" > '$D/$S.$A.log' 2>&1 & CP=\$!; \
+    ( sleep $CAP; kill \$CP 2>/dev/null && echo 'stopped at the time cap' >> '$D/$S.$A.log' ) & KP=\$!; \
+    wait \$CP; echo \"exit \$?\" >> '$D/$S.$A.log'; kill \$KP 2>/dev/null; \
     mv '$D/$S.aside/'*.json reviews/ 2>/dev/null; rmdir '$D/$S.aside'; \
     '$W/apps/api/.venv/bin/python' '$R/agents/scripts/flo' codex-usage '$S' '$T0' > /dev/null" > /dev/null 2>&1 &
   echo "review launched: $S by codex ($1, $2)"

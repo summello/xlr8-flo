@@ -442,7 +442,11 @@ review. Aim for about {60 if deep else 30} commands in total. When the steps bel
 write the verdict and stop; do not widen the review.
 
 1. cd {wt}
-   Read the diff above once. Write down the defects you suspect BEFORE running anything.
+   Everything you need is in this packet. Do NOT open AGENTS.md, CLAUDE.md, agents/,
+   docs/ or design/ — their review rules are restated here.
+   Read the diff above once, then write reviews/{sid}.<your-agent-id>.json at once as a
+   draft (verdict, ran_tests false, the defects you suspect) and keep it current as you go:
+   the run is stopped at a time cap, and the draft is what survives.
 2. Tests, once each. The full suite runs on GitHub for {pkt['branch']}; do not run it here.
      apps/api/.venv/bin/python agents/scripts/flo check --light   # lint, types, the story's tests
    Then only the test files a suspicion needs, on the worktree's own database:
@@ -455,13 +459,17 @@ write the verdict and stop; do not widen the review.
      git checkout -- <file>                          # restore at once
 4. Confirm each requirement id above is satisfied by what the diff does, not by what
    it says. Cite the id in any finding it belongs to.
-5. Write your verdict, then stop.
-     reviews/{sid}.<your-agent-id>.json   # schema in AGENTS.md §2.2
+5. Finalise the verdict file, then stop. Exactly this shape; verdict is "approve" or
+   "changes_requested", severity is "blocker", "major" or "minor":
+     {{"story": "{sid}", "reviewer": "<your-agent-id>", "verdict": "approve",
+      "ran_tests": true, "findings": [{{"severity": "major", "file": "path", "line": 1,
+      "requirement": "REQ-001", "problem": "what fails", "fix": "what to change"}}]}}
 
 --- tool discipline ---
 DO   pipe every test and build command through `| tail -20`; never print a whole log
 DO   wait for a long command to finish instead of polling it
-DO   read a file once; use `sed -n 'A,Bp'` or `grep -n` for the part you need
+DO   read a file once; use `sed -n 'A,Bp'` or `grep -n` for the part you need, and cap
+     every read and search with `| head -60`
 DO   stop after 2 failed attempts to reproduce a suspicion; report it as `major` or
      `minor` marked "unverified", never as a blocker
 

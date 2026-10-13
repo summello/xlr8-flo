@@ -5,6 +5,8 @@
 set -e
 . "$(dirname "$0")/env.sh"
 S="$1"; EXTRA="${2:-}"; R="$(cd "$(dirname "$0")/../.." && pwd)"; W="$R-$S"; D="$R/.scratch"
+# the launch cds into the worktree, so a relative findings path would be lost
+[ -n "$EXTRA" ] && EXTRA="$(cd "$(dirname "$EXTRA")" && pwd)/$(basename "$EXTRA")"
 mkdir -p "$D"
 A="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["author"])' "$W/task.json")"
 P="$D/$S.prompt"
@@ -20,7 +22,7 @@ Blocking: follow docs/author-traps.md "Blocking". Block only on money, state tra
 Done means: apps/api/.venv/bin/python agents/scripts/flo check --light is green from the worktree root (lint, types, boundaries, web checks, secrets, and the tests your diff touches; the full suite runs on GitHub after submit), and every guard you added was planted and seen to fail. Fill task.json traceability (requirement id -> test name) and notes.recap (one or two plain sentences).
 Commit in this worktree with messages starting "$S:". Do NOT run flo submit, flo done, flo gate, push, or merge. Finish with a short report: files changed, test counts, plants and their results, followups.
 EOP
-[ -n "$2" ] && cat "$2" >> "$P"
+[ -n "$EXTRA" ] && cat "$EXTRA" >> "$P"
 cd "$W"
 case "$A" in
   sonnet)
