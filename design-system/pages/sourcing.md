@@ -4,7 +4,7 @@
 
 Requirements: SRC-001 to 008, 010 to 018, VEN-012, VEN-013, REQ-014, REQ-015, APR-003, WF-005, ACC-008, A11Y-003, A11Y-004, UX-002, UX-004, UX-005.
 
-**MASTER was not amended.** Needs an operator-approved amendment before code: the RFQ and award status maps (§2.3 has none), see section 10.
+**MASTER was amended on 13 Oct 2026:** the RFQ and award status maps are in MASTER §2.3 (see sections 3 and 10).
 
 ---
 
@@ -42,7 +42,7 @@ Sourcing is **Operate** mode in the Commit phase: phase colour only on the nav i
 - **Submit and Save are never disabled to signal an error** (DECISIONS 45): a failed submit gives a focused summary (`Category: link`) and keeps typed input. Destructive dialogs focus the safe button and state the consequence and whether it can be undone (DECISIONS 58, MASTER 7.13).
 - **Colour has three jobs on the comparison** (DECISIONS 120); on this page status and price position are icon plus words (`Lowest`, `Not the Lowest`).
 
-## 3. Status vocabulary (proposal, not in MASTER)
+## 3. Status vocabulary (MASTER §2.3, amended 13 Oct 2026)
 
 RFQ: `draft` (neutral), `published` (info), `closed` (info), `under_evaluation` (info), `awarded` (success), `cancelled` (danger). Award: `draft` (neutral), `approval_pending` (info), `approved` (success), `superseded` (warning), `cancelled` (danger). Icon plus words everywhere; a closed set.
 
@@ -86,6 +86,6 @@ Happy path from a requisition to a published RFQ, keyed bids, evaluation and the
 
 The comparison (built: `pages/rfq-comparison.md`), a vendor portal (none in v1), PO creation (the Purchase Orders page), approval workflow configuration (the Approval Workflow Builder page).
 
-## 10. Needs an operator-approved MASTER amendment
+## 10. MASTER amendment (done 13 Oct 2026)
 
-The RFQ and award status maps (section 3). The eligibility signal and `.sig` are already proposed in `pages/vendors.md` section 9; this page adds no new component.
+The `rfq` and `award` status maps are MASTER §2.3. **`status/map.ts` has `rfq.closed` as `neutral`; MASTER says `info`** (the RFQ is closed to bids but still in flight, so it reads as a step, not an ending). The first sourcing UI story corrects the map and its test, and adds the `award` map, which does not exist in code yet. The eligibility signal is MASTER §7.14; this page adds no new component.

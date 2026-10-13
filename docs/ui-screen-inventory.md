@@ -90,6 +90,8 @@ Home · Organization · Administration · Projects · Budget · Reporting · Req
 
 ### 3.6 Vendors and sourcing
 
+*Drawn 13 Oct 2026 (M3 design pass round 1): `design-system/pages/vendors.md` and `design-system/pages/sourcing.md`, from `design-system/canvas/STORY-NOTES.md` sections 7 and 8. Drawn is not built: **GAP** stays until a UI story citing the page file is on the roadmap.*
+
 | Screen | Story |
 |---|---|
 | Vendor list, profile, contacts, documents with expiry | **GAP** (E11-S01 to S03) |
@@ -100,8 +102,13 @@ Home · Organization · Administration · Projects · Budget · Reporting · Req
 | Comparison dashboard with accessible table equivalent | E12-S10 |
 | Evaluation scoring and conflict-of-interest declaration | **GAP** (E12-S07) |
 | Award: split by line, non-lowest justification | **GAP** (E12-S08) |
+| Vendor request, questionnaire administration, onboarding decision (inbox variant) | **GAP** (E11-S04 to S06) |
+| RFQ list, detail, editor and amend, cancel and supersede, `Start RFQ` on a requisition | **GAP** (E12-S01 to S03, S05, S09) |
+| Award draft and award decision (inbox variant) | **GAP** (E12-S08) |
 
 ### 3.7 Purchase orders
+
+*Drawn 13 Oct 2026: `design-system/pages/purchase-orders.md` (STORY-NOTES section 9). Drawn is not built.*
 
 | Screen | Story |
 |---|---|
@@ -109,6 +116,8 @@ Home · Organization · Administration · Projects · Budget · Reporting · Req
 | PO create from awarded lines | **GAP** (E13-S01) |
 | Change order with field-level diff | **GAP** (E13-S06) |
 | Issue and transmission log, PDF preview | **GAP** (E13-S08, S09) |
+| Cancel or reduce, vendor copy, PO decision (inbox variant) | **GAP** (E13-S04, S07, S11) |
+| Sending domain status (SPF, DKIM, DMARC, suppressed addresses) | **GAP** (E13-S10) |
 
 ### 3.8 Assets and warehouses
 

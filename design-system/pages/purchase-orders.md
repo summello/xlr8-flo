@@ -4,7 +4,7 @@
 
 Requirements: PO-001 to PO-017, FIN-008, FIN-009, EML-001 to EML-006, SEQ-001 to SEQ-003, COL-002, SRC-018, ACC-002, ACC-005, ACC-006, ACC-008, OBS-004, A11Y-003, A11Y-004, UX-002, UX-004, UX-005.
 
-**MASTER was not amended.** Needs an operator-approved amendment before code: the PO status map uses `Partially Delivered`, `Delivered` and `Accepted` where MASTER 2.3 says `Partially Fulfilled` and `Fulfilled` (decision 169); requirement PO-007 carries the old wording and is flagged for Opus (a requirement is not changed on a board).
+**MASTER was amended on 13 Oct 2026:** the PO status map uses `Partially Delivered`, `Delivered` and `Accepted` (decision 169) and the issue moment is MASTER §7.16. Requirement PO-007 and the requisition lifecycle diagram in `docs/requirements.md` carry the same wording as of the same day.
 
 ---
 
@@ -70,7 +70,7 @@ Tabs follow the arrow, Home and End keys. Dialogs and sheets trap focus, close o
 1. **Which project a commitment lands on** (decision 162): the project that holds the reservation is the assumption; E09-S13 decides.
 2. **Valuation of a vendor-currency PO** (decision 167): the award's stored rate, fixed at issue; the engine rule is open.
 3. **Closing a PO:** `Closed` is manual in M3; the rule for automatic closing arrives with goods receipt (M4, E14).
-4. **Requirement and MASTER wording:** PO-007 and MASTER 2.3 say Fulfilled; the product says Delivered and Accepted (decision 169).
+4. **Wording (closed 13 Oct 2026):** PO-007, MASTER 2.3 and the requisition diagram now say Delivered and Accepted (decision 169). What remains is code: `status/map.ts` and `labels.ts` still carry `partially_fulfilled` and `fulfilled`, and the E13 state-machine story (E13-S03) must use the new keys.
 5. **A PO whose vendor is suspended after approval but before issue:** drawn as an override by a sourcing lead; confirm separation of duty.
 6. **Supplier acknowledgement:** the email asks the vendor to reply; nothing captures a reply in M3.
 7. **PDF template ownership:** who edits the template and how a new version is approved is not drawn.
@@ -80,6 +80,6 @@ Tabs follow the arrow, Home and End keys. Dialogs and sheets trap focus, close o
 
 Happy path from an approved award to an issued PO, keyboard-only (ACC-008 with the Sourcing page). Unit tests: tax and freight allocation and rounding (line totals equal the award's landed lines; document totals are sums of rounded lines); the open-quantity guard; issue is idempotent. **A real-Postgres concurrency test: two simultaneous issues, exactly one commits.** A TEN-010 isolation case. An authorization test per role. **A test that no chartfield, budget figure or internal note is in the email or the PDF, with a planted violation.** A transmission test per state (queued, sent, delivered, bounced, complained, suppressed), a resend that does not duplicate the PO or the commitment, a cancel or reduce that releases once. Change order: diff in words, signed budget effect, reapproval only for a material change. Playwright with `@axe-core/playwright` on each route and the `MASTER.md` §8 checklist.
 
-## 9. Needs an operator-approved MASTER amendment
+## 9. MASTER amendment (done 13 Oct 2026)
 
-The PO status map with `Partially Delivered`, `Delivered` and `Accepted`; and the issue moment's classes (`.po-stage`, `.po-doc`, `.po-seal`, `.po-trace`, `.po-vendor`), tokens only, with the `.pdf-page` vendor-copy style.
+The PO status map with `Partially Delivered`, `Delivered` and `Accepted` is MASTER §2.3, the email transmission result is a signal (MASTER §2.3 and §7.14), and the issue moment with its classes (`.po-stage`, `.po-doc`, `.po-seal`, `.po-trace`, `.po-vendor`) and the `.pdf-page` vendor-copy style is MASTER §7.16. The trace line's phase colour is the registered exception in MASTER §2.2.

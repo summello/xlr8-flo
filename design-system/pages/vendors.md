@@ -4,7 +4,7 @@
 
 Requirements: VEN-001 to VEN-015, ORG-003, CUS-008, PRIV-001, OBS-004, COL-004, COL-005, AUD-006, A11Y-003, A11Y-004, UX-002, UX-004, UX-005.
 
-**MASTER was not amended.** Two things here need an operator-approved MASTER amendment before code (section 9): the vendor status map (§2.3 has no `vendor` entry) and the `Eligibility` and `signal` components (§7).
+**MASTER was amended on 13 Oct 2026** (section 9): the vendor status map is MASTER §2.3, the `signal` and `eligibility` components are §7.14, the masked value is §7.15. Implement them from MASTER; this file keeps the page rules.
 
 ---
 
@@ -93,8 +93,8 @@ Tabs follow the arrow, Home and End keys. Every control is reachable in logical 
 
 Unit tests on the eligibility rule (status, approval, each required document expired, missing or rejected, unit scope, local disable, never auto-changing status); a **TEN-010 isolation case** (a foreign tenant's vendor is a 404 on the profile, its documents and its scorecard); an authorization test per role (`vendor.view`, `vendor.edit`, `vendor.approve`, finance reveal, requester read-only) including that a hidden control is also refused by the server; a **masking test that the full tax id and bank account are absent from the API response, the rendered DOM, exports and logs until an audited reveal**, with a planted violation; a duplicate-identifier test (blocked, override with reason, audited); an expiry look-ahead test; a state-machine test for the six statuses and the approval-gated transitions; an append-only test for scores and disputes; the questionnaire weight rule and version immutability; Playwright with `@axe-core/playwright` on each route, a keyboard-only path through list, profile, request and questionnaire editor, and the `MASTER.md` §8 checklist.
 
-## 9. Needs an operator-approved MASTER amendment
+## 9. MASTER amendment (done 13 Oct 2026)
 
-1. **§2.3 `vendor` status map** (`draft` neutral, `pending_approval` info, `active` success, `suspended` warning, `inactive` neutral, `rejected` danger; icon plus words).
-2. **§7 `signal` and `eligibility` components** and the `mask` value style (tokens only; classes `.sig`, `.sig-why`, `.elig`, `.mask` in `xlr8flo.css`).
-3. **§7.13** is already approved; this page uses `Destructive` and the confirm-fill exactly as written, and the dark values are still owed.
+1. **§2.3 `vendor` status map** is in MASTER (`draft` neutral, `pending_approval` info, `active` success, `suspended` warning, `inactive` neutral, `rejected` danger). **`apps/web/src/components/status/map.ts` still carries the E04-S05 vendor map** (`pending`, `expired`, no `draft` or `rejected`), which contradicts decision 123 (an expired document never changes status). The first vendor UI story replaces it and `labels.ts`; the old `expired` key is removed, not kept.
+2. **§7.14 `signal` and `eligibility`** and **§7.15 masked value** are in MASTER (classes `.sig`, `.sig-why`, `.elig`, `.mask`).
+3. **§7.13** is approved and its dark-mode values are now measured in MASTER; this page uses `Destructive` and the confirm-fill exactly as written.

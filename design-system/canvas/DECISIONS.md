@@ -349,6 +349,18 @@ Screens proposed and accepted: PO list, create from awarded lines, PO editor, PO
 - **Left, with reasons (in `pages/purchase-orders.md` section 7):** eight cards on the detail (each answers a different question); four future stepper pills that share one note (a single caption was weighed: the pills are the lifecycle and are kept); the shell's top bar over a sheet's close button and the five-button decision footer at 375 are the shared decision-panel component; the unconfirmed focus ring on one date input in light mode; the 11px `Required` tag and money fractions are the system floor.
 
 
+## 6k. MASTER amendment for M3 round 1 (13 Oct 2026; operator asked for it, Opus drafted)
+
+Items 121, 143 and 169 said "MASTER was not amended". They are now folded in; the canvas follows MASTER from here, as everywhere.
+
+182. **MASTER 2.3** gains the `vendor`, `rfq` and `award` maps (121, 143) and the purchase-order map with `partially_delivered`, `delivered`, `accepted` (169, 172). Email transmission results are signals, not statuses, and never use the bare word `Delivered` (173).
+183. **MASTER 7.14 to 7.16** are the signal and eligibility component, the masked value, and the purchase order issue moment (131, 132, 136, 174, 175, 179, 181).
+184. **MASTER 2.2** registers one exception to "phase colour in four places": the trace line of a signature moment (7.12, 7.16), because it is a drawing and its words and table always sit beside it.
+185. **MASTER 7.13 dark values are measured** (danger text and fill 7.30:1 on `--surface`, 6.60:1 on `--raised`; confirm label 7.30:1; hover 6.18:1; undo 9.11:1). No new token. The canvas's `filter: brightness(0.92)` hover on the confirm fill is a shortcut; code uses a background shift.
+186. **`docs/requirements.md`:** PO-007 and the requisition lifecycle diagram take Delivered and Accepted wording, and the PO report metric reads `delivery status`. The operator decided the nomenclature (169); no requirement's meaning changed.
+187. **Code is behind MASTER in three places**, each for the first story that touches the screen: `status/map.ts` has `vendor` with `pending` and `expired` (decision 123 forbids an expired status), `rfq.closed` as neutral (MASTER: info), no `award`, and `purchase_order` with the old fulfilled keys; `labels.ts` has the matching words.
+188. **A shared defect is recorded once** in `pages/approval-inbox.md` section 6 (decision-panel footer and top bar at 375), not on each of the three pages.
+
 ## 7. Findings to feed back into MASTER.md (amended 9 Oct 2026, see 97)
 
 - **The MASTER amendment is deferred until after Budget Transfer (item 84), which is now built: the next session can draft it for the operator.** It would fold in the items below plus the ancestry state rows (6f item 86).

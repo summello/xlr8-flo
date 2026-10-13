@@ -1,6 +1,8 @@
 # XLR8 FLO — Design System (Master)
 
-> *Amended 9 Oct 2026: sections 7.11 to 7.13 added (links, folds, required fields, ancestry trace, buttons); 7.13 was approved on 10 Oct 2026, with its dark-mode values still to be measured.*
+> *Amended 9 Oct 2026: sections 7.11 to 7.13 added (links, folds, required fields, ancestry trace, buttons); 7.13 was approved on 10 Oct 2026.*
+>
+> *Amended 13 Oct 2026 (M3 design pass round 1: Vendors, Sourcing, Purchase Orders; transcribed from `canvas/DECISIONS.md` 6h, 6i, 6j): §2.3 gains the `vendor`, `rfq`, `award` and `po_transmission` maps and the purchase-order map takes the operator's nomenclature (`Partially Delivered`, `Delivered`, `Accepted`; decision 169); sections 7.14 to 7.16 added (signal and eligibility, masked value, purchase order issue moment); 7.13's dark-mode values are measured. `tokens.css`, `status/map.ts` and component code follow this text, never the reverse.*
 >
 > **Binding on every UI story.** Page-specific deviations live in `design-system/pages/<page>.md` and override this file only where they say so explicitly.
 >
@@ -99,7 +101,7 @@ Eleven modules cannot own eleven hues without colliding with status. They do not
 
 Every value ≥5:1 in light and ≥7:1 in dark, well past the 3:1 UI-glyph floor.
 
-Phase colour appears in exactly four places: the nav icon, the active nav indicator, a 2px rule under the page header, and the tint behind a cross-module link badge. **Never** on a control, a row, a number, or a status. The route segment sets one variable and the whole surface retunes:
+Phase colour appears in exactly four places: the nav icon, the active nav indicator, a 2px rule under the page header, and the tint behind a cross-module link badge. **Never** on a control, a row, a number, or a status. The one registered exception is the trace line of a signature moment (§7.12 and §7.16): it is a drawing of cause and effect, it always has its words and table beside it, and it is never the only carrier of meaning. The route segment sets one variable and the whole surface retunes:
 
 ```tsx
 <div style={{ '--phase': 'var(--phase-commit)' }}>   {/* set once per route segment */}
@@ -132,12 +134,32 @@ export const STATUS: Record<DocType, Record<string, StatusTone>> = {
                  sourced:'info', awarded:'success', open_for_purchase:'info',
                  completed:'success', cancelled:'danger' },
   purchase_order: { draft:'neutral', approval_pending:'info', approved:'info',
-                 issued:'success', partially_fulfilled:'info', fulfilled:'success',
-                 closed:'neutral', cancelled:'danger', superseded:'warning' },
+                 issued:'success', partially_delivered:'info', delivered:'success',
+                 accepted:'success', closed:'neutral', cancelled:'danger',
+                 superseded:'warning' },
+  vendor:      { draft:'neutral', pending_approval:'info', active:'success',
+                 suspended:'warning', inactive:'neutral', rejected:'danger' },
+  rfq:         { draft:'neutral', published:'info', closed:'info',
+                 under_evaluation:'info', awarded:'success', cancelled:'danger' },
+  award:       { draft:'neutral', approval_pending:'info', approved:'success',
+                 superseded:'warning', cancelled:'danger' },
   budget:      { within:'success', nearing:'warning', exceeded:'danger' },
   // …one entry per document type
 }
 ```
+
+**Purchase order nomenclature** (operator, 13 Oct 2026, canvas decision 169). The fulfilment states are `Partially Delivered`, `Delivered` and `Accepted`, not `Partially Fulfilled` and `Fulfilled`. They are future states in M3 (goods receipt arrives in M4). When a PO's lines are accepted the linked requisition becomes `Completed`, the status REQ-005 already has; no `Fulfilled` status exists anywhere in the product (decision 172). `Closed` is manual in M3.
+
+**A vendor's eligibility is not its status.** An expired required document makes a vendor *Not Eligible* and leaves its status `Active` (decision 123, VEN-012). `vendor` has no `expired` state. Eligibility is a signal (§7.14), never a pill.
+
+**Email transmission result is a signal, not a status.** It describes one send of one PO version, not the document, so it is rendered with §7.14 and never with a pill. Closed set, icon plus words, tone from the five status tones:
+
+- `neutral`: `Not Sent`
+- `info`: `Email Queued`, `Email Sent`
+- `success`: `Email Delivered`
+- `danger`: `Email Bounced`, `Email Complaint`, `Email Failed`, `Address Suppressed`
+
+(A list, not a table: the contrast test reads every table in this section as a status-token row.) The result never uses the bare word `Delivered` — that is a purchase order state, and the two must not be mistaken for each other (decision 173).
 
 ### 2.4 Tags and label groups — free, but not lawless
 
@@ -432,7 +454,7 @@ Five, all specific to capital expenditure. Each teaches something the interface 
 
 4. **Requisition approval → reservation.** The approved amount visually detaches from the *Available* bar and settles into *Reserved*, with the two numbers counting in opposite directions. Cause and effect in 500ms.
 
-5. **Purchase order issue.** The document lifts on `--shadow-drag`, a seal marks it, and a trace runs to the vendor row as the transmission is queued. On failure the trace snaps back red and the retry affordance is already focused.
+5. **Purchase order issue** *(built on the canvas, §7.16)*. The document lifts on `--shadow-drag`, a seal marks it, and a trace runs to the vendor row as the transmission is queued. On failure the trace snaps back red and the retry affordance is already focused (for a hard bounce the focused affordance is `Change Recipient`, since resending to a suppressed address would fail; §7.16).
 
 ### 6.3 Standard motions
 
@@ -595,7 +617,7 @@ The cross-hierarchy transfer moment (§6.2 item 3) is a table first and an anima
 
 State is always a word as well as a dot (§2.7). The Chart and Table tabs are the same rows (Table adds a State column in recount order); the table is the accessible equivalent (A11Y-009). A live region reads `Recounting <level>, step N of M.`. The totals strip (Moved Out, Moved In, Net Change) is derived from how many levels are recounted, so a static frame and the table can never disagree. Under reduced motion the finished picture is shown at once and nothing pulses. Text on a `--sunken` row uses `--fg-secondary` for captions and currency codes (`--fg-muted` measures 4.31:1 there).
 
-### 7.13 Buttons and semantic colour (approved 10 Oct 2026; dark-mode values still to be contrast-measured)
+### 7.13 Buttons and semantic colour (approved 10 Oct 2026; dark-mode values measured 13 Oct 2026)
 
 Direction from the operator: fixed semantic colours for buttons, each with an icon or text, so the meaning of a button is learned once. Proposal, on existing tokens only:
 
@@ -607,7 +629,53 @@ Direction from the operator: fixed semantic colours for buttons, each with an ic
 | Reversible | `--status-info` text, `ArrowCounterClockwise` icon plus `Undo` | undo in a toast |
 | Positive | not a button colour: approval is the primary action, not a green button | |
 
-The safe button of a destructive dialog takes focus (DECISIONS 58). A semantic colour never replaces the verb. The destructive fill is the one new fill in the system, so it counts against the one-accent-per-region rule inside its dialog only. **Open:** exact dark-mode values must be contrast-measured in a tokens story before this is built (approved by the operator on 10 Oct 2026; `tokens.css` follows this text).
+The safe button of a destructive dialog takes focus (DECISIONS 58). A semantic colour never replaces the verb. The destructive fill is the one new fill in the system, so it counts against the one-accent-per-region rule inside its dialog only. **Measured (13 Oct 2026, from the §2.3 values; no new token is needed).**
+
+| Pair | Light | Dark |
+|---|---|---|
+| Destructive text and icon, `--status-danger` on `--surface` | 5.46:1 | 7.30:1 |
+| Same on `--raised` (popover, menu) | 5.46:1 | 6.60:1 |
+| Confirm label, `--surface` on the `--status-danger` fill | 5.46:1 | 7.30:1 |
+| Confirm fill on hover (darkened 8%) | 6.23:1 | 6.18:1 |
+| Reversible, `--status-info` on `--surface` | 5.23:1 | 9.11:1 |
+
+All clear 4.5:1 for text and 3:1 for the glyph. The trigger's boundary is `--border-control` (§2.7), so it is identified by more than its hairline. The tokens story adds the first three pairs to the derived-pair test so a later retune cannot break them silently. The canvas darkens the confirm fill on hover with `filter: brightness(0.92)`; that is a canvas shortcut, and code uses a background shift in the same direction (§6.3, hover moves background only).
+
+### 7.14 Signal and eligibility (approved 13 Oct 2026, decisions 131, 132; built on the canvas as `.sig`, `.sig-why`, `.elig`)
+
+A **status** is a fixed-vocabulary fact about a document and is a pill (§7.1). A **signal** is a *derived* fact about one thing in one context: a vendor's eligibility for a business unit, a document's expiry, a questionnaire's weight total, an email's transmission result. It is not a second pill vocabulary.
+
+```
+✓  Eligible Here                         13/18 · 560 · icon takes the tone, words are --fg
+✕  Not Eligible In Plant 4               14/20 in the .elig header form
+   · Insurance Certificate expired 2 Oct      12/16 · 400 · --fg-secondary · the reasons, one per line
+   · Quality Questionnaire not renewed
+```
+
+- One icon from the §2.3 set (`CheckCircle`, `Warning`, `XCircle`, `ArrowsClockwise`, `Circle`) in the status tone, then words. **The words never depend on the icon** (A11Y-004); the greyscale test is that two signals still differ by icon shape and words.
+- A signal that says *no* or *warn* carries its **reasons in words**, from the server, never computed on the client. A list cell shows the first reason on the next line and `and N more`.
+- Not a button, not a link, never inside a pill. If the user can act on it, the action is a separate control beside it (`Override`, `Open`).
+- Eligibility is worked out by the server for one unit from status, approval, each required document and that unit's availability (VEN-012), and every screen that offers a vendor — the vendor list, the profile header, the RFQ invitation picker and the PO vendor field — shows the same component and the same rule (decision 153). The `Override` beside a not-eligible vendor needs `rfq.approve` on the unit, a reason, and is audited.
+- Class contract, tokens only: `.sig` with `.is-ok`, `.is-warn`, `.is-bad`, `.is-info`, `.is-n` (icon colour from the `--status-*` text tokens), `.sig-why`, `.elig` (header form).
+
+### 7.15 Masked value (approved 13 Oct 2026, decision 136; `.mask`)
+
+Tax identifiers and bank accounts (VEN-014, CUS-008, PRIV-001).
+
+- Shown masked by default as the last four characters, in the mono face with +0.04em tracking, so the width does not change on reveal.
+- `Reveal Values` is offered only to users the server names (vendor managers and finance users, decision 124); everyone else sees `Restricted` and who to ask. **The value is fetched on reveal, never shipped in the page**, never in an export, a log, a page title or the DOM before the reveal. The reveal is audited and says so (`Revealed by you, 14:02. Logged.`), and the value re-masks on leaving the card or after 60 seconds (timeout to be confirmed, vendors.md section 7).
+- Masked data is never a search key. A planted-violation test proves the full value is absent from the response and the markup until an audited reveal.
+
+### 7.16 Purchase order issue moment (signature moment 5, built 13 Oct 2026; decisions 174, 175, 179, 181)
+
+A table first and an animation second, as §7.12. The order of events is the order of the words.
+
+1. **Confirmation dialog first** (the commit). It lists the recipient, version and template, **what will be sent and what stays here**, and the commitment. There is no second `Issue` button on the page that follows; the moment shows what happened.
+2. **The moment** (played once per session, `po-stage`): the document lifts on `--shadow-drag` (`po-doc`), a seal marks it (`po-seal`, success tone), a trace runs to the vendor row (`po-trace`, `po-vendor`) as the email is queued. Each step is a word and a row in a Frames table whose selected row follows the frame on show. Under reduced motion the finished picture is shown with a note; below 760px the trace is dropped and the stage stacks.
+3. **On failure** the trace snaps back to `--status-danger` and the recovery is already focused. For a hard bounce or a suppressed address the primary and focused action is `Change Recipient` and `Resend` is second, because resending would fail; for a soft failure `Resend` is primary and focused. `Resend` sends the same version, says so, and commits nothing more.
+4. **Vendor copy.** The email and PDF the supplier receives are drawn together with a list of what never goes to the vendor (chartfields, budget figures, internal notes). `.pdf-page` is the one place a paper-like page is drawn; it uses `--surface` and `--border-strong`, never a literal white.
+
+Tokens only; the trace colour is the registered exception in §2.2. Every frame also exists as words and a table (A11Y-009).
 
 ---
 
@@ -632,7 +700,8 @@ The safe button of a destructive dialog takes focus (DECISIONS 58). A semantic c
 - [ ] `axe` passes on the new route; `@axe-core/playwright` test committed
 - [ ] Icons from Phosphor, one weight; every icon-only control labelled; no emoji
 - [ ] Forms: every required control has `required` and a `Required` tag (§7.11); submit is never disabled to signal an error; a failed submit gives a focused summary and keeps typed input
-- [ ] A state that animates is also a word (§7.12); the finished picture is shown under reduced motion
+- [ ] A state that animates is also a word (§7.12, §7.16); the finished picture is shown under reduced motion
+- [ ] A derived fact (eligibility, expiry, transmission result) is a signal with its reasons in words, not a pill (§7.14); a sensitive value is masked and fetched on an audited reveal (§7.15)
 
 ---
 
