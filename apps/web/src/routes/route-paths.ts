@@ -9,6 +9,7 @@ export const ROUTE_PATHS = [
   "/reporting",
   "/requisitions",
   "/approvals",
+  "/approvals/availability",
   "/vendors",
   "/sourcing",
   "/purchase-orders",

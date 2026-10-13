@@ -102,6 +102,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/approvals/delegations/decided-on-my-behalf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Decided On My Behalf Route */
+        get: operations["decided_on_my_behalf_route_api_v1_approvals_delegations_decided_on_my_behalf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/approvals/delegations/eligible-delegates": {
         parameters: {
             query?: never;
@@ -215,6 +232,23 @@ export interface paths {
         put?: never;
         /** Withdraw Approval */
         post: operations["withdraw_approval_api_v1_approvals_instances__id__withdraw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/approvals/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Inbox Route */
+        get: operations["inbox_route_api_v1_approvals_tasks_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3020,6 +3054,85 @@ export interface components {
             /** Row No */
             row_no: number;
         };
+        /** InboxCounts */
+        InboxCounts: {
+            /** Completed */
+            completed: number;
+            /** Delegated */
+            delegated: number;
+            /** Overdue */
+            overdue: number;
+            /** Pending */
+            pending: number;
+        };
+        /** InboxMoney */
+        InboxMoney: {
+            /** Amount */
+            amount: string;
+            /** Currency */
+            currency: string;
+        };
+        /** InboxPage */
+        InboxPage: {
+            counts: components["schemas"]["InboxCounts"];
+            /** Next Cursor */
+            next_cursor: string | null;
+            /** Rows */
+            rows: components["schemas"]["InboxRow"][];
+            /** Total */
+            total: number;
+            /** Total Amount */
+            total_amount: components["schemas"]["InboxMoney"][];
+        };
+        /** InboxRow */
+        InboxRow: {
+            amount: components["schemas"]["InboxMoney"] | null;
+            /** Decided At */
+            decided_at: string | null;
+            /**
+             * Document Id
+             * Format: uuid
+             */
+            document_id: string;
+            /** Document Type */
+            document_type: string;
+            /** Document Version */
+            document_version: number;
+            /** Due At */
+            due_at: string | null;
+            /** Href */
+            href: string;
+            /**
+             * Instance Id
+             * Format: uuid
+             */
+            instance_id: string;
+            /** Number */
+            number: string;
+            /** On Behalf Of Email */
+            on_behalf_of_email: string | null;
+            /** Requester Email */
+            requester_email: string;
+            /** Requester Note */
+            requester_note: string | null;
+            /** Status Word */
+            status_word: string;
+            step: components["schemas"]["InboxStep"];
+            /**
+             * Task Id
+             * Format: uuid
+             */
+            task_id: string;
+            /** Title */
+            title: string;
+        };
+        /** InboxStep */
+        InboxStep: {
+            /** Index */
+            index: number;
+            /** Of */
+            of: number;
+        };
         /** InstanceRead */
         InstanceRead: {
             /** Current Node Id */
@@ -5432,10 +5545,51 @@ export interface operations {
             };
         };
     };
+    decided_on_my_behalf_route_api_v1_approvals_delegations_decided_on_my_behalf_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionRead"][];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     eligible_delegates_route_api_v1_approvals_delegations_eligible_delegates_get: {
         parameters: {
             query?: {
                 document_type?: ("project" | "requisition" | "budget_change" | "vendor" | "rfq" | "award" | "po") | null;
+                document_types?: ("project" | "requisition" | "budget_change" | "vendor" | "rfq" | "award" | "po")[] | null;
             };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
@@ -5711,6 +5865,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InstanceRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    inbox_route_api_v1_approvals_tasks_get: {
+        parameters: {
+            query?: {
+                view?: "pending" | "overdue" | "completed" | "delegated";
+                type?: ("project" | "requisition" | "budget_change" | "vendor" | "rfq" | "award" | "po") | null;
+                q?: string;
+                sort?: ("due" | "amount" | "decided") | null;
+                direction?: ("asc" | "desc") | null;
+                cursor?: string | null;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InboxPage"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

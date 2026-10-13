@@ -2856,6 +2856,56 @@
       },
       "recap": "Final approval of a requisition now runs inside the decision's transaction: a project-linked one keeps its submit-time reservation and gets an active generated sub-project; a standalone one creates a project with an allocation and reservation, or reserves on an assigned project. projects.service gained create_generated_project and generated_for.",
       "title": "Approval reserves budget and generates the sub-project, one transaction"
+    },
+    {
+      "story": "E10-S10",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [
+        {
+          "from": "codex",
+          "to": "qwen",
+          "role": "reviewer",
+          "reason": "Codex five-hour window hit its limit mid-review on 13 Oct 2026 10:09 IST (resets 13:00) with no verdict written; operator's standing rule routes ungated reviews to qwen while Codex is capped.",
+          "outcome": "qwen ran ~70 min under the pre-budget packet (10:13-11:2x) and exited without writing a verdict; Codex reset, so the review returns to Codex (13 Oct 2026)."
+        }
+      ],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "b983a3b4-1cdf-4470-a0dc-b0db6be5028d",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E10-S10",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a13400-e877-7c82-a049-130a901b06ad",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds GET /api/v1/approvals/tasks (pending, overdue, completed, delegated views over live membership with server filter, sort, paging and totals) and the /approvals inbox, decision panel and /approvals/availability screens on top of the existing decision and delegation routes.",
+      "title": "Approval inbox: pending, overdue, completed, delegated views"
     }
   ]
 }

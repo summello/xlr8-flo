@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 import { stubWorkflows } from "../e2e/workflow-list-fixture";
+import { stubApprovals } from "../e2e/approvals-fixture";
 import { stubDashboard } from "../e2e/dashboard-fixture";
 import { projectId } from "../e2e/projects-fixture";
 import { ROUTE_PATHS } from "../../src/routes/route-paths";
@@ -10,6 +11,9 @@ expect(ROUTE_PATHS, "MISSING: forms-kit route in the shared route manifest").toC
   "/_dev/forms",
 );
 
+const summarize = (violations: { id: string; nodes: { target: unknown; failureSummary?: string }[] }[]) =>
+  violations.map(v => `${v.id}: ${v.nodes.map(n => `${JSON.stringify(n.target)} ${n.failureSummary?.split("\n").slice(1).join(" ")}`).join(" | ")}`);
+
 for (const theme of ["light", "dark"] as const) {
   for (const route of [...ROUTE_PATHS, `/projects/${projectId}/dashboard`]) {
     test(`${route} passes axe in ${theme} theme`, async ({ page }) => {
@@ -17,6 +21,7 @@ for (const theme of ["light", "dark"] as const) {
         localStorage.setItem("xlr8flo.theme", selectedTheme);
       }, theme);
       if (route === "/admin/approval-workflows") await stubWorkflows(page);
+      if (route.startsWith("/approvals")) await stubApprovals(page);
       await page.goto(route);
       await page.locator(".app-shell").waitFor();
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
@@ -84,5 +89,37 @@ for (const theme of ["light", "dark"] as const) {
     await page.goto(`/admin/approval-workflows/${workflowId}`);
     await page.getByRole("button", { name: "Add Condition" }).waitFor();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  });
+}
+
+for (const theme of ["light", "dark"] as const) {
+  for (const tab of ["pending", "overdue", "completed", "delegated"] as const) {
+    test(`approval inbox ${tab} tab with the decision panel open passes axe in ${theme}`, async ({ page }) => {
+      await page.addInitScript(t => localStorage.setItem("xlr8flo.theme", t), theme);
+      await stubApprovals(page);
+      await page.goto(`/approvals?tab=${tab}`);
+      await page.locator(".appr-table tbody tr").first().waitFor();
+      expect(summarize((await new AxeBuilder({ page }).analyze()).violations)).toEqual([]);
+      await page.locator(".appr-doc").first().click();
+      await expect(page.getByText("Why It Reached You")).toBeVisible();
+      await expect(page.getByText("Decision Trail").first()).toBeVisible();
+      expect(summarize((await new AxeBuilder({ page }).analyze()).violations)).toEqual([]);
+    });
+  }
+
+  test(`approval availability with errors and the revoke dialog passes axe in ${theme}`, async ({ page }) => {
+    await page.addInitScript(t => localStorage.setItem("xlr8flo.theme", t), theme);
+    await stubApprovals(page, { delegateAdmin: true });
+    await page.goto("/approvals/availability");
+    await page.getByRole("button", { name: "Save Out-of-Office" }).click();
+    await expect(page.getByRole("alert").first()).toContainText("Not saved");
+    expect(summarize((await new AxeBuilder({ page }).analyze()).violations)).toEqual([]);
+    await page.getByLabel(/^Starts/).fill("2030-02-01");
+    await page.getByLabel(/^Ends/).fill("2030-02-05");
+    await page.getByLabel(/^Pass Approvals To/).selectOption({ label: "delegate@example.test" });
+    await page.getByRole("button", { name: "Save Out-of-Office" }).click();
+    await page.getByRole("button", { name: /^Revoke/ }).click();
+    await expect(page.getByRole("alertdialog")).toBeVisible();
+    expect(summarize((await new AxeBuilder({ page }).analyze()).violations)).toEqual([]);
   });
 }

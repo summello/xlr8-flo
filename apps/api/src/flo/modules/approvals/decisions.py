@@ -67,6 +67,31 @@ def task_instance(
         return cast(UUID, row[0])
 
 
+def _decision_reads(
+    conn: psycopg.Connection[tuple[object, ...]], rows: list[tuple[object, ...]]
+) -> list[DecisionRead]:
+    emails = emails_by_id(
+        cast(IdentityAuthorizationConnection, conn),
+        [cast(UUID, id) for row in rows for id in (row[3], row[4]) if id is not None],
+    )
+    result = []
+    for row in rows:
+        data = dict(zip((*DECISION_FIELDS, "node_id", "step_label"), row, strict=True))
+        data["actor_email"] = emails.get(cast(UUID, data.pop("actor_id")), "(removed user)")
+        behalf = cast(UUID | None, data.pop("on_behalf_of"))
+        data["on_behalf_of_email"] = emails.get(behalf, "(removed user)") if behalf else None
+        result.append(DecisionRead.model_validate(data))
+    return result
+
+
+_DECISION_SELECT = (
+    "SELECT "
+    + ",".join("d." + f for f in DECISION_FIELDS)
+    + ",t.node_id,t.name FROM approval_decision d LEFT JOIN approval_task t "
+    "ON t.org_id=d.org_id AND t.id=d.task_id "
+)
+
+
 def decisions_for(
     conn: psycopg.Connection[tuple[object, ...]], scope: Scope, instance_id: UUID
 ) -> list[DecisionRead]:
@@ -74,25 +99,31 @@ def decisions_for(
         repo = WorkflowRepository(conn, scope)
         engine._instance(repo, instance_id)
         rows = repo.execute(
-            "SELECT "
-            + ",".join("d." + f for f in DECISION_FIELDS)
-            + ",t.node_id,t.name FROM approval_decision d LEFT JOIN approval_task t "
-            "ON t.org_id=d.org_id AND t.id=d.task_id "
-            "WHERE d.org_id=%(org_id)s AND d.instance_id=%(id)s ORDER BY d.decided_at,d.id",
+            _DECISION_SELECT + "WHERE d.org_id=%(org_id)s AND d.instance_id=%(id)s "
+            "ORDER BY d.decided_at,d.id",
             {"id": instance_id},
         ).fetchall()
-        emails = emails_by_id(
-            cast(IdentityAuthorizationConnection, conn),
-            [cast(UUID, id) for row in rows for id in (row[3], row[4]) if id is not None],
+        return _decision_reads(conn, rows)
+
+
+def decided_on_behalf(
+    conn: psycopg.Connection[tuple[object, ...]], scope: Scope, owner_id: UUID
+) -> list[DecisionRead]:
+    """Decisions a delegate recorded for `owner_id`, newest first (APR-017).
+
+    ponytail: the latest 50; add a cursor if an owner is covered more often than that.
+    """
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        rows = (
+            WorkflowRepository(conn, scope)
+            .execute(
+                _DECISION_SELECT + "WHERE d.org_id=%(org_id)s AND d.on_behalf_of=%(me)s "
+                "ORDER BY d.decided_at DESC,d.id DESC LIMIT 50",
+                {"me": owner_id},
+            )
+            .fetchall()
         )
-        result = []
-        for row in rows:
-            data = dict(zip((*DECISION_FIELDS, "node_id", "step_label"), row, strict=True))
-            data["actor_email"] = emails.get(cast(UUID, data.pop("actor_id")), "(removed user)")
-            behalf = cast(UUID | None, data.pop("on_behalf_of"))
-            data["on_behalf_of_email"] = emails.get(behalf, "(removed user)") if behalf else None
-            result.append(DecisionRead.model_validate(data))
-        return result
+        return _decision_reads(conn, rows)
 
 
 def _insert(

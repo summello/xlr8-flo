@@ -25,8 +25,10 @@ TESTS = Path(__file__).resolve().parents[1]
 
 # (method, path) -> "file::test" that proves a foreign id returns 404.
 COVERED = {
-    ("GET", "/api/v1/budget/change-requests/{id}"):
-        "budget/test_change_requests.py::test_change_request_foreign_tenant",
+    (
+        "GET",
+        "/api/v1/budget/change-requests/{id}",
+    ): "budget/test_change_requests.py::test_change_request_foreign_tenant",
     (
         "GET",
         "/api/v1/approvals/instances/{id}/explanation",
@@ -67,6 +69,12 @@ COVERED = {
         "GET",
         "/api/v1/approvals/eligible-approvers",
     ): "approvals/test_eligibility.py::test_picker_foreign_scope_and_authorization",
+    ("GET", "/api/v1/approvals/delegations/decided-on-my-behalf"): (
+        "approvals/test_inbox.py::test_decided_on_my_behalf_is_self_scoped_and_isolated"
+    ),
+    ("GET", "/api/v1/approvals/tasks"): (
+        "approvals/test_inbox.py::test_inbox_http_is_self_scoped_and_foreign_tenant_sees_nothing"
+    ),
     ("POST", "/api/v1/approvals/delegations"): (
         "approvals/test_delegation.py::"
         "test_delegation_routes_unauthenticated_forbidden_and_foreign_scope"

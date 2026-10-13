@@ -1257,7 +1257,7 @@ epics:
           - E04-S03
           - E10-S08
           - E10-S09
-        st: review
+        st: done
       - id: E10-S11
         t: Visual workflow builder, drag-and-drop canvas
         k: ui

@@ -18,6 +18,8 @@ import WorkflowBuilder from "./admin/approval-workflows/[id]";
 import ProjectDetail from "./projects/detail";
 import Dashboard from "./projects/dashboard";
 import BudgetOverview from "./budget";
+import ApprovalInbox from "./approvals/inbox";
+import ApprovalAvailability from "./approvals/availability";
 import type { Project } from "../components/projects/api";
 import type { RoutePath } from "./route-paths";
 
@@ -100,10 +102,17 @@ const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
   },
   "/approvals": {
     activeHref: "/approvals",
-    description: "Approval screens arrive with the demand milestone.",
-    hierarchy: [ORGANIZATION, BUSINESS_UNIT, PROJECT, ["/approvals", "Approvals"]],
+    description: "Decide the approvals waiting on you.",
+    hierarchy: [ORGANIZATION, ["/approvals", "Approvals"]],
     phase: "demand",
-    title: "Approvals",
+    title: "Approval Inbox",
+  },
+  "/approvals/availability": {
+    activeHref: "/approvals",
+    description: "Pass your approvals to a colleague while you are away.",
+    hierarchy: [ORGANIZATION, ["/approvals", "Approvals"], ["/approvals/availability", "Availability"]],
+    phase: "demand",
+    title: "Approval Availability",
   },
   "/vendors": {
     activeHref: "/vendors",
@@ -300,6 +309,8 @@ export default function RootRoute() {
       {shellRoute.path === "/projects" ? <ProjectList navigate={navigate} /> : undefined}
       {shellRoute.path === "/projects/new" ? <NewProject navigate={navigate} /> : undefined}
       {dashboardId ? <Dashboard key={`${dashboardId}-${window.location.search}`} id={dashboardId} navigate={navigate} onLoaded={onProjectLoaded} /> : undefined}
+      {shellRoute.path === "/approvals" ? <ApprovalInbox navigate={navigate} /> : undefined}
+      {shellRoute.path === "/approvals/availability" ? <ApprovalAvailability navigate={navigate} /> : undefined}
       {shellRoute.path === "/budget" ? <BudgetOverview key={window.location.search} navigate={navigate} /> : undefined}
       {shellRoute.path === "/admin/approval-workflows" ? <WorkflowList navigate={navigate} /> : undefined}
       {workflowId ? <WorkflowBuilder key={workflowId} id={workflowId} /> : undefined}

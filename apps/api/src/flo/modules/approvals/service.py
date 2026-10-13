@@ -36,6 +36,9 @@ from flo.modules.approvals.decisions import (
     decide as decide,
 )
 from flo.modules.approvals.decisions import (
+    decided_on_behalf as decided_on_behalf,
+)
+from flo.modules.approvals.decisions import (
     decisions_for as decisions_for,
 )
 from flo.modules.approvals.decisions import (
@@ -111,6 +114,8 @@ from flo.modules.approvals.engine import (
 from flo.modules.approvals.explain import Explanation as Explanation
 from flo.modules.approvals.explain import explain as explain
 from flo.modules.approvals.explain import explanation_document as explanation_document
+from flo.modules.approvals.inbox import InboxPage as InboxPage
+from flo.modules.approvals.inbox import inbox as inbox
 from flo.modules.approvals.material import (
     approval_state as approval_state,
 )
@@ -149,6 +154,8 @@ from flo.modules.identity.service import (
 from flo.modules.org.service import OrgService
 
 __all__ = [
+    "InboxPage",
+    "inbox",
     "create_delegation",
     "eligible_delegates",
     "list_delegations",
@@ -160,6 +167,7 @@ __all__ = [
     "supersede",
     "assert_current_approval",
     "decide",
+    "decided_on_behalf",
     "decisions_for",
     "task_instance",
     "withdraw",

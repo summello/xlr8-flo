@@ -3,7 +3,7 @@
 from typing import Annotated, Literal, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 
 from flo.api.admin_users import organization_target
 from flo.api.authz_factory import production_authorization_resolver
@@ -34,16 +34,19 @@ from flo.modules.approvals.schemas import (
 )
 from flo.modules.approvals.service import (
     Explanation,
+    InboxPage,
     PickerPage,
     adapter_for,
     approver_picker,
     create_delegation,
     decide,
+    decided_on_behalf,
     decisions_for,
     eligible_delegates,
     explain,
     explanation_document,
     get_instance,
+    inbox,
     list_delegations,
     reassign_task,
     revoke_delegation,
@@ -198,17 +201,28 @@ def create_delegation_route(
 # Registered before the id routes so "eligible-delegates" is never read as a delegation id.
 @router.get("/delegations/eligible-delegates", response_model=PickerPage)
 def eligible_delegates_route(
-    context: DelegateContext, connection: Connection, document_type: DocumentType | None = None
+    context: DelegateContext,
+    connection: Connection,
+    document_type: DocumentType | None = None,
+    document_types: Annotated[list[DocumentType] | None, Query()] = None,
 ) -> PickerPage:
+    # A person must hold every selected type; none selected means every registered type.
+    chosen: list[str] = [*(document_types or []), *([document_type] if document_type else [])]
     factory: HoldersResolverFactory = production_authorization_resolver
     with factory(current_scope()) as resolver:
         return eligible_delegates(
             connection,
             current_scope(),
             context.user_id,
-            None if document_type is None else [document_type],
+            chosen or None,
             resolver,
         )
+
+
+@router.get("/delegations/decided-on-my-behalf", response_model=list[DecisionRead])
+def decided_on_my_behalf_route(user: MemberUser, connection: Connection) -> list[DecisionRead]:
+    # Self-scoped (convention P): only decisions recorded for the caller as the delegator.
+    return decided_on_behalf(connection, current_scope(), user)
 
 
 @router.get("/delegations", response_model=DelegationPage)
@@ -254,3 +268,28 @@ def reassign_route(
         )
     instance = get_instance(connection, current_scope(), instance_id)
     return next(t for t in instance.tasks if t.id == task_id)
+
+
+@router.get("/tasks", response_model=InboxPage)
+def inbox_route(
+    user: MemberUser,
+    connection: Connection,
+    view: Literal["pending", "overdue", "completed", "delegated"] = "pending",
+    type: DocumentType | None = None,
+    q: str = "",
+    sort: Literal["due", "amount", "decided"] | None = None,
+    direction: Literal["asc", "desc"] | None = None,
+    cursor: str | None = None,
+) -> InboxPage:
+    # Self-scoped list (convention P): membership is evaluated live for the caller only.
+    return inbox(
+        connection,
+        current_scope(),
+        user_id=user,
+        view=view,
+        document_type=type,
+        q=q,
+        sort=sort,
+        direction=direction,
+        cursor=cursor,
+    )
