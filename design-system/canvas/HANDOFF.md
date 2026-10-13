@@ -4,6 +4,8 @@ Read `DECISIONS.md` first (everything decided so far), then `README.md` (how to 
 
 ## State
 
+**13 Oct 2026: M3 screens are next, in this order: Vendors (new page), the rest of Sourcing (on the RFQ Comparison page; the comparison itself is built), Purchase Orders (new page). Start with `HANDOFF-m3.md`, then `HANDOFF-vendors.md`, `HANDOFF-sourcing.md`, `HANDOFF-purchase-orders.md`. They come before the Common Screens item below until the three pages are done.**
+
 **Budget Transfer (6e, 6f) and Bid Comparison (6g, 21 boards, `comparison.spec.mjs`) pages built; MASTER amended (97). Next: the rest of Common Screens (6c), then the operator sign-off on MASTER 7.13 (semantic buttons).**
 
 **Approval Inbox and Approval Workflow Builder pages built (DECISIONS 6d). Next: Budget Transfer, Comparison Dashboard, then the rest of Common Screens (6c). Requisition Create is 6b.**
