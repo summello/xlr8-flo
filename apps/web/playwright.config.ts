@@ -5,7 +5,9 @@ import { defineConfig } from "@playwright/test";
 // One port per checkout. Story worktrees run their suites concurrently, and a fixed
 // port made `reuseExistingServer` hand a run the *other* worktree's dev server —
 // which serves different code and fails tests that have nothing wrong with them.
+// E2E_PORT overrides it when something else already holds the hashed port.
 const port =
+  Number(process.env.E2E_PORT) ||
   4173 + (createHash("sha256").update(import.meta.dirname).digest()[0]! % 200);
 const url = `http://127.0.0.1:${port}`;
 
