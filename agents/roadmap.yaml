@@ -43,6 +43,11 @@ milestones:
     branch: milestone/M5-customer-ready
     goal: Self-serve tenancy, verification, backup evidence, legal surface,
       graduation instrumentation.
+  - id: M7
+    name: Future roadmap
+    branch: milestone/M7-future
+    goal: Agreed future items with no date, logged so they are not lost. Pulled into a
+      dated milestone when the operator schedules them.
   - id: MT
     name: Delivery tooling
     branch: main
@@ -1125,19 +1130,78 @@ epics:
           - E09-S12
         st: done
       - id: E09-S13
-        t: 'Standalone requisition funding, who may assign one to a project, master-code
-          re-check at approval, and one shared audit helper (operator requirements pending; before
-          the M2 PR)'
+        t: 'Roles and permission catalogue: every checked permission grantable, Project
+          Manager role, budget governance decisions and user guide'
+        k: security
+        s: M
+        tags:
+          - auth
+          - security
+          - migration
+        reqs:
+          - USR-007
+          - TEN-010
+        dep:
+          - E09-S12
+        st: todo
+      - id: E09-S15
+        t: 'Project Requests: own document type, workflow, permission and name; sponsors;
+          abandoned on cancel and kept out of budget totals'
+        k: engine
+        s: L
+        tags:
+          - money
+          - auth
+          - ui
+          - migration
+        reqs:
+          - REQ-004
+        dep:
+          - E09-S13
+        st: todo
+      - id: E09-S16
+        t: 'Sub-project funding: an approved requisition''s sub-project draws from its main
+          project; funds return on cancel'
         k: ledger
+        s: L
+        tags:
+          - money
+          - concurrency
+        reqs:
+          - REQ-002
+          - ACC-001
+          - WF-003
+          - FIN-011
+        dep:
+          - E09-S13
+        st: todo
+      - id: E09-S17
+        t: Block governed actions until their approval workflow is published
+        k: engine
         s: M
         tags:
           - money
           - auth
         reqs:
-          - REQ-004
+          - BUD-007
+          - WF-001
         dep:
-          - E09-S12
-          - E10-S11
+          - E09-S13
+          - E09-S15
+        st: todo
+      - id: E09-S18
+        t: 'Expired master codes: flag, substitute at approval, block downstream; no code
+          changes by amendment'
+        k: engine
+        s: L
+        tags:
+          - money
+          - auth
+          - ui
+        reqs:
+          - AUD-001
+        dep:
+          - E09-S13
         st: todo
 
   - id: E10
@@ -1709,6 +1773,56 @@ epics:
         dep:
           - E13-S09
           - E09-S10
+        st: todo
+
+  - id: E22
+    name: Budget governance follow-ups
+    milestone: M3
+    stories:
+      - id: E22-S01
+        t: 'Create Project with budget: form and Excel, sponsors, through the project approval
+          workflow'
+        k: engine
+        s: L
+        tags:
+          - money
+          - auth
+          - ui
+        reqs:
+          - PROJ-003
+        dep:
+          - E09-S17
+        st: todo
+      - id: E22-S02
+        t: Soft delete for every draft document
+        k: crud
+        s: M
+        tags:
+          - ui
+          - migration
+        reqs:
+          - DATA-002
+        dep:
+          - E09-S15
+        st: todo
+      - id: E22-S03
+        t: One audit helper instead of twelve, behaviour-preserving
+        k: chore
+        s: M
+        tags: []
+        reqs:
+          - AUD-001
+        dep: []
+        st: todo
+      - id: E22-S04
+        t: 'M2 milestone review follow-ups: Money zero prop, shared lookup helper, internal
+          collaboration readers, approvals read via service, e2e focus helper'
+        k: chore
+        s: M
+        tags:
+          - ui
+        reqs: []
+        dep: []
         st: todo
 
   # ─────────────────── M4 — Full Phase-1 scope ───────────────────
@@ -2526,3 +2640,42 @@ epics:
           - OBS-003
         dep: []
         st: done
+
+  - id: E30
+    name: Future roadmap
+    milestone: M7
+    stories:
+      - id: E30-S01
+        t: 'Organisation budget pool: allocations draw from an organisation-level pool instead
+          of creating budget'
+        k: ledger
+        s: L
+        tags:
+          - money
+        reqs:
+          - BUD-007
+        dep: []
+        st: todo
+      - id: E30-S02
+        t: 'Release and re-reserve when an amendment or substitution changes a code or
+          ledger account'
+        k: ledger
+        s: M
+        tags:
+          - money
+        reqs:
+          - REQ-012
+        dep:
+          - E09-S18
+        st: todo
+      - id: E30-S03
+        t: 'Bin: view and restore soft-deleted drafts'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - DATA-002
+        dep:
+          - E22-S02
+        st: todo

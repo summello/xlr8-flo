@@ -13,10 +13,30 @@ named in the packet that uses it. Reverse one by editing the packet before its s
 | D-M2-2 | **Approval-group membership is live**: who may decide is evaluated when the decision is made, not when the task was created. | §14 #10 | E10-S04, E10-S05, E10-S06 |
 | D-M2-3 | **Approval depth is configurable per organization between 1 and 50.** | §14 #11 | E10-S03 |
 | D-M2-4 | **Conditions may route on amount in M2** (APR-005). The named "threshold band" administration feature stays Phase 2 (APR-010). Together with canvas `DECISIONS.md` 83 (accepted 9 Oct: "workflow conditions use the estimate only; department and risk wait for Phase 2"): the condition **engine** is generic (APR-005), but in M2 the requisition field catalogue exposes only `amount`, so a builder can only route on the estimate. Phase 2 widens the catalogue; the engine does not change. | §14 #19 | E10-S02, E10-S03, E10-S11 |
-| D-M2-5 | **A standalone requisition's approval creates a new top-level project and allocates the approved amount to it as new budget**, then reserves it (REQ-004). An approver may instead assign an existing project, which then funds it like a project-linked requisition. Approval can therefore create budget; the final approver of a standalone requisition must hold `budget.allocate` on its BU/OU. | — | E09-S04, E09-S06 |
+| D-M2-5 | **Superseded 14 Oct 2026 by D-M2-16, D-M2-18, D-M2-22.** **A standalone requisition's approval creates a new top-level project and allocates the approved amount to it as new budget**, then reserves it (REQ-004). An approver may instead assign an existing project, which then funds it like a project-linked requisition. Approval can therefore create budget; the final approver of a standalone requisition must hold `budget.allocate` on its BU/OU. | — | E09-S04, E09-S06 |
 | D-M2-6 | **Requisition expiry is a per-organization setting, unset by default** (`requisition.expiry_days`, never expires). When set, an approved requisition with no RFQ started within that many days of approval expires and releases its reservation exactly once (REQ-013). | — | E09-S05, E09-S07 |
 | D-M2-7 | **A requisition's currency is always its project's currency, which is the organization's base currency.** It is derived, never entered. Only supplier prices (RFQ bids and stored RFQ history, M3) may be in another currency. | §14 #8 (in part) | E09-S01, E09-S04, E09-S06 |
 | D-M2-8 | **Attachments that pass allow-list, magic-byte and size checks are marked `basic_checks_passed` and are downloadable by authorized users; they are never shared externally** until full scanning exists (E19-S04, D-14). | — | E09-S10 |
+
+## Operator decisions (14 Oct 2026) — budget governance
+
+Recorded from the operator's answers to E09-S13's open points. Full text and the user guide: `design/E09-S13.md`.
+
+| # | Decision | Story |
+|---|---|---|
+| D-M2-16 | No organisation pool: budget lives in pre-approved projects. The organisation-pool workflow is a future item (M7, E30-S01). | — |
+| D-M2-17 | Regular requisitions select an existing main project; requisition-generated sub-projects cannot be selected (REQ-003). | built |
+| D-M2-18 | Standalone requisitions are **Project Requests**: own document type and workflow, own UI name, created only with `project_request.create`; everyone else picks a budget source. | E09-S15 |
+| D-M2-19 | An approved requisition's sub-project draws from its main project: main-to-sub transfer and the reservation on the sub-project, one transaction. | E09-S16 |
+| D-M2-20 | Direct project creation (button, Excel) is role-gated, needs one or more sponsors, may be standalone or a child, goes through the project approval workflow, and posts on the project and its main project. | E22-S01 |
+| D-M2-21 | With no published workflow, Project Requests, project creation with budget, and budget transfers, adjustments and allocations are refused. | E09-S17 |
+| D-M2-22 | A Project Request's project exists only after full approval. Cancelled later: standalone project abandoned and kept out of budget totals (Abandoned group); sub-project abandoned with funds returned to the main project. | E09-S15, E09-S16 |
+| D-M2-23 | Code, account and project changes by amendment are blocked; budget moves go through transfer and adjustment requests. Release-and-re-reserve is M7 (E30-S02). | E09-S18 |
+| D-M2-24 | Project Request creation is role-gated (Organization Administrator and Project Manager by default). | E09-S13 |
+| D-M2-25 | Expired codes: the current approver substitutes to approve, or rejects without substituting; after approval, M3 sourcing and purchasing documents are blocked until a Project Manager substitutes; flagged wherever the project appears. | E09-S18 |
+| D-M2-26 | A purchase order draws only against its immediate project (the sub-project). | M3 E13 |
+| D-M2-27 | Every document can be soft-deleted while draft; a Bin view is M7 (E30-S03). | E22-S02 |
+| D-M2-28 | One audit helper instead of twelve, behaviour-preserving. | E22-S03 |
 
 ## Defaults to confirm (Opus, 10 Oct 2026)
 
