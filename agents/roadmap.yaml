@@ -1202,7 +1202,7 @@ epics:
           - AUD-001
         dep:
           - E09-S13
-        st: todo
+        st: in_progress
 
   - id: E10
     name: Approvals
