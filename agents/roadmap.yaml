@@ -1125,8 +1125,9 @@ epics:
           - E09-S12
         st: done
       - id: E09-S13
-        t: 'Standalone requisition funding, who may assign one to a project, and master-code
-          re-check at approval (operator requirements pending; before the M2 PR)'
+        t: 'Standalone requisition funding, who may assign one to a project, master-code
+          re-check at approval, and one shared audit helper (operator requirements pending; before
+          the M2 PR)'
         k: ledger
         s: M
         tags:
