@@ -1158,7 +1158,7 @@ epics:
           - REQ-004
         dep:
           - E09-S13
-        st: todo
+        st: in_progress
       - id: E09-S16
         t: 'Sub-project funding: an approved requisition''s sub-project draws from its main
           project; funds return on cancel'
