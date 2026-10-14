@@ -51,7 +51,7 @@ from flo.modules.budget.schemas import (
     LedgerEntryRead,
     ReservationState,
 )
-from flo.modules.budget.transfers import post_legs
+from flo.modules.budget.transfers import post_legs as post_legs
 from flo.modules.budget.transfers import transfer as transfer
 from flo.modules.org.service import OrgService
 from flo.modules.projects.service import ProjectService
@@ -74,6 +74,7 @@ __all__ = [
     "ledger_query",
     "lock_balance",
     "post_entry",
+    "post_legs",
     "record_actual",
     "release_commitment",
     "release_reservation",

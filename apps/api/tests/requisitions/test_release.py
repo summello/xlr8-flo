@@ -41,7 +41,8 @@ def approved(db, price="60"):
 def releases(db, id):
     return sql(
         db,
-        "SELECT amount,reason FROM ledger_entry WHERE source_id=%s AND entry_type='release'",
+        "SELECT amount,reason FROM ledger_entry WHERE source_id=%s AND entry_type='release' "
+        "AND reason<>'approved'",  # the approval's own release moved funds to the sub-project
         (id,),
     )
 
@@ -75,9 +76,7 @@ def test_withdraw_after_approval_releases_once_and_abandons_sub_project(lifecycl
         "WHERE requisition_id=%s AND to_status='withdrawn'",
         (row.id,),
     ) == [(True,)]
-    assert sql(db, "SELECT reserved FROM project_balance WHERE project_id=%s", (p.id,)) == [
-        (Decimal(0),)
-    ]
+    assert sql(db, "SELECT sum(reserved) FROM project_balance") == [(Decimal(0),)]
     assert drift(db) == []
 
 
@@ -226,9 +225,11 @@ def test_reduce_to_releases_the_difference_once_then_cancel_releases_the_rest(li
         f"req:{row.id}:release:{state(db, row.id).reservation.funding_round}:reduce:7"
     )
     assert releases(db, row.id) == [(Decimal(-40), "reduced")]
-    assert sql(db, "SELECT idempotency_key FROM ledger_entry WHERE entry_type='release'") == [
-        (f"req:{row.id}:release:{state(db, row.id).reservation.funding_round}:reduce:7",)
-    ]
+    assert sql(
+        db,
+        "SELECT idempotency_key FROM ledger_entry WHERE entry_type='release' "
+        "AND reason<>'approved'",
+    ) == [(f"req:{row.id}:release:{state(db, row.id).reservation.funding_round}:reduce:7",)]
     assert reduce("60") is None  # replaying the same version releases nothing
     assert len(releases(db, row.id)) == 1
     for bad in ("61", "-1"):
@@ -237,9 +238,7 @@ def test_reduce_to_releases_the_difference_once_then_cancel_releases_the_rest(li
         assert error.value.checks["problem"] == "release_exceeds_reservation"
     command(db, row, "cancelled", reason=REASON)
     assert sorted(a for a, _ in releases(db, row.id)) == [Decimal(-60), Decimal(-40)]
-    assert sql(db, "SELECT reserved FROM project_balance WHERE project_id=%s", (p.id,)) == [
-        (Decimal(0),)
-    ]
+    assert sql(db, "SELECT sum(reserved) FROM project_balance") == [(Decimal(0),)]
     assert drift(db) == []
 
 
@@ -274,7 +273,11 @@ def test_repeated_reject_to_draft_releases_each_funding_round_once(lifecycle_db)
         if round_ == 1:
             edit_justification(db, row, "Reworded after the rejection")
             command(db, row)
-    keys = sql(db, "SELECT idempotency_key FROM ledger_entry WHERE entry_type='release'")
+    keys = sql(
+        db,
+        "SELECT idempotency_key FROM ledger_entry WHERE entry_type='release' "
+        "AND reason<>'approved'",
+    )
     assert len(set(keys)) == 2
     assert drift(db) == []
 
@@ -309,9 +312,12 @@ def test_two_concurrent_reductions_to_60_leave_60_twenty_runs(lifecycle_db):
             jobs = [pool.submit(reduce_on_own_connection, db, row, v, barrier) for v in (1, 2)]
             results = [job.result(timeout=60) for job in jobs]
         assert len([r for r in results if r is not None]) == 1
-        assert sql(db, "SELECT reserved FROM project_balance WHERE project_id=%s", (p.id,)) == [
-            (Decimal(60),)
-        ]
+        assert sql(
+            db,
+            "SELECT reserved FROM project_balance WHERE project_id=(SELECT project_id FROM "
+            "ledger_entry WHERE id=(SELECT reservation_entry_id FROM requisition WHERE id=%s))",
+            (row.id,),
+        ) == [(Decimal(60),)]
         assert releases(db, row.id) == [(Decimal(-40), "reduced")]
         assert drift(db) == []
 
@@ -322,7 +328,8 @@ def test_stops_take_project_balance_before_the_requisition(lifecycle_db, stop):
     holding the requisition lock: a stop that locks the requisition first (or skips the balance
     lock) leaves it locked and deadlocks against any balance-first path."""
     db, _ = lifecycle_db
-    p, row = approved(db, price="100")
+    _, row = approved(db, price="100")
+    sub = sql(db, "SELECT id FROM project WHERE generated_by_requisition_id=%s", (row.id,))[0][0]
     version = state(db, row.id).version
     scope = Scope(db[1])
     with (
@@ -331,7 +338,7 @@ def test_stops_take_project_balance_before_the_requisition(lifecycle_db, stop):
         ThreadPoolExecutor(1) as pool,
     ):
         with holder.transaction():
-            lock_balance(holder, scope, p.id)
+            lock_balance(holder, scope, sub)
             job = pool.submit(
                 stop_on_own_connection if stop == "cancel" else reduce_on_own_connection,
                 *((db, row, "cancelled", version) if stop == "cancel" else (db, row, 1, None, 60)),
@@ -352,6 +359,6 @@ def test_stops_take_project_balance_before_the_requisition(lifecycle_db, stop):
                     (db[1], row.id),
                 )
         job.result(timeout=60)
-    assert sql(db, "SELECT reserved FROM project_balance WHERE project_id=%s", (p.id,)) == [
+    assert sql(db, "SELECT sum(reserved) FROM project_balance") == [
         (Decimal(0) if stop == "cancel" else Decimal(60),)
     ]

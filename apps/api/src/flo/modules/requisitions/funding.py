@@ -9,9 +9,72 @@ import psycopg
 from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
-from flo.modules.budget.schemas import LedgerEntry
-from flo.modules.budget.service import lock_balance, release_reservation, reservation_remaining
+from flo.modules.budget.schemas import AllocationCreate, LedgerEntry
+from flo.modules.budget.service import (
+    lock_balance,
+    post_legs,
+    release_reservation,
+    reservation_remaining,
+)
+from flo.modules.org.service import today
+from flo.modules.projects.service import ProjectService
 from flo.modules.requisitions.models import RequisitionRepository
+
+
+def lock_funding(
+    conn: psycopg.Connection[tuple[object, ...]], scope: Scope, requisition_row: dict[str, object]
+) -> None:
+    """Lock the main project and the project holding the live reservation, in id order."""
+    ids = {cast(UUID, requisition_row["project_id"])} if requisition_row["project_id"] else set()
+    if requisition_row["reservation_entry_id"] is not None:
+        entry = cast(int, requisition_row["reservation_entry_id"])
+        ids.add(reservation_remaining(conn, scope, entry).project_id)
+    for project_id in sorted(ids):
+        lock_balance(conn, scope, project_id)
+
+
+def move_funds(
+    conn: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    requisition_row: dict[str, object],
+    *,
+    source_id: UUID,
+    target_id: UUID,
+    amount: Decimal,
+    key: str,
+    reason: str,
+    actor_id: UUID,
+) -> None:
+    """Transfer `amount` source to target in one balanced group (D-M2-19); caller holds the locks.
+
+    Legs carry the requisition's codes, so both entries read as the requisition's money.
+    """
+    projects = ProjectService(conn, scope)
+    codes = {
+        "department_code": str(requisition_row["department_code"]),
+        "ledger_account_code": str(requisition_row["ledger_account_code"]),
+    }
+    post_legs(
+        conn,
+        scope,
+        AllocationCreate.model_validate(
+            {
+                "amount": format(amount, "f"),
+                "currency": str(requisition_row["currency"]),
+                "effective_date": today(),
+                "reason": reason,
+                "evidence_ref": f"requisition:{requisition_row['number']}",
+            }
+        ),
+        actor_id,
+        key,
+        [
+            (projects.get(source_id).model_copy(update=codes), -amount, ":out"),
+            (projects.get(target_id).model_copy(update=codes), amount, ":in"),
+        ],
+        source_type="requisition",
+        source_id=cast(UUID, requisition_row["id"]),
+    )
 
 
 def release_live(

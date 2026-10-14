@@ -185,7 +185,8 @@ def test_final_approve_withdraw_forced_orders_twenty_runs(lifecycle_db, monkeypa
         )[0][0]
         releases = sql(
             db,
-            "SELECT count(*) FROM ledger_entry WHERE source_id=%s AND entry_type='release'",
+            "SELECT count(*) FROM ledger_entry WHERE source_id=%s AND entry_type='release' "
+            "AND reason<>'approved'",
             (row.id,),
         )[0][0]
         if first_action == "approve":
@@ -284,7 +285,8 @@ def test_concurrent_withdraw_releases_once(lifecycle_db):
     assert (
         sql(
             db,
-            "SELECT count(*) FROM ledger_entry WHERE source_id=%s AND entry_type='release'",
+            "SELECT count(*) FROM ledger_entry WHERE source_id=%s AND entry_type='release' "
+            "AND reason<>'approved'",
             (row.id,),
         )[0][0]
         == 1

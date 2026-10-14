@@ -154,9 +154,16 @@ def test_high_estimate_walks_two_levels_then_generates_sub_project(lifecycle_db)
     child = subprojects(db, row)[0][0]
     assert sql(
         db, "SELECT allocated,reserved FROM project_balance WHERE project_id=%s", (child,)
-    ) == [(Decimal(0), Decimal(0))]
-    assert reservations(db, child) == []
-    assert reservations(db, p.id) == [(Decimal(1500),)]
+    ) == [(Decimal(1500), Decimal(1500))]
+    # E09-S16: the reservation moved to the sub-project through a main -> sub transfer.
+    assert reservations(db, child) == [(Decimal(1500),)]
+    assert sql(
+        db,
+        "SELECT project_id,amount FROM ledger_entry WHERE entry_type='transfer' ORDER BY amount",
+    ) == [(p.id, Decimal(-1500)), (child, Decimal(1500))]
+    assert sql(
+        db, "SELECT allocated,reserved FROM project_balance WHERE project_id=%s", (p.id,)
+    ) == [(Decimal(500), Decimal(0))]
     assert drift(db) == []
 
 

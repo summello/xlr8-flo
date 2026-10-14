@@ -3214,6 +3214,54 @@
       },
       "recap": "Every checked permission code is now in PERMISSION_CODES and granted to a baseline role, with a Project Manager role and migration 0053 that records what it changes so downgrade restores exactly that. The catalogue gate scans keyword, TRANSITIONS, adapter and constant forms; project.view/edit are retired.",
       "title": "Roles and permission catalogue: every checked permission grantable, Project Manager role, budget governance decisions and user guide"
+    },
+    {
+      "story": "E09-S16",
+      "kind": "ledger",
+      "size": "L",
+      "tags": [
+        "money",
+        "concurrency"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "43c59831-1aaa-4b3d-a4ab-1b79573d60b4",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S16",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a139d4-73ec-7183-8e57-dd03a3b4957c",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "1b4f7384-72c5-48ef-96ac-8e83fbac7eff",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Final approval now releases the main-project reservation, transfers the amount main to sub in one balanced group and reserves it on the generated sub-project. Stop returns the remainder to the main project and amendments move the difference, all under both project locks.",
+      "title": "Sub-project funding: an approved requisition's sub-project draws from its main project; funds return on cancel"
     }
   ]
 }

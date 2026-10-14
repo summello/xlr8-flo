@@ -38,6 +38,8 @@ def post_legs(
     *,
     allow_negative: bool | None = None,
     poster: Callable[..., LedgerEntry] | None = None,
+    source_type: str = "transfer",
+    source_id: UUID | None = None,
 ) -> TransferRead:
     """Post one balanced group; the caller owns locks and the outer transaction."""
     repo = LedgerRepository(conn, scope)
@@ -52,8 +54,8 @@ def post_legs(
             entry_type=LedgerType.TRANSFER,
             amount=amount,
             currency=body.currency,
-            source_type="transfer",
-            source_id=group_id,
+            source_type=source_type,
+            source_id=source_id or group_id,
             transfer_group_id=group_id,
             effective_date=body.effective_date,
             actor_id=actor_id,

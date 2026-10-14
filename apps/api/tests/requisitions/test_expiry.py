@@ -88,10 +88,15 @@ def test_expiry_boundary_releases_once_and_abandons_sub_project_as_system(header
     )
     assert sql(
         db,
-        "SELECT amount,reason FROM ledger_entry WHERE source_id=%s AND entry_type='release'",
+        "SELECT amount,reason FROM ledger_entry WHERE source_id=%s AND entry_type='release' "
+        "AND reason<>'approved'",
         (old.id,),
     ) == [(Decimal(-60), "expired")]
-    key = sql(db, "SELECT idempotency_key FROM ledger_entry WHERE entry_type='release'")
+    key = sql(
+        db,
+        "SELECT idempotency_key FROM ledger_entry WHERE entry_type='release' "
+        "AND reason<>'approved'",
+    )
     assert key == [(f"req:{old.id}:release:{state(db, old.id).reservation.funding_round}:expired",)]
     event = sql(
         db,

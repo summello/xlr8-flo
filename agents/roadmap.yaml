@@ -1174,7 +1174,7 @@ epics:
           - FIN-011
         dep:
           - E09-S13
-        st: in_progress
+        st: done
       - id: E09-S17
         t: Block governed actions until their approval workflow is published
         k: engine
@@ -1202,7 +1202,7 @@ epics:
           - AUD-001
         dep:
           - E09-S13
-        st: in_progress
+        st: review
 
   - id: E10
     name: Approvals

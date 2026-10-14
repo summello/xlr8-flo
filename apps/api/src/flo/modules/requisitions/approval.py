@@ -33,7 +33,7 @@ from flo.modules.org.service import OrgService, today
 from flo.modules.projects.schemas import ProjectRead
 from flo.modules.projects.service import ProjectService, create_generated_project, depth_of
 from flo.modules.requisitions import revisions
-from flo.modules.requisitions.funding import release_live
+from flo.modules.requisitions.funding import lock_funding, move_funds, release_live
 from flo.modules.requisitions.lifecycle import authorize, pending_terminal, read_row, write_status
 from flo.modules.requisitions.models import RequisitionRepository
 from flo.modules.requisitions.schemas import invalid
@@ -187,15 +187,7 @@ def _amendment_outcome(
     if outcome not in names:
         raise conflict("invalid_transition", "This approval outcome is unavailable.")
     status, label = names[outcome]
-    before = read_row(repo, document_id)
-    if before["reservation_entry_id"] is not None:
-        lock_balance(
-            conn,
-            scope,
-            reservation_remaining(
-                conn, scope, cast(int, before["reservation_entry_id"])
-            ).project_id,
-        )
+    lock_funding(conn, scope, read_row(repo, document_id))
     row = read_row(repo, document_id, lock=True)
     revision = repo.execute(
         "SELECT id,status,snapshot FROM requisition_revision WHERE org_id=%(org_id)s AND id=%(id)s"
@@ -211,8 +203,14 @@ def _amendment_outcome(
         if row["reservation_entry_id"] is not None:
             held = reservation_remaining(conn, scope, cast(int, row["reservation_entry_id"]))
             if held.remaining != total:
-                release_live(conn, scope, row, "resubmit", actor_id=context.actor_id)
                 round_ = cast(int, row["funding_round"]) + 1
+                # Sub-project funded (E09-S16): the difference moves main <-> sub (D-M2-19).
+                main_id = cast(UUID, row["project_id"])
+                delta = total - held.remaining
+                sub_funded = held.project_id != main_id
+                if sub_funded and delta > 0:
+                    _move(conn, scope, row, main_id, held.project_id, delta, round_, context)
+                release_live(conn, scope, row, "resubmit", actor_id=context.actor_id)
                 entry = reserve(
                     conn,
                     scope,
@@ -228,6 +226,8 @@ def _amendment_outcome(
                     idempotency_key=f"req:{document_id}:reserve:{round_}",
                 )
                 ledger_entry = entry.id
+                if sub_funded and delta < 0:
+                    _move(conn, scope, row, held.project_id, main_id, -delta, round_, context)
                 repo.execute(
                     "UPDATE requisition SET funding_round=%(round)s,reservation_entry_id=%(entry)s"
                     " WHERE org_id=%(org_id)s AND id=%(id)s",
@@ -249,6 +249,86 @@ def _amendment_outcome(
         ledger_entry_id=ledger_entry,
         decision_id=context.decision_id,
     )
+
+
+def _move(
+    conn: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    row: dict[str, object],
+    source_id: UUID,
+    target_id: UUID,
+    amount: Decimal,
+    round_: int,
+    context: OutcomeContext,
+) -> None:
+    move_funds(
+        conn,
+        scope,
+        row,
+        source_id=source_id,
+        target_id=target_id,
+        amount=amount,
+        key=f"req:{row['id']}:amend:{round_}",
+        reason=f"Requisition {row['number']} amended, funds moved between projects",
+        actor_id=context.actor_id,
+    )
+
+
+def _fund_sub_project(
+    conn: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    repo: RequisitionRepository,
+    row: dict[str, object],
+    sub: ProjectRead,
+    context: OutcomeContext,
+) -> int:
+    """Move an approved requisition's money onto its sub-project (D-M2-19, ACC-001).
+
+    The caller holds the main project's lock and the requisition row. Release the main-project
+    reservation, transfer main -> sub, reserve on the sub: the main project's allocated and
+    reserved each fall by the amount and its available is unchanged.
+    """
+    document_id = cast(UUID, row["id"])
+    main_id = cast(UUID, row["project_id"])
+    round_ = cast(int, row["funding_round"])
+    amount = cast(Decimal, row["estimate"])
+    # The sub-project is new and unreachable by other transactions; locking it second cannot
+    # deadlock, and the main project is already locked by the caller.
+    for project_id in sorted({main_id, sub.id}):
+        lock_balance(conn, scope, project_id)
+    release_live(conn, scope, row, "approved", actor_id=context.actor_id)
+    move_funds(
+        conn,
+        scope,
+        row,
+        source_id=main_id,
+        target_id=sub.id,
+        amount=amount,
+        key=f"req:{document_id}:fund:{round_}",
+        reason=f"Requisition {row['number']} approved, funds moved to sub-project",
+        actor_id=context.actor_id,
+    )
+    entry = reserve(
+        conn,
+        scope,
+        project_id=sub.id,
+        amount=amount,
+        currency=str(row["currency"]),
+        source_type="requisition",
+        source_id=document_id,
+        effective_date=today(),
+        actor_id=context.actor_id,
+        department_code=str(row["department_code"]),
+        ledger_account_code=str(row["ledger_account_code"]),
+        idempotency_key=f"req:{document_id}:reserve:{round_}:sub",
+    )
+    repo.execute(
+        "UPDATE requisition SET reservation_entry_id=%(entry)s"
+        " WHERE org_id=%(org_id)s AND id=%(id)s",
+        {"id": document_id, "entry": entry.id},
+    )
+    row["reservation_entry_id"] = entry.id
+    return entry.id
 
 
 def _money(amount: Decimal, currency: str) -> str:
@@ -451,7 +531,7 @@ def _approved(
             held = reservation_remaining(conn, scope, cast(int, row["reservation_entry_id"]))
             if held.remaining != estimate or held.project_id != target_id:
                 raise _mismatch(document_id, f"remaining {held.remaining}, estimate {estimate}")
-    if new_project or assigned is not None:
+    if new_project:
         round_ = cast(int, row["funding_round"]) + 1
         entry = reserve(
             conn,
@@ -474,6 +554,14 @@ def _approved(
             {"id": document_id, "project": target_id, "round": round_, "entry": entry_id},
         )
         row.update(project_id=target_id, funding_round=round_, reservation_entry_id=entry_id)
+    elif assigned is not None:
+        round_ = cast(int, row["funding_round"]) + 1
+        repo.execute(
+            "UPDATE requisition SET project_id=%(project)s,funding_round=%(round)s"
+            " WHERE org_id=%(org_id)s AND id=%(id)s",
+            {"id": document_id, "project": target_id, "round": round_},
+        )
+        row.update(project_id=target_id, funding_round=round_)
     extra: dict[str, object] = {"project_id": str(target_id), "reservation_entry_id": entry_id}
     if not new_project:
         try:
@@ -494,6 +582,8 @@ def _approved(
                 raise conflict("project_depth_exceeded", exc.detail or "Depth limit.") from exc
             raise
         extra["sub_project_id"] = str(sub.id)
+        entry_id = _fund_sub_project(conn, scope, repo, row, sub, context)
+        extra["reservation_entry_id"] = entry_id
     else:
         extra["created_project_id"] = str(target_id)
         extra["allocation_entry_id"] = allocation_entry_id

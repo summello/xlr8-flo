@@ -14,7 +14,7 @@ from flo.kernel.errors import ErrorCode, ProblemError, conflict
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.approvals.service import active_instance, preview_route, start, withdraw
-from flo.modules.budget.service import lock_balance, reservation_remaining, reserve
+from flo.modules.budget.service import get_balance, lock_balance, reservation_remaining, reserve
 from flo.modules.identity.service import (
     AuthorizationConnection,
     AuthorizationResolver,
@@ -24,7 +24,7 @@ from flo.modules.identity.service import (
 from flo.modules.org.service import OrgService, today
 from flo.modules.projects.service import abandon_generated, generated_for
 from flo.modules.requisitions import revisions
-from flo.modules.requisitions.funding import release_live
+from flo.modules.requisitions.funding import lock_funding, move_funds, release_live
 from flo.modules.requisitions.models import RequisitionRepository
 from flo.modules.requisitions.schemas import (
     RequisitionStatus,
@@ -405,10 +405,7 @@ def stop_approved(
                 actor_id=actor_id,
                 reason=f"Requisition {to}",
             )
-        before = read_row(repo, id)
-        if before["reservation_entry_id"] is not None:
-            held = reservation_remaining(conn, scope, cast(int, before["reservation_entry_id"]))
-            lock_balance(conn, scope, held.project_id)
+        lock_funding(conn, scope, read_row(repo, id))
         row = read_row(repo, id, lock=True)
         if row["status"] != "sourcing_in_progress":
             if system_actor:
@@ -428,9 +425,29 @@ def stop_approved(
                 "sourcing_started",
                 f"Sourcing has started on {row['number']}. Ask Procurement to cancel it.",
             )
+        held = (
+            reservation_remaining(conn, scope, cast(int, row["reservation_entry_id"]))
+            if row["reservation_entry_id"] is not None
+            else None
+        )
         entry = release_live(conn, scope, row, to, actor_id=actor_id)
         sub = generated_for(conn, scope, id)
         if sub is not None:
+            if held is not None and held.project_id == sub.id:
+                # Funded sub-project (E09-S16, D-M2-22): what is left goes back to the main project.
+                left = get_balance(conn, scope, sub.id)
+                if left.available > 0:
+                    move_funds(
+                        conn,
+                        scope,
+                        row,
+                        source_id=sub.id,
+                        target_id=cast(UUID, row["project_id"]),
+                        amount=left.available,
+                        key=f"req:{id}:unfund:{row['funding_round']}",
+                        reason=f"Requisition {row['number']} {to}, funds returned to project",
+                        actor_id=actor_id,
+                    )
             abandon_generated(
                 conn,
                 scope,

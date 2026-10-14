@@ -91,7 +91,9 @@ def test_graph_after_submit_approve_attachment_and_note(lifecycle_db):
     assert ledger["relation"] == "reserves" and ledger["currency"] == "USD"
     assert ledger["amount"] == "60.0000"
     assert ledger["label"].endswith("Reservation 60.00 USD")
-    assert ledger["href"] == f"/projects/{p.id}/dashboard?bucket=all&entry={ledger['id']}#ledger"
+    # The live reservation sits on the generated sub-project (E09-S16).
+    sub_id = by_kind["generated_project"]["id"]
+    assert ledger["href"] == f"/projects/{sub_id}/dashboard?bucket=all&entry={ledger['id']}#ledger"
     assert by_kind["attachment"]["relation"] == "attached"
     assert by_kind["note"]["relation"] == "noted"
     assert {(e["from"], e["to"], e["relation"]) for e in body["edges"]} == {
@@ -105,7 +107,7 @@ def test_withdraw_after_approval_shows_release_and_abandoned_sub_project(lifecyc
     command(db, row, "withdrawn")
     body = graph(db, row)
     relations = {n.relation for n in body.nodes if n.kind == "ledger_entry"}
-    assert relations == {"reserves", "releases"}
+    assert relations == {"reserves", "releases", "transfer"}
     release = next(n for n in body.nodes if n.relation == "releases")
     assert release.label.endswith("Release (60.00) USD") and release.amount == "-60.0000"
     sub = next(n for n in body.nodes if n.kind == "generated_project")

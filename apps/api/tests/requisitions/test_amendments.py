@@ -141,9 +141,8 @@ def test_material_increase_stays_pending_until_approved(lifecycle_db):
     assert done.reservation.remaining == "100.0000" and done.reservation.funding_round == 2
     assert revision(db, row.id, no) == ("applied", "Supplier raised the price")
     current_check(db, row.id)
-    assert sql(db, "SELECT reserved FROM project_balance WHERE project_id=%s", (p.id,)) == [
-        (Decimal(100),)
-    ]
+    # The reservation lives on the sub-project (E09-S16); the main project holds none.
+    assert sql(db, "SELECT sum(reserved) FROM project_balance") == [(Decimal(100),)]
     assert [
         e[0]
         for e in sql(
@@ -160,7 +159,7 @@ def test_increase_beyond_available_funds_fails_the_decision_and_changes_nothing(
     db, _ = lifecycle_db
     p, row = approved(db)
     amend(db, row, "100")
-    sql(db, "UPDATE project_balance SET allocated=90 WHERE project_id=%s RETURNING 1", (p.id,))
+    sql(db, "UPDATE project_balance SET allocated=20 WHERE project_id=%s RETURNING 1", (p.id,))
     with pytest.raises(ProblemError) as error:
         approve(db, row)
     assert error.value.code == ErrorCode.INSUFFICIENT_BUDGET
@@ -193,17 +192,18 @@ def test_decrease_releases_the_round_once_and_reserves_the_new_total(lifecycle_d
     assert done.reservation.remaining == "70.0000" and done.reservation.funding_round == 2
     keys = sql(
         db,
-        "SELECT entry_type,idempotency_key,amount FROM ledger_entry WHERE source_id=%s ORDER BY id",
+        "SELECT entry_type,idempotency_key,amount FROM ledger_entry WHERE source_id=%s "
+        "AND entry_type<>'transfer' ORDER BY id",
         (row.id,),
     )
     assert [(k[0], k[1]) for k in keys] == [
         ("reservation", f"req:{row.id}:reserve:1"),
+        ("release", f"req:{row.id}:release:1:approved"),
+        ("reservation", f"req:{row.id}:reserve:1:sub"),
         ("release", f"req:{row.id}:release:1:resubmit"),
         ("reservation", f"req:{row.id}:reserve:2"),
     ]
-    assert sql(db, "SELECT reserved FROM project_balance WHERE project_id=%s", (p.id,)) == [
-        (Decimal(70),)
-    ]
+    assert sql(db, "SELECT sum(reserved) FROM project_balance") == [(Decimal(70),)]
     assert drift(db) == []
 
 
@@ -256,10 +256,8 @@ def test_cancel_with_an_amendment_running_withdraws_it_first(lifecycle_db):
         db,
         "SELECT amount,reason FROM ledger_entry WHERE source_id=%s AND entry_type='release'",
         (row.id,),
-    ) == [(Decimal(-60), "cancelled")]
-    assert sql(db, "SELECT reserved FROM project_balance WHERE project_id=%s", (p.id,)) == [
-        (Decimal(0),)
-    ]
+    ) == [(Decimal(-60), "approved"), (Decimal(-60), "cancelled")]
+    assert sql(db, "SELECT sum(reserved) FROM project_balance") == [(Decimal(0),)]
 
 
 def test_requester_withdraws_a_running_amendment_and_others_cannot(lifecycle_db):

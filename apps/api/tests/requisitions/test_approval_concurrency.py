@@ -71,9 +71,10 @@ def test_two_assigned_approvals_of_60_against_100_twenty_runs(lifecycle_db):
                 )
             )
         assert sorted(results) == ["insufficient", "success"]
-        assert sql(db, "SELECT reserved FROM project_balance WHERE project_id=%s", (p.id,)) == [
-            (Decimal(60),)
-        ]
+        # The winner's 60 moved to its sub-project; the main project keeps 40, reserved 0.
+        assert sql(
+            db, "SELECT allocated,reserved FROM project_balance WHERE project_id=%s", (p.id,)
+        ) == [(Decimal(40), Decimal(0))]
         statuses = sorted(
             RequisitionService(db[0], Scope(db[1])).get(r.id).status for r in (first, second)
         )

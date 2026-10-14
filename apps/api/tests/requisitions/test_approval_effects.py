@@ -119,16 +119,15 @@ def test_project_linked_approval_generates_active_sub_project(lifecycle_db):
         (row.id,),
     )
     assert sub == [(p.id, "active", db[3], p.bu_id, "USD", "Request")]
-    # The submit-time reservation stands: no new ledger row, parent unchanged.
-    assert sql(db, "SELECT count(*) FROM ledger_entry WHERE source_id=%s", (row.id,)) == [(1,)]
-    assert (
-        sql(db, "SELECT reserved,allocated FROM project_balance WHERE project_id=%s", (p.id,))
-        == before
-    )
+    # Reserve at submit, release, two transfer legs, reserve on the sub-project (E09-S16).
+    assert sql(db, "SELECT count(*) FROM ledger_entry WHERE source_id=%s", (row.id,)) == [(5,)]
+    assert sql(
+        db, "SELECT allocated,reserved FROM project_balance WHERE project_id=%s", (p.id,)
+    ) == [(before[0][1] - Decimal(60), Decimal(0))]
     child = sql(db, "SELECT id FROM project WHERE generated_by_requisition_id=%s", (row.id,))[0][0]
     assert sql(
         db, "SELECT allocated,reserved FROM project_balance WHERE project_id=%s", (child,)
-    ) == [(Decimal(0), Decimal(0))]
+    ) == [(Decimal(60), Decimal(60))]
     events = sql(
         db,
         "SELECT decision_id FROM requisition_status_event "
@@ -266,9 +265,10 @@ def test_standalone_assigned_reserves_on_project_and_generates_sub_project(lifec
     approve(db, row, p.id)
     after = state(db, row.id)
     assert after.status == "sourcing_in_progress" and after.project_id == p.id
-    assert sql(db, "SELECT reserved FROM project_balance WHERE project_id=%s", (p.id,)) == [
-        (Decimal(60),)
-    ]
+    # The money sits on the sub-project (E09-S16): main allocated 100 -> 40, nothing reserved.
+    assert sql(
+        db, "SELECT allocated,reserved FROM project_balance WHERE project_id=%s", (p.id,)
+    ) == [(Decimal(40), Decimal(0))]
     assert sql(
         db, "SELECT parent_id,status FROM project WHERE generated_by_requisition_id=%s", (row.id,)
     ) == [(p.id, "active")]
@@ -362,7 +362,7 @@ def test_auto_approval_at_submit_runs_the_same_effects(lifecycle_db):
     assert sql(
         db, "SELECT parent_id,status FROM project WHERE generated_by_requisition_id=%s", (row.id,)
     ) == [(p.id, "active")]
-    assert sql(db, "SELECT count(*) FROM ledger_entry WHERE source_id=%s", (row.id,)) == [(1,)]
+    assert sql(db, "SELECT count(*) FROM ledger_entry WHERE source_id=%s", (row.id,)) == [(5,)]
     # The status event carries no decision for an automatic approval.
     assert sql(
         db,
