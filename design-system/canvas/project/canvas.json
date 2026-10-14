@@ -4989,6 +4989,16 @@
       "w": 1440,
       "x": 0,
       "y": 34718
+    },
+    "PoDetailProjects.dc.html": {
+      "x": 1520,
+      "y": 20675,
+      "w": 1440,
+      "h": 1750,
+      "expand": "fill",
+      "is_interactive": true,
+      "page": "purchase-orders",
+      "title": "PO Detail, Two Projects"
     }
   },
   "createdOnFiles": {
@@ -6131,7 +6141,8 @@
     "PoDomainLoading.dc.html",
     "PoDomainError.dc.html",
     "PoDomainFailing.dc.html",
-    "PoDomainEmpty.dc.html"
+    "PoDomainEmpty.dc.html",
+    "PoDetailProjects.dc.html"
   ],
   "pages": [
     {

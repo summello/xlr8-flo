@@ -371,7 +371,7 @@ Three open comments on the published canvas. Where a comment left a choice open,
 192. **PO Editor cap raised** from 1120 to 1600px, centred, full width below that (the operator chose a wider centred cap). Auto margins in a flex column shrink an item to its content, so the width is stated: `width:100%` with the cap.
 193. **Bid Comparison comment of 9 Oct** (overlapping lowest highlight; colour for wins and failures): the operator says it has been addressed and asked for it to be resolved. No board change.
 194. **New classes in `xlr8flo.css` (tokens only):** `.po-hdr .po-lanes .po-lane .po-body .po-col .stepper.is-linked .po-ver`.
-195. **Open, asked back to the operator:** what `Budget Summary for the immediate Project` should contain beyond this PO's reserved, committed and released. The board names the project and shows no project-level figure, because inventing one on a money board would settle a rule (E09-S13 also decides which project a commitment lands on, decision 162).
+195. **Budget Summary is per project** (operator, 14 Oct 2026): the immediate project of the PO's lines, not the parent. One block per project invoked on the PO, four figures: `Committed`, `This PO`, `Available After Issue`, `Project Actual`. A line's project is shown beneath its description; board `PoDetailProjects` shows a PO that touches two. The definitions of the four figures are assumptions to confirm (`pages/purchase-orders.md` section 7 item 9).
 
 ## 7. Findings to feed back into MASTER.md (amended 9 Oct 2026, see 97)
 

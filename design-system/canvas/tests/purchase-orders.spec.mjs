@@ -40,7 +40,7 @@ test.describe('the page on the canvas', () => {
   test('Purchase Orders page with widths and states, none overlapping', () => {
     const mine = Object.entries(canvas.boards).filter(([, b]) => b.page === 'purchase-orders');
     expect(canvas.pages.find((p) => p.id === 'purchase-orders').name).toBe('Purchase Orders');
-    expect(mine.length).toBe(83);
+    expect(mine.length).toBe(84);
     for (const f of ['PoListW375', 'PoCreateW375', 'PoEditorW375', 'PoDetailW375', 'PoChangeW375', 'PoIssueW375']) expect(canvas.boards[`${f}.dc.html`].w, f).toBe(375);
     for (let i = 0; i < mine.length; i++) for (let j = i + 1; j < mine.length; j++) {
       const a = mine[i][1], c = mine[j][1];
@@ -190,16 +190,26 @@ test.describe('detail, issue and the transmission log', () => {
     await expect(page.getByRole('alertdialog').getByRole('alert')).toContainText('Nothing was issued or sent, no money was committed');
     await expect(page.getByRole('alertdialog').getByRole('button', { name: 'Try Again' })).toBeEnabled();
   });
-  test('the budget card: reserved before issue, committed after, released once on cancel', async ({ page }) => {
-    const get = async (file) => { await open(page, `/${file}.dc.html`); const t = await page.locator('section', { has: page.getByRole('heading', { name: 'Budget' }) }).innerText(); return t.replace(/\s+/g, ' '); };
+  test('the budget summary is per project: committed, this PO, available after issue, project actual', async ({ page }) => {
+    const get = async (file) => { await open(page, `/${file}.dc.html`); const t = await page.locator('section', { has: page.getByRole('heading', { name: 'Budget Summary' }) }).innerText(); return t.replace(/\s+/g, ' '); };
     const before = await get('PoDetail');
-    expect(before).toMatch(/reserved for this po 175,665\.58\s*usd committed 0\.00\s*usd released 0\.00\s*usd/i);
+    expect(before).toMatch(/Plant 4 Line Retrofit committed 812,400\.00\s*usd this po 175,665\.58\s*usd reserved available after issue 693,337\.87\s*usd project actual 301,250\.00\s*usd/i);
     const after = await get('PoDetailIssued');
-    expect(after).toMatch(/reserved for this po 0\.00\s*usd committed 175,665\.58\s*usd released 0\.00\s*usd/i);
+    expect(after).toMatch(/this po 175,665\.58\s*usd committed available after issue 693,337\.87\s*usd/i);
     const gone = await get('PoDetailCancelled');
-    expect(gone).toMatch(/reserved for this po 0\.00\s*usd committed 0\.00\s*usd released 175,665\.58\s*usd/i);
+    expect(gone).toMatch(/this po 0\.00\s*usd released 175,665\.58\s*usd available after release 869,003\.45\s*usd/i);
     const v2 = await get('PoDetailChanged');
-    expect(v2).toMatch(/committed 178,765\.58\s*usd/i);                                                      // 175,665.58 + 3,100.00
+    expect(v2).toMatch(/this po 178,765\.58\s*usd committed available after issue 690,237\.87\s*usd/i);      // 175,665.58 + 3,100.00
+  });
+  test('a PO that touches two projects shows one block per project, and they add up to the PO', async ({ page }) => {
+    await open(page, '/PoDetailProjects.dc.html');
+    const sec = page.locator('section', { has: page.getByRole('heading', { name: 'Budget Summary' }) });
+    await expect(sec.locator('.po-proj')).toHaveCount(2);
+    const t = (await sec.innerText()).replace(/\s+/g, ' ');
+    expect(t).toMatch(/Plant 4 Line Retrofit committed 812,400\.00\s*usd this po 1\d\d,\d{3}\.\d\d\s*usd/i);
+    expect(t).toMatch(/Packaging Line 2 committed 228,000\.00\s*usd this po 1,918\.27\s*usd/i);
+    const nums = [...t.matchAll(/this po ([\d,]+\.\d\d)\s*usd/gi)].map((m) => cents(m[1]));
+    expect(nums.reduce((a, b) => a + b, 0)).toBe(lineTotals().reduce((a, b) => a + b, 0));
   });
   test('every transmission state is an icon plus words', async ({ page }) => {
     for (const [file, word] of [['PoDetailIssued', 'Email Delivered'], ['PoDetailQueued', 'Email Queued'], ['PoDetailBounced', 'Email Bounced'], ['PoDetailSuppressed', 'Address Suppressed']]) {

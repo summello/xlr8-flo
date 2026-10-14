@@ -890,3 +890,5 @@ button.cmp-gbtn .t-caption { text-transform: none; letter-spacing: 0; font-weigh
 .po-ver .pop { left: 0; right: auto; width: 360px; }
 .po-ver[open] > summary svg { transform: rotate(180deg); }
 @media (max-width: 1023px) { .po-ver > summary { min-height: 44px; } }
+.po-proj { display: flex; flex-direction: column; gap: 8px; }
+.po-proj + .po-proj { padding-top: 12px; border-top: 1px solid var(--border); }

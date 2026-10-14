@@ -97,7 +97,7 @@
           <div class="card-h"><h2 class="t-heading" id="h-pl">Lines</h2><span class="t-caption">Price, tax and freight apart</span></div>
           <div class="card-b" style="padding:12px 0 0">
             <div role="table" aria-label="Purchase order lines"><div class="row head cols-pln stack" role="row"><span role="columnheader">Description</span><span role="columnheader" class="r">Quantity</span><span role="columnheader" class="r hide-md">Unit Price</span><span role="columnheader" class="r">Price</span><span role="columnheader" class="r hide-md">Tax</span><span role="columnheader" class="r hide-md">Freight</span><span role="columnheader" class="r">Line Total</span></div>
-              <sc-for list="{{lines}}" as="l" hint-placeholder-count="3"><div class="row cols-pln stack" role="row" style="min-height:56px"><div role="cell" class="stack-main"><span style="font-weight:520">{{l.d}}</span><div class="t-caption">{{l.kind}} · {{l.u}}</div></div><span role="cell" class="num r" data-label="Quantity">{{l.q}} {{l.u}}</span><span role="cell" class="num r hide-md" data-label="Unit Price"><span class="w">{{l.uw}}</span><span class="d">{{l.ud}}</span></span><span role="cell" class="num r" data-label="Price"><span class="w">{{l.pw}}</span><span class="d">{{l.pd}}</span></span><span role="cell" class="num r hide-md" data-label="Tax"><span class="w">{{l.tw}}</span><span class="d">{{l.td}}</span></span><span role="cell" class="num r hide-md" data-label="Freight"><span class="w">{{l.fw}}</span><span class="d">{{l.fd}}</span></span><span role="cell" class="num r" data-label="Line Total"><span class="w">{{l.lw}}</span><span class="d">{{l.ld}}</span><span class="cur">USD</span></span></div></sc-for>
+              <sc-for list="{{lines}}" as="l" hint-placeholder-count="3"><div class="row cols-pln stack" role="row" style="min-height:56px"><div role="cell" class="stack-main"><span style="font-weight:520">{{l.d}}</span><div class="t-caption">{{l.kind}} · {{l.u}} · {{l.proj}}</div></div><span role="cell" class="num r" data-label="Quantity">{{l.q}} {{l.u}}</span><span role="cell" class="num r hide-md" data-label="Unit Price"><span class="w">{{l.uw}}</span><span class="d">{{l.ud}}</span></span><span role="cell" class="num r" data-label="Price"><span class="w">{{l.pw}}</span><span class="d">{{l.pd}}</span></span><span role="cell" class="num r hide-md" data-label="Tax"><span class="w">{{l.tw}}</span><span class="d">{{l.td}}</span></span><span role="cell" class="num r hide-md" data-label="Freight"><span class="w">{{l.fw}}</span><span class="d">{{l.fd}}</span></span><span role="cell" class="num r" data-label="Line Total"><span class="w">{{l.lw}}</span><span class="d">{{l.ld}}</span><span class="cur">USD</span></span></div></sc-for>
             </div>
             <div class="total-bar" role="group" aria-label="Totals"><span style="display:flex;flex-wrap:wrap;gap:4px 24px;align-items:center"><span><span class="t-caption">Subtotal </span><span class="num"><span class="w">{{t.pw}}</span><span class="d">{{t.pd}}</span></span></span><span><span class="t-caption">Tax </span><span class="num"><span class="w">{{t.tw}}</span><span class="d">{{t.td}}</span></span></span><span><span class="t-caption">Freight </span><span class="num"><span class="w">{{t.fw}}</span><span class="d">{{t.fd}}</span></span></span></span><span class="num"><span class="t-caption">PO Total </span><span class="w">{{t.lw}}</span><span class="d">{{t.ld}}</span><span class="cur">USD</span></span></div>
           </div>
@@ -137,13 +137,17 @@
 
         <div class="po-col">
           <section class="card" aria-labelledby="h-bud">
-            <div class="card-h"><h2 class="t-heading" id="h-bud">Budget Summary</h2><span class="t-caption">Plant 4 Line Retrofit</span></div>
+            <div class="card-h"><h2 class="t-heading" id="h-bud">Budget Summary</h2><span class="t-caption">Per project on this PO</span></div>
             <div class="card-b" style="display:flex;flex-direction:column;gap:12px">
-            <dl class="kv" style="margin:0;grid-template-columns:minmax(0,1fr) auto">
-              <dt class="t-label">Reserved for This PO</dt><dd class="amt" style="margin:0;text-align:right"><span class="w">{{bud.resW}}</span><span class="d">{{bud.resD}}</span><span class="cur">USD</span></dd>
-              <dt class="t-label">Committed</dt><dd class="amt" style="margin:0;text-align:right"><span class="w">{{bud.comW}}</span><span class="d">{{bud.comD}}</span><span class="cur">USD</span></dd>
-              <dt class="t-label">Released</dt><dd class="amt" style="margin:0;text-align:right"><span class="w">{{bud.relW}}</span><span class="d">{{bud.relD}}</span><span class="cur">USD</span></dd>
-            </dl>
+            <sc-for list="{{bud.rows}}" as="r" hint-placeholder-count="1"><div class="po-proj">
+              <h3 class="t-dense" style="margin:0;font-weight:560">{{r.name}}</h3>
+              <dl class="kv" style="margin:0;grid-template-columns:minmax(0,1fr) auto">
+                <dt class="t-label">Committed</dt><dd class="amt" style="margin:0;text-align:right"><span class="w">{{r.cW}}</span><span class="d">{{r.cD}}</span><span class="cur">USD</span></dd>
+                <dt class="t-label">This PO</dt><dd class="amt" style="margin:0;text-align:right"><span class="w">{{r.tW}}</span><span class="d">{{r.tD}}</span><span class="cur">USD</span><div class="t-caption">{{r.word}}</div></dd>
+                <dt class="t-label">{{bud.availLabel}}</dt><dd class="amt" style="margin:0;text-align:right"><span class="w">{{r.aW}}</span><span class="d">{{r.aD}}</span><span class="cur">USD</span></dd>
+                <dt class="t-label">Project Actual</dt><dd class="amt" style="margin:0;text-align:right"><span class="w">{{r.xW}}</span><span class="d">{{r.xD}}</span><span class="cur">USD</span></dd>
+              </dl>
+            </div></sc-for>
             <p class="t-dense" style="margin:0">{{bud.sentence}}</p>
             <p class="t-caption" style="margin:0">Approval never commits; issue does, once. Assumption, not yet confirmed: the project is the one that holds the reservation.</p>
             </div>
@@ -271,7 +275,7 @@
 </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"dark","options":["light","dark"]},"collapsed":{"editor":"enum","default":"auto","options":["auto","yes","no"]},"navOpen":{"editor":"boolean","default":false},"view":{"editor":"enum","default":"ready","options":["ready","loading","error","partial"]},"status":{"editor":"enum","default":"approved","options":["draft","approval_pending","approved","issued","cancelled"]},"tx":{"editor":"enum","default":"","options":["","delivered","queued","bounced","suppressed"]},"ver":{"editor":"enum","default":"1","options":["1","2"]},"dialog":{"editor":"enum","default":"","options":["","issue","cancel","resend"]},"dstate":{"editor":"enum","default":"","options":["","busy","error","missing"]},"sheet":{"editor":"enum","default":"","options":["","pdf","tx"]},"mode":{"editor":"enum","default":"all","options":["all","reduce"]},"$preview":{"width":1440,"height":2400}}'>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"dark","options":["light","dark"]},"collapsed":{"editor":"enum","default":"auto","options":["auto","yes","no"]},"navOpen":{"editor":"boolean","default":false},"view":{"editor":"enum","default":"ready","options":["ready","loading","error","partial"]},"status":{"editor":"enum","default":"approved","options":["draft","approval_pending","approved","issued","cancelled"]},"tx":{"editor":"enum","default":"","options":["","delivered","queued","bounced","suppressed"]},"ver":{"editor":"enum","default":"1","options":["1","2"]},"projects":{"editor":"enum","default":"one","options":["one","two"]},"dialog":{"editor":"enum","default":"","options":["","issue","cancel","resend"]},"dstate":{"editor":"enum","default":"","options":["","busy","error","missing"]},"sheet":{"editor":"enum","default":"","options":["","pdf","tx"]},"mode":{"editor":"enum","default":"all","options":["all","reduce"]},"$preview":{"width":1440,"height":2400}}'>
 class Component extends DCLogic {
   componentDidMount() {
     if ((this.props.collapsed ?? 'auto') === 'auto') {
@@ -494,12 +498,12 @@ class Component extends DCLogic {
   renderVals() {
     const st = this.state || {};
     const g = (k, d) => (st[k] !== undefined ? st[k] : (this.props[k] !== undefined && this.props[k] !== '' ? this.props[k] : d));
-    const view = g('view', 'ready'), status = g('status', 'approved'), txp = g('tx', ''), ver = Number(g('ver', 1)), dk = g('dialog', ''), sheet = g('sheet', ''), dstate = g('dstate', ''), role = g('role', 'buyer');
+    const view = g('view', 'ready'), status = g('status', 'approved'), txp = g('tx', ''), ver = Number(g('ver', 1)), dk = g('dialog', ''), sheet = g('sheet', ''), dstate = g('dstate', ''), role = g('role', 'buyer'), two = g('projects', 'one') === 'two';
     const { fmt, split, PS, TX, lines, totals, IC } = this.pd;
     const s = PS[status];
     const issued = status === 'issued';
     const sp = (n) => split(n);
-    const L = lines.map((l) => { const u = sp(l.unit), p = sp(l.price), t = sp(l.tax), fr = sp(l.freight), lt = sp(l.total); return { d: l.d, kind: l.kind, q: l.q, u: l.u, uw: u[0], ud: u[1], pw: p[0], pd: p[1], tw: t[0], td: t[1], fw: fr[0], fd: fr[1], lw: lt[0], ld: lt[1] }; });
+    const L = lines.map((l, i) => { const u = sp(l.unit), p = sp(l.price), t = sp(l.tax), fr = sp(l.freight), lt = sp(l.total); return { d: l.d, kind: l.kind, proj: two && i === 1 ? 'Packaging Line 2' : 'Plant 4 Line Retrofit', q: l.q, u: l.u, uw: u[0], ud: u[1], pw: p[0], pd: p[1], tw: t[0], td: t[1], fw: fr[0], fd: fr[1], lw: lt[0], ld: lt[1] }; });
     const T = { pw: sp(totals.price)[0], pd: sp(totals.price)[1], tw: sp(totals.tax)[0], td: sp(totals.tax)[1], fw: sp(totals.freight)[0], fd: sp(totals.freight)[1], lw: sp(totals.total)[0], ld: sp(totals.total)[1] };
     const LIFE = ['Draft', 'Approval Pending', 'Approved', 'Issued', 'Partially Delivered', 'Delivered', 'Accepted', 'Closed'];
     const idx = { draft: 0, approval_pending: 1, approved: 2, issued: 3, cancelled: 3 }[status];
@@ -518,6 +522,22 @@ class Component extends DCLogic {
     const latestWhen = txs[0] ? txs[0].when.split(',')[0] : '';
     const bud = issued ? (ver === 2 ? { r: 0, c: 178765.58, l: 0, s: 'Issued as version 2. The commitment rose by 3,100.00 USD, checked under a lock against the reservation at approval of the change order.' } : { r: 0, c: totals.total, l: 0, s: 'Issuing converted ' + fmt(totals.total) + ' USD of the reservation into a commitment on Plant 4 Line Retrofit, once. 17,346.55 USD stays reserved for PO-00263.' }) : cancelled ? { r: 0, c: 0, l: totals.total, s: 'Cancelling released ' + fmt(totals.total) + ' USD of unused commitment back to Plant 4 Line Retrofit, once. The commitment entry stays in the ledger and is reversed, never edited.' } : { r: totals.total, c: 0, l: 0, s: 'Issuing will convert ' + fmt(totals.total) + ' USD of the reservation into a commitment on Plant 4 Line Retrofit. Until then it is reserved, not committed.' };
     const bR = sp(bud.r), bC = sp(bud.c), bL = sp(bud.l);
+    // Budget Summary per project invoked on the PO (operator, 14 Oct 2026). Cents throughout. `free0` is what the project has left with nothing from this PO held against it.
+    const cts = (n) => Math.round(n * 100);
+    const PRJ = { 'Plant 4 Line Retrofit': { others: cts(812400), actual: cts(301250), free0: cts(869003.45) }, 'Packaging Line 2': { others: cts(228000), actual: cts(64100), free0: cts(412750) } };
+    const lineProj = (i) => (two && i === 1 ? 'Packaging Line 2' : 'Plant 4 Line Retrofit');
+    const perProj = {};
+    lines.forEach((l, i) => { const n = lineProj(i); perProj[n] = (perProj[n] || 0) + cts(l.total); });
+    if (ver === 2) perProj['Plant 4 Line Retrofit'] += cts(3100);
+    const money = (c) => { const x = sp(c / 100); return { w: x[0], d: x[1] }; };
+    const projRows = Object.keys(perProj).map((name) => {
+      const P0 = PRJ[name], mine = cancelled ? 0 : perProj[name];
+      const word = cancelled ? 'Released ' + fmt(perProj[name] / 100) + ' USD' : issued ? 'Committed' : 'Reserved';
+      const o = money(P0.others), t = money(mine), a = money(P0.free0 - mine), x = money(P0.actual);
+      return { name, cW: o.w, cD: o.d, tW: t.w, tD: t.d, word, aW: a.w, aD: a.d, xW: x.w, xD: x.d };
+    });
+    const availLabel = cancelled ? 'Available After Release' : 'Available After Issue';
+    const budSentence = two && !issued && !cancelled ? 'Issuing will convert ' + fmt(totals.total) + ' USD of the reservation into a commitment across 2 projects. Until then it is reserved, not committed.' : two && issued ? 'Issuing converted ' + fmt(ver === 2 ? totals.total + 3100 : totals.total) + ' USD of the reservation into a commitment across 2 projects, once.' : two && cancelled ? 'Cancelling released ' + fmt(totals.total) + ' USD of unused commitment across 2 projects, once. The commitment entries stay in the ledger and are reversed, never edited.' : bud.s;
     const can = { edit: status === 'draft', issue: status === 'approved', resend: issued && (eff === 'bounced' || eff === 'suppressed'), pdf: issued || cancelled, change: issued && ver === 1, cancel: issued };
     const notes = [{ t: 'Deliver before the plant shutdown on 20 Nov', vis: 'Sent to Vendor, on the PDF' }, { t: 'Approved over Cablecraft for the 48-hour support requirement', vis: 'Internal' }, { t: 'Servo drive datasheet, rev C.pdf', vis: 'Marked for the vendor. Not sent until scanning is available' }];
     const versions = ver === 2 || cancelled ? [{ name: 'Version 2, CO-1', when: '14 Oct 2026, 11:02', note: 'Commitment rose by 3,100.00 USD. Reapproved by amara.okafor@northwind.example.' }, { name: 'Version 1', when: '12 Oct 2026, 09:14', note: 'First issue. Its PDF and send stay readable.' }] : status === 'issued' ? [{ name: 'Version 1', when: '12 Oct 2026, 09:14', note: 'First issue. No change orders.' }] : [{ name: 'Version 1, draft', when: 'Today', note: 'Not issued yet.' }];
@@ -554,7 +574,7 @@ class Component extends DCLogic {
       banner: cancelled ? { on: true, cls: 'summary warning', d: IC.warn, title: 'Cancelled', text: 'This PO was cancelled on 14 Oct 2026 and is read-only. Its history, PDF and transmissions are kept.' } : eff === 'bounced' || eff === 'suppressed' ? { on: true, cls: 'summary', d: IC.x, title: 'Issued, but not delivered', text: 'The PO is issued and the money is committed, but the email to delivery@siemar.example bounced. Change the recipient, then resend the same version.' } : { on: false },
       c: { ord: { loading: view === 'loading', ok: view !== 'loading', error: false }, snt: { loading: view === 'loading', ok: view !== 'loading' && view !== 'partial', error: view === 'partial' }, log: { error: view === 'partial' } },
       snt: { ver: 'Version ' + ver + (issued || cancelled ? '' : ', not sent'), latest: latest.label + (latestWhen ? ', ' + latestWhen : ''), suppressed: eff === 'suppressed' },
-      bud: { resW: bR[0], resD: bR[1], comW: bC[0], comD: bC[1], relW: bL[0], relD: bL[1], sentence: bud.s }, lines: L, t: T, notes, versions, history, links,
+      bud: { sentence: budSentence, rows: projRows, availLabel }, lines: L, t: T, notes, versions, history, links,
       txs, hasTxs: txs.length > 0 && view !== 'partial', noTxs: txs.length === 0 && view !== 'partial', txs0: cur,
       openIssue: openFrom('issue'), openResend: openFrom('resend'), openCancel: openFrom('cancel'), changeRecipient: () => this.toast('Opens the vendor contacts. Fix the address, then resend.'),
       openPdf: (ev) => { this._opener = ev.currentTarget; this.setState({ sheet: 'pdf' }); }, downloadPdf: () => this.toast('PDF-00262-v' + ver + '.pdf downloaded. Generated from the stored snapshot.'),
