@@ -462,7 +462,7 @@ class IdentityAuthorizationService:
             return role
 
     def seed_baseline_roles(self) -> dict[RoleCode, Role]:
-        """Materialize the eleven explicit system roles for the current organization."""
+        """Materialize the twelve explicit system roles for the current organization."""
 
         seeded: dict[RoleCode, Role] = {}
         for code, name in BASELINE_ROLES:

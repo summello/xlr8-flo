@@ -79,13 +79,11 @@ def test_new_role_and_new_permission_are_default_deny(
         database,
         scope,
         user_id,
-        "project.view",
+        "requisition.view",
         AuthorizationTarget.organization(database.org_a),
     ) == (True, False)
 
-    database.connection.execute(
-        "INSERT INTO permission (code) VALUES ('future_module.execute')"
-    )
+    database.connection.execute("INSERT INTO permission (code) VALUES ('future_module.execute')")
     with service_for(database, scope, "default-deny-admin") as service:
         roles = service.seed_baseline_roles()
         service.grant_role(
@@ -160,7 +158,7 @@ def test_project_grant_recurses_to_roll_down_descendants_without_sibling_leak(
     bu_id, root, child, grandchild, sibling = (uuid4() for _ in range(5))
     with service_for(database, scope, "project-tree-setup") as service:
         role = service.create_role("project-reader", "Project reader")
-        service.grant_permission(role.id, "project.view")
+        service.grant_permission(role.id, "requisition.view")
         service.register_scope(ScopeType.BU, bu_id, ScopeType.ORG, database.org_a)
         service.register_scope(ScopeType.PROJECT, root, ScopeType.BU, bu_id)
         service.register_scope(ScopeType.PROJECT, child, ScopeType.PROJECT, root)
@@ -173,13 +171,13 @@ def test_project_grant_recurses_to_roll_down_descendants_without_sibling_leak(
         )
 
     assert check(
-        database, scope, user_id, "project.view", AuthorizationTarget(ScopeType.PROJECT, root)
+        database, scope, user_id, "requisition.view", AuthorizationTarget(ScopeType.PROJECT, root)
     ) == (True, True)
     assert check(
         database,
         scope,
         user_id,
-        "project.view",
+        "requisition.view",
         AuthorizationTarget(ScopeType.PROJECT, grandchild, "project", grandchild),
     ) == (True, True)
 
@@ -194,7 +192,7 @@ def test_project_grant_recurses_to_roll_down_descendants_without_sibling_leak(
         database,
         scope,
         sibling_user,
-        "project.view",
+        "requisition.view",
         AuthorizationTarget(ScopeType.PROJECT, grandchild, "project", grandchild),
     ) == (False, False)
 
@@ -210,7 +208,7 @@ def test_project_grant_recurses_to_roll_down_descendants_without_sibling_leak(
         database,
         scope,
         user_id,
-        "project.view",
+        "requisition.view",
         AuthorizationTarget(ScopeType.PROJECT, grandchild, "project", grandchild),
     ) == (False, False)
 
@@ -224,7 +222,7 @@ def test_bu_grant_contains_projects_even_when_project_roll_down_is_disabled(
     bu_id, parent, child = uuid4(), uuid4(), uuid4()
     with service_for(database, scope, "bu-project-setup") as service:
         role = service.create_role("bu-reader", "BU reader")
-        service.grant_permission(role.id, "project.view")
+        service.grant_permission(role.id, "requisition.view")
         service.register_scope(ScopeType.BU, bu_id, ScopeType.ORG, database.org_a)
         service.register_scope(ScopeType.PROJECT, parent, ScopeType.BU, bu_id)
         service.register_scope(
@@ -236,7 +234,7 @@ def test_bu_grant_contains_projects_even_when_project_roll_down_is_disabled(
         )
         service.grant_role(user_id, role.id, AuthorizationTarget(ScopeType.BU, bu_id))
     assert check(
-        database, scope, user_id, "project.view", AuthorizationTarget(ScopeType.PROJECT, child)
+        database, scope, user_id, "requisition.view", AuthorizationTarget(ScopeType.PROJECT, child)
     ) == (True, True)
 
 
@@ -249,7 +247,7 @@ def test_org_grant_contains_every_bu_and_project(
     bu_id, project_id = uuid4(), uuid4()
     with service_for(database, scope, "org-project-setup") as service:
         role = service.create_role("org-reader", "Organization reader")
-        service.grant_permission(role.id, "project.view")
+        service.grant_permission(role.id, "requisition.view")
         service.register_scope(ScopeType.BU, bu_id, ScopeType.ORG, database.org_a)
         service.register_scope(ScopeType.PROJECT, project_id, ScopeType.BU, bu_id)
         service.grant_role(
@@ -258,13 +256,13 @@ def test_org_grant_contains_every_bu_and_project(
             AuthorizationTarget.organization(database.org_a),
         )
     assert check(
-        database, scope, user_id, "project.view", AuthorizationTarget(ScopeType.BU, bu_id)
+        database, scope, user_id, "requisition.view", AuthorizationTarget(ScopeType.BU, bu_id)
     ) == (True, True)
     assert check(
         database,
         scope,
         user_id,
-        "project.view",
+        "requisition.view",
         AuthorizationTarget(ScopeType.PROJECT, project_id),
     ) == (True, True)
 
@@ -277,10 +275,10 @@ ROLE_CASES = (
     ("sourcing-specialist", "rfq.create", "purchase_order.create"),
     ("purchasing-user", "purchase_order.issue", "rfq.create"),
     ("vendor-manager", "vendor.edit", "budget.edit"),
-    ("budget-finance-user", "budget.transfer", "project.edit"),
+    ("budget-finance-user", "budget.transfer", "requisition.edit"),
     ("warehouse-asset-user", "asset.edit", "budget.edit"),
-    ("executive-viewer", "report.view", "project.edit"),
-    ("auditor", "audit.read", "project.edit"),
+    ("executive-viewer", "report.view", "requisition.edit"),
+    ("auditor", "audit.read", "requisition.edit"),
 )
 
 
@@ -289,9 +287,7 @@ def test_every_baseline_role_allows_only_its_explicit_permissions(
 ) -> None:
     database = authorization_database
     scope = Scope(database.org_a)
-    database.connection.execute(
-        "INSERT INTO permission (code) VALUES ('future_module.execute')"
-    )
+    database.connection.execute("INSERT INTO permission (code) VALUES ('future_module.execute')")
     with service_for(database, scope, "role-matrix") as service:
         roles = service.seed_baseline_roles()
         for role_name, allowed, denied in ROLE_CASES:
@@ -326,7 +322,7 @@ def test_revocation_changes_the_next_check_and_writes_before_after_audit(
     user_id = insert_identity(database, "revoked")
     with service_for(database, scope, "grant-audit") as service:
         role = service.create_role("immediate-revoke", "Immediate revoke")
-        service.grant_permission(role.id, "project.view")
+        service.grant_permission(role.id, "requisition.view")
         assignment = service.grant_role(
             user_id, role.id, AuthorizationTarget.organization(database.org_a)
         )
@@ -334,7 +330,7 @@ def test_revocation_changes_the_next_check_and_writes_before_after_audit(
         database,
         scope,
         user_id,
-        "project.view",
+        "requisition.view",
         AuthorizationTarget.organization(database.org_a),
     ) == (True, True)
 
@@ -344,7 +340,7 @@ def test_revocation_changes_the_next_check_and_writes_before_after_audit(
         database,
         scope,
         user_id,
-        "project.view",
+        "requisition.view",
         AuthorizationTarget.organization(database.org_a),
     ) == (False, False)
 
@@ -377,8 +373,8 @@ def test_permission_grant_and_revoke_each_write_before_after_audit(
     scope = Scope(database.org_a)
     with service_for(database, scope, "permission-audit") as service:
         role = service.create_role("permission-audit", "Permission audit")
-        assert service.grant_permission(role.id, "project.view")
-        assert service.revoke_permission(role.id, "project.view")
+        assert service.grant_permission(role.id, "requisition.view")
+        assert service.revoke_permission(role.id, "requisition.view")
 
     with tenant_transaction(database.connection, scope):
         rows = database.connection.execute(
@@ -389,11 +385,11 @@ def test_permission_grant_and_revoke_each_write_before_after_audit(
         (
             "role.permission.grant",
             {"permission": None},
-            {"permission": "project.view"},
+            {"permission": "requisition.view"},
         ),
         (
             "role.permission.revoke",
-            {"permission": "project.view"},
+            {"permission": "requisition.view"},
             {"permission": None},
         ),
     ]
@@ -407,16 +403,14 @@ def test_rls_and_scoped_queries_hide_another_organizations_grants(
     scope_b = Scope(database.org_b)
     with service_for(database, scope_b, "foreign-org-setup") as service:
         role = service.create_role("foreign-reader", "Foreign reader")
-        service.grant_permission(role.id, "project.view")
-        service.grant_role(
-            user_id, role.id, AuthorizationTarget.organization(database.org_b)
-        )
+        service.grant_permission(role.id, "requisition.view")
+        service.grant_role(user_id, role.id, AuthorizationTarget.organization(database.org_b))
 
     assert check(
         database,
         Scope(database.org_a),
         user_id,
-        "project.view",
+        "requisition.view",
         AuthorizationTarget.organization(database.org_a),
     ) == (False, False)
 

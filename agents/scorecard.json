@@ -3165,6 +3165,55 @@
       },
       "recap": "Adds tests/requisitions/test_exit_criterion.py: a requisition above 1000 walks two approval levels, then generates its sub-project with the submit-time reservation intact; 300 takes one level; a failing sub-project insert rolls the final approval back. Test-only, no production change.",
       "title": "M2 exit criterion end to end: a requisition through a multi-level conditional workflow to approval, sub-project and reservation"
+    },
+    {
+      "story": "E09-S13",
+      "kind": "security",
+      "size": "M",
+      "tags": [
+        "auth",
+        "security",
+        "migration"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 4,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "cf482464-b5e0-42c3-9e2b-fa498dacc9ef",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S13",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a138f1-c804-7fc2-aee6-76876bb7d287",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "1b4f7384-72c5-48ef-96ac-8e83fbac7eff",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Every checked permission code is now in PERMISSION_CODES and granted to a baseline role, with a Project Manager role and migration 0053 that records what it changes so downgrade restores exactly that. The catalogue gate scans keyword, TRANSITIONS, adapter and constant forms; project.view/edit are retired.",
+      "title": "Roles and permission catalogue: every checked permission grantable, Project Manager role, budget governance decisions and user guide"
     }
   ]
 }

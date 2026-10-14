@@ -1143,7 +1143,7 @@ epics:
           - TEN-010
         dep:
           - E09-S12
-        st: review
+        st: done
       - id: E09-S15
         t: 'Project Requests: own document type, workflow, permission and name; sponsors;
           abandoned on cancel and kept out of budget totals'

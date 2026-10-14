@@ -522,7 +522,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E08-S03** Import batch record, idempotent re-import by external key, async with progress | E08 | engine | M | IMP-008, IMP-009, IMP-012, PERF-004 | ~~E08-S02~~ |
 | ✅ | **E08-S04** Project and budget import templates end to end | E08 | crud | M | PROJ-001, IMP-001 | ~~E08-S03~~, ~~E07-S03~~ |
 
-#### M2 — Governed demand · 26/31 done
+#### M2 — Governed demand · 27/31 done
 
 > Requisitions that reserve real money, and the approval engine that authorizes them.
 
@@ -541,11 +541,11 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E09-S11** Requisition screens: create, lines, submit, track, quantity rollup | E09 | ui | L | REQ-015, UX-003, UX-004 | ~~E09-S09~~, ~~E04-S03~~, ~~E09-S08~~, ~~E10-S06~~ |
 | ✅ | **E09-S12** Resubmit and amendment screens: review changes, funding effect, version lineage | E09 | ui | L | REQ-012, APR-015, DATA-002, UX-003 | ~~E09-S08~~, ~~E09-S11~~ |
 | ✅ | **E09-S14** M2 exit criterion end to end: a requisition through a multi-level conditional workflow to approval, sub-project and reservation | E09 | test | S | WF-002, WF-003, REQ-002, ACC-001 | ~~E09-S12~~ |
-| 👀 | **E09-S13** Roles and permission catalogue: every checked permission grantable, Project Manager role, budget governance decisions and user guide | E09 | security | M | USR-007, TEN-010 | ~~E09-S12~~ |
-| ⬜ | **E09-S15** Project Requests: own document type, workflow, permission and name; sponsors; abandoned on cancel and kept out of budget totals | E09 | engine | L | REQ-004 | E09-S13 |
-| ⬜ | **E09-S16** Sub-project funding: an approved requisition's sub-project draws from its main project; funds return on cancel | E09 | ledger | L | REQ-002, ACC-001, WF-003, FIN-011 | E09-S13 |
-| ⬜ | **E09-S17** Block governed actions until their approval workflow is published | E09 | engine | M | BUD-007, WF-001 | E09-S13, E09-S15 |
-| ⬜ | **E09-S18** Expired master codes: flag, substitute at approval, block downstream; no code changes by amendment | E09 | engine | L | AUD-001 | E09-S13 |
+| ✅ | **E09-S13** Roles and permission catalogue: every checked permission grantable, Project Manager role, budget governance decisions and user guide | E09 | security | M | USR-007, TEN-010 | ~~E09-S12~~ |
+| ⬜ | **E09-S15** Project Requests: own document type, workflow, permission and name; sponsors; abandoned on cancel and kept out of budget totals | E09 | engine | L | REQ-004 | ~~E09-S13~~ |
+| ⬜ | **E09-S16** Sub-project funding: an approved requisition's sub-project draws from its main project; funds return on cancel | E09 | ledger | L | REQ-002, ACC-001, WF-003, FIN-011 | ~~E09-S13~~ |
+| ⬜ | **E09-S17** Block governed actions until their approval workflow is published | E09 | engine | M | BUD-007, WF-001 | ~~E09-S13~~, E09-S15 |
+| ⬜ | **E09-S18** Expired master codes: flag, substitute at approval, block downstream; no code changes by amendment | E09 | engine | L | AUD-001 | ~~E09-S13~~ |
 | ✅ | **E10-S01** Workflow definition schema, versioning, active-document version pinning | E10 | migration | L | APR-011, ACC-007 | ~~E03-S04~~ |
 | ✅ | **E10-S02** Condition evaluator over any document attribute including amount and custom fields | E10 | engine | L | APR-005, APR-010 | ~~E10-S01~~ |
 | ✅ | **E10-S03** Graph validation: cycle detection, unreachable steps, duplicate approvals, depth limit | E10 | engine | M | APR-006, APR-007, APR-008, APR-012 | ~~E10-S01~~, ~~E10-S02~~ |
