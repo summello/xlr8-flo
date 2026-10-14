@@ -544,7 +544,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E09-S13** Roles and permission catalogue: every checked permission grantable, Project Manager role, budget governance decisions and user guide | E09 | security | M | USR-007, TEN-010 | ~~E09-S12~~ |
 | ✅ | **E09-S15** Project Requests: own document type, workflow, permission and name; sponsors; abandoned on cancel and kept out of budget totals | E09 | engine | L | REQ-004 | ~~E09-S13~~ |
 | ✅ | **E09-S16** Sub-project funding: an approved requisition's sub-project draws from its main project; funds return on cancel | E09 | ledger | L | REQ-002, ACC-001, WF-003, FIN-011 | ~~E09-S13~~ |
-| ⬜ | **E09-S17** Block governed actions until their approval workflow is published | E09 | engine | M | BUD-007, WF-001 | ~~E09-S13~~, ~~E09-S15~~ |
+| 🔨 | **E09-S17** Block governed actions until their approval workflow is published | E09 | engine | M | BUD-007, WF-001 | ~~E09-S13~~, ~~E09-S15~~ |
 | ✅ | **E09-S18** Expired master codes: flag, substitute at approval, block downstream; no code changes by amendment | E09 | engine | L | AUD-001 | ~~E09-S13~~ |
 | ✅ | **E10-S01** Workflow definition schema, versioning, active-document version pinning | E10 | migration | L | APR-011, ACC-007 | ~~E03-S04~~ |
 | ✅ | **E10-S02** Condition evaluator over any document attribute including amount and custom fields | E10 | engine | L | APR-005, APR-010 | ~~E10-S01~~ |
