@@ -1,5 +1,7 @@
 #!/bin/sh
-# usage: agents/scripts/review.sh STORY [codex|qwen|kimi|opus] [A|B]   (opus: fresh session on that account, default B)
+# usage: agents/scripts/review.sh STORY|MILESTONE [codex|qwen|kimi|deepseek|opus] [A|B]
+#   (opus: fresh session on that account, default B; a milestone id such as M2 runs a release
+#   review from `flo release-packet` in a read-only checkout of the milestone head)
 # Runs the reviewer on the flo review packet in the story worktree, in the background.
 # Log: .scratch/STORY.REVIEWER.log ending in "exit N"; verdict: <worktree>/reviews/STORY.REVIEWER.json
 set -e
@@ -9,16 +11,27 @@ case "$A" in
   codex|opus) ;;
   qwen) M=openrouter/qwen/qwen3.8-27b ;;
   kimi) M=openrouter/moonshotai/kimi-k2.6 ;;
+  deepseek) M=openrouter/deepseek/deepseek-v4-pro-0813 ;;
   *) echo "review.sh: unknown reviewer $A" >&2; exit 1 ;;
 esac
 P="$D/$S.$A.review.prompt"; X="$D/xdg-$A"; mkdir -p "$X"
+RELEASE=""
+case "$S" in M[0-9]*)
+  # Release review: a detached checkout of the milestone head, the light packet, static only.
+  RELEASE=1; W="$R-$S-release"
+  BR="$("$R/apps/api/.venv/bin/python" -c 'import sys,yaml; print(next(m["branch"] for m in yaml.safe_load(open(sys.argv[1]))["milestones"] if m["id"]==sys.argv[2]))' "$R/agents/roadmap.yaml" "$S")"
+  git -C "$R" fetch -q origin "$BR"
+  if [ -d "$W" ]; then git -C "$W" checkout -q --detach "origin/$BR"; else git -C "$R" worktree add -q --detach "$W" "origin/$BR"; fi
+  mkdir -p "$W/reviews" ;;
+esac
 # A second review by the same reviewer gets its own previous findings and the changes since the
 # commit it reviewed, not the whole story again (13 Oct: a full re-review re-planted everything).
 SHA="$D/$S.$A.sha"; PRIOR="$D/$S.$A.prior.json"; ARGS=""
 if [ -f "$SHA" ] && [ -f "$W/reviews/$S.$A.json" ]; then
   cp "$W/reviews/$S.$A.json" "$PRIOR"; ARGS="--since $(cat "$SHA") --prior $PRIOR"
 fi
-"$W/apps/api/.venv/bin/python" "$R/agents/scripts/flo" review "$S" $ARGS > "$P"
+if [ -n "$RELEASE" ]; then "$R/apps/api/.venv/bin/python" "$R/agents/scripts/flo" release-packet "$S" > "$P"
+else "$W/apps/api/.venv/bin/python" "$R/agents/scripts/flo" review "$S" $ARGS > "$P"; fi
 git -C "$W" rev-parse HEAD > "$SHA.new"  # becomes the baseline only if the run succeeds
 printf '\nYour agent id is %s. Write reviews/%s.%s.json and stop.\n' "$A" "$S" "$A" >> "$P"
 cd "$W"
@@ -59,9 +72,20 @@ if [ "$A" = codex ]; then
   echo "review launched: $S by codex ($1, $2)${ARGS:+, re-review}"
   exit 0
 fi
+# OpenRouter is metered: refuse to start below a floor rather than die halfway without a verdict.
+LEFT="$(K="$(security find-generic-password -a "$USER" -s OPENROUTER_API_KEY -w)"; curl -s --max-time 20 \
+  -H "Authorization: Bearer $K" https://openrouter.ai/api/v1/credits \
+  | python3 -c 'import json,sys; d=json.load(sys.stdin)["data"]; print(round(d["total_credits"]-d["total_usage"],2))')"
+python3 -c 'import sys; sys.exit(0 if float(sys.argv[1]) >= 3 else 1)' "${LEFT:-0}" \
+  || { echo "review.sh: OpenRouter balance \$${LEFT:-?} is below the \$3 floor; top up first" >&2; exit 1; }
+# Caps: release 50 calls / 25 min; story 35 / 10 min; re-review 30 / 8 min.
+if [ -n "$RELEASE" ]; then CALLS=50; CAP=1500; elif [ -n "$ARGS" ]; then CALLS=30; CAP=480; else CALLS=35; CAP=600; fi
 # another reviewer's verdict is not evidence: move existing verdicts out of reach for the run
 nohup sh -c "mkdir -p '$D/$S.aside' && mv reviews/*.json '$D/$S.aside/' 2>/dev/null; \
   XDG_DATA_HOME='$X' OPENROUTER_API_KEY=\"\$(security find-generic-password -a \"\$USER\" -s OPENROUTER_API_KEY -w)\" \
-  opencode run --auto -m $M \"\$(cat '$P')\" > '$D/$S.$A.log' 2>&1; echo \"exit \$?\" >> '$D/$S.$A.log'; \
+  opencode run --auto -m $M \"\$(cat '$P')\" > '$D/$S.$A.log' 2>&1 & OP=\$!; \
+  '$R/apps/api/.venv/bin/python' '$R/agents/scripts/flo' log-guard '$D/$S.$A.log' $CALLS \$OP $CAP & \
+  wait \$OP; echo \"exit \$?\" >> '$D/$S.$A.log'; \
   mv -n '$D/$S.aside/'*.json reviews/ 2>/dev/null; rmdir '$D/$S.aside'" > /dev/null 2>&1 &
+echo "OpenRouter balance \$$LEFT; caps $CALLS calls, $CAP s"
 echo "review launched: $S by $A"

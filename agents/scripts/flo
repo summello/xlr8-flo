@@ -515,6 +515,101 @@ def cmd_codex_guard(argv):
         time.sleep(15)
 
 
+def cmd_release_packet(argv):
+    """flo release-packet <MILESTONE>: a light release-review packet (no inline diff) for the
+    milestone branch against main: goal, exit criteria, stories, a per-area size table, where to
+    look first, and how to read only what a suspicion needs."""
+    if not argv:
+        die("usage: flo release-packet <MILESTONE>")
+    mid = argv[0]
+    rm = load_yaml(ROOT / "agents" / "roadmap.yaml")
+    ms = next((m for m in rm["milestones"] if m["id"] == mid), None)
+    if ms is None:
+        die(f"unknown milestone {mid}")
+    stories = [s for e in rm["epics"] if e.get("milestone") == mid for s in e["stories"]]
+    done = [s for s in stories if s.get("st") == "done"]
+    rng = f"origin/main...{ms['branch']}"
+    areas: dict[str, list[int]] = {}
+    for ln in git("diff", "--numstat", rng, check=False).splitlines():
+        add, rem, path = (ln.split("\t") + ["", "", ""])[:3]
+        if path.rsplit("/", 1)[-1] in GENERATED_FILES or not add.isdigit():
+            continue
+        parts = path.split("/")
+        if parts[0] in ("design-system", "design", "docs", ".scratch"):
+            key = "(docs) " + parts[0]
+        elif path.startswith("apps/api/src/flo/modules/"):
+            key = "/".join(parts[:6])
+        else:
+            key = "/".join(parts[:4]) if path.startswith("apps/") else parts[0]
+        a = areas.setdefault(key, [0, 0, 0]); a[0] += 1; a[1] += int(add); a[2] += int(rem)
+    migrations = [ln for ln in git("diff", "--name-only", "--diff-filter=A", rng, "--", "migrations",
+                                   check=False).splitlines() if ln.endswith(".py")]
+    exit_row = next((ln for ln in (ROOT / "docs" / "claude-plan.md").read_text().splitlines()
+                     if ln.startswith(f"| **{mid}** |")), "")
+    print(f"=== RELEASE REVIEW PACKET {mid} — {ms['name']} ===")
+    print(f"Goal: {' '.join(str(ms.get('goal', '')).split())}")
+    if exit_row:
+        print(f"Exit criteria: {exit_row.split('|')[4].strip()}")
+    print(f"\nStories merged ({len(done)} of {len(stories)}):")
+    for s in done:
+        print(f"  {s['id']}  {' '.join(s['t'].split())[:110]}  [{', '.join(s.get('tags') or []) or '-'}]")
+    print(f"\nDiff {rng} by area (files, +, -), generated files excluded:")
+    for k, (n, a, r) in sorted(areas.items(), key=lambda kv: (kv[0].startswith("(docs)"), -kv[1][1]))[:32]:
+        print(f"  {n:4d} {a:7d} {r:6d}  {k}")
+    print(f"\nNew migrations ({len(migrations)}): " + ", ".join(m.rsplit('/', 1)[-1][:24] for m in migrations))
+    print(f"""
+Read first (highest risk): money and ledger (modules/budget, modules/requisitions/approval.py,
+funding.py, lifecycle.py, amendments.py), authorization and tenancy (modules/identity, every
+api/*.py route's require/permitted, RLS on every new table in the migrations above), approval
+engine (modules/approvals), and the boundaries between modules (a module may import another's
+service and schemas only).
+
+--- how to review (budget: about 40 commands; the run is stopped at a time and call cap) ---
+1. You are in a read-only checkout of {ms['branch']}. Do NOT open AGENTS.md, CLAUDE.md, agents/,
+   docs/ or design/; this packet is the brief. Do not print the whole diff.
+2. Write reviews/{mid}.<your-agent-id>.json at once as a draft and keep it current.
+3. Read only what a suspicion needs, capped:
+     git diff {rng} --stat -- <path> | tail -20
+     git diff {rng} -- <one file> | head -200
+     sed -n 'A,Bp' <file>     grep -rn '<pattern>' <dir> | head -40
+4. Static review only: no tests, no plants. Every story was planted and passed the full suite on
+   CI, and the milestone branch CI is green. Set "ran_tests": false.
+5. Look for what per-story review misses: drift between stories, duplicated helpers, a rule
+   enforced in one path but not its sibling, boundary leaks, missing RLS or audit, money moved
+   outside a lock or a transaction.
+6. Finalise and stop. Exactly this shape; severity blocker | major | minor:
+     {{"story": "{mid}", "reviewer": "<your-agent-id>", "verdict": "approve" | "changes_requested",
+      "ran_tests": false, "findings": [{{"severity": "major", "file": "path", "line": 1,
+      "requirement": "REQ-001", "problem": "what fails", "fix": "what to change"}}]}}
+   Report only what you reproduced or traced in the code as it stands. Two failed attempts to
+   confirm a suspicion: report it as unverified, never as a blocker.""")
+
+
+def cmd_log_guard(argv):
+    """flo log-guard <log> <max_calls> <pid> <max_seconds>: stop an opencode reviewer past its tool
+    call budget, its wall-clock deadline, or 10 minutes without log output. Counts the tool lines
+    opencode prints ('$ ' commands and '→ ' reads/edits)."""
+    log, cap, pid, secs = Path(argv[0]), int(argv[1]), int(argv[2]), int(argv[3])
+    deadline, ansi = time.time() + secs, re.compile(r"\x1b\[[0-9;]*m")
+    while True:
+        try:
+            os.kill(pid, 0)
+        except OSError:
+            return
+        text = ansi.sub("", log.read_text(errors="replace")) if log.exists() else ""
+        calls = sum(1 for ln in text.splitlines() if ln.startswith(("$ ", "→ ")))
+        stale = log.exists() and time.time() - log.stat().st_mtime > 600
+        why = ("stopped at the time cap" if time.time() > deadline else
+               f"stopped at the call cap ({calls} > {cap})" if calls > cap else
+               "stopped: no output for 10 minutes" if stale else None)
+        if why:
+            os.kill(pid, 15)
+            with log.open("a") as f:
+                f.write(why + "\n")
+            return
+        time.sleep(15)
+
+
 def cmd_review(argv):
     """flo review <S> [--since <sha> --prior <verdict.json>]: with --since, a re-review packet that
     carries the reviewer's previous findings and only the story's changes since that commit."""
@@ -2068,7 +2163,7 @@ COMMANDS = {
     "review": cmd_review, "gate": cmd_gate, "final": cmd_final, "escalate": cmd_escalate,
     "done": cmd_done, "design": cmd_design, "status": cmd_status, "budget": cmd_budget,
     "roadmap": cmd_roadmap, "score": cmd_score, "session": cmd_session, "board": cmd_board,
-    "reap": cmd_reap, "account": cmd_account, "codex-usage": cmd_codex_usage, "codex-guard": cmd_codex_guard, "ci-watch": cmd_ci_watch, "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "db": cmd_db, "up": cmd_up, "down": cmd_down,
+    "reap": cmd_reap, "account": cmd_account, "codex-usage": cmd_codex_usage, "codex-guard": cmd_codex_guard, "release-packet": cmd_release_packet, "log-guard": cmd_log_guard, "ci-watch": cmd_ci_watch, "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "db": cmd_db, "up": cmd_up, "down": cmd_down,
 }
 
 if __name__ == "__main__":
