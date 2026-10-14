@@ -592,8 +592,10 @@ def cmd_release_packet(argv):
 --- how to review (budget: about {25 if area else 40} commands; the run is stopped at a time and call cap) ---
 1. You are in a read-only checkout of {ms['branch']}. Do NOT open AGENTS.md, CLAUDE.md, agents/,
    docs/ or design/; this packet is the brief. Do not print the whole diff.
-2. Write reviews/{vid}.<your-agent-id>.json at once as a draft and keep it current. Record each
-   finding in it the moment you confirm it; the run can be stopped at any time.
+2. Write reviews/{vid}.<your-agent-id>.json at once as a draft. Within your first 8 commands, skim
+   the diff stat for your area and add up to 5 suspicions to its findings, each marked
+   "unverified" in "problem". Spend the rest confirming or deleting them, updating the file after
+   each one. The run can be stopped at any time; the file is what counts.
 3. Read only what a suspicion needs, capped:
      git diff {rng} --stat -- <path> | tail -20
      git diff {rng} -- <one file> | head -200
