@@ -306,8 +306,7 @@ def test_no_workflow_submit_writes_nothing(lines_db):
     row, _ = complete(db, project(db), price="60")
     with pytest.raises(ProblemError) as error:
         command(db, row)
-    assert error.value.checks["problem"] == "submission_invalid"
-    assert any(x.field == "routing/workflow" for x in error.value.errors)
+    assert error.value.checks["problem"] == "workflow_not_set_up"
     assert sql(db, "SELECT id FROM ledger_entry WHERE source_id=%s", (row.id,)) == []
     assert (
         sql(

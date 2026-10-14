@@ -5,8 +5,6 @@ from typing import Annotated, Literal, cast
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Query, Request
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
 from pydantic import AfterValidator
 
 from flo.api.admin_users import organization_target
@@ -25,18 +23,15 @@ from flo.modules.budget.schemas import (
     AdjustmentCreate,
     AggregateRead,
     AllocationCreate,
-    AllocationResult,
     BalanceQueryRead,
     BudgetChangeRequestRead,
     LedgerPage,
     ReconciliationRead,
     TransferCreate,
-    TransferRead,
 )
 from flo.modules.budget.service import (
     BudgetSummary,
     aggregate_balance,
-    allocate,
     balance_query,
     budget_summary,
     get_request,
@@ -76,8 +71,8 @@ Key = Annotated[str, Header(alias="Idempotency-Key", min_length=1), AfterValidat
 
 @router.post(
     "/api/v1/projects/{project_id}/budget/allocations",
-    status_code=201,
-    response_model=AllocationResult,
+    status_code=202,
+    response_model=BudgetChangeRequestRead,
 )
 def allocate_budget(
     request: Request,
@@ -86,8 +81,8 @@ def allocate_budget(
     context: AllocateContext,
     connection: Connection,
     idempotency_key: Key,
-) -> AllocationResult:
-    return allocate(
+) -> BudgetChangeRequestRead:
+    return request_change(
         connection,
         current_scope(),
         project_id,
@@ -102,9 +97,8 @@ def allocate_budget(
 
 @router.post(
     "/api/v1/projects/{project_id}/budget/adjustments",
-    status_code=201,
-    response_model=AllocationResult,
-    responses={202: {"model": BudgetChangeRequestRead}},
+    status_code=202,
+    response_model=BudgetChangeRequestRead,
 )
 def adjust_budget(
     project_id: UUID,
@@ -112,13 +106,10 @@ def adjust_budget(
     context: AdjustContext,
     connection: Connection,
     idempotency_key: Key,
-) -> AllocationResult | JSONResponse:
-    result = request_change(
+) -> BudgetChangeRequestRead:
+    return request_change(
         connection, current_scope(), project_id, body, context.user_id, idempotency_key
     )
-    if isinstance(result, BudgetChangeRequestRead):
-        return JSONResponse(status_code=202, content=jsonable_encoder(result))
-    return cast(AllocationResult, result)
 
 
 class BalanceParameters:
@@ -208,9 +199,8 @@ ReceivingContext = Annotated[
 
 @router.post(
     "/api/v1/budget/transfers",
-    status_code=201,
-    response_model=TransferRead,
-    responses={202: {"model": BudgetChangeRequestRead}},
+    status_code=202,
+    response_model=BudgetChangeRequestRead,
 )
 def transfer_budget(
     body: TransferCreate,
@@ -218,13 +208,10 @@ def transfer_budget(
     receiving_context: ReceivingContext,
     connection: Connection,
     idempotency_key: Key,
-) -> TransferRead | JSONResponse:
-    result = request_change(
+) -> BudgetChangeRequestRead:
+    return request_change(
         connection, current_scope(), body.from_project_id, body, context.user_id, idempotency_key
     )
-    if isinstance(result, BudgetChangeRequestRead):
-        return JSONResponse(status_code=202, content=jsonable_encoder(result))
-    return cast(TransferRead, result)
 
 
 @router.get("/api/v1/projects/{project_id}/balance/aggregate", response_model=AggregateRead)

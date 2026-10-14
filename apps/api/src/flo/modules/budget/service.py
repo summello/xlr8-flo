@@ -16,6 +16,7 @@ from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.budget import funding_policy
 from flo.modules.budget.aggregate import aggregate_balance as aggregate_balance
 from flo.modules.budget.change_requests import get_request as get_request
+from flo.modules.budget.change_requests import request_by_key as request_by_key
 from flo.modules.budget.change_requests import request_change as request_change
 from flo.modules.budget.ledger import ENTRY_FIELDS, LedgerRepository, invalid, read_entry
 from flo.modules.budget.ledger import (
@@ -58,6 +59,7 @@ from flo.modules.projects.service import ProjectService
 
 __all__ = [
     "get_request",
+    "request_by_key",
     "request_change",
     "ReservationState",
     "reservation_remaining",
@@ -247,10 +249,28 @@ def _funding_mode_guard(
         "OR root.bu_id IN (SELECT id FROM units)) LIMIT 1",
         {"unit": unit_id},
     ).fetchone()
-    if row:
+    has_requests = repo.execute("SELECT to_regclass('budget_change_request')").fetchone() != (None,)
+    pending = (
+        None
+        if row or not has_requests
+        else repo.execute(
+            "WITH RECURSIVE units AS (SELECT id FROM org_unit WHERE org_id=%(org_id)s "
+            "AND (%(unit)s::uuid IS NULL OR id=%(unit)s) UNION "
+            "SELECT u.id FROM org_unit u JOIN units a ON u.parent_id=a.id "
+            "WHERE u.org_id=%(org_id)s) SELECT 1 FROM budget_change_request r "
+            "JOIN project p ON p.id=r.project_id AND p.org_id=r.org_id "
+            "JOIN project root ON root.id=p.root_id AND root.org_id=p.org_id "
+            "WHERE r.org_id=%(org_id)s AND r.kind='allocation' AND r.status='pending' "
+            "AND (p.bu_id IN (SELECT id FROM units) OR root.bu_id IN (SELECT id FROM units)) "
+            "LIMIT 1",
+            {"unit": unit_id},
+        ).fetchone()
+    )
+    if row or pending:
         raise ProblemError(
             ErrorCode.CONFLICT,
-            detail="Ledger entries lock the funding mode. Keep the current mode.",
+            detail="Ledger entries and pending allocation requests lock the funding mode. "
+            "Keep the current mode.",
             checks={"problem": "funding_mode_locked"},
         )
 

@@ -56,7 +56,8 @@ def test_project_request_needs_its_own_published_workflow(lifecycle_db):
         )
     with pytest.raises(ProblemError) as error:
         command(db, row)
-    assert any(x.field == "routing/workflow" for x in error.value.errors)
+    assert error.value.checks["problem"] == "workflow_not_set_up"
+    assert "Project Requests" in str(error.value.detail)
     assert sql(db, "SELECT status FROM requisition WHERE id=%s", (row.id,)) == [("draft",)]
     assert linked(db, project(db, unit(db, uuid4().hex))).status == "approval_pending"
 

@@ -281,27 +281,6 @@
         "title": "AllocationCreate",
         "type": "object"
       },
-      "AllocationResult": {
-        "properties": {
-          "balance": {
-            "$ref": "#/components/schemas/BalanceRead"
-          },
-          "entries": {
-            "description": "One direct allocation, or the parent debit and child credit in roll-down mode.",
-            "items": {
-              "$ref": "#/components/schemas/LedgerEntryRead"
-            },
-            "title": "Entries",
-            "type": "array"
-          }
-        },
-        "required": [
-          "entries",
-          "balance"
-        ],
-        "title": "AllocationResult",
-        "type": "object"
-      },
       "AmendmentHeader": {
         "properties": {
           "delivery_address_id": {
@@ -1025,78 +1004,6 @@
         "title": "BalanceRange",
         "type": "object"
       },
-      "BalanceRead": {
-        "properties": {
-          "actual": {
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
-            "title": "Actual",
-            "type": "string"
-          },
-          "allocated": {
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
-            "title": "Allocated",
-            "type": "string"
-          },
-          "available": {
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
-            "title": "Available",
-            "type": "string"
-          },
-          "bu_id": {
-            "format": "uuid",
-            "title": "Bu Id",
-            "type": "string"
-          },
-          "committed": {
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
-            "title": "Committed",
-            "type": "string"
-          },
-          "currency": {
-            "title": "Currency",
-            "type": "string"
-          },
-          "org_id": {
-            "format": "uuid",
-            "title": "Org Id",
-            "type": "string"
-          },
-          "project_id": {
-            "format": "uuid",
-            "title": "Project Id",
-            "type": "string"
-          },
-          "reserved": {
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
-            "title": "Reserved",
-            "type": "string"
-          },
-          "updated_at": {
-            "format": "date-time",
-            "title": "Updated At",
-            "type": "string"
-          },
-          "version": {
-            "title": "Version",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "project_id",
-          "org_id",
-          "bu_id",
-          "currency",
-          "allocated",
-          "reserved",
-          "committed",
-          "actual",
-          "available",
-          "version",
-          "updated_at"
-        ],
-        "title": "BalanceRead",
-        "type": "object"
-      },
       "BaseCurrencyPut": {
         "additionalProperties": false,
         "properties": {
@@ -1152,6 +1059,7 @@
           "kind": {
             "enum": [
               "adjustment",
+              "allocation",
               "transfer"
             ],
             "title": "Kind",
@@ -9710,28 +9618,6 @@
         "title": "TransferCreate",
         "type": "object"
       },
-      "TransferRead": {
-        "properties": {
-          "entries": {
-            "items": {
-              "$ref": "#/components/schemas/LedgerEntryRead"
-            },
-            "title": "Entries",
-            "type": "array"
-          },
-          "transfer_group_id": {
-            "format": "uuid",
-            "title": "Transfer Group Id",
-            "type": "string"
-          }
-        },
-        "required": [
-          "transfer_group_id",
-          "entries"
-        ],
-        "title": "TransferRead",
-        "type": "object"
-      },
       "TransitionAvailable": {
         "properties": {
           "allowed": {
@@ -13445,16 +13331,6 @@
           "required": true
         },
         "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TransferRead"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
           "202": {
             "content": {
               "application/json": {
@@ -13463,7 +13339,7 @@
                 }
               }
             },
-            "description": "Accepted"
+            "description": "Successful Response"
           },
           "4XX": {
             "content": {
@@ -19605,16 +19481,6 @@
           "required": true
         },
         "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AllocationResult"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
           "202": {
             "content": {
               "application/json": {
@@ -19623,7 +19489,7 @@
                 }
               }
             },
-            "description": "Accepted"
+            "description": "Successful Response"
           },
           "4XX": {
             "content": {
@@ -19704,11 +19570,11 @@
           "required": true
         },
         "responses": {
-          "201": {
+          "202": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AllocationResult"
+                  "$ref": "#/components/schemas/BudgetChangeRequestRead"
                 }
               }
             },

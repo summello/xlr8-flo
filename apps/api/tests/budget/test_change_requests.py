@@ -38,8 +38,9 @@ def payload(**changes):
     } | changes
 
 
-def request_budget(wiring, transfer=False, **changes):
+def request_budget(wiring, transfer=False, allocation=False, project_id=None, **changes):
     db, project, _ = wiring
+    project_id = project_id or project.id
 
     async def run():
         async with client(app) as browser:
@@ -47,7 +48,10 @@ def request_budget(wiring, transfer=False, **changes):
             path = (
                 "/api/v1/budget/transfers"
                 if transfer
-                else (f"/api/v1/projects/{project.id}/budget/adjustments")
+                else (
+                    f"/api/v1/projects/{project_id}/budget/"
+                    + ("allocations" if allocation else "adjustments")
+                )
             )
             response = await browser.post(
                 path, json=payload(**changes), headers=headers(browser, uuid4().hex)
@@ -104,11 +108,39 @@ def reconcile(wiring):
     assert reconciliation_drift(db[0], Scope(db[1]), run, None, 50).entries == []
 
 
-def test_no_workflow_posts_immediately(wiring):
-    response = request_budget(wiring)
-    assert response.status_code == 201, response.text
-    assert len(response.json()["entries"]) == 1
-    assert get_balance(wiring[0][0], Scope(wiring[0][1]), wiring[1].id).allocated == Decimal("100")
+def test_no_workflow_refuses_and_writes_nothing(wiring):
+    db = wiring[0]
+    for response in (request_budget(wiring), request_budget(wiring, allocation=True)):
+        assert response.status_code == 409, response.text
+        assert response.json()["checks"]["problem"] == "workflow_not_set_up"
+        assert "Ask an administrator" in response.json()["detail"]
+    assert db[0].execute("SELECT count(*) FROM ledger_entry").fetchone() == (0,)
+    assert db[0].execute("SELECT count(*) FROM budget_change_request").fetchone() == (0,)
+
+
+def test_allocation_pending_then_posts_once_and_rejection_posts_nothing(wiring):
+    db, project, _ = wiring
+    publish(wiring, "budget_change")
+    request = read(wiring, request_budget(wiring, allocation=True))
+    assert (request.kind, request.status) == ("allocation", "pending")
+    assert db[0].execute("SELECT count(*) FROM ledger_entry").fetchone() == (0,)
+    assert decide_budget(wiring, request, key=uuid4().hex).status_code == 200
+    assert db[0].execute("SELECT idempotency_key FROM ledger_entry").fetchall() == [
+        (f"bcr:{request.id}",)
+    ]
+    adapter_for("budget_change").on_outcome(
+        db[0],
+        Scope(db[1]),
+        request.id,
+        Outcome.APPROVED,
+        OutcomeContext(wiring[2], None, None, lambda p, t: True),
+    )
+    assert get_balance(db[0], Scope(db[1]), project.id).allocated == Decimal("100")
+    rejected = read(wiring, request_budget(wiring, allocation=True))
+    refusal = decide_budget(wiring, rejected, "reject", reject_mode="permanent", comment="No")
+    assert refusal.status_code == 200
+    assert get_request(db[0], Scope(db[1]), rejected.id).status == "rejected"
+    assert get_balance(db[0], Scope(db[1]), project.id).allocated == Decimal("100")
 
 
 def test_adjustment_pending_then_exactly_once_requester_posting(wiring):
@@ -282,7 +314,7 @@ def test_get_request_authorization_and_openapi_202(wiring):
         assert "202" in app.openapi()["paths"][path]["post"]["responses"]
 
 
-@pytest.mark.parametrize("column,value", [("kind", "allocation"), ("status", "returned")])
+@pytest.mark.parametrize("column,value", [("kind", "bogus"), ("status", "returned")])
 def test_request_database_checks_reject_planted_invalid_values(wiring, column, value):
     db = wiring[0]
     publish(wiring, "budget_change")
@@ -318,8 +350,7 @@ def test_request_unique_key_and_cross_tenant_fk_plants(wiring):
 
 def test_migration_down_up_preserves_seeded_ledger(wiring):
     db, project, _ = wiring
-    response = request_budget(wiring)
-    assert response.status_code == 201
+    allocate(db[0], Scope(db[1]), project.id, AllocationCreate(**payload()), db[3], uuid4().hex)
     before = db[0].execute("SELECT * FROM ledger_entry ORDER BY id").fetchall()
     balance = get_balance(db[0], Scope(db[1]), project.id)
     migration = load_migration(ROOT / "migrations/20261009_0050_budget_change_requests.py", "bcr")
@@ -491,3 +522,99 @@ def test_negative_adjustment_routes_by_absolute_amount(wiring):
     assert decide_budget(wiring, request).status_code == 200
     assert get_balance(db[0], Scope(db[1]), project.id).allocated == Decimal("50")
     reconcile(wiring)
+
+
+def test_allocation_kind_migration_down_refuses_then_preserves_requests(wiring):
+    db, project, _ = wiring
+    publish(wiring, "budget_change")
+    adjustment = read(wiring, request_budget(wiring))
+    allocation = read(wiring, request_budget(wiring, allocation=True))
+    migration = load_migration(
+        ROOT / "migrations/20261014_0055_budget_change_allocation_kind.py", "bcr_allocation"
+    )
+    with pytest.raises(psycopg.errors.RaiseException), db[0].transaction():
+        migration.downgrade(db[0])
+    db[0].execute("DELETE FROM budget_change_request WHERE id=%s", (allocation.id,))
+    with db[0].transaction():
+        migration.downgrade(db[0])
+        with pytest.raises(psycopg.errors.CheckViolation), db[0].transaction():
+            db[0].execute("UPDATE budget_change_request SET kind='allocation'")
+        migration.upgrade(db[0])
+    assert get_request(db[0], Scope(db[1]), adjustment.id).status == "pending"
+
+
+def child_under_roll_up(wiring):
+    from flo.modules.org.schemas import SettingPut
+    from flo.modules.org.service import OrgService
+
+    db, parent, _ = wiring
+    child = ProjectService(db[0], Scope(db[1]), db[3]).create(
+        ProjectCreate(
+            bu_id=parent.bu_id,
+            name="Child",
+            parent_id=parent.id,
+            department_code="D",
+            ledger_account_code="L",
+            currency="USD",
+        )
+    )
+    OrgService(db[0], Scope(db[1]), db[3]).set_setting(
+        "funding_mode", SettingPut(unit_id=parent.bu_id, value="roll_up")
+    )
+    return child
+
+
+def test_pending_allocation_locks_funding_mode(wiring):
+    from flo.modules.org.schemas import SettingPut
+    from flo.modules.org.service import OrgService
+
+    db, parent, _ = wiring
+    publish(wiring, "budget_change")
+    child = child_under_roll_up(wiring)
+    request = read(wiring, request_budget(wiring, allocation=True, project_id=child.id))
+    assert request.payload["planned_parent_id"] is None
+    with pytest.raises(ProblemError) as locked:
+        OrgService(db[0], Scope(db[1]), db[3]).set_setting(
+            "funding_mode", SettingPut(unit_id=parent.bu_id, value="roll_down")
+        )
+    assert locked.value.checks["problem"] == "funding_mode_locked"
+
+
+def test_approval_refuses_when_funding_plan_changed_after_request(wiring):
+    db, parent, approver = wiring
+    publish(wiring, "budget_change")
+    child = child_under_roll_up(wiring)
+    request = read(wiring, request_budget(wiring, allocation=True, project_id=child.id))
+    # Bypass the guard: flip the mode in storage, as a pre-lock deployment could have.
+    with tenant_transaction(db[0], Scope(db[1])):
+        db[0].execute(
+            "UPDATE org_setting SET value='\"roll_down\"' WHERE key='funding_mode' AND unit_id=%s",
+            (parent.bu_id,),
+        )
+    with pytest.raises(ProblemError) as refused:
+        adapter_for("budget_change").on_outcome(
+            db[0],
+            Scope(db[1]),
+            request.id,
+            Outcome.APPROVED,
+            OutcomeContext(approver, None, None, lambda p, t: True),
+        )
+    assert refused.value.checks["problem"] == "funding_plan_changed"
+    assert db[0].execute("SELECT count(*) FROM ledger_entry").fetchone() == (0,)
+    assert get_request(db[0], Scope(db[1]), request.id).status == "pending"
+
+
+def test_idempotency_key_reuse_across_kinds_is_refused(wiring):
+    from flo.modules.budget.schemas import AdjustmentCreate
+    from flo.modules.budget.service import request_change
+
+    db, project, _ = wiring
+    publish(wiring, "budget_change")
+    scope = Scope(db[1])
+    first = request_change(db[0], scope, project.id, AllocationCreate(**payload()), db[3], "same")
+    assert first.kind == "allocation"
+    with pytest.raises(ProblemError) as reused:
+        request_change(db[0], scope, project.id, AdjustmentCreate(**payload()), db[3], "same")
+    assert reused.value.code == ErrorCode.IDEMPOTENCY_KEY_REUSED
+    replay = request_change(db[0], scope, project.id, AllocationCreate(**payload()), db[3], "same")
+    assert replay.id == first.id

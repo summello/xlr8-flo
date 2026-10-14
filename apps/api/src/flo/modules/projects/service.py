@@ -16,6 +16,7 @@ from flo.kernel.config import Settings
 from flo.kernel.errors import ErrorCode, ProblemError, conflict
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
+from flo.modules.approvals.service import require_workflow
 from flo.modules.identity.service import (
     IdentityAuthorizationConnection,
     register_project_scope,
@@ -195,6 +196,14 @@ class ProjectService:
             problems = lifecycle.evaluate(before, blocked, body, permitted)
             if problems:
                 raise problems[0]
+            if body.to == "approval_pending":
+                require_workflow(
+                    self.connection,
+                    self.scope,
+                    "project",
+                    cast(UUID | None, before["bu_id"]),
+                    "Projects",
+                )
             lifecycle.write(before, blocked, body)
             after = self._get(project_id)
             self._audit(

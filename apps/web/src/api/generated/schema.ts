@@ -2342,15 +2342,6 @@ export interface components {
             /** Reason */
             reason: string;
         };
-        /** AllocationResult */
-        AllocationResult: {
-            balance: components["schemas"]["BalanceRead"];
-            /**
-             * Entries
-             * @description One direct allocation, or the parent debit and child credit in roll-down mode.
-             */
-            entries: components["schemas"]["LedgerEntryRead"][];
-        };
         /** AmendmentHeader */
         AmendmentHeader: {
             /** Delivery Address Id */
@@ -2596,43 +2587,6 @@ export interface components {
             /** To */
             to: string | null;
         };
-        /** BalanceRead */
-        BalanceRead: {
-            /** Actual */
-            actual: string;
-            /** Allocated */
-            allocated: string;
-            /** Available */
-            available: string;
-            /**
-             * Bu Id
-             * Format: uuid
-             */
-            bu_id: string;
-            /** Committed */
-            committed: string;
-            /** Currency */
-            currency: string;
-            /**
-             * Org Id
-             * Format: uuid
-             */
-            org_id: string;
-            /**
-             * Project Id
-             * Format: uuid
-             */
-            project_id: string;
-            /** Reserved */
-            reserved: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
-            /** Version */
-            version: number;
-        };
         /** BaseCurrencyPut */
         BaseCurrencyPut: {
             /** Currency */
@@ -2662,7 +2616,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "adjustment" | "transfer";
+            kind: "adjustment" | "allocation" | "transfer";
             /** Payload */
             payload: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -5522,16 +5476,6 @@ export interface components {
              */
             to_project_id: string;
         };
-        /** TransferRead */
-        TransferRead: {
-            /** Entries */
-            entries: components["schemas"]["LedgerEntryRead"][];
-            /**
-             * Transfer Group Id
-             * Format: uuid
-             */
-            transfer_group_id: string;
-        };
         /** TransitionAvailable */
         TransitionAvailable: {
             /** Allowed */
@@ -7488,15 +7432,6 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TransferRead"];
-                };
-            };
-            /** @description Accepted */
             202: {
                 headers: {
                     [name: string]: unknown;
@@ -10685,15 +10620,6 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AllocationResult"];
-                };
-            };
-            /** @description Accepted */
             202: {
                 headers: {
                     [name: string]: unknown;
@@ -10741,12 +10667,12 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            201: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AllocationResult"];
+                    "application/json": components["schemas"]["BudgetChangeRequestRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

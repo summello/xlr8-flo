@@ -7,10 +7,10 @@ Loaded into every agent session. Updated by `flo done` (status) and by Opus at e
 
 | | |
 |---|---|
-| Milestone | **M2 — Governed demand** |
-| Stories | 89 / 183 done |
-| Branch | milestone/M2-governed-demand |
-| In flight | E09-S17 |
+| Milestone | **M3 — First sellable release** |
+| Stories | 90 / 183 done |
+| Branch | milestone/M3-sellable |
+| In flight | — |
 | Blocked | — |
 <!-- STATE:END -->
 

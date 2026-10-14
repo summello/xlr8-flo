@@ -192,6 +192,8 @@ __all__ = [
     "eligible_approvers",
     "ValidationReport",
     "validate_graph",
+    "require_workflow",
+    "require_workflow_for",
     "resolve_version",
     "resolve_version_reason",
     "Explanation",
@@ -214,6 +216,38 @@ def conflict(problem: str) -> ProblemError:
         ErrorCode.CONFLICT,
         detail="The workflow cannot accept this change. Reload its versions and retry.",
         checks={"problem": problem},
+    )
+
+
+def require_workflow(
+    conn: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    document_type: str,
+    bu_id: UUID | None,
+    label: str,
+) -> None:
+    """D-M2-21: a governed action with no published workflow is refused, never auto-approved."""
+    if resolve_version(conn, scope, document_type, bu_id) is None:
+        raise ProblemError(
+            ErrorCode.CONFLICT,
+            detail=f"No approval workflow is published for {label}. "
+            "Ask an administrator to set one up.",
+            checks={"problem": "workflow_not_set_up"},
+        )
+
+
+def require_workflow_for(
+    conn: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    document_type: str,
+    document_id: UUID,
+    label: str,
+) -> None:
+    """require_workflow for an existing document: resolve its business unit as start does."""
+    from flo.modules.approvals.engine import document_bu
+
+    require_workflow(
+        conn, scope, document_type, document_bu(conn, scope, document_type, document_id), label
     )
 
 

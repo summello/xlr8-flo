@@ -142,7 +142,7 @@ class AggregateRead(BaseModel):
 
 class BudgetChangeRequestRead(BaseModel):
     id: UUID
-    kind: Literal["adjustment", "transfer"]
+    kind: Literal["adjustment", "allocation", "transfer"]
     project_id: UUID
     payload: dict[str, JsonValue]
     amount: Decimal

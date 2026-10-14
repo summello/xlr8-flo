@@ -1188,7 +1188,7 @@ epics:
         dep:
           - E09-S13
           - E09-S15
-        st: in_progress
+        st: done
       - id: E09-S18
         t: 'Expired master codes: flag, substitute at approval, block downstream; no code
           changes by amendment'

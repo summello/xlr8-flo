@@ -540,6 +540,23 @@ def _business_unit(repo: WorkflowRepository, target: AuthorizationTarget) -> UUI
     return cast(UUID, row[0]) if row else None
 
 
+def document_bu(
+    conn: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    document_type: str,
+    document_id: UUID,
+) -> UUID | None:
+    """The business unit a new approval of this document would resolve its workflow in."""
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        target = adapter_for(document_type).snapshot(conn, scope, document_id).target
+        kind = getattr(target.scope_type, "value", "")
+        if kind == "bu":
+            return target.scope_id
+        return (
+            _business_unit(WorkflowRepository(conn, scope), target) if kind == "project" else None
+        )
+
+
 def start(
     conn: psycopg.Connection[tuple[object, ...]],
     scope: Scope,

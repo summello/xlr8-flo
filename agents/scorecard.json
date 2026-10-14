@@ -3361,6 +3361,54 @@
       },
       "recap": "Standalone requisitions are now Project Requests: own project_request approval type/workflow (fields amount, bu), project_request.create permission, sponsors carried to the created project, and cancel-after-approval abandons that project and reports its allocation under an Abandoned group outside budget totals. Migration 0054 adds the type, sponsor tables and project.source_requisition_id; the web form, list tab and budget page follow.",
       "title": "Project Requests: own document type, workflow, permission and name; sponsors; abandoned on cancel and kept out of budget totals"
+    },
+    {
+      "story": "E09-S17",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "money",
+        "auth"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "b8db2096-975c-408c-98f1-2febe5333f66",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S17",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a13c4c-7719-7373-a955-0daf3d4955af",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "1b4f7384-72c5-48ef-96ac-8e83fbac7eff",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "With no published workflow, project submission and budget allocations, adjustments and transfers now refuse with 409 workflow_not_set_up. Allocations (API and import) became pending budget_change requests (202) that post on approval.",
+      "title": "Block governed actions until their approval workflow is published"
     }
   ]
 }

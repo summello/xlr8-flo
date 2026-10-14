@@ -13,7 +13,7 @@ from flo.kernel.authz import permits, require
 from flo.kernel.config import Settings
 from flo.kernel.tenancy.context import current_scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
-from flo.modules.approvals.service import resolve_version, start
+from flo.modules.approvals.service import start
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.identity.service import AuthorizationConnection, AuthorizationResolver
 from flo.modules.org.service import OrgService
@@ -210,12 +210,10 @@ def transition_project(
     scope = current_scope()
     with tenant_transaction(cast(RlsSession, connection), scope):
         service = ProjectService(connection, scope, context.user_id)
-        project = service.transition(
+        service.transition(
             id, body, version, lambda permission: permits(request, permission, target)
         )
         if body.to == "approval_pending":
-            if resolve_version(connection, scope, "project", project.bu_id) is None:
-                return service.approval_outcome(id, "active", "no_approval_applies")
             # Submit exception to R: status and event first; start is last.
             start(
                 connection,

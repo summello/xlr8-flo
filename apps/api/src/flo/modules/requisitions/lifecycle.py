@@ -13,7 +13,13 @@ import psycopg
 from flo.kernel.errors import ErrorCode, ProblemError, conflict
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
-from flo.modules.approvals.service import active_instance, preview_route, start, withdraw
+from flo.modules.approvals.service import (
+    active_instance,
+    preview_route,
+    require_workflow_for,
+    start,
+    withdraw,
+)
 from flo.modules.budget.service import get_balance, lock_balance, reservation_remaining, reserve
 from flo.modules.identity.service import (
     AuthorizationConnection,
@@ -316,6 +322,17 @@ def transition(
             raise conflict("nothing_changed", "Not resubmitted. Nothing has changed.")
         if check is None:  # only a submission reaches here; withdraw returned above
             raise conflict("invalid_transition", "This requisition cannot move to that status.")
+        latest_instance = revisions.latest_instance(conn, scope, id)
+        if not (latest_instance and latest_instance[1] == "returned"):
+            # D-M2-21: one code for "nothing published"; a returned approval resumes its pin.
+            kind = doc_type(conn, scope, id)
+            require_workflow_for(
+                conn,
+                scope,
+                kind,
+                id,
+                "Project Requests" if kind == "project_request" else "Capital Requisitions",
+            )
         check = routing_check(conn, scope, id, check)
         if check.problems:
             raise SubmissionInvalid(check.problems)

@@ -64,7 +64,12 @@ def send(db, row, to, viewer=None, **changes):
 @pytest.mark.parametrize("start,target", list(product(get_args(ProjectStatus.__value__), repeat=2)))
 def test_all_36_state_pairs(project_db, start, target):
     row = project(project_db, start)
-    if (start, target) in VALID:
+    if (start, target) == ("draft", "approval_pending"):
+        # D-M2-21: no published workflow, no submission; nothing is written.
+        with pytest.raises(ProblemError) as error:
+            transition(project_db, row, target, reason="Explained transition")
+        assert error.value.checks == {"problem": "workflow_not_set_up"}
+    elif (start, target) in VALID:
         result = transition(project_db, row, target, reason="Explained transition")
         assert result.status == target and result.version == 2
     else:
@@ -73,7 +78,7 @@ def test_all_36_state_pairs(project_db, start, target):
         assert error.value.code == ErrorCode.CONFLICT
         assert error.value.checks == {"problem": "invalid_transition"}
     count = project_db.connection.execute("SELECT count(*) FROM project_status_event").fetchone()[0]
-    assert count == int((start, target) in VALID)
+    assert count == int((start, target) in VALID and target != "approval_pending")
 
 
 def test_submitter_cannot_approve_and_other_actor_can(project_db):
@@ -81,12 +86,18 @@ def test_submitter_cannot_approve_and_other_actor_can(project_db):
     grant_permissions(db, db.actor_id, "project.submit", "project.approve")
     row = project(db)
     submitted = send(db, row, "approval_pending")
-    assert submitted.status_code == 200 and submitted.json()["status"] == "active"
+    assert submitted.status_code == 409, submitted.text
+    assert submitted.json()["checks"]["problem"] == "workflow_not_set_up"
     # Exercise the legacy manual approval path on a pre-workflow pending project.
     row = service(db).create(body(unit(db, "LEGACY")))
-    transition(db, row, "approval_pending")
+    db.connection.execute("UPDATE project SET status='approval_pending' WHERE id=%s", (row.id,))
+    db.connection.execute(
+        "INSERT INTO project_status_event(org_id,project_id,from_status,to_status,actor_id) "
+        "VALUES(%s,%s,'draft','approval_pending',%s)",
+        (db.org_a, row.id, db.actor_id),
+    )
     with pytest.raises(ProblemError) as exc:
-        service(db).transition(row.id, TransitionCreate(to="active"), "2", lambda p: True)
+        service(db).transition(row.id, TransitionCreate(to="active"), "1", lambda p: True)
     assert exc.value.code == ErrorCode.FORBIDDEN
     other = insert_identity(db, "approver")
     grant_permissions(db, other, "project.read", "project.approve")
@@ -95,7 +106,7 @@ def test_submitter_cannot_approve_and_other_actor_can(project_db):
         "POST",
         f"/{row.id}/transitions",
         json={"to": "active"},
-        headers={"If-Match": "2", "Idempotency-Key": uuid4().hex},
+        headers={"If-Match": "1", "Idempotency-Key": uuid4().hex},
         viewer=other,
     )
     assert result.status_code == 200, result.text
@@ -117,7 +128,9 @@ def test_dynamic_permissions(project_db, start, target, permission):
     grant_permissions(db, viewer, "project.read")
     assert send(db, row, target, viewer, reason="A reason").status_code == 403
     grant_permissions(db, viewer, permission)
-    assert send(db, row, target, viewer, reason="A reason").status_code == 200
+    allowed = send(db, row, target, viewer, reason="A reason")
+    # Submitting passes authorization, then stops at the missing workflow (D-M2-21).
+    assert allowed.status_code == (409 if target == "approval_pending" else 200)
 
 
 @pytest.mark.parametrize("target", ["completed", "abandoned"])

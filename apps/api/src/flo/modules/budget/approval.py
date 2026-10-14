@@ -19,8 +19,13 @@ from flo.modules.approvals.schemas import (
     Outcome,
     OutcomeContext,
 )
-from flo.modules.budget.change_requests import ChangeRepository, get_request
-from flo.modules.budget.schemas import AdjustmentCreate, TransferCreate
+from flo.modules.budget.change_requests import (
+    PLANNED,
+    ChangeRepository,
+    get_request,
+    planned_parent,
+)
+from flo.modules.budget.schemas import AdjustmentCreate, AllocationCreate, TransferCreate
 from flo.modules.identity.service import AuthorizationTarget, ScopeType
 
 
@@ -75,7 +80,7 @@ class BudgetChangeAdapter:
         outcome: Outcome,
         context: OutcomeContext,
     ) -> None:
-        from flo.modules.budget.service import adjust, transfer
+        from flo.modules.budget.service import adjust, allocate, transfer
 
         with tenant_transaction(cast(RlsSession, conn), scope):
             repo = ChangeRepository(conn, scope)
@@ -98,6 +103,16 @@ class BudgetChangeAdapter:
                     return
                 raise ProblemError(ErrorCode.CONFLICT, detail="Request already decided.")
             result = None
+            if outcome == Outcome.APPROVED and row.kind == "allocation":
+                # The parent was authorized at request time; refuse if the plan has since changed.
+                if row.payload.get(PLANNED) != planned_parent(
+                    conn, scope, row.project_id, row.amount
+                ):
+                    raise ProblemError(
+                        ErrorCode.CONFLICT,
+                        detail="Funding mode changed since this request. Submit a new request.",
+                        checks={"problem": "funding_plan_changed"},
+                    )
             if outcome == Outcome.APPROVED:
                 key = f"bcr:{row.id}"
                 posted = (
@@ -109,6 +124,19 @@ class BudgetChangeAdapter:
                         key,
                     )
                     if row.kind == "transfer"
+                    else allocate(
+                        conn,
+                        scope,
+                        row.project_id,
+                        AllocationCreate.model_validate(
+                            {k: v for k, v in row.payload.items() if k != PLANNED}
+                        ),
+                        row.requested_by,
+                        key,
+                        # The requester's parent-funding permission was checked at request time.
+                        permitted_at=lambda _: True,
+                    )
+                    if row.kind == "allocation"
                     else adjust(
                         conn,
                         scope,

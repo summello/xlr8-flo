@@ -5,7 +5,8 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from decimal import Decimal
 from typing import cast
-from uuid import uuid4
+from unittest.mock import patch
+from uuid import UUID, uuid4
 
 import httpx
 import psycopg
@@ -84,6 +85,40 @@ def app(db, viewer=None):
     return result
 
 
+def settle(db, response):
+    """E09-S17: budget changes now answer 202 and post on approval.
+
+    These tests exercise the posting rules, so approve the pending request directly and
+    present the posted result as the old immediate response. Refusals pass through.
+    """
+    if response.status_code != 202:
+        return response
+    from flo.modules.approvals.schemas import Outcome, OutcomeContext
+    from flo.modules.approvals.service import adapter_for
+    from flo.modules.budget.service import get_request
+
+    scope = Scope(db.org_a)
+    id = UUID(response.json()["id"])
+    adapter_for("budget_change").on_outcome(
+        db.connection,
+        scope,
+        id,
+        Outcome.APPROVED,
+        OutcomeContext(db.actor_id, None, None, lambda p, t: True),
+    )
+    return httpx.Response(201, json=get_request(db.connection, scope, id).result)
+
+
+@contextmanager
+def workflow_published():
+    """Stand in for a published budget_change workflow without a routing engine."""
+    with (
+        patch("flo.modules.budget.change_requests.require_workflow"),
+        patch("flo.modules.budget.change_requests.start"),
+    ):
+        yield
+
+
 def request(db, project, kind="allocations", data=None, viewer=None, key=None):
     async def send():
         async with httpx.AsyncClient(
@@ -95,7 +130,8 @@ def request(db, project, kind="allocations", data=None, viewer=None, key=None):
                 headers={"Idempotency-Key": key or uuid4().hex},
             )
 
-    return asyncio.run(send())
+    with workflow_published():
+        return settle(db, asyncio.run(send()))
 
 
 def project(db):
@@ -231,9 +267,7 @@ def test_project_funding_status_guard(allocation_db, status):
     row = project(db)
     db.connection.execute("UPDATE project SET status = %s WHERE id = %s", (status, row.id))
     result = request(db, row)
-    assert result.status_code == (201 if status in ("draft", "active") else 409), (
-        result.text
-    )
+    assert result.status_code == (201 if status in ("draft", "active") else 409), result.text
     if result.status_code == 409:
         assert result.json()["checks"]["problem"] == "posting_not_allowed"
         assert db.connection.execute("SELECT count(*) FROM ledger_entry").fetchone() == (0,)

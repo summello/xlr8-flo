@@ -158,17 +158,21 @@ def submit_once(wiring):
     return asyncio.run(run())
 
 
-def test_no_workflow_activates_with_two_events_and_reason(wiring):
+def test_no_workflow_refuses_submit_and_writes_nothing(wiring):
     db, row, _ = wiring
-    result = submit_once(wiring)
-    assert result["status"] == "active" and result["version"] == 3
-    assert db[0].execute(
-        "SELECT from_status,to_status FROM project_status_event WHERE project_id=%s ORDER BY id",
-        (row.id,),
-    ).fetchall() == [("draft", "approval_pending"), ("approval_pending", "active")]
-    assert db[0].execute(
-        "SELECT after->>'reason' FROM audit_log WHERE action='project.activated'"
-    ).fetchone() == ("no_approval_applies",)
+
+    async def run():
+        async with client(app) as browser:
+            await authenticate(wiring, browser)
+            return await submit(browser, row)
+
+    response = asyncio.run(run())
+    assert response.status_code == 409, response.text
+    assert response.json()["checks"]["problem"] == "workflow_not_set_up"
+    assert db[0].execute("SELECT status FROM project WHERE id=%s", (row.id,)).fetchone() == (
+        "draft",
+    )
+    assert db[0].execute("SELECT count(*) FROM project_status_event").fetchone() == (0,)
 
 
 @pytest.mark.parametrize(
