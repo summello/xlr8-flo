@@ -541,7 +541,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E09-S11** Requisition screens: create, lines, submit, track, quantity rollup | E09 | ui | L | REQ-015, UX-003, UX-004 | ~~E09-S09~~, ~~E04-S03~~, ~~E09-S08~~, ~~E10-S06~~ |
 | ✅ | **E09-S12** Resubmit and amendment screens: review changes, funding effect, version lineage | E09 | ui | L | REQ-012, APR-015, DATA-002, UX-003 | ~~E09-S08~~, ~~E09-S11~~ |
 | ✅ | **E09-S14** M2 exit criterion end to end: a requisition through a multi-level conditional workflow to approval, sub-project and reservation | E09 | test | S | WF-002, WF-003, REQ-002, ACC-001 | ~~E09-S12~~ |
-| ⬜ | **E09-S13** Standalone requisition funding, who may assign one to a project, and master-code re-check at approval (operator requirements pending; before the M2 PR) | E09 | ledger | M | REQ-004 | ~~E09-S12~~, ~~E10-S11~~ |
+| ⬜ | **E09-S13** Standalone requisition funding, who may assign one to a project, master-code re-check at approval, and one shared audit helper (operator requirements pending; before the M2 PR) | E09 | ledger | M | REQ-004 | ~~E09-S12~~, ~~E10-S11~~ |
 | ✅ | **E10-S01** Workflow definition schema, versioning, active-document version pinning | E10 | migration | L | APR-011, ACC-007 | ~~E03-S04~~ |
 | ✅ | **E10-S02** Condition evaluator over any document attribute including amount and custom fields | E10 | engine | L | APR-005, APR-010 | ~~E10-S01~~ |
 | ✅ | **E10-S03** Graph validation: cycle detection, unreachable steps, duplicate approvals, depth limit | E10 | engine | M | APR-006, APR-007, APR-008, APR-012 | ~~E10-S01~~, ~~E10-S02~~ |
