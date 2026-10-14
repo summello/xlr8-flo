@@ -515,13 +515,39 @@ def cmd_codex_guard(argv):
         time.sleep(15)
 
 
+RELEASE_FOCUS_ALL = """Read first (highest risk): money and ledger (modules/budget, modules/requisitions/approval.py,
+funding.py, lifecycle.py, amendments.py), authorization and tenancy (modules/identity, every
+api/*.py route's require/permitted, RLS on every new table in the migrations above), approval
+engine (modules/approvals), and the boundaries between modules (a module may import another's
+service and schemas only)."""
+RELEASE_AREAS = {
+    "money": """Your area: MONEY AND LEDGER only. Read apps/api/src/flo/modules/budget/ and
+modules/requisitions/{approval,funding,lifecycle,amendments,revisions,codes}.py. Check: every
+reserve, release, transfer and allocation happens under the balance lock and inside one
+transaction; releases happen exactly once; Decimal only; no float or round(); idempotency keys;
+abandoned projects kept out of totals. Ignore UI and the approval engine internals.""",
+    "auth": """Your area: AUTHORIZATION AND TENANCY only. Read apps/api/src/flo/api/*.py (each
+route's require/permitted), modules/identity/, and the new migrations' RLS/FORCE RLS/policies.
+Check: every route authorizes server-side; org_id only from the session; a foreign tenant gets
+404; every new tenant table has RLS; permission codes match the catalogue. Ignore UI and money maths.""",
+    "approvals": """Your area: THE APPROVAL ENGINE only. Read apps/api/src/flo/modules/approvals/.
+Check: version pinning, decisions and their audit, stale-version guard, delegation, workflow
+gating (no workflow => refused), adapter on_outcome inside the decision transaction. Ignore UI.""",
+    "ui": """Your area: THE WEB UI only. Read apps/web/src/routes and components for requisitions,
+approvals, projects and budget. Check against the rules: tokens only (no hardcoded colour,
+spacing, radius, duration), keyboard reachable, colour never the only signal, money with tabular
+figures and parenthesised negatives, loading/empty/error states, generated API types only.""",
+}
+
+
 def cmd_release_packet(argv):
     """flo release-packet <MILESTONE>: a light release-review packet (no inline diff) for the
     milestone branch against main: goal, exit criteria, stories, a per-area size table, where to
     look first, and how to read only what a suspicion needs."""
     if not argv:
-        die("usage: flo release-packet <MILESTONE>")
-    mid = argv[0]
+        die("usage: flo release-packet <MILESTONE>[-<area>]  (areas: money, auth, approvals, ui)")
+    mid, _, area = argv[0].partition("-")
+    vid = argv[0]  # the verdict file's id: M2, or M2-money for an area pass
     rm = load_yaml(ROOT / "agents" / "roadmap.yaml")
     ms = next((m for m in rm["milestones"] if m["id"] == mid), None)
     if ms is None:
@@ -546,7 +572,10 @@ def cmd_release_packet(argv):
                                    check=False).splitlines() if ln.endswith(".py")]
     exit_row = next((ln for ln in (ROOT / "docs" / "claude-plan.md").read_text().splitlines()
                      if ln.startswith(f"| **{mid}** |")), "")
-    print(f"=== RELEASE REVIEW PACKET {mid} — {ms['name']} ===")
+    focus = RELEASE_AREAS.get(area)
+    if area and focus is None:
+        die(f"unknown area {area}; choose from {', '.join(RELEASE_AREAS)}")
+    print(f"=== RELEASE REVIEW PACKET {vid} — {ms['name']}" + (f" — area: {area} only" if area else "") + " ===")
     print(f"Goal: {' '.join(str(ms.get('goal', '')).split())}")
     if exit_row:
         print(f"Exit criteria: {exit_row.split('|')[4].strip()}")
@@ -558,16 +587,13 @@ def cmd_release_packet(argv):
         print(f"  {n:4d} {a:7d} {r:6d}  {k}")
     print(f"\nNew migrations ({len(migrations)}): " + ", ".join(m.rsplit('/', 1)[-1][:24] for m in migrations))
     print(f"""
-Read first (highest risk): money and ledger (modules/budget, modules/requisitions/approval.py,
-funding.py, lifecycle.py, amendments.py), authorization and tenancy (modules/identity, every
-api/*.py route's require/permitted, RLS on every new table in the migrations above), approval
-engine (modules/approvals), and the boundaries between modules (a module may import another's
-service and schemas only).
+{focus or RELEASE_FOCUS_ALL}
 
---- how to review (budget: about 40 commands; the run is stopped at a time and call cap) ---
+--- how to review (budget: about {25 if area else 40} commands; the run is stopped at a time and call cap) ---
 1. You are in a read-only checkout of {ms['branch']}. Do NOT open AGENTS.md, CLAUDE.md, agents/,
    docs/ or design/; this packet is the brief. Do not print the whole diff.
-2. Write reviews/{mid}.<your-agent-id>.json at once as a draft and keep it current.
+2. Write reviews/{vid}.<your-agent-id>.json at once as a draft and keep it current. Record each
+   finding in it the moment you confirm it; the run can be stopped at any time.
 3. Read only what a suspicion needs, capped:
      git diff {rng} --stat -- <path> | tail -20
      git diff {rng} -- <one file> | head -200
@@ -578,7 +604,7 @@ service and schemas only).
    enforced in one path but not its sibling, boundary leaks, missing RLS or audit, money moved
    outside a lock or a transaction.
 6. Finalise and stop. Exactly this shape; severity blocker | major | minor:
-     {{"story": "{mid}", "reviewer": "<your-agent-id>", "verdict": "approve" | "changes_requested",
+     {{"story": "{vid}", "reviewer": "<your-agent-id>", "verdict": "approve" | "changes_requested",
       "ran_tests": false, "findings": [{{"severity": "major", "file": "path", "line": 1,
       "requirement": "REQ-001", "problem": "what fails", "fix": "what to change"}}]}}
    Report only what you reproduced or traced in the code as it stands. Two failed attempts to

@@ -18,8 +18,8 @@ P="$D/$S.$A.review.prompt"; X="$D/xdg-$A"; mkdir -p "$X"
 RELEASE=""
 case "$S" in M[0-9]*)
   # Release review: a detached checkout of the milestone head, the light packet, static only.
-  RELEASE=1; W="$R-$S-release"
-  BR="$("$R/apps/api/.venv/bin/python" -c 'import sys,yaml; print(next(m["branch"] for m in yaml.safe_load(open(sys.argv[1]))["milestones"] if m["id"]==sys.argv[2]))' "$R/agents/roadmap.yaml" "$S")"
+  RELEASE=1; MS="${S%%-*}"; W="$R-$MS-release"   # M2 or an area pass such as M2-money
+  BR="$("$R/apps/api/.venv/bin/python" -c 'import sys,yaml; print(next(m["branch"] for m in yaml.safe_load(open(sys.argv[1]))["milestones"] if m["id"]==sys.argv[2]))' "$R/agents/roadmap.yaml" "$MS")"
   git -C "$R" fetch -q origin "$BR"
   if [ -d "$W" ]; then git -C "$W" checkout -q --detach "origin/$BR"; else git -C "$R" worktree add -q --detach "$W" "origin/$BR"; fi
   mkdir -p "$W/reviews" ;;
@@ -78,8 +78,8 @@ LEFT="$(K="$(security find-generic-password -a "$USER" -s OPENROUTER_API_KEY -w)
   | python3 -c 'import json,sys; d=json.load(sys.stdin)["data"]; print(round(d["total_credits"]-d["total_usage"],2))')"
 python3 -c 'import sys; sys.exit(0 if float(sys.argv[1]) >= 3 else 1)' "${LEFT:-0}" \
   || { echo "review.sh: OpenRouter balance \$${LEFT:-?} is below the \$3 floor; top up first" >&2; exit 1; }
-# Caps: release 50 calls / 25 min; story 35 / 10 min; re-review 30 / 8 min.
-if [ -n "$RELEASE" ]; then CALLS=50; CAP=1500; elif [ -n "$ARGS" ]; then CALLS=30; CAP=480; else CALLS=35; CAP=600; fi
+# Caps: release 50 calls / 25 min; release area pass 30 / 12 min; story 35 / 10 min; re-review 30 / 8 min.
+if [ -n "$RELEASE" ] && [ "$S" != "$MS" ]; then CALLS=30; CAP=720; elif [ -n "$RELEASE" ]; then CALLS=50; CAP=1500; elif [ -n "$ARGS" ]; then CALLS=30; CAP=480; else CALLS=35; CAP=600; fi
 # another reviewer's verdict is not evidence: move existing verdicts out of reach for the run
 nohup sh -c "mkdir -p '$D/$S.aside' && mv reviews/*.json '$D/$S.aside/' 2>/dev/null; \
   XDG_DATA_HOME='$X' OPENROUTER_API_KEY=\"\$(security find-generic-password -a \"\$USER\" -s OPENROUTER_API_KEY -w)\" \
