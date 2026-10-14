@@ -25,7 +25,7 @@ async function keyboardFocus(page: Page, locator: Locator) {
   for (let i = 0; i < 200; i++) {
     await page.keyboard.press("Tab");
     if (await locator.evaluate(node => node === document.activeElement)) {
-      expect(await locator.evaluate(node => getComputedStyle(node).outlineStyle)).not.toBe("none");
+      await expect.poll(() => locator.evaluate(node => getComputedStyle(node).outlineStyle)).not.toBe("none");
       return;
     }
   }

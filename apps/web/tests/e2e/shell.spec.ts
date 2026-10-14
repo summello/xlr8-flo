@@ -13,7 +13,7 @@ test("skip link is first, keyboard-visible, and jumps to main", async ({ page })
 
   const skipLink = page.getByRole("link", { name: "Skip to main content" });
   await expect(skipLink).toBeFocused();
-  expect(await skipLink.evaluate((link) => getComputedStyle(link).outlineStyle)).not.toBe("none");
+  await expect.poll(() => skipLink.evaluate((link) => getComputedStyle(link).outlineStyle)).not.toBe("none");
 
   await page.keyboard.press("Enter");
   await expect(page.getByRole("main")).toBeFocused();

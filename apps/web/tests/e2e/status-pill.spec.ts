@@ -78,7 +78,7 @@ test("keyboard-only entry reaches and visibly focuses the gallery main content",
   await page.keyboard.press("Tab");
   const skipLink = page.getByRole("link", { name: "Skip to main content" });
   await expect(skipLink).toBeFocused();
-  expect(await skipLink.evaluate((link) => getComputedStyle(link).outlineStyle)).not.toBe("none");
+  await expect.poll(() => skipLink.evaluate((link) => getComputedStyle(link).outlineStyle)).not.toBe("none");
 
   await page.keyboard.press("Enter");
   await expect(page.getByRole("main")).toBeFocused();

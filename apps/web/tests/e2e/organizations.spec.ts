@@ -36,7 +36,7 @@ test('probe, keyboard chooser and switch discard document memory', async ({ page
   await expect(list).toBeVisible();
   await page.keyboard.press('Tab');
   await expect(list.getByRole('button').first()).toBeFocused();
-  expect(await list.getByRole('button').first().evaluate(e => getComputedStyle(e).outlineStyle)).not.toBe('none');
+  await expect.poll(() => list.getByRole('button').first().evaluate(e => getComputedStyle(e).outlineStyle)).not.toBe('none');
   await page.keyboard.press('Enter'); await expect(page).toHaveURL(/\/budget$/);
   await page.evaluate(() => { (window as Window & { tenantCache?: string }).tenantCache = 'EMEA'; });
   await page.getByText('Account menu', { exact: true }).click();

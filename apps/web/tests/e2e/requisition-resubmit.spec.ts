@@ -142,7 +142,7 @@ test("keyboard only: returned banner, review, resubmit", async ({ page }) => {
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "What Changed" })).toBeVisible();
   await keyboardFocus(page, send(page));
-  expect(await send(page).evaluate(node => getComputedStyle(node).outlineStyle)).not.toBe("none");
+  await expect.poll(() => send(page).evaluate(node => getComputedStyle(node).outlineStyle)).not.toBe("none");
   await page.keyboard.press("Enter");
   await expect(page.getByRole("status").filter({ hasText: "Resubmitted as Version 2" })).toBeFocused();
 });

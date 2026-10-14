@@ -123,7 +123,7 @@ test('keyboard, show toggle, empty fields and Enter submission', async ({ page }
   await page.keyboard.press('Tab'); await expect(page.getByLabel('Email', { exact: true })).toBeFocused();
   await page.keyboard.press('Tab'); await expect(page.getByLabel('Password', { exact: true })).toBeFocused();
   await page.keyboard.press('Tab'); await expect(page.getByRole('button', { name: 'Show', exact: true })).toBeFocused();
-  expect(await page.getByRole('button', { name: 'Show', exact: true }).evaluate(e => getComputedStyle(e).outlineStyle)).not.toBe('none');
+  await expect.poll(() => page.getByRole('button', { name: 'Show', exact: true }).evaluate(e => getComputedStyle(e).outlineStyle)).not.toBe('none');
   await page.keyboard.press('Enter'); await expect(page.getByRole('button', { name: 'Hide', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.keyboard.press('Tab'); await expect(page.getByRole('button', { name: 'Forgot your password?' })).toBeFocused();
   await page.keyboard.press('Tab'); await page.keyboard.press('Enter');
