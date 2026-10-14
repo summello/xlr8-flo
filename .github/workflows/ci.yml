@@ -106,8 +106,9 @@ jobs:
           # lowercase subject before the rule was checked on them. They are
           # pinned by hash so history is not rewritten; every new commit is
           # still held to the rule. Three fleet-tooling commits on 13 Oct used feat(fleet):, a type the
-          # rule does not allow; pinned the same way rather than force-pushing a shared milestone.
-          pinned='1b625dd f691f82 d3f2625 2b9889b 5f42029'
+          # rule does not allow, and a318911 on 15 Oct; pinned the same way rather than force-pushing a
+          # shared milestone. .githooks/commit-msg now refuses the shape locally.
+          pinned='1b625dd f691f82 d3f2625 2b9889b 5f42029 a318911'
           while read -r sha subject; do
             case " $pinned " in
               *" ${sha:0:7} "*) continue ;;

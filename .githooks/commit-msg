@@ -1,0 +1,10 @@
+#!/bin/sh
+# Refuse a commit subject CI's governance check would fail (AGENTS.md section 5): a story commit
+# `Enn-Snn: subject`, a merge, or a maintenance commit typed ci/fix/build/chore/docs (optional scope).
+subject="$(head -1 "$1")"
+case "$subject" in
+  E[0-9][0-9]-S[0-9][0-9]:*|Merge*|fixup!*|squash!*) exit 0 ;;
+  ci:*|ci\(*\):*|fix:*|fix\(*\):*|build:*|build\(*\):*|chore:*|chore\(*\):*|docs:*|docs\(*\):*) exit 0 ;;
+esac
+echo "commit-msg: \"$subject\" is neither a story commit (Enn-Snn: ...) nor ci/fix/build/chore/docs: ..." >&2
+exit 1
