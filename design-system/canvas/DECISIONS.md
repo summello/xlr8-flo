@@ -361,6 +361,18 @@ Items 121, 143 and 169 said "MASTER was not amended". They are now folded in; th
 187. **Code is behind MASTER in three places**, each for the first story that touches the screen: `status/map.ts` has `vendor` with `pending` and `expired` (decision 123 forbids an expired status), `rfq.closed` as neutral (MASTER: info), no `award`, and `purchase_order` with the old fulfilled keys; `labels.ts` has the matching words.
 188. **A shared defect is recorded once** in `pages/approval-inbox.md` section 6 (decision-panel footer and top bar at 375), not on each of the three pages.
 
+## 6l. Canvas comments, 14 Oct 2026 (operator; questions asked first, answers below)
+
+Three open comments on the published canvas. Where a comment left a choice open, it was asked, not assumed.
+
+189. **PO Detail is simplified** (comment on `PoDetail`): PO number is the page title; one header bar holds the connected lifecycle stepper over two equal swimlanes, `Order` and `Vendor`; the body is 70 / 30. Left: `Lines`, `Notes and Files`, `Transmissions`. Right: `Budget Summary`, `Linked Records`, `History`. The operator chose the stepper on a row above the two swimlanes, and `Sent to Vendor` inside Transmissions.
+190. **Versions are a control, not a card.** The page shows the current version; a disclosure beside the PO number lists versions and change orders (Escape closes, focus returns to it). Class contract: `.po-ver` on a native `<details>`, reusing `.pop`, `.pop-h`, `.pop-i`.
+191. **The stepper is connected** (`.stepper.is-linked`): a 2px line joins the steps and takes the success tone after a done step. The words and `aria-current` carry the meaning; the line is decoration and is dropped below 760px.
+192. **PO Editor cap raised** from 1120 to 1600px, centred, full width below that (the operator chose a wider centred cap). Auto margins in a flex column shrink an item to its content, so the width is stated: `width:100%` with the cap.
+193. **Bid Comparison comment of 9 Oct** (overlapping lowest highlight; colour for wins and failures): the operator says it has been addressed and asked for it to be resolved. No board change.
+194. **New classes in `xlr8flo.css` (tokens only):** `.po-hdr .po-lanes .po-lane .po-body .po-col .stepper.is-linked .po-ver`.
+195. **Open, asked back to the operator:** what `Budget Summary for the immediate Project` should contain beyond this PO's reserved, committed and released. The board names the project and shows no project-level figure, because inventing one on a money board would settle a rule (E09-S13 also decides which project a commitment lands on, decision 162).
+
 ## 7. Findings to feed back into MASTER.md (amended 9 Oct 2026, see 97)
 
 - **The MASTER amendment is deferred until after Budget Transfer (item 84), which is now built: the next session can draft it for the operator.** It would fold in the items below plus the ancestry state rows (6f item 86).

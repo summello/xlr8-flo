@@ -248,6 +248,32 @@ test.describe('detail, issue and the transmission log', () => {
     test(`state: ${file}`, async ({ page }) => { await open(page, `/${file}.dc.html`); await expect(check(page)).toBeVisible(); });
   }
   test('375: no sideways scroll', async ({ page }) => { await open(page, '/PoDetailW375.dc.html', 375); expect(await noSideways(page)).toBe(true); });
+  test('round 2 layout: PO number is the title, header lanes are equal, body is 70/30, versions are a control not a card', async ({ page }) => {
+    await open(page, '/PoDetail.dc.html');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('PO-00262');
+    const box = async (sel) => (await page.locator(sel).first().boundingBox());
+    const [order, vendor] = [await box('section[aria-labelledby=h-ord]'), await box('section[aria-labelledby=h-ven]')];
+    expect(Math.abs(order.width - vendor.width)).toBeLessThan(2);
+    expect(vendor.x).toBeGreaterThan(order.x);
+    const [left, right] = [await box('.po-col:nth-child(1)'), await box('.po-col:nth-child(2)')];
+    expect(left.width / (left.width + right.width)).toBeGreaterThan(0.66);
+    expect(left.width / (left.width + right.width)).toBeLessThan(0.74);
+    const leftHeads = await page.locator('.po-col:nth-child(1) h2').allInnerTexts();
+    const rightHeads = await page.locator('.po-col:nth-child(2) h2').allInnerTexts();
+    expect(leftHeads).toEqual(['Lines', 'Notes and Files', 'Transmissions']);
+    expect(rightHeads).toEqual(['Budget Summary', 'Linked Records', 'History']);
+    await expect(page.getByRole('heading', { name: 'Versions and Change Orders' })).toHaveCount(0);   // no card of its own
+    await page.locator('.po-ver > summary').click();
+    await expect(page.locator('.po-ver .pop')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.po-ver .pop')).toBeHidden();
+  });
+  test('round 2 layout: the editor fills a large screen up to a centred cap', async ({ page }) => {
+    await open(page, '/PoEditor.dc.html', 1920);
+    const w = (await page.locator('main .dash').first().boundingBox()).width;
+    expect(w).toBeGreaterThan(1121);     // no longer the 1120 cap
+    expect(w).toBeLessThanOrEqual(1600);
+  });
 });
 
 test.describe('issue, signature moment 5', () => {

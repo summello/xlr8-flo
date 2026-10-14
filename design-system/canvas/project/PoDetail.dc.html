@@ -39,8 +39,14 @@
     <main class="page">
       <div class="phead">
         <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
-          <h1 class="t-display">Siemar Automation</h1>
-          <p class="secondary"><span class="num" style="text-align:left">PO-00262</span> · {{versionText}} · <a href="RfqAward.dc.html" class="u">AWD-00095</a> · Plant 4 Line Retrofit</p>
+          <h1 class="t-display"><span class="num" style="text-align:left">PO-00262</span></h1>
+          <div class="t-dense secondary" style="display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center">
+            <span style="font-weight:560;color:var(--fg)">Siemar Automation</span>
+            <details class="po-ver" onKeyDown="{{verKey}}"><summary class="btn" aria-label="{{versionText}}, show version history">{{versionText}}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></summary>
+              <div class="pop" role="group" aria-label="Version history"><div class="pop-h"><b class="t-dense">Versions and Change Orders</b></div><sc-for list="{{versions}}" as="v" hint-placeholder-count="2"><div class="pop-i"><div style="min-width:0"><div class="t-dense" style="font-weight:520">{{v.name}}</div><div class="t-caption">{{v.when}}</div><div class="t-caption">{{v.note}}</div></div></div></sc-for></div>
+            </details>
+            <span><a href="RfqAward.dc.html" class="u">AWD-00095</a> · Plant 4 Line Retrofit</span>
+          </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="{{pillCls}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{pillD}}"></path></svg>{{pillText}}</span><sc-if value="{{hasTx}}" hint-placeholder-val="{{ false }}"><span class="{{tx.cls}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{tx.d}}"></path></svg><span>{{tx.text}}</span></span></sc-if></div>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
@@ -57,64 +63,36 @@
 
       <sc-if value="{{pageOk}}" hint-placeholder-val="{{ true }}">
       <sc-if value="{{banner.on}}" hint-placeholder-val="{{ false }}"><div class="{{banner.cls}}" role="status"><div style="display:flex;gap:8px;align-items:flex-start"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:1px"><path d="{{banner.d}}"></path></svg><div><b class="t-dense">{{banner.title}}</b><div class="t-dense">{{banner.text}}</div></div></div></div></sc-if>
-      <section class="card" aria-labelledby="h-life" style="padding:16px;display:flex;flex-direction:column;gap:12px">
-        <h2 class="t-heading" id="h-life" tabindex="-1">Where It Is</h2>
-        <ol class="stepper" aria-label="Purchase order lifecycle"><sc-for list="{{stages}}" as="s" hint-placeholder-count="8"><li class="{{s.cls}}" aria-current="{{s.cur}}">{{s.mark}}{{s.label}}<span class="sr-only">{{s.sr}}</span></li></sc-for></ol>
+      <section class="card po-hdr" aria-labelledby="h-life">
+        <h2 class="sr-only" id="h-life" tabindex="-1">Where It Is</h2>
+        <ol class="stepper is-linked" aria-label="Purchase order lifecycle"><sc-for list="{{stages}}" as="s" hint-placeholder-count="8"><li class="{{s.cls}}" aria-current="{{s.cur}}">{{s.mark}}{{s.label}}<span class="sr-only">{{s.sr}}</span></li></sc-for></ol>
         <p class="t-dense secondary" style="margin:0">{{whereText}}</p>
-      </section>
-
-      <div class="dash">
-        <section class="card a-wf" aria-labelledby="h-ord">
-          <div class="card-h"><h2 class="t-heading" id="h-ord">Order</h2></div>
-          <div class="card-b">
+        <div class="po-lanes">
+          <section aria-labelledby="h-ord" class="po-lane">
+            <h2 class="t-heading" id="h-ord">Order</h2>
             <sc-if value="{{c.ord.loading}}" hint-placeholder-val="{{ false }}"><div role="status" aria-label="Loading the order" style="display:flex;flex-direction:column;gap:12px"><span class="skel" style="height:14px;width:70%"></span><span class="skel" style="height:14px"></span><span class="skel" style="height:14px;width:60%"></span></div></sc-if>
             <sc-if value="{{c.ord.ok}}" hint-placeholder-val="{{ true }}"><dl class="kv" style="margin:0">
-              <dt class="t-label">Vendor</dt><dd style="margin:0"><a href="VendorProfile.dc.html" class="u">Siemar Automation</a> <span class="t-caption">as it was on the award, snapshot v3</span></dd>
-              <dt class="t-label">Send To</dt><dd style="margin:0;overflow-wrap:anywhere">Tom Whitcombe, delivery@siemar.example</dd>
               <dt class="t-label">Bill To</dt><dd style="margin:0">Northwind Capital, Accounts Payable, 100 Commerce Way, Chicago IL</dd>
               <dt class="t-label">Ship To</dt><dd style="margin:0">Plant 4 Receiving Dock</dd>
               <dt class="t-label">Terms</dt><dd style="margin:0">Net 30, needed by 20 Nov 2026</dd>
               <dt class="t-label">Chartfields</dt><dd style="margin:0">Plant 4 Line Retrofit · Maintenance · 6100 Capital Equipment <span class="t-caption">internal, never on the vendor copy</span></dd>
             </dl></sc-if>
             <sc-if value="{{c.ord.error}}" hint-placeholder-val="{{ false }}"><div class="state" role="alert"><span class="pill danger"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>Could not load the order</span><button class="btn" type="button" onClick="{{retry}}">Try again</button></div></sc-if>
-          </div>
-        </section>
+          </section>
+          <section aria-labelledby="h-ven" class="po-lane">
+            <h2 class="t-heading" id="h-ven">Vendor</h2>
+            <sc-if value="{{c.ord.loading}}" hint-placeholder-val="{{ false }}"><div role="status" aria-label="Loading the vendor" style="display:flex;flex-direction:column;gap:12px"><span class="skel" style="height:14px;width:70%"></span><span class="skel" style="height:14px"></span></div></sc-if>
+            <sc-if value="{{c.ord.ok}}" hint-placeholder-val="{{ true }}"><dl class="kv" style="margin:0">
+              <dt class="t-label">Vendor</dt><dd style="margin:0"><a href="VendorProfile.dc.html" class="u">Siemar Automation</a> <span class="t-caption">as it was on the award, snapshot v3</span></dd>
+              <dt class="t-label">Send To</dt><dd style="margin:0;overflow-wrap:anywhere">Tom Whitcombe, delivery@siemar.example</dd>
+            </dl></sc-if>
+            <sc-if value="{{c.ord.error}}" hint-placeholder-val="{{ false }}"><div class="state" role="alert"><span class="pill danger"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>Could not load the vendor</span><button class="btn" type="button" onClick="{{retry}}">Try again</button></div></sc-if>
+          </section>
+        </div>
+      </section>
 
-        <section class="card a-bu" aria-labelledby="h-bud">
-          <div class="card-h"><h2 class="t-heading" id="h-bud">Budget</h2></div>
-          <div class="card-b" style="display:flex;flex-direction:column;gap:12px">
-            <dl class="kv" style="margin:0;grid-template-columns:minmax(0,1fr) auto">
-              <dt class="t-label">Reserved for This PO</dt><dd class="amt" style="margin:0;text-align:right"><span class="w">{{bud.resW}}</span><span class="d">{{bud.resD}}</span><span class="cur">USD</span></dd>
-              <dt class="t-label">Committed</dt><dd class="amt" style="margin:0;text-align:right"><span class="w">{{bud.comW}}</span><span class="d">{{bud.comD}}</span><span class="cur">USD</span></dd>
-              <dt class="t-label">Released</dt><dd class="amt" style="margin:0;text-align:right"><span class="w">{{bud.relW}}</span><span class="d">{{bud.relD}}</span><span class="cur">USD</span></dd>
-            </dl>
-            <p class="t-dense" style="margin:0">{{bud.sentence}}</p>
-            <p class="t-caption" style="margin:0">Approval never commits; issue does, once. Assumption, not yet confirmed: the project is the one that holds the reservation.</p>
-          </div>
-        </section>
-
-        <section class="card a-ln" aria-labelledby="h-snt">
-          <div class="card-h"><h2 class="t-heading" id="h-snt">Sent to Vendor</h2></div>
-          <div class="card-b" style="display:flex;flex-direction:column;gap:12px">
-            <sc-if value="{{c.snt.loading}}" hint-placeholder-val="{{ false }}"><div role="status" aria-label="Loading what was sent" style="display:flex;flex-direction:column;gap:12px"><span class="skel" style="height:14px;width:70%"></span><span class="skel" style="height:60px"></span></div></sc-if>
-            <sc-if value="{{c.snt.ok}}" hint-placeholder-val="{{ true }}">
-              <dl class="kv" style="margin:0">
-                <dt class="t-label">Version</dt><dd style="margin:0">{{snt.ver}}</dd>
-                <dt class="t-label">Recipient</dt><dd style="margin:0;overflow-wrap:anywhere">delivery@siemar.example</dd>
-                <dt class="t-label">Latest Result</dt><dd style="margin:0"><span class="{{tx.cls}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{tx.d}}"></path></svg><span>{{snt.latest}}</span></span></dd>
-                <dt class="t-label">Contents</dt><dd style="margin:0">An email with a short summary, and the PO as a PDF. Chartfields, budget and internal notes are never in it.</dd>
-              </dl>
-              <sc-if value="{{snt.suppressed}}" hint-placeholder-val="{{ false }}"><div class="summary" role="alert"><div class="t-dense"><b>delivery@siemar.example is suppressed.</b> The address hard-bounced on 12 Oct 2026 and will not be tried again. Change the recipient on the vendor, then resend the same version.</div></div></sc-if>
-            </sc-if>
-            <sc-if value="{{c.snt.error}}" hint-placeholder-val="{{ false }}"><div class="state" role="alert"><span class="pill danger"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>Could not load what was sent</span><div class="t-dense secondary">The PO itself is current. Nothing was changed.</div><button class="btn" type="button" onClick="{{retry}}">Try again</button></div></sc-if>
-          </div>
-        </section>
-
-        <section class="card a-fn" aria-labelledby="h-nt">
-          <div class="card-h"><h2 class="t-heading" id="h-nt">Notes and Files</h2></div>
-          <div class="card-b" style="padding:0"><ul class="suggest"><sc-for list="{{notes}}" as="n" hint-placeholder-count="3"><li><div style="min-width:0"><span class="t-dense" style="font-weight:520;overflow-wrap:anywhere">{{n.t}}</span><div class="t-caption">{{n.vis}}</div></div></li></sc-for></ul></div>
-        </section>
-
+      <div class="po-body">
+        <div class="po-col">
         <section class="card a-att" aria-labelledby="h-pl">
           <div class="card-h"><h2 class="t-heading" id="h-pl">Lines</h2><span class="t-caption">Price, tax and freight apart</span></div>
           <div class="card-b" style="padding:12px 0 0">
@@ -125,30 +103,62 @@
           </div>
         </section>
 
-        <section class="card v-w" aria-labelledby="h-tx">
-          <div class="card-h"><h2 class="t-heading" id="h-tx">Transmissions</h2><span class="t-caption">{{txs.length}} sends</span></div>
-          <div class="card-b" style="padding:12px 0 0">
+        <section class="card a-fn" aria-labelledby="h-nt">
+          <div class="card-h"><h2 class="t-heading" id="h-nt">Notes and Files</h2></div>
+          <div class="card-b" style="padding:0"><ul class="suggest"><sc-for list="{{notes}}" as="n" hint-placeholder-count="3"><li><div style="min-width:0"><span class="t-dense" style="font-weight:520;overflow-wrap:anywhere">{{n.t}}</span><div class="t-caption">{{n.vis}}</div></div></li></sc-for></ul></div>
+        </section>
+
+          <section class="card" aria-labelledby="h-tx">
+            <div class="card-h"><h2 class="t-heading" id="h-tx">Transmissions</h2><span class="t-caption">{{txs.length}} sends</span></div>
+            <div class="card-b" style="display:flex;flex-direction:column;gap:12px">
+              <h3 class="t-label" style="margin:0">Sent to Vendor</h3>
+              <sc-if value="{{c.snt.loading}}" hint-placeholder-val="{{ false }}"><div role="status" aria-label="Loading what was sent" style="display:flex;flex-direction:column;gap:12px"><span class="skel" style="height:14px;width:70%"></span><span class="skel" style="height:60px"></span></div></sc-if>
+              <sc-if value="{{c.snt.ok}}" hint-placeholder-val="{{ true }}">
+                <dl class="kv" style="margin:0">
+                  <dt class="t-label">Version</dt><dd style="margin:0">{{snt.ver}}</dd>
+                  <dt class="t-label">Recipient</dt><dd style="margin:0;overflow-wrap:anywhere">delivery@siemar.example</dd>
+                  <dt class="t-label">Latest Result</dt><dd style="margin:0"><span class="{{tx.cls}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{tx.d}}"></path></svg><span>{{snt.latest}}</span></span></dd>
+                  <dt class="t-label">Contents</dt><dd style="margin:0">An email with a short summary, and the PO as a PDF. Chartfields, budget and internal notes are never in it.</dd>
+                </dl>
+                <sc-if value="{{snt.suppressed}}" hint-placeholder-val="{{ false }}"><div class="summary" role="alert"><div class="t-dense"><b>delivery@siemar.example is suppressed.</b> The address hard-bounced on 12 Oct 2026 and will not be tried again. Change the recipient on the vendor, then resend the same version.</div></div></sc-if>
+              </sc-if>
+              <sc-if value="{{c.snt.error}}" hint-placeholder-val="{{ false }}"><div class="state" role="alert"><span class="pill danger"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>Could not load what was sent</span><div class="t-dense secondary">The PO itself is current. Nothing was changed.</div><button class="btn" type="button" onClick="{{retry}}">Try again</button></div></sc-if>
+            </div>
+            <div class="card-b" style="padding:12px 0 0;border-top:1px solid var(--border)">
             <sc-if value="{{hasTxs}}" hint-placeholder-val="{{ true }}">
             <div role="table" aria-label="Transmission log"><div class="row head cols-ptx stack" role="row"><span role="columnheader">Time</span><span role="columnheader">Version</span><span role="columnheader" class="hide-md">Recipient</span><span role="columnheader">Result</span><span role="columnheader"><span class="sr-only">Details</span></span></div>
               <sc-for list="{{txs}}" as="x" hint-placeholder-count="2"><div class="row cols-ptx stack" role="row" style="min-height:56px"><div role="cell" class="stack-main">{{x.when}}</div><span role="cell" data-label="Version">{{x.ver}}</span><span role="cell" class="hide-md t-caption" data-label="Recipient" style="overflow-wrap:anywhere">{{x.to}}</span><span role="cell" data-label="Result"><span class="{{x.cls}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{x.d}}"></path></svg><span>{{x.text}}</span></span></span><span role="cell"><button class="btn" type="button" aria-label="{{x.aria}}" onClick="{{x.open}}">Details</button></span></div></sc-for>
             </div></sc-if>
             <sc-if value="{{noTxs}}" hint-placeholder-val="{{ false }}"><div class="state"><div class="t-heading">Nothing Sent Yet</div><div class="t-dense secondary">Every send is listed here with its result, from the moment it is queued.</div></div></sc-if>
             <sc-if value="{{c.log.error}}" hint-placeholder-val="{{ false }}"><div class="state" role="alert"><span class="pill danger"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>Could not load the transmission log</span><div class="t-dense secondary">The PO is current. Nothing was resent.</div><button class="btn" type="button" onClick="{{retry}}">Try again</button></div></sc-if>
-          </div>
-        </section>
-        <section class="card v-n" aria-labelledby="h-ver">
-          <div class="card-h"><h2 class="t-heading" id="h-ver">Versions and Change Orders</h2></div>
-          <div class="card-b" style="padding:0"><ul class="suggest"><sc-for list="{{versions}}" as="v" hint-placeholder-count="2"><li><div style="min-width:0"><div class="t-dense" style="font-weight:520">{{v.name}}</div><div class="t-caption">{{v.when}}</div><div class="t-caption">{{v.note}}</div></div></li></sc-for></ul></div>
+            </div>
+          </section>
+        </div>
+
+        <div class="po-col">
+          <section class="card" aria-labelledby="h-bud">
+            <div class="card-h"><h2 class="t-heading" id="h-bud">Budget Summary</h2><span class="t-caption">Plant 4 Line Retrofit</span></div>
+            <div class="card-b" style="display:flex;flex-direction:column;gap:12px">
+            <dl class="kv" style="margin:0;grid-template-columns:minmax(0,1fr) auto">
+              <dt class="t-label">Reserved for This PO</dt><dd class="amt" style="margin:0;text-align:right"><span class="w">{{bud.resW}}</span><span class="d">{{bud.resD}}</span><span class="cur">USD</span></dd>
+              <dt class="t-label">Committed</dt><dd class="amt" style="margin:0;text-align:right"><span class="w">{{bud.comW}}</span><span class="d">{{bud.comD}}</span><span class="cur">USD</span></dd>
+              <dt class="t-label">Released</dt><dd class="amt" style="margin:0;text-align:right"><span class="w">{{bud.relW}}</span><span class="d">{{bud.relD}}</span><span class="cur">USD</span></dd>
+            </dl>
+            <p class="t-dense" style="margin:0">{{bud.sentence}}</p>
+            <p class="t-caption" style="margin:0">Approval never commits; issue does, once. Assumption, not yet confirmed: the project is the one that holds the reservation.</p>
+            </div>
+          </section>
+
+        <section class="card v-n" aria-labelledby="h-link">
+          <div class="card-h"><h2 class="t-heading" id="h-link">Linked Records</h2></div>
+          <div class="card-b" style="padding:0"><ul class="suggest"><sc-for list="{{links}}" as="l" hint-placeholder-count="4"><li><div style="min-width:0"><div class="t-dense"><a href="#" class="u" style="font-weight:520">{{l.ref}}</a><span style="margin-left:0.5em">{{l.kind}}</span></div><div class="t-caption">{{l.note}}</div></div></li></sc-for></ul></div>
         </section>
 
         <section class="card v-w" aria-labelledby="h-hist">
           <div class="card-h"><h2 class="t-heading" id="h-hist">History</h2></div>
           <div class="card-b"><ol class="lineage"><sc-for list="{{history}}" as="h" hint-placeholder-count="4"><li><div class="t-dense" style="font-weight:520">{{h.what}}</div><div class="t-caption">{{h.when}} · {{h.who}}</div></li></sc-for></ol></div>
         </section>
-        <section class="card v-n" aria-labelledby="h-link">
-          <div class="card-h"><h2 class="t-heading" id="h-link">Linked Records</h2></div>
-          <div class="card-b" style="padding:0"><ul class="suggest"><sc-for list="{{links}}" as="l" hint-placeholder-count="4"><li><div style="min-width:0"><div class="t-dense"><a href="#" class="u" style="font-weight:520">{{l.ref}}</a><span style="margin-left:0.5em">{{l.kind}}</span></div><div class="t-caption">{{l.note}}</div></div></li></sc-for></ul></div>
-        </section>
+        </div>
       </div>
       </sc-if>
       <p class="t-caption">Sample data for layout review.</p>
@@ -556,6 +566,7 @@ class Component extends DCLogic {
         this.setState({ dstate: 'busy' });
         setTimeout(() => { this.setState({ dialog: '', dstate: '', reason: '', status: dk === 'issue' ? 'issued' : dk === 'cancel' ? 'cancelled' : status, tx: dk === 'issue' ? 'queued' : dk === 'resend' ? 'queued' : txp }); this.toast(dk === 'issue' ? 'Issued. Commitment posted. Email queued to delivery@siemar.example.' : dk === 'resend' ? 'Queued again. Version 1, nothing committed twice.' : 'Cancelled. 175,665.58 USD released once.'); this.back(this._opener); }, 700);
       },
+      verKey: (e) => { if (e.key === 'Escape') { const d = e.currentTarget; if (d.open) { d.open = false; d.querySelector('summary').focus(); e.stopPropagation(); } } },
       dlgKey: (e) => {
         if (e.key === 'Escape') { e.preventDefault(); closeDlg(); return; }
         if (e.key !== 'Tab') return;
