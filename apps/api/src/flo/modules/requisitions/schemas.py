@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError
 from flo.modules.approvals.schemas import RoutePreview
+from flo.modules.org.schemas import CodesRead
 
 type RequisitionStatus = Literal[
     "draft",
@@ -117,6 +118,10 @@ class RequisitionRead(BaseModel):
     reservation: ReservationRead | None = None
     approval: ApprovalRead | None = None
     amendment: AmendmentRef | None = None
+    codes: CodesRead | None = None
+    codes_expired: bool = False
+    # Single-record read only: the caller holds master_code.substitute and the status allows it.
+    can_substitute_codes: bool = False
 
 
 class AmountTotal(BaseModel):
@@ -257,6 +262,7 @@ class LookupOption(BaseModel):
     label: str
     disabled: bool = False
     note: str | None = None
+    codes_expired: bool = False
 
 
 class LookupRows(BaseModel):
@@ -500,3 +506,16 @@ class LinksRead(BaseModel):
     nodes: list[LinkedRecord]
     edges: list[LinkEdge]
     partial: bool = False
+
+
+class CodeSubstitute(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    department_code: str | None = Field(default=None, min_length=1, max_length=64)
+    ledger_account_code: str | None = Field(default=None, min_length=1, max_length=64)
+    reason: str = Field(min_length=1, max_length=1000)
+
+    @model_validator(mode="after")
+    def needs_a_code(self) -> CodeSubstitute:
+        if self.department_code is None and self.ledger_account_code is None:
+            raise invalid("department_code", "Supply a replacement code.", "code_required")
+        return self

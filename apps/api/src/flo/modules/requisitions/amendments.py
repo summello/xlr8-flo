@@ -175,6 +175,16 @@ def put(
                     "To move it to another project, withdraw it and raise a new requisition.",
                     "project_change_blocked",
                 )
+        for field in ("department_code", "ledger_account_code"):
+            if field in changes:
+                value = changes.pop(field)
+                if (value or "").strip().upper() != (header[field] or "").strip().upper():
+                    raise invalid(
+                        field,
+                        "Codes cannot be changed by amendment. "
+                        "Raise a transfer or adjustment request.",
+                        "codes_change_blocked",
+                    )
         if "title" in changes and changes["title"] is None:
             raise invalid("title", "Supply a title.")
         coded = ("department_code", "ledger_account_code", "delivery_address_id")

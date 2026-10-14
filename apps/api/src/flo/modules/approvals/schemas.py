@@ -28,6 +28,7 @@ from flo.kernel.authz import AuthorizationTarget
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError
 from flo.kernel.money import Money, currency_exponent
 from flo.kernel.tenancy.context import Scope
+from flo.modules.org.schemas import CodesRead
 
 DocumentType = Literal["project", "requisition", "budget_change", "vendor", "rfq", "award", "po"]
 VersionStatus = Literal["draft", "published", "superseded"]
@@ -395,6 +396,7 @@ class DocumentSummary:
     requester_id: UUID
     href: str
     note: str | None
+    codes: CodesRead | None = None
 
 
 class DocumentAdapter(Protocol):
@@ -493,12 +495,18 @@ class InstanceRead(Contract):
     finished_at: datetime | None
 
 
+class CodeSubstitutions(Contract):
+    department_code: str | None = Field(default=None, min_length=1, max_length=64)
+    ledger_account_code: str | None = Field(default=None, min_length=1, max_length=64)
+
+
 class DecisionWrite(Contract):
     outcome: Literal["approve", "reject", "return", "comment"]
     reject_mode: Literal["return_to_draft", "permanent"] | None = None
     comment: str | None = Field(default=None, min_length=1, max_length=4000)
     document_version: int
     assign_project_id: UUID | None = None
+    substitutions: CodeSubstitutions | None = None
 
     @model_validator(mode="after")
     def validate_action(self) -> Self:

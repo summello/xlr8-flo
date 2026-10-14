@@ -28,7 +28,13 @@ AMENDMENT_ROUTES = (
     "requisitions/test_amendments.py::"
     "test_routes_conceal_foreign_tenants_and_refuse_view_only_users"
 )
+CODES_ROUTES = (
+    "requisitions/test_expired_codes.py::"
+    "test_codes_routes_conceal_foreign_tenants_and_need_the_permission"
+)
 COVERED = {
+    ("POST", "/api/v1/requisitions/{id}/codes"): CODES_ROUTES,
+    ("POST", "/api/v1/projects/{id}/codes"): CODES_ROUTES,
     (
         "GET",
         "/api/v1/budget/change-requests/{id}",

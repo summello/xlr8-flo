@@ -532,22 +532,9 @@ def test_summaries_carry_the_requesters_note(lifecycle_db):
 
 
 def test_submit_revalidates_the_proposals_master_data(lifecycle_db):
-    from datetime import date
-
-    from flo.modules.org.schemas import MasterCreate
-    from tests.requisitions.test_header import org_svc
-
     db, _ = lifecycle_db
     _, row = approved(db)
-    org_svc(db).create_master(
-        "ledger_account",
-        MasterCreate(
-            code="L2",
-            name="L2",
-            effective_from=date(2000, 1, 1),
-            attributes={"account_type": "expense"},
-        ),
-    )
+    # D-M2-23: a code cannot be changed by amendment, so the code itself expires meanwhile.
     draft = opened(db, row)
     line = service(db).list_lines(row.id).rows[0]
     draft = amendments.put(
@@ -556,7 +543,7 @@ def test_submit_revalidates_the_proposals_master_data(lifecycle_db):
         row.id,
         draft.revision_no,
         AmendmentPut(
-            header=AmendmentHeaderPut(ledger_account_code="L2"),
+            header=AmendmentHeaderPut(),
             lines=[
                 ReplacementLine(line_id=line.id, **(BODY | {"quantity": "1", "unit_price": "60"}))
             ],
@@ -566,7 +553,7 @@ def test_submit_revalidates_the_proposals_master_data(lifecycle_db):
     )
     sql(
         db,
-        "UPDATE master_record SET active=false WHERE kind='ledger_account' AND code='L2' "
+        "UPDATE master_record SET active=false WHERE kind='ledger_account' AND code='L' "
         "RETURNING 1",
     )
     with pytest.raises(ProblemError) as error:

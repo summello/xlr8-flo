@@ -16,7 +16,7 @@ from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.org.service import OrgService
 from flo.modules.projects.service import ProjectService
-from flo.modules.requisitions import amendments, revisions
+from flo.modules.requisitions import amendments, codes, revisions
 from flo.modules.requisitions.lines import LineService
 from flo.modules.requisitions.lookups import LookupService
 from flo.modules.requisitions.schemas import (
@@ -24,6 +24,7 @@ from flo.modules.requisitions.schemas import (
     AmendmentRead,
     AmendmentSubmit,
     ChangeSet,
+    CodeSubstitute,
     Direction,
     LineCreate,
     LinesRead,
@@ -84,6 +85,9 @@ ReadContext = Annotated[
 ]
 EditContext = Annotated[
     AuthorizationContext, Depends(require("requisition.edit", requisition_target))
+]
+SubstituteContext = Annotated[
+    AuthorizationContext, Depends(require("master_code.substitute", requisition_target))
 ]
 SubmitContext = Annotated[
     AuthorizationContext, Depends(require("requisition.submit", requisition_target))
@@ -181,6 +185,11 @@ def get_requisition(
             cast(TargetProtocol, AuthorizationTarget(ScopeType.PROJECT, project_id)),
         ),
         lambda: permits(request, "requisition.edit", requisition_target(id, connection)),
+    )
+    row.can_substitute_codes = (
+        row.codes_expired
+        and codes.can_substitute_requisition(connection, current_scope(), id)
+        and permits(request, "master_code.substitute", requisition_target(id, connection))
     )
     response.headers["ETag"] = f'"{row.version}"'
     return row
@@ -496,3 +505,18 @@ def withdraw_amendment(
     )
     response.headers["ETag"] = f'"{row.version}"'
     return row
+
+
+@router.post("/{id}/codes", response_model=RequisitionRead)
+def substitute_requisition_codes(
+    id: UUID, body: CodeSubstitute, context: SubstituteContext, connection: Connection
+) -> RequisitionRead:
+    codes.substitute_requisition(
+        connection,
+        current_scope(),
+        context.user_id,
+        id,
+        body.model_dump(exclude={"reason"}, exclude_none=True),
+        body.reason,
+    )
+    return RequisitionService(connection, current_scope(), context.user_id).get(id)

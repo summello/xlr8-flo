@@ -2,6 +2,8 @@ import { ArrowRight, NotePencil, PencilSimple, Trash } from "@phosphor-icons/rea
 import { useState } from "react";
 import { apiClient } from "../../api/client";
 import StatusPill from "../../components/status/StatusPill";
+import ExpiredCodeBadge from "../../components/codes/ExpiredCodeBadge";
+import SubstituteCodes from "../../components/codes/SubstituteCodes";
 import { CardSkeleton, HistoryCard, LinesCard, LinkedCard, CardState, RequestCard, ReservationCard } from "../../components/requisitions/DetailCards";
 import Stepper from "../../components/requisitions/Stepper";
 import WithdrawDialog from "../../components/requisitions/WithdrawDialog";
@@ -67,7 +69,9 @@ export default function RequisitionDetail({ id, navigate, onLoaded }: { id: stri
     <header className="req-heading">
       <p>{row.number} · {row.project_name ?? "Standalone request"} · requested by {row.requester_email}</p>
       <StatusPill docType="requisition" status={row.status} />
+      {row.codes_expired && <ExpiredCodeBadge />}
       <div className="req-actions">
+        {row.can_substitute_codes && row.codes && <SubstituteCodes target="requisition" id={id} codes={row.codes} onDone={main.reload} />}
         {row.status === "draft" && !returned && <a className="req-link-button" href={`/requisitions/${id}/edit`} onClick={e => { e.preventDefault(); navigate(`/requisitions/${id}/edit`); }}><PencilSimple aria-hidden="true" weight="regular" />Edit draft</a>}
         {row.status === "draft" && !held && can("withdrawn")?.allowed && <button type="button" className="req-destructive" onClick={() => void discard()}><Trash aria-hidden="true" weight="regular" />Discard draft</button>}
         {withdrawReady && (row.status !== "draft" || held) && can("withdrawn")?.allowed && <WithdrawDialog row={row} mode="withdraw" approvers={approvers} onDone={next => changed(next, "Requisition withdrawn.")} onStale={main.reload} />}

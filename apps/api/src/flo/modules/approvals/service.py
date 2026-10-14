@@ -123,6 +123,9 @@ from flo.modules.approvals.material import (
     assert_current_approval as assert_current_approval,
 )
 from flo.modules.approvals.material import (
+    rebase_digest as rebase_digest,
+)
+from flo.modules.approvals.material import (
     requires_resubmission as requires_resubmission,
 )
 from flo.modules.approvals.material import (
@@ -165,6 +168,7 @@ __all__ = [
     "approval_state",
     "requires_resubmission",
     "supersede",
+    "rebase_digest",
     "assert_current_approval",
     "decide",
     "decided_on_behalf",

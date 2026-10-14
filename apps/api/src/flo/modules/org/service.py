@@ -34,6 +34,8 @@ from flo.modules.org.models import OrgRepository
 from flo.modules.org.numbering import NumberingService as NumberingService
 from flo.modules.org.schemas import (
     BaseCurrencyPut,
+    CodesRead,
+    CodeState,
     CurrencyRead,
     EffectiveSetting,
     MasterCreate,
@@ -68,6 +70,7 @@ __all__ = [
     "PeriodClosed",
     "assert_postable",
     "assert_usable",
+    "codes_read",
     "create_organization",
     "known_key",
     "list_currencies",
@@ -638,6 +641,30 @@ class OrgService:
             ):
                 raise MasterCodeUnusable(code, "not_effective")
             return ref
+
+
+def codes_read(
+    connection: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    department_code: str | None,
+    ledger_account_code: str | None,
+) -> CodesRead:
+    """Status of a document's department and ledger-account codes at today's date."""
+    on_date = today()
+
+    def state(kind: str, code: str | None) -> CodeState:
+        if not code:
+            return CodeState(code=code, status="missing")
+        try:
+            OrgService(connection, scope).assert_usable(kind, code, on_date)
+        except MasterCodeUnusable as exc:
+            return CodeState(code=code, status=exc.reason)
+        return CodeState(code=code, status="usable")
+
+    return CodesRead(
+        department=state("department", department_code),
+        ledger_account=state("ledger_account", ledger_account_code),
+    )
 
 
 class MasterCodeUnusable(ValueError):

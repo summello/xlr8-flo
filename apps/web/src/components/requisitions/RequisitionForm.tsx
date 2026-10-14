@@ -23,7 +23,7 @@ async function lookup(kind: string, buId?: string): Promise<LookupOption[]> {
   if (!data) throw new Error(failure(error, "Loading the list of choices"));
   return data.rows;
 }
-const optionLabel = (o: LookupOption) => o.note ? `${o.label} (${o.note})` : o.label;
+const optionLabel = (o: LookupOption) => { const notes = [o.note, o.codes_expired ? "expired code" : null].filter(Boolean); return notes.length ? `${o.label} (${notes.join(", ")})` : o.label; };
 
 export default function RequisitionForm({ navigate, initial }: { navigate: (href: string) => void; initial?: Initial }) {
   const [header, setHeader] = useState<Header>(() => initial ? initialHeader(initial.row) : EMPTY_HEADER);

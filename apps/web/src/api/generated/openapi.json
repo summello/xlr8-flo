@@ -1590,6 +1590,132 @@
         "title": "ChildrenPage",
         "type": "object"
       },
+      "CodeState": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CodeStatus"
+          }
+        },
+        "required": [
+          "code",
+          "status"
+        ],
+        "title": "CodeState",
+        "type": "object"
+      },
+      "CodeStatus": {
+        "enum": [
+          "usable",
+          "missing",
+          "unknown",
+          "inactive",
+          "not_effective"
+        ],
+        "type": "string"
+      },
+      "CodeSubstitute": {
+        "additionalProperties": false,
+        "properties": {
+          "department_code": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department Code"
+          },
+          "ledger_account_code": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ledger Account Code"
+          },
+          "reason": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "CodeSubstitute",
+        "type": "object"
+      },
+      "CodeSubstitutions": {
+        "additionalProperties": false,
+        "properties": {
+          "department_code": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department Code"
+          },
+          "ledger_account_code": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ledger Account Code"
+          }
+        },
+        "title": "CodeSubstitutions",
+        "type": "object"
+      },
+      "CodesRead": {
+        "description": "A document's two master codes judged against today's master data (D-M2-25).",
+        "properties": {
+          "department": {
+            "$ref": "#/components/schemas/CodeState"
+          },
+          "ledger_account": {
+            "$ref": "#/components/schemas/CodeState"
+          }
+        },
+        "required": [
+          "department",
+          "ledger_account"
+        ],
+        "title": "CodesRead",
+        "type": "object"
+      },
       "CommitBody": {
         "additionalProperties": false,
         "properties": {
@@ -1921,6 +2047,16 @@
               }
             ],
             "title": "Reject Mode"
+          },
+          "substitutions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CodeSubstitutions"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -3324,6 +3460,21 @@
               }
             ]
           },
+          "codes": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CodesRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "codes_expired": {
+            "default": false,
+            "title": "Codes Expired",
+            "type": "boolean"
+          },
           "decided_at": {
             "anyOf": [
               {
@@ -4625,6 +4776,11 @@
       },
       "LookupOption": {
         "properties": {
+          "codes_expired": {
+            "default": false,
+            "title": "Codes Expired",
+            "type": "boolean"
+          },
           "disabled": {
             "default": false,
             "title": "Disabled",
@@ -7055,6 +7211,26 @@
             ],
             "title": "Bu Name"
           },
+          "can_substitute_codes": {
+            "default": false,
+            "title": "Can Substitute Codes",
+            "type": "boolean"
+          },
+          "codes": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CodesRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "codes_expired": {
+            "default": false,
+            "title": "Codes Expired",
+            "type": "boolean"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -7791,6 +7967,26 @@
           "bu_name": {
             "title": "Bu Name",
             "type": "string"
+          },
+          "can_substitute_codes": {
+            "default": false,
+            "title": "Can Substitute Codes",
+            "type": "boolean"
+          },
+          "codes": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CodesRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "codes_expired": {
+            "default": false,
+            "title": "Codes Expired",
+            "type": "boolean"
           },
           "created_at": {
             "format": "date-time",
@@ -17640,6 +17836,85 @@
         ]
       }
     },
+    "/api/v1/projects/{id}/codes": {
+      "post": {
+        "operationId": "substitute_project_codes_api_v1_projects__id__codes_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodeSubstitute"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Substitute Project Codes",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
     "/api/v1/projects/{id}/milestones": {
       "get": {
         "operationId": "list_milestones_api_v1_projects__id__milestones_get",
@@ -20656,6 +20931,85 @@
           }
         },
         "summary": "Requisition Changes",
+        "tags": [
+          "requisitions"
+        ]
+      }
+    },
+    "/api/v1/requisitions/{id}/codes": {
+      "post": {
+        "operationId": "substitute_requisition_codes_api_v1_requisitions__id__codes_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodeSubstitute"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequisitionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Substitute Requisition Codes",
         "tags": [
           "requisitions"
         ]

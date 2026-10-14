@@ -33,6 +33,7 @@ from flo.modules.identity.service import (
     IdentityAuthorizationConnection,
     emails_by_id,
 )
+from flo.modules.org.schemas import CodesRead
 
 Connection = psycopg.Connection[tuple[object, ...]]
 View = Literal["pending", "overdue", "completed", "delegated"]
@@ -67,6 +68,8 @@ class InboxRow(Contract):
     status_word: str
     on_behalf_of_email: str | None
     href: str
+    codes: CodesRead | None = None
+    codes_expired: bool = False
 
 
 class InboxCounts(Contract):
@@ -354,6 +357,8 @@ def inbox(
                     status_word=word,
                     on_behalf_of_email=behalf,
                     href=s.href,
+                    codes=s.codes,
+                    codes_expired=s.codes is not None and s.codes.expired,
                 )
             )
         return InboxPage(

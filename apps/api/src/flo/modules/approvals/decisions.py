@@ -297,6 +297,19 @@ def decide(
             members=sorted(emails.get(m, "(removed user)") for m in listed),
             reject_mode=body.reject_mode,
         )
+        prepare = getattr(adapter, "prepare_approval", None)
+        if body.outcome == "approve" and prepare is not None:
+            # Optional adapter hook: the document may refuse an approval or take a correction
+            # (expired master codes, D-M2-25); a raise rolls the decision back with it.
+            prepare(
+                conn,
+                scope,
+                cast(UUID, instance["document_id"]),
+                actor_id,
+                body.substitutions.model_dump(exclude_none=True) if body.substitutions else {},
+            )
+        elif body.substitutions is not None:
+            raise decision_invalid("substitutions", "Substitute codes only when approving.")
         context = OutcomeContext(
             actor_id,
             id,

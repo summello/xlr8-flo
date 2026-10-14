@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { apiClient } from "../../api/client";
 import type { components } from "../../api/generated/schema";
 import { writeHeaders } from "../../features/auth/api";
+import ExpiredCodeBadge from "../codes/ExpiredCodeBadge";
 import Money from "../ui/Money";
 import InboxStatus from "./InboxStatus";
 import type { InboxRow, Tab } from "./inbox-model";
@@ -15,7 +16,7 @@ type Instance = components["schemas"]["InstanceRead"];
 type Explanation = components["schemas"]["Explanation"];
 type Result = components["schemas"]["DecisionResult"];
 type Outcome = components["schemas"]["DecisionWrite"]["outcome"];
-type Refusal = { kind: "reason" | "stale" | "closed" | "other"; text: string; version?: number };
+type Refusal = { kind: "reason" | "stale" | "closed" | "codes" | "other"; text: string; version?: number };
 
 const DONE: Record<Exclude<Outcome, "comment">, string> = {
   approve: "Approved",
@@ -46,6 +47,14 @@ export default function DecisionPanel({ row, tab, next, onOpen, onClose, onDecid
   const [modeError, setModeError] = useState("");
   const [project, setProject] = useState("");
   const [projects, setProjects] = useState<components["schemas"]["ProjectRead"][]>([]);
+  const [subDepartment, setSubDepartment] = useState("");
+  const [subLedger, setSubLedger] = useState("");
+  const [codesRefused, setCodesRefused] = useState(false);
+  // Known up front from the inbox row; a refusal reveals both fields when the row carried no state.
+  const unusable = (state?: { status: string }) => state !== undefined && state.status !== "usable" && state.status !== "missing";
+  const needDepartment = row.codes ? unusable(row.codes.department) : codesRefused;
+  const needLedger = row.codes ? unusable(row.codes.ledger_account) : codesRefused;
+  const codesOpen = needDepartment || needLedger;
   const [refusal, setRefusal] = useState<Refusal>();
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -124,6 +133,10 @@ export default function DecisionPanel({ row, tab, next, onOpen, onClose, onDecid
           ...(text ? { comment: text } : {}),
           ...(outcome === "reject" ? { reject_mode: mode || undefined } : {}),
           ...(outcome === "approve" && assigned ? { assign_project_id: assigned.id } : {}),
+          ...(outcome === "approve" && (subDepartment.trim() || subLedger.trim()) ? { substitutions: {
+            ...(subDepartment.trim() ? { department_code: subDepartment.trim() } : {}),
+            ...(subLedger.trim() ? { ledger_account_code: subLedger.trim() } : {}),
+          } } : {}),
         },
       });
       if (response.data) {
@@ -144,6 +157,8 @@ export default function DecisionPanel({ row, tab, next, onOpen, onClose, onDecid
         const fresh = await refreshRow(row);
         setRefusal({ kind: "stale", text: "Not decided. This requisition changed.", version: fresh?.document_version });
       }
+      else if (kind === "code_expired") { setCodesRefused(true); setRefusal({ kind: "codes", text: `Not approved. ${problem?.detail ?? "A master code has expired."} Enter a replacement below, or reject. Your comment is kept.` }); }
+      else if (kind === "code_usable" || kind === "code_unusable") setRefusal({ kind: "codes", text: `Not approved. ${problem?.errors?.[0]?.message ?? "Check the replacement code."} Your comment is kept.` });
       else if (kind === "task_closed" || kind === "already_decided") { setClosedByServer(true); setRefusal({ kind: "closed", text: "Already Decided. Someone else decided this first; nothing was recorded from you." }); }
       else if (response.response.status === 422 && problem?.errors?.some((e) => e.field === "comment")) setRefusal({ kind: "reason", text: "Not decided. A reason is needed." });
       else setRefusal({ kind: "other", text: `Not decided. ${problem?.detail ?? "Something went wrong."} Your comment is kept. Try again.` });
@@ -198,6 +213,7 @@ export default function DecisionPanel({ row, tab, next, onOpen, onClose, onDecid
             <div className="appr-sheet-body">
               <Notices tab={tab} row={row} covering={covering} passed={passed} closed={closedNow} />
               {notice && <p role="status" className="appr-note"><Info aria-hidden="true" />{notice}</p>}
+              {row.codes_expired && <ExpiredCodeBadge />}
               <dl className="appr-facts">
                 <div><dt>Requested by</dt><dd>{row.requester_email}</dd></div>
                 <div><dt>Amount</dt><dd className="appr-amount">{row.amount ? <Money value={row.amount.amount} currency={row.amount.currency} /> : "Not applicable"}</dd></div>
@@ -239,11 +255,25 @@ export default function DecisionPanel({ row, tab, next, onOpen, onClose, onDecid
                     <label><input type="radio" name="appr-mode" checked={mode === "permanent"} onChange={() => { setMode("permanent"); setModeError(""); rotateKey(); }} /> Reject permanently</label>
                     {modeError && <p id="appr-mode-error" className="field-error"><WarningCircle aria-hidden="true" weight="regular" /><span>{modeError}</span></p>}
                   </fieldset>
+                  {codesOpen ? (
+                    <fieldset className="appr-assign">
+                      <legend>Expired Code <span className="appr-tag">Replace to approve</span></legend>
+                      {needDepartment && <>
+                        <label htmlFor="appr-sub-department">Replacement department code{row.codes ? ` for ${row.codes.department.code}` : ""}</label>
+                        <input id="appr-sub-department" autoComplete="off" value={subDepartment} onChange={(event) => { setSubDepartment(event.target.value); rotateKey(); }} />
+                      </>}
+                      {needLedger && <>
+                        <label htmlFor="appr-sub-ledger">Replacement ledger account code{row.codes ? ` for ${row.codes.ledger_account.code}` : ""}</label>
+                        <input id="appr-sub-ledger" autoComplete="off" value={subLedger} onChange={(event) => { setSubLedger(event.target.value); rotateKey(); }} />
+                      </>}
+                      <p className="appr-meta">The reservation stays on the original code. The substitution is audited. You can also reject without a substitute.</p>
+                    </fieldset>
+                  ) : null}
                   {canAssign && (
                     <div className="appr-assign">
                       <label htmlFor="appr-project">Assign to an existing project <span className="appr-meta">(optional)</span></label>
                       <input id="appr-project" list="appr-projects" autoComplete="off" value={project} onChange={(event) => { setProject(event.target.value); rotateKey(); }} aria-describedby="appr-project-hint" />
-                      <datalist id="appr-projects">{projects.map((p) => <option key={p.id} value={`${p.number} ${p.name}`} />)}</datalist>
+                      <datalist id="appr-projects">{projects.map((p) => <option key={p.id} value={`${p.number} ${p.name}`} label={p.codes_expired ? "Expired code" : undefined} />)}</datalist>
                       <p id="appr-project-hint" className="appr-meta">{project.trim() === "" ? "Leave empty and a new project is created and funded with the approved amount." : "The approved amount is drawn from this project."}</p>
                     </div>
                   )}

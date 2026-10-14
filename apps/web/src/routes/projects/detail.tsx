@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "../../api/client";
 import ProjectLoading from "../../components/projects/Loading";
 import StatusPill from "../../components/status/StatusPill";
+import ExpiredCodeBadge from "../../components/codes/ExpiredCodeBadge";
+import SubstituteCodes from "../../components/codes/SubstituteCodes";
 import Transitions from "../../components/projects/Transitions";
 import Schedule from "../../components/projects/Schedule";
 import Risks from "../../components/projects/Risks";
@@ -53,7 +55,9 @@ export default function ProjectDetail({ id, onLoaded }: { id: string; onLoaded: 
     {loading && !project && tab === "overview" ? <ProjectLoading /> : loading && <p role="status">Loading project… Previously loaded details are preserved.</p>}
     {errors.length > 0 && <div role="alert">{errors.map(e => <p key={e}>{e}</p>)}<button onClick={() => { setLoading(true); void load(); }}>Retry project</button></div>}
     {project && <>
-      <header className="project-record-heading"><p className="numeric">{project.number}</p><StatusPill docType="project" status={project.status} /></header>
+      <header className="project-record-heading"><p className="numeric">{project.number}</p><StatusPill docType="project" status={project.status} />
+        {project.codes_expired && <ExpiredCodeBadge />}
+        {project.can_substitute_codes && project.codes && <SubstituteCodes target="project" id={id} codes={project.codes} onDone={() => { setLoading(true); void load(); }} />}</header>
       <div role="tablist" aria-label="Project sections" className="project-tabs">{tabs.map((name, index) => <button key={name} type="button" id={`tab-${name}`} role="tab" aria-controls={`panel-${name}`} aria-selected={tab === name} tabIndex={tab === name ? 0 : -1} onClick={() => activate(name)} onKeyDown={e => {
         const next = e.key === "ArrowRight" ? tabs[(index + 1) % tabs.length] : e.key === "ArrowLeft" ? tabs[(index + tabs.length - 1) % tabs.length] : e.key === "Home" ? tabs[0] : e.key === "End" ? tabs[tabs.length - 1] : undefined;
         if (next) { e.preventDefault(); activate(next); document.getElementById(`tab-${next}`)?.focus(); }

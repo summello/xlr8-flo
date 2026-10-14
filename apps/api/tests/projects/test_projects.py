@@ -60,6 +60,9 @@ def test_create_details_scope_audit_and_status(project_db):
         "allocated",
         "available",
         "generated_by_requisition_id",
+        "codes",
+        "codes_expired",
+        "can_substitute_codes",
     }
     assert request(db, "GET", "/" + row["id"]).json() == row
     from uuid import UUID

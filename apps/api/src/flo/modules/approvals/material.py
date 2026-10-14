@@ -1,5 +1,6 @@
 """Approval in force and material-change policy for document callers."""
 
+from collections.abc import Callable
 from typing import cast
 from uuid import UUID
 
@@ -122,3 +123,23 @@ def supersede(
             after_source={"status": "superseded", "reason": reason},
             after_fields=("status", "reason"),
         )
+
+
+def rebase_digest(
+    conn: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    document_type: str,
+    document_id: UUID,
+    mutate: Callable[[], None],
+) -> None:
+    """Run `mutate` (a non-material correction the caller authorized) under the instance lock,
+    then re-stamp the approved digest so the approval stays in force. Lock order: instance first."""
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        repo = WorkflowRepository(conn, scope)
+        instance = _in_force(repo, document_type, document_id, lock=True)
+        mutate()
+        if instance is not None and instance["status"] == "approved":
+            instance["approved_material_digest"] = engine.material_digest(
+                engine.adapter_for(document_type).snapshot(conn, scope, document_id)
+            )
+            engine._save(repo, instance)

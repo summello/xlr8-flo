@@ -26,6 +26,7 @@ from flo.modules.org.service import (
     NumberingService,
     OrgService,
     assert_usable,
+    codes_read,
     list_currencies,
 )
 from flo.modules.projects.hierarchy import Hierarchy
@@ -93,9 +94,49 @@ class ProjectService:
             "SELECT name FROM org_unit WHERE org_id = %(org_id)s AND id = %(id)s",
             {"id": row["bu_id"]},
         ).fetchone()
-        return ProjectRead.model_validate(
-            with_variance(row | {"bu_name": str(unit[0]) if unit is not None else None})
+        return self._with_codes(
+            ProjectRead.model_validate(
+                with_variance(row | {"bu_name": str(unit[0]) if unit is not None else None})
+            )
         )
+
+    def _with_codes(self, project: ProjectRead) -> ProjectRead:
+        # ponytail: four master lookups per row; batch if a page of 50 shows up in a profile.
+        project.codes = codes_read(
+            self.connection, self.scope, project.department_code, project.ledger_account_code
+        )
+        project.codes_expired = project.codes.expired
+        return project
+
+    def lock(self, project_id: UUID) -> ProjectRead:
+        """Take the project row lock and read it (callers plan against the locked state)."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            return self._read(self._get(project_id, lock=True))
+
+    def substitute_codes(
+        self, project_id: UUID, changes: dict[str, str], reason: str
+    ) -> ProjectRead:
+        """Replace master codes on a project (D-M2-25); the ledger keeps what it posted."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            before = self._get(project_id, lock=True)
+            if not changes:
+                return self._read(before)
+            after = before | changes
+            self.repo.execute(
+                "UPDATE project SET department_code=%(department_code)s,"
+                "ledger_account_code=%(ledger_account_code)s "
+                "WHERE org_id=%(org_id)s AND id=%(id)s",
+                {"id": project_id}
+                | {k: after[k] for k in ("department_code", "ledger_account_code")},
+            )
+            keys = ("department_code", "ledger_account_code")
+            self._audit(
+                "project.code_substitute",
+                project_id,
+                {k: before[k] for k in keys},
+                {k: after[k] for k in keys} | {"reason": reason},
+            )
+            return self._read(self._get(project_id))
 
     def get(self, project_id: UUID) -> ProjectRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
@@ -685,7 +726,9 @@ class ProjectService:
             ).fetchall()
             fields = (*FIELDS, "bu_name", "allocated", "available")
             records = [
-                ProjectRead.model_validate(with_variance(dict(zip(fields, row, strict=True))))
+                self._with_codes(
+                    ProjectRead.model_validate(with_variance(dict(zip(fields, row, strict=True))))
+                )
                 for row in rows[:page_size]
             ]
             next_cursor = None

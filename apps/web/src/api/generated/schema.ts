@@ -1459,6 +1459,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{id}/codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Substitute Project Codes */
+        post: operations["substitute_project_codes_api_v1_projects__id__codes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{id}/milestones": {
         parameters: {
             query?: never;
@@ -1884,6 +1901,23 @@ export interface paths {
         get: operations["requisition_changes_api_v1_requisitions__id__changes_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/requisitions/{id}/codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Substitute Requisition Codes */
+        post: operations["substitute_requisition_codes_api_v1_requisitions__id__codes_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2782,6 +2816,38 @@ export interface components {
             /** Rows */
             rows: components["schemas"]["ProjectRef"][];
         };
+        /** CodeState */
+        CodeState: {
+            /** Code */
+            code: string | null;
+            status: components["schemas"]["CodeStatus"];
+        };
+        /** @enum {string} */
+        CodeStatus: "usable" | "missing" | "unknown" | "inactive" | "not_effective";
+        /** CodeSubstitute */
+        CodeSubstitute: {
+            /** Department Code */
+            department_code?: string | null;
+            /** Ledger Account Code */
+            ledger_account_code?: string | null;
+            /** Reason */
+            reason: string;
+        };
+        /** CodeSubstitutions */
+        CodeSubstitutions: {
+            /** Department Code */
+            department_code?: string | null;
+            /** Ledger Account Code */
+            ledger_account_code?: string | null;
+        };
+        /**
+         * CodesRead
+         * @description A document's two master codes judged against today's master data (D-M2-25).
+         */
+        CodesRead: {
+            department: components["schemas"]["CodeState"];
+            ledger_account: components["schemas"]["CodeState"];
+        };
         /** CommitBody */
         CommitBody: {
             /**
@@ -2896,6 +2962,7 @@ export interface components {
             outcome: "approve" | "reject" | "return" | "comment";
             /** Reject Mode */
             reject_mode?: ("return_to_draft" | "permanent") | null;
+            substitutions?: components["schemas"]["CodeSubstitutions"] | null;
         };
         /** DelegationCreate */
         DelegationCreate: {
@@ -3411,6 +3478,12 @@ export interface components {
         /** InboxRow */
         InboxRow: {
             amount: components["schemas"]["InboxMoney"] | null;
+            codes?: components["schemas"]["CodesRead"] | null;
+            /**
+             * Codes Expired
+             * @default false
+             */
+            codes_expired?: boolean;
             /** Decided At */
             decided_at: string | null;
             /**
@@ -3870,6 +3943,11 @@ export interface components {
         };
         /** LookupOption */
         LookupOption: {
+            /**
+             * Codes Expired
+             * @default false
+             */
+            codes_expired?: boolean;
             /**
              * Disabled
              * @default false
@@ -4678,6 +4756,17 @@ export interface components {
             /** Bu Name */
             bu_name?: string | null;
             /**
+             * Can Substitute Codes
+             * @default false
+             */
+            can_substitute_codes?: boolean;
+            codes?: components["schemas"]["CodesRead"] | null;
+            /**
+             * Codes Expired
+             * @default false
+             */
+            codes_expired?: boolean;
+            /**
              * Created At
              * Format: date-time
              */
@@ -4875,6 +4964,17 @@ export interface components {
             bu_id: string;
             /** Bu Name */
             bu_name: string;
+            /**
+             * Can Substitute Codes
+             * @default false
+             */
+            can_substitute_codes?: boolean;
+            codes?: components["schemas"]["CodesRead"] | null;
+            /**
+             * Codes Expired
+             * @default false
+             */
+            codes_expired?: boolean;
             /**
              * Created At
              * Format: date-time
@@ -9766,6 +9866,52 @@ export interface operations {
             };
         };
     };
+    substitute_project_codes_api_v1_projects__id__codes_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CodeSubstitute"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     list_milestones_api_v1_projects__id__milestones_get: {
         parameters: {
             query?: never;
@@ -11162,6 +11308,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChangeSet"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    substitute_requisition_codes_api_v1_requisitions__id__codes_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CodeSubstitute"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequisitionRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

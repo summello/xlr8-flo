@@ -21,6 +21,7 @@ from flo.modules.org.service import (
     NumberingService,
     OrgService,
     assert_usable,
+    codes_read,
     today,
 )
 from flo.modules.projects.service import ProjectService, is_requisition_generated
@@ -116,7 +117,16 @@ class RequisitionService:
         ).fetchone()
         if row is None:
             raise ProblemError(ErrorCode.NOT_FOUND)
-        return RequisitionRead.model_validate(dict(zip(READ_FIELDS, row, strict=True)))
+        return self._with_codes(
+            RequisitionRead.model_validate(dict(zip(READ_FIELDS, row, strict=True)))
+        )
+
+    def _with_codes(self, read: RequisitionRead) -> RequisitionRead:
+        read.codes = codes_read(
+            self.connection, self.scope, read.department_code, read.ledger_account_code
+        )
+        read.codes_expired = read.codes.expired
+        return read
 
     def detail(
         self,
@@ -512,7 +522,9 @@ class RequisitionService:
                 {**params, "limit": page_size + 1},
             ).fetchall()
             records = [
-                RequisitionRead.model_validate(dict(zip(READ_FIELDS, row, strict=True)))
+                self._with_codes(
+                    RequisitionRead.model_validate(dict(zip(READ_FIELDS, row, strict=True)))
+                )
                 for row in rows[:page_size]
             ]
             next_cursor = None

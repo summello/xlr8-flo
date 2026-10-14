@@ -188,3 +188,25 @@ class FxIngestReport(BaseModel):
 class CurrencyRead(BaseModel):
     code: str
     exponent: int
+
+
+type CodeStatus = Literal["usable", "missing", "unknown", "inactive", "not_effective"]
+
+
+class CodeState(BaseModel):
+    code: str | None
+    status: CodeStatus
+
+
+class CodesRead(BaseModel):
+    """A document's two master codes judged against today's master data (D-M2-25)."""
+
+    department: CodeState
+    ledger_account: CodeState
+
+    @property
+    def expired(self) -> bool:
+        # An absent code (a blank draft) is not an expired one.
+        return any(
+            c.status not in ("usable", "missing") for c in (self.department, self.ledger_account)
+        )

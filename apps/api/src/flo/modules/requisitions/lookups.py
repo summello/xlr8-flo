@@ -79,6 +79,7 @@ class LookupService:
                     label=f"{project.number} {project.name}",
                     disabled=disabled,
                     note=note,
+                    codes_expired=project.codes_expired,
                 )
             )
             if len(rows) == limit:

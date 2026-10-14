@@ -29,7 +29,7 @@ from flo.modules.budget.service import (
     reserve,
 )
 from flo.modules.identity.service import AuthorizationTarget, ScopeType
-from flo.modules.org.service import OrgService, today
+from flo.modules.org.service import OrgService, codes_read, today
 from flo.modules.projects.schemas import ProjectRead
 from flo.modules.projects.service import ProjectService, create_generated_project, depth_of
 from flo.modules.requisitions import revisions
@@ -87,7 +87,8 @@ class RequisitionAdapter:
         rows = (
             RequisitionRepository(conn, scope)
             .execute(
-                "SELECT id,number,title,estimate,currency,requester_id FROM "
+                "SELECT id,number,title,estimate,currency,requester_id,department_code,"
+                "ledger_account_code FROM "
                 "requisition WHERE org_id=%(org_id)s AND id=ANY(%(ids)s)",
                 {"ids": list(document_ids)},
             )
@@ -112,9 +113,23 @@ class RequisitionAdapter:
                 cast(UUID, r[5]),
                 f"/requisitions/{r[0]}",
                 cast(str | None, notes.get(r[0])),
+                codes_read(conn, scope, cast(str | None, r[6]), cast(str | None, r[7])),
             )
             for r in rows
         }
+
+    def prepare_approval(
+        self,
+        conn: psycopg.Connection[tuple[object, ...]],
+        scope: Scope,
+        document_id: UUID,
+        actor_id: UUID,
+        substitutions: dict[str, str],
+    ) -> None:
+        """Optional hook: refuse approval over an expired code unless it is substituted."""
+        from flo.modules.requisitions.codes import prepare_approval
+
+        prepare_approval(conn, scope, document_id, actor_id, substitutions)
 
     def on_outcome(
         self,

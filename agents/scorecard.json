@@ -3262,6 +3262,55 @@
       },
       "recap": "Final approval now releases the main-project reservation, transfers the amount main to sub in one balanced group and reserves it on the generated sub-project. Stop returns the remainder to the main project and amendments move the difference, all under both project locks.",
       "title": "Sub-project funding: an approved requisition's sub-project draws from its main project; funds return on cancel"
+    },
+    {
+      "story": "E09-S18",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "money",
+        "auth",
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 3,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "56584d5c-0fed-4360-aeef-a7fa52a17ff9",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S18",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a13adc-8ed1-73c2-816b-b08317d34b72",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "1b4f7384-72c5-48ef-96ac-8e83fbac7eff",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Approval now refuses an expired department or ledger code unless the approver substitutes a usable one (audited, reservation left on the original code); after approval assert_current_upstream blocks until a Project Manager substitutes via new POST /requisitions/{id}/codes and /projects/{id}/codes. Amendments cannot change codes; project and requisition reads, lookups and UI carry an Expired code badge.",
+      "title": "Expired master codes: flag, substitute at approval, block downstream; no code changes by amendment"
     }
   ]
 }

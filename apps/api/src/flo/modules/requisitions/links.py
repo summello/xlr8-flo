@@ -15,6 +15,7 @@ from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.approvals.service import assert_current_approval, instances_for
 from flo.modules.budget.service import entries_for_source
 from flo.modules.collaboration.service import CollaborationService
+from flo.modules.org.service import codes_read
 from flo.modules.projects.service import ProjectService, generated_for
 from flo.modules.requisitions import revisions
 from flo.modules.requisitions.approval import RequisitionAdapter
@@ -342,3 +343,19 @@ def assert_current_upstream(
                 f"{document_version} and have no amendment pending. Reload it and retry.",
             )
         assert_current_approval(conn, scope, "requisition", requisition_id, document_version)
+        # D-M2-25: no sourcing or purchasing document is raised on an expired code.
+        expired = codes_read(
+            conn,
+            scope,
+            cast(str | None, row["department_code"]),
+            cast(str | None, row["ledger_account_code"]),
+        ).expired
+        sub = generated_for(conn, scope, requisition_id)
+        if not expired and sub is not None:
+            expired = ProjectService(conn, scope).get(sub.id).codes_expired
+        if expired:
+            raise conflict(
+                "code_expired",
+                f"{row['number']} or its project carries an expired department or ledger "
+                "account code. A Project Manager must substitute it before this step.",
+            )

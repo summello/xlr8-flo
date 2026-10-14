@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiClient } from "../../api/client";
 import DataGrid, { type GridPage } from "../../components/grid/DataGrid";
 import { GRID_FEATURES } from "../../components/grid/config";
+import ExpiredCodeBadge from "../../components/codes/ExpiredCodeBadge";
 import StatusPill from "../../components/status/StatusPill";
 import ProjectPreview from "../../components/projects/Preview";
 import Money from "../../components/ui/Money";
@@ -80,6 +81,8 @@ export default function ProjectList({ navigate }: { navigate: (href: string) => 
         cell: ({ row }) => <a href={`/projects/${row.original.id}`} onClick={e => { e.preventDefault(); navigate(`/projects/${row.original.id}`); }}>{row.original.name}</a> }),
       helper.accessor("status", { header: "Status", meta: { label: "Status" }, enableSorting: !extra.group_by,
         cell: ({ getValue }) => <StatusPill docType="project" status={getValue()} /> }),
+      helper.accessor("codes_expired", { header: "Codes", meta: { label: "Codes" }, enableSorting: false,
+        cell: ({ getValue }) => getValue() ? <ExpiredCodeBadge /> : <span className="visually-hidden">Codes usable</span> }),
       helper.accessor("bu_name", { header: "BU / OU", meta: { label: "BU / OU" }, enableSorting: false }),
       helper.accessor("owner_id", { header: "Owner", meta: { label: "Owner" }, enableSorting: false }),
       helper.accessor("health", { header: "Health", meta: { label: "Health" }, enableSorting: false, cell: ({ getValue }) => label(getValue()) }),

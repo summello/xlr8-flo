@@ -44,6 +44,8 @@ from flo.modules.projects.schemas import (
     TreeRead,
 )
 from flo.modules.projects.service import ProjectService, risk_indicators
+from flo.modules.requisitions import codes
+from flo.modules.requisitions.schemas import CodeSubstitute
 
 router = APIRouter(prefix="/api/v1/projects", tags=["projects"])
 
@@ -81,6 +83,9 @@ def parent_read(
 CreateContext = Annotated[AuthorizationContext, Depends(require("project.create", create_target))]
 ReadContext = Annotated[AuthorizationContext, Depends(require("project.read", project_target))]
 UpdateContext = Annotated[AuthorizationContext, Depends(require("project.update", project_target))]
+SubstituteContext = Annotated[
+    AuthorizationContext, Depends(require("master_code.substitute", project_target))
+]
 ListContext = Annotated[AuthorizationContext, Depends(require("project.read", organization_target))]
 
 
@@ -122,8 +127,17 @@ def list_projects(
 
 
 @router.get("/{id}", response_model=ProjectRead)
-def get_project(id: UUID, context: ReadContext, connection: Connection) -> ProjectRead:
-    return ProjectService(connection, current_scope(), context.user_id).get(id)
+def get_project(
+    id: UUID, context: ReadContext, connection: Connection, request: Request
+) -> ProjectRead:
+    project = ProjectService(connection, current_scope(), context.user_id).get(id)
+    allowed = project.codes_expired and permits(
+        request, "master_code.substitute", project_target(id, connection)
+    )
+    if allowed:
+        allowed = codes.can_substitute_project(connection, current_scope(), id)
+    project.can_substitute_codes = bool(allowed)
+    return project
 
 
 @router.patch("/{id}", response_model=ProjectRead)
@@ -135,6 +149,21 @@ def patch_project(
     version: Annotated[str | None, Header(alias="If-Match")] = None,
 ) -> ProjectRead:
     return ProjectService(connection, current_scope(), context.user_id).update(id, body, version)
+
+
+@router.post("/{id}/codes", response_model=ProjectRead)
+def substitute_project_codes(
+    id: UUID, body: CodeSubstitute, context: SubstituteContext, connection: Connection
+) -> ProjectRead:
+    codes.substitute_project(
+        connection,
+        current_scope(),
+        context.user_id,
+        id,
+        body.model_dump(exclude={"reason"}, exclude_none=True),
+        body.reason,
+    )
+    return ProjectService(connection, current_scope(), context.user_id).get(id)
 
 
 @router.get("/{id}/children", response_model=ChildrenPage)
