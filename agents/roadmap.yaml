@@ -1174,7 +1174,7 @@ epics:
           - FIN-011
         dep:
           - E09-S13
-        st: todo
+        st: in_progress
       - id: E09-S17
         t: Block governed actions until their approval workflow is published
         k: engine
