@@ -130,7 +130,9 @@ def list_projects(
 def get_project(
     id: UUID, context: ReadContext, connection: Connection, request: Request
 ) -> ProjectRead:
-    project = ProjectService(connection, current_scope(), context.user_id).get(id)
+    service = ProjectService(connection, current_scope(), context.user_id)
+    project = service.get(id)
+    project.sponsor_ids = service.sponsors(id)
     allowed = project.codes_expired and permits(
         request, "master_code.substitute", project_target(id, connection)
     )

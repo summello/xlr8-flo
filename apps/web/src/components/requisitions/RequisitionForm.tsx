@@ -66,11 +66,12 @@ export default function RequisitionForm({ navigate, initial }: { navigate: (href
 
   const projects = useLoad(() => lookup("project"), []);
   const units = useLoad(() => lookup("bu"), []);
+  const people = useLoad(() => lookup("user"), []);
   const departments = useLoad(() => lookup("department"), []);
   const ledger = useLoad(() => lookup("ledger_account"), []);
   const uoms = useLoad(() => lookup("uom"), []);
   const addresses = useLoad(() => lookup("delivery_address", buId ?? undefined), [buId]);
-  const listError = [projects, units, departments, ledger, uoms, addresses].find(l => l.error)?.error ?? null;
+  const listError = [projects, units, people, departments, ledger, uoms, addresses].find(l => l.error)?.error ?? null;
 
   const refreshCheck = useCallback((id: string) => {
     apiClient.GET("/api/v1/requisitions/{id}/submission-check", { params: { path: { id } } }).then(({ data, error }) => {
@@ -98,13 +99,13 @@ export default function RequisitionForm({ navigate, initial }: { navigate: (href
     let current = row; let v = version;
     const fields = { justification: text(header.justification), needed_by: text(header.needed_by), department_code: text(header.department_code), ledger_account_code: text(header.ledger_account_code), delivery_address_id: text(header.delivery_address_id) };
     if (!current || v === null) {
-      const created = await apiClient.POST("/api/v1/requisitions", { headers: mutationHeaders(`${action}-create`), body: { title: header.title.trim(), ...(header.mode === "project" ? { project_id: header.project_id } : { bu_id: header.bu_id }), ...fields } });
+      const created = await apiClient.POST("/api/v1/requisitions", { headers: mutationHeaders(`${action}-create`), body: { title: header.title.trim(), ...(header.mode === "project" ? { project_id: header.project_id } : { bu_id: header.bu_id, sponsor_ids: header.sponsor_ids }), ...fields } });
       if (!created.data) { show(problemSummary(created.error as Problem, "save")); return null; }
       current = created.data; v = created.data.version; setRow(current); setVersion(v);
       window.history.replaceState(null, "", `/requisitions/${current.id}/edit`);
     } else {
       const nulls = Object.fromEntries(Object.entries(fields).map(([k, val]) => [k, val ?? null]));
-      const patched = await apiClient.PATCH("/api/v1/requisitions/{id}", { params: { path: { id: current.id } }, headers: mutationHeaders(`${action}-patch-${v}`, v), body: { title: header.title.trim() || undefined, ...(header.mode === "project" && header.project_id ? { project_id: header.project_id } : {}), ...nulls } });
+      const patched = await apiClient.PATCH("/api/v1/requisitions/{id}", { params: { path: { id: current.id } }, headers: mutationHeaders(`${action}-patch-${v}`, v), body: { title: header.title.trim() || undefined, ...(header.mode === "project" && header.project_id ? { project_id: header.project_id } : {}), ...(header.mode === "standalone" && header.sponsor_ids.length > 0 ? { sponsor_ids: header.sponsor_ids } : {}), ...nulls } });
       if (!patched.data) { show(problemSummary(patched.error as Problem, "save")); return null; }
       current = patched.data; v = patched.data.version; setRow(current); setVersion(v);
     }
@@ -184,24 +185,27 @@ export default function RequisitionForm({ navigate, initial }: { navigate: (href
     const list = options ?? [];
     return code && !list.some(o => o.value === code) ? [...list, { value: code, label: `${code} (${kind === "unit" ? "unavailable" : "inactive"})`, disabled: false, note: null }] : list;
   };
-  return <section className="req-page" aria-label="Requisition form">
+  // The unit lookup lists only units where the caller holds project_request.create (D-M2-18).
+  const canRequest = header.mode === "standalone" || (units.data?.length ?? 0) > 0;
+  const isRequest = header.mode === "standalone";
+  return <section className="req-page" aria-label={isRequest ? "Project Request form" : "Requisition form"}>
     <header className="req-heading">
       <p>{row ? `Draft ${row.number} · ${status} · amounts in ${row.currency}` : "Draft · not saved yet"}</p>
       <a href="/requisitions" onClick={e => { e.preventDefault(); navigate("/requisitions"); }}>Back to requisitions</a>
     </header>
     {summary && <SubmitSummary title={summary.title} lead={summary.lead} problems={summary.problems} detail={summary.detail} />}
-    {listError && <div role="alert" className="req-notice"><p>{listError}</p><button type="button" onClick={() => { for (const l of [projects, units, departments, ledger, uoms, addresses]) if (l.error) l.reload(); }}>Try again</button></div>}
+    {listError && <div role="alert" className="req-notice"><p>{listError}</p><button type="button" onClick={() => { for (const l of [projects, units, people, departments, ledger, uoms, addresses]) if (l.error) l.reload(); }}>Try again</button></div>}
     <div className="req-grid">
       <div className="req-main">
         <section className="req-card" id="requisition-details" tabIndex={-1} aria-labelledby="details-title">
-          <header className="req-card-head"><h2 id="details-title">Requisition Details</h2></header>
+          <header className="req-card-head"><h2 id="details-title">{isRequest ? "Project Request Details" : "Requisition Details"}</h2></header>
           <fieldset className="req-mode" disabled={row !== null}>
-            <legend>Requisition for</legend>
+            <legend>Raise a request for</legend>
             <label><input type="radio" name="mode" id="req-mode" checked={header.mode === "project"} onChange={() => set({ mode: "project", bu_id: "" })} />An existing project</label>
-            <label><input type="radio" name="mode" checked={header.mode === "standalone"} onChange={() => set({ mode: "standalone", project_id: "" })} />A standalone capital request</label>
+            {canRequest && <label><input type="radio" name="mode" checked={header.mode === "standalone"} onChange={() => set({ mode: "standalone", project_id: "" })} />A new Project Request</label>}
             {row !== null && <p className="field-help">The kind of request cannot change once the draft is saved.</p>}
           </fieldset>
-          {header.mode === "standalone" && <p className="req-note">Approval creates a new project for this request unless the approver assigns it to an existing one.</p>}
+          {isRequest && <p className="req-note">A Project Request asks for budget for a new project. Full approval creates the project unless the approver assigns the request to an existing one.</p>}
           <div className="req-fields">
             <ReqField id="req-title" label="Title" wide help="A short name approvers will recognise." error={errorFor("req-title")}>
               {p => <input {...p} type="text" maxLength={200} value={header.title} onChange={e => set({ title: e.target.value })} />}</ReqField>
@@ -212,6 +216,9 @@ export default function RequisitionForm({ navigate, initial }: { navigate: (href
               <ReqField id="req-bu_id" label="Business unit" help="The unit that will own the new project." error={errorFor("req-bu_id")}>
                 {p => <select {...p} value={header.bu_id} onChange={e => set({ bu_id: e.target.value })}><option value="">Choose a business unit</option>
                   {withCurrent(units.data, header.bu_id, "unit").map(o => <option key={o.value} value={o.value} disabled={o.disabled}>{optionLabel(o)}</option>)}</select>}</ReqField>}
+            {isRequest && <ReqField id="req-sponsor_ids" label="Sponsors" help="Choose one to ten people who sponsor the project. Hold Ctrl or Command to choose several." error={errorFor("req-sponsor_ids")}>
+              {p => <select {...p} multiple size={5} value={header.sponsor_ids} onChange={e => set({ sponsor_ids: Array.from(e.target.selectedOptions, o => o.value).slice(0, 10) })}>
+                {people.data?.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select>}</ReqField>}
             <ReqField id="req-department_code" label="Department" help="The department that bears the cost." error={errorFor("req-department_code")}>
               {p => <select {...p} value={header.department_code} onChange={e => set({ department_code: e.target.value })}><option value="">Choose a department</option>
                 {withCurrent(departments.data, header.department_code, "dept").map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select>}</ReqField>

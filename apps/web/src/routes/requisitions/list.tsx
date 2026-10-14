@@ -11,7 +11,7 @@ import type { GridQuery } from "../../lib/grid-params";
 import "../../styles/projects.css";
 import "../../styles/requisitions.css";
 
-const TABS = [["mine", "Mine"], ["drafts", "Drafts"], ["submitted", "Submitted"], ["all", "All"]] as const;
+const TABS = [["mine", "Mine"], ["drafts", "Drafts"], ["submitted", "Submitted"], ["requests", "Project Requests"], ["all", "All"]] as const;
 type Tab = typeof TABS[number][0];
 const sorts = ["number", "title", "estimate", "needed_by", "updated_at"] as const;
 const PAGE = 10;
@@ -31,7 +31,8 @@ function read(): { tab: Tab; status: RequisitionStatus | ""; project: string } {
 /** The tab fixes the requester/status filter; a Status filter only narrows "Mine" and "All". */
 function tabQuery(tab: Tab) {
   return tab === "mine" ? { requester: "me" as const } : tab === "drafts" ? { requester: "me" as const, status: "draft" as const }
-    : tab === "submitted" ? { requester: "me" as const, status: "approval_pending" as const } : {};
+    : tab === "submitted" ? { requester: "me" as const, status: "approval_pending" as const }
+    : tab === "requests" ? { kind: "project_request" as const } : {};
 }
 
 export default function RequisitionList({ navigate }: { navigate: (href: string) => void }) {
@@ -83,7 +84,7 @@ export default function RequisitionList({ navigate }: { navigate: (href: string)
   const columns = useMemo(() => helper.columns([
     helper.accessor("number", { header: "Number", meta: { label: "Number" }, cell: ({ row }) => <a className="numeric" href={`/requisitions/${row.original.id}`} onClick={e => { e.preventDefault(); navigate(`/requisitions/${row.original.id}`); }}>{row.original.number}</a> }),
     helper.accessor("title", { header: "Title", meta: { label: "Title" }, cell: ({ row }) => <span className="req-title-cell"><span>{row.original.title}</span><span className="req-sub">{row.original.requester_email}</span></span> }),
-    helper.accessor("project_name", { header: "Project", meta: { label: "Project" }, enableSorting: false, cell: ({ row }) => row.original.project_name ? `${row.original.project_number} ${row.original.project_name}` : "Standalone" }),
+    helper.accessor("project_name", { header: "Project", meta: { label: "Project" }, enableSorting: false, cell: ({ row }) => row.original.project_name ? `${row.original.project_number} ${row.original.project_name}` : "Project Request" }),
     helper.accessor("estimate", { header: "Amount", meta: { label: "Amount", numeric: true }, cell: ({ row }) => <Money value={row.original.estimate} currency={row.original.currency} /> }),
     helper.accessor("status", { header: "Status", meta: { label: "Status" }, enableSorting: false, cell: ({ getValue }) => <StatusPill docType="requisition" status={getValue()} /> }),
     helper.accessor("needed_by", { header: "Needed by", meta: { label: "Needed by" }, cell: ({ getValue }) => formatDate(getValue()) }),
@@ -91,7 +92,7 @@ export default function RequisitionList({ navigate }: { navigate: (href: string)
   ]), [navigate]);
   const { tab, status, project } = filters;
   const loadPage = useCallback(async (query: GridQuery, signal: AbortSignal): Promise<GridPage<Requisition>> => {
-    const fixed: { requester?: "me"; status?: RequisitionStatus } = tabQuery(tab);
+    const fixed: { requester?: "me"; status?: RequisitionStatus; kind?: "project_request" } = tabQuery(tab);
     // A cursor belongs to one sort and search; when either changes, start again from page 1.
     const key = JSON.stringify([query.sort, query.filter]);
     const sameOrder = order.current === "" || order.current === key;

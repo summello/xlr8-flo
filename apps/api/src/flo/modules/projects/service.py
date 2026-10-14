@@ -96,9 +96,29 @@ class ProjectService:
         ).fetchone()
         return self._with_codes(
             ProjectRead.model_validate(
-                with_variance(row | {"bu_name": str(unit[0]) if unit is not None else None})
+                with_variance(
+                    row
+                    | {
+                        "bu_name": str(unit[0]) if unit is not None else None,
+                        "sponsor_ids": [row["sponsor_id"]] if row["sponsor_id"] else [],
+                    }
+                )
             )
         )
+
+    def sponsors(self, project_id: UUID) -> list[UUID]:
+        """Every sponsor; a project that predates sponsor lists falls back to `sponsor_id`."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            found = [
+                cast(UUID, r[0])
+                for r in self.repo.execute(
+                    "SELECT user_id FROM project_sponsor WHERE org_id = %(org_id)s "
+                    "AND project_id = %(id)s ORDER BY user_id",
+                    {"id": project_id},
+                ).fetchall()
+            ]
+            row = self._get(project_id)
+            return found or ([cast(UUID, row["sponsor_id"])] if row["sponsor_id"] else [])
 
     def _with_codes(self, project: ProjectRead) -> ProjectRead:
         # ponytail: four master lookups per row; batch if a page of 50 shows up in a profile.
@@ -323,6 +343,7 @@ class ProjectService:
                 | {
                     "status": status,
                     "generated_by_requisition_id": generated_by_requisition_id,
+                    "source_requisition_id": source_requisition_id,
                     "id": project_id,
                     "number": number,
                     "owner_id": owner,
@@ -336,12 +357,13 @@ class ProjectService:
                         description, external_ref,
                         owner_id, sponsor_id, department_code, ledger_account_code, currency,
                         planned_start, planned_end, created_by, status,
-                        generated_by_requisition_id)
+                        generated_by_requisition_id, source_requisition_id)
                         VALUES (%(id)s, %(org_id)s, %(bu_id)s, %(parent_id)s, %(number)s, %(name)s,
                         %(description)s, %(external_ref)s, %(owner_id)s, %(sponsor_id)s,
                         %(department_code)s,
                         %(ledger_account_code)s, %(currency)s, %(planned_start)s, %(planned_end)s,
-                        %(created_by)s, %(status)s, %(generated_by_requisition_id)s)
+                        %(created_by)s, %(status)s, %(generated_by_requisition_id)s,
+                        %(source_requisition_id)s)
                         ON CONFLICT (org_id, bu_id, number)
                         DO NOTHING RETURNING id""",
                         values,
@@ -788,6 +810,54 @@ def create_generated_project(
     )
 
 
+def apply_sponsors(
+    connection: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    project_id: UUID,
+    user_ids: list[UUID],
+) -> None:
+    """Carry a Project Request's sponsors to its project; `sponsor_id` keeps the first."""
+    if not user_ids:
+        return
+    repo = ProjectService(connection, scope).repo
+    for user_id in user_ids:
+        repo.execute(
+            "INSERT INTO project_sponsor(org_id, project_id, user_id) "
+            "VALUES (%(org_id)s, %(id)s, %(user)s) ON CONFLICT DO NOTHING",
+            {"id": project_id, "user": user_id},
+        )
+    repo.execute(
+        "UPDATE project SET sponsor_id = %(user)s WHERE org_id = %(org_id)s AND id = %(id)s",
+        {"id": project_id, "user": user_ids[0]},
+    )
+
+
+def abandon_requested(
+    connection: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    project_id: UUID,
+    *,
+    reason: str,
+    actor_id: UUID | None,
+    system_actor: str | None = None,
+) -> bool:
+    """Abandon the project a Project Request created after the request stopped (D-M2-22).
+
+    Like `abandon_generated`, but the allocation stays (it is reported apart as Abandoned) and
+    the stopping request, still open while this runs, does not count against the closing rule.
+    """
+    return _abandon(
+        connection,
+        scope,
+        project_id,
+        reason,
+        actor_id,
+        system_actor,
+        own_open_documents=1,
+        action="project.abandon",
+    )
+
+
 def abandon_generated(
     connection: psycopg.Connection[tuple[object, ...]],
     scope: Scope,
@@ -802,12 +872,26 @@ def abandon_generated(
     A system consequence, so no `project.complete` grant; the closing rule still applies and
     the sub-project must hold nothing. Returns False when it was no longer open to abandon.
     """
+    return _abandon(connection, scope, project_id, reason, actor_id, system_actor)
+
+
+def _abandon(
+    connection: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    project_id: UUID,
+    reason: str,
+    actor_id: UUID | None,
+    system_actor: str | None,
+    own_open_documents: int = 0,
+    action: str = "project.transition",
+) -> bool:
     with tenant_transaction(cast(RlsSession, connection), scope):
         service = ProjectService(connection, scope, actor_id)
         lifecycle = Lifecycle(service.repo, actor_id)
         before, blocked = lifecycle.snapshot(project_id, for_update=True)
         if before["status"] not in ("active", "deferred"):
             return False
+        blocked["open_documents"] = cast(int, blocked["open_documents"]) - own_open_documents
         blocker = blocked_by_holdings(blocked, False, lambda _permission: False, "")
         if blocker is not None:
             raise blocker
@@ -820,14 +904,21 @@ def abandon_generated(
         after = service._get(project_id)
         AuditWriter(cast(AuditConnection, connection), scope).write(
             actor=AuditActor(ActorKind.JOB if system_actor else ActorKind.USER, actor_id),
-            action="project.transition",
+            action=action,
             target_type="project",
             target_id=project_id,
             outcome=Outcome.SUCCESS,
             before_source=before,
             before_fields=tuple(before),
-            after_source=after | {"reason": reason, "blocked_by": blocked},
-            after_fields=(*after, "reason", "blocked_by"),
+            after_source=after
+            | {"reason": reason, "blocked_by": blocked}
+            | ({"source": "requisition"} if own_open_documents else {}),
+            after_fields=(
+                *after,
+                "reason",
+                "blocked_by",
+                *(("source",) if own_open_documents else ()),
+            ),
         )
         return True
 
@@ -848,6 +939,23 @@ def generated_for(
             .fetchone()
         )
         return ProjectRef.model_validate(dict(zip(REF_FIELDS, row, strict=True))) if row else None
+
+
+def requested_for(
+    connection: psycopg.Connection[tuple[object, ...]], scope: Scope, requisition_id: UUID
+) -> UUID | None:
+    """The project a Project Request's approval created (not a generated sub-project)."""
+    with tenant_transaction(cast(RlsSession, connection), scope):
+        row = (
+            ProjectRepository(connection, scope)
+            .execute(
+                "SELECT id FROM project WHERE org_id=%(org_id)s AND source_requisition_id=%(id)s "
+                "AND generated_by_requisition_id IS NULL",
+                {"id": requisition_id},
+            )
+            .fetchone()
+        )
+        return cast(UUID, row[0]) if row else None
 
 
 def get_status(
@@ -967,6 +1075,9 @@ __all__ = [
     "create_generated_project",
     "generated_for",
     "abandon_generated",
+    "abandon_requested",
+    "requested_for",
+    "apply_sponsors",
 ]
 
 

@@ -86,6 +86,8 @@ def test_empty_draft_collects_all_categories_and_submission_invalid(header_db):
     db = header_db
     row = draft(db)
     change(db, "requisition", row.id, "title=' '")
+    with tenant_transaction(db[0], Scope(db[1])):
+        db[0].execute("DELETE FROM requisition_sponsor WHERE requisition_id=%s", (row.id,))
     result = check(db, row)
     assert not result.ready and result.funding is None
     assert [(p.field, p.message) for p in result.problems] == [
@@ -95,11 +97,12 @@ def test_empty_draft_collects_all_categories_and_submission_invalid(header_db):
         ("required/department_code", "Choose a department"),
         ("required/ledger_account_code", "Choose a ledger account"),
         ("required/delivery_address_id", "Choose a delivery location"),
+        ("required/sponsors", "Name at least one sponsor"),
         ("lines/lines", "Add at least one line"),
     ]
     error = SubmissionInvalid(result.problems)
     assert error.checks == {"problem": "submission_invalid"}
-    assert len(error.errors) == 7 and "Fix 7 things" in error.detail
+    assert len(error.errors) == 8 and "Fix 8 things" in error.detail
 
 
 def test_needed_by_today_passes_yesterday_fails_and_non_draft_not_ready(lines_db):

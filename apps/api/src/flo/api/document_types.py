@@ -14,6 +14,7 @@ from flo.modules.identity.service import AuthorizationTarget, ScopeType
 from flo.modules.projects.approval import ProjectAdapter
 from flo.modules.projects.service import ProjectService, register_open_document_counter
 from flo.modules.requisitions.service import (
+    ProjectRequestAdapter,
     RequisitionAdapter,
     RequisitionService,
     open_document_count,
@@ -46,6 +47,7 @@ def register_document_types() -> None:
     register_document_type(ProjectAdapter())
     register_document_type(BudgetChangeAdapter())
     register_document_type(RequisitionAdapter())
+    register_document_type(ProjectRequestAdapter())
     register_open_document_counter(open_document_count)
     register_document_access(
         DocumentAccess("requisition", "requisition.view", "requisition.edit", requisition_access)

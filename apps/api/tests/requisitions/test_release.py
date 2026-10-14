@@ -135,7 +135,7 @@ def test_only_the_requester_withdraws_after_approval(lifecycle_db):
     assert releases(db, row.id) == []
 
 
-def test_standalone_created_project_is_left_alone_on_cancel(lifecycle_db):
+def test_standalone_created_project_is_abandoned_on_cancel(lifecycle_db):
     db, _ = lifecycle_db
     grant(db, "budget.allocate")
     row = standalone(db)
@@ -148,7 +148,7 @@ def test_standalone_created_project_is_left_alone_on_cancel(lifecycle_db):
         "SELECT status FROM project WHERE id=(SELECT project_id FROM requisition WHERE id=%s)",
         (row.id,),
     )
-    assert project_status == [("active",)]
+    assert project_status == [("abandoned",)]  # D-M2-22, supersedes "left alone" (E09-S15)
     assert drift(db) == []
 
 

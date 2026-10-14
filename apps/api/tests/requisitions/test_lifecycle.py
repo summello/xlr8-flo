@@ -45,6 +45,9 @@ def lifecycle_db(lines_db):
     workflow = definition(db)
     draft(db, workflow, graph())
     svc(db).publish(workflow.id, 1, True)
+    request_workflow = definition(db, document_type="project_request")
+    draft(db, request_workflow, graph())
+    svc(db).publish(request_workflow.id, 1, True)
     return db, user
 
 

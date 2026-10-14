@@ -2225,6 +2225,19 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AbandonedCurrency */
+        AbandonedCurrency: {
+            /** Actual */
+            actual: string;
+            /** Allocated */
+            allocated: string;
+            /** Committed */
+            committed: string;
+            /** Currency */
+            currency: string;
+            /** Reserved */
+            reserved: string;
+        };
         /**
          * AccessGrantResponse
          * @description One role assignment with timing and grant provenance.
@@ -2676,6 +2689,11 @@ export interface components {
         };
         /** BudgetSummary */
         BudgetSummary: {
+            /**
+             * Abandoned
+             * @default []
+             */
+            abandoned?: components["schemas"]["AbandonedCurrency"][];
             /** Totals */
             totals: components["schemas"]["SummaryCurrency"][];
         };
@@ -2972,7 +2990,7 @@ export interface components {
              */
             delegate_id: string;
             /** Document Types */
-            document_types?: ("project" | "requisition" | "budget_change" | "vendor" | "rfq" | "award" | "po")[] | null;
+            document_types?: ("project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po")[] | null;
             /**
              * Ends At
              * Format: date-time
@@ -4810,6 +4828,8 @@ export interface components {
             schedule_variance_days: number | null;
             /** Sponsor Id */
             sponsor_id: string | null;
+            /** Sponsor Ids */
+            sponsor_ids?: string[];
             status: components["schemas"]["ProjectStatus"];
             /** Version */
             version: number;
@@ -4922,6 +4942,8 @@ export interface components {
             needed_by?: string | null;
             /** Project Id */
             project_id?: string | null;
+            /** Sponsor Ids */
+            sponsor_ids?: string[] | null;
             /** Title */
             title: string;
         };
@@ -4950,6 +4972,8 @@ export interface components {
             needed_by?: string | null;
             /** Project Id */
             project_id?: string | null;
+            /** Sponsor Ids */
+            sponsor_ids?: string[] | null;
             /** Title */
             title?: string | null;
         };
@@ -5017,6 +5041,8 @@ export interface components {
              */
             requester_id: string;
             reservation?: components["schemas"]["ReservationRead"] | null;
+            /** Sponsor Ids */
+            sponsor_ids?: string[];
             /** Standalone */
             standalone: boolean;
             status: components["schemas"]["RequisitionStatus"];
@@ -5615,7 +5641,7 @@ export interface components {
              * Document Type
              * @enum {string}
              */
-            document_type: "project" | "requisition" | "budget_change" | "vendor" | "rfq" | "award" | "po";
+            document_type: "project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po";
             /** Name */
             name: string;
             /** Scope Id */
@@ -5665,7 +5691,7 @@ export interface components {
              * Document Type
              * @enum {string}
              */
-            document_type: "project" | "requisition" | "budget_change" | "vendor" | "rfq" | "award" | "po";
+            document_type: "project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po";
             /** Draft Version */
             draft_version?: number | null;
             /** Edited At */
@@ -6092,8 +6118,8 @@ export interface operations {
     eligible_delegates_route_api_v1_approvals_delegations_eligible_delegates_get: {
         parameters: {
             query?: {
-                document_type?: ("project" | "requisition" | "budget_change" | "vendor" | "rfq" | "award" | "po") | null;
-                document_types?: ("project" | "requisition" | "budget_change" | "vendor" | "rfq" | "award" | "po")[] | null;
+                document_type?: ("project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po") | null;
+                document_types?: ("project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po")[] | null;
             };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
@@ -6177,7 +6203,7 @@ export interface operations {
     eligible_picker_api_v1_approvals_eligible_approvers_get: {
         parameters: {
             query: {
-                document_type: "project" | "requisition" | "budget_change" | "vendor" | "rfq" | "award" | "po";
+                document_type: "project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po";
                 scope_type: "org" | "bu";
                 scope_id: string;
                 q?: string | null;
@@ -6395,7 +6421,7 @@ export interface operations {
         parameters: {
             query?: {
                 view?: "pending" | "overdue" | "completed" | "delegated";
-                type?: ("project" | "requisition" | "budget_change" | "vendor" | "rfq" | "award" | "po") | null;
+                type?: ("project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po") | null;
                 q?: string;
                 sort?: ("due" | "amount" | "decided") | null;
                 direction?: ("asc" | "desc") | null;
@@ -10798,6 +10824,7 @@ export interface operations {
                 status?: components["schemas"]["RequisitionStatus"] | null;
                 project_id?: string | null;
                 bu_id?: string | null;
+                kind?: ("project_request" | "requisition") | null;
                 requester?: "me" | null;
                 q?: string;
                 sort?: "number" | "title" | "estimate" | "needed_by" | "updated_at";
@@ -11864,7 +11891,7 @@ export interface operations {
     list_workflows_api_v1_workflows_get: {
         parameters: {
             query?: {
-                document_type?: ("project" | "requisition" | "budget_change" | "vendor" | "rfq" | "award" | "po") | null;
+                document_type?: ("project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po") | null;
                 cursor?: string | null;
                 search?: string;
             };
@@ -11952,7 +11979,7 @@ export interface operations {
     workflow_catalog_api_v1_workflows_catalog_get: {
         parameters: {
             query: {
-                document_type: "project" | "requisition" | "budget_change" | "vendor" | "rfq" | "award" | "po";
+                document_type: "project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po";
             };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;

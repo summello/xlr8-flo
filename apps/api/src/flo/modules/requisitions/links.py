@@ -20,7 +20,7 @@ from flo.modules.projects.service import ProjectService, generated_for
 from flo.modules.requisitions import revisions
 from flo.modules.requisitions.approval import RequisitionAdapter
 from flo.modules.requisitions.lifecycle import read_row
-from flo.modules.requisitions.models import RequisitionRepository
+from flo.modules.requisitions.models import RequisitionRepository, doc_type
 from flo.modules.requisitions.schemas import (
     LinkAccess,
     LinkEdge,
@@ -342,7 +342,9 @@ def assert_current_upstream(
                 "since version "
                 f"{document_version} and have no amendment pending. Reload it and retry.",
             )
-        assert_current_approval(conn, scope, "requisition", requisition_id, document_version)
+        assert_current_approval(
+            conn, scope, doc_type(conn, scope, requisition_id), requisition_id, document_version
+        )
         # D-M2-25: no sourcing or purchasing document is raised on an expired code.
         expired = codes_read(
             conn,

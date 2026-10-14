@@ -10,7 +10,7 @@ from flo.api.admin_users import organization_target
 from flo.api.auth import get_auth_settings
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
-from flo.kernel.authz import permits, require
+from flo.kernel.authz import permits, require, require_resolved
 from flo.kernel.config import Settings
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
@@ -56,12 +56,17 @@ from flo.modules.requisitions.service import (
 router = APIRouter(prefix="/api/v1/requisitions", tags=["requisitions"])
 
 
-def create_target(body: RequisitionCreate, connection: Connection) -> TargetProtocol:
+def create_target(body: RequisitionCreate, connection: Connection) -> tuple[str, TargetProtocol]:
+    """A standalone request is a Project Request: its own permission on the unit (D-M2-18)."""
     if body.project_id is not None:
         project = ProjectService(connection, current_scope()).get(body.project_id)
-        return cast(TargetProtocol, AuthorizationTarget(ScopeType.PROJECT, project.id))
+        return "requisition.create", cast(
+            TargetProtocol, AuthorizationTarget(ScopeType.PROJECT, project.id)
+        )
     unit = OrgService(connection, current_scope()).get_unit(cast(UUID, body.bu_id))
-    return cast(TargetProtocol, AuthorizationTarget(ScopeType.BU, unit.id))
+    return "project_request.create", cast(
+        TargetProtocol, AuthorizationTarget(ScopeType.BU, unit.id)
+    )
 
 
 def requisition_target(id: UUID, connection: Connection) -> TargetProtocol:
@@ -77,9 +82,7 @@ def requisition_target(id: UUID, connection: Connection) -> TargetProtocol:
     )
 
 
-CreateContext = Annotated[
-    AuthorizationContext, Depends(require("requisition.create", create_target))
-]
+CreateContext = Annotated[AuthorizationContext, Depends(require_resolved(create_target))]
 ReadContext = Annotated[
     AuthorizationContext, Depends(require("requisition.view", requisition_target))
 ]
@@ -120,6 +123,7 @@ def list_requisitions(
     status: RequisitionStatus | None = None,
     project_id: UUID | None = None,
     bu_id: UUID | None = None,
+    kind: Literal["project_request", "requisition"] | None = None,
     requester: Literal["me"] | None = None,
     q: str = "",
     sort: RequisitionSort = "number",
@@ -133,6 +137,7 @@ def list_requisitions(
         status=status,
         project_id=project_id,
         bu_id=bu_id,
+        kind=kind,
         requester=requester,
         q=q,
         sort=sort,
@@ -158,10 +163,10 @@ def lookups(
     bu_id: UUID | None = None,
     limit: int = 20,
 ) -> LookupRows:
-    def can_raise(kind: ScopeType, id: UUID) -> bool:
+    def can_raise(kind: ScopeType, id: UUID, permission: str = "requisition.create") -> bool:
         return permits(
             request,
-            "requisition.create",
+            permission,
             cast(TargetProtocol, AuthorizationTarget(kind, id)),
         )
 
@@ -170,6 +175,7 @@ def lookups(
         current_scope(),
         lambda id: can_raise(ScopeType.PROJECT, id),
         lambda id: can_raise(ScopeType.BU, id),
+        lambda id: can_raise(ScopeType.BU, id, "project_request.create"),
     ).options(kind, q, bu_id, limit)
 
 

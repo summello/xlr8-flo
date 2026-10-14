@@ -65,9 +65,9 @@ export default function RequisitionDetail({ id, navigate, onLoaded }: { id: stri
     if (data) navigate("/requisitions"); else setDiscardError(failure(error as Problem | undefined, "Discarding the draft"));
   };
 
-  return <section className="req-page req-detail" aria-label="Requisition">
+  return <section className="req-page req-detail" aria-label={row.standalone ? "Project Request" : "Requisition"}>
     <header className="req-heading">
-      <p>{row.number} · {row.project_name ?? "Standalone request"} · requested by {row.requester_email}</p>
+      <p>{row.number} · {row.project_name ?? "Project Request"} · requested by {row.requester_email}</p>
       <StatusPill docType="requisition" status={row.status} />
       {row.codes_expired && <ExpiredCodeBadge />}
       <div className="req-actions">

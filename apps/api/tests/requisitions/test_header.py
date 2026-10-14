@@ -102,6 +102,10 @@ def svc(db, org=None):
 
 
 def draft(db, bu=None, p=None, org=None, **changes):
+    if p is None:  # a Project Request must name a sponsor (D-M2-20)
+        changes.setdefault(
+            "sponsor_ids", [db[3] if org is None else admin_id(db[0], "second@example.test")]
+        )
     return svc(db, org).create(
         RequisitionCreate(
             title="Request",
@@ -134,6 +138,7 @@ def test_project_defaults_standalone_currency_estimate_audit_and_idempotency(hea
                 {
                     "title": "Standalone",
                     "bu_id": str(bu.id),
+                    "sponsor_ids": [str(db[3])],
                     "department_code": " d ",
                     "ledger_account_code": " l ",
                 },
@@ -222,7 +227,11 @@ def test_create_requires_exactly_one_mode_and_base_currency(header_db):
                     result.status_code == 422
                     and result.json()["errors"][0]["field"] == "project_id"
                 )
-            result = await send(browser, "POST", data={"title": "X", "bu_id": str(p.bu_id)})
+            result = await send(
+                browser,
+                "POST",
+                data={"title": "X", "bu_id": str(p.bu_id), "sponsor_ids": [str(db[3])]},
+            )
             assert (
                 result.status_code == 409
                 and result.json()["checks"]["problem"] == "base_currency_unset"
@@ -386,7 +395,7 @@ def test_codes_and_delivery_address_guards(header_db):
     async def scenario():
         async with client(app) as browser:
             await login(browser)
-            data = {"title": "Request", "bu_id": str(bu.id)}
+            data = {"title": "Request", "bu_id": str(bu.id), "sponsor_ids": [str(db[3])]}
             result = await send(browser, "POST", data=data | {"ledger_account_code": "L"})
             assert result.status_code == 422 and result.json()["checks"]["problem"] == "inactive"
             for item in invalid_addresses:
@@ -710,7 +719,12 @@ def test_header_bounds_extra_fields_and_incomplete_past_date_draft(header_db):
             result = await send(
                 browser,
                 "POST",
-                data={"title": "Incomplete", "bu_id": str(bu.id), "needed_by": "2000-01-01"},
+                data={
+                    "title": "Incomplete",
+                    "bu_id": str(bu.id),
+                    "needed_by": "2000-01-01",
+                    "sponsor_ids": [str(db[3])],
+                },
             )
             assert result.status_code == 201 and result.json()["needed_by"] == "2000-01-01"
             row = result.json()
@@ -736,7 +750,11 @@ def test_create_duplicate_number_is_safe_conflict(header_db):
         async with client(app) as browser:
             await login(browser)
             with patch.object(NumberingService, "allocate", return_value=row.number):
-                result = await send(browser, "POST", data={"title": "X", "bu_id": str(bu.id)})
+                result = await send(
+                    browser,
+                    "POST",
+                    data={"title": "X", "bu_id": str(bu.id), "sponsor_ids": [str(db[3])]},
+                )
             assert (
                 result.status_code == 409
                 and result.json()["checks"]["problem"] == "duplicate_number"

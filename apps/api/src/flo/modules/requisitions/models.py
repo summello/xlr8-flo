@@ -46,3 +46,15 @@ class RequisitionRepository(ScopedRepo[object]):
         self, query: str, params: Mapping[str, object] | None = None
     ) -> psycopg.Cursor[tuple[object, ...]]:
         return self.connection.execute(query, self.scoped_params(params))
+
+
+def doc_type(connection: psycopg.Connection[tuple[object, ...]], scope: Scope, id: object) -> str:
+    """The approval document type: a standalone request is a Project Request (D-M2-18)."""
+    row = (
+        RequisitionRepository(connection, scope)
+        .execute(
+            "SELECT standalone FROM requisition WHERE org_id=%(org_id)s AND id=%(id)s", {"id": id}
+        )
+        .fetchone()
+    )
+    return "project_request" if row and row[0] else "requisition"

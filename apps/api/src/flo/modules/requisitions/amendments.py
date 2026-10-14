@@ -21,7 +21,7 @@ from flo.modules.requisitions import revisions
 from flo.modules.requisitions.catalogue import CatalogueService
 from flo.modules.requisitions.lifecycle import check_version, read_row, routing_check
 from flo.modules.requisitions.lines import LIMIT, LineService
-from flo.modules.requisitions.models import RequisitionRepository
+from flo.modules.requisitions.models import RequisitionRepository, doc_type
 from flo.modules.requisitions.schemas import (
     AmendmentHeader,
     AmendmentLineRead,
@@ -430,7 +430,7 @@ def submit(
             raise SubmissionInvalid(problems)
         if base is not None and revisions.unchanged(base, snap):
             raise conflict("nothing_changed", "Not submitted. Nothing has changed.")
-        state = approval_state(conn, scope, "requisition", id)
+        state = approval_state(conn, scope, doc_type(conn, scope, id), id)
         approved = (
             state.approved_material_digest
             if state.status == "approved"
@@ -473,7 +473,7 @@ def submit(
         start(
             conn,
             scope,
-            document_type="requisition",
+            document_type=doc_type(conn, scope, id),
             document_id=id,
             actor_id=actor_id,
             resolver=AuthorizationResolver(cast(AuthorizationConnection, conn), scope),
@@ -509,7 +509,7 @@ def withdraw_amendment(
         withdraw(
             conn,
             scope,
-            document_type="requisition",
+            document_type=doc_type(conn, scope, id),
             document_id=id,
             actor_id=actor_id,
             reason="Amendment withdrawn",

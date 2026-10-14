@@ -24,11 +24,12 @@ export type Header = {
   needed_by: string;
   delivery_address_id: string;
   justification: string;
+  sponsor_ids: string[];
 };
 
 export const EMPTY_HEADER: Header = {
   mode: "project", title: "", project_id: "", bu_id: "", department_code: "", ledger_account_code: "",
-  needed_by: "", delivery_address_id: "", justification: "",
+  needed_by: "", delivery_address_id: "", justification: "", sponsor_ids: [],
 };
 
 export function newLine(type: "item" | "service" = "item"): DraftLine {
@@ -59,7 +60,7 @@ export const CATEGORY_LABELS: Readonly<Record<string, string>> = {
 
 export type SummaryProblem = { category: string; message: string; target: string };
 
-const HEADER_FIELDS = new Set(["title", "project_id", "bu_id", "department_code", "ledger_account_code", "needed_by", "delivery_address_id", "justification"]);
+const HEADER_FIELDS = new Set(["title", "project_id", "bu_id", "department_code", "ledger_account_code", "needed_by", "delivery_address_id", "justification", "sponsor_ids", "sponsors"]);
 
 /** `lines/3/quantity` -> the control `line-3-quantity`; `required/title` -> `req-title`; the rest land on their card. */
 export function targetFor(path: string): string {
@@ -68,7 +69,7 @@ export function targetFor(path: string): string {
   if (parts[0] === "lines") return "lines-card";
   if (parts[0] === "funds" || parts[0] === "routing") return "funding-check";
   const field = parts[parts.length - 1] ?? "";
-  return HEADER_FIELDS.has(field) ? `req-${field}` : "requisition-details";
+  return HEADER_FIELDS.has(field) ? `req-${field === "sponsors" ? "sponsor_ids" : field}` : "requisition-details";
 }
 
 export function problemFromError(error: { field: string; message: string }): SummaryProblem {
@@ -87,6 +88,7 @@ export function clientProblems(header: Header, lines: readonly DraftLine[], toda
   if (!header.title.trim()) need("title", "Enter a title");
   if (header.mode === "project") { if (!header.project_id) need("project_id", "Choose a project"); }
   else if (!header.bu_id) need("bu_id", "Choose a business unit");
+  if (header.mode === "standalone" && header.sponsor_ids.length === 0) need("sponsor_ids", "Name at least one sponsor");
   if (!header.department_code) need("department_code", "Choose a department");
   if (!header.ledger_account_code) need("ledger_account_code", "Choose a ledger account");
   if (!header.needed_by) need("needed_by", "Enter the date it is needed by");
@@ -120,7 +122,7 @@ export function initialHeader(row: Requisition): Header {
   return {
     mode: row.standalone ? "standalone" : "project", title: row.title, project_id: row.project_id ?? "", bu_id: row.standalone ? row.bu_id : "",
     department_code: row.department_code ?? "", ledger_account_code: row.ledger_account_code ?? "", needed_by: row.needed_by ?? "",
-    delivery_address_id: row.delivery_address_id ?? "", justification: row.justification ?? "",
+    delivery_address_id: row.delivery_address_id ?? "", justification: row.justification ?? "", sponsor_ids: row.sponsor_ids ?? [],
   };
 }
 export function initialLines(rows: RequisitionLine[]): DraftLine[] {

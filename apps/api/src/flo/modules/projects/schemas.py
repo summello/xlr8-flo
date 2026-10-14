@@ -93,6 +93,7 @@ class ProjectRead(BaseModel):
     parent_id: UUID | None
     owner_id: UUID
     sponsor_id: UUID | None
+    sponsor_ids: list[UUID] = Field(default_factory=list)
     department_code: str
     ledger_account_code: str
     currency: str

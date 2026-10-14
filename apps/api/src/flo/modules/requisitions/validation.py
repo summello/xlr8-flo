@@ -102,6 +102,15 @@ def check_submission(
         standalone = bool(values["standalone"])
         if standalone and values["bu_id"] is None:
             add("required", "bu_id", "Choose a business unit")
+        if standalone and (
+            repo.execute(
+                "SELECT 1 FROM requisition_sponsor WHERE org_id=%(org_id)s AND "
+                "requisition_id=%(id)s LIMIT 1",
+                {"id": requisition_id},
+            ).fetchone()
+            is None
+        ):
+            add("required", "sponsors", "Name at least one sponsor")
         org = OrgService(conn, scope)
 
         def master(category: Category, field: str, kind: str, code: str, label: str) -> None:

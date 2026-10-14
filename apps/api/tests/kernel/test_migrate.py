@@ -30,6 +30,16 @@ def _database_url() -> tuple[str, bool]:
     return url.replace("postgresql+psycopg://", "postgresql://", 1), configured is not None
 
 
+def legacy_draft(create):
+    """Seed a standalone draft on a schema older than migration 0054 (no sponsor tables)."""
+    from unittest.mock import patch
+
+    from flo.modules.requisitions.service import RequisitionService
+
+    with patch.object(RequisitionService, "_require_sponsors"):
+        return create()
+
+
 @pytest.fixture
 def empty_database() -> Iterator[str]:
     administrative_url, configured = _database_url()
@@ -143,6 +153,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261009_0051",
         "20261009_0052",
         "20261014_0053",
+        "20261014_0054",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -1059,7 +1070,9 @@ def test_requisition_lines_migration_roundtrip_preserves_lines_and_header(empty_
         org.set_base_currency(BaseCurrencyPut(currency="USD"))
         bu = org.create_unit(OrgUnitCreate(code="BU", name="BU", kind="bu"))
         requisitions = RequisitionService(conn, scope, actor, settings(conn))
-        row = requisitions.create(RequisitionCreate(title="Preserved", bu_id=bu.id))
+        row = legacy_draft(
+            lambda: requisitions.create(RequisitionCreate(title="Preserved", bu_id=bu.id))
+        )
         before = conn.execute(
             "SELECT id,title,estimate,currency,version FROM requisition"
         ).fetchall()
@@ -1153,8 +1166,10 @@ def test_catalogue_migration_roundtrip_preserves_items_events_and_lines(empty_da
                 attributes={"dimension": "count"},
             ),
         )
-        row = RequisitionService(conn, scope, actor, settings(conn)).create(
-            RequisitionCreate(title="Preserved", bu_id=bu.id)
+        row = legacy_draft(
+            lambda: RequisitionService(conn, scope, actor, settings(conn)).create(
+                RequisitionCreate(title="Preserved", bu_id=bu.id)
+            )
         )
         revisions[-1].upgrade(conn)
         LineService(conn, scope, actor).write(
@@ -1554,8 +1569,10 @@ def test_requisition_lifecycle_permissions_roundtrip_preserves_existing_data(emp
         org = OrgService(conn, scope, actor)
         org.set_base_currency(BaseCurrencyPut(currency="USD"))
         bu = org.create_unit(OrgUnitCreate(code="BU", name="BU", kind="bu"))
-        row = RequisitionService(conn, scope, actor, settings(conn)).create(
-            RequisitionCreate(title="Preserve", bu_id=bu.id)
+        row = legacy_draft(
+            lambda: RequisitionService(conn, scope, actor, settings(conn)).create(
+                RequisitionCreate(title="Preserve", bu_id=bu.id)
+            )
         )
         # The catalogue has the new codes, so model a pre-upgrade tenant explicitly.
         conn.execute(
@@ -1712,8 +1729,10 @@ def test_requisition_revisions_roundtrip_and_plants_the_immutability_guards(empt
         org = OrgService(conn, scope, actor)
         org.set_base_currency(BaseCurrencyPut(currency="USD"))
         bu = org.create_unit(OrgUnitCreate(code="BU", name="BU", kind="bu"))
-        req = RequisitionService(conn, scope, actor, settings(conn)).create(
-            RequisitionCreate(title="Seed", bu_id=bu.id)
+        req = legacy_draft(
+            lambda: RequisitionService(conn, scope, actor, settings(conn)).create(
+                RequisitionCreate(title="Seed", bu_id=bu.id)
+            )
         )
         before = conn.execute("SELECT id,title,status,version FROM requisition").fetchall()
         mig.upgrade(conn)

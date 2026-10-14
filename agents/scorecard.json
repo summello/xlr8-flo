@@ -3311,6 +3311,56 @@
       },
       "recap": "Approval now refuses an expired department or ledger code unless the approver substitutes a usable one (audited, reservation left on the original code); after approval assert_current_upstream blocks until a Project Manager substitutes via new POST /requisitions/{id}/codes and /projects/{id}/codes. Amendments cannot change codes; project and requisition reads, lookups and UI carry an Expired code badge.",
       "title": "Expired master codes: flag, substitute at approval, block downstream; no code changes by amendment"
+    },
+    {
+      "story": "E09-S15",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "money",
+        "auth",
+        "ui",
+        "migration"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 3,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "5e56b202-8218-443b-a865-e9d0949fc3c3",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S15",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a13b32-d62a-74e0-9a8c-750fc8acf503",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "1b4f7384-72c5-48ef-96ac-8e83fbac7eff",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Standalone requisitions are now Project Requests: own project_request approval type/workflow (fields amount, bu), project_request.create permission, sponsors carried to the created project, and cancel-after-approval abandons that project and reports its allocation under an Abandoned group outside budget totals. Migration 0054 adds the type, sponsor tables and project.source_requisition_id; the web form, list tab and budget page follow.",
+      "title": "Project Requests: own document type, workflow, permission and name; sponsors; abandoned on cancel and kept out of budget totals"
     }
   ]
 }

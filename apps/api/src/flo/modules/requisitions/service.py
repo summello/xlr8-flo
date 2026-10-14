@@ -5,7 +5,7 @@ import json
 from collections.abc import Callable
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, cast
+from typing import Any, Literal, cast
 from uuid import UUID, uuid4
 
 import psycopg
@@ -25,6 +25,7 @@ from flo.modules.org.service import (
     today,
 )
 from flo.modules.projects.service import ProjectService, is_requisition_generated
+from flo.modules.requisitions.approval import ProjectRequestAdapter as ProjectRequestAdapter
 from flo.modules.requisitions.approval import RequisitionAdapter as RequisitionAdapter
 from flo.modules.requisitions.approval import open_document_count as open_document_count
 from flo.modules.requisitions.catalogue import record_event, record_requested
@@ -61,6 +62,7 @@ from flo.modules.requisitions.schemas import SubmissionInvalid as SubmissionInva
 from flo.modules.requisitions.validation import check_submission as check_submission
 
 __all__ = [
+    "ProjectRequestAdapter",
     "RequisitionAdapter",
     "open_document_count",
     "transition",
@@ -128,6 +130,38 @@ class RequisitionService:
         read.codes_expired = read.codes.expired
         return read
 
+    def _sponsors(self, id: UUID) -> list[UUID]:
+        return [
+            cast(UUID, r[0])
+            for r in self.repo.execute(
+                "SELECT user_id FROM requisition_sponsor WHERE org_id=%(org_id)s AND "
+                "requisition_id=%(id)s ORDER BY user_id",
+                {"id": id},
+            ).fetchall()
+        ]
+
+    def _set_sponsors(self, id: UUID, sponsor_ids: list[UUID]) -> None:
+        found = self.repo.execute(
+            "SELECT i.id FROM identity i WHERE i.id=ANY(%(ids)s) AND i.status='active' AND EXISTS ("
+            "SELECT 1 FROM user_role r WHERE r.org_id=%(org_id)s AND r.user_id=i.id)",
+            {"ids": sponsor_ids},
+        ).fetchall()
+        for user_id in sponsor_ids:
+            if user_id not in {r[0] for r in found}:
+                raise invalid(
+                    "sponsor_ids", f"{user_id} is not an active user of this organization."
+                )
+        self.repo.execute(
+            "DELETE FROM requisition_sponsor WHERE org_id=%(org_id)s AND requisition_id=%(id)s",
+            {"id": id},
+        )
+        for user_id in sponsor_ids:
+            self.repo.execute(
+                "INSERT INTO requisition_sponsor(org_id,requisition_id,user_id) "
+                "VALUES (%(org_id)s,%(id)s,%(user)s)",
+                {"id": id, "user": user_id},
+            )
+
     def detail(
         self,
         id: UUID,
@@ -141,6 +175,7 @@ class RequisitionService:
 
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             result = self._get(id)
+            result.sponsor_ids = self._sponsors(id)
             row = read_row(self.repo, id)
             if row["reservation_entry_id"] is not None:
                 held = reservation_remaining(
@@ -161,7 +196,7 @@ class RequisitionService:
                 )
             instance = self.repo.execute(
                 "SELECT id,status FROM approval_instance WHERE org_id=%(org_id)s AND "
-                "document_type='requisition' AND document_id=%(id)s"
+                "document_type IN ('requisition','project_request') AND document_id=%(id)s"
                 " ORDER BY started_at DESC,id DESC LIMIT 1",
                 {"id": id},
             ).fetchone()
@@ -268,9 +303,17 @@ class RequisitionService:
             after_fields=tuple(after),
         )
 
+    @staticmethod
+    def _require_sponsors(body: RequisitionCreate) -> None:
+        """A Project Request names one to ten sponsors when it is created (D-M2-20)."""
+        if body.project_id is None and not body.sponsor_ids:
+            raise invalid("sponsor_ids", "Name one to ten sponsors for a Project Request.")
+
     def create(self, body: RequisitionCreate) -> RequisitionRead:
+        self._require_sponsors(body)
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             values = body.model_dump()
+            sponsors = cast(list[UUID] | None, values.pop("sponsor_ids"))
             if body.project_id is not None:
                 derived = self._project(body.project_id)
                 for field in ("department_code", "ledger_account_code"):
@@ -311,7 +354,10 @@ class RequisitionService:
             ).fetchone()
             if inserted is None:
                 raise self._duplicate_number()
+            if sponsors:
+                self._set_sponsors(cast(UUID, values["id"]), sponsors)
             result = self._get(cast(UUID, values["id"]))
+            result.sponsor_ids = sponsors or []
             self._audit("requisition.create", result.id, None, result.model_dump())
             return result
 
@@ -352,6 +398,13 @@ class RequisitionService:
                     checks={"problem": "not_editable"},
                 )
             changes = body.model_dump(exclude_unset=True)
+            sponsors = cast(list[UUID] | None, changes.pop("sponsor_ids", None))
+            old_sponsors: list[UUID] = []
+            if sponsors is not None:
+                if not before.standalone:
+                    raise invalid("sponsor_ids", "Only a Project Request can name sponsors.")
+                old_sponsors = self._sponsors(id)
+                self._set_sponsors(id, sponsors)
             if "project_id" in changes:
                 if before.standalone or body.project_id is None:
                     raise invalid(
@@ -415,12 +468,12 @@ class RequisitionService:
             changed_fields = {
                 field for field in changes if getattr(before, field) != getattr(after, field)
             }
-            self._audit(
-                "requisition.update",
-                id,
-                {field: getattr(before, field) for field in changed_fields},
-                {field: getattr(after, field) for field in changed_fields},
-            )
+            audit_before = {field: getattr(before, field) for field in changed_fields}
+            audit_after = {field: getattr(after, field) for field in changed_fields}
+            if sponsors is not None and sorted(sponsors) != sorted(old_sponsors):
+                audit_before["sponsor_ids"] = [str(u) for u in old_sponsors]
+                audit_after["sponsor_ids"] = [str(u) for u in sorted(sponsors)]
+            self._audit("requisition.update", id, audit_before, audit_after)
             return (
                 self.detail(id, can_view_budget, can_edit) if can_view_budget is not None else after
             )
@@ -440,6 +493,7 @@ class RequisitionService:
         status: RequisitionStatus | None = None,
         project_id: UUID | None = None,
         bu_id: UUID | None = None,
+        kind: Literal["project_request", "requisition"] | None = None,
         requester: str | None = None,
         q: str = "",
         sort: RequisitionSort = "number",
@@ -460,6 +514,7 @@ class RequisitionService:
             "status": status,
             "project_id": project_id,
             "bu_id": bu_id,
+            "standalone": None if kind is None else kind == "project_request",
             "requester_id": self.actor_id if requester == "me" else None,
         }
         escaped = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
@@ -467,6 +522,7 @@ class RequisitionService:
         filters = """r.org_id=%(org_id)s AND (%(status)s::text IS NULL OR r.status=%(status)s)
           AND (%(project_id)s::uuid IS NULL OR r.project_id=%(project_id)s)
           AND (%(bu_id)s::uuid IS NULL OR r.bu_id=%(bu_id)s)
+          AND (%(standalone)s::boolean IS NULL OR r.standalone=%(standalone)s)
           AND (%(requester_id)s::uuid IS NULL OR r.requester_id=%(requester_id)s)
           AND (r.number ILIKE %(prefix)s OR r.title ILIKE %(substring)s)"""
         boundary = ""

@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Literal
+from typing import Literal, Self
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -49,10 +49,16 @@ class HeaderFields(BaseModel):
     delivery_address_id: UUID | None = None
 
 
+def distinct_ids(ids: list[UUID] | None) -> None:
+    if ids is not None and len(set(ids)) != len(ids):
+        raise invalid("sponsor_ids", "Name each sponsor once.")
+
+
 class RequisitionCreate(HeaderFields):
     title: str = Field(min_length=1, max_length=200)
     project_id: UUID | None = None
     bu_id: UUID | None = None
+    sponsor_ids: list[UUID] | None = Field(default=None, min_length=1, max_length=10)
 
     @model_validator(mode="before")
     @classmethod
@@ -65,17 +71,32 @@ class RequisitionCreate(HeaderFields):
                     )
             if bool(value.get("project_id")) == bool(value.get("bu_id")):
                 raise invalid("project_id", "Choose exactly one project or business unit.")
+            if value.get("project_id") and value.get("sponsor_ids") is not None:
+                raise invalid("sponsor_ids", "Only a Project Request can name sponsors.")
         return value
+
+    @model_validator(mode="after")
+    def distinct_sponsors(self) -> Self:
+        distinct_ids(self.sponsor_ids)
+        return self
 
 
 class RequisitionPatch(HeaderFields):
     title: str | None = Field(default=None, min_length=1, max_length=200)
     project_id: UUID | None = None
+    sponsor_ids: list[UUID] | None = Field(default=None, min_length=1, max_length=10)
+
+    @model_validator(mode="after")
+    def distinct_sponsors(self) -> Self:
+        distinct_ids(self.sponsor_ids)
+        return self
 
     @model_validator(mode="before")
     @classmethod
     def reject_immutable(cls, value: object) -> object:
         if isinstance(value, dict):
+            if "sponsor_ids" in value and value["sponsor_ids"] is None:
+                raise invalid("sponsor_ids", "Sponsors cannot be emptied; name one to ten.")
             for field in (
                 "standalone",
                 "bu_id",
@@ -118,6 +139,7 @@ class RequisitionRead(BaseModel):
     reservation: ReservationRead | None = None
     approval: ApprovalRead | None = None
     amendment: AmendmentRef | None = None
+    sponsor_ids: list[UUID] = Field(default_factory=list)
     codes: CodesRead | None = None
     codes_expired: bool = False
     # Single-record read only: the caller holds master_code.substitute and the status allows it.

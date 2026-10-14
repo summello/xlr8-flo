@@ -16,7 +16,7 @@ from flo.modules.approvals.schemas import DocumentSnapshot
 from flo.modules.approvals.service import instances_for, material_digest
 from flo.modules.budget.service import get_balance, reservation_remaining
 from flo.modules.identity.service import AuthorizationTarget, ScopeType
-from flo.modules.requisitions.models import RequisitionRepository
+from flo.modules.requisitions.models import RequisitionRepository, doc_type
 from flo.modules.requisitions.schemas import (
     ChangeDelta,
     ChangeFunding,
@@ -529,7 +529,7 @@ def diff_rows(
 
 def latest_instance(conn: Conn, scope: Scope, requisition_id: UUID) -> tuple[UUID, str] | None:
     """The newest approval instance, read through approvals.service (greatest started_at, id)."""
-    found = instances_for(conn, scope, "requisition", requisition_id)
+    found = instances_for(conn, scope, doc_type(conn, scope, requisition_id), requisition_id)
     return (found[-1].id, found[-1].status) if found else None
 
 

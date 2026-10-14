@@ -30,7 +30,9 @@ from flo.kernel.money import Money, currency_exponent
 from flo.kernel.tenancy.context import Scope
 from flo.modules.org.schemas import CodesRead
 
-DocumentType = Literal["project", "requisition", "budget_change", "vendor", "rfq", "award", "po"]
+DocumentType = Literal[
+    "project", "requisition", "project_request", "budget_change", "vendor", "rfq", "award", "po"
+]
 VersionStatus = Literal["draft", "published", "superseded"]
 
 
@@ -569,7 +571,7 @@ class DelegationCreate(Contract):
     delegate_id: UUID
     starts_at: datetime
     ends_at: datetime
-    document_types: list[DocumentType] | None = Field(default=None, min_length=1, max_length=7)
+    document_types: list[DocumentType] | None = Field(default=None, min_length=1, max_length=8)
     reason: str = Field(min_length=1, max_length=500)
 
     @model_validator(mode="after")

@@ -522,7 +522,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E08-S03** Import batch record, idempotent re-import by external key, async with progress | E08 | engine | M | IMP-008, IMP-009, IMP-012, PERF-004 | ~~E08-S02~~ |
 | ✅ | **E08-S04** Project and budget import templates end to end | E08 | crud | M | PROJ-001, IMP-001 | ~~E08-S03~~, ~~E07-S03~~ |
 
-#### M2 — Governed demand · 29/31 done
+#### M2 — Governed demand · 30/31 done
 
 > Requisitions that reserve real money, and the approval engine that authorizes them.
 
@@ -542,9 +542,9 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E09-S12** Resubmit and amendment screens: review changes, funding effect, version lineage | E09 | ui | L | REQ-012, APR-015, DATA-002, UX-003 | ~~E09-S08~~, ~~E09-S11~~ |
 | ✅ | **E09-S14** M2 exit criterion end to end: a requisition through a multi-level conditional workflow to approval, sub-project and reservation | E09 | test | S | WF-002, WF-003, REQ-002, ACC-001 | ~~E09-S12~~ |
 | ✅ | **E09-S13** Roles and permission catalogue: every checked permission grantable, Project Manager role, budget governance decisions and user guide | E09 | security | M | USR-007, TEN-010 | ~~E09-S12~~ |
-| 👀 | **E09-S15** Project Requests: own document type, workflow, permission and name; sponsors; abandoned on cancel and kept out of budget totals | E09 | engine | L | REQ-004 | ~~E09-S13~~ |
+| ✅ | **E09-S15** Project Requests: own document type, workflow, permission and name; sponsors; abandoned on cancel and kept out of budget totals | E09 | engine | L | REQ-004 | ~~E09-S13~~ |
 | ✅ | **E09-S16** Sub-project funding: an approved requisition's sub-project draws from its main project; funds return on cancel | E09 | ledger | L | REQ-002, ACC-001, WF-003, FIN-011 | ~~E09-S13~~ |
-| ⬜ | **E09-S17** Block governed actions until their approval workflow is published | E09 | engine | M | BUD-007, WF-001 | ~~E09-S13~~, E09-S15 |
+| ⬜ | **E09-S17** Block governed actions until their approval workflow is published | E09 | engine | M | BUD-007, WF-001 | ~~E09-S13~~, ~~E09-S15~~ |
 | ✅ | **E09-S18** Expired master codes: flag, substitute at approval, block downstream; no code changes by amendment | E09 | engine | L | AUD-001 | ~~E09-S13~~ |
 | ✅ | **E10-S01** Workflow definition schema, versioning, active-document version pinning | E10 | migration | L | APR-011, ACC-007 | ~~E03-S04~~ |
 | ✅ | **E10-S02** Condition evaluator over any document attribute including amount and custom fields | E10 | engine | L | APR-005, APR-010 | ~~E10-S01~~ |
@@ -595,7 +595,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E13-S10** Deliverability: SPF/DKIM/DMARC verification, bounce and complaint handling, suppression list | E13 | engine | M | EML-001, EML-002, EML-003, EML-006 | E13-S09 |
 | ⬜ | **E13-S11** Internal vs vendor-facing notes and attachments, enforced by test | E13 | security | M | PO-017, EML-005, COL-002 | E13-S09, ~~E09-S10~~ |
 | ⬜ | **E22-S01** Create Project with budget: form and Excel, sponsors, through the project approval workflow | E22 | engine | L | PROJ-003 | E09-S17 |
-| ⬜ | **E22-S02** Soft delete for every draft document | E22 | crud | M | DATA-002 | E09-S15 |
+| ⬜ | **E22-S02** Soft delete for every draft document | E22 | crud | M | DATA-002 | ~~E09-S15~~ |
 | ⬜ | **E22-S03** One audit helper instead of twelve, behaviour-preserving | E22 | chore | M | AUD-001 | — |
 | ⬜ | **E22-S04** M2 milestone review follow-ups: Money zero prop, shared lookup helper, internal collaboration readers, approvals read via service, e2e focus helper | E22 | chore | M | A11Y-001, UX-007 | — |
 

@@ -46,6 +46,13 @@ describe("submission problems", () => {
     ]);
     expect(clientProblems(EMPTY_HEADER, [], "2026-10-13").at(-1)?.message).toBe("Add at least one line");
   });
+  it("a Project Request must name a sponsor; a requisition does not", () => {
+    const request = { ...EMPTY_HEADER, mode: "standalone" as const };
+    expect(clientProblems(request, [], "2026-10-13").map(p => p.message)).toContain("Name at least one sponsor");
+    expect(clientProblems({ ...request, sponsor_ids: ["u"] }, [], "2026-10-13").map(p => p.message)).not.toContain("Name at least one sponsor");
+    expect(clientProblems(EMPTY_HEADER, [], "2026-10-13").map(p => p.message)).not.toContain("Name at least one sponsor");
+    expect(targetFor("required/sponsors")).toBe("req-sponsor_ids");
+  });
   it("blocks a needed-by date in the past", () => {
     const header = { ...EMPTY_HEADER, needed_by: "2020-01-01" };
     expect(clientProblems(header, [], "2026-10-13").map(p => p.message)).toContain("The needed-by date is in the past");

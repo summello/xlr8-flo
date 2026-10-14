@@ -22,10 +22,15 @@ from flo.modules.identity.service import (
     emails_by_id,
 )
 from flo.modules.org.service import OrgService, today
-from flo.modules.projects.service import abandon_generated, generated_for
+from flo.modules.projects.service import (
+    abandon_generated,
+    abandon_requested,
+    generated_for,
+    requested_for,
+)
 from flo.modules.requisitions import revisions
 from flo.modules.requisitions.funding import lock_funding, move_funds, release_live
-from flo.modules.requisitions.models import RequisitionRepository
+from flo.modules.requisitions.models import RequisitionRepository, doc_type
 from flo.modules.requisitions.schemas import (
     RequisitionStatus,
     RequisitionTransitionAvailable,
@@ -165,7 +170,7 @@ def routing_check(
     route = preview_route(
         conn,
         scope,
-        document_type="requisition",
+        document_type=doc_type(conn, scope, id),
         document_id=id,
         resolver=AuthorizationResolver(cast(AuthorizationConnection, conn), scope),
     )
@@ -249,7 +254,7 @@ def transition(
                 withdraw(
                     conn,
                     scope,
-                    document_type="requisition",
+                    document_type=doc_type(conn, scope, id),
                     document_id=id,
                     actor_id=actor_id,
                     reason=body.reason or body.to,
@@ -357,7 +362,7 @@ def transition(
             start(
                 conn,
                 scope,
-                document_type="requisition",
+                document_type=doc_type(conn, scope, id),
                 document_id=id,
                 actor_id=actor_id,
                 resolver=resolver,
@@ -369,7 +374,7 @@ def transition(
             start(
                 conn,
                 scope,
-                document_type="requisition",
+                document_type=doc_type(conn, scope, id),
                 document_id=id,
                 actor_id=actor_id,
                 resolver=resolver,
@@ -396,11 +401,11 @@ def stop_approved(
     """
     with tenant_transaction(cast(RlsSession, conn), scope):
         repo = RequisitionRepository(conn, scope)
-        if active_instance(conn, scope, "requisition", id) is not None:
+        if active_instance(conn, scope, doc_type(conn, scope, id), id) is not None:
             withdraw(
                 conn,
                 scope,
-                document_type="requisition",
+                document_type=doc_type(conn, scope, id),
                 document_id=id,
                 actor_id=actor_id,
                 reason=f"Requisition {to}",
@@ -452,6 +457,17 @@ def stop_approved(
                 conn,
                 scope,
                 sub.id,
+                reason=f"Abandoned because {row['number']} was {to}",
+                actor_id=None if system_actor else actor_id,
+                system_actor=system_actor,
+            )
+        created = requested_for(conn, scope, id)
+        if created is not None:
+            # A Project Request's own project: abandoned, allocation kept (D-M2-22).
+            abandon_requested(
+                conn,
+                scope,
+                created,
                 reason=f"Abandoned because {row['number']} was {to}",
                 actor_id=None if system_actor else actor_id,
                 system_actor=system_actor,

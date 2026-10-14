@@ -22,7 +22,7 @@ export function CardState({ error, loading, hasData, name, retry, children }: { 
 export function RequestCard({ row, delivery }: { row: Requisition; delivery: string | null }) {
   const facts: [string, React.ReactNode][] = [
     ["Justification", row.justification ?? "—"],
-    ["Project", row.project_id ? <a href={`/projects/${row.project_id}`}>{row.project_number} {row.project_name}</a> : "Standalone request"],
+    ["Project", row.project_id ? <a href={`/projects/${row.project_id}`}>{row.project_number} {row.project_name}</a> : "Project Request"],
     ["Business unit", row.bu_name], ["Department", row.department_code ?? "—"], ["Ledger account", row.ledger_account_code ?? "—"],
     ["Needed by", formatDate(row.needed_by)], ["Delivery", delivery ?? "—"], ["Estimate", <Money key="e" value={row.estimate} currency={row.currency} />],
   ];
@@ -36,7 +36,7 @@ export function ReservationCard({ row }: { row: Requisition }) {
   const r = row.reservation;
   return <section className="req-card" aria-labelledby="reservation-title">
     <header className="req-card-head"><h2 id="reservation-title">Reservation</h2></header>
-    {row.standalone && !r ? <p>Funding is assigned when a standalone request is approved. Nothing is reserved until then.</p> :
+    {row.standalone && !r ? <p>Funding is assigned when a Project Request is approved. Nothing is reserved until then.</p> :
       !r ? <p>{row.status === "draft" ? <>Nothing is reserved yet. Submitting would reserve <Money value={row.estimate} currency={row.currency} /> against {row.project_name ?? "the project"}.</> : "Nothing is reserved."}</p> :
       <dl className="req-funds">
         <div><dt>Reserved</dt><dd className="req-big"><Money value={r.remaining} currency={r.currency} /></dd></div>

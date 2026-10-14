@@ -51,6 +51,8 @@ export async function stubRequisitions(page: Page, initial: { row?: Req; lines?:
     links: [] as components["schemas"]["LinkedRecord"][],
     linksFail: false,
     catalogueFail: false,
+    // The unit lookup lists only units where the caller holds project_request.create.
+    canRequest: true,
     catalogue: [] as components["schemas"]["CatalogueItemRead"][],
     attachments: [] as components["schemas"]["AttachmentRead"][],
     list: [] as Req[],
@@ -72,7 +74,7 @@ export async function stubRequisitions(page: Page, initial: { row?: Req; lines?:
     state.calls.push({ path, method, body, headers: request.headers(), query: url.searchParams });
     const lookups: Record<string, { value: string; label: string; disabled?: boolean; note?: string }[]> = {
       project: [{ value: projectId, label: "PRJ-0001 Plant renewal" }, { value: generatedProjectId, label: "PRJ-0002 Cooling upgrade", disabled: true, note: "created from REQ-00277" }],
-      bu: [{ value: unitId, label: "Infrastructure" }], department: [{ value: "D", label: "D Operations" }], ledger_account: [{ value: "L", label: "L Plant equipment" }],
+      bu: state.canRequest ? [{ value: unitId, label: "Infrastructure" }] : [], user: [{ value: "bbbbbbbb-1111-4111-8111-111111111111", label: "amara@example.test" }, { value: "bbbbbbbb-2222-4222-8222-222222222222", label: "lee@example.test" }], department: [{ value: "D", label: "D Operations" }], ledger_account: [{ value: "L", label: "L Plant equipment" }],
       uom: [{ value: "ea", label: "ea" }, { value: "day", label: "day" }], delivery_address: [{ value: addressId, label: "North plant dock" }],
     };
     const lookup = path.match(/^\/api\/v1\/requisitions\/lookups\/(.+)$/);
@@ -90,7 +92,7 @@ export async function stubRequisitions(page: Page, initial: { row?: Req; lines?:
       return send({ rows: page, total: rows.length, next_cursor: from + size < rows.length ? String(from + size) : null, totals: rows.length ? [{ currency: "USD", amount: money4(sum) }] : [] });
     }
     if (path === "/api/v1/requisitions" && method === "POST") {
-      state.row = requisition({ id: reqId, title: String(body?.title), project_id: (body?.project_id as string) ?? null, standalone: !body?.project_id, justification: (body?.justification as string) ?? null, needed_by: (body?.needed_by as string) ?? null, department_code: (body?.department_code as string) ?? null, ledger_account_code: (body?.ledger_account_code as string) ?? null, delivery_address_id: (body?.delivery_address_id as string) ?? null, project_name: body?.project_id ? "Plant renewal" : null, project_number: body?.project_id ? "PRJ-0001" : null });
+      state.row = requisition({ id: reqId, title: String(body?.title), project_id: (body?.project_id as string) ?? null, standalone: !body?.project_id, sponsor_ids: (body?.sponsor_ids as string[]) ?? [], justification: (body?.justification as string) ?? null, needed_by: (body?.needed_by as string) ?? null, department_code: (body?.department_code as string) ?? null, ledger_account_code: (body?.ledger_account_code as string) ?? null, delivery_address_id: (body?.delivery_address_id as string) ?? null, project_name: body?.project_id ? "Plant renewal" : null, project_number: body?.project_id ? "PRJ-0001" : null });
       return send(state.row, 201);
     }
     if (!state.row) return problem("Not found.", 404);

@@ -267,8 +267,18 @@ class SummaryCurrency(BaseModel):
     available: str
 
 
+class AbandonedCurrency(BaseModel):
+    currency: str
+    allocated: str
+    reserved: str
+    committed: str
+    actual: str
+
+
 class BudgetSummary(BaseModel):
     totals: list[SummaryCurrency]
+    # Abandoned Project Request projects, kept out of `totals` (D-M2-22).
+    abandoned: list[AbandonedCurrency] = []
 
 
 def budget_summary(
@@ -281,7 +291,9 @@ def budget_summary(
         rows = (
             LedgerRepository(conn, scope)
             .execute(
-                "SELECT p.currency, COALESCE(sum(b.allocated),0)::text, "
+                "SELECT p.currency, (root.status='abandoned' AND root.source_requisition_id "
+                "IS NOT NULL AND root.generated_by_requisition_id IS NULL) AS abandoned, "
+                "COALESCE(sum(b.allocated),0)::text, "
                 "COALESCE(sum(b.reserved),0)::text, COALESCE(sum(b.committed),0)::text, "
                 "COALESCE(sum(b.actual),0)::text, COALESCE(sum(b.available),0)::text "
                 "FROM project p JOIN project root ON root.id=p.root_id AND root.org_id=p.org_id "
@@ -289,16 +301,24 @@ def budget_summary(
                 "ON b.project_id=p.id AND b.org_id=p.org_id "
                 "WHERE p.org_id=%(org_id)s "
                 "AND (%(unit)s::uuid IS NULL OR root.bu_id=%(unit)s) "
-                "GROUP BY p.currency ORDER BY p.currency",
+                "GROUP BY p.currency, 2 ORDER BY p.currency",
                 {"unit": unit_id},
             )
             .fetchall()
         )
-        fields = ("currency", "allocated", "reserved", "committed", "actual", "available")
+        fields = (
+            "currency",
+            "abandoned",
+            "allocated",
+            "reserved",
+            "committed",
+            "actual",
+            "available",
+        )
+        read = [dict(zip(fields, row, strict=True)) for row in rows]
         return BudgetSummary(
-            totals=[
-                SummaryCurrency.model_validate(dict(zip(fields, row, strict=True))) for row in rows
-            ]
+            totals=[SummaryCurrency.model_validate(r) for r in read if not r["abandoned"]],
+            abandoned=[AbandonedCurrency.model_validate(r) for r in read if r["abandoned"]],
         )
 
 

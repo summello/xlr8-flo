@@ -167,13 +167,55 @@ test("cents are exact and the line totals, estimate and Funding Check agree", as
   await expect(page.locator("#funding-check .req-funds > div").nth(2)).toContainText("99,949.72");
 });
 
-test("standalone mode shows the note and no funds figure", async ({ page }) => {
+test("a Project Request names sponsors, shows its note and no funds figure", async ({ page }) => {
+  const state = await stubRequisitions(page);
+  await page.goto("/requisitions/new");
+  await page.getByLabel("A new Project Request").check();
+  await expect(page.getByText("A Project Request asks for budget for a new project.")).toBeVisible();
+  await expect(page.locator("#funding-check")).toContainText("Funding is assigned when a Project Request is approved. Nothing is reserved until then.");
+  await expect(page.locator("#req-bu_id")).toBeVisible();
+  await page.locator("#req-title").fill("New plant");
+  await page.locator("#req-bu_id").selectOption({ index: 1 });
+  await page.locator("#req-sponsor_ids").selectOption(["bbbbbbbb-1111-4111-8111-111111111111", "bbbbbbbb-2222-4222-8222-222222222222"]);
+  await page.locator("#req-department_code").selectOption("D");
+  await page.locator("#req-ledger_account_code").selectOption("L");
+  await page.locator("#req-needed_by").fill("2030-01-31");
+  await page.locator("#req-delivery_address_id").selectOption({ index: 1 });
+  await page.locator("#req-justification").fill("Capacity");
+  await page.getByRole("button", { name: "Add item line" }).click();
+  await page.getByLabel("Description, line 1").fill("Crane");
+  await page.getByLabel("Quantity, line 1").fill("1");
+  await page.getByLabel("Unit, line 1").selectOption("ea");
+  await page.getByLabel("Unit price, line 1").fill("10");
+  await page.getByRole("button", { name: "Save draft" }).click();
+  await expect(page.getByText("Draft saved. Nothing is reserved until you submit.")).toBeVisible();
+  const create = state.calls.find(c => c.method === "POST" && c.path === "/api/v1/requisitions")!;
+  expect(create.body?.sponsor_ids).toHaveLength(2);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
+test("a Project Request needs a sponsor before it saves", async ({ page }) => {
   await stubRequisitions(page);
   await page.goto("/requisitions/new");
-  await page.getByLabel("A standalone capital request").check();
-  await expect(page.getByText("Approval creates a new project for this request unless the approver assigns it to an existing one.")).toBeVisible();
-  await expect(page.locator("#funding-check")).toContainText("Funding is assigned when a standalone request is approved. Nothing is reserved until then.");
-  await expect(page.locator("#req-bu_id")).toBeVisible();
+  await page.getByLabel("A new Project Request").check();
+  await page.getByRole("button", { name: "Submit for approval" }).click();
+  await expect(page.getByText("Name at least one sponsor").first()).toBeVisible();
+});
+
+test("the Project Request option is hidden without project_request.create", async ({ page }) => {
+  const state = await stubRequisitions(page);
+  state.canRequest = false;
+  await page.goto("/requisitions/new");
+  await expect(page.getByLabel("An existing project")).toBeVisible();
+  await expect(page.getByLabel("A new Project Request")).toHaveCount(0);
+});
+
+test("keyboard only: the Project Request option and sponsors are reachable", async ({ page }) => {
+  await stubRequisitions(page);
+  await page.goto("/requisitions/new");
+  await page.getByLabel("A new Project Request").focus();
+  await page.keyboard.press("Space");
+  await keyboardFocus(page, page.locator("#req-sponsor_ids"));
 });
 
 test("UX-003: a dirty form asks before in-app navigation; beforeunload exists only while dirty", async ({ page }) => {

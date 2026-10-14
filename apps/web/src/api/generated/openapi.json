@@ -1,6 +1,39 @@
 {
   "components": {
     "schemas": {
+      "AbandonedCurrency": {
+        "properties": {
+          "actual": {
+            "title": "Actual",
+            "type": "string"
+          },
+          "allocated": {
+            "title": "Allocated",
+            "type": "string"
+          },
+          "committed": {
+            "title": "Committed",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "reserved": {
+            "title": "Reserved",
+            "type": "string"
+          }
+        },
+        "required": [
+          "currency",
+          "allocated",
+          "reserved",
+          "committed",
+          "actual"
+        ],
+        "title": "AbandonedCurrency",
+        "type": "object"
+      },
       "AccessGrantResponse": {
         "description": "One role assignment with timing and grant provenance.",
         "properties": {
@@ -1185,6 +1218,14 @@
       },
       "BudgetSummary": {
         "properties": {
+          "abandoned": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AbandonedCurrency"
+            },
+            "title": "Abandoned",
+            "type": "array"
+          },
           "totals": {
             "items": {
               "$ref": "#/components/schemas/SummaryCurrency"
@@ -2081,6 +2122,7 @@
                   "enum": [
                     "project",
                     "requisition",
+                    "project_request",
                     "budget_change",
                     "vendor",
                     "rfq",
@@ -2089,7 +2131,7 @@
                   ],
                   "type": "string"
                 },
-                "maxItems": 7,
+                "maxItems": 8,
                 "minItems": 1,
                 "type": "array"
               },
@@ -7366,6 +7408,14 @@
             ],
             "title": "Sponsor Id"
           },
+          "sponsor_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Sponsor Ids",
+            "type": "array"
+          },
           "status": {
             "$ref": "#/components/schemas/ProjectStatus"
           },
@@ -7794,6 +7844,23 @@
             ],
             "title": "Project Id"
           },
+          "sponsor_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "maxItems": 10,
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sponsor Ids"
+          },
           "title": {
             "maxLength": 200,
             "minLength": 1,
@@ -7919,6 +7986,23 @@
               }
             ],
             "title": "Project Id"
+          },
+          "sponsor_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "maxItems": 10,
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sponsor Ids"
           },
           "title": {
             "anyOf": [
@@ -8131,6 +8215,14 @@
                 "type": "null"
               }
             ]
+          },
+          "sponsor_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Sponsor Ids",
+            "type": "array"
           },
           "standalone": {
             "title": "Standalone",
@@ -9944,6 +10036,7 @@
             "enum": [
               "project",
               "requisition",
+              "project_request",
               "budget_change",
               "vendor",
               "rfq",
@@ -10072,6 +10165,7 @@
             "enum": [
               "project",
               "requisition",
+              "project_request",
               "budget_change",
               "vendor",
               "rfq",
@@ -10953,6 +11047,7 @@
                   "enum": [
                     "project",
                     "requisition",
+                    "project_request",
                     "budget_change",
                     "vendor",
                     "rfq",
@@ -10979,6 +11074,7 @@
                     "enum": [
                       "project",
                       "requisition",
+                      "project_request",
                       "budget_change",
                       "vendor",
                       "rfq",
@@ -11132,6 +11228,7 @@
               "enum": [
                 "project",
                 "requisition",
+                "project_request",
                 "budget_change",
                 "vendor",
                 "rfq",
@@ -11556,6 +11653,7 @@
                   "enum": [
                     "project",
                     "requisition",
+                    "project_request",
                     "budget_change",
                     "vendor",
                     "rfq",
@@ -19862,6 +19960,26 @@
           },
           {
             "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "project_request",
+                    "requisition"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "in": "query",
             "name": "requester",
             "required": false,
             "schema": {
@@ -21934,6 +22052,7 @@
                   "enum": [
                     "project",
                     "requisition",
+                    "project_request",
                     "budget_change",
                     "vendor",
                     "rfq",
@@ -22110,6 +22229,7 @@
               "enum": [
                 "project",
                 "requisition",
+                "project_request",
                 "budget_change",
                 "vendor",
                 "rfq",

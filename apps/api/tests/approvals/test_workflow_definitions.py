@@ -52,9 +52,9 @@ def svc(db, org=None, conn=None):
     return WorkflowService(conn or db[0], Scope(org or db[1]), db[3])
 
 
-def definition(db, org=None, **changes):
+def definition(db, org=None, document_type="requisition", **changes):
     return svc(db, org).create(
-        WorkflowCreate(document_type="requisition", name="Review", scope_type="org", **changes)
+        WorkflowCreate(document_type=document_type, name="Review", scope_type="org", **changes)
     )
 
 

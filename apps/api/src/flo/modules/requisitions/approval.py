@@ -31,7 +31,12 @@ from flo.modules.budget.service import (
 from flo.modules.identity.service import AuthorizationTarget, ScopeType
 from flo.modules.org.service import OrgService, codes_read, today
 from flo.modules.projects.schemas import ProjectRead
-from flo.modules.projects.service import ProjectService, create_generated_project, depth_of
+from flo.modules.projects.service import (
+    ProjectService,
+    apply_sponsors,
+    create_generated_project,
+    depth_of,
+)
 from flo.modules.requisitions import revisions
 from flo.modules.requisitions.funding import lock_funding, move_funds, release_live
 from flo.modules.requisitions.lifecycle import authorize, pending_terminal, read_row, write_status
@@ -178,6 +183,34 @@ class RequisitionAdapter:
             else None
         )
         write_status(conn, scope, row, to, context.actor_id, reason, ledger, context.decision_id)
+
+
+class ProjectRequestAdapter(RequisitionAdapter):
+    """A standalone requisition under its own document type and workflow (D-M2-18).
+
+    Outcomes are the requisition's: `_approved` already branches on `standalone`.
+    """
+
+    document_type = "project_request"
+
+    def fields(self) -> Mapping[str, FieldType]:
+        return {"amount": "money", "bu": "code"}
+
+    def snapshot(
+        self, conn: psycopg.Connection[tuple[object, ...]], scope: Scope, document_id: UUID
+    ) -> DocumentSnapshot:
+        base = super().snapshot(conn, scope, document_id)
+        code = (
+            RequisitionRepository(conn, scope)
+            .execute(
+                "SELECT u.code FROM requisition r JOIN org_unit u ON u.org_id=r.org_id AND "
+                "u.id=r.bu_id WHERE r.org_id=%(org_id)s AND r.id=%(id)s",
+                {"id": document_id},
+            )
+            .fetchone()
+        )
+        base.attributes["bu"] = str(code[0]) if code else None
+        return base
 
 
 def _amendment_outcome(
@@ -451,6 +484,19 @@ def _approved(
             reason=f"Standalone requisition {number} approved",
         )
         target_id = created.id
+        apply_sponsors(
+            conn,
+            scope,
+            created.id,
+            [
+                cast(UUID, r[0])
+                for r in repo.execute(
+                    "SELECT user_id FROM requisition_sponsor WHERE org_id=%(org_id)s AND "
+                    "requisition_id=%(id)s ORDER BY user_id",
+                    {"id": document_id},
+                ).fetchall()
+            ],
+        )
         allocation = allocate(
             conn,
             scope,

@@ -15,7 +15,7 @@ from flo.modules.requisitions.models import RequisitionRepository
 from flo.modules.requisitions.schemas import LookupOption, LookupRows, invalid
 
 MASTER_KINDS = ("department", "ledger_account", "uom", "item_category", "service_category")
-KINDS = ("project", "bu", "delivery_address", *MASTER_KINDS)
+KINDS = ("project", "bu", "delivery_address", "user", *MASTER_KINDS)
 FIVE_LEVELS = 5
 # The router builds authorization targets (modules never import identity); the service
 # only asks "may the caller raise a requisition in this project / unit?".
@@ -29,7 +29,9 @@ class LookupService:
         scope: Scope,
         can_raise_in_project: CanRaise,
         can_raise_in_unit: CanRaise,
+        can_request_in_unit: CanRaise | None = None,
     ) -> None:
+        self.can_request_in_unit = can_request_in_unit or can_raise_in_unit
         self.connection, self.scope = connection, scope
         self.can_raise_in_project, self.can_raise_in_unit = can_raise_in_project, can_raise_in_unit
         self.repo = RequisitionRepository(connection, scope)
@@ -45,6 +47,8 @@ class LookupService:
                 return LookupRows(rows=self._projects(needle, limit))
             if kind == "bu":
                 return LookupRows(rows=self._units(needle, limit))
+            if kind == "user":
+                return LookupRows(rows=self._users(needle, limit))
             if kind == "delivery_address":
                 return LookupRows(rows=self._addresses(needle, bu_id, limit))
             page = OrgService(self.connection, self.scope).list_master(
@@ -97,11 +101,23 @@ class LookupService:
                 unit.code.casefold().startswith(needle) or needle in unit.name.casefold()
             ):
                 continue
-            if self.can_raise_in_unit(unit.id):
+            # Only a Project Request draws on a bare unit, so this is its permission (D-M2-18).
+            if self.can_request_in_unit(unit.id):
                 rows.append(LookupOption(value=str(unit.id), label=f"{unit.code} {unit.name}"))
             if len(rows) == limit:
                 break
         return rows
+
+    def _users(self, needle: str, limit: int) -> list[LookupOption]:
+        """Active members of the organization, for naming sponsors."""
+        escaped = needle.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        found = self.repo.execute(
+            "SELECT i.id,i.email FROM identity i WHERE i.status='active' AND EXISTS ("
+            "SELECT 1 FROM user_role r WHERE r.org_id=%(org_id)s AND r.user_id=i.id) "
+            "AND lower(i.email) LIKE %(like)s ORDER BY lower(i.email) LIMIT %(limit)s",
+            {"like": "%" + escaped + "%", "limit": limit},
+        ).fetchall()
+        return [LookupOption(value=str(r[0]), label=str(r[1])) for r in found]
 
     def _addresses(self, needle: str, bu_id: UUID | None, limit: int) -> list[LookupOption]:
         if bu_id is None:

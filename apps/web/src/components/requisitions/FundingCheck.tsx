@@ -11,7 +11,7 @@ export default function FundingCheck({ check, estimate, currency, standalone, sa
 }) {
   const route = check?.route;
   let body;
-  if (standalone) body = <p>Funding is assigned when a standalone request is approved. Nothing is reserved until then.</p>;
+  if (standalone) body = <p>Funding is assigned when a Project Request is approved. Nothing is reserved until then.</p>;
   else if (!saved) body = <p>Funds are checked when you save the draft.</p>;
   else if (error) body = <div role="alert"><p>{error}</p><button type="button" onClick={retry}>Try again</button></div>;
   else if (!check?.funding) body = <p role="status">Checking funds…</p>;

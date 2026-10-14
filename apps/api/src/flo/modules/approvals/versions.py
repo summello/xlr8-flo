@@ -66,6 +66,7 @@ def enrich(repo: WorkflowRepository, row: WorkflowRead) -> WorkflowRead:
     label = {
         "project": "Projects",
         "requisition": "Capital Requisitions",
+        "project_request": "Project Requests",
         "budget_change": "Budget Changes",
         "vendor": "Vendors",
         "rfq": "RFQs",
