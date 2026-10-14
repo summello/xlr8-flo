@@ -47,9 +47,6 @@ test.describe('the page on the canvas', () => {
       expect(a.x < c.x + c.w && c.x < a.x + a.w && a.y < c.y + c.h && c.y < a.y + a.h, `${mine[i][0]} overlaps ${mine[j][0]}`).toBe(false);
     }
   });
-  test('the two onboarding decision panels sit on the Approval Inbox page', () => {
-    for (const f of ['ApprSheetVendor.dc.html', 'ApprSheetVendorLow.dc.html']) expect(canvas.boards[f].page).toBe('approval-inbox');
-  });
 });
 
 test.describe('vendor list', () => {
@@ -319,26 +316,7 @@ test.describe('questionnaire administration', () => {
   }
 });
 
-test.describe('onboarding decision panel on the inbox', () => {
-  test('score against threshold is a fact, the breakdown is behind a fold, Approve stays enabled', async ({ page }) => {
-    await open(page, '/ApprSheetVendorLow.dc.html');
-    const sheet = page.getByRole('dialog');
-    await expect(sheet).toContainText('Below the threshold by 12 points');
-    await expect(sheet).toContainText('Registration number matches an existing vendor');
-    await expect(sheet.locator('details.fold')).toHaveCount(2);                                   // score by question, and why it reached you
-    await expect(sheet.getByRole('button', { name: 'Approve' })).toBeEnabled();
-    await expect(sheet.getByText('does not block approval')).toBeVisible();
-  });
-  test('a clean request shows no duplicate and says which documents are still missing', async ({ page }) => {
-    await open(page, '/ApprSheetVendor.dc.html');
-    const sheet = page.getByRole('dialog');
-    await expect(sheet).toContainText('At or above the threshold');
-    await expect(sheet).toContainText('No match on tax ID or registration number');
-    await expect(sheet).toContainText('Banking Verification, Safety Certification');
-  });
-});
-
-const AXE_BOARDS = ['VendorList', 'VenListLoading', 'VenListEmpty', 'VenListError', 'VenListPartial', 'VenListW375', 'VendorProfile', 'VenProfNotEligible', 'VenProfRestricted', 'VenProfRevealed', 'VenProfNoDocs', 'VenProfPending', 'VenProfLoading', 'VenProfError', 'VenProfPartial', 'VenDlgSuspend', 'VenDlgSuspendMissing', 'VenDlgDisable', 'VenSheetDoc', 'VenSheetDocMissing', 'VenSheetDocReject', 'VenSheetScore', 'VenSheetScoreAdd', 'VendorRequest', 'VenReqErrors', 'VenReqDup', 'VenReqDupMgr', 'VenReqSubmitted', 'VenReqW375', 'VendorQuestionnaires', 'VenQuestWeights', 'VenQuestPublish', 'VenQuestEmpty', 'ApprSheetVendor', 'ApprSheetVendorLow'];
+const AXE_BOARDS = ['VendorList', 'VenListLoading', 'VenListEmpty', 'VenListError', 'VenListPartial', 'VenListW375', 'VendorProfile', 'VenProfNotEligible', 'VenProfRestricted', 'VenProfRevealed', 'VenProfNoDocs', 'VenProfPending', 'VenProfLoading', 'VenProfError', 'VenProfPartial', 'VenDlgSuspend', 'VenDlgSuspendMissing', 'VenDlgDisable', 'VenSheetDoc', 'VenSheetDocMissing', 'VenSheetDocReject', 'VenSheetScore', 'VenSheetScoreAdd', 'VendorRequest', 'VenReqErrors', 'VenReqDup', 'VenReqDupMgr', 'VenReqSubmitted', 'VenReqW375', 'VendorQuestionnaires', 'VenQuestWeights', 'VenQuestPublish', 'VenQuestEmpty', ];
 test.describe('axe', () => {
   test('axe fails on a planted unlabelled input', async ({ page }) => {
     await open(page, REQUEST);

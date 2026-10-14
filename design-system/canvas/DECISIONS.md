@@ -376,6 +376,15 @@ Three open comments on the published canvas. Where a comment left a choice open,
 196. **The shared decision panel at 375** (found on the three M3 pages) is decided once, in `pages/approval-inbox.md` section 6 item 7, and built by story E11-S10. The variant boards at 375 are stale until redrawn.
 197. **Stories raised:** E11-S09 (status vocabulary) and E11-S10 (decision panel at phone width); see `STORY-NOTES.md` section 10.
 
+## 6m. Second canvas (14 Oct 2026; operator)
+
+198. **The canvas is split.** The first canvas reached its limit of 512 files. A second canvas, **XLR8 FLO Design System 2** (https://claude.ai/artifact/62JVFUjfv8Bw3KiKXEWs5r, source `design-system/canvas-2/`), holds the Common Screens page (27 boards) and the Vendors page (60 boards), moved whole with their tests. The first canvas keeps nine pages and frees 87 files for new boards on them.
+199. **Every GAP in the screen inventory is registered as a page in the second canvas,** grouped by module like the first: Home and Reporting, Organization and Administration, Projects and Budget, Requisitions and Approvals, Assets and Warehouses, Cross-Cutting Surfaces; the remaining Common Screens items are listed on that page. **Nothing is drawn yet** (operator): each page has a brief, `design-system/canvas-2/HANDOFF-<page>.md`, to be confirmed with the operator before building.
+200. **Cross links are absolute.** A board cannot be deep-linked, so a link between canvases opens the other canvas in a new tab. The five links from first-canvas boards to `VendorProfile` now open the second canvas; no second-canvas board links to a first-canvas board.
+201. **`xlr8flo.css` exists in both canvases** and a test fails if they differ. The Design System sheet, this decision log and MASTER stay single.
+202. **The two onboarding decision panels** (`ApprSheetVendor`, `ApprSheetVendorLow`) stay on the Approval Inbox page; their tests moved to `canvas/tests/vendor-decision.spec.mjs`.
+203. **Specs and rules that named `design-system/canvas/`** now name both (AGENTS.md authority 3, `agents/claude.md`, `author.sh`, `docs/author-traps.md`, CodeQL ignore).
+
 ## 7. Findings to feed back into MASTER.md (amended 9 Oct 2026, see 97)
 
 - **The MASTER amendment is deferred until after Budget Transfer (item 84), which is now built: the next session can draft it for the operator.** It would fold in the items below plus the ancestry state rows (6f item 86).

@@ -13,6 +13,7 @@ name: xlr8flo
 # code is ever promoted into apps/, it is scanned from that point.
 paths-ignore:
   - design-system/canvas
+  - design-system/canvas-2
 
 query-filters:
   # py/ineffectual-statement flags the `...` body of every method on every

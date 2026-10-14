@@ -83,7 +83,7 @@
             <h2 class="t-heading" id="h-ven">Vendor</h2>
             <sc-if value="{{c.ord.loading}}" hint-placeholder-val="{{ false }}"><div role="status" aria-label="Loading the vendor" style="display:flex;flex-direction:column;gap:12px"><span class="skel" style="height:14px;width:70%"></span><span class="skel" style="height:14px"></span></div></sc-if>
             <sc-if value="{{c.ord.ok}}" hint-placeholder-val="{{ true }}"><dl class="kv" style="margin:0">
-              <dt class="t-label">Vendor</dt><dd style="margin:0"><a href="VendorProfile.dc.html" class="u">Siemar Automation</a> <span class="t-caption">as it was on the award, snapshot v3</span></dd>
+              <dt class="t-label">Vendor</dt><dd style="margin:0"><a href="https://claude.ai/artifact/62JVFUjfv8Bw3KiKXEWs5r" target="_blank" rel="noopener" class="u">Siemar Automation</a> <span class="t-caption">as it was on the award, snapshot v3</span></dd>
               <dt class="t-label">Send To</dt><dd style="margin:0;overflow-wrap:anywhere">Tom Whitcombe, delivery@siemar.example</dd>
             </dl></sc-if>
             <sc-if value="{{c.ord.error}}" hint-placeholder-val="{{ false }}"><div class="state" role="alert"><span class="pill danger"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>Could not load the vendor</span><button class="btn" type="button" onClick="{{retry}}">Try again</button></div></sc-if>

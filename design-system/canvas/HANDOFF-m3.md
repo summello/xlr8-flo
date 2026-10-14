@@ -6,7 +6,7 @@ own handoff:
 
 | Order | Page | Handoff | Canvas page |
 |---:|---|---|---|
-| 1 | Vendors | `HANDOFF-vendors.md` | **new** page `Vendors` |
+| 1 | Vendors | `HANDOFF-vendors.md` | **new** page `Vendors` (moved to the second canvas, `../canvas-2/`, 14 Oct 2026) |
 | 2 | Sourcing (the RFQ screens not yet drawn) | `HANDOFF-sourcing.md` | the existing `RFQ Comparison` page (see that file for the rename question) |
 | 3 | Purchase Orders | `HANDOFF-purchase-orders.md` | **new** page `Purchase Orders` |
 

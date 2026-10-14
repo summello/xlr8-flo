@@ -1,6 +1,6 @@
 # Page spec: Vendors (list, profile, request, questionnaires, onboarding decision)
 
-**Stories:** the back-end stories E11-S01 to S07 exist; **no vendor UI story exists**, so the UI stories named in `design-system/canvas/STORY-NOTES.md` section 7 must be raised and must cite this file. **Read first:** `design-system/MASTER.md`, then this file. Layout reference: canvas page `Vendors` (60 boards) and two boards on `Approval Inbox` (`ApprSheetVendor`, `ApprSheetVendorLow`). The canvas is a drawing; where it disagrees with MASTER or this file, the canvas is stale.
+**Stories:** the back-end stories E11-S01 to S07 exist; **no vendor UI story exists**, so the UI stories named in `design-system/canvas/STORY-NOTES.md` section 7 must be raised and must cite this file. **Read first:** `design-system/MASTER.md`, then this file. Layout reference: canvas page `Vendors` (60 boards; in the **second canvas**, `design-system/canvas-2/project/`, moved from the first on 14 Oct 2026; `vendors.spec.mjs` is in `design-system/canvas-2/tests/`) and two boards on `Approval Inbox` (`ApprSheetVendor`, `ApprSheetVendorLow`). The canvas is a drawing; where it disagrees with MASTER or this file, the canvas is stale.
 
 Requirements: VEN-001 to VEN-015, ORG-003, CUS-008, PRIV-001, OBS-004, COL-004, COL-005, AUD-006, A11Y-003, A11Y-004, UX-002, UX-004, UX-005.
 
@@ -48,7 +48,7 @@ Header: trading name, number and legal name, status pill, and the **eligibility 
 
 ### 3.3 Request a vendor `/vendors/new`
 
-Cards: Company, Identifiers (duplicate check), Where It Will Be Used (global or selected units), Contacts, Questionnaire (typed fields rendered from the published version; weights are **never** shown to the requester), Documents. Sticky action bar: `Save Draft` and `Submit for Approval`, with `Required fields are still empty` / `All required fields complete` from the required-field mark (MASTER 7.11). Submitted state names the approver and what happens next.
+Cards: Company, Identifiers (duplicate check), Where It Applies (global or selected units), Contacts, Questionnaire (typed fields rendered from the published version; weights are **never** shown to the requester), Documents. Sticky action bar: `Save Draft` and `Submit for Approval`, with `Required fields are still empty` / `All required fields complete` from the required-field mark (MASTER 7.11). Submitted state names the approver and what happens next.
 
 ### 3.4 Onboarding decision (Approval Inbox)
 

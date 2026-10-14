@@ -4,6 +4,8 @@ Status: **draft for operator review** (8 Oct 2026). Derived from `docs/requireme
 
 **Story column:** the roadmap story that builds the screen. **GAP** = the roadmap has no UI story for it, so a back-end story would ship with no way to use it. Each gap needs a story before its module's milestone is authored.
 
+**Where each GAP is drawn or registered (14 Oct 2026).** Drawn pages are in the first canvas (`design-system/canvas/`) except Common Screens and Vendors, which are in the second (`design-system/canvas-2/`, https://claude.ai/artifact/62JVFUjfv8Bw3KiKXEWs5r). Every remaining GAP is a registered, undrawn page there with a brief: 3.1 and 3.9 (demo banner) are the rest of Common Screens; 3.2 is Home and Reporting; 3.3 is Organization and Administration; 3.4 is Projects and Budget; 3.5 is Requisitions and Approvals (the linked-record graph); 3.8 is Assets and Warehouses; 3.9 (attachments) is Cross-Cutting Surfaces.
+
 ## 1. Who uses it (proposed roles, to confirm)
 
 | Role | Primary job | Lives in |

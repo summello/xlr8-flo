@@ -12,7 +12,6 @@ for (const [name, url, sel] of [
   ['Project Dashboard', '/ProjectDashboard.dc.html', HEADINGS],
   ['Ledger Entries', '/ProjectLedger.dc.html', HEADINGS],
   ['Project Detail', '/ProjectDetail.dc.html', HEADINGS],
-  ['Sign In', '/SignIn.dc.html', 'h1, h2, h3'],
   ['Requisition Create', '/RequisitionCreate.dc.html', HEADINGS],
   ['Requisition List', '/RequisitionList.dc.html', HEADINGS],
   ['Requisition Detail', '/RequisitionDetail.dc.html', HEADINGS],
@@ -61,14 +60,6 @@ test('ledger sheet and detail tabs keep title case once opened', async ({ page }
     await page.goto(url);
     await page.locator('h1').waitFor();
     for (const t of await heads(page, '.t-heading')) expect(titleCaseViolations(t), `${url}: "${t}"`).toEqual([]);
-  }
-});
-
-test('every access view keeps title case', async ({ page }) => {
-  for (const f of ['Error', 'Mfa', 'MfaInvalid', 'Enrol', 'Recovery', 'Signup', 'SignupErrors', 'Verify', 'Invite', 'InviteErrors', 'InviteChecking', 'InviteExpired', 'InviteGone', 'InviteDone', 'InviteJoin', 'Orgs']) {
-    await page.goto(`/SignIn${f}.dc.html`);
-    await page.locator('h1').waitFor();
-    for (const t of await heads(page, 'h1, h2, h3')) expect(titleCaseViolations(t), `${f}: "${t}"`).toEqual([]);
   }
 });
 
