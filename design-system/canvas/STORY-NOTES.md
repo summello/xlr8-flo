@@ -141,3 +141,8 @@ Page spec: `design-system/pages/purchase-orders.md`. **E13-S01 to S11 are engine
 11. **Answered 13 Oct 2026 (DECISIONS 6j):** commit against the project holding the reservation (assumption), award path only, tax and freight per line with freight shared pro rata, Bill To and Ship To from masters, **PDF only, uploaded files stay internal, no HTML attachment**, material changes need reapproval, vendor currency at the award's stored rate, email to the Service and Delivery contact with an internal notification to the requester, **Delivered and Accepted instead of Fulfilled, requisition becomes Completed**. **Open:** the commit-target and valuation rules (E09-S13), the PO-007 wording, automatic closing at goods receipt.
 12. **Needs an operator-approved MASTER amendment:** the PO status map with Delivered and Accepted, and the issue moment's classes.
 
+## 10. Stories raised from the M3 design pass (14 Oct 2026; on branch `docs/m3-ui-alignment-stories`, packets `design/E11-S09.md` and `design/E11-S10.md`)
+
+- **E11-S09** (ui/S, second in M3, after E11-S01): status vocabulary aligned to MASTER 2.3 (vendor, RFQ, award, purchase-order maps and labels). Every M3 UI story below depends on it.
+- **E11-S10** (ui/M, after E11-S09 and E22-S04, built on E10-S10): the shared decision panel at phone width. The vendor-onboarding, award and PO decision variants depend on it.
+- **Still to raise** (sections 7 to 9 above): the vendor, sourcing and purchase-order UI stories. They cite the page files and MASTER 7.14 to 7.16.

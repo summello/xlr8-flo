@@ -373,6 +373,9 @@ Three open comments on the published canvas. Where a comment left a choice open,
 194. **New classes in `xlr8flo.css` (tokens only):** `.po-hdr .po-lanes .po-lane .po-body .po-col .stepper.is-linked .po-ver`.
 195. **Budget Summary is per project** (operator, 14 Oct 2026): the immediate project of the PO's lines, not the parent. One block per project invoked on the PO, four figures: `Committed`, `This PO`, `Available After Issue`, `Project Actual`. A line's project is shown beneath its description; board `PoDetailProjects` shows a PO that touches two. The definitions of the four figures are assumptions to confirm (`pages/purchase-orders.md` section 7 item 9).
 
+196. **The shared decision panel at 375** (found on the three M3 pages) is decided once, in `pages/approval-inbox.md` section 6 item 7, and built by story E11-S10. The variant boards at 375 are stale until redrawn.
+197. **Stories raised:** E11-S09 (status vocabulary) and E11-S10 (decision panel at phone width); see `STORY-NOTES.md` section 10.
+
 ## 7. Findings to feed back into MASTER.md (amended 9 Oct 2026, see 97)
 
 - **The MASTER amendment is deferred until after Budget Transfer (item 84), which is now built: the next session can draft it for the operator.** It would fold in the items below plus the ancestry state rows (6f item 86).
