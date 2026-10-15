@@ -1867,7 +1867,7 @@ epics:
         reqs:
           - OPS-007
         dep: []
-        st: todo
+        st: in_progress
 
   # ─────────────────── M4 — Full Phase-1 scope ───────────────────
 
