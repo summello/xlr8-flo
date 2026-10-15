@@ -2,7 +2,7 @@
 
 > **Product:** Capital Projects, Budget Tracking, and Capital Expenditure Management  
 > **Document status:** Working requirements baseline  
-> **Last revised:** 24 August 2026  
+> **Last revised:** 24 August 2026 (wording of PO-007 and the requisition lifecycle diagram, 13 October 2026)  
 > **North Star:** *Neutral chrome, chromatic data.* The application shell is quiet grayscale; color appears only where it carries meaning—status, modules, money, and risk.
 
 ## 📑 Contents
@@ -354,7 +354,7 @@ stateDiagram-v2
     SourcingInProgress --> Sourced: evaluation complete
     Sourced --> Awarded: award approved
     Awarded --> OpenForPurchase: purchasing enabled
-    OpenForPurchase --> Completed: fulfilled or closed
+    OpenForPurchase --> Completed: accepted or closed
     Draft --> Cancelled
     ApprovalPending --> Cancelled
     SourcingInProgress --> Cancelled
@@ -445,7 +445,7 @@ flowchart LR
 | PO-004 | Phase 1 must send approved POs by email and record recipient, time, delivery result, and the exact document version. |
 | PO-005 | Later phases must support external REST APIs and cXML without changing the core PO record. |
 | PO-006 | PO numbers must be unique within their configured organization/BU/OU sequence. |
-| PO-007 | The lifecycle should support Draft, Approval Pending, Approved, Issued, Partially Fulfilled, Fulfilled, Closed, Cancelled, and Superseded. |
+| PO-007 | The lifecycle should support Draft, Approval Pending, Approved, Issued, Partially Delivered, Delivered, Accepted, Closed, Cancelled, and Superseded. |
 | PO-008 | Approval or issue must convert the applicable requisition reservation into a commitment atomically. |
 | PO-009 | Partial POs must reduce only the corresponding open requisition quantity and value. |
 | PO-010 | Issued POs must be immutable; changes must create a numbered, approved change order/version. |
@@ -712,7 +712,7 @@ The transfer must:
 | Budget | Allocated, reserved, committed, actual, available, utilization, transfer/adjustment volume |
 | Requisitions | Approval cycle time, sourcing lead time, open aging, rejection/return rate |
 | Sourcing | Vendors invited/responding, bid coverage, award cycle time, quoted-versus-awarded savings |
-| Purchase orders | Approval time, issue success, open commitment, fulfillment status, change-order rate |
+| Purchase orders | Approval time, issue success, open commitment, delivery status, change-order rate |
 | Vendors | Onboarding duration, document compliance, quality, delivery adherence, pricing trend |
 
 ---

@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PO Editor, 1440</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="xlr8flo.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;560;600;640&amp;family=JetBrains+Mono:wght@400;460;620&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{rootCls}}" data-theme="{{theme}}" style="min-height: 100vh;--ph-page: var(--phase-commit)">
+<div class="{{appCls}}">
+  <nav class="side" aria-label="Primary" onScroll="{{navTipHide}}">
+    <div class="brand"><span class="brand-mark">FL</span><span class="brand-name">XLR8 FLO</span></div>
+    <button class="iconbtn side-toggle toggle-collapse" type="button" onClick="{{toggleCollapse}}" aria-label="{{collapseLabel}}" aria-expanded="{{expanded}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4zM9 5v14"></path></svg></button>
+    <button class="iconbtn side-toggle toggle-nav" type="button" onClick="{{toggleNav}}" aria-label="{{navLabel}}" aria-expanded="{{navOpen}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4zM9 5v14"></path></svg></button>
+    <sc-for list="{{nav}}" as="n" hint-placeholder-count="18">
+      <sc-if value="{{n.isHead}}" hint-placeholder-val="{{ false }}"><div class="nav-h">{{n.label}}</div></sc-if>
+      <sc-if value="{{n.isLink}}" hint-placeholder-val="{{ true }}">
+        <a href="#" class="{{n.cls}}" aria-label="{{n.label}}" data-tip="{{n.label}}" onMouseEnter="{{navTipShow}}" onFocus="{{navTipShow}}" onMouseLeave="{{navTipHide}}" onBlur="{{navTipHide}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{n.d}}"></path></svg><span class="lbl">{{n.label}}</span></a>
+      </sc-if>
+    </sc-for>
+  </nav>
+  <div class="scrim" onClick="{{closeNav}}"></div>
+  <div class="main">
+    <header class="top">
+      <button class="iconbtn menu-btn" type="button" onClick="{{toggleNav}}" aria-label="Open navigation" aria-expanded="{{navOpen}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
+      <div class="crumbs"><span class="crumb-parent"><a href="PoList.dc.html" class="secondary">Purchase Orders</a></span><span class="sep" aria-hidden="true">/</span><b>PO Editor</b></div>
+      <button class="cmdk" type="button" aria-label="Open command menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4"></path></svg><span class="txt">Search or run a command</span><kbd>⌘K</kbd></button>
+      <button class="iconbtn" type="button" aria-label="Notifications"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 17V11a6 6 0 1112 0v6l2 2H4zM10 21h4"></path></svg></button>
+      <span class="avatar" aria-label="Signed in as Sonam">SM</span>
+    </header>
+
+    <main class="page">
+      <div class="phead">
+        <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+          <h1 class="t-display">Edit PO Draft</h1>
+          <p class="secondary"><span class="num" style="text-align:left">PO-00262</span> · {{vendorName}} · from <a href="RfqAward.dc.html" class="u">AWD-00095</a></p>
+          <div><span class="pill neutral"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18z"></path></svg>Draft</span></div>
+        </div>
+      </div>
+
+      <sc-if value="{{hasProblems}}" hint-placeholder-val="{{ false }}">
+        <div class="summary" role="alert" tabindex="-1" id="pe-summary">
+          <div style="display:flex;gap:8px;align-items:center;font-weight:560"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>{{summaryTitle}}</div>
+          <p class="t-dense" style="margin:0">Nothing was submitted. Everything you entered is kept.</p>
+          <ul class="t-dense"><sc-for list="{{problems}}" as="p" hint-placeholder-count="3"><li><b>{{p.cat}}:</b> <a href="#" onClick="{{p.go}}">{{p.text}}</a></li></sc-for></ul>
+        </div>
+      </sc-if>
+      <sc-if value="{{isError}}" hint-placeholder-val="{{ false }}"><div class="card state" role="alert" style="padding:48px 16px"><span class="pill danger"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg>Could not load this purchase order</span><div class="t-dense secondary">The request timed out. Nothing was changed.</div><button class="btn" type="button" onClick="{{retry}}">Try again</button></div></sc-if>
+      <sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}"><div role="status" aria-label="Loading the purchase order" class="card" style="padding:24px;display:flex;flex-direction:column;gap:14px"><span class="skel" style="height:20px;width:30%"></span><span class="skel" style="height:44px"></span><span class="skel" style="height:44px"></span><span class="skel" style="height:120px"></span></div></sc-if>
+
+      <sc-if value="{{showForm}}" hint-placeholder-val="{{ true }}">
+      <div class="dash" style="width:100%;max-width:1600px;margin-inline:auto">
+        <section class="card" aria-labelledby="h-hdr">
+          <div class="card-h"><h2 class="t-heading" id="h-hdr">Order Header</h2></div>
+          <div class="card-b" style="display:flex;flex-direction:column;gap:14px">
+            <div class="elig">
+              <span class="{{elig.cls}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{elig.d}}"></path></svg><span>{{elig.text}}</span></span>
+              <ul class="sig-why" style="margin-left:22px"><sc-for list="{{elig.why}}" as="w" hint-placeholder-count="1"><li>{{w}}</li></sc-for></ul>
+              <sc-if value="{{elig.canOverride}}" hint-placeholder-val="{{ false }}"><div class="field" style="margin-left:22px;max-width:520px"><label class="t-label" for="pe-ovr">Reason to Order From This Vendor Anyway<span class="req-tag" aria-hidden="true"><span class="rq-need">Required</span><span class="rq-done">Done</span></span></label><input required id="pe-ovr" class="inp" type="text" value="{{f.ovr}}" onChange="{{set.ovr}}" autocomplete="off" placeholder="Audited, and shown on the approval"></div></sc-if>
+              <sc-if value="{{elig.cannot}}" hint-placeholder-val="{{ false }}"><p class="t-caption" style="margin:0 0 0 22px">Only a sourcing lead can override. The issued PO is not affected by a later suspension.</p></sc-if>
+            </div>
+            <div class="form-grid">
+              <div class="field"><label class="t-label" for="pe-req">Requestor</label><input id="pe-req" class="inp" type="text" value="dev.patel@northwind.example" readonly></div>
+              <div class="field"><label class="t-label" for="pe-rcp">Send To<span class="req-tag" aria-hidden="true"><span class="rq-need">Required</span><span class="rq-done">Done</span></span></label><select required id="pe-rcp" class="btn" style="padding-right:8px" value="{{f.rcp}}" onChange="{{set.rcp}}" aria-invalid="{{eb.rcp}}" aria-describedby="pe-rcp-e"><option value="">Choose a contact</option><option value="d">Tom Whitcombe, Service and Delivery, delivery@siemar.example</option><option value="s">Elena Ruiz, Sales, elena.ruiz@siemar.example</option></select><sc-if value="{{e.rcp}}" hint-placeholder-val="{{ false }}"><div class="field-err" id="pe-rcp-e"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg><span>{{e.rcp}}</span></div></sc-if></div>
+              <div class="field"><label class="t-label" for="pe-bill">Bill To</label><select id="pe-bill" class="btn" style="padding-right:8px"><option>Northwind Capital, Accounts Payable, 100 Commerce Way, Chicago IL</option></select></div>
+              <div class="field"><label class="t-label" for="pe-ship">Ship To<span class="req-tag" aria-hidden="true"><span class="rq-need">Required</span><span class="rq-done">Done</span></span></label><select required id="pe-ship" class="btn" style="padding-right:8px" value="{{f.ship}}" onChange="{{set.ship}}" aria-invalid="{{eb.ship}}" aria-describedby="pe-ship-e"><option value="">Choose a delivery location</option><option value="p4">Plant 4 Receiving Dock</option><option value="p2">Plant 2 Warehouse</option><option value="cs">Central Stores</option></select><sc-if value="{{e.ship}}" hint-placeholder-val="{{ false }}"><div class="field-err" id="pe-ship-e"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg><span>{{e.ship}}</span></div></sc-if></div>
+              <div class="field"><label class="t-label" for="pe-pay">Payment Terms</label><select id="pe-pay" class="btn" style="padding-right:8px"><option>Net 30</option><option>Net 45</option></select></div>
+              <div class="field"><label class="t-label" for="pe-need">Needed By<span class="req-tag" aria-hidden="true"><span class="rq-need">Required</span><span class="rq-done">Done</span></span></label><input required id="pe-need" class="inp" type="date" value="2026-11-20"></div>
+              <div class="field"><label class="t-label" for="pe-prj">Project</label><input id="pe-prj" class="inp" type="text" value="Plant 4 Line Retrofit" readonly></div>
+              <div class="field"><label class="t-label" for="pe-led">Department and Ledger Account</label><input id="pe-led" class="inp" type="text" value="Maintenance, 6100 Capital Equipment" readonly></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card a-att" aria-labelledby="h-pl" style="grid-column:1/-1">
+          <div class="card-h"><h2 class="t-heading" id="h-pl">Lines</h2><span class="t-caption">Price, tax and freight are kept apart</span></div>
+          <div class="card-b" style="padding:12px 0 0">
+            <div role="table" aria-label="Purchase order lines">
+              <div class="row head cols-pln stack" role="row"><span role="columnheader">Description</span><span role="columnheader" class="r">Quantity</span><span role="columnheader" class="r hide-md">Unit Price</span><span role="columnheader" class="r">Price</span><span role="columnheader" class="r hide-md">Tax</span><span role="columnheader" class="r hide-md">Freight</span><span role="columnheader" class="r">Line Total</span></div>
+              <sc-for list="{{lines}}" as="l" hint-placeholder-count="3">
+                <div class="row cols-pln stack" role="row" style="min-height:56px">
+                  <div role="cell" class="stack-main"><span style="font-weight:520">{{l.d}}</span><div class="t-caption">{{l.kind}} · {{l.u}}</div></div>
+                  <span role="cell" class="num r" data-label="Quantity">{{l.q}} {{l.u}}</span>
+                  <span role="cell" class="num r hide-md" data-label="Unit Price"><span class="w">{{l.uw}}</span><span class="d">{{l.ud}}</span></span>
+                  <span role="cell" class="num r" data-label="Price"><span class="w">{{l.pw}}</span><span class="d">{{l.pd}}</span></span>
+                  <span role="cell" class="num r hide-md" data-label="Tax"><span class="w">{{l.tw}}</span><span class="d">{{l.td}}</span></span>
+                  <span role="cell" class="num r hide-md" data-label="Freight"><span class="w">{{l.fw}}</span><span class="d">{{l.fd}}</span></span>
+                  <span role="cell" class="num r" data-label="Line Total"><span class="w">{{l.lw}}</span><span class="d">{{l.ld}}</span><span class="cur">{{cur}}</span></span>
+                </div>
+              </sc-for>
+            </div>
+            <div class="total-bar" role="group" aria-label="Totals"><span style="display:flex;flex-wrap:wrap;gap:4px 24px;align-items:center"><span><span class="t-caption">Subtotal </span><span class="num"><span class="w">{{t.pw}}</span><span class="d">{{t.pd}}</span></span></span><span><span class="t-caption">Tax </span><span class="num"><span class="w">{{t.tw}}</span><span class="d">{{t.td}}</span></span></span><span><span class="t-caption">Freight </span><span class="num"><span class="w">{{t.fw}}</span><span class="d">{{t.fd}}</span></span></span></span><span class="num"><span class="t-caption">PO Total </span><span class="w">{{t.lw}}</span><span class="d">{{t.ld}}</span><span class="cur">{{cur}}</span></span></div>
+          </div>
+        </section>
+
+        <section class="card a-wf" aria-labelledby="h-bud">
+          <div class="card-h"><h2 class="t-heading" id="h-bud">Budget Preview</h2></div>
+          <div class="card-b" style="display:flex;flex-direction:column;gap:10px">
+            <p class="t-dense" style="margin:0">{{budget.sentence}}</p>
+            <sc-if value="{{budget.foreign}}" hint-placeholder-val="{{ false }}"><p class="t-dense" style="margin:0">The PO is in EUR. It commits {{budget.commit}} USD at 1.0840, the rate stored with the award on 7 Oct 2026. The rate is fixed at issue.</p></sc-if>
+            <p class="t-caption" style="margin:0">Approval does not commit. Issue does, once. Assumption, not yet confirmed: the project is the one that holds the reservation.</p>
+          </div>
+        </section>
+
+        <section class="card a-bu" aria-labelledby="h-nt">
+          <div class="card-h"><h2 class="t-heading" id="h-nt">Notes and Files</h2></div>
+          <div class="card-b" style="padding:0">
+            <ul class="suggest"><sc-for list="{{notes}}" as="n" hint-placeholder-count="3"><li style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center"><div style="min-width:0"><span style="font-weight:520;overflow-wrap:anywhere">{{n.t}}</span><div class="t-caption">{{n.meta}}</div></div><div class="field" style="min-width:170px"><label class="t-caption" for="{{n.id}}">Visibility</label><select id="{{n.id}}" class="btn" style="padding-right:8px" value="{{n.vis}}" onChange="{{n.set}}"><option value="internal">Internal</option><option value="vendor">Sent to Vendor</option></select></div><sc-if value="{{n.blocked}}" hint-placeholder-val="{{ false }}"><div class="t-caption" style="flex-basis:100%">Not sent until scanning is available. Only the generated PDF goes to the vendor.</div></sc-if></li></sc-for></ul>
+          </div>
+        </section>
+      </div>
+
+      <div class="action-bar">
+        <span style="display:flex;gap:4px 16px;flex-wrap:wrap;align-items:center"><span class="t-caption" role="status">{{savedText}}</span><span class="req-left" role="status"><span class="rq-count">Required fields are still empty</span><span class="rq-allset">All required fields complete</span></span><span class="t-caption">{{wfText}}</span></span>
+        <span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" type="button" onClick="{{saveDraft}}">Save Draft</button><button class="btn primary" type="submit" onClick="{{submit}}">{{submitLabel}}</button></span>
+      </div>
+      </sc-if>
+      <p class="t-caption">Sample data for layout review.</p>
+
+    </main>
+  </div>
+</div>
+
+<sc-if value="{{navTip}}" hint-placeholder-val="{{ false }}"><div class="nav-tip" style="{{navTip.style}}">{{navTip.text}}</div></sc-if>
+<div class="toasts" role="status" aria-live="polite">
+  <sc-if value="{{toast}}" hint-placeholder-val="{{ false }}"><div class="toast"><span>{{toast.msg}}</span></div></sc-if>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"dark","options":["light","dark"]},"collapsed":{"editor":"enum","default":"auto","options":["auto","yes","no"]},"navOpen":{"editor":"boolean","default":false},"view":{"editor":"enum","default":"ready","options":["ready","loading","error","errors"]},"workflow":{"editor":"enum","default":"published","options":["published","none"]},"vendor":{"editor":"enum","default":"ok","options":["ok","suspended"]},"currency":{"editor":"enum","default":"USD","options":["USD","EUR"]},"role":{"editor":"enum","default":"lead","options":["lead","buyer"]},"$preview":{"width":1440,"height":1900}}'>
+class Component extends DCLogic {
+  componentDidMount() {
+    if ((this.props.collapsed ?? 'auto') === 'auto') {
+      try { if (localStorage.getItem('xf.sidebar') === 'collapsed') this.setState({ collapsed: true }); } catch (e) {}
+    }
+    this.mounted && this.mounted();
+    this.applyHues();
+  }
+  componentDidUpdate() { this.applyHues(); }
+  // Card hover outline colour: the next colour of the chart series by position, so a new card needs no colour decision.
+  applyHues() {
+    const H = ['--c5', '--c7', '--c8', '--c1', '--c3', '--c2', '--c4', '--c6'];
+    document.querySelectorAll('.dash > .card').forEach((el, i) => el.style.setProperty('--hue', 'var(' + H[i % H.length] + ')'));
+  }
+  componentWillUnmount() { cancelAnimationFrame(this._raf); clearTimeout(this._it); clearTimeout(this._tt); }
+  split(s) { const i = s.lastIndexOf('.'); return i < 0 ? [s, ''] : [s.slice(0, i), s.slice(i)]; }
+  back(el) { setTimeout(() => { if (el && el.focus) el.focus(); }, 0); }
+  toast(msg) {
+    clearTimeout(this._tt);
+    this.setState({ toast: { msg } });
+    this._tt = setTimeout(() => this.setState({ toast: null }), 4000);
+  }
+  shellVals(st) {
+    const collapsed = st.collapsed ?? (this.props.collapsed === 'yes');
+    const navOpen = st.navOpen ?? (this.props.navOpen === true);
+    const act = this.activeNav || 'Projects';
+    const I = {
+      home: "M3 11l9-8 9 8M5 10v10h14V10M10 20v-6h4v6",
+      org: "M4 21V5l8-2v18M12 9h8v12M7 8h2M7 12h2M7 16h2M15 13h2M15 17h2",
+      admin: "M4 7h10M18 7h2M4 17h2M10 17h10M16 4v6M8 14v6",
+      proj: "M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z",
+      budget: "M3 7a2 2 0 012-2h13v4M3 7v11a2 2 0 002 2h15V9H5a2 2 0 01-2-2zM16 14.5h.01",
+      rep: "M4 20V10M10 20V4M16 20v-7M2 20h20",
+      req: "M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6",
+      appr: "M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6",
+      vend: "M4 9l1-5h14l1 5M4 9a2.5 2.5 0 005 0 2.5 2.5 0 006 0 2.5 2.5 0 005 0M5 11v9h14v-9M10 20v-5h4v5",
+      src: "M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4",
+      po: "M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6",
+      asset: "M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10",
+      help: "M12 21a9 9 0 100-18 9 9 0 000 18zM9.5 9.5a2.5 2.5 0 115 .5c0 1.5-2.5 2-2.5 3.5M12 17h.01"
+    };
+    const link = (label, d, ph, on) => ({ isLink: true, isHead: false, label, d, cls: 'nav-i ' + ph + (on ? ' on' : '') });
+    const hd = (label) => ({ isHead: true, isLink: false, label });
+    const nav = [
+      link('Home', I.home, '', false),
+      hd('Foundation'), link('Organization', I.org, 'p-foundation'), link('Administration', I.admin, 'p-foundation'),
+      hd('Plan'), link('Projects', I.proj, 'p-plan', act === 'Projects'), link('Budget', I.budget, 'p-plan'), link('Reporting', I.rep, 'p-plan'),
+      hd('Demand'), link('Requisitions', I.req, 'p-demand', act === 'Requisitions'), link('Approvals', I.appr, 'p-demand'),
+      hd('Commit'), link('Vendors', I.vend, 'p-commit', act === 'Vendors'), link('Sourcing', I.src, 'p-commit', act === 'Sourcing'), link('Purchase orders', I.po, 'p-commit', act === 'Purchase orders'), link('Assets', I.asset, 'p-commit'),
+      hd('Support'), link('Help', I.help, '')
+    ];
+    return {
+      theme: this.props.theme ?? 'light', nav,
+      rootCls: 'xf' + (st.intro ? ' intro' : ''),
+      appCls: 'app' + (collapsed ? ' collapsed' : '') + (navOpen ? ' nav-open' : ''),
+      navOpen, expanded: !collapsed, collapseLabel: collapsed ? 'Expand sidebar' : 'Collapse sidebar',
+      navLabel: navOpen ? 'Close navigation' : 'Open navigation',
+      // rail tooltips are one fixed-position element, so the scrolling sidebar cannot clip them
+      navTip: st.navTip || null,
+      navTipShow: (e) => {
+        const a = e.currentTarget, lbl = a.querySelector('.lbl');
+        if (!lbl || getComputedStyle(lbl).display !== 'none') return;
+        const r = a.getBoundingClientRect();
+        this.setState({ navTip: { text: a.getAttribute('data-tip'), style: 'left:' + (r.right + 12) + 'px;top:' + (r.top + r.height / 2) + 'px' } });
+      },
+      navTipHide: () => { if (st.navTip) this.setState({ navTip: null }); },
+      toggleCollapse: () => {
+        this.setState({ collapsed: !collapsed });
+        try { localStorage.setItem('xf.sidebar', collapsed ? 'expanded' : 'collapsed'); } catch (e) {}
+      },
+      toggleNav: () => this.setState({ navOpen: !navOpen }),
+      closeNav: () => this.setState({ navOpen: false }),
+      toast: st.toast || null
+    };
+  }
+
+  get activeNav() { return 'Purchase orders'; }
+  // ---- Vendors: shared sample data and rules (sample data only; invented) ----
+  get vd() {
+    const TODAY = Date.UTC(2026, 9, 13);
+    const days = (iso) => Math.round((Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) - TODAY) / 86400000);
+    const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const dmy = (iso) => (iso ? +iso.slice(8, 10) + ' ' + MON[+iso.slice(5, 7) - 1] + ' ' + iso.slice(0, 4) : '');
+    const dm = (iso) => +iso.slice(8, 10) + ' ' + MON[+iso.slice(5, 7) - 1];
+    // Closed vocabulary (VEN-005, proposal for MASTER 2.3): icon plus words, never colour alone
+    const IC = { x: 'M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6', ok: 'M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6', clock: 'M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3 2', warn: 'M12 3l10 18H2zM12 10v5M12 18h.01', n: 'M12 21a9 9 0 100-18 9 9 0 000 18z', pause: 'M12 21a9 9 0 100-18 9 9 0 000 18zM10 9v6M14 9v6', info: 'M20 11a8 8 0 00-14-4M4 4v4h4M4 13a8 8 0 0014 4M20 20v-4h-4' };
+    const STATUS = {
+      draft: { label: 'Draft', tone: 'neutral', d: IC.n }, pending_approval: { label: 'Pending Approval', tone: 'info', d: IC.info },
+      active: { label: 'Active', tone: 'success', d: IC.ok }, suspended: { label: 'Suspended', tone: 'warning', d: IC.pause },
+      inactive: { label: 'Inactive', tone: 'neutral', d: IC.n }, rejected: { label: 'Rejected', tone: 'danger', d: IC.x }
+    };
+    const REQ = ['Tax Registration', 'Certificate of Incorporation', 'Insurance Certificate', 'Banking Verification', 'Safety Certification'];
+    const doc = (type, issued, expiry, ver) => ({ type, issued, expiry, ver });
+    const full = (ins) => [doc('Tax Registration', '2025-02-10', '2027-02-09', 'verified'), doc('Certificate of Incorporation', '2019-06-03', '', 'verified'), doc('Insurance Certificate', ins[0], ins[1], ins[2] || 'verified'), doc('Banking Verification', '2026-03-18', '', 'verified'), doc('Safety Certification', '2026-01-12', '2027-01-11', 'verified')];
+    const V = [
+      { id: 'northgate', num: 'V-00101', trading: 'Northgate Controls', legal: 'Northgate Industrial Controls Limited', status: 'active', scope: 'Global', off: [], docs: full(['2026-04-01', '2027-03-31']), score: 86, period: 'Q3 2026', used: '8 Oct', cat: 'Controls and Automation' },
+      { id: 'halden', num: 'V-00108', trading: 'Halden Packaging', legal: 'Halden Packaging Systems GmbH', status: 'active', scope: 'Global', off: [], docs: full(['2025-10-26', '2026-10-25']), score: 79, period: 'Q3 2026', used: '2 Oct', cat: 'Packaging Machinery' },
+      { id: 'meridian', num: 'V-00115', trading: 'Meridian Mechanical', legal: 'Meridian Mechanical Contractors Inc.', status: 'active', scope: 'Global', off: [{ unit: 'Plant 4', by: 'ops.lead@northwind.example', on: '2026-09-03', why: 'Safety audit finding open' }], docs: full(['2026-02-01', '2027-01-31']), score: 72, period: 'Q3 2026', used: '21 Sep', cat: 'Mechanical Installation' },
+      { id: 'cobalt', num: 'V-00122', trading: 'Cobalt Cooling', legal: 'Cobalt Cooling Solutions Pty Ltd', status: 'active', scope: 'Global', off: [], docs: full(['2025-10-02', '2026-10-02']), score: 81, period: 'Q3 2026', used: '5 Oct', cat: 'Cooling and HVAC' },
+      { id: 'apex', num: 'V-00130', trading: 'Apex Conveyor', legal: 'Apex Conveyor & Handling Co.', status: 'suspended', scope: 'Global', off: [], docs: full(['2026-01-15', '2027-01-14']), score: 58, period: 'Q2 2026', used: '19 Aug', cat: 'Material Handling', openRfqs: 2, openPos: 1 },
+      { id: 'brightpath', num: 'V-00137', trading: 'BrightPath IT', legal: 'BrightPath IT Services (UK) Limited', status: 'active', scope: 'Plant 4, Central Stores', off: [], docs: full(['2026-05-20', '2027-05-19']), score: 90, period: 'Q3 2026', used: '10 Oct', cat: 'IT Hardware' },
+      { id: 'fenwick', num: 'V-00144', trading: 'Fenwick Electrical', legal: 'Fenwick Electrical Supplies Ltd', status: 'active', scope: 'Global', off: [], docs: [doc('Tax Registration', '2025-08-04', '2027-08-03', 'verified'), doc('Certificate of Incorporation', '2018-01-22', '', 'verified'), doc('Insurance Certificate', '2026-03-01', '2027-02-28', 'verified'), doc('Safety Certification', '2026-02-02', '2027-02-01', 'verified')], score: 74, period: 'Q3 2026', used: '30 Sep', cat: 'Electrical Supplies' },
+      { id: 'tessellate', num: 'V-00151', trading: 'Tessellate Safety', legal: 'Tessellate Safety Engineering Limited', status: 'pending_approval', scope: 'Plant 4', off: [], docs: [doc('Tax Registration', '2026-09-02', '2028-09-01', 'unverified'), doc('Certificate of Incorporation', '2021-04-12', '', 'unverified'), doc('Insurance Certificate', '2026-09-20', '2027-09-19', 'unverified')], score: null, period: '', used: 'Never', cat: 'Safety Engineering', requester: 'dev.patel@northwind.example' },
+      { id: 'orion', num: 'V-00158', trading: 'Orion Freight', legal: 'Orion Freight, Rigging and Heavy Lift Services International Limited Partnership', status: 'active', scope: 'Global', off: [], docs: full(['2026-06-01', '2027-05-31']), score: 83, period: 'Q3 2026', used: '27 Sep', cat: 'Logistics and Rigging' },
+      { id: 'kestrel', num: 'V-00163', trading: 'Kestrel Fasteners', legal: 'Kestrel Fasteners Limited', status: 'inactive', scope: 'Global', off: [], docs: full(['2025-11-01', '2026-10-31']), score: 66, period: 'Q1 2026', used: '3 Mar', cat: 'Fasteners and Fixings' },
+      { id: 'lumen', num: 'V-00170', trading: 'Lumen Lighting', legal: 'Lumen Lighting Controls LLC', status: 'rejected', scope: 'Plant 2', off: [], docs: [doc('Tax Registration', '2026-07-01', '2028-06-30', 'rejected')], score: null, period: '', used: 'Never', cat: 'Lighting' },
+      { id: 'vantage', num: 'V-00176', trading: 'Vantage Site Services', legal: 'Vantage Site Services Limited', status: 'draft', scope: 'Global', off: [], docs: [], score: null, period: '', used: 'Never', cat: 'Site Services' }
+    ];
+    const UNIT = 'Plant 4';
+    // Derived, never typed (VEN-012): eligibility for one unit, with every reason in words
+    const elig = (v, unit) => {
+      const why = [];
+      if (v.status === 'pending_approval') why.push('Not approved yet');
+      else if (v.status === 'draft') why.push('Request not submitted');
+      else if (v.status === 'rejected') why.push('Request was rejected');
+      else if (v.status === 'suspended') why.push('Suspended');
+      else if (v.status === 'inactive') why.push('Inactive');
+      if (v.scope !== 'Global' && v.scope.indexOf(unit) < 0) why.push('Not available to ' + unit);
+      const off = v.off.find((o) => o.unit === unit);
+      if (off) why.push('Disabled in ' + unit + ' on ' + dm(off.on));
+      if (v.status === 'active') {
+        REQ.forEach((t) => {
+          const d = v.docs.find((x) => x.type === t);
+          if (!d) { why.push(t + ' missing'); return; }
+          if (d.ver === 'rejected') why.push(t + ' rejected');
+          else if (d.expiry && days(d.expiry) < 0) why.push(t + ' expired ' + dm(d.expiry));
+        });
+      }
+      return { ok: why.length === 0, why };
+    };
+    // Documents summary for the list: look ahead before it says Expired (VEN-011, OBS-004)
+    const docSum = (v) => {
+      if (v.status === 'draft' || v.status === 'rejected') return { kind: 'none', text: v.docs.length ? v.docs.length + ' Supplied' : 'None Supplied', tone: 'neutral', d: IC.n, attn: false };
+      if (v.status === 'pending_approval') return { kind: 'pending', text: v.docs.length + ' of ' + REQ.length + ' Supplied', tone: 'info', d: IC.info, attn: false };
+      let exp = 0, soon = 0, miss = 0, rej = 0, soonDays = 999;
+      REQ.forEach((t) => {
+        const d = v.docs.find((x) => x.type === t);
+        if (!d) { miss += 1; return; }
+        if (d.ver === 'rejected') rej += 1;
+        else if (d.expiry) { const n = days(d.expiry); if (n < 0) exp += 1; else if (n <= 30) { soon += 1; soonDays = Math.min(soonDays, n); } }
+      });
+      if (rej) return { kind: 'rejected', text: rej + ' Rejected', tone: 'danger', d: IC.x, attn: true };
+      if (exp) return { kind: 'expired', text: exp + ' Expired', tone: 'danger', d: IC.x, attn: true };
+      if (miss) return { kind: 'missing', text: miss + ' Missing', tone: 'warning', d: IC.warn, attn: true };
+      if (soon) return { kind: 'soon', text: soon + (soonDays === 0 ? ' Expires Today' : ' Expiring in ' + soonDays + (soonDays === 1 ? ' Day' : ' Days')), tone: 'warning', d: IC.clock, attn: true };
+      return { kind: 'ok', text: 'All Current', tone: 'success', d: IC.ok, attn: false };
+    };
+    const availText = (v) => (v.scope === 'Global' ? 'Global' : v.scope.split(',').length + (v.scope.split(',').length === 1 ? ' Unit' : ' Units')) + (v.off.length ? ', ' + v.off.length + ' Disabled' : '');
+    return { days, dmy, dm, IC, STATUS, REQ, V, UNIT, elig, docSum, availText, TODAY };
+  }
+
+
+  // ---- Purchase Orders: shared sample data and rules (sample only). The award is AWD-00095; figures agree with the Sourcing page. ----
+  get pd() {
+    const vd = this.vd;
+    const IC = vd.IC;
+    const fmt = (n) => { const a = Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); return n < 0 ? '(' + a + ')' : a; };
+    const split = (n) => { const s = fmt(n); const i = s.lastIndexOf('.'); return [s.slice(0, i), s.slice(i)]; };
+    // PO status map from MASTER 2.3, with the operator's nomenclature (decision 169): Delivered and Accepted, not Fulfilled
+    const PS = {
+      draft: { label: 'Draft', tone: 'neutral', d: IC.n }, approval_pending: { label: 'Approval Pending', tone: 'info', d: IC.info },
+      approved: { label: 'Approved', tone: 'info', d: IC.ok }, issued: { label: 'Issued', tone: 'success', d: IC.ok },
+      partially_delivered: { label: 'Partially Delivered', tone: 'info', d: IC.info }, delivered: { label: 'Delivered', tone: 'success', d: IC.ok },
+      accepted: { label: 'Accepted', tone: 'success', d: IC.ok }, closed: { label: 'Closed', tone: 'neutral', d: IC.n },
+      cancelled: { label: 'Cancelled', tone: 'danger', d: IC.x }, superseded: { label: 'Superseded', tone: 'warning', d: IC.warn }
+    };
+    // transmission results: icon plus words, never colour alone (PO-004, EML-006)
+    const TX = {
+      none: { label: 'Not Sent', cls: 'sig is-n', d: IC.n }, queued: { label: 'Email Queued', cls: 'sig is-info', d: IC.clock }, sent: { label: 'Email Sent', cls: 'sig is-info', d: IC.info },
+      delivered: { label: 'Email Delivered', cls: 'sig is-ok', d: IC.ok }, bounced: { label: 'Email Bounced', cls: 'sig is-bad', d: IC.x }, complained: { label: 'Email Complaint', cls: 'sig is-bad', d: IC.x },
+      failed: { label: 'Email Failed', cls: 'sig is-bad', d: IC.x }, suppressed: { label: 'Address Suppressed', cls: 'sig is-bad', d: IC.x }
+    };
+    // PO-00262 lines from the award: 3 of Siemar Automation's 4 lines. Price, tax and freight are separate (PO-016); every figure in cents.
+    const LANDED = [7366886, 191827, 10007845];                 // the award's landed line amounts, USD
+    const TARGET = LANDED.reduce((a, b) => a + b, 0);            // 17,566,558
+    const FREIGHT = 336040, RATE = 0.05;
+    const P = Math.round((TARGET - FREIGHT) / (1 + RATE));
+    const build = (k) => {
+      const p = LANDED.map((l) => Math.round(P * l / TARGET));
+      p[0] += P - p.reduce((a, b) => a + b, 0) + k;
+      const sp = p.reduce((a, b) => a + b, 0);
+      const f = p.map((x) => Math.round(FREIGHT * x / sp));
+      f[2] += FREIGHT - f.reduce((a, b) => a + b, 0);
+      const t = p.map((x) => Math.round(x * RATE));
+      return p.map((x, i) => ({ price: x, tax: t[i], freight: f[i], total: x + t[i] + f[i] }));
+    };
+    // find the split of price, tax and freight whose line totals equal the award's landed line amounts exactly
+    const attempt = (p) => {
+      const sp = p.reduce((x, y) => x + y, 0);
+      const f = p.map((x) => Math.round(FREIGHT * x / sp));
+      f[2] += FREIGHT - f.reduce((x, y) => x + y, 0);
+      const t = p.map((x) => Math.round(x * RATE));
+      return p.map((x, i) => ({ price: x, tax: t[i], freight: f[i], total: x + t[i] + f[i] }));
+    };
+    const base = LANDED.map((l) => Math.round(P * l / TARGET));
+    let rows = null;
+    for (let a0 = -80; a0 <= 80 && !rows; a0++) for (let a1 = -80; a1 <= 80 && !rows; a1++) {
+      const p = [base[0] + a0, base[1] + a1, 0]; p[2] = P - p[0] - p[1];
+      const r = attempt(p);
+      if (r.every((x, i) => x.total === LANDED[i])) rows = r;
+    }
+    if (!rows) rows = build(0);
+    const META = [['Servo drive, 7.5 kW', 'Item', 4, 'ea'], ['Encoder cable, 10 m', 'Item', 24, 'ea'], ['On-site drive tuning', 'Service', 8, 'day']];
+    const lines = rows.map((r, i) => ({ d: META[i][0], kind: META[i][1], q: META[i][2], u: META[i][3], unit: r.price / 100 / META[i][2], price: r.price / 100, tax: r.tax / 100, freight: r.freight / 100, total: r.total / 100 }));
+    const sum = (k) => Math.round(lines.reduce((a, l) => a + l[k] * 100, 0)) / 100;
+    const totals = { price: sum('price'), tax: sum('tax'), freight: sum('freight'), total: sum('total') };
+    const PO = [
+      { id: 'PO-00262', vendor: 'Siemar Automation', project: 'Plant 4 Line Retrofit', total: totals.total, status: 'approved', tx: 'none', ver: 1, tab: 'ready', when: '' },
+      { id: 'PO-00263', vendor: 'Apex Industrial Supply', project: 'Plant 4 Line Retrofit', total: 17346.55, status: 'draft', tx: 'none', ver: 1, tab: 'drafts', when: '' },
+      { id: 'PO-00251', vendor: 'Halden Packaging', project: 'Plant 2 Dock Upgrade', total: 18420.50, status: 'approval_pending', tx: 'none', ver: 1, tab: 'awaiting', when: '' },
+      { id: 'PO-00249', vendor: 'Meridian Mechanical', project: 'Plant 2 Dock Upgrade', total: 23900.00, status: 'approval_pending', tx: 'none', ver: 1, tab: 'awaiting', when: '' },
+      { id: 'PO-00244', vendor: 'Northgate Controls', project: 'Plant 4 Line Retrofit', total: 12980.00, status: 'issued', tx: 'delivered', ver: 1, tab: 'issued', when: '12 Oct' },
+      { id: 'PO-00238', vendor: 'Cobalt Cooling', project: 'Data Centre Cooling', total: 64210.75, status: 'issued', tx: 'bounced', ver: 1, tab: 'attention', when: '11 Oct' },
+      { id: 'PO-00231', vendor: 'BrightPath IT', project: 'ERP Upgrade', total: 41200.00, status: 'issued', tx: 'delivered', ver: 2, tab: 'issued', when: '2 Oct' },
+      { id: 'PO-00219', vendor: 'Kestrel Fasteners', project: 'Packaging Line 2', total: 3810.00, status: 'cancelled', tx: 'delivered', ver: 1, tab: 'issued', when: '19 Sep' }
+    ];
+    return { fmt, split, PS, TX, LANDED, TARGET, lines, totals, PO, FREIGHT, RATE, IC, vd };
+  }
+
+  renderVals() {
+    const st = this.state || {};
+    const g = (k, d) => (st[k] !== undefined ? st[k] : (this.props[k] !== undefined && this.props[k] !== '' ? this.props[k] : d));
+    const view = g('view', 'ready'), wf = g('workflow', 'published'), vend = g('vendor', 'ok'), cur = g('currency', 'USD'), role = g('role', 'lead');
+    const { fmt, split, lines, totals, IC } = this.pd;
+    const lead = role === 'lead';
+    const f = { rcp: view === 'errors' ? '' : 'd', ship: view === 'errors' ? '' : 'p4', ovr: '', ...(st.f || {}) };
+    const set = (k) => (ev) => this.setState({ f: { ...f, [k]: ev.target.value } });
+    const sp = (n) => split(n);
+    const L = lines.map((l) => { const u = sp(l.unit), p = sp(l.price), t = sp(l.tax), fr = sp(l.freight), lt = sp(l.total); return { d: l.d, kind: l.kind, q: l.q, u: l.u, uw: u[0], ud: u[1], pw: p[0], pd: p[1], tw: t[0], td: t[1], fw: fr[0], fd: fr[1], lw: lt[0], ld: lt[1] }; });
+    const T = { pw: sp(totals.price)[0], pd: sp(totals.price)[1], tw: sp(totals.tax)[0], td: sp(totals.tax)[1], fw: sp(totals.freight)[0], fd: sp(totals.freight)[1], lw: sp(totals.total)[0], ld: sp(totals.total)[1] };
+    const foreign = cur === 'EUR';
+    const commit = Math.round(totals.total * 1.084 * 100) / 100;
+    const sus = vend === 'suspended';
+    const elig = sus ? { cls: 'sig is-bad', d: IC.x, text: 'Siemar Automation is not eligible', why: ['Suspended on 12 Oct 2026, after this award was approved'], canOverride: lead, cannot: !lead } : { cls: 'sig is-ok', d: IC.ok, text: 'Siemar Automation is eligible in Plant 4', why: [], canOverride: false, cannot: false };
+    const NT = [
+      { id: 'pe-n1', t: 'Deliver before the plant shutdown on 20 Nov', meta: 'Note · dev.patel@northwind.example', vis: (st.vis || {}).n1 || 'vendor', file: false },
+      { id: 'pe-n2', t: 'Approved over Cablecraft for the 48-hour support requirement', meta: 'Note · priya.raman@northwind.example', vis: (st.vis || {}).n2 || 'internal', file: false },
+      { id: 'pe-n3', t: 'Servo drive datasheet, rev C.pdf', meta: 'File · 1.2 MB · scanned, basic checks passed', vis: (st.vis || {}).n3 || 'vendor', file: true }
+    ].map((n, i) => ({ ...n, blocked: n.file && n.vis === 'vendor', set: (ev) => this.setState({ vis: { ...(st.vis || {}), ['n' + (i + 1)]: ev.target.value } }) }));
+    const tried = st.tried !== undefined ? st.tried : view === 'errors';
+    const e = {};
+    if (tried && !f.rcp) e.rcp = 'Choose who receives the order.';
+    if (tried && !f.ship) e.ship = 'Choose a delivery location.';
+    const problems = [];
+    if (e.rcp) problems.push({ cat: 'Required field', text: 'Send To is needed', go: (ev) => { ev.preventDefault(); const el = document.getElementById('pe-rcp'); el && el.focus(); } });
+    if (e.ship) problems.push({ cat: 'Required field', text: 'Ship To is needed', go: (ev) => { ev.preventDefault(); const el = document.getElementById('pe-ship'); el && el.focus(); } });
+    if (tried && sus && !(f.ovr || '').trim()) problems.push({ cat: 'Vendor', text: lead ? 'Siemar Automation is suspended. Give a reason to order anyway' : 'Siemar Automation is suspended. Ask a sourcing lead', go: (ev) => { ev.preventDefault(); const el = document.getElementById('pe-ovr'); el && el.focus(); } });
+    const sentence = 'Issuing will commit ' + fmt(totals.total) + ' ' + cur + ' on Plant 4 Line Retrofit, from its 193,012.13 USD reservation. After issue, 17,346.55 USD stays reserved for PO-00263.';
+    return {
+      ...this.shellVals(st), retry: () => this.setState({ view: 'ready' }), isError: view === 'error', isLoading: view === 'loading', showForm: view !== 'error' && view !== 'loading',
+      vendorName: 'Siemar Automation', cur, lines: L, t: T, elig, f, set: { rcp: set('rcp'), ship: set('ship'), ovr: set('ovr') }, e, eb: { rcp: e.rcp ? 'true' : 'false', ship: e.ship ? 'true' : 'false' },
+      hasProblems: tried && problems.length > 0, problems, summaryTitle: problems.length === 1 ? '1 thing needs attention' : problems.length + ' things need attention',
+      budget: { sentence, foreign, commit: fmt(commit) }, notes: NT, savedText: st.saved ? 'Draft saved just now' : 'Not saved yet',
+      wfText: wf === 'published' ? 'Goes to the purchase order workflow before issue.' : 'No PO workflow is published. This PO is approved when you submit.',
+      submitLabel: wf === 'published' ? 'Submit for Approval' : 'Approve',
+      saveDraft: () => { this.setState({ saved: true }); this.toast('Draft saved. Nothing was sent to an approver or a vendor.'); },
+      submit: () => {
+        this.setState({ tried: true });
+        const bad = !f.rcp || !f.ship || (sus && !(f.ovr || '').trim());
+        if (bad) { setTimeout(() => { const el = document.getElementById('pe-summary'); el && el.focus(); }, 0); return; }
+        this.toast(wf === 'published' ? 'Submitted for approval. Nothing is committed yet.' : 'Approved. Issue it when you are ready.');
+      }
+    };
+  }
+
+}
+</script>
+</body>
+</html>

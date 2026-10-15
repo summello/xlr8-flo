@@ -90,6 +90,9 @@ Server: dates are inclusive and in the organization's time zone; overlapping act
 3. When a delegation is revoked, do undecided tasks return to the owner (sample) or stay with the delegate?
 4. Can a delegate re-delegate? The sample says no.
 5. Does a task returned to the requester keep its place in the approver's Completed tab as `Returned for Changes` (sample), and does the resubmitted document create a new task or reopen the old one?
+6. **Decision-panel variants added by M3 (13 Oct 2026).** The same panel carries three more document kinds, each a variant and not a second approval UI: vendor onboarding and status changes (`pages/vendors.md` section 3.4), award (`pages/sourcing.md` screen 8) and purchase order (`pages/purchase-orders.md` screen 10). Each adds an evidence block between the key facts and the Decision Trail (DECISIONS 65) and keeps Approve enabled when a fact is adverse (a low onboarding score, a vendor suspended since award, DECISIONS 52, 6h-6). **No UI story exists for these variants**; the stories in STORY-NOTES sections 7 to 9 must extend the E10-S10 panel and cite this file.
+7. **Decided 14 Oct 2026 (Opus, layout; story E11-S10):** at 375 the shared panel's footer is a two-column grid in DOM order: `Close` and `Post Comment`, then `Return for Changes` and `Reject`, then `Approve` across both; every button at least 44px; reading order, tab order and visual order are the same. The close button must not be covered by the shell's top bar (hit-tested). The canvas boards `ApprSheet375` and the variant boards at 375 are stale until the design session redraws them (follow-up).
+8. **People are shown by name on the older inbox boards and by email on the M3 rows** (D-M2-16: the identity has no name yet). A later pass aligns `ApprovalInbox` and `Appr*` to email.
 
 ## 7. Tests the stories must leave behind
 

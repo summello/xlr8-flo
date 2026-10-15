@@ -35,7 +35,7 @@ otherwise wins.
   the head's date prefix plus the next number, and proves down then up preserves data.
 - **New routes** go into `apps/api/tests/isolation/test_route_coverage.py::COVERED` with a real
   named foreign-tenant test.
-- **Web:** tokens only, never a value from `design-system/canvas/`. Wait for mount before a visual
+- **Web:** tokens only, never a value from `design-system/canvas/` or `design-system/canvas-2/`. Wait for mount before a visual
   assertion. Touch-target assertions allow sub-pixel rounding (43.99 passes 44).
 
 ## Never

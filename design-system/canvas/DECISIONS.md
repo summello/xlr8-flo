@@ -228,6 +228,163 @@ Operator answers to the open Budget Transfer questions, then the screen list con
 120. **Bid comparison, colour and density revised** (operator feedback, 10 Oct 2026: the `Lowest` label was overlapped by the selection highlight and the screen overwhelmed with data). Colour now has **three jobs only, each with an icon and words**: a **win** (green tint, with `Lowest`, `Fastest` or `Highest Score` inside the cell), **worth a look** (amber: partial, not comparable, not quoted) and a **failure** (red: misses the needed-by date, three or more unmet requirements). One or two unmet requirements are an icon and words without a tint, so amber is scarce. A **colour key** sits on the matrix. A mark lives inside the cell it describes, so nothing can overlap it (a test measures every mark against its cell). The selection outline on `By Line` is 1px with a text twin and a caption. **Density:** the matrix opens with four short groups (Cost, Delivery, Compliance and Score); `Price, Tax and Freight` and `Terms` are closed groups that say how many rows they hold and open on demand (progressive disclosure, a native-button toggle with `aria-expanded`); the verdict card keeps one total, how it compares, three quiet facts and only its wins; a vendor that misses the needed-by date (award 12 Oct plus lead time) is flagged in red in the strip and the matrix.
 Tests: `comparison.spec.mjs` (81 tests, including planted violations: an altered landed total, `Lowest` on a partial bid, a figure on a sealed page, an unlabelled input), with figures checked against values computed outside the page, and axe in light and dark on 19 boards. `transfers.spec.mjs` now has 141 tests.
 
+## 6h. Vendors (built 13 Oct 2026; screen list and questions confirmed with the operator first)
+
+Page `Vendors` holds 60 boards: the **vendor list**, **profile**, **request**, **questionnaire administration**, each with 1440, 1920, 1024, 768 and 375 and its states; the profile also carries the status, scope and document dialogs, the document sheet and the scorecard sheet as boards. Two boards on the Approval Inbox page show the **onboarding decision panel** (`ApprSheetVendor`, `ApprSheetVendorLow`). Page spec for the coding agents: `design-system/pages/vendors.md`. Story requests: `STORY-NOTES.md` section 7. Tests: `vendors.spec.mjs`.
+
+**Operator answers, 13 Oct 2026** ("accept all recommendations", to the ten questions in `HANDOFF-vendors.md` section 7; each is the handoff's proposal):
+
+121. **(6h-1) Vendor status vocabulary:** `draft`, `pending_approval` (info), `active` (success), `suspended` (warning), `inactive` (neutral), `rejected` (danger), icon plus words. **MASTER was not amended**; the map is a proposal in `pages/vendors.md` section 9 for the operator to fold into MASTER 2.3.
+122. **(6h-2) Required documents:** an organization list of document types, each `required` or `optional`, optionally per vendor category. The per-category part is not drawn; the canvas assumes five required types.
+123. **(6h-3) An expired required document makes the vendor not eligible**, automatically. Eligibility is derived and the status does not change (VEN-012).
+124. **(6h-4) Who may reveal tax and banking:** vendor managers and finance users only, every reveal audited, never auditors by default (PRIV-001). Everyone else sees `Restricted`.
+125. **(6h-5) Local disable of a global vendor:** an organization setting `Allow Local Disable`; a user with `vendor.edit` on that unit may do it; **no approval**.
+126. **(6h-6) Onboarding score below the threshold informs, it does not block.** The approver sees the fact; approval decides.
+127. **(6h-7) A duplicate identifier blocks a second record** and offers `Use Existing Vendor`; a vendor manager may override with a reason (audited).
+128. **(6h-8) The `Service and Delivery` contact receives RFQs and POs; `Billing` receives nothing in M3**, with a per-contact override.
+129. **(6h-9) No minimum order value is captured now.** A money field with no rule would settle a rule on a board; it stays open with the award screen (decision 119).
+130. **(6h-10) Performance in M3:** purchasing users score manually per PO and period; disputes by vendor managers. Goods receipt (M4, E14) will automate it.
+
+**Design decisions made while building** *(Claude)*:
+
+131. **Eligibility and status are different things.** Status is a pill; eligibility is a derived `signal` (icon plus words) with its reasons, shown in the profile header and in the list. A vendor with an expired certificate stays `Active` and reads `Not Eligible`.
+132. **A signal is an icon plus words, with the icon taking a tone.** One class, `.sig`, serves eligibility, documents and the questionnaire weight total, so the list does not grow a second pill vocabulary. Pills are for status only.
+133. **The list answers "why not" without a click:** the `Eligible Here` cell shows the first reason on the next line (`and 1 more`), and the Documents cell looks ahead (`Expiring in 12 Days` before `Expired`).
+134. **The scorecard is a wide side sheet, not a route**, so `Open Scorecard` keeps the profile behind it and stays at two actions.
+135. **Onboarding evidence is a fold, not a card:** the profile's `Onboarding Record` is a closed `<details>` (decision 65); the approver's per-question breakdown is a closed fold too.
+136. **Masked values are fetched on Reveal.** The board keeps sample values in its own script only to simulate the reveal; the test inspects rendered markup and fails a planted leak.
+137. **Questionnaire reorder is move-up and move-down buttons**, named with the question; drag is optional and not drawn.
+138. **Destructive buttons follow MASTER 7.13:** `.btn.danger` (danger text, icon, verb) and `.btn.danger.fill` only on a confirmation dialog's confirm button.
+139. **A pair of cards that never goes three-up** (`.v-w`, `.v-n`: 7/5, then 8/4) is used for Performance and History so no row is ragged at 1600 and up; the rest follow the dashboard rule.
+140. **New classes in `xlr8flo.css`** (tokens only): `.sig .sig-why .elig .mask .btn.danger .btn.danger.fill .v-w .v-n .cols-ven .cols-vdoc .cols-vcon .cols-vsc .cols-vq`. The Design System sheet gains **Eligibility, Signals and Masked Values** (`s-vendors`). Everything else is reused (`.tabs .toolbar .row.stack .pager .summary .dialog .sheet .kv .lineage .suggest .total-bar .action-bar .fold .req-tag .meter`).
+141. **The inbox gains two pending vendor-onboarding rows**, so `approvals.spec.mjs` counts moved (9 to 11 pending). Earlier boards still show people by name; the vendor rows use email (D-M2-16). A later pass should align them.
+
+**Self-review with impeccable (13 Oct 2026, two isolated assessments: design review A, detector with browser evidence B).**
+
+- **Specificity:** authored for capital procurement, not interchangeable. Eligibility derived for a unit and explained in words, the vendor snapshot beside the live record, suspension consequences for open RFQs and issued POs, duplicate evidence and score on the approver's panel, document expiry feeding eligibility. The generic parts (tabs, table, form) are right for Operate.
+- **Heuristics (A), 0 to 4:** visibility of status 3, match to the real world 3, control and freedom 3, consistency 3, error prevention 3, recognition rather than recall 2, flexibility 3, aesthetic and minimalist 2, error recovery 3, help 3: **28/40**. The two 2s were a duplicate named only in prose and an eight-card profile with a dead `Amount` row.
+- **Cognitive load:** no memory bridge on a money figure (the vendor pages carry none). More than four options at the list header (5 tabs, 2 filters, 2 actions) and in the decision footer (5 buttons); both follow the existing patterns and are left.
+- **Detector (B):** one advisory, `repeating-stripes-gradient`, from the shared `.hatch` class in `xlr8flo.css` that no vendor board uses: **false positive**. No overflow at 1440 or 375, no contrast failure in light or dark, no missing accessible names.
+- **Fixed in one batch (P1):** (1) a placeholder, `the vendor`, leaked into the Trading Name input and the `Done` mark contradicted an invalid email: the value is kept apart from the success text and email fields carry the same dotted-domain pattern the summary checks; (2) the scorecard sheet squeezed Rationale and spilled the scorer's email: the scorer is now a line under the rationale and Rationale takes the flexible column; (3) the duplicate on the decision panel was prose: it is a link with the matching registration number and address beside the new request's; (4) the header rule showed the Plan hue on a Commit page: `--ph-page` on the page root now sets it; (5) 18px checkbox rows were under 44px below 1024: `.v-chk`; (6) the dead `Amount: Not applicable` row is gone for a vendor.
+- **Left, with reasons (P2, P3, recorded in `pages/vendors.md` section 7):** the eight-card profile (a closed fold for Contacts and Linked Records was weighed and refused: contacts carry live checkboxes and Linked Records carries the VEN-013 caption); the five-button decision footer wrapping at 375 and the shell's top bar overlapping the sheet's close button are the shared decision-panel component and affect every document kind, so they are a follow-up on the Approval Inbox page, not a vendor fix; the 375 list tab strip wraps two long labels; the unconfirmed focus ring on one request input at one tab stop; 11px text is the system's own floor (`Required`, `Done`, sidebar group labels).
+
+## 6i. Sourcing (screen list and questions confirmed with the operator first, 13 Oct 2026)
+
+Screens added around the built comparison: RFQ list, start an RFQ from approved lines, RFQ editor (draft and amend), RFQ detail, key a bid, evaluation, award draft, award decision (inbox variant), cancel and supersede dialogs, and `Start RFQ` on the requisition detail. The comparison, by-line, cost breakdown, scoring read side, vendor bid sheets and their states (6g) are **not redrawn**. Page spec: `design-system/pages/sourcing.md`. Tests: `sourcing.spec.mjs`.
+
+**Operator answers, 13 Oct 2026** ("Yes to all", to the screen list and to the nine questions in `HANDOFF-sourcing.md` section 7 plus the page rename; each is the handoff's proposal or my recommendation):
+
+142. **(6i-0) The page `RFQ Comparison` is renamed `Sourcing`.** Its id `rfq-comparison` stays, so no link breaks.
+143. **(6i-1) Status vocabulary.** RFQ: `draft` (neutral), `published` (info), `closed` (info), `under_evaluation` (info), `awarded` (success), `cancelled` (danger). Award: `draft`, `approval_pending`, `approved`, `superseded` (warning), `cancelled`. Icon plus words. **MASTER was not amended**; the map is a proposal in the page spec.
+144. **(6i-2) One RFQ may carry lines from several requisitions** when they share business unit or operating unit and currency; a line that does not is shown disabled with the reason.
+145. **(6i-3) The vendor's sent time decides lateness.** The buyer enters it with the vendor's email attached as evidence; the keyed time is always recorded beside it.
+146. **(6i-4) The sourcing lead is `rfq.approve` on the RFQ's unit.** No new role. It waives compliance requirements and overrides late bids and ineligible vendors, with a reason, audited.
+147. **(6i-5) An award goes through approval only when an award workflow is published.** Otherwise the board says `No award workflow is published. This award is approved when you submit.` A financial-control rule the operator owns; the notice makes it visible.
+148. **(6i-6) The reserved amount an award does not use is released once, when the award is approved.** Matches the requisition detail copy. Drawn as an assumption only: E12-S08 stays blocked on E09-S13 for the engine rule.
+149. **(6i-7) No split-award-versus-minimum-order warning is drawn.** The vendor carries no minimum order value (6h-9); it stays open (119).
+150. **(6i-8) The non-lowest justification is an organization setting, on by default** (SRC-014 "when configured").
+
+**Design decisions made while building** *(Claude)*:
+
+151. **The comparison is not redrawn; the new screens wrap it.** The list, detail and award draft link into the built comparison, and `Start Award` lands on the award draft with its basis carried across.
+152. **The line picker and the invitee picker are checkbox rows, not drag.** A quantity field is the whole split mechanism (REQ-014), so no drag path is needed.
+153. **The eligibility signal is the Vendors one.** `Override` is offered only to `rfq.approve` on the unit, asks for a reason, and is recorded beside the vendor; the sixth invitee is refused with the limit in words even with an override.
+154. **A published RFQ is amended, never edited.** The amend screen shows `What Changed` as words and a struck `was`, a required reason, and `Who Will Be Told` by contact; each invitee row says which version it holds.
+155. **A keyed bid carries two times:** `Vendor Sent It On` (date and a 24-hour time, evidenced) decides lateness; `Keyed By Us` never changes. A late bid is kept out unless a lead accepts it with a reason, in one footer action (`Accept Late Bid and Save`).
+156. **The award verdict sits beside the total and in the pinned bar,** not a screen below the lines, so the figure that decides the submit is never carried from one place to another. `Set All to Lowest` is the keyboard shortcut for the common case.
+157. **Non-lowest justification is one line per line,** a text input marked Required, so three open textareas do not take the page.
+158. **The release of unused reserved funds is labelled an assumption on the board,** and no ticket id appears in user copy.
+159. **Captions on a sunken ground step up to the secondary colour** (`.row.group`, `.notice`), the same fix as DECISIONS section 7.
+160. **New classes in `xlr8flo.css` (tokens only):** `.cols-rfq .cols-rln .cols-rit .cols-rinv .cols-rdi .cols-rbl .cols-rev .cols-raw`. Everything else is reused (`.sig`, `.elig`, `.diff`, `.stepper`, `.sheet.wide`, `.dialog`, `.total-bar`, `.action-bar`, `.fold`, `.v-chk`, `.v-w`, `.v-n`). No new Design System section: no new component.
+161. **The inbox gains one pending award row set:** `AWD-00095` and `AWD-00096`, so `approvals.spec.mjs` counts moved again (see below). The `Start RFQ` action is on `RequisitionDetail` for a requisition in sourcing.
+
+**Self-review with impeccable (13 Oct 2026, two isolated assessments: design review A, detector with browser evidence B).**
+
+- **Specificity:** the generic parts (list, tabs, draft editor, scoring grid) are right for Operate. What only capital procurement carries: the justification per non-lowest line, the scope and funds check with the released amount, requisition lines with a quantity to source against an open quantity, sealed bids with `Keyed By Us` and no portal, the conflict declaration before scoring, the award evidence block on the approver's panel.
+- **Heuristics (A), 0 to 4:** visibility 3, real-world match 3, control 3, consistency 2, error prevention 3, recognition rather than recall 2, flexibility 2, minimalism 3, error recovery 3, help 3: **26/40**. The three below 3 are fixed below.
+- **Cognitive load:** one P0 memory bridge on a money figure: the over-scope verdict was a screen below the lines and the total, and not in the pinned bar. Fixed.
+- **Detector (B):** `repeating-stripes-gradient` from the shared, unused `.hatch` class on every board: **false positive**. No overflow at 1440 or 375, no duplicate ids, no control without an accessible name, no dark-mode contrast failure.
+- **Fixed in one batch (P0 and P1):** (1) award verdict beside `Total Awarded` and in the action bar; (2) New RFQ header cells did not sit over their columns (a seventh, hidden header shifted them); (3) the late-bid callout contradicted itself (`Blocked` with an `Accept` button inside): one callout, one footer action; (4) mixed date formats and a 12-hour time: a date field and a 24-hour time field; (5) four open justification textareas on an over-scope award: one line each; (6) 4.32:1 captions on a sunken ground in light mode; (7) ticket ids in user copy; (8) no shortcut for the common case: `Set All to Lowest`; (9) no score range beside the score field.
+- **Left, with reasons (recorded in `pages/sourcing.md` section 7):** the detail page has seven cards (each is a different question; a fold for History and Linked Records was weighed and refused, they are the audit trail); the footer wrap of the shared decision panel at 375 (follow-up on the Approval Inbox page); 18px checkboxes sit inside 44px labels (measured on the input, not the label); the unconfirmed focus ring on one text input in light mode at one tab stop (same as Vendors); money fractions and `USD` at 11px are the system's money style; sort eligible vendors first in the invitee picker (P3).
+
+## 6j. Purchase Orders (screen list and questions; answers logged 13 Oct 2026, page not built yet)
+
+Screens proposed and accepted: PO list, create from awarded lines, PO editor, PO detail, issue (confirmation and signature moment 5), transmission log, change order, cancel or reduce, PDF preview, PO decision (inbox variant), sending domain status. Page spec when built: `design-system/pages/purchase-orders.md`.
+
+**Operator answers, 13 Oct 2026** ("Yes to all except 7 and 5"; each accepted answer is the recommendation made):
+
+162. **(6j-1) A PO commits against the project that holds the requisition's reservation at issue,** whichever it is. The budget card names it. Drawn as a labelled assumption: E09-S13 is open.
+163. **(6j-2) "Authorized project items" (PO-001's second path) are not in M3.** Only the award path is drawn, which keeps SRC-018 intact.
+164. **(6j-3) Tax and freight are entered per line;** freight may also be entered per document and is shared pro rata by line value (as DECISIONS 116). Rounding is per line; document totals are sums of rounded lines.
+165. **(6j-4) Bill To comes from the organization or unit address; Ship To is chosen from the delivery locations the requisition uses.** No one-off typed Ship To in M3.
+166. **(6j-6) A change order needs reapproval for the requisition's material changes** (amount, project, ledger account, item, line count; D-M2-13).
+167. **(6j-8) A PO in a vendor's currency commits at the rate stored with the award,** fixed at issue and shown with its date; a change order revalues only changed lines. Drawn as an assumption.
+168. **(6j-9) The PO email goes to the vendor's `Service and Delivery` contact** (6h-8). The requester gets an internal notification on issue, not a copy of the vendor email.
+169. **(6j-7) Fulfilment nomenclature is `Delivered` and `Accepted`, not `Fulfilled`** (operator). `Partially Delivered`, `Delivered` and `Accepted` are future states in M3 (goods receipt arrives in M4). The linked requisition's status when its lines are accepted is `Completed` (172). **Note for Opus:** PO-007 in `docs/requirements.md` still says `Partially Fulfilled` and `Fulfilled`, and MASTER 2.3 maps `partially_fulfilled` and `fulfilled`; a requirement is not changed on a board (AGENTS.md rule 4), so the wording is flagged here.
+170. **(6j-5) The supplier receives an email and a PDF only** (operator, 13 Oct 2026). The email body is a high-level summary of the PO; the PDF is a simplified version of the buyer's PO with **no chartfields (project, department, ledger account) and no budget information**, and no internal notes. **PDF only, no HTML attachment** (PO-014: reproducible from the snapshot; HTML attachments are often blocked). The PDF is generated by the system from the PO snapshot, so it is not an uploaded file and D-M2-8 does not hold it back.
+171. **(6j-5b) Other uploaded files stay internal in M3** (operator): an attachment marked for the vendor shows `Not sent until scanning is available` (D-14, E19-S04), and only the generated PDF goes out.
+172. **(6j-7b) After acceptance the linked requisition's status is `Completed`** (operator), the status REQ-005 already has; no new `Fulfilled` status is added.
+
+**Page built 13 Oct 2026** (the screen list and questions were confirmed first; this section was started when the answers were logged). Page `Purchase Orders` holds 83 boards; two decision panels sit on the Approval Inbox page (`ApprSheetPo`, `ApprSheetPoSuspended`). Page spec: `design-system/pages/purchase-orders.md`. Story requests: `STORY-NOTES.md` section 9. Tests: `purchase-orders.spec.mjs`.
+
+**Design decisions made while building** *(Claude)*:
+
+173. **The email result never uses the bare word `Delivered`.** It reads `Email Delivered`, `Email Bounced`, `Email Queued`, so it cannot be read as goods received, which is the future PO state `Delivered` (decision 169).
+174. **A hard bounce makes `Change Recipient` the primary action and the focused one; `Resend` is second.** Resending to a suppressed address would fail; the recovery is a new address, then the same version again. MASTER 6.2 says the retry affordance is focused; for a hard bounce the next step is. A soft failure would focus `Resend`.
+175. **The confirmation dialog on the PO is the commit; the issue page is the moment that follows.** The page has no second `Issue` button: a replay is prototype-only. Closes the double-confirmation question.
+176. **Price, tax and freight line amounts equal the award's landed line amounts to the cent.** The sample is built so the PO and the award agree, and `purchase-orders.spec.mjs` checks it; a one-cent difference would read as a bug.
+177. **The `Amount to Order` column follows `Quantity to Order`,** so the value of a partial order is never inferred.
+178. **The vendor copy is a page of its own** (the email and the PDF side by side, and a list of what never goes to the vendor), and the PDF is also a sheet on the PO. `.pdf-page` is the one place a paper-like page is drawn; it uses surface tokens, not a literal white.
+179. **The signature moment ends in words and a table** (A11Y-009, MASTER 7.12): the steps list, the result card and a Frames table whose selected tab follows the frame on show.
+180. **No requirement, decision or ticket id appears in user copy;** a test fails if one does. The assumptions are one plain sentence.
+181. **New classes in `xlr8flo.css` (tokens only):** `.cols-pol .cols-pcr .cols-pln .cols-ptx .cols-pch .cols-pst .cols-pdm .cols-psp .pdf-page .pdf-h .pdf-grid .pdf-row .pdf-tot .po-stage .po-doc .po-seal .po-trace .po-vendor`, and a 44px minimum on `.v-chk` and the sheet close button below 1024. Everything else is reused.
+
+**Self-review with impeccable (13 Oct 2026, two isolated assessments: design review A, detector with browser evidence B).**
+
+- **Specificity:** the shell (header, pill, stepper, two-column cards, history) is generic and right for Operate. What only capital procurement carries: reserved, committed and released side by side with the sentence that says which one the PO holds; the budget effect of a change order; the vendor copy with no chartfields; per-line partial ordering against an award; vendor-currency commitment at the award's stored rate; issue as one atomic act.
+- **Heuristics (A), 0 to 4:** visibility 3, real-world match 3, control 3, consistency 3, error prevention 3, recognition 3, flexibility 3, minimalism 3, error recovery 3, help 3: **30/40**. No heuristic below 3; the P1s were specific defects.
+- **Cognitive load:** no P0 memory bridge. One near miss: an amount that did not follow the quantity being ordered (fixed).
+- **Detector (B):** `repeating-stripes-gradient` from the shared, unused `.hatch` class on every board: **false positive**. No overflow, no duplicate ids, no control without an accessible name, no contrast failure in either theme, and **no chartfield, budget or internal word on the PDF** (also a test).
+- **Fixed in one batch (P1 and P2):** (1) the email result `Delivered` collided with the future PO state; (2) `Resend` was primary and focused for a suppressed address; (3) requirement and ticket ids and `Assumption, not yet a rule` in user copy; (4) a double confirmation, dialog then page; (5) the Frames table said `Before` while the picture showed another frame; (6) `Landed Amount` did not follow the quantity; (7) a bounce dated before the issue; (8) 18px checkboxes and a 34px close button below 1024; (9) the tab strip wrapped `Awaiting Approval`.
+- **Left, with reasons (in `pages/purchase-orders.md` section 7):** eight cards on the detail (each answers a different question); four future stepper pills that share one note (a single caption was weighed: the pills are the lifecycle and are kept); the shell's top bar over a sheet's close button and the five-button decision footer at 375 are the shared decision-panel component; the unconfirmed focus ring on one date input in light mode; the 11px `Required` tag and money fractions are the system floor.
+
+
+## 6k. MASTER amendment for M3 round 1 (13 Oct 2026; operator asked for it, Opus drafted)
+
+Items 121, 143 and 169 said "MASTER was not amended". They are now folded in; the canvas follows MASTER from here, as everywhere.
+
+182. **MASTER 2.3** gains the `vendor`, `rfq` and `award` maps (121, 143) and the purchase-order map with `partially_delivered`, `delivered`, `accepted` (169, 172). Email transmission results are signals, not statuses, and never use the bare word `Delivered` (173).
+183. **MASTER 7.14 to 7.16** are the signal and eligibility component, the masked value, and the purchase order issue moment (131, 132, 136, 174, 175, 179, 181).
+184. **MASTER 2.2** registers one exception to "phase colour in four places": the trace line of a signature moment (7.12, 7.16), because it is a drawing and its words and table always sit beside it.
+185. **MASTER 7.13 dark values are measured** (danger text and fill 7.30:1 on `--surface`, 6.60:1 on `--raised`; confirm label 7.30:1; hover 6.18:1; undo 9.11:1). No new token. The canvas's `filter: brightness(0.92)` hover on the confirm fill is a shortcut; code uses a background shift.
+186. **`docs/requirements.md`:** PO-007 and the requisition lifecycle diagram take Delivered and Accepted wording, and the PO report metric reads `delivery status`. The operator decided the nomenclature (169); no requirement's meaning changed.
+187. **Code is behind MASTER in three places**, each for the first story that touches the screen: `status/map.ts` has `vendor` with `pending` and `expired` (decision 123 forbids an expired status), `rfq.closed` as neutral (MASTER: info), no `award`, and `purchase_order` with the old fulfilled keys; `labels.ts` has the matching words.
+188. **A shared defect is recorded once** in `pages/approval-inbox.md` section 6 (decision-panel footer and top bar at 375), not on each of the three pages.
+
+## 6l. Canvas comments, 14 Oct 2026 (operator; questions asked first, answers below)
+
+Three open comments on the published canvas. Where a comment left a choice open, it was asked, not assumed.
+
+189. **PO Detail is simplified** (comment on `PoDetail`): PO number is the page title; one header bar holds the connected lifecycle stepper over two equal swimlanes, `Order` and `Vendor`; the body is 70 / 30. Left: `Lines`, `Notes and Files`, `Transmissions`. Right: `Budget Summary`, `Linked Records`, `History`. The operator chose the stepper on a row above the two swimlanes, and `Sent to Vendor` inside Transmissions.
+190. **Versions are a control, not a card.** The page shows the current version; a disclosure beside the PO number lists versions and change orders (Escape closes, focus returns to it). Class contract: `.po-ver` on a native `<details>`, reusing `.pop`, `.pop-h`, `.pop-i`.
+191. **The stepper is connected** (`.stepper.is-linked`): a 2px line joins the steps and takes the success tone after a done step. The words and `aria-current` carry the meaning; the line is decoration and is dropped below 760px.
+192. **PO Editor cap raised** from 1120 to 1600px, centred, full width below that (the operator chose a wider centred cap). Auto margins in a flex column shrink an item to its content, so the width is stated: `width:100%` with the cap.
+193. **Bid Comparison comment of 9 Oct** (overlapping lowest highlight; colour for wins and failures): the operator says it has been addressed and asked for it to be resolved. No board change.
+194. **New classes in `xlr8flo.css` (tokens only):** `.po-hdr .po-lanes .po-lane .po-body .po-col .stepper.is-linked .po-ver`.
+195. **Budget Summary is per project** (operator, 14 Oct 2026): the immediate project of the PO's lines, not the parent. One block per project invoked on the PO, four figures: `Committed`, `This PO`, `Available After Issue`, `Project Actual`. A line's project is shown beneath its description; board `PoDetailProjects` shows a PO that touches two. The definitions of the four figures are assumptions to confirm (`pages/purchase-orders.md` section 7 item 9).
+
+196. **The shared decision panel at 375** (found on the three M3 pages) is decided once, in `pages/approval-inbox.md` section 6 item 7, and built by story E11-S10. The variant boards at 375 are stale until redrawn.
+197. **Stories raised:** E11-S09 (status vocabulary) and E11-S10 (decision panel at phone width); see `STORY-NOTES.md` section 10.
+
+## 6m. Second canvas (14 Oct 2026; operator)
+
+198. **The canvas is split.** The first canvas reached its limit of 512 files. A second canvas, **XLR8 FLO Design System 2** (https://claude.ai/artifact/62JVFUjfv8Bw3KiKXEWs5r, source `design-system/canvas-2/`), holds the Common Screens page (27 boards) and the Vendors page (60 boards), moved whole with their tests. The first canvas keeps nine pages and frees 87 files for new boards on them.
+199. **Every GAP in the screen inventory is registered as a page in the second canvas,** grouped by module like the first: Home and Reporting, Organization and Administration, Projects and Budget, Requisitions and Approvals, Assets and Warehouses, Cross-Cutting Surfaces; the remaining Common Screens items are listed on that page. **Nothing is drawn yet** (operator): each page has a brief, `design-system/canvas-2/HANDOFF-<page>.md`, to be confirmed with the operator before building.
+200. **Cross links are absolute.** A board cannot be deep-linked, so a link between canvases opens the other canvas in a new tab. The five links from first-canvas boards to `VendorProfile` now open the second canvas; no second-canvas board links to a first-canvas board.
+201. **`xlr8flo.css` exists in both canvases** and a test fails if they differ. The Design System sheet, this decision log and MASTER stay single.
+202. **The two onboarding decision panels** (`ApprSheetVendor`, `ApprSheetVendorLow`) stay on the Approval Inbox page; their tests moved to `canvas/tests/vendor-decision.spec.mjs`.
+203. **Specs and rules that named `design-system/canvas/`** now name both (AGENTS.md authority 3, `agents/claude.md`, `author.sh`, `docs/author-traps.md`, CodeQL ignore).
+
 ## 7. Findings to feed back into MASTER.md (amended 9 Oct 2026, see 97)
 
 - **The MASTER amendment is deferred until after Budget Transfer (item 84), which is now built: the next session can draft it for the operator.** It would fold in the items below plus the ancestry state rows (6f item 86).

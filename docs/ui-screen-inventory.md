@@ -4,6 +4,8 @@ Status: **draft for operator review** (8 Oct 2026). Derived from `docs/requireme
 
 **Story column:** the roadmap story that builds the screen. **GAP** = the roadmap has no UI story for it, so a back-end story would ship with no way to use it. Each gap needs a story before its module's milestone is authored.
 
+**Where each GAP is drawn or registered (14 Oct 2026).** Drawn pages are in the first canvas (`design-system/canvas/`) except Common Screens and Vendors, which are in the second (`design-system/canvas-2/`, https://claude.ai/artifact/62JVFUjfv8Bw3KiKXEWs5r). Every remaining GAP is a registered, undrawn page there with a brief: 3.1 and 3.9 (demo banner) are the rest of Common Screens; 3.2 is Home and Reporting; 3.3 is Organization and Administration; 3.4 is Projects and Budget; 3.5 is Requisitions and Approvals (the linked-record graph); 3.8 is Assets and Warehouses; 3.9 (attachments) is Cross-Cutting Surfaces.
+
 ## 1. Who uses it (proposed roles, to confirm)
 
 | Role | Primary job | Lives in |
@@ -90,6 +92,8 @@ Home · Organization · Administration · Projects · Budget · Reporting · Req
 
 ### 3.6 Vendors and sourcing
 
+*Drawn 13 Oct 2026 (M3 design pass round 1): `design-system/pages/vendors.md` and `design-system/pages/sourcing.md`, from `design-system/canvas/STORY-NOTES.md` sections 7 and 8. Drawn is not built: **GAP** stays until a UI story citing the page file is on the roadmap.*
+
 | Screen | Story |
 |---|---|
 | Vendor list, profile, contacts, documents with expiry | **GAP** (E11-S01 to S03) |
@@ -100,8 +104,13 @@ Home · Organization · Administration · Projects · Budget · Reporting · Req
 | Comparison dashboard with accessible table equivalent | E12-S10 |
 | Evaluation scoring and conflict-of-interest declaration | **GAP** (E12-S07) |
 | Award: split by line, non-lowest justification | **GAP** (E12-S08) |
+| Vendor request, questionnaire administration, onboarding decision (inbox variant) | **GAP** (E11-S04 to S06) |
+| RFQ list, detail, editor and amend, cancel and supersede, `Start RFQ` on a requisition | **GAP** (E12-S01 to S03, S05, S09) |
+| Award draft and award decision (inbox variant) | **GAP** (E12-S08) |
 
 ### 3.7 Purchase orders
+
+*Drawn 13 Oct 2026: `design-system/pages/purchase-orders.md` (STORY-NOTES section 9). Drawn is not built.*
 
 | Screen | Story |
 |---|---|
@@ -109,6 +118,8 @@ Home · Organization · Administration · Projects · Budget · Reporting · Req
 | PO create from awarded lines | **GAP** (E13-S01) |
 | Change order with field-level diff | **GAP** (E13-S06) |
 | Issue and transmission log, PDF preview | **GAP** (E13-S08, S09) |
+| Cancel or reduce, vendor copy, PO decision (inbox variant) | **GAP** (E13-S04, S07, S11) |
+| Sending domain status (SPF, DKIM, DMARC, suppressed addresses) | **GAP** (E13-S10) |
 
 ### 3.8 Assets and warehouses
 

@@ -4,6 +4,10 @@ Read `DECISIONS.md` first (everything decided so far), then `README.md` (how to 
 
 ## State
 
+**14 Oct 2026: second canvas created (DECISIONS 6m).** Common Screens (27 boards) and Vendors (60) moved to `design-system/canvas-2/` (https://claude.ai/artifact/62JVFUjfv8Bw3KiKXEWs5r); every GAP in the screen inventory is registered there as a page with a brief. This canvas keeps nine pages and has room for new boards on them. The Design System sheet stays here.
+
+**13 Oct 2026: Vendors page BUILT (DECISIONS 6h, `pages/vendors.md`, `vendors.spec.mjs`) and Sourcing BUILT (DECISIONS 6i, `pages/sourcing.md`, `sourcing.spec.mjs`; the RFQ Comparison page is renamed Sourcing). Purchase Orders BUILT (DECISIONS 6j, `pages/purchase-orders.md`, `purchase-orders.spec.mjs`). All three M3 pages are built; next is the operator's MASTER amendment pass (status maps for vendors, RFQs, awards and POs; the signal and eligibility components; the issue moment). Original order: Vendors (new page), the rest of Sourcing (on the RFQ Comparison page; the comparison itself is built), Purchase Orders (new page). Start with `HANDOFF-m3.md`, then `HANDOFF-vendors.md`, `HANDOFF-sourcing.md`, `HANDOFF-purchase-orders.md`. They come before the Common Screens item below until the three pages are done.**
+
 **Budget Transfer (6e, 6f) and Bid Comparison (6g, 21 boards, `comparison.spec.mjs`) pages built; MASTER amended (97). Next: the rest of Common Screens (6c), then the operator sign-off on MASTER 7.13 (semantic buttons).**
 
 **Approval Inbox and Approval Workflow Builder pages built (DECISIONS 6d). Next: Budget Transfer, Comparison Dashboard, then the rest of Common Screens (6c). Requisition Create is 6b.**

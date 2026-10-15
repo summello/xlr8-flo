@@ -94,3 +94,55 @@ Page spec: `design-system/pages/rfq-comparison.md`. E12-S10 is the UI story and 
 7. **Answered 10 Oct 2026 (DECISIONS 112 to 119):** freight pro rata by line value, rate warning after 7 days with a refresh for any sourcing role, a sealed round hidden from everyone, ties and overrides, compliance requirements per RFQ with an audited waiver. **Open:** how a split award interacts with vendor minimum order values.
 8. **New story needed: a tokens story that contrast-measures MASTER 7.13 in dark mode** before any button code is written.
 
+## 7. Vendors: stories the canvas needs (DECISIONS 6h)
+
+Page spec: `design-system/pages/vendors.md`. **E11-S01 to S07 are back-end stories; no vendor UI story exists.** Requests, in order:
+
+1. **Vendor list and profile UI** (new, after E11-S01, S02, S03): list with tabs and filters, profile cards, contacts, documents table and document sheet, `Missing` rows, expiry look-ahead. Cite the spec sections 3.1, 3.2, 3.6 and VEN-001 to 003, 011, OBS-004.
+2. **Eligibility as a shared server rule and a shared component** (new, before any RFQ or PO UI): the server returns `eligible` plus ordered reasons for a given unit (VEN-012); the web app has one `Eligibility` component used by the profile, the list, the RFQ invitation picker and the PO vendor field. Never recomputed in the browser.
+3. **Tax and banking masking UI** (new, after E11-S04): masked by default, audited `Reveal` for vendor managers and finance, `Restricted` for everyone else, no value in the API response, DOM, exports or logs before an audited reveal. A planted-violation test is part of the story.
+4. **Vendor request form and duplicate check UI** (new, after E11-S05, S06): the request form, live duplicate check at the field, `Use Existing Vendor`, manager override with a reason, saved drafts.
+5. **Onboarding decision panel** (extends E10-S10): the vendor evidence block, in decision-panel order (DECISIONS 65). Cite spec section 3.4.
+6. **Status, scope and local-disable dialogs** (new, after E11-S01, S06): `Suspend`, `Reactivate`, `Change Availability` go for approval; `Disable Here` and `Enable Here` take effect at once. Needs the organization setting `Allow Local Disable`.
+7. **Questionnaire administration UI** (new, after E11-S05): versioned list, editor with move buttons, weights total 100, publish dialog, preview. Versions are immutable (CUS-007).
+8. **Performance scorecard UI** (new, after E11-S07): scored orders, add score, appended disputes with adjustment. Scoring happens per PO and period by purchasing users in M3; goods receipt in M4 (E14) will automate it.
+9. **Answered 13 Oct 2026 (DECISIONS 6h):** status vocabulary, expired required document makes a vendor not eligible, reveal for vendor managers and finance, local disable without approval, below-threshold informs, duplicates block with manager override, Service and Delivery contact receives RFQs and POs, no minimum order value yet, manual scoring in M3. **Open:** required document types and their configuration, reveal timeout, category scoring beyond four, drag reordering.
+10. **Needs an operator-approved MASTER amendment:** the `vendor` status map and the `signal` and `eligibility` components (page spec section 9).
+
+## 8. Sourcing: stories the canvas needs (DECISIONS 6i)
+
+Page spec: `design-system/pages/sourcing.md`. Only E12-S10 (comparison) is a UI story today; E12-S08 and S09 are blocked on money rules. Requests, in order:
+
+1. **RFQ list and RFQ detail UI** (new, after E12-S01, S03): list with tabs and counts, detail with lifecycle, versions, invitees and the sealed bids card. Cite spec sections 4.1 and 4.4 and SRC-004, SRC-015.
+2. **New RFQ from approved lines UI** (new, after E12-S01): the line picker, the open-quantity guard at the field, lines from several requisitions that share unit and currency, `Start RFQ` on the requisition detail. Cite SRC-001, SRC-003, REQ-014, REQ-015.
+3. **RFQ editor, invitations and amend UI** (new, after E12-S02, S03): compliance requirements, attachment visibility, the eligibility picker (cap of 5, override with a reason), publish confirmation, amend with diff, reason and who is told, extend deadline. Needs the vendor **eligibility signal** story from Vendors section 7 first. Cite SRC-002, SRC-004, SRC-005, VEN-012.
+4. **Record a bid UI** (new, after E12-S04, S05): the vendor's sent time with evidence, keyed time, lines in the vendor's currency, `Not Quoted`, compliance answers, late bid blocked and accepted only by override with a reason. Cite SRC-006, SRC-008, SRC-010.
+5. **Evaluation UI** (new, after E12-S07): conflict declaration first, scores and comments, sealed until the deadline, recusal. Cite SRC-011.
+6. **Award draft UI** (new, after E12-S08; **blocked on the money rule**): per-line vendor and quantity, justification for non-lowest lines, scope and reserved-funds check, over scope refused with the figure. Cite SRC-012 to 014, SRC-016. This is the award UI story that section 6 item 4 asked for.
+7. **Award decision panel** (extends E10-S10): `Award Evidence` in decision-panel order. Cite spec section 4.8.
+8. **Cancel and supersede dialogs** (new, after E12-S09; **blocked**): consequence for invitees, bids, open quantities and budget; history kept. Cite SRC-017, WF-005.
+9. **Answered 13 Oct 2026 (DECISIONS 6i):** page renamed Sourcing, status vocabulary, several requisitions per RFQ, the vendor's sent time decides lateness, sourcing lead is `rfq.approve` on the unit, award approval only when a workflow is published, unused reservation released once at approval (assumption), no minimum-order warning, non-lowest justification on by default. **Open:** the reservation rule (E09-S13), cancel budget effect (E12-S09), separation of duty on an override, criteria and weights ownership.
+10. **Needs an operator-approved MASTER amendment:** the RFQ and award status maps.
+
+## 9. Purchase orders: stories the canvas needs (DECISIONS 6j)
+
+Page spec: `design-system/pages/purchase-orders.md`. **E13-S01 to S11 are engine or ledger stories; there is no PO UI story, and the E13 money rules are blocked on E09-S13.** Requests, in order:
+
+1. **PO list and PO detail UI** (new, after E13-S03): tabs and counts, the lifecycle (with Delivered and Accepted as future states), the Budget card (reserved, committed, released), Linked Records. Cite spec sections 4.1 and 4.4 and PO-007, PO-013.
+2. **Create PO from awarded lines UI** (new, after E13-S01): grouped by vendor, partial ordering by quantity, the open-quantity refusal at the field. Cite PO-001, PO-009, SRC-018.
+3. **PO editor UI** (new, after E13-S01, S02): PO-002 header, tax and freight apart, the budget preview, notes and files with visibility, vendor eligibility with override. Cite PO-002, PO-016, PO-017, VEN-012.
+4. **Issue UI and signature moment 5** (new, after E13-S05): the confirmation listing what is sent and what stays, the moment with its failure frame and reduced-motion end state, idempotent issue. Cite PO-008, PO-012, MASTER 6.2.
+5. **Transmission log and resend UI** (new, after E13-S09, S10): per-send rows, bounce and suppression states, `Change Recipient`, `Resend` that sends the same version. Cite PO-004, PO-015, EML-002, EML-003, EML-006.
+6. **Vendor copy** (new, after E13-S08, S11): the PDF template (no chartfields, no budget, no internal notes), the email summary, PDF preview. A test fails if an internal field appears. Cite PO-014, PO-017.
+7. **Change order UI** (new, after E13-S06): field-level diff, signed budget effect, reapproval only for a material change. Cite PO-010, PO-011, ACC-005.
+8. **Cancel or reduce UI** (new, after E13-S07): released figure once, history kept. Cite PO-013, ACC-006.
+9. **PO decision panel** (extends E10-S10): `Purchase Order Evidence`. Cite spec section 4.10, PO-003.
+10. **Sending domain status** (new, Administration, after E13-S10): SPF, DKIM, DMARC and the suppression list. Cite EML-001, EML-003.
+11. **Answered 13 Oct 2026 (DECISIONS 6j):** commit against the project holding the reservation (assumption), award path only, tax and freight per line with freight shared pro rata, Bill To and Ship To from masters, **PDF only, uploaded files stay internal, no HTML attachment**, material changes need reapproval, vendor currency at the award's stored rate, email to the Service and Delivery contact with an internal notification to the requester, **Delivered and Accepted instead of Fulfilled, requisition becomes Completed**. **Open:** the commit-target and valuation rules (E09-S13), the PO-007 wording, automatic closing at goods receipt.
+12. **Needs an operator-approved MASTER amendment:** the PO status map with Delivered and Accepted, and the issue moment's classes.
+
+## 10. Stories raised from the M3 design pass (14 Oct 2026; on branch `docs/m3-ui-alignment-stories`, packets `design/E11-S09.md` and `design/E11-S10.md`)
+
+- **E11-S09** (ui/S, second in M3, after E11-S01): status vocabulary aligned to MASTER 2.3 (vendor, RFQ, award, purchase-order maps and labels). Every M3 UI story below depends on it.
+- **E11-S10** (ui/M, after E11-S09 and E22-S04, built on E10-S10): the shared decision panel at phone width. The vendor-onboarding, award and PO decision variants depend on it.
+- **Still to raise** (sections 7 to 9 above): the vendor, sourcing and purchase-order UI stories. They cite the page files and MASTER 7.14 to 7.16.

@@ -210,7 +210,7 @@
 </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"dark","options":["light","dark"]},"view":{"editor":"enum","default":"signin","options":["orgs","invite-join","invite","invite-errors","invite-network","invite-checking","invite-expired","invite-gone","invite-done","signin","error","network","busy","ended","fields","mfa","mfa-invalid","enrol","recovery","signup","signup-errors","verify"]},"$preview":{"width":1440,"height":900}}'>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;light&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;]},&quot;view&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;signin&quot;,&quot;options&quot;:[&quot;orgs&quot;,&quot;invite-join&quot;,&quot;invite&quot;,&quot;invite-errors&quot;,&quot;invite-network&quot;,&quot;invite-checking&quot;,&quot;invite-expired&quot;,&quot;invite-gone&quot;,&quot;invite-done&quot;,&quot;signin&quot;,&quot;error&quot;,&quot;network&quot;,&quot;busy&quot;,&quot;ended&quot;,&quot;fields&quot;,&quot;mfa&quot;,&quot;mfa-invalid&quot;,&quot;enrol&quot;,&quot;recovery&quot;,&quot;signup&quot;,&quot;signup-errors&quot;,&quot;verify&quot;]},&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900}}">
 class Component extends DCLogic {
   componentWillUnmount() { clearTimeout(this._tt); clearTimeout(this._bt); }
   // a failure moves focus to its summary, so a keyboard or screen reader user lands on what went wrong
