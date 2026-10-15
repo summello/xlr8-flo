@@ -97,7 +97,6 @@ def test_create_validates_availability_shape_and_numbers_vendors(header_db):
 
 
 def test_list_searches_names_and_number_pages_stably_and_never_tax_ids(header_db):
-    db = header_db
 
     async def scenario():
         async with client(app) as browser:
