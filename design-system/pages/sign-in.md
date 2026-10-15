@@ -2,7 +2,7 @@
 
 **Stories that build this:** E05-S10 (sign in, MFA challenge, enrolment, logout), E05-S11 (throttling, no UI of its own). **Read first:** `design-system/MASTER.md`, then this file. Where this file and MASTER disagree, this file wins for these routes only, and only where it says so (§9).
 
-**Source of truth for the layout:** the canvas boards `SignIn*.dc.html` in `design-system/canvas/project/` (published on the Common Screens page of the design canvas). `xlr8flo.css` in that folder holds the classes (`.auth*`, `.summary`, `.field-err`, `.inp.lg`, `.code-in`, `.qr`, `.codes`, `.art-*`) as token-only CSS. Port them to Tailwind and tokens; do not copy values.
+**Source of truth for the layout:** the canvas boards `SignIn*.dc.html` in `design-system/canvas-2/project/` (published on the Common Screens page of the second canvas, https://claude.ai/artifact/62JVFUjfv8Bw3KiKXEWs5r; moved there from the first canvas on 14 Oct 2026). `xlr8flo.css` in that folder holds the classes (`.auth*`, `.summary`, `.field-err`, `.inp.lg`, `.code-in`, `.qr`, `.codes`, `.art-*`) as token-only CSS. Port them to Tailwind and tokens; do not copy values.
 
 Decisions this page records: DECISIONS.md 6c, items 34 to 37. Requirements: AUTH-002, 003, 004, 006, 007, 009, SEC-007, A11Y-006, UX-004, UX-005.
 

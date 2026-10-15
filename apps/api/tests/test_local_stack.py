@@ -45,12 +45,17 @@ def test_up_waits_for_health_and_prints_all_four_urls(
 ) -> None:
     compose_calls = []
     waited = []
-    monkeypatch.setitem(FLO_GLOBALS, "_run_compose", lambda *args: compose_calls.append(args))
-    monkeypatch.setitem(FLO_GLOBALS, "_wait_for_stack", lambda: waited.append(True))
+    monkeypatch.setitem(
+        FLO_GLOBALS, "_run_compose", lambda *args, **_: compose_calls.append(args) or object()
+    )
+    monkeypatch.setitem(FLO_GLOBALS, "_wait_for_stack", lambda **_: waited.append(True))
 
     FLO["cmd_up"]([])
 
-    assert compose_calls == [("up", "-d")]
+    assert compose_calls == [
+        ("up", "-d", "postgres", "mailpit"),
+        ("up", "-d", "minio", "minio-init"),
+    ]
     assert waited == [True]
     output = capsys.readouterr().out
     assert len(output.splitlines()) == 4
@@ -62,15 +67,35 @@ def test_up_waits_for_health_and_prints_all_four_urls(
 
 def test_up_reset_destroys_volumes_before_starting(monkeypatch: pytest.MonkeyPatch) -> None:
     compose_calls = []
-    monkeypatch.setitem(FLO_GLOBALS, "_run_compose", lambda *args: compose_calls.append(args))
-    monkeypatch.setitem(FLO_GLOBALS, "_wait_for_stack", lambda: None)
+    monkeypatch.setitem(
+        FLO_GLOBALS, "_run_compose", lambda *args, **_: compose_calls.append(args) or object()
+    )
+    monkeypatch.setitem(FLO_GLOBALS, "_wait_for_stack", lambda **_: None)
 
     FLO["cmd_up"](["--reset"])
 
     assert compose_calls == [
         ("down", "--volumes", "--remove-orphans"),
-        ("up", "-d"),
+        ("up", "-d", "postgres", "mailpit"),
+        ("up", "-d", "minio", "minio-init"),
     ]
+
+
+def test_up_survives_an_unpullable_object_store(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    waited = []
+    monkeypatch.setitem(
+        FLO_GLOBALS,
+        "_run_compose",
+        lambda *args, optional=False, **_: None if optional else object(),
+    )
+    monkeypatch.setitem(FLO_GLOBALS, "_wait_for_stack", lambda **kw: waited.append(kw))
+
+    FLO["cmd_up"]([])
+
+    assert waited == [{"object_store": False}]
+    assert "SKIPPED" in capsys.readouterr().out
 
 
 def test_down_stops_the_compose_project(monkeypatch: pytest.MonkeyPatch) -> None:

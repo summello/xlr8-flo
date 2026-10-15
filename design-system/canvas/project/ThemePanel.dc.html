@@ -392,6 +392,34 @@
 
 
 
+  <section aria-labelledby="s-vendors" style="display:flex;flex-direction:column;gap:12px">
+    <h3 class="t-label" id="s-vendors">Eligibility, Signals and Masked Values</h3>
+    <p class="t-dense secondary">Added with the Vendors page. A <b>signal</b> is an icon plus words; the icon takes a status tone and the words never depend on it. <b>Eligibility</b> is a signal worked out for one unit from status, approval, documents and availability, always followed by its reasons in words; it is never typed and never merged with the vendor's status pill. A <b>masked value</b> shows only its last four characters until a deliberate, logged Reveal.</p>
+    <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:14px" aria-label="Signals and eligibility samples">
+      <div style="display:flex;flex-wrap:wrap;gap:8px 24px">
+        <span class="sig is-ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6"></path></svg><span>All Current</span></span>
+        <span class="sig is-warn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3 2"></path></svg><span>1 Expiring in 12 Days</span></span>
+        <span class="sig is-bad"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg><span>1 Expired</span></span>
+        <span class="sig is-info"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 00-14-4M4 4v4h4M4 13a8 8 0 0014 4M20 20v-4h-4"></path></svg><span>3 of 5 Supplied</span></span>
+        <span class="sig is-n"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18z"></path></svg><span>Not Scored</span></span>
+      </div>
+      <div style="display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+        <div class="elig"><span class="sig is-ok"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6"></path></svg><span>Eligible in Plant 4</span></span><div class="t-caption" style="margin-left:22px">Profile header</div></div>
+        <div class="elig"><span class="sig is-bad"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg><span>Not eligible in Plant 4</span></span><ul class="sig-why" style="margin-left:22px"><li>Insurance Certificate expired 2 Oct</li><li>Banking Verification missing</li></ul></div>
+        <div class="elig"><span class="sig is-bad"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg><span>Not Eligible</span></span><div class="t-caption" style="margin-left:20px">Insurance Certificate expired 2 Oct and 1 more</div><div class="t-caption" style="margin-left:20px">List row, reason on the second line</div></div>
+        <div class="elig"><span class="sig is-bad"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6"></path></svg><span>Not Eligible</span></span><div class="t-caption" style="margin-left:20px">Suspended</div><div><button class="btn" type="button">Override</button></div><div class="t-caption" style="margin-left:0">RFQ picker or PO field: only the authorized see Override, and it asks for a reason</div></div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center">
+        <span class="t-label">Masked</span><span class="mask">&bull;&bull;&bull;&bull; 4821</span><button class="btn" type="button">Reveal Values</button>
+        <span class="t-label">Restricted</span><span class="sig is-n"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11V8a5 5 0 0110 0v3M5 11h14v10H5z"></path></svg><span>Restricted</span></span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center">
+        <span class="t-label">Destructive</span><button class="btn danger" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM10 9v6M14 9v6"></path></svg>Suspend</button>
+        <span class="t-label">Confirm in a Dialog</span><button class="btn danger fill" type="button">Request Suspension</button>
+      </div>
+    </div>
+  </section>
+
   <section aria-labelledby="s-load" style="display:flex;flex-direction:column;gap:12px">
     <h3 class="t-label" id="s-load">Loading, Empty and Error (UX-004, UX-005)</h3>
     <div class="card" style="padding:0;overflow:hidden">

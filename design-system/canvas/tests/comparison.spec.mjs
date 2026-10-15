@@ -41,8 +41,8 @@ export const lowestIndex = (landed, full) => landed.reduce((best, v, i) => (full
 
 test.describe('the page on the canvas', () => {
   test('boards with widths and states, none overlapping, on their own page', () => {
-    const mine = Object.entries(canvas.boards).filter(([, b]) => b.page === 'rfq-comparison');
-    expect(canvas.pages.find((p) => p.id === 'rfq-comparison').name).toBe('RFQ Comparison');
+    const mine = Object.entries(canvas.boards).filter(([f, b]) => b.page === 'rfq-comparison' && /^(RfqComparison|Cmp)/.test(f));
+    expect(canvas.pages.find((p) => p.id === 'rfq-comparison').name).toBe('Sourcing');   // renamed 13 Oct 2026 (DECISIONS 142); the id stays
     expect(mine.length).toBe(21);
     for (const w of [1920, 1024, 768, 375]) expect(canvas.boards[`CmpW${w}.dc.html`].w).toBe(w);
     for (let i = 0; i < mine.length; i++) for (let j = i + 1; j < mine.length; j++) {

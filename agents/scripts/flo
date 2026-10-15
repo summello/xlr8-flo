@@ -30,6 +30,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -2087,17 +2088,26 @@ COMPOSE = ROOT / "compose.yaml"
 STACK_SERVICES = ("postgres", "minio", "mailpit")
 
 
-def _run_compose(*args, capture_output=False):
+def _container_cli():
+    # podman is the documented runtime; OrbStack/Docker (`docker compose`) is the macOS fallback.
+    return os.environ.get("FLO_CONTAINER_CLI") or next(
+        (c for c in ("podman", "docker") if shutil.which(c)), "podman"
+    )
+
+
+def _run_compose(*args, capture_output=False, optional=False):
     if not COMPOSE.exists():
         die("compose.yaml missing — story E01-S02 delivers it")
-    cmd = ["podman", "compose", "-f", str(COMPOSE), *args]
+    cmd = [_container_cli(), "compose", "-f", str(COMPOSE), *args]
     try:
         return subprocess.run(cmd, check=True, capture_output=capture_output, text=True)
     except FileNotFoundError:
-        die("podman is required for the local stack but was not found on PATH")
+        die("podman or docker is required for the local stack but neither was found on PATH")
     except subprocess.CalledProcessError as exc:
-        detail = (exc.stderr or exc.stdout or "no error output").strip()
-        die(f"{' '.join(cmd)} failed: {detail}")
+        if not optional:
+            detail = (exc.stderr or exc.stdout or "no error output").strip()
+            die(f"{' '.join(cmd)} failed: {detail}")
+    return None
 
 
 def _container_status(service, include_stopped=False):
@@ -2111,7 +2121,7 @@ def _container_status(service, include_stopped=False):
         return None, None, None
     inspect = subprocess.run(
         [
-            "podman",
+            _container_cli(),
             "inspect",
             "--format",
             "{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{end}}|{{.State.ExitCode}}",
@@ -2127,18 +2137,21 @@ def _container_status(service, include_stopped=False):
     return status, health or None, int(exit_code)
 
 
-def _wait_for_stack(timeout_seconds=120):
+def _wait_for_stack(timeout_seconds=120, object_store=True):
+    services_to_wait = STACK_SERVICES if object_store else ("postgres", "mailpit")
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
-        services = {service: _container_status(service) for service in STACK_SERVICES}
+        services = {service: _container_status(service) for service in services_to_wait}
         for service, (status, health, _) in services.items():
             if health == "unhealthy" or status in {"dead", "exited"}:
                 die(f"{service} failed while the local stack was starting ({health or status})")
 
-        init_status, _, init_exit_code = _container_status("minio-init", include_stopped=True)
-        init_ready = init_status == "exited" and init_exit_code == 0
-        if init_status == "exited" and init_exit_code != 0:
-            die(f"minio-init failed with exit code {init_exit_code}")
+        init_ready = True
+        if object_store:
+            init_status, _, init_exit_code = _container_status("minio-init", include_stopped=True)
+            init_ready = init_status == "exited" and init_exit_code == 0
+            if init_status == "exited" and init_exit_code != 0:
+                die(f"minio-init failed with exit code {init_exit_code}")
         if all(health == "healthy" for _, health, _ in services.values()) and init_ready:
             return
         time.sleep(1)
@@ -2150,11 +2163,17 @@ def cmd_up(argv):
         die("usage: flo up [--reset]")
     if argv == ["--reset"]:
         _run_compose("down", "--volumes", "--remove-orphans")
-    _run_compose("up", "-d")
-    _wait_for_stack()
+    _run_compose("up", "-d", "postgres", "mailpit")
+    # The object store is optional: CI and the test suite do not use it, and its image registry
+    # has withdrawn it (E22-S05 replaces it). Start it best-effort; never fail `flo up` on it.
+    store = _run_compose("up", "-d", "minio", "minio-init", capture_output=True, optional=True)
+    _wait_for_stack(object_store=store is not None)
     print("Postgres:     postgresql://localhost:5432/flo_dev")
-    print("MinIO API:   http://localhost:9000")
-    print("MinIO console: http://localhost:9001")
+    if store is not None:
+        print("MinIO API:   http://localhost:9000")
+        print("MinIO console: http://localhost:9001")
+    else:
+        print("Object store: SKIPPED (image unavailable) — attachments need it; see E22-S05")
     print("Mailpit UI:  http://localhost:8025")
 
 

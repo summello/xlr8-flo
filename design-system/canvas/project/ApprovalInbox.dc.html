@@ -143,11 +143,71 @@
 
       <dl class="kv" style="margin:0">
         <dt class="t-label">Requested By</dt><dd style="margin:0">{{sheet.by}}</dd>
-        <dt class="t-label">Project</dt><dd style="margin:0"><a href="#" class="u">{{sheet.proj}}</a></dd>
-        <dt class="t-label">Amount</dt><dd style="margin:0"><sc-if value="{{sheet.hasAmt}}" hint-placeholder-val="{{ true }}"><span class="amt"><span class="metric" style="font-size:22px;line-height:28px"><span class="w">{{sheet.aw}}</span><span class="d">{{sheet.ad}}</span></span><span class="cur">USD</span></span></sc-if><sc-if value="{{sheet.noAmt}}" hint-placeholder-val="{{ false }}">Not applicable</sc-if></dd>
+        <sc-if value="{{sheet.notVendor}}" hint-placeholder-val="{{ true }}"><dt class="t-label">Project</dt><dd style="margin:0"><a href="#" class="u">{{sheet.proj}}</a></dd></sc-if>
+        <sc-if value="{{sheet.notVendor}}" hint-placeholder-val="{{ true }}"><dt class="t-label">Amount</dt><dd style="margin:0"><sc-if value="{{sheet.hasAmt}}" hint-placeholder-val="{{ true }}"><span class="amt"><span class="metric" style="font-size:22px;line-height:28px"><span class="w">{{sheet.aw}}</span><span class="d">{{sheet.ad}}</span></span><span class="cur">USD</span></span></sc-if><sc-if value="{{sheet.noAmt}}" hint-placeholder-val="{{ false }}">Not applicable</sc-if></dd></sc-if>
         <dt class="t-label">{{sheet.needLabel}}</dt><dd style="margin:0">{{sheet.needed}}</dd>
         <dt class="t-label">Version</dt><dd style="margin:0">{{sheet.verText}}</dd>
       </dl>
+      <sc-if value="{{sheet.isPo}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="sh-po">
+          <h3 class="t-label" id="sh-po" style="margin-bottom:8px">Purchase Order Evidence</h3>
+          <div class="card" style="box-shadow:none"><div class="card-b" style="display:flex;flex-direction:column;gap:12px">
+            <div><div class="t-label">Source</div><div class="t-dense">{{sheet.po.source}}</div></div>
+            <div style="border-top:1px solid var(--border);padding-top:12px"><div class="t-label" style="margin-bottom:6px">Budget Effect When Issued</div>
+              <dl class="kv" style="margin:0;grid-template-columns:minmax(0,1fr) auto"><dt class="t-label">Commits</dt><dd class="amt" style="margin:0;text-align:right"><span class="w">{{sheet.po.cw}}</span><span class="d">{{sheet.po.cd}}</span><span class="cur">USD</span></dd><dt class="t-label">From Reservation</dt><dd class="amt" style="margin:0;text-align:right"><span class="w">{{sheet.po.rw}}</span><span class="d">{{sheet.po.rd}}</span><span class="cur">USD</span></dd><dt class="t-label">Project</dt><dd style="margin:0;text-align:right">{{sheet.po.project}}</dd></dl>
+              <p class="t-caption" style="margin:6px 0 0">Approving does not commit money. Issuing does, once.</p></div>
+            <div style="border-top:1px solid var(--border);padding-top:12px"><div class="t-label" style="margin-bottom:6px">Vendor</div>
+              <span class="{{sheet.po.eligCls}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{sheet.po.eligD}}"></path></svg><span>{{sheet.po.elig}}</span></span>
+              <p class="t-caption" style="margin:4px 0 0">{{sheet.po.eligNote}}</p></div>
+            <div style="border-top:1px solid var(--border);padding-top:12px"><div class="t-label" style="margin-bottom:6px">Award Justification</div><div class="t-dense">{{sheet.po.why}}</div></div>
+            <div style="border-top:1px solid var(--border);padding-top:12px"><div class="t-label" style="margin-bottom:6px">Will Be Sent</div><div class="t-dense">An email and the PO as a PDF to {{sheet.po.to}}, without chartfields or budget.</div></div>
+          </div></div>
+        </section>
+      </sc-if>
+      <sc-if value="{{sheet.isAward}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="sh-aw">
+          <h3 class="t-label" id="sh-aw" style="margin-bottom:8px">Award Evidence</h3>
+          <div class="card" style="box-shadow:none"><div class="card-b" style="display:flex;flex-direction:column;gap:12px">
+            <div><div class="t-label">Basis</div><div>{{sheet.award.basis}}</div></div>
+            <div style="border-top:1px solid var(--border);padding-top:12px"><div class="t-label" style="margin-bottom:6px">By Vendor</div>
+              <dl class="kv" style="margin:0;grid-template-columns:minmax(0,1fr) auto"><sc-for list="{{sheet.award.vendors}}" as="v" hint-placeholder-count="2"><dt style="overflow-wrap:anywhere">{{v.name}}<div class="t-caption">{{v.lines}}</div></dt><dd class="amt" style="margin:0;text-align:right"><span class="w">{{v.w}}</span><span class="d">{{v.d}}</span><span class="cur">USD</span></dd></sc-for></dl></div>
+            <div style="border-top:1px solid var(--border);padding-top:12px"><div class="t-label" style="margin-bottom:6px">Scope and Funds</div>
+              <span class="{{sheet.award.scopeCls}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{sheet.award.scopeD}}"></path></svg><span>{{sheet.award.scope}}</span></span>
+              <p class="t-caption" style="margin:4px 0 0">{{sheet.award.release}}</p></div>
+            <div style="border-top:1px solid var(--border);padding-top:12px"><div class="t-label" style="margin-bottom:6px">Not the Lowest</div>
+              <sc-if value="{{sheet.award.hasNl}}" hint-placeholder-val="{{ false }}"><ul class="sig-why" style="margin:0;font-size:13px;line-height:20px;color:var(--fg)"><sc-for list="{{sheet.award.nl}}" as="n" hint-placeholder-count="1"><li>{{n.line}}: {{n.vendor}} instead of {{n.low}}, {{n.diff}} USD more<div class="t-caption" style="margin-top:2px">Reason: {{n.why}}</div></li></sc-for></ul></sc-if>
+              <sc-if value="{{sheet.award.noNl}}" hint-placeholder-val="{{ false }}"><span class="t-dense secondary">None. Every line goes to its lowest supplier.</span></sc-if></div>
+            <div style="border-top:1px solid var(--border);padding-top:12px"><div class="t-label" style="margin-bottom:6px">Exceptions and Evaluators</div>
+              <ul class="sig-why" style="margin:0;font-size:13px;line-height:20px;color:var(--fg)"><sc-for list="{{sheet.award.notes}}" as="n" hint-placeholder-count="2"><li>{{n}}</li></sc-for></ul></div>
+          </div></div>
+        </section>
+      </sc-if>
+      <sc-if value="{{sheet.isVendor}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="sh-vn">
+          <h3 class="t-label" id="sh-vn" style="margin-bottom:8px">Onboarding Evidence</h3>
+          <div class="card" style="box-shadow:none"><div class="card-b" style="display:flex;flex-direction:column;gap:12px">
+            <div>
+              <div class="t-label">Questionnaire Score</div>
+              <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><span class="metric">{{sheet.vn.score}}</span><span class="t-caption">of 100, threshold {{sheet.vn.threshold}}</span></div>
+              <span class="{{sheet.vn.scoreCls}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{sheet.vn.scoreD}}"></path></svg><span>{{sheet.vn.scoreText}}</span></span>
+              <details class="fold" style="margin-top:8px"><summary class="t-dense" style="font-weight:560;cursor:pointer;min-height:24px">Score by Question <span class="t-caption" style="font-weight:400">answers and points</span></summary>
+                <dl class="kv" style="margin:8px 0 0;grid-template-columns:minmax(0,1fr) auto"><sc-for list="{{sheet.vn.qs}}" as="q" hint-placeholder-count="4"><dt style="overflow-wrap:anywhere">{{q.q}}<div class="t-caption">{{q.a}}</div></dt><dd class="num" style="margin:0;text-align:right">{{q.pts}}</dd></sc-for></dl>
+              </details>
+            </div>
+            <div style="border-top:1px solid var(--border);padding-top:12px">
+              <div class="t-label" style="margin-bottom:6px">Duplicate Check</div>
+              <span class="{{sheet.vn.dupCls}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{sheet.vn.dupD}}"></path></svg><span>{{sheet.vn.dupText}}</span></span>
+              <sc-if value="{{sheet.vn.dupNote}}" hint-placeholder-val="{{ false }}"><p class="t-dense" style="margin:4px 0 0"><a href="https://claude.ai/artifact/62JVFUjfv8Bw3KiKXEWs5r" target="_blank" rel="noopener" class="u">{{sheet.vn.dupName}}</a> <span class="t-caption">{{sheet.vn.dupNote}}</span></p><dl class="kv" style="margin:8px 0 0;grid-template-columns:120px minmax(0,1fr)"><dt class="t-label">This Request</dt><dd style="margin:0">{{sheet.vn.dupMine}}</dd><dt class="t-label">Existing Vendor</dt><dd style="margin:0">{{sheet.vn.dupTheirs}}</dd></dl></sc-if>
+            </div>
+            <div style="border-top:1px solid var(--border);padding-top:12px">
+              <div class="t-label" style="margin-bottom:6px">Documents</div>
+              <ul class="sig-why" style="margin:0;font-size:13px;line-height:20px;color:var(--fg)"><sc-for list="{{sheet.vn.docs}}" as="d" hint-placeholder-count="3"><li>{{d.t}} <span class="t-caption">{{d.s}}</span></li></sc-for></ul>
+              <sc-if value="{{sheet.vn.hasMissing}}" hint-placeholder-val="{{ true }}"><p class="t-caption" style="margin:6px 0 0">Not supplied yet: {{sheet.vn.missing}}. The vendor will not be eligible until they are.</p></sc-if>
+            </div>
+            <p class="t-caption" style="margin:0">A score below the threshold is a fact for you to weigh. It does not block approval.</p>
+          </div></div>
+        </section>
+      </sc-if>
       <sc-if value="{{sheet.isTransfer}}" hint-placeholder-val="{{ false }}">
         <section aria-labelledby="sh-post">
           <h3 class="t-label" id="sh-post" style="margin-bottom:8px">What Posts If You Approve</h3>
@@ -332,7 +392,11 @@ class Component extends DCLogic {
       { id: 'REQ-00424', title: 'Conveyor Belt Replacement', type: 'Capital Requisition', by: 'Sana Qureshi', proj: 'Plant 2 Dock Upgrade', amt: 84500, step: '1 of 1', due: '10 Oct 2026', dueN: 10, late: 0, tab: 'pending', kind: 'requisition', ver: 'v3', stale: true },
       { id: 'REQ-00409', title: 'Packaging Line Guarding', type: 'Capital Requisition', by: 'Dev Patel', proj: 'Plant 4 Line Retrofit', amt: 52000, step: '1 of 1', due: '11 Oct 2026', dueN: 11, late: 0, tab: 'pending', kind: 'requisition', ver: 'v2', changes: true },
       { id: 'BT-00031', title: 'Transfer Plant 4 To Plant 2', type: 'Budget Transfer', by: 'Luis Moreno', proj: 'Plant 4 Line Retrofit', amt: 40000, step: '2 of 2', due: '12 Oct 2026', dueN: 12, late: 0, tab: 'pending', kind: 'transfer', ver: 'v1' },
+      { id: 'V-00151', title: 'Tessellate Safety', type: 'Vendor Onboarding', by: 'dev.patel@northwind.example', proj: 'Plant 4', amt: null, step: '1 of 2', due: '14 Oct 2026', dueN: 14, late: 0, tab: 'pending', kind: 'vendor', ver: 'v1' },
+      { id: 'V-00184', title: 'Brightline Hoists', type: 'Vendor Onboarding', by: 'sana.qureshi@northwind.example', proj: 'Plant 2', amt: null, step: '1 of 2', due: '15 Oct 2026', dueN: 15, late: 0, tab: 'pending', kind: 'vendor', ver: 'v1' },
       { id: 'AWD-00094', title: 'Servo Drive Award', type: 'Award', by: 'Priya Raman', proj: 'Plant 4 Line Retrofit', amt: 128640, step: '1 of 2', due: '13 Oct 2026', dueN: 13, late: 0, tab: 'pending', kind: 'award', ver: 'v1' },
+      { id: 'AWD-00095', title: 'Servo Drives and Controls Award', type: 'Award', by: 'priya.raman@northwind.example', proj: 'Plant 4 Line Retrofit', amt: 193012.13, step: '1 of 2', due: '15 Oct 2026', dueN: 15, late: 0, tab: 'pending', kind: 'award', ver: 'v1' },
+      { id: 'AWD-00096', title: 'Roof Sensors Award', type: 'Award', by: 'marcus.lee@northwind.example', proj: 'Plant 4 Line Retrofit', amt: 43900, step: '1 of 2', due: '15 Oct 2026', dueN: 15, late: 0, tab: 'pending', kind: 'award', ver: 'v1' },
       { id: 'PO-00251', title: 'Conveyor Spares', type: 'Purchase Order', by: 'Priya Raman', proj: 'Plant 2 Dock Upgrade', amt: 18420.5, step: '1 of 1', due: '14 Oct 2026', dueN: 14, late: 0, tab: 'pending', kind: 'purchase order', ver: 'v1' },
       { id: 'REQ-00398', title: 'Forklift Battery Pack', type: 'Capital Requisition', by: 'Sana Qureshi', proj: 'Plant 2 Dock Upgrade', amt: 22800, step: '1 of 1', due: '6 Oct 2026', dueN: 6, late: 0, tab: 'completed', out: 'approved', kind: 'requisition', ver: 'v1', note: 'Within the plan and the quote is current.' },
       { id: 'REQ-00391', title: 'Compressor Overhaul', type: 'Capital Requisition', by: 'Dev Patel', proj: 'Plant 4 Line Retrofit', amt: 47500, step: '1 of 1', due: '5 Oct 2026', dueN: 5, late: 0, tab: 'completed', out: 'returned', kind: 'requisition', ver: 'v1', note: 'Quote is for one unit, the request says two. Fix the quantity.' },
@@ -443,10 +507,30 @@ class Component extends DCLogic {
         { field: 'Conveyor Belt, Line 1', was: '2 ea', now: '3 ea', delta: '1 more' },
         { field: 'Estimate', was: '84,500.00 USD', now: '126,750.00 USD', delta: 'Up 42,250.00 USD (50%)' }
       ] : [];
+      const OKI = 'M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6', WARNI = 'M12 3l10 18H2zM12 10v5M12 18h.01';
+      const POM = {
+        'PO-00251': { source: 'AWD-00091, approved 9 Oct 2026, lowest cost supplier, from RFQ-00064', commit: ['18,420', '.50'], res: ['18,420', '.50'], project: 'Plant 2 Dock Upgrade', ok: true, elig: 'Halden Packaging is eligible in Plant 2', note: 'Documents are current. Checked just now.', why: 'None needed: every line is the lowest supplier.', to: 'delivery@halden.example' },
+        'PO-00249': { source: 'AWD-00088, approved 30 Sep 2026, split by line, from RFQ-00060', commit: ['23,900', '.00'], res: ['23,900', '.00'], project: 'Plant 2 Dock Upgrade', ok: false, elig: 'Meridian Mechanical is not eligible in Plant 2', note: 'Suspended on 12 Oct 2026, after the award was approved. An override with a reason is needed to issue; an issued PO is not affected by a later suspension.', why: 'Boiler feed pump: Meridian instead of Northgate, 1,150.00 USD more, because Northgate cannot deliver before 20 Nov.', to: 'delivery@meridian.example' }
+      };
+      const poRaw = POM[cur.id] || null;
+      const poView = poRaw ? { source: poRaw.source, cw: poRaw.commit[0], cd: poRaw.commit[1], rw: poRaw.res[0], rd: poRaw.res[1], project: poRaw.project, eligCls: 'sig ' + (poRaw.ok ? 'is-ok' : 'is-bad'), eligD: poRaw.ok ? 'M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6' : 'M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6', elig: poRaw.elig, eligNote: poRaw.note, why: poRaw.why, to: poRaw.to } : null;
+      const AWM = {
+        'AWD-00095': { basis: 'Lowest Cost Supplier: each line goes to its lowest supplier, so the award is split between two vendors.', vendors: [['Siemar Automation', 'Servo drive, encoder cable, drive tuning', '175,665', '.58'], ['Apex Industrial Supply', 'Proximity sensor (partial bid, quoted this line)', '17,346', '.55']], scope: 'Within approved scope, 2,987.87 USD to spare', ok: true, release: 'Approving releases 2,987.87 USD of the 196,000.00 USD reserved on REQ-00418, once (assumption, pending E12-S08).', nl: [], notes: ['Compliance waived: On-site support within 48 hours, for Siemar Automation, by priya.raman@northwind.example, with a reason.', 'Apex Industrial Supply bid partially: no price for On-site drive tuning.', 'Evaluators: 2 scored, 1 recused for a declared conflict.'] },
+        'AWD-00096': { basis: 'Best Average Cost: one vendor takes the whole RFQ.', vendors: [['Halden Packaging', 'Roof sensor, IR, 20 ea; mounting kit, 20 ea', '43,900', '.00']], scope: 'Within approved scope, 4,100.00 USD to spare', ok: true, release: 'Approving releases 4,100.00 USD of the 48,000.00 USD reserved, once (assumption, pending E12-S08).', nl: [{ line: 'Mounting kit, 20 ea', vendor: 'Halden Packaging', low: 'Northgate Controls', diff: '2,700.00', why: 'Northgate cannot deliver before 20 Nov; Halden delivers on 6 Nov, inside the needed-by date.' }], notes: ['No compliance waived.', 'Evaluators: 3 scored.'] },
+        'AWD-00094': { basis: 'Lowest Cost Supplier.', vendors: [['Voltek Drives', 'Servo drive, 5 kW, 3 ea; cabinet kit, 3 ea', '85,440', '.00'], ['Cablecraft Ltd', 'Commissioning, 12 days', '43,200', '.00']], scope: 'Within approved scope, 11,360.00 USD to spare', ok: true, release: 'Approving releases 11,360.00 USD of the 140,000.00 USD reserved, once (assumption, pending E12-S08).', nl: [], notes: ['No compliance waived.', 'Evaluators: 2 scored.'] }
+      };
+      const awRaw = AWM[cur.id] || null;
+      const awm = awRaw ? { basis: awRaw.basis, vendors: awRaw.vendors.map((v) => ({ name: v[0], lines: v[1], w: v[2], d: v[3] })), scopeCls: 'sig ' + (awRaw.ok ? 'is-ok' : 'is-bad'), scopeD: awRaw.ok ? OKI : WARNI, scope: awRaw.scope, release: awRaw.release, hasNl: awRaw.nl.length > 0, noNl: awRaw.nl.length === 0, nl: awRaw.nl, notes: awRaw.notes } : null;
+      const VNM = {
+        'V-00151': { score: 84, threshold: 70, qs: [['What does the company make or supply?', 'Safety engineering and machine guarding', 'Read'], ['Years trading', '5 years', '10 of 20'], ['Do you hold an ISO 9001 certificate?', 'Yes', '25 of 25'], ['Largest order in the last 12 months', 'Under 100,000 USD', '5 of 20'], ['Regions you can deliver to', 'North America, Europe', '10 of 15'], ['Insurance cover renews on', '19 Sep 2027', '20 of 20']], dup: [true, 'No match on tax ID or registration number', ''], docs: [['Tax Registration', 'Supplied, not yet verified'], ['Certificate of Incorporation', 'Supplied, not yet verified'], ['Insurance Certificate', 'Supplied, not yet verified']], missing: 'Banking Verification, Safety Certification' },
+        'V-00184': { score: 58, threshold: 70, qs: [['What does the company make or supply?', 'Overhead hoists and lifting gear', 'Read'], ['Years trading', '2 years', '0 of 20'], ['Do you hold an ISO 9001 certificate?', 'No', '0 of 25'], ['Largest order in the last 12 months', '100,000 to 1,000,000 USD', '12 of 20'], ['Regions you can deliver to', 'Europe', '5 of 15'], ['Insurance cover renews on', '30 Jun 2027', '20 of 20']], dup: [false, 'Registration number matches an existing vendor', 'Active. The requester was offered that vendor and chose to continue; a vendor manager entered the reason: separate legal entity, same address.', 'Cobalt Cooling, V-00122', 'Reg. 04418732, 9 Foundry Lane, Leeds', 'Reg. 04418732, 9 Foundry Lane, Leeds'], docs: [['Tax Registration', 'Supplied, verified'], ['Certificate of Incorporation', 'Supplied, not yet verified'], ['Insurance Certificate', 'Supplied, verified'], ['Banking Verification', 'Supplied, not yet verified'], ['Safety Certification', 'Supplied, verified']], missing: '' }
+      };
+      const vnRaw = VNM[cur.id] || null;
+      const vn = vnRaw ? { score: vnRaw.score, threshold: vnRaw.threshold, scoreCls: 'sig ' + (vnRaw.score >= vnRaw.threshold ? 'is-ok' : 'is-warn'), scoreD: vnRaw.score >= vnRaw.threshold ? 'M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6' : 'M12 3l10 18H2zM12 10v5M12 18h.01', scoreText: vnRaw.score >= vnRaw.threshold ? 'At or above the threshold' : 'Below the threshold by ' + (vnRaw.threshold - vnRaw.score) + ' points', qs: vnRaw.qs.map((x) => ({ q: x[0], a: x[1], pts: x[2] })), dupCls: 'sig ' + (vnRaw.dup[0] ? 'is-ok' : 'is-warn'), dupD: vnRaw.dup[0] ? 'M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6' : 'M12 3l10 18H2zM12 10v5M12 18h.01', dupText: vnRaw.dup[1], dupNote: vnRaw.dup[2], dupName: vnRaw.dup[3] || '', dupMine: vnRaw.dup[4] || '', dupTheirs: vnRaw.dup[5] || '', docs: vnRaw.docs.map((d) => ({ t: d[0], s: d[1] })), hasMissing: !!vnRaw.missing, missing: vnRaw.missing } : null;
       sheet = {
         id: cur.id, type: cur.type, ver: cur.ver, title: cur.title, kind: cur.kind,
         pillCls: 'pill ' + v.pill.c, pd: v.pill.d, pillText: v.pill.t, focusClose: !result,
-        notes, by: cur.by, proj: cur.proj, hasAmt: !!a, noAmt: !a, aw: a ? a[0] : '', ad: a ? a[1] : '', needed: TRF[cur.id] ? TRF[cur.id].eff : '6 Nov 2026', needLabel: TRF[cur.id] ? 'Effective Date' : 'Needed By', isTransfer: !!TRF[cur.id], tr: trView(cur.id),
+        notes, by: cur.by, proj: cur.proj, hasAmt: !!a, noAmt: !a, aw: a ? a[0] : '', ad: a ? a[1] : '', needed: cur.kind === 'vendor' ? (cur.id === 'V-00184' ? 'Plant 2 only' : 'Plant 4 only') : TRF[cur.id] ? TRF[cur.id].eff : '6 Nov 2026', needLabel: cur.kind === 'vendor' ? 'Availability Requested' : TRF[cur.id] ? 'Effective Date' : 'Needed By', isVendor: cur.kind === 'vendor', notVendor: cur.kind !== 'vendor', vn, isAward: !!awm, award: awm, isPo: !!poView, po: poView, isTransfer: !!TRF[cur.id], tr: trView(cur.id),
         verText: (cur.stale && loadedNow ? 'v3, loaded 09:40' : cur.stale ? 'v2 (you have it), v3 is current' : cur.ver + ', submitted 6 Oct 2026, 09:12'),
         hasDiff: showDiff, diff: DIFF, diffSummary: cur.changes ? 'Three changes. The estimate rose, so this is a material change: routing restarted and your earlier return no longer applies.' : 'Two changes. The estimate rose by half, so routing restarted from the first step.',
         whyOk: !partial, whyErr: partial,

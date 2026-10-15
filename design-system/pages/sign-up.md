@@ -2,7 +2,7 @@
 
 **Stories:** E18-S02 is back end only (self-serve signup with email verification and anti-abuse controls). **There is no UI story yet.** See `design-system/canvas/STORY-NOTES.md`, item 2. **Read first:** `design-system/MASTER.md`, then `design-system/pages/sign-in.md`, which this page inherits entirely (card, panels, backdrop, field and summary patterns, 44px controls, motion, overrides E-2 to E-4). Only the differences are written here.
 
-**Source of truth:** canvas boards `SignInSignup`, `SignInSignupErrors`, `SignInVerify` in `design-system/canvas/project/`. Requirements: AUTH-002, 003, 004, 005, 007, 008, SEC-006, SEC-007, A11Y-006, UX-005.
+**Source of truth:** canvas boards `SignInSignup`, `SignInSignupErrors`, `SignInVerify` in `design-system/canvas-2/project/` (second canvas, moved 14 Oct 2026). Requirements: AUTH-002, 003, 004, 005, 007, 008, SEC-006, SEC-007, A11Y-006, UX-005.
 
 ---
 

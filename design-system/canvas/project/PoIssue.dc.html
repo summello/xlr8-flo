@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Issue, 1440</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="xlr8flo.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;560;600;640&amp;family=JetBrains+Mono:wght@400;460;620&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{rootCls}}" data-theme="{{theme}}" style="min-height: 100vh;--ph-page: var(--phase-commit)">
+<div class="{{appCls}}">
+  <nav class="side" aria-label="Primary" onScroll="{{navTipHide}}">
+    <div class="brand"><span class="brand-mark">FL</span><span class="brand-name">XLR8 FLO</span></div>
+    <button class="iconbtn side-toggle toggle-collapse" type="button" onClick="{{toggleCollapse}}" aria-label="{{collapseLabel}}" aria-expanded="{{expanded}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4zM9 5v14"></path></svg></button>
+    <button class="iconbtn side-toggle toggle-nav" type="button" onClick="{{toggleNav}}" aria-label="{{navLabel}}" aria-expanded="{{navOpen}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4zM9 5v14"></path></svg></button>
+    <sc-for list="{{nav}}" as="n" hint-placeholder-count="18">
+      <sc-if value="{{n.isHead}}" hint-placeholder-val="{{ false }}"><div class="nav-h">{{n.label}}</div></sc-if>
+      <sc-if value="{{n.isLink}}" hint-placeholder-val="{{ true }}">
+        <a href="#" class="{{n.cls}}" aria-label="{{n.label}}" data-tip="{{n.label}}" onMouseEnter="{{navTipShow}}" onFocus="{{navTipShow}}" onMouseLeave="{{navTipHide}}" onBlur="{{navTipHide}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{n.d}}"></path></svg><span class="lbl">{{n.label}}</span></a>
+      </sc-if>
+    </sc-for>
+  </nav>
+  <div class="scrim" onClick="{{closeNav}}"></div>
+  <div class="main">
+    <header class="top">
+      <button class="iconbtn menu-btn" type="button" onClick="{{toggleNav}}" aria-label="Open navigation" aria-expanded="{{navOpen}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
+      <div class="crumbs"><span class="crumb-parent"><a href="PoList.dc.html" class="secondary">Purchase Orders</a></span><span class="sep" aria-hidden="true">/</span><b>Issue</b></div>
+      <button class="cmdk" type="button" aria-label="Open command menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4"></path></svg><span class="txt">Search or run a command</span><kbd>⌘K</kbd></button>
+      <button class="iconbtn" type="button" aria-label="Notifications"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 17V11a6 6 0 1112 0v6l2 2H4zM10 21h4"></path></svg></button>
+      <span class="avatar" aria-label="Signed in as Sonam">SM</span>
+    </header>
+
+    <main class="page">
+      <div class="phead">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <h1 class="t-display">Issue Purchase Order</h1>
+          <p class="secondary"><span class="num" style="text-align:left">PO-00262</span> · Siemar Automation · issuing commits 175,665.58 USD, once</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" type="button" onClick="{{replay}}">Replay Issue</button><a href="PoDetail.dc.html" class="btn">Back to PO</a></div>
+      </div>
+
+      <div class="dash">
+        <section class="card a-wf" aria-labelledby="h-stage">
+          <div class="card-h"><h2 class="t-heading" id="h-stage">{{stageTitle}}</h2><span class="t-caption" role="status">{{stageStatus}}</span></div>
+          <div class="card-b" style="display:flex;flex-direction:column;gap:20px">
+            <div class="po-stage">
+              <div class="{{docCls}}" aria-label="The purchase order">
+                <span class="{{sealCls}}" aria-hidden="true">{{sealText}}</span>
+                <div class="t-caption">Purchase Order</div>
+                <div class="t-title num" style="text-align:left">PO-00262</div>
+                <div class="t-dense">Siemar Automation · version 1</div>
+                <div class="amt" style="margin-top:8px"><span class="metric" style="font-size:22px;line-height:28px"><span class="w">175,665</span><span class="d">.58</span></span><span class="cur">USD</span></div>
+              </div>
+              <svg class="po-trace" viewBox="0 0 120 40" preserveAspectRatio="none" aria-hidden="true"><path class="{{traceCls}}" d="M0 20 C 40 20, 80 20, 120 20" pathLength="100" style="{{traceStyle}}"></path></svg>
+              <div class="{{vendorCls}}"><div class="t-caption">Vendor</div><div style="font-weight:560">Siemar Automation</div><div class="t-caption" style="overflow-wrap:anywhere">delivery@siemar.example</div><span class="{{vendorSig.cls}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{vendorSig.d}}"></path></svg><span>{{vendorSig.text}}</span></span></div>
+            </div>
+            <sc-if value="{{reducedNote}}" hint-placeholder-val="{{ false }}"><p class="t-dense secondary" style="margin:0">Motion is off, so this is the finished picture. The steps below say the same thing in words.</p></sc-if>
+            <ol class="lineage" aria-label="Steps of issuing"><sc-for list="{{steps}}" as="s" hint-placeholder-count="4"><li><div class="t-dense" style="font-weight:520;display:flex;gap:8px;align-items:flex-start"><span class="{{s.cls}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{s.d}}"></path></svg><span>{{s.state}}</span></span> <span>{{s.t}}</span></div><div class="t-caption" style="margin-left:0">{{s.note}}</div></li></sc-for></ol>
+          </div>
+        </section>
+
+        <section class="card a-bu" aria-labelledby="h-res">
+          <div class="card-h"><h2 class="t-heading" id="h-res">Result</h2></div>
+          <div class="card-b" style="display:flex;flex-direction:column;gap:12px">
+            <sc-if value="{{res.isBefore}}" hint-placeholder-val="{{ true }}"><p class="t-dense" style="margin:0">Nothing has happened yet. Issuing posts the commitment and queues the email together. You confirmed in the dialog on the PO, and issuing starts the moment this page opens. A second click, a retry or a worker retry gives the same result and never issues twice.</p></sc-if>
+            <sc-if value="{{res.isTrace}}" hint-placeholder-val="{{ false }}"><p class="t-dense" role="status" style="margin:0">Issuing. Please wait. The commitment is posted and the email is being queued as one action.</p></sc-if>
+            <sc-if value="{{res.isDone}}" hint-placeholder-val="{{ false }}"><div role="status"><div class="t-heading" id="po-done" tabindex="-1">{{res.title}}</div><p class="t-dense" style="margin:4px 0 0">{{res.text}}</p></div><dl class="kv" style="margin:0"><dt class="t-label">Commitment</dt><dd style="margin:0"><a href="#" class="u">LE-0331</a> <span class="t-caption">175,665.58 USD</span></dd><dt class="t-label">Email</dt><dd style="margin:0"><a href="#" class="u">TX-0415</a> <span class="t-caption">{{res.mail}}</span></dd></dl><div><a href="PoDetail.dc.html" class="btn">View PO</a></div></sc-if>
+            <sc-if value="{{res.isFailed}}" hint-placeholder-val="{{ false }}"><div class="summary" role="alert" tabindex="-1" id="po-fail"><div class="t-dense"><b>Issued, but not delivered.</b> The PO is issued and 175,665.58 USD is committed. The email to delivery@siemar.example bounced and nothing was lost. The address is suppressed, so change the recipient first, then resend the same version.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="button" onClick="{{changeRecipient}}" autoFocus="{{res.focusResend}}">Change Recipient</button><button class="btn" type="button" onClick="{{resend}}">Resend</button></div></sc-if>
+          </div>
+        </section>
+
+        <section class="card" aria-labelledby="h-frames" style="grid-column:1/-1">
+          <div class="card-h"><h2 class="t-heading" id="h-frames">Frames</h2><span class="t-caption">The moment as still pictures, for review and for reduced motion</span></div>
+          <div class="card-b" style="padding:0">
+            <div class="tabs" role="tablist" aria-label="Frames" style="grid-auto-columns:minmax(0,1fr);width:calc(100% - 32px);max-width:640px;margin:12px 16px 0" onKeyDown="{{tabKey}}">
+              <sc-for list="{{tabs}}" as="t" hint-placeholder-count="4"><button class="tab" role="tab" id="{{t.id}}" aria-selected="{{t.sel}}" aria-controls="po-fp" tabindex="{{t.ti}}" type="button" onClick="{{t.go}}">{{t.label}}</button></sc-for>
+              <span class="tab-ind" style="{{ind}}"></span>
+            </div>
+            <div role="tabpanel" id="po-fp" aria-labelledby="{{lab}}" style="padding:12px 0 0">
+              <div role="table" aria-label="What each frame shows"><div class="row head cols-pst stack" role="row"><span role="columnheader">Step</span><span role="columnheader">State</span><span role="columnheader">In Words</span></div>
+                <sc-for list="{{table}}" as="r" hint-placeholder-count="4"><div class="row cols-pst stack" role="row" style="min-height:52px"><div role="cell" class="stack-main"><span style="font-weight:520">{{r.step}}</span></div><span role="cell" data-label="State"><span class="{{r.cls}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.d}}"></path></svg><span>{{r.state}}</span></span></span><span role="cell" data-label="In Words">{{r.words}}</span></div></sc-for>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <p class="t-caption">Sample data for layout review. Replay Issue is prototype-only, like Replay intro.</p>
+
+    </main>
+  </div>
+</div>
+
+<sc-if value="{{navTip}}" hint-placeholder-val="{{ false }}"><div class="nav-tip" style="{{navTip.style}}">{{navTip.text}}</div></sc-if>
+<div class="toasts" role="status" aria-live="polite">
+  <sc-if value="{{toast}}" hint-placeholder-val="{{ false }}"><div class="toast"><span>{{toast.msg}}</span></div></sc-if>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"dark","options":["light","dark"]},"collapsed":{"editor":"enum","default":"auto","options":["auto","yes","no"]},"navOpen":{"editor":"boolean","default":false},"frame":{"editor":"enum","default":"before","options":["before","trace","after","failed","reduced","double"]},"reduced":{"editor":"enum","default":"","options":["","on"]},"tab":{"editor":"enum","default":"before","options":["before","trace","after","failed"]},"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  componentDidMount() {
+    if ((this.props.collapsed ?? 'auto') === 'auto') {
+      try { if (localStorage.getItem('xf.sidebar') === 'collapsed') this.setState({ collapsed: true }); } catch (e) {}
+    }
+    this.mounted && this.mounted();
+    this.applyHues();
+  }
+  componentDidUpdate() { this.applyHues(); }
+  // Card hover outline colour: the next colour of the chart series by position, so a new card needs no colour decision.
+  applyHues() {
+    const H = ['--c5', '--c7', '--c8', '--c1', '--c3', '--c2', '--c4', '--c6'];
+    document.querySelectorAll('.dash > .card').forEach((el, i) => el.style.setProperty('--hue', 'var(' + H[i % H.length] + ')'));
+  }
+  componentWillUnmount() { cancelAnimationFrame(this._raf); clearTimeout(this._it); clearTimeout(this._tt); }
+  split(s) { const i = s.lastIndexOf('.'); return i < 0 ? [s, ''] : [s.slice(0, i), s.slice(i)]; }
+  back(el) { setTimeout(() => { if (el && el.focus) el.focus(); }, 0); }
+  toast(msg) {
+    clearTimeout(this._tt);
+    this.setState({ toast: { msg } });
+    this._tt = setTimeout(() => this.setState({ toast: null }), 4000);
+  }
+  shellVals(st) {
+    const collapsed = st.collapsed ?? (this.props.collapsed === 'yes');
+    const navOpen = st.navOpen ?? (this.props.navOpen === true);
+    const act = this.activeNav || 'Projects';
+    const I = {
+      home: "M3 11l9-8 9 8M5 10v10h14V10M10 20v-6h4v6",
+      org: "M4 21V5l8-2v18M12 9h8v12M7 8h2M7 12h2M7 16h2M15 13h2M15 17h2",
+      admin: "M4 7h10M18 7h2M4 17h2M10 17h10M16 4v6M8 14v6",
+      proj: "M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z",
+      budget: "M3 7a2 2 0 012-2h13v4M3 7v11a2 2 0 002 2h15V9H5a2 2 0 01-2-2zM16 14.5h.01",
+      rep: "M4 20V10M10 20V4M16 20v-7M2 20h20",
+      req: "M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6",
+      appr: "M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6",
+      vend: "M4 9l1-5h14l1 5M4 9a2.5 2.5 0 005 0 2.5 2.5 0 006 0 2.5 2.5 0 005 0M5 11v9h14v-9M10 20v-5h4v5",
+      src: "M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4",
+      po: "M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6",
+      asset: "M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10",
+      help: "M12 21a9 9 0 100-18 9 9 0 000 18zM9.5 9.5a2.5 2.5 0 115 .5c0 1.5-2.5 2-2.5 3.5M12 17h.01"
+    };
+    const link = (label, d, ph, on) => ({ isLink: true, isHead: false, label, d, cls: 'nav-i ' + ph + (on ? ' on' : '') });
+    const hd = (label) => ({ isHead: true, isLink: false, label });
+    const nav = [
+      link('Home', I.home, '', false),
+      hd('Foundation'), link('Organization', I.org, 'p-foundation'), link('Administration', I.admin, 'p-foundation'),
+      hd('Plan'), link('Projects', I.proj, 'p-plan', act === 'Projects'), link('Budget', I.budget, 'p-plan'), link('Reporting', I.rep, 'p-plan'),
+      hd('Demand'), link('Requisitions', I.req, 'p-demand', act === 'Requisitions'), link('Approvals', I.appr, 'p-demand'),
+      hd('Commit'), link('Vendors', I.vend, 'p-commit', act === 'Vendors'), link('Sourcing', I.src, 'p-commit', act === 'Sourcing'), link('Purchase orders', I.po, 'p-commit', act === 'Purchase orders'), link('Assets', I.asset, 'p-commit'),
+      hd('Support'), link('Help', I.help, '')
+    ];
+    return {
+      theme: this.props.theme ?? 'light', nav,
+      rootCls: 'xf' + (st.intro ? ' intro' : ''),
+      appCls: 'app' + (collapsed ? ' collapsed' : '') + (navOpen ? ' nav-open' : ''),
+      navOpen, expanded: !collapsed, collapseLabel: collapsed ? 'Expand sidebar' : 'Collapse sidebar',
+      navLabel: navOpen ? 'Close navigation' : 'Open navigation',
+      // rail tooltips are one fixed-position element, so the scrolling sidebar cannot clip them
+      navTip: st.navTip || null,
+      navTipShow: (e) => {
+        const a = e.currentTarget, lbl = a.querySelector('.lbl');
+        if (!lbl || getComputedStyle(lbl).display !== 'none') return;
+        const r = a.getBoundingClientRect();
+        this.setState({ navTip: { text: a.getAttribute('data-tip'), style: 'left:' + (r.right + 12) + 'px;top:' + (r.top + r.height / 2) + 'px' } });
+      },
+      navTipHide: () => { if (st.navTip) this.setState({ navTip: null }); },
+      toggleCollapse: () => {
+        this.setState({ collapsed: !collapsed });
+        try { localStorage.setItem('xf.sidebar', collapsed ? 'expanded' : 'collapsed'); } catch (e) {}
+      },
+      toggleNav: () => this.setState({ navOpen: !navOpen }),
+      closeNav: () => this.setState({ navOpen: false }),
+      toast: st.toast || null
+    };
+  }
+
+  get activeNav() { return 'Purchase orders'; }
+  // ---- Vendors: shared sample data and rules (sample data only; invented) ----
+  get vd() {
+    const TODAY = Date.UTC(2026, 9, 13);
+    const days = (iso) => Math.round((Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) - TODAY) / 86400000);
+    const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const dmy = (iso) => (iso ? +iso.slice(8, 10) + ' ' + MON[+iso.slice(5, 7) - 1] + ' ' + iso.slice(0, 4) : '');
+    const dm = (iso) => +iso.slice(8, 10) + ' ' + MON[+iso.slice(5, 7) - 1];
+    // Closed vocabulary (VEN-005, proposal for MASTER 2.3): icon plus words, never colour alone
+    const IC = { x: 'M12 21a9 9 0 100-18 9 9 0 000 18zM9 9l6 6M15 9l-6 6', ok: 'M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6', clock: 'M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3 2', warn: 'M12 3l10 18H2zM12 10v5M12 18h.01', n: 'M12 21a9 9 0 100-18 9 9 0 000 18z', pause: 'M12 21a9 9 0 100-18 9 9 0 000 18zM10 9v6M14 9v6', info: 'M20 11a8 8 0 00-14-4M4 4v4h4M4 13a8 8 0 0014 4M20 20v-4h-4' };
+    const STATUS = {
+      draft: { label: 'Draft', tone: 'neutral', d: IC.n }, pending_approval: { label: 'Pending Approval', tone: 'info', d: IC.info },
+      active: { label: 'Active', tone: 'success', d: IC.ok }, suspended: { label: 'Suspended', tone: 'warning', d: IC.pause },
+      inactive: { label: 'Inactive', tone: 'neutral', d: IC.n }, rejected: { label: 'Rejected', tone: 'danger', d: IC.x }
+    };
+    const REQ = ['Tax Registration', 'Certificate of Incorporation', 'Insurance Certificate', 'Banking Verification', 'Safety Certification'];
+    const doc = (type, issued, expiry, ver) => ({ type, issued, expiry, ver });
+    const full = (ins) => [doc('Tax Registration', '2025-02-10', '2027-02-09', 'verified'), doc('Certificate of Incorporation', '2019-06-03', '', 'verified'), doc('Insurance Certificate', ins[0], ins[1], ins[2] || 'verified'), doc('Banking Verification', '2026-03-18', '', 'verified'), doc('Safety Certification', '2026-01-12', '2027-01-11', 'verified')];
+    const V = [
+      { id: 'northgate', num: 'V-00101', trading: 'Northgate Controls', legal: 'Northgate Industrial Controls Limited', status: 'active', scope: 'Global', off: [], docs: full(['2026-04-01', '2027-03-31']), score: 86, period: 'Q3 2026', used: '8 Oct', cat: 'Controls and Automation' },
+      { id: 'halden', num: 'V-00108', trading: 'Halden Packaging', legal: 'Halden Packaging Systems GmbH', status: 'active', scope: 'Global', off: [], docs: full(['2025-10-26', '2026-10-25']), score: 79, period: 'Q3 2026', used: '2 Oct', cat: 'Packaging Machinery' },
+      { id: 'meridian', num: 'V-00115', trading: 'Meridian Mechanical', legal: 'Meridian Mechanical Contractors Inc.', status: 'active', scope: 'Global', off: [{ unit: 'Plant 4', by: 'ops.lead@northwind.example', on: '2026-09-03', why: 'Safety audit finding open' }], docs: full(['2026-02-01', '2027-01-31']), score: 72, period: 'Q3 2026', used: '21 Sep', cat: 'Mechanical Installation' },
+      { id: 'cobalt', num: 'V-00122', trading: 'Cobalt Cooling', legal: 'Cobalt Cooling Solutions Pty Ltd', status: 'active', scope: 'Global', off: [], docs: full(['2025-10-02', '2026-10-02']), score: 81, period: 'Q3 2026', used: '5 Oct', cat: 'Cooling and HVAC' },
+      { id: 'apex', num: 'V-00130', trading: 'Apex Conveyor', legal: 'Apex Conveyor & Handling Co.', status: 'suspended', scope: 'Global', off: [], docs: full(['2026-01-15', '2027-01-14']), score: 58, period: 'Q2 2026', used: '19 Aug', cat: 'Material Handling', openRfqs: 2, openPos: 1 },
+      { id: 'brightpath', num: 'V-00137', trading: 'BrightPath IT', legal: 'BrightPath IT Services (UK) Limited', status: 'active', scope: 'Plant 4, Central Stores', off: [], docs: full(['2026-05-20', '2027-05-19']), score: 90, period: 'Q3 2026', used: '10 Oct', cat: 'IT Hardware' },
+      { id: 'fenwick', num: 'V-00144', trading: 'Fenwick Electrical', legal: 'Fenwick Electrical Supplies Ltd', status: 'active', scope: 'Global', off: [], docs: [doc('Tax Registration', '2025-08-04', '2027-08-03', 'verified'), doc('Certificate of Incorporation', '2018-01-22', '', 'verified'), doc('Insurance Certificate', '2026-03-01', '2027-02-28', 'verified'), doc('Safety Certification', '2026-02-02', '2027-02-01', 'verified')], score: 74, period: 'Q3 2026', used: '30 Sep', cat: 'Electrical Supplies' },
+      { id: 'tessellate', num: 'V-00151', trading: 'Tessellate Safety', legal: 'Tessellate Safety Engineering Limited', status: 'pending_approval', scope: 'Plant 4', off: [], docs: [doc('Tax Registration', '2026-09-02', '2028-09-01', 'unverified'), doc('Certificate of Incorporation', '2021-04-12', '', 'unverified'), doc('Insurance Certificate', '2026-09-20', '2027-09-19', 'unverified')], score: null, period: '', used: 'Never', cat: 'Safety Engineering', requester: 'dev.patel@northwind.example' },
+      { id: 'orion', num: 'V-00158', trading: 'Orion Freight', legal: 'Orion Freight, Rigging and Heavy Lift Services International Limited Partnership', status: 'active', scope: 'Global', off: [], docs: full(['2026-06-01', '2027-05-31']), score: 83, period: 'Q3 2026', used: '27 Sep', cat: 'Logistics and Rigging' },
+      { id: 'kestrel', num: 'V-00163', trading: 'Kestrel Fasteners', legal: 'Kestrel Fasteners Limited', status: 'inactive', scope: 'Global', off: [], docs: full(['2025-11-01', '2026-10-31']), score: 66, period: 'Q1 2026', used: '3 Mar', cat: 'Fasteners and Fixings' },
+      { id: 'lumen', num: 'V-00170', trading: 'Lumen Lighting', legal: 'Lumen Lighting Controls LLC', status: 'rejected', scope: 'Plant 2', off: [], docs: [doc('Tax Registration', '2026-07-01', '2028-06-30', 'rejected')], score: null, period: '', used: 'Never', cat: 'Lighting' },
+      { id: 'vantage', num: 'V-00176', trading: 'Vantage Site Services', legal: 'Vantage Site Services Limited', status: 'draft', scope: 'Global', off: [], docs: [], score: null, period: '', used: 'Never', cat: 'Site Services' }
+    ];
+    const UNIT = 'Plant 4';
+    // Derived, never typed (VEN-012): eligibility for one unit, with every reason in words
+    const elig = (v, unit) => {
+      const why = [];
+      if (v.status === 'pending_approval') why.push('Not approved yet');
+      else if (v.status === 'draft') why.push('Request not submitted');
+      else if (v.status === 'rejected') why.push('Request was rejected');
+      else if (v.status === 'suspended') why.push('Suspended');
+      else if (v.status === 'inactive') why.push('Inactive');
+      if (v.scope !== 'Global' && v.scope.indexOf(unit) < 0) why.push('Not available to ' + unit);
+      const off = v.off.find((o) => o.unit === unit);
+      if (off) why.push('Disabled in ' + unit + ' on ' + dm(off.on));
+      if (v.status === 'active') {
+        REQ.forEach((t) => {
+          const d = v.docs.find((x) => x.type === t);
+          if (!d) { why.push(t + ' missing'); return; }
+          if (d.ver === 'rejected') why.push(t + ' rejected');
+          else if (d.expiry && days(d.expiry) < 0) why.push(t + ' expired ' + dm(d.expiry));
+        });
+      }
+      return { ok: why.length === 0, why };
+    };
+    // Documents summary for the list: look ahead before it says Expired (VEN-011, OBS-004)
+    const docSum = (v) => {
+      if (v.status === 'draft' || v.status === 'rejected') return { kind: 'none', text: v.docs.length ? v.docs.length + ' Supplied' : 'None Supplied', tone: 'neutral', d: IC.n, attn: false };
+      if (v.status === 'pending_approval') return { kind: 'pending', text: v.docs.length + ' of ' + REQ.length + ' Supplied', tone: 'info', d: IC.info, attn: false };
+      let exp = 0, soon = 0, miss = 0, rej = 0, soonDays = 999;
+      REQ.forEach((t) => {
+        const d = v.docs.find((x) => x.type === t);
+        if (!d) { miss += 1; return; }
+        if (d.ver === 'rejected') rej += 1;
+        else if (d.expiry) { const n = days(d.expiry); if (n < 0) exp += 1; else if (n <= 30) { soon += 1; soonDays = Math.min(soonDays, n); } }
+      });
+      if (rej) return { kind: 'rejected', text: rej + ' Rejected', tone: 'danger', d: IC.x, attn: true };
+      if (exp) return { kind: 'expired', text: exp + ' Expired', tone: 'danger', d: IC.x, attn: true };
+      if (miss) return { kind: 'missing', text: miss + ' Missing', tone: 'warning', d: IC.warn, attn: true };
+      if (soon) return { kind: 'soon', text: soon + (soonDays === 0 ? ' Expires Today' : ' Expiring in ' + soonDays + (soonDays === 1 ? ' Day' : ' Days')), tone: 'warning', d: IC.clock, attn: true };
+      return { kind: 'ok', text: 'All Current', tone: 'success', d: IC.ok, attn: false };
+    };
+    const availText = (v) => (v.scope === 'Global' ? 'Global' : v.scope.split(',').length + (v.scope.split(',').length === 1 ? ' Unit' : ' Units')) + (v.off.length ? ', ' + v.off.length + ' Disabled' : '');
+    return { days, dmy, dm, IC, STATUS, REQ, V, UNIT, elig, docSum, availText, TODAY };
+  }
+
+
+  // ---- Purchase Orders: shared sample data and rules (sample only). The award is AWD-00095; figures agree with the Sourcing page. ----
+  get pd() {
+    const vd = this.vd;
+    const IC = vd.IC;
+    const fmt = (n) => { const a = Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); return n < 0 ? '(' + a + ')' : a; };
+    const split = (n) => { const s = fmt(n); const i = s.lastIndexOf('.'); return [s.slice(0, i), s.slice(i)]; };
+    // PO status map from MASTER 2.3, with the operator's nomenclature (decision 169): Delivered and Accepted, not Fulfilled
+    const PS = {
+      draft: { label: 'Draft', tone: 'neutral', d: IC.n }, approval_pending: { label: 'Approval Pending', tone: 'info', d: IC.info },
+      approved: { label: 'Approved', tone: 'info', d: IC.ok }, issued: { label: 'Issued', tone: 'success', d: IC.ok },
+      partially_delivered: { label: 'Partially Delivered', tone: 'info', d: IC.info }, delivered: { label: 'Delivered', tone: 'success', d: IC.ok },
+      accepted: { label: 'Accepted', tone: 'success', d: IC.ok }, closed: { label: 'Closed', tone: 'neutral', d: IC.n },
+      cancelled: { label: 'Cancelled', tone: 'danger', d: IC.x }, superseded: { label: 'Superseded', tone: 'warning', d: IC.warn }
+    };
+    // transmission results: icon plus words, never colour alone (PO-004, EML-006)
+    const TX = {
+      none: { label: 'Not Sent', cls: 'sig is-n', d: IC.n }, queued: { label: 'Email Queued', cls: 'sig is-info', d: IC.clock }, sent: { label: 'Email Sent', cls: 'sig is-info', d: IC.info },
+      delivered: { label: 'Email Delivered', cls: 'sig is-ok', d: IC.ok }, bounced: { label: 'Email Bounced', cls: 'sig is-bad', d: IC.x }, complained: { label: 'Email Complaint', cls: 'sig is-bad', d: IC.x },
+      failed: { label: 'Email Failed', cls: 'sig is-bad', d: IC.x }, suppressed: { label: 'Address Suppressed', cls: 'sig is-bad', d: IC.x }
+    };
+    // PO-00262 lines from the award: 3 of Siemar Automation's 4 lines. Price, tax and freight are separate (PO-016); every figure in cents.
+    const LANDED = [7366886, 191827, 10007845];                 // the award's landed line amounts, USD
+    const TARGET = LANDED.reduce((a, b) => a + b, 0);            // 17,566,558
+    const FREIGHT = 336040, RATE = 0.05;
+    const P = Math.round((TARGET - FREIGHT) / (1 + RATE));
+    const build = (k) => {
+      const p = LANDED.map((l) => Math.round(P * l / TARGET));
+      p[0] += P - p.reduce((a, b) => a + b, 0) + k;
+      const sp = p.reduce((a, b) => a + b, 0);
+      const f = p.map((x) => Math.round(FREIGHT * x / sp));
+      f[2] += FREIGHT - f.reduce((a, b) => a + b, 0);
+      const t = p.map((x) => Math.round(x * RATE));
+      return p.map((x, i) => ({ price: x, tax: t[i], freight: f[i], total: x + t[i] + f[i] }));
+    };
+    // find the split of price, tax and freight whose line totals equal the award's landed line amounts exactly
+    const attempt = (p) => {
+      const sp = p.reduce((x, y) => x + y, 0);
+      const f = p.map((x) => Math.round(FREIGHT * x / sp));
+      f[2] += FREIGHT - f.reduce((x, y) => x + y, 0);
+      const t = p.map((x) => Math.round(x * RATE));
+      return p.map((x, i) => ({ price: x, tax: t[i], freight: f[i], total: x + t[i] + f[i] }));
+    };
+    const base = LANDED.map((l) => Math.round(P * l / TARGET));
+    let rows = null;
+    for (let a0 = -80; a0 <= 80 && !rows; a0++) for (let a1 = -80; a1 <= 80 && !rows; a1++) {
+      const p = [base[0] + a0, base[1] + a1, 0]; p[2] = P - p[0] - p[1];
+      const r = attempt(p);
+      if (r.every((x, i) => x.total === LANDED[i])) rows = r;
+    }
+    if (!rows) rows = build(0);
+    const META = [['Servo drive, 7.5 kW', 'Item', 4, 'ea'], ['Encoder cable, 10 m', 'Item', 24, 'ea'], ['On-site drive tuning', 'Service', 8, 'day']];
+    const lines = rows.map((r, i) => ({ d: META[i][0], kind: META[i][1], q: META[i][2], u: META[i][3], unit: r.price / 100 / META[i][2], price: r.price / 100, tax: r.tax / 100, freight: r.freight / 100, total: r.total / 100 }));
+    const sum = (k) => Math.round(lines.reduce((a, l) => a + l[k] * 100, 0)) / 100;
+    const totals = { price: sum('price'), tax: sum('tax'), freight: sum('freight'), total: sum('total') };
+    const PO = [
+      { id: 'PO-00262', vendor: 'Siemar Automation', project: 'Plant 4 Line Retrofit', total: totals.total, status: 'approved', tx: 'none', ver: 1, tab: 'ready', when: '' },
+      { id: 'PO-00263', vendor: 'Apex Industrial Supply', project: 'Plant 4 Line Retrofit', total: 17346.55, status: 'draft', tx: 'none', ver: 1, tab: 'drafts', when: '' },
+      { id: 'PO-00251', vendor: 'Halden Packaging', project: 'Plant 2 Dock Upgrade', total: 18420.50, status: 'approval_pending', tx: 'none', ver: 1, tab: 'awaiting', when: '' },
+      { id: 'PO-00249', vendor: 'Meridian Mechanical', project: 'Plant 2 Dock Upgrade', total: 23900.00, status: 'approval_pending', tx: 'none', ver: 1, tab: 'awaiting', when: '' },
+      { id: 'PO-00244', vendor: 'Northgate Controls', project: 'Plant 4 Line Retrofit', total: 12980.00, status: 'issued', tx: 'delivered', ver: 1, tab: 'issued', when: '12 Oct' },
+      { id: 'PO-00238', vendor: 'Cobalt Cooling', project: 'Data Centre Cooling', total: 64210.75, status: 'issued', tx: 'bounced', ver: 1, tab: 'attention', when: '11 Oct' },
+      { id: 'PO-00231', vendor: 'BrightPath IT', project: 'ERP Upgrade', total: 41200.00, status: 'issued', tx: 'delivered', ver: 2, tab: 'issued', when: '2 Oct' },
+      { id: 'PO-00219', vendor: 'Kestrel Fasteners', project: 'Packaging Line 2', total: 3810.00, status: 'cancelled', tx: 'delivered', ver: 1, tab: 'issued', when: '19 Sep' }
+    ];
+    return { fmt, split, PS, TX, LANDED, TARGET, lines, totals, PO, FREIGHT, RATE, IC, vd };
+  }
+
+  renderVals() {
+    const st = this.state || {};
+    const frame = st.frame ?? this.props.frame ?? 'before';
+    const reducedProp = this.props.reduced === 'on';
+    const { IC } = this.pd;
+    const reduced = reducedProp || frame === 'reduced';
+    const F = reduced && frame === 'before' ? 'after' : frame === 'reduced' || frame === 'double' ? 'after' : frame;   // reduced motion and the double click both end on the finished result
+    const done = F === 'after', trace = F === 'trace', failed = F === 'failed', before = F === 'before';
+    const OK = { cls: 'sig is-ok', d: IC.ok }, WAIT = { cls: 'sig is-n', d: IC.n }, GO = { cls: 'sig is-info', d: IC.clock }, BAD = { cls: 'sig is-bad', d: IC.x };
+    const steps = [
+      { t: 'Commitment posted', note: 'Converts 175,665.58 USD of the reservation into a commitment on Plant 4 Line Retrofit, in the same transaction as the status change.', ...(before ? WAIT : OK), state: before ? 'Waiting' : 'Done' },
+      { t: 'PDF generated', note: 'From the stored snapshot and template v4, without chartfields or budget.', ...(before ? WAIT : OK), state: before ? 'Waiting' : 'Done' },
+      { t: 'Email queued', note: 'Through the outbox, to delivery@siemar.example. Never sent from the request.', ...(before ? WAIT : trace ? GO : OK), state: before ? 'Waiting' : trace ? 'In progress' : 'Done' },
+      { t: 'Delivery', note: failed ? 'Email bounced: the mailbox does not exist. The address is suppressed and will not be retried silently.' : done ? 'Queued. The result appears on the PO as soon as the provider answers.' : 'Known after the email is queued.', ...(failed ? BAD : before || trace ? WAIT : GO), state: failed ? 'Bounced' : before || trace ? 'Waiting' : 'Queued' }
+    ];
+    const FR = ['before', 'trace', 'after', 'failed'], FL = ['Before', 'Mid-Trace', 'After', 'Failed'];
+    const FRM = { before: 'before', trace: 'trace', after: 'after', reduced: 'after', double: 'after', failed: 'failed' };
+    const tabIdx = Math.max(0, FR.indexOf(st.tab !== undefined ? st.tab : (this.props.tab || FRM[frame] || 'before')));
+    const tabKey = FR[tabIdx];
+    const TBL = {
+      before: [['Commitment', WAIT, 'Waiting', 'Nothing is committed. The reservation stands.'], ['PDF', WAIT, 'Waiting', 'Not generated yet.'], ['Email', WAIT, 'Waiting', 'Not queued.']],
+      trace: [['Commitment', OK, 'Done', 'Committed, once.'], ['PDF', OK, 'Done', 'Generated from the snapshot.'], ['Email', GO, 'In progress', 'Queued to delivery@siemar.example.']],
+      after: [['Commitment', OK, 'Done', 'Issued. Commitment posted.'], ['PDF', OK, 'Done', 'Version 1 stored with its template.'], ['Email', GO, 'Queued', 'Email queued to delivery@siemar.example.']],
+      failed: [['Commitment', OK, 'Done', 'Issued. Commitment posted. Nothing was lost.'], ['PDF', OK, 'Done', 'Version 1 stored.'], ['Email', BAD, 'Bounced', 'Undelivered. The next step, Change Recipient, is focused.']]
+    };
+    const setFrame = (f) => this.setState({ frame: f });
+    const issue = () => {
+      if (st.busy) return;                                       // a second click does nothing visible (PO-012)
+      this.setState({ busy: true, frame: 'trace' });
+      this._t = setTimeout(() => this.setState({ frame: 'after', busy: false }), 900);
+    };
+    const asReduced = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return {
+      ...this.shellVals(st), stageTitle: done ? 'Issued' : failed ? 'Issued, Not Delivered' : trace ? 'Issuing' : 'Ready to Issue', stageStatus: done ? 'Issued. Commitment posted. Email queued to delivery@siemar.example.' : failed ? 'Issued. Email bounced.' : trace ? 'Issuing' : 'Not issued',
+      docCls: 'po-doc' + (done || trace || failed ? ' is-lifted' : ''), sealCls: 'po-seal' + (done || failed ? ' is-on' : ''), sealText: failed ? 'Issued' : 'Issued',
+      traceCls: failed ? 'is-bad' : '', traceStyle: 'stroke-dashoffset:' + (before ? 100 : trace ? 45 : failed ? 0 : 0),
+      vendorCls: 'po-vendor' + (failed ? ' is-bad' : done ? ' is-ok' : ''), vendorSig: failed ? { cls: 'sig is-bad', d: IC.x, text: 'Bounced' } : done ? { cls: 'sig is-info', d: IC.clock, text: 'Queued' } : trace ? { cls: 'sig is-info', d: IC.clock, text: 'Queuing' } : { cls: 'sig is-n', d: IC.n, text: 'Not sent' },
+      reducedNote: reduced || asReduced && !before,
+      steps,
+      res: { isBefore: before, isTrace: trace, isDone: done, isFailed: failed, focusIssue: false, focusResend: failed,
+        title: frame === 'double' ? 'Issued once' : 'Issued', text: frame === 'double' ? 'You clicked twice and got one result: issued once, one commitment, one email.' : 'Issued. Commitment posted. Email queued to delivery@siemar.example.', mail: 'Queued, version 1' },
+      issue, resend: () => this.toast('Queued again. Version 1, nothing committed twice.'), changeRecipient: () => this.toast('Opens the vendor contacts. Fix the address, then resend.'),
+      replay: () => { clearTimeout(this._t); this.setState({ frame: 'before', busy: false }); setTimeout(() => (asReduced ? setFrame('after') : issue()), 150); },
+      tabs: FL.map((label, i) => ({ id: 'po-f' + i, label, sel: i === tabIdx, ti: i === tabIdx ? 0 : -1, go: () => this.setState({ tab: FR[i] }) })), ind: 'width:25%;transform:translateX(' + tabIdx * 100 + '%)', lab: 'po-f' + tabIdx,
+      tabKey: (e) => { let to = tabIdx; if (e.key === 'ArrowRight') to = (tabIdx + 1) % 4; else if (e.key === 'ArrowLeft') to = (tabIdx + 3) % 4; else if (e.key === 'Home') to = 0; else if (e.key === 'End') to = 3; else return; e.preventDefault(); this.setState({ tab: FR[to] }); this.back(document.getElementById('po-f' + to)); },
+      table: TBL[tabKey].map(([step, s, state, words]) => ({ step, cls: s.cls, d: s.d, state, words }))
+    };
+  }
+
+}
+</script>
+</body>
+</html>
