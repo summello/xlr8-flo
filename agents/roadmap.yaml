@@ -1404,6 +1404,39 @@ epics:
         dep:
           - E05-S01
         st: todo
+      - id: E11-S09
+        t: 'Status vocabulary aligned to MASTER 2.3: vendor, RFQ, award and purchase-order
+          maps and labels'
+        k: ui
+        s: S
+        tags:
+          - ui
+        reqs:
+          - TAG-001
+          - TAG-002
+          - TAG-003
+          - A11Y-004
+          - VEN-012
+          - PO-007
+        dep:
+          - E11-S01
+        st: todo
+      - id: E11-S10
+        t: 'Shared decision panel at phone width: footer reflow, close button never
+          covered'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - A11Y-011
+          - A11Y-002
+          - UX-008
+          - APR-020
+        dep:
+          - E11-S09
+          - E22-S04
+        st: todo
       - id: E11-S02
         t: 'Typed contacts: billing, service/delivery, additional types'
         k: crud
