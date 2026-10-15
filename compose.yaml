@@ -29,7 +29,7 @@ services:
     volumes:
       - seaweedfs-data:/data
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
+      test: ["CMD", "nc", "-z", "127.0.0.1", "9000"]
       interval: 2s
       timeout: 5s
       retries: 30
