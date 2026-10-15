@@ -30,6 +30,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -2087,14 +2088,21 @@ COMPOSE = ROOT / "compose.yaml"
 STACK_SERVICES = ("postgres", "minio", "mailpit")
 
 
+def _container_cli():
+    # podman is the documented runtime; OrbStack/Docker (`docker compose`) is the macOS fallback.
+    return os.environ.get("FLO_CONTAINER_CLI") or next(
+        (c for c in ("podman", "docker") if shutil.which(c)), "podman"
+    )
+
+
 def _run_compose(*args, capture_output=False):
     if not COMPOSE.exists():
         die("compose.yaml missing — story E01-S02 delivers it")
-    cmd = ["podman", "compose", "-f", str(COMPOSE), *args]
+    cmd = [_container_cli(), "compose", "-f", str(COMPOSE), *args]
     try:
         return subprocess.run(cmd, check=True, capture_output=capture_output, text=True)
     except FileNotFoundError:
-        die("podman is required for the local stack but was not found on PATH")
+        die("podman or docker is required for the local stack but neither was found on PATH")
     except subprocess.CalledProcessError as exc:
         detail = (exc.stderr or exc.stdout or "no error output").strip()
         die(f"{' '.join(cmd)} failed: {detail}")
@@ -2111,7 +2119,7 @@ def _container_status(service, include_stopped=False):
         return None, None, None
     inspect = subprocess.run(
         [
-            "podman",
+            _container_cli(),
             "inspect",
             "--format",
             "{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{end}}|{{.State.ExitCode}}",
