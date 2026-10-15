@@ -19,6 +19,7 @@ from flo.api.master import router as master_router
 from flo.api.org import router as org_router
 from flo.api.projects import router as projects_router
 from flo.api.requisitions import router as requisitions_router
+from flo.api.vendors import router as vendors_router
 from flo.api.workflows import router as workflows_router
 
 TESTS = Path(__file__).resolve().parents[1]
@@ -33,6 +34,30 @@ CODES_ROUTES = (
     "test_codes_routes_conceal_foreign_tenants_and_need_the_permission"
 )
 COVERED = {
+    (
+        "GET",
+        "/api/v1/vendors",
+    ): "vendors/test_vendors.py::test_vendor_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/api/v1/vendors",
+    ): "vendors/test_vendors.py::test_vendor_routes_conceal_foreign_tenants",
+    (
+        "GET",
+        "/api/v1/vendors/{id}",
+    ): "vendors/test_vendors.py::test_vendor_routes_conceal_foreign_tenants",
+    (
+        "PATCH",
+        "/api/v1/vendors/{id}",
+    ): "vendors/test_vendors.py::test_vendor_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/api/v1/vendors/{id}/units/{unit_id}/disable",
+    ): "vendors/test_vendors.py::test_vendor_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/api/v1/vendors/{id}/units/{unit_id}/enable",
+    ): "vendors/test_vendors.py::test_vendor_routes_conceal_foreign_tenants",
     ("POST", "/api/v1/requisitions/{id}/codes"): CODES_ROUTES,
     ("POST", "/api/v1/projects/{id}/codes"): CODES_ROUTES,
     (
@@ -558,6 +583,7 @@ def test_every_id_route_has_a_named_foreign_tenant_case() -> None:
                 approvals_router,
                 workflows_router,
                 requisitions_router,
+                vendors_router,
                 collaboration_router,
             ),
             COVERED,
@@ -584,6 +610,7 @@ def test_gate_fails_on_an_uncovered_route_and_on_a_dangling_reference() -> None:
             approvals_router,
             workflows_router,
             requisitions_router,
+            vendors_router,
             collaboration_router,
         )
         | widget

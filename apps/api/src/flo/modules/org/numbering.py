@@ -23,9 +23,10 @@ DEFAULT_FORMATS: dict[str, tuple[str, bool, int]] = {
     "award": ("AWD", False, 5),
     "po": ("PO", False, 5),
     "asset": ("AST", False, 5),
+    "vendor": ("V-", False, 6),
 }
 
-type DocumentType = Literal["project", "requisition", "rfq", "award", "po", "asset"]
+type DocumentType = Literal["project", "requisition", "rfq", "award", "po", "asset", "vendor"]
 
 
 class NumberingService:
