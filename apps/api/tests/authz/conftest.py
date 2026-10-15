@@ -105,6 +105,15 @@ def authorization_database() -> Iterator[AuthorizationDatabase]:
     connection.execute("ALTER TABLE auth_session ADD COLUMN org_id uuid")
     audit_migration.upgrade(connection)
     rbac_migration.upgrade(connection)
+    load_migration(
+        ROOT / "migrations/20261009_0049_requisition_permissions.py", "req_permissions"
+    ).upgrade(connection)
+    load_migration(
+        ROOT / "migrations/20261009_0038_workflow_permissions.py", "authz_workflow_permissions"
+    ).upgrade(connection)
+    load_migration(
+        ROOT / "migrations/20261009_0047_approval_permissions.py", "authz_approval_permissions"
+    ).upgrade(connection)
     mfa_migration.upgrade(connection)
     access_migration.upgrade(connection)
     actor_id = IdentityId(uuid4())

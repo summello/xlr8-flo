@@ -23,6 +23,14 @@ def buckets(values: list[Decimal]) -> AggregateBuckets:
     )
 
 
+def live(alias: str) -> str:
+    """Not an abandoned Project Request project, which is reported apart (D-M2-22)."""
+    return (
+        f"NOT ({alias}.status='abandoned' AND {alias}.source_requisition_id IS NOT NULL "
+        f"AND {alias}.generated_by_requisition_id IS NULL)"
+    )
+
+
 def aggregate_balance(
     conn: psycopg.Connection[tuple[object, ...]],
     scope: Scope,
@@ -58,9 +66,9 @@ def aggregate_balance(
             LedgerRepository(conn, scope)
             .execute(
                 "WITH RECURSIVE tree AS (SELECT id,currency FROM project "
-                "WHERE org_id=%(org_id)s AND id=%(id)s UNION ALL "
+                f"WHERE org_id=%(org_id)s AND id=%(id)s AND {live('project')} UNION ALL "
                 "SELECT p.id,p.currency FROM project p JOIN tree t ON p.parent_id=t.id "
-                "WHERE p.org_id=%(org_id)s) SELECT t.currency, "
+                f"WHERE p.org_id=%(org_id)s AND {live('p')}) SELECT t.currency, "
                 f"{sums}, (SELECT count(*) FROM tree) FROM tree t {join} "
                 "GROUP BY t.currency ORDER BY t.currency",
                 {"id": project_id, "lower": lower, "upper": upper},
@@ -82,4 +90,6 @@ def aggregate_balance(
                     total=buckets(total),
                 )
             )
-        return AggregateRead(mode=mode, totals=totals, node_count=cast(int, rows[0][9]))
+        return AggregateRead(
+            mode=mode, totals=totals, node_count=cast(int, rows[0][9] if rows else 0)
+        )

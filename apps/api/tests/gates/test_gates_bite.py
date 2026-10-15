@@ -13,6 +13,7 @@ from collections.abc import Sequence
 from importlib.machinery import SourceFileLoader
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 import pytest
 
@@ -1027,7 +1028,11 @@ def test_run_check_fails_when_required_tool_is_missing(
     assert exit_status.value.code == 1
     gate_output = capsys.readouterr().out
     assert "missing-executable" in gate_output
-    assert "exit-127" in gate_output
+    assert "exit-127" not in gate_output  # fail-fast: nothing runs after the first red
+
+    monkeypatch.setattr(flo, "CHECKS", [("exit-127", [sys.executable, str(exit_127)])])
+    assert flo.run_check(tmp_path) is False
+    assert "exit-127" in capsys.readouterr().out
 
 
 def test_run_check_honours_only_named_missing_tool_opt_out(
@@ -1086,34 +1091,51 @@ def test_each_worktree_gets_its_own_test_database(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("kind", "tags", "author", "reviewers"),
+    ("kind", "tags", "busy", "author", "reviewers"),
     [
-        ("crud", ["money"], "codex", ["opus"]),  # a gated tag keeps the free author off it
-        ("crud", [], "opencode-nemotron", ["qwen"]),
-        ("ui", ["auth"], "codex", ["opus"]),
-        ("engine", [], "codex", ["qwen"]),  # engines never go to a free author
+        ("crud", ["money"], {}, "sonnet", ["codex"]),  # gated: codex reviews, opus_final adds Opus
+        ("crud", [], {}, "sonnet", ["codex"]),
+        ("crud", [], {"A": 1}, "sonnet", ["codex"]),  # one account full, the other still free
+        ("crud", [], {"A": 1, "B": 1}, "opencode-nemotron", ["codex"]),  # overflow lane
+        ("engine", [], {"A": 1, "B": 1}, "codex", ["qwen"]),  # codex never reviews itself
+        ("crud", ["money"], {"A": 1, "B": 1}, "codex", ["qwen"]),  # gated keeps the free author off
     ],
 )
-def test_assignment_scales_review_to_risk(
-    monkeypatch: pytest.MonkeyPatch, kind: str, tags: list[str], author: str, reviewers: list[str]
+def test_assignment_routes_authors_by_priority_and_free_slots(
+    monkeypatch: pytest.MonkeyPatch,
+    kind: str,
+    tags: list[str],
+    busy: dict[str, int],
+    author: str,
+    reviewers: list[str],
 ) -> None:
-    """Review is Opus's only on gated stories; everything else must still get one reviewer."""
+    """Sonnet authors while an account has a free slot; every story gets one reviewer that is
+    not its author, and a gated story also needs Opus."""
     flo = load_flo()
     story = {"id": "E99-S01", "t": "planted", "k": kind, "s": "M", "tags": tags}
     monkeypatch.setattr(
         flo, "roadmap", lambda: {"epics": [{"id": "E99", "milestone": "M9", "stories": [story]}]}
     )
     monkeypatch.setattr(flo, "state", lambda: {})
+    monkeypatch.setattr(flo, "worker_load", lambda name: busy)
     # The routing-relevant slice of agents/agents.yaml, inline: CI's venv has no PyYAML.
     gated = ["money", "auth", "security", "migration", "concurrency"]
     fleet = {
         "policy": {
             "min_reviewers": 1,
             "opus_final_required_tags": gated,
-            "ungated_reviewers": ["qwen", "kimi"],
+            "ungated_reviewers": ["codex", "qwen"],
+            "author_priority": ["sonnet", "opencode-nemotron", "codex"],
         },
         "agents": {
             "opus": {"metered": "rate", "roles": ["final_review"], "allowed_kinds": []},
+            "sonnet": {
+                "metered": "rate",
+                "roles": ["author"],
+                "allowed_kinds": ["engine", "crud", "ui"],
+                "accounts": {"A": "~/a", "B": "~/b"},
+                "max_workers_per_account": 1,
+            },
             "codex": {
                 "metered": "rate",
                 "roles": ["author", "review"],
@@ -1129,8 +1151,6 @@ def test_assignment_scales_review_to_risk(
             },
             "qwen": {"metered": "spend", "roles": ["author", "review"], "allowed_kinds": [],
                      "monthly_budget_usd": 20},
-            "kimi": {"metered": "spend", "roles": ["author", "review"], "allowed_kinds": [],
-                     "monthly_budget_usd": 20},
         },
     }
     monkeypatch.setattr(flo, "load_yaml", lambda path: fleet)
@@ -1138,7 +1158,44 @@ def test_assignment_scales_review_to_risk(
     out = flo.cmd_assign(["E99-S01"])
 
     assert (out["author"], out["reviewers"]) == (author, reviewers)
-    assert out["opus_final"] is (reviewers == ["opus"])
+    assert out["opus_final"] is bool(tags)
+
+
+def test_account_picker_balances_load_and_resumes_a_recorded_session(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    flo = load_flo()
+    task = tmp_path / "task.json"
+    task.write_text(json.dumps({"author": "sonnet"}))
+    cfg = {"accounts": {"A": "default", "B": "~/b"}, "max_workers_per_account": 2}
+    saved: dict[str, Any] = {"last_account": {"sonnet": "B"}}
+    load = {"A": 1}
+    monkeypatch.setattr(flo, "worktree_path", lambda sid: tmp_path)
+    monkeypatch.setattr(flo, "load_yaml", lambda path: {"agents": {"sonnet": cfg}})
+    monkeypatch.setattr(flo, "worker_load", lambda name: load)
+    monkeypatch.setattr(flo, "state", lambda: saved)
+    monkeypatch.setattr(flo, "save_state", saved.update)
+
+    flo.cmd_account(["E99-S01"])
+    kind, config_dir, session, account = capsys.readouterr().out.split()
+    # B is less loaded, even though it went last
+    assert (kind, config_dir, account) == ("new", str(Path("~/b").expanduser()), "B")
+    rec = json.loads(task.read_text())["sessions"]["sonnet"]
+    assert (rec["account"], rec["id"]) == ("B", session)
+
+    flo.cmd_account(["E99-S01"])  # a second launch of the same story resumes, never forks
+    assert capsys.readouterr().out.split() == [
+        "resume", str(Path("~/b").expanduser()), session, "B"]
+
+    task.write_text(json.dumps({"author": "sonnet"}))
+    load.update({"B": 2})
+    flo.cmd_account(["E99-S01"])  # A is the default login: CLAUDE_CONFIG_DIR must be unset, not set
+    assert capsys.readouterr().out.split()[1:4:2] == ["-", "A"]
+
+    task.write_text(json.dumps({"author": "sonnet"}))
+    load.update({"A": 2, "B": 2})
+    with pytest.raises(SystemExit):
+        flo.cmd_account(["E99-S01"])
 
 
 def test_run_check_leaves_a_configured_database_alone(
@@ -1158,6 +1215,195 @@ def test_run_check_leaves_a_configured_database_alone(
     )
 
     assert flo.run_check(tmp_path) is True
+
+
+def story_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """A git repo with a milestone branch and a story branch checked out, like a worktree."""
+    for key, value in {"GIT_AUTHOR_NAME": "gate", "GIT_COMMITTER_NAME": "gate",
+                       "GIT_AUTHOR_EMAIL": "gate@example.invalid",
+                       "GIT_COMMITTER_EMAIL": "gate@example.invalid"}.items():
+        monkeypatch.setenv(key, value)
+    repo = tmp_path / "wt"
+    repo.mkdir()
+
+    def sh(*args: str) -> None:
+        subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True)
+
+    sh("init", "--quiet", "-b", "milestone/M9")
+    (repo / ".gitignore").write_text("task.json\n")
+    (repo / "README").write_text("base\n")
+    sh("add", ".")
+    sh("commit", "--quiet", "-m", "base")
+    sh("checkout", "--quiet", "-b", "story/E99-S01")
+    (repo / "task.json").write_text(json.dumps(
+        {"milestone_branch": "milestone/M9", "branch": "story/E99-S01"}))
+    return repo
+
+
+def commit(repo: Path, path: str, text: str = "x\n") -> str:
+    (repo / path).parent.mkdir(parents=True, exist_ok=True)
+    (repo / path).write_text(text)
+    subprocess.run(["git", "add", path], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "--quiet", "-m", path], cwd=repo, check=True,
+                   capture_output=True)
+    return subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo, check=True,
+                          capture_output=True, text=True).stdout.strip()
+
+
+def test_gate_reuses_a_green_tree_and_reruns_when_it_changes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """submit and done ran the same 35-minute check on one tree; the second must be a cache hit,
+    and any change to the tree, committed or not, must run it again."""
+    flo = load_flo()
+    repo = story_repo(tmp_path, monkeypatch)
+    runs: list[str] = []
+
+    def run_check(cwd: Path, profile: str = "full") -> bool:
+        runs.append(profile)
+        return True
+
+    monkeypatch.setattr(flo, "run_check", run_check)
+
+    assert flo.checked(repo, "light") and flo.checked(repo, "light")
+    assert runs == ["light"]
+    assert flo.checked(repo, "full") and runs == ["light", "full"]  # a profile is not a substitute
+
+    commit(repo, "apps/api/src/changed.py")
+    assert flo.checked(repo, "full") and runs == ["light", "full", "full"]
+
+    (repo / "README").write_text("dirty\n")
+    assert flo.checked(repo, "full") and flo.checked(repo, "full")
+    assert runs == ["light", "full", "full", "full", "full"]  # never cached while dirty
+
+
+def test_gated_story_needs_green_ci_on_the_commit_it_submitted(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    flo = load_flo()
+    repo = story_repo(tmp_path, monkeypatch)
+    sha = commit(repo, "apps/api/src/story.py")
+    pkt = {"branch": "story/E99-S01", "submitted_sha": sha}
+    runs: list[dict[str, object]] = []
+    monkeypatch.setattr(flo, "gh_runs", lambda branch: runs)
+
+    assert "no submitted_sha" in flo.story_ci_failure({"branch": "b"}, repo)
+    assert "no CI run" in flo.story_ci_failure(pkt, repo)
+    runs[:] = [{"headSha": "0" * 40, "status": "completed", "conclusion": "success"}]
+    assert "no CI run" in flo.story_ci_failure(pkt, repo)  # green on another commit is not green
+    runs[:] = [{"headSha": sha, "status": "in_progress", "conclusion": ""}]
+    assert "still in_progress" in flo.story_ci_failure(pkt, repo)
+    runs[:] = [{"headSha": sha, "status": "completed", "conclusion": "failure", "databaseId": 7}]
+    assert "failure" in flo.story_ci_failure(pkt, repo)
+    runs[:] = [{"headSha": sha, "status": "completed", "conclusion": "success"}]
+    assert flo.story_ci_failure(pkt, repo) is None
+
+    # finish merges the milestone in; other stories' commits arriving that way are not story changes
+    subprocess.run(["git", "checkout", "--quiet", "milestone/M9"], cwd=repo, check=True)
+    commit(repo, "apps/api/src/other_story.py")
+    subprocess.run(["git", "checkout", "--quiet", "story/E99-S01"], cwd=repo, check=True)
+    subprocess.run(["git", "merge", "--quiet", "--no-edit", "milestone/M9"], cwd=repo, check=True,
+                   capture_output=True)
+    assert flo.story_ci_failure(pkt, repo) is None
+
+    commit(repo, "apps/api/src/after_review.py")
+    assert "never CI'd" in flo.story_ci_failure(pkt, repo)
+
+
+def test_light_profile_skips_full_suites_and_runs_the_story_tests(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    flo = load_flo()
+    repo = story_repo(tmp_path, monkeypatch)
+    commit(repo, "apps/api/tests/budget/test_story.py")
+    commit(repo, "apps/api/tests/budget/helpers.py")
+    commit(repo, "apps/api/migrations/20991231_0099_story.py")
+    commit(repo, "apps/web/tests/e2e/story.spec.ts")
+    commit(repo, "apps/web/src/Story.tsx")
+
+    assert flo.story_checks(repo) == [
+        ("story pytest", ["pytest", "-q", "apps/api/tests/budget/test_story.py",
+                          "apps/api/tests/kernel/test_migrate.py"]),
+        ("story e2e", ["npm", "--prefix", "apps/web", "run", "test:e2e", "--",
+                       "tests/e2e/story.spec.ts"]),
+    ]
+
+    ran: list[str] = []
+    monkeypatch.setenv("DATABASE_URL", "postgresql://ci/flo_test")
+    monkeypatch.setattr(flo, "CHECKS", [("ruff", ["ruff"]), ("pytest", ["pytest"]),
+                                        ("e2e+axe", ["e2e"])])
+
+    real_run = subprocess.run
+
+    def record(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        if cmd[0] == "git":
+            return real_run(cmd, **kwargs)
+        ran.append(" ".join(cmd))
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+
+    monkeypatch.setattr(flo.subprocess, "run", record)
+    assert flo.run_check(repo, "light") is True
+    assert ran[0] == "ruff" and "pytest" not in ran and "e2e" not in ran
+    assert any(r.startswith("pytest -q apps/api/tests/budget/test_story.py") for r in ran)
+
+
+def test_ci_watch_marks_red_once_and_reaps_green_merged_stories(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The monitor is what turns 'merge without waiting for CI' into a safe rule: a red run must
+    reach the planner, and a worktree must never be dropped before its CI is green."""
+    flo = load_flo()
+    stories = [{"id": "E99-S01", "st": "done"}, {"id": "E99-S02", "st": "review"},
+               {"id": "E99-S03", "st": "done"}]
+    monkeypatch.setattr(flo, "ROOT", tmp_path)
+    monkeypatch.setattr(flo, "roadmap", lambda: {
+        "milestones": [{"id": "M9", "branch": "milestone/M9"}],
+        "epics": [{"id": "E99", "milestone": "M9", "stories": stories}]})
+    monkeypatch.setattr(flo, "worktree_path", lambda sid: tmp_path / sid)
+    for s in stories:
+        (tmp_path / s["id"]).mkdir()
+        (tmp_path / s["id"] / "task.json").write_text(json.dumps(
+            {"branch": f"story/{s['id']}", "submitted_sha": f"sha-{s['id']}"}))
+
+    def run(sha: str, conclusion: str, status: str = "completed") -> dict[str, object]:
+        return {"headSha": sha, "status": status, "conclusion": conclusion, "databaseId": 1}
+
+    runs = {
+        "story/E99-S01": [run("sha-E99-S01", "success")],
+        "story/E99-S02": [run("sha-E99-S02", "failure")],
+        "story/E99-S03": [run("sha-E99-S03", "", "in_progress")],
+        "milestone/M9": [run("m-head", "failure"), run("m-old", "success")],
+    }
+    monkeypatch.setattr(flo, "gh_runs", lambda branch: runs[branch])
+    views: list[str] = []
+
+    def gh_view(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        views.append(cmd[3])
+        return subprocess.CompletedProcess(cmd, 0, "FAILED test_story\n", "")
+
+    monkeypatch.setattr(flo.subprocess, "run", gh_view)
+    reaped: list[str] = []
+
+    def reap(argv: list[str]) -> None:
+        reaped.append(argv[0])
+        shutil.rmtree(tmp_path / argv[0])  # as flo reap removes the worktree
+
+    monkeypatch.setattr(flo, "cmd_reap", reap)
+
+    flo.cmd_ci_watch([])
+    red = tmp_path / ".scratch" / "E99-S02.ci-red"
+    assert "FAILED test_story" in red.read_text()
+    assert (tmp_path / ".scratch" / "M9.ci-red").exists()
+    assert reaped == ["E99-S01"]  # S03 is merged but its CI has not finished: keep the worktree
+
+    flo.cmd_ci_watch([])
+    assert len(views) == 2  # the same red run is not fetched and reported again
+
+    runs["story/E99-S02"] = [run("sha-E99-S02", "success")]
+    runs["milestone/M9"] = [run("m-fix", "success")]
+    flo.cmd_ci_watch([])
+    assert not red.exists() and not (tmp_path / ".scratch" / "M9.ci-red").exists()
+    assert reaped == ["E99-S01"]  # S02 is green but not merged: nothing to reap
 
 
 @pytest.mark.parametrize(

@@ -2,6 +2,406 @@
   "v": 3,
   "attachments": {},
   "boards": {
+    "ApprCompleted.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Inbox, Completed Tab",
+      "w": 1440,
+      "x": 7600,
+      "y": 2947
+    },
+    "ApprDelegated.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Inbox, Delegated Tab With Notice",
+      "w": 1440,
+      "x": 9120,
+      "y": 2947
+    },
+    "ApprEmpty.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Inbox, Empty",
+      "w": 1440,
+      "x": 1520,
+      "y": 2947
+    },
+    "ApprError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Inbox, Error",
+      "w": 1440,
+      "x": 3040,
+      "y": 2947
+    },
+    "ApprLoading.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Inbox, Loading",
+      "w": 1440,
+      "x": 0,
+      "y": 2947
+    },
+    "ApprOverdue.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Inbox, Overdue Tab",
+      "w": 1440,
+      "x": 6080,
+      "y": 2947
+    },
+    "ApprPartial.dc.html": {
+      "expand": "fill",
+      "h": 1053,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Inbox, Partial, Due Dates Delayed",
+      "w": 1440,
+      "x": 4560,
+      "y": 2947
+    },
+    "ApprSheet.dc.html": {
+      "expand": "fill",
+      "h": 1010,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Your Turn",
+      "w": 1440,
+      "x": 0,
+      "y": 4260
+    },
+    "ApprSheet375.dc.html": {
+      "expand": "fill",
+      "h": 2687,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, 375",
+      "w": 375,
+      "x": 15200,
+      "y": 4260
+    },
+    "ApprSheetChanges.dc.html": {
+      "expand": "fill",
+      "h": 1010,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Resubmitted With Diff",
+      "w": 1440,
+      "x": 6080,
+      "y": 4260
+    },
+    "ApprSheetCover.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Covering for Someone",
+      "w": 1440,
+      "x": 12160,
+      "y": 4260
+    },
+    "ApprSheetDecided.dc.html": {
+      "expand": "fill",
+      "h": 1010,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Already Decided",
+      "w": 1440,
+      "x": 7600,
+      "y": 4260
+    },
+    "ApprSheetDone.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Your Past Decision",
+      "w": 1440,
+      "x": 10640,
+      "y": 4260
+    },
+    "ApprSheetPartial.dc.html": {
+      "expand": "fill",
+      "h": 1053,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Routing Unavailable",
+      "w": 1440,
+      "x": 9120,
+      "y": 4260
+    },
+    "ApprSheetReason.dc.html": {
+      "expand": "fill",
+      "h": 1010,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Reason Missing",
+      "w": 1440,
+      "x": 1520,
+      "y": 4260
+    },
+    "ApprSheetSod.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Your Own Request",
+      "w": 1440,
+      "x": 13680,
+      "y": 4260
+    },
+    "ApprSheetStale.dc.html": {
+      "expand": "fill",
+      "h": 1010,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Changed While Open",
+      "w": 1440,
+      "x": 3040,
+      "y": 4260
+    },
+    "ApprSheetStaleErr.dc.html": {
+      "expand": "fill",
+      "h": 1010,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Stale Version Refused",
+      "w": 1440,
+      "x": 4560,
+      "y": 4260
+    },
+    "ApprW1024.dc.html": {
+      "expand": "fill",
+      "h": 1010,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Inbox, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 0
+    },
+    "ApprW1920.dc.html": {
+      "expand": "fill",
+      "h": 1010,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Inbox, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 0
+    },
+    "ApprW375.dc.html": {
+      "expand": "fill",
+      "h": 2687,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Inbox, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 0
+    },
+    "ApprW768.dc.html": {
+      "expand": "fill",
+      "h": 1097,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Inbox, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 0
+    },
+    "ApprovalDelegation.dc.html": {
+      "expand": "fill",
+      "h": 1179,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Availability",
+      "w": 1440,
+      "x": 0,
+      "y": 14499
+    },
+    "ApprovalInbox.dc.html": {
+      "expand": "fill",
+      "h": 1010,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Inbox",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "ApprovalWorkflows.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Approval Workflows",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "BuildCond.dc.html": {
+      "expand": "fill",
+      "h": 1136,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, Condition Selected",
+      "w": 1440,
+      "x": 1520,
+      "y": 6939
+    },
+    "BuildEmpty.dc.html": {
+      "expand": "fill",
+      "h": 1048,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, Empty",
+      "w": 1440,
+      "x": 4560,
+      "y": 8666
+    },
+    "BuildError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, Error",
+      "w": 1440,
+      "x": 6080,
+      "y": 8666
+    },
+    "BuildGroup.dc.html": {
+      "expand": "fill",
+      "h": 1469,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, Quorum Group Selected",
+      "w": 1440,
+      "x": 3040,
+      "y": 6939
+    },
+    "BuildLoading.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, Loading",
+      "w": 1440,
+      "x": 3040,
+      "y": 8666
+    },
+    "BuildOutline.dc.html": {
+      "expand": "fill",
+      "h": 1367,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, Outline (Non-Drag)",
+      "w": 1440,
+      "x": 0,
+      "y": 6939
+    },
+    "BuildPartial.dc.html": {
+      "expand": "fill",
+      "h": 1243,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, Partial, Approvers Unavailable",
+      "w": 1440,
+      "x": 7600,
+      "y": 8666
+    },
+    "BuildPreview.dc.html": {
+      "expand": "fill",
+      "h": 1367,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, Route Preview",
+      "w": 1440,
+      "x": 0,
+      "y": 8666
+    },
+    "BuildProblems.dc.html": {
+      "expand": "fill",
+      "h": 1136,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, Problems Block Publishing",
+      "w": 1440,
+      "x": 4560,
+      "y": 6939
+    },
+    "BuildProblemsOutline.dc.html": {
+      "expand": "fill",
+      "h": 1082,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, Problems in the Outline",
+      "w": 1440,
+      "x": 6080,
+      "y": 6939
+    },
+    "BuildPublish.dc.html": {
+      "expand": "fill",
+      "h": 1367,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, Publish",
+      "w": 1440,
+      "x": 1520,
+      "y": 8666
+    },
+    "BuildW1024.dc.html": {
+      "expand": "fill",
+      "h": 2053,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 3353
+    },
+    "BuildW1920.dc.html": {
+      "expand": "fill",
+      "h": 1367,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 3353
+    },
+    "BuildW375.dc.html": {
+      "expand": "fill",
+      "h": 3328,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, 375, Outline",
+      "w": 375,
+      "x": 5472,
+      "y": 3353
+    },
+    "BuildW768.dc.html": {
+      "expand": "fill",
+      "h": 2031,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, 768, Outline",
+      "w": 768,
+      "x": 4624,
+      "y": 3353
+    },
     "DashEmpty.dc.html": {
       "expand": "fill",
       "h": 996,
@@ -81,6 +481,106 @@
       "w": 768,
       "x": 4624,
       "y": 4832
+    },
+    "DelegEmpty.dc.html": {
+      "expand": "fill",
+      "h": 1077,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Availability, No Delegations",
+      "w": 1440,
+      "x": 1520,
+      "y": 17165
+    },
+    "DelegError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Availability, Error",
+      "w": 1440,
+      "x": 3040,
+      "y": 17165
+    },
+    "DelegErrors.dc.html": {
+      "expand": "fill",
+      "h": 1329,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Availability, Form Errors",
+      "w": 1440,
+      "x": 4560,
+      "y": 17165
+    },
+    "DelegLoading.dc.html": {
+      "expand": "fill",
+      "h": 997,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Availability, Loading",
+      "w": 1440,
+      "x": 0,
+      "y": 17165
+    },
+    "DelegOrg.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Availability, Organization Tab",
+      "w": 1440,
+      "x": 7600,
+      "y": 17165
+    },
+    "DelegRevoke.dc.html": {
+      "expand": "fill",
+      "h": 1179,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Availability, Revoke Confirmation",
+      "w": 1440,
+      "x": 6080,
+      "y": 17165
+    },
+    "DelegW1024.dc.html": {
+      "expand": "fill",
+      "h": 1679,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Availability, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 14499
+    },
+    "DelegW1920.dc.html": {
+      "expand": "fill",
+      "h": 1163,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Availability, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 14499
+    },
+    "DelegW375.dc.html": {
+      "expand": "fill",
+      "h": 2436,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Availability, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 14499
+    },
+    "DelegW768.dc.html": {
+      "expand": "fill",
+      "h": 1771,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Approval Availability, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 14499
     },
     "DesignSystem.dc.html": {
       "expand": "fill",
@@ -183,7 +683,7 @@
     },
     "DetailW375.dc.html": {
       "expand": "fill",
-      "h": 1946,
+      "h": 2004,
       "is_interactive": true,
       "page": "project-dashboard",
       "title": "Project Detail, 375",
@@ -193,7 +693,7 @@
     },
     "DetailW768.dc.html": {
       "expand": "fill",
-      "h": 1541,
+      "h": 1599,
       "is_interactive": true,
       "page": "project-dashboard",
       "title": "Project Detail, 768",
@@ -531,6 +1031,756 @@
       "x": 0,
       "y": 0
     },
+    "ReqCreateBusy.dc.html": {
+      "expand": "fill",
+      "h": 1240,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition Create, Submitting",
+      "w": 1440,
+      "x": 4560,
+      "y": 3891
+    },
+    "ReqCreateError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition Create, Error",
+      "w": 1440,
+      "x": 9120,
+      "y": 3891
+    },
+    "ReqCreateErrors.dc.html": {
+      "expand": "fill",
+      "h": 1577,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition Create, Validation Summary",
+      "w": 1440,
+      "x": 1520,
+      "y": 3891
+    },
+    "ReqCreateLoading.dc.html": {
+      "expand": "fill",
+      "h": 1033,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition Create, Loading",
+      "w": 1440,
+      "x": 7600,
+      "y": 3891
+    },
+    "ReqCreateNew.dc.html": {
+      "expand": "fill",
+      "h": 1218,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition Create, New",
+      "w": 1440,
+      "x": 0,
+      "y": 3891
+    },
+    "ReqCreatePartial.dc.html": {
+      "expand": "fill",
+      "h": 1240,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition Create, Partial, Catalogue Failed",
+      "w": 1440,
+      "x": 10640,
+      "y": 3891
+    },
+    "ReqCreateShort.dc.html": {
+      "expand": "fill",
+      "h": 1407,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition Create, Short on Funds",
+      "w": 1440,
+      "x": 3040,
+      "y": 3891
+    },
+    "ReqCreateSubmitted.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition Create, Submitted",
+      "w": 1440,
+      "x": 6080,
+      "y": 3891
+    },
+    "ReqCreateW1024.dc.html": {
+      "expand": "fill",
+      "h": 2227,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition Create, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 0
+    },
+    "ReqCreateW1920.dc.html": {
+      "expand": "fill",
+      "h": 1200,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition Create, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 0
+    },
+    "ReqCreateW375.dc.html": {
+      "expand": "fill",
+      "h": 3551,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition Create, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 0
+    },
+    "ReqCreateW768.dc.html": {
+      "expand": "fill",
+      "h": 2309,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition Create, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 0
+    },
+    "ReqDetailAwarded.dc.html": {
+      "expand": "fill",
+      "h": 1499,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition Detail, Awarded",
+      "w": 1440,
+      "x": 3040,
+      "y": 12526
+    },
+    "ReqDetailDraft.dc.html": {
+      "expand": "fill",
+      "h": 1234,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition Detail, Draft",
+      "w": 1440,
+      "x": 0,
+      "y": 12526
+    },
+    "ReqDetailEmpty.dc.html": {
+      "expand": "fill",
+      "h": 1234,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition Detail, Empty, Nothing Linked",
+      "w": 1440,
+      "x": 9120,
+      "y": 12526
+    },
+    "ReqDetailError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition Detail, Error",
+      "w": 1440,
+      "x": 6080,
+      "y": 12526
+    },
+    "ReqDetailLoading.dc.html": {
+      "expand": "fill",
+      "h": 1312,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition Detail, Loading",
+      "w": 1440,
+      "x": 4560,
+      "y": 12526
+    },
+    "ReqDetailPartial.dc.html": {
+      "expand": "fill",
+      "h": 1390,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition Detail, Partial, Linked Records Failed",
+      "w": 1440,
+      "x": 7600,
+      "y": 12526
+    },
+    "ReqDetailReturned.dc.html": {
+      "expand": "fill",
+      "h": 1496,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Requisition Detail, Returned for Changes",
+      "w": 1440,
+      "x": 0,
+      "y": 7207
+    },
+    "ReqDetailSourcing.dc.html": {
+      "expand": "fill",
+      "h": 1444,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition Detail, Sourcing",
+      "w": 1440,
+      "x": 1520,
+      "y": 12526
+    },
+    "ReqDetailW1024.dc.html": {
+      "expand": "fill",
+      "h": 1452,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition Detail, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 9322
+    },
+    "ReqDetailW1920.dc.html": {
+      "expand": "fill",
+      "h": 1110,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition Detail, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 9322
+    },
+    "ReqDetailW375.dc.html": {
+      "expand": "fill",
+      "h": 2864,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition Detail, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 9322
+    },
+    "ReqDetailW768.dc.html": {
+      "expand": "fill",
+      "h": 1950,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition Detail, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 9322
+    },
+    "ReqDetailWithdrawn.dc.html": {
+      "expand": "fill",
+      "h": 1442,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Requisition Detail, Withdrawn",
+      "w": 1440,
+      "x": 1520,
+      "y": 7207
+    },
+    "ReqListEmpty.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition List, Empty",
+      "w": 1440,
+      "x": 1520,
+      "y": 8082
+    },
+    "ReqListError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition List, Error",
+      "w": 1440,
+      "x": 3040,
+      "y": 8082
+    },
+    "ReqListLoading.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition List, Loading",
+      "w": 1440,
+      "x": 0,
+      "y": 8082
+    },
+    "ReqListPartial.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition List, Partial, Status Delayed",
+      "w": 1440,
+      "x": 4560,
+      "y": 8082
+    },
+    "ReqListW1024.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition List, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 5808
+    },
+    "ReqListW1920.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition List, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 5808
+    },
+    "ReqListW375.dc.html": {
+      "expand": "fill",
+      "h": 1934,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition List, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 5808
+    },
+    "ReqListW768.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition List, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 5808
+    },
+    "RequisitionCreate.dc.html": {
+      "expand": "fill",
+      "h": 1240,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition Create, 1440",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "RequisitionDetail.dc.html": {
+      "expand": "fill",
+      "h": 1390,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition Detail, 1440",
+      "w": 1440,
+      "x": 0,
+      "y": 9322
+    },
+    "RequisitionList.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "requisition-create",
+      "title": "Requisition List, 1440",
+      "w": 1440,
+      "x": 0,
+      "y": 5808
+    },
+    "RequisitionResubmit.dc.html": {
+      "expand": "fill",
+      "h": 1240,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Resubmit, Material Change",
+      "w": 1440,
+      "x": 0,
+      "y": 10331
+    },
+    "ResubBusy.dc.html": {
+      "expand": "fill",
+      "h": 1240,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Resubmit, Sending",
+      "w": 1440,
+      "x": 4560,
+      "y": 12909
+    },
+    "ResubDone.dc.html": {
+      "expand": "fill",
+      "h": 1330,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Resubmit, Sent",
+      "w": 1440,
+      "x": 6080,
+      "y": 12909
+    },
+    "ResubError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Resubmit, Error",
+      "w": 1440,
+      "x": 9120,
+      "y": 12909
+    },
+    "ResubFunds.dc.html": {
+      "expand": "fill",
+      "h": 1097,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Resubmit, Funds Short",
+      "w": 1440,
+      "x": 3040,
+      "y": 12909
+    },
+    "ResubLoading.dc.html": {
+      "expand": "fill",
+      "h": 1031,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Resubmit, Loading",
+      "w": 1440,
+      "x": 7600,
+      "y": 12909
+    },
+    "ResubMinor.dc.html": {
+      "expand": "fill",
+      "h": 1053,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Resubmit, Not a Material Change",
+      "w": 1440,
+      "x": 0,
+      "y": 12909
+    },
+    "ResubNone.dc.html": {
+      "expand": "fill",
+      "h": 1027,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Resubmit, No Changes",
+      "w": 1440,
+      "x": 1520,
+      "y": 12909
+    },
+    "ResubW1024.dc.html": {
+      "expand": "fill",
+      "h": 1814,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Resubmit, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 10331
+    },
+    "ResubW1920.dc.html": {
+      "expand": "fill",
+      "h": 1198,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Resubmit, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 10331
+    },
+    "ResubW375.dc.html": {
+      "expand": "fill",
+      "h": 2318,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Resubmit, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 10331
+    },
+    "ResubW768.dc.html": {
+      "expand": "fill",
+      "h": 1808,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Resubmit, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 10331
+    },
+    "SignIn.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "Sign-In, 1440",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "SignInBusy.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "Sign-In, Signing In",
+      "w": 1440,
+      "x": 3040,
+      "y": 1240
+    },
+    "SignInEnded.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "Sign-In, Session Ended",
+      "w": 1440,
+      "x": 4560,
+      "y": 1240
+    },
+    "SignInEnrol.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "MFA Enrolment",
+      "w": 1440,
+      "x": 3040,
+      "y": 2480
+    },
+    "SignInError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "Sign-In, Wrong Password",
+      "w": 1440,
+      "x": 0,
+      "y": 1240
+    },
+    "SignInFields.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "Sign-In, Field Errors",
+      "w": 1440,
+      "x": 6080,
+      "y": 1240
+    },
+    "SignInInvite.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "Invitation, Form",
+      "w": 1440,
+      "x": 0,
+      "y": 4960
+    },
+    "SignInInviteChecking.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "Invitation, Checking",
+      "w": 1440,
+      "x": 4560,
+      "y": 4960
+    },
+    "SignInInviteDone.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "Invitation, Accepted",
+      "w": 1440,
+      "x": 9120,
+      "y": 4960
+    },
+    "SignInInviteErrors.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "Invitation, Field Errors",
+      "w": 1440,
+      "x": 1520,
+      "y": 4960
+    },
+    "SignInInviteExpired.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "Invitation, Expired",
+      "w": 1440,
+      "x": 6080,
+      "y": 4960
+    },
+    "SignInInviteGone.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "Invitation, Unavailable",
+      "w": 1440,
+      "x": 7600,
+      "y": 4960
+    },
+    "SignInInviteJoin.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "Invitation, Existing Account",
+      "w": 1440,
+      "x": 10640,
+      "y": 4960
+    },
+    "SignInInviteNetwork.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "Invitation, Server Unreachable",
+      "w": 1440,
+      "x": 3040,
+      "y": 4960
+    },
+    "SignInInviteW375.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "Invitation, 375",
+      "w": 375,
+      "x": 12160,
+      "y": 4960
+    },
+    "SignInMfa.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "MFA Challenge",
+      "w": 1440,
+      "x": 0,
+      "y": 2480
+    },
+    "SignInMfaInvalid.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "MFA Challenge, Invalid Code",
+      "w": 1440,
+      "x": 1520,
+      "y": 2480
+    },
+    "SignInNetwork.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "Sign-In, Server Unreachable",
+      "w": 1440,
+      "x": 1520,
+      "y": 1240
+    },
+    "SignInOrgs.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "Sign-In, Choose Organization",
+      "w": 1440,
+      "x": 7600,
+      "y": 1240
+    },
+    "SignInRecovery.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "MFA Recovery Codes",
+      "w": 1440,
+      "x": 4560,
+      "y": 2480
+    },
+    "SignInSignup.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "Sign-Up",
+      "w": 1440,
+      "x": 0,
+      "y": 3720
+    },
+    "SignInSignupErrors.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "Sign-Up, Field Errors",
+      "w": 1440,
+      "x": 1520,
+      "y": 3720
+    },
+    "SignInVerify.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "Sign-Up, Check Your Email",
+      "w": 1440,
+      "x": 3040,
+      "y": 3720
+    },
+    "SignInW1024.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "Sign-In, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 0
+    },
+    "SignInW1920.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "Sign-In, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 0
+    },
+    "SignInW375.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "Sign-In, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 0
+    },
+    "SignInW768.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "common-screens",
+      "title": "Sign-In, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 0
+    },
     "ThemePanel.dc.html": {
       "h": 8000,
       "is_interactive": true,
@@ -540,615 +1790,865 @@
       "x": 1520,
       "y": 0
     },
-    "SignIn.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Sign-In, 1440",
-      "w": 1440,
-      "x": 0,
-      "y": 0,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInW1920.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Sign-In, 1920",
-      "w": 1920,
-      "x": 1520,
-      "y": 0,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInW1024.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Sign-In, 1024",
-      "w": 1024,
-      "x": 3520,
-      "y": 0,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInW768.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Sign-In, 768",
-      "w": 768,
-      "x": 4624,
-      "y": 0,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInW375.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Sign-In, 375",
-      "w": 375,
-      "x": 5472,
-      "y": 0,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInError.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Sign-In, Wrong Password",
-      "w": 1440,
-      "x": 0,
-      "y": 1240,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInNetwork.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Sign-In, Server Unreachable",
-      "w": 1440,
-      "x": 1520,
-      "y": 1240,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInBusy.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Sign-In, Signing In",
-      "w": 1440,
-      "x": 3040,
-      "y": 1240,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInEnded.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Sign-In, Session Ended",
-      "w": 1440,
-      "x": 4560,
-      "y": 1240,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInFields.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Sign-In, Field Errors",
-      "w": 1440,
-      "x": 6080,
-      "y": 1240,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInOrgs.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Sign-In, Choose Organization",
-      "w": 1440,
-      "x": 7600,
-      "y": 1240,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInMfa.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "MFA Challenge",
-      "w": 1440,
-      "x": 0,
-      "y": 2480,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInMfaInvalid.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "MFA Challenge, Invalid Code",
-      "w": 1440,
-      "x": 1520,
-      "y": 2480,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInEnrol.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "MFA Enrolment",
-      "w": 1440,
-      "x": 3040,
-      "y": 2480,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInRecovery.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "MFA Recovery Codes",
-      "w": 1440,
-      "x": 4560,
-      "y": 2480,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInSignup.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Sign-Up",
-      "w": 1440,
-      "x": 0,
-      "y": 3720,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInSignupErrors.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Sign-Up, Field Errors",
-      "w": 1440,
-      "x": 1520,
-      "y": 3720,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInVerify.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Sign-Up, Check Your Email",
-      "w": 1440,
-      "x": 3040,
-      "y": 3720,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInInvite.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Invitation, Form",
-      "w": 1440,
-      "x": 0,
-      "y": 4960,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInInviteErrors.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Invitation, Field Errors",
-      "w": 1440,
-      "x": 1520,
-      "y": 4960,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInInviteNetwork.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Invitation, Server Unreachable",
-      "w": 1440,
-      "x": 3040,
-      "y": 4960,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInInviteChecking.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Invitation, Checking",
-      "w": 1440,
-      "x": 4560,
-      "y": 4960,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInInviteExpired.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Invitation, Expired",
-      "w": 1440,
-      "x": 6080,
-      "y": 4960,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInInviteGone.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Invitation, Unavailable",
-      "w": 1440,
-      "x": 7600,
-      "y": 4960,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInInviteDone.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Invitation, Accepted",
-      "w": 1440,
-      "x": 9120,
-      "y": 4960,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInInviteJoin.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Invitation, Existing Account",
-      "w": 1440,
-      "x": 10640,
-      "y": 4960,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "SignInInviteW375.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Invitation, 375",
-      "w": 375,
-      "x": 12160,
-      "y": 4960,
-      "page": "common-screens",
-      "is_interactive": true
-    },
-    "RequisitionCreate.dc.html": {
-      "expand": "fill",
-      "h": 1240,
-      "title": "Requisition Create, 1440",
-      "w": 1440,
-      "x": 0,
-      "y": 0,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqCreateW1920.dc.html": {
-      "expand": "fill",
-      "h": 1200,
-      "title": "Requisition Create, 1920",
-      "w": 1920,
-      "x": 1520,
-      "y": 0,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqCreateW1024.dc.html": {
-      "expand": "fill",
-      "h": 2227,
-      "title": "Requisition Create, 1024",
-      "w": 1024,
-      "x": 3520,
-      "y": 0,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqCreateW768.dc.html": {
-      "expand": "fill",
-      "h": 2309,
-      "title": "Requisition Create, 768",
-      "w": 768,
-      "x": 4624,
-      "y": 0,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqCreateW375.dc.html": {
-      "expand": "fill",
-      "h": 3551,
-      "title": "Requisition Create, 375",
-      "w": 375,
-      "x": 5472,
-      "y": 0,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqCreateNew.dc.html": {
-      "expand": "fill",
-      "h": 1218,
-      "title": "Requisition Create, New",
-      "w": 1440,
-      "x": 0,
-      "y": 3891,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqCreateErrors.dc.html": {
-      "expand": "fill",
-      "h": 1577,
-      "title": "Requisition Create, Validation Summary",
-      "w": 1440,
-      "x": 1520,
-      "y": 3891,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqCreateShort.dc.html": {
-      "expand": "fill",
-      "h": 1407,
-      "title": "Requisition Create, Short on Funds",
-      "w": 1440,
-      "x": 3040,
-      "y": 3891,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqCreateBusy.dc.html": {
-      "expand": "fill",
-      "h": 1240,
-      "title": "Requisition Create, Submitting",
-      "w": 1440,
-      "x": 4560,
-      "y": 3891,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqCreateSubmitted.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Requisition Create, Submitted",
-      "w": 1440,
-      "x": 6080,
-      "y": 3891,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqCreateLoading.dc.html": {
-      "expand": "fill",
-      "h": 1033,
-      "title": "Requisition Create, Loading",
-      "w": 1440,
-      "x": 7600,
-      "y": 3891,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqCreateError.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Requisition Create, Error",
-      "w": 1440,
-      "x": 9120,
-      "y": 3891,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqCreatePartial.dc.html": {
-      "expand": "fill",
-      "h": 1240,
-      "title": "Requisition Create, Partial, Catalogue Failed",
-      "w": 1440,
-      "x": 10640,
-      "y": 3891,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "RequisitionList.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Requisition List, 1440",
-      "w": 1440,
-      "x": 0,
-      "y": 5808,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqListW1920.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Requisition List, 1920",
-      "w": 1920,
-      "x": 1520,
-      "y": 5808,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqListW1024.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Requisition List, 1024",
-      "w": 1024,
-      "x": 3520,
-      "y": 5808,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqListW768.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Requisition List, 768",
-      "w": 768,
-      "x": 4624,
-      "y": 5808,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqListW375.dc.html": {
-      "expand": "fill",
-      "h": 1934,
-      "title": "Requisition List, 375",
-      "w": 375,
-      "x": 5472,
-      "y": 5808,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqListLoading.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Requisition List, Loading",
-      "w": 1440,
-      "x": 0,
-      "y": 8082,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqListEmpty.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Requisition List, Empty",
-      "w": 1440,
-      "x": 1520,
-      "y": 8082,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqListError.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Requisition List, Error",
-      "w": 1440,
-      "x": 3040,
-      "y": 8082,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqListPartial.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Requisition List, Partial, Status Delayed",
-      "w": 1440,
-      "x": 4560,
-      "y": 8082,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "RequisitionDetail.dc.html": {
+    "WdBusy.dc.html": {
       "expand": "fill",
       "h": 1390,
-      "title": "Requisition Detail, 1440",
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Withdraw Confirmation, Withdrawing",
       "w": 1440,
-      "x": 0,
-      "y": 9322,
-      "page": "requisition-create",
-      "is_interactive": true
+      "x": 4560,
+      "y": 7207
     },
-    "ReqDetailW1920.dc.html": {
+    "WdDecided.dc.html": {
       "expand": "fill",
-      "h": 1110,
-      "title": "Requisition Detail, 1920",
-      "w": 1920,
-      "x": 1520,
-      "y": 9322,
-      "page": "requisition-create",
-      "is_interactive": true
+      "h": 1390,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Withdraw Confirmation, Already Approved",
+      "w": 1440,
+      "x": 7600,
+      "y": 7207
     },
-    "ReqDetailW1024.dc.html": {
+    "WdDialog.dc.html": {
       "expand": "fill",
-      "h": 1452,
-      "title": "Requisition Detail, 1024",
-      "w": 1024,
-      "x": 3520,
-      "y": 9322,
-      "page": "requisition-create",
-      "is_interactive": true
+      "h": 1390,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Withdraw Confirmation",
+      "w": 1440,
+      "x": 3040,
+      "y": 7207
     },
-    "ReqDetailW768.dc.html": {
-      "expand": "fill",
-      "h": 1950,
-      "title": "Requisition Detail, 768",
-      "w": 768,
-      "x": 4624,
-      "y": 9322,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqDetailW375.dc.html": {
+    "WdDialog375.dc.html": {
       "expand": "fill",
       "h": 2864,
-      "title": "Requisition Detail, 375",
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Withdraw Confirmation, 375",
       "w": 375,
-      "x": 5472,
-      "y": 9322,
-      "page": "requisition-create",
-      "is_interactive": true
+      "x": 9120,
+      "y": 7207
     },
-    "ReqDetailDraft.dc.html": {
-      "expand": "fill",
-      "h": 1234,
-      "title": "Requisition Detail, Draft",
-      "w": 1440,
-      "x": 0,
-      "y": 12526,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqDetailSourcing.dc.html": {
-      "expand": "fill",
-      "h": 1444,
-      "title": "Requisition Detail, Sourcing",
-      "w": 1440,
-      "x": 1520,
-      "y": 12526,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqDetailAwarded.dc.html": {
-      "expand": "fill",
-      "h": 1499,
-      "title": "Requisition Detail, Awarded",
-      "w": 1440,
-      "x": 3040,
-      "y": 12526,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqDetailLoading.dc.html": {
-      "expand": "fill",
-      "h": 1312,
-      "title": "Requisition Detail, Loading",
-      "w": 1440,
-      "x": 4560,
-      "y": 12526,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqDetailError.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "title": "Requisition Detail, Error",
-      "w": 1440,
-      "x": 6080,
-      "y": 12526,
-      "page": "requisition-create",
-      "is_interactive": true
-    },
-    "ReqDetailPartial.dc.html": {
+    "WdError.dc.html": {
       "expand": "fill",
       "h": 1390,
-      "title": "Requisition Detail, Partial, Linked Records Failed",
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Withdraw Confirmation, Failed",
+      "w": 1440,
+      "x": 6080,
+      "y": 7207
+    },
+    "WfListEmpty.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflows, Empty",
+      "w": 1440,
+      "x": 1520,
+      "y": 2193
+    },
+    "WfListError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflows, Error",
+      "w": 1440,
+      "x": 3040,
+      "y": 2193
+    },
+    "WfListLoading.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflows, Loading",
+      "w": 1440,
+      "x": 0,
+      "y": 2193
+    },
+    "WfListPartial.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflows, Partial, Counts Delayed",
+      "w": 1440,
+      "x": 4560,
+      "y": 2193
+    },
+    "WfListVersions.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflows, Version History",
+      "w": 1440,
+      "x": 6080,
+      "y": 2193
+    },
+    "WfListW1024.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Approval Workflows, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 0
+    },
+    "WfListW1920.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Approval Workflows, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 0
+    },
+    "WfListW375.dc.html": {
+      "expand": "fill",
+      "h": 1933,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Approval Workflows, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 0
+    },
+    "WfListW768.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Approval Workflows, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 0
+    },
+    "WorkflowBuilder.dc.html": {
+      "expand": "fill",
+      "h": 1367,
+      "is_interactive": true,
+      "page": "approval-builder",
+      "title": "Workflow Builder, Canvas",
+      "w": 1440,
+      "x": 0,
+      "y": 3353
+    },
+    "BudgetTransferList.dc.html": {
+      "expand": "fill",
+      "h": 1054,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Budget Transfers, 1440",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "TrListW1920.dc.html": {
+      "expand": "fill",
+      "h": 1054,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Budget Transfers, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 0
+    },
+    "TrListW1024.dc.html": {
+      "expand": "fill",
+      "h": 1054,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Budget Transfers, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 0
+    },
+    "TrListW768.dc.html": {
+      "expand": "fill",
+      "h": 1121,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Budget Transfers, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 0
+    },
+    "TrListW375.dc.html": {
+      "expand": "fill",
+      "h": 2789,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Budget Transfers, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 0
+    },
+    "TrListLoading.dc.html": {
+      "expand": "fill",
+      "h": 909,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Budget Transfers, Loading",
+      "w": 1440,
+      "x": 0,
+      "y": 3129
+    },
+    "TrListEmpty.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Budget Transfers, Empty",
+      "w": 1440,
+      "x": 1520,
+      "y": 3129
+    },
+    "TrListError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Budget Transfers, Error",
+      "w": 1440,
+      "x": 3040,
+      "y": 3129
+    },
+    "TrListPartial.dc.html": {
+      "expand": "fill",
+      "h": 1107,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Budget Transfers, Partial",
+      "w": 1440,
+      "x": 4560,
+      "y": 3129
+    },
+    "BudgetTransferCreate.dc.html": {
+      "expand": "fill",
+      "h": 1607,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, 1440",
+      "w": 1440,
+      "x": 0,
+      "y": 4576
+    },
+    "TrCreateW1920.dc.html": {
+      "expand": "fill",
+      "h": 1605,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 4576
+    },
+    "TrCreateW1024.dc.html": {
+      "expand": "fill",
+      "h": 2450,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 4576
+    },
+    "TrCreateW768.dc.html": {
+      "expand": "fill",
+      "h": 2476,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 4576
+    },
+    "TrCreateW375.dc.html": {
+      "expand": "fill",
+      "h": 3754,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 4576
+    },
+    "TrCreateCross.dc.html": {
+      "expand": "fill",
+      "h": 1551,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, Cross Hierarchy",
+      "w": 1440,
+      "x": 0,
+      "y": 8670
+    },
+    "TrCreatePolicy.dc.html": {
+      "expand": "fill",
+      "h": 1326,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, Policy Not Enabled",
+      "w": 1440,
+      "x": 1520,
+      "y": 8670
+    },
+    "TrCreateAllocation.dc.html": {
+      "expand": "fill",
+      "h": 988,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Allocation",
+      "w": 1440,
+      "x": 3040,
+      "y": 8670
+    },
+    "TrCreateAdjustment.dc.html": {
+      "expand": "fill",
+      "h": 990,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Adjustment",
+      "w": 1440,
+      "x": 4560,
+      "y": 8670
+    },
+    "TrCreateErrors.dc.html": {
+      "expand": "fill",
+      "h": 1320,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, Validation Summary",
+      "w": 1440,
+      "x": 6080,
+      "y": 8670
+    },
+    "TrCreateShort.dc.html": {
+      "expand": "fill",
+      "h": 1729,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, Over the Available Funds",
       "w": 1440,
       "x": 7600,
-      "y": 12526,
-      "page": "requisition-create",
-      "is_interactive": true
+      "y": 8670
     },
-    "ReqDetailEmpty.dc.html": {
+    "TrCreateRace.dc.html": {
       "expand": "fill",
-      "h": 1234,
-      "title": "Requisition Detail, Empty, Nothing Linked",
+      "h": 1769,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, Lost the Race",
+      "w": 1440,
+      "x": 0,
+      "y": 10739
+    },
+    "TrCreateBusy.dc.html": {
+      "expand": "fill",
+      "h": 1607,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, Submitting",
+      "w": 1440,
+      "x": 1520,
+      "y": 10739
+    },
+    "TrCreateSubmitted.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, Submitted",
+      "w": 1440,
+      "x": 3040,
+      "y": 10739
+    },
+    "TrCreateLoading.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, Loading",
+      "w": 1440,
+      "x": 4560,
+      "y": 10739
+    },
+    "TrCreateError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, Error",
+      "w": 1440,
+      "x": 6080,
+      "y": 10739
+    },
+    "TrCreatePartial.dc.html": {
+      "expand": "fill",
+      "h": 1174,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "New Transfer, Partial",
+      "w": 1440,
+      "x": 7600,
+      "y": 10739
+    },
+    "BudgetTransferDetail.dc.html": {
+      "expand": "fill",
+      "h": 1495,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Transfer Detail, 1440",
+      "w": 1440,
+      "x": 0,
+      "y": 12848
+    },
+    "TrDetailW1920.dc.html": {
+      "expand": "fill",
+      "h": 1630,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Transfer Detail, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 12848
+    },
+    "TrDetailW1024.dc.html": {
+      "expand": "fill",
+      "h": 2440,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Transfer Detail, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 12848
+    },
+    "TrDetailW768.dc.html": {
+      "expand": "fill",
+      "h": 2091,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Transfer Detail, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 12848
+    },
+    "TrDetailW375.dc.html": {
+      "expand": "fill",
+      "h": 3119,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Transfer Detail, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 12848
+    },
+    "TrDetailCross.dc.html": {
+      "expand": "fill",
+      "h": 1439,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Transfer Detail, Cross Hierarchy Pending",
+      "w": 1440,
+      "x": 0,
+      "y": 16307
+    },
+    "TrDetailPosted.dc.html": {
+      "expand": "fill",
+      "h": 1525,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Transfer Detail, Posted",
+      "w": 1440,
+      "x": 1520,
+      "y": 16307
+    },
+    "TrDetailReversed.dc.html": {
+      "expand": "fill",
+      "h": 1597,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Transfer Detail, Reversed",
+      "w": 1440,
+      "x": 3040,
+      "y": 16307
+    },
+    "TrDetailRejected.dc.html": {
+      "expand": "fill",
+      "h": 1527,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Transfer Detail, Rejected",
+      "w": 1440,
+      "x": 4560,
+      "y": 16307
+    },
+    "TrDetailReadOnly.dc.html": {
+      "expand": "fill",
+      "h": 1573,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Transfer Detail, Without Reversal Right",
+      "w": 1440,
+      "x": 6080,
+      "y": 16307
+    },
+    "TrDetailReverse.dc.html": {
+      "expand": "fill",
+      "h": 1525,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Reverse Transfer Confirmation",
+      "w": 1440,
+      "x": 0,
+      "y": 18244
+    },
+    "TrDetailReverseBusy.dc.html": {
+      "expand": "fill",
+      "h": 1525,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Reverse Transfer, Creating",
+      "w": 1440,
+      "x": 1520,
+      "y": 18244
+    },
+    "TrDetailReverseBlocked.dc.html": {
+      "expand": "fill",
+      "h": 1621,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Reverse Transfer, Funds Not There",
+      "w": 1440,
+      "x": 3040,
+      "y": 18244
+    },
+    "TrDetailLoading.dc.html": {
+      "expand": "fill",
+      "h": 917,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Transfer Detail, Loading",
+      "w": 1440,
+      "x": 4560,
+      "y": 18244
+    },
+    "TrDetailError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Transfer Detail, Error",
+      "w": 1440,
+      "x": 6080,
+      "y": 18244
+    },
+    "TrDetailPartial.dc.html": {
+      "expand": "fill",
+      "h": 1062,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Transfer Detail, Partial",
+      "w": 1440,
+      "x": 7600,
+      "y": 18244
+    },
+    "TransferPosting.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Posting Moment, After",
+      "w": 1440,
+      "x": 0,
+      "y": 20205
+    },
+    "TrMomentBefore.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Posting Moment, Before",
+      "w": 1440,
+      "x": 1520,
+      "y": 20205
+    },
+    "TrMomentTrace.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Posting Moment, Trace in Progress",
+      "w": 1440,
+      "x": 3040,
+      "y": 20205
+    },
+    "TrMomentReduced.dc.html": {
+      "expand": "fill",
+      "h": 953,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Posting Moment, Reduced Motion",
+      "w": 1440,
+      "x": 4560,
+      "y": 20205
+    },
+    "TrMomentTable.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Posting Moment, Table Alternative",
+      "w": 1440,
+      "x": 6080,
+      "y": 20205
+    },
+    "TrMomentW375.dc.html": {
+      "expand": "fill",
+      "h": 1879,
+      "is_interactive": true,
+      "page": "budget-transfer",
+      "title": "Posting Moment, 375",
+      "w": 375,
+      "x": 7600,
+      "y": 20205
+    },
+    "RfqComparison.dc.html": {
+      "expand": "fill",
+      "h": 2182,
+      "is_interactive": true,
+      "page": "rfq-comparison",
+      "title": "Bid Comparison, 1440",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "CmpW1920.dc.html": {
+      "expand": "fill",
+      "h": 1985,
+      "is_interactive": true,
+      "page": "rfq-comparison",
+      "title": "Bid Comparison, 1920",
+      "w": 1920,
+      "x": 1520,
+      "y": 0
+    },
+    "CmpW1024.dc.html": {
+      "expand": "fill",
+      "h": 2647,
+      "is_interactive": true,
+      "page": "rfq-comparison",
+      "title": "Bid Comparison, 1024",
+      "w": 1024,
+      "x": 3520,
+      "y": 0
+    },
+    "CmpW768.dc.html": {
+      "expand": "fill",
+      "h": 2845,
+      "is_interactive": true,
+      "page": "rfq-comparison",
+      "title": "Bid Comparison, 768",
+      "w": 768,
+      "x": 4624,
+      "y": 0
+    },
+    "CmpW375.dc.html": {
+      "expand": "fill",
+      "h": 2907,
+      "is_interactive": true,
+      "page": "rfq-comparison",
+      "title": "Bid Comparison, 375",
+      "w": 375,
+      "x": 5472,
+      "y": 0
+    },
+    "CmpLines.dc.html": {
+      "expand": "fill",
+      "h": 1121,
+      "is_interactive": true,
+      "page": "rfq-comparison",
+      "title": "Bid Comparison, by Line",
+      "w": 1440,
+      "x": 0,
+      "y": 3247
+    },
+    "CmpBreakdown.dc.html": {
+      "expand": "fill",
+      "h": 1018,
+      "is_interactive": true,
+      "page": "rfq-comparison",
+      "title": "Bid Comparison, Cost Breakdown Chart",
+      "w": 1440,
+      "x": 1520,
+      "y": 3247
+    },
+    "CmpBreakdownTable.dc.html": {
+      "expand": "fill",
+      "h": 1008,
+      "is_interactive": true,
+      "page": "rfq-comparison",
+      "title": "Bid Comparison, Cost Breakdown Table",
+      "w": 1440,
+      "x": 3040,
+      "y": 3247
+    },
+    "CmpScoring.dc.html": {
+      "expand": "fill",
+      "h": 1358,
+      "is_interactive": true,
+      "page": "rfq-comparison",
+      "title": "Bid Comparison, Scoring",
+      "w": 1440,
+      "x": 4560,
+      "y": 3247
+    },
+    "CmpAverage.dc.html": {
+      "expand": "fill",
+      "h": 2214,
+      "is_interactive": true,
+      "page": "rfq-comparison",
+      "title": "Bid Comparison, Best Average Cost Selected",
+      "w": 1440,
+      "x": 6080,
+      "y": 3247
+    },
+    "CmpSheetForeign.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "rfq-comparison",
+      "title": "Vendor Bid, Foreign Currency",
+      "w": 1440,
+      "x": 0,
+      "y": 5801
+    },
+    "CmpSheetLate.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "rfq-comparison",
+      "title": "Vendor Bid, Late by Override",
+      "w": 1440,
+      "x": 1520,
+      "y": 5801
+    },
+    "CmpSheetPartial.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "rfq-comparison",
+      "title": "Vendor Bid, Partial",
+      "w": 1440,
+      "x": 3040,
+      "y": 5801
+    },
+    "CmpSheetW375.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "rfq-comparison",
+      "title": "Vendor Bid, 375",
+      "w": 375,
+      "x": 4560,
+      "y": 5801
+    },
+    "CmpSealed.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "rfq-comparison",
+      "title": "Bid Comparison, Sealed",
+      "w": 1440,
+      "x": 0,
+      "y": 7041
+    },
+    "CmpEmpty.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "rfq-comparison",
+      "title": "Bid Comparison, No Bids",
+      "w": 1440,
+      "x": 1520,
+      "y": 7041
+    },
+    "CmpLoading.dc.html": {
+      "expand": "fill",
+      "h": 901,
+      "is_interactive": true,
+      "page": "rfq-comparison",
+      "title": "Bid Comparison, Loading",
+      "w": 1440,
+      "x": 3040,
+      "y": 7041
+    },
+    "CmpError.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "rfq-comparison",
+      "title": "Bid Comparison, Error",
+      "w": 1440,
+      "x": 4560,
+      "y": 7041
+    },
+    "CmpPartial.dc.html": {
+      "expand": "fill",
+      "h": 2126,
+      "is_interactive": true,
+      "page": "rfq-comparison",
+      "title": "Bid Comparison, Scores Not Available",
+      "w": 1440,
+      "x": 6080,
+      "y": 7041
+    },
+    "CmpStale.dc.html": {
+      "expand": "fill",
+      "h": 2270,
+      "is_interactive": true,
+      "page": "rfq-comparison",
+      "title": "Bid Comparison, Stale Rate",
+      "w": 1440,
+      "x": 7600,
+      "y": 7041
+    },
+    "CmpOver.dc.html": {
+      "expand": "fill",
+      "h": 2182,
+      "is_interactive": true,
+      "page": "rfq-comparison",
+      "title": "Bid Comparison, Over Approved Scope",
       "w": 1440,
       "x": 9120,
-      "y": 12526,
-      "page": "requisition-create",
-      "is_interactive": true
+      "y": 7041
+    },
+    "ApprSheetTransfer.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Budget Transfer",
+      "w": 1440,
+      "x": 0,
+      "y": 18834
+    },
+    "ApprSheetTransferFunds.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "approval-inbox",
+      "title": "Decision Panel, Funds Changed",
+      "w": 1440,
+      "x": 1520,
+      "y": 18834
     }
   },
   "createdOnFiles": {
@@ -1161,6 +2661,168 @@
     "view": "canvas"
   },
   "notes": {
+    "ap1": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-inbox",
+      "text": "Approval Inbox: Widths",
+      "w": 240,
+      "x": 0,
+      "y": -120
+    },
+    "ap10": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-builder",
+      "text": "Approval Workflows: States and Version History",
+      "w": 240,
+      "x": 0,
+      "y": 2073
+    },
+    "ap11": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-builder",
+      "text": "Workflow Builder: Widths",
+      "w": 240,
+      "x": 0,
+      "y": 3233
+    },
+    "ap12": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-builder",
+      "text": "Workflow Builder: Non-Drag Outline, Inspector Views, Problems",
+      "w": 240,
+      "x": 0,
+      "y": 6819
+    },
+    "ap13": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-builder",
+      "text": "Workflow Builder: Preview, Publish and States",
+      "w": 240,
+      "x": 0,
+      "y": 8546
+    },
+    "ap2": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-inbox",
+      "text": "Approval Inbox: States and Tabs",
+      "w": 240,
+      "x": 0,
+      "y": 2827
+    },
+    "ap3": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-inbox",
+      "text": "Decision Panel: Routing, Blocked Decisions and Errors",
+      "w": 240,
+      "x": 0,
+      "y": 4075
+    },
+    "ap4": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-inbox",
+      "text": "Withdraw Confirmation and Returned Requisition",
+      "w": 240,
+      "x": 0,
+      "y": 7019
+    },
+    "ap5": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-inbox",
+      "text": "Return, Amend and Resubmit With a Diff",
+      "w": 240,
+      "x": 0,
+      "y": 10122
+    },
+    "ap6": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-inbox",
+      "text": "Resubmit: Cases and States",
+      "w": 240,
+      "x": -2,
+      "y": 12694
+    },
+    "ap7": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-inbox",
+      "text": "Delegation and Out-of-Office",
+      "w": 240,
+      "x": 0,
+      "y": 14379
+    },
+    "ap8": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-inbox",
+      "text": "Delegation: States",
+      "w": 240,
+      "x": 0,
+      "y": 17045
+    },
+    "ap9": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "approval-builder",
+      "text": "Approval Workflows: List",
+      "w": 240,
+      "x": 0,
+      "y": -120
+    },
+    "c1": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "common-screens",
+      "text": "Sign-In: Responsive Widths",
+      "w": 240,
+      "x": 0,
+      "y": -260
+    },
+    "c2": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "common-screens",
+      "text": "Sign-In: States",
+      "w": 240,
+      "x": 0,
+      "y": 980
+    },
+    "c3": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "common-screens",
+      "text": "Two-Step Verification: Challenge, Enrolment and Recovery",
+      "w": 240,
+      "x": 0,
+      "y": 2220
+    },
+    "c4": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "common-screens",
+      "text": "Sign-Up: Form, Errors and Verification",
+      "w": 240,
+      "x": 0,
+      "y": 3460
+    },
+    "c5": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "common-screens",
+      "text": "Invitation Acceptance: Form, States and Phone",
+      "w": 240,
+      "x": 0,
+      "y": 4700
+    },
     "p1": {
       "kind": "title1",
       "maxW": 8000,
@@ -1233,6 +2895,60 @@
       "x": 0,
       "y": 19549
     },
+    "r1": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "requisition-create",
+      "text": "Requisition Create: Responsive Widths",
+      "w": 240,
+      "x": 0,
+      "y": -260
+    },
+    "r2": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "requisition-create",
+      "text": "Requisition Create: States",
+      "w": 240,
+      "x": 0,
+      "y": 3631
+    },
+    "r3": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "requisition-create",
+      "text": "Requisition List: Responsive Widths",
+      "w": 240,
+      "x": 0,
+      "y": 5548
+    },
+    "r4": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "requisition-create",
+      "text": "Requisition List: States",
+      "w": 240,
+      "x": 0,
+      "y": 7822
+    },
+    "r5": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "requisition-create",
+      "text": "Requisition Detail: Responsive Widths",
+      "w": 240,
+      "x": 0,
+      "y": 9062
+    },
+    "r6": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "requisition-create",
+      "text": "Requisition Detail: Stages and States",
+      "w": 240,
+      "x": 0,
+      "y": 12266
+    },
     "t1": {
       "kind": "title1",
       "maxW": 3000,
@@ -1269,104 +2985,131 @@
       "x": 0,
       "y": -260
     },
-    "c1": {
+    "ap14": {
       "kind": "title1",
       "maxW": 8000,
-      "text": "Sign-In: Responsive Widths",
+      "page": "approval-inbox",
+      "text": "Decision Panel: Budget Transfer",
       "w": 240,
       "x": 0,
-      "y": -260,
-      "page": "common-screens"
+      "y": 18574
     },
-    "c2": {
+    "bt1": {
       "kind": "title1",
       "maxW": 8000,
-      "text": "Sign-In: States",
+      "page": "budget-transfer",
+      "text": "Budget Transfers: Responsive Widths",
       "w": 240,
       "x": 0,
-      "y": 980,
-      "page": "common-screens"
+      "y": -260
     },
-    "c3": {
+    "bt2": {
       "kind": "title1",
       "maxW": 8000,
-      "text": "Two-Step Verification: Challenge, Enrolment and Recovery",
+      "page": "budget-transfer",
+      "text": "Budget Transfers: States",
       "w": 240,
       "x": 0,
-      "y": 2220,
-      "page": "common-screens"
+      "y": 2869
     },
-    "c4": {
+    "bt3": {
       "kind": "title1",
       "maxW": 8000,
-      "text": "Sign-Up: Form, Errors and Verification",
+      "page": "budget-transfer",
+      "text": "New Transfer: Responsive Widths",
       "w": 240,
       "x": 0,
-      "y": 3460,
-      "page": "common-screens"
+      "y": 4316
     },
-    "c5": {
+    "bt4": {
       "kind": "title1",
       "maxW": 8000,
-      "text": "Invitation Acceptance: Form, States and Phone",
+      "page": "budget-transfer",
+      "text": "New Transfer: Types, Cross Hierarchy and Validation",
       "w": 240,
       "x": 0,
-      "y": 4700,
-      "page": "common-screens"
+      "y": 8410
     },
-    "r1": {
+    "bt5": {
       "kind": "title1",
       "maxW": 8000,
-      "text": "Requisition Create: Responsive Widths",
+      "page": "budget-transfer",
+      "text": "New Transfer: Race, Submit and States",
       "w": 240,
       "x": 0,
-      "y": -260,
-      "page": "requisition-create"
+      "y": 10479
     },
-    "r2": {
+    "bt6": {
       "kind": "title1",
       "maxW": 8000,
-      "text": "Requisition Create: States",
+      "page": "budget-transfer",
+      "text": "Transfer Detail: Responsive Widths",
       "w": 240,
       "x": 0,
-      "y": 3631,
-      "page": "requisition-create"
+      "y": 12588
     },
-    "r3": {
+    "bt7": {
       "kind": "title1",
       "maxW": 8000,
-      "text": "Requisition List: Responsive Widths",
+      "page": "budget-transfer",
+      "text": "Transfer Detail: Statuses",
       "w": 240,
       "x": 0,
-      "y": 5548,
-      "page": "requisition-create"
+      "y": 16047
     },
-    "r4": {
+    "bt8": {
       "kind": "title1",
       "maxW": 8000,
-      "text": "Requisition List: States",
+      "page": "budget-transfer",
+      "text": "Transfer Detail: Reversal and States",
       "w": 240,
       "x": 0,
-      "y": 7822,
-      "page": "requisition-create"
+      "y": 17984
     },
-    "r5": {
+    "bt9": {
       "kind": "title1",
       "maxW": 8000,
-      "text": "Requisition Detail: Responsive Widths",
+      "page": "budget-transfer",
+      "text": "Posting Moment: Signature Moment 3",
       "w": 240,
       "x": 0,
-      "y": 9062,
-      "page": "requisition-create"
+      "y": 19945
     },
-    "r6": {
+    "cm1": {
       "kind": "title1",
       "maxW": 8000,
-      "text": "Requisition Detail: Stages and States",
+      "page": "rfq-comparison",
+      "text": "Bid Comparison: Responsive Widths",
       "w": 240,
       "x": 0,
-      "y": 12266,
-      "page": "requisition-create"
+      "y": -260
+    },
+    "cm2": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "rfq-comparison",
+      "text": "Bid Comparison: Views and Award Basis",
+      "w": 240,
+      "x": 0,
+      "y": 2987
+    },
+    "cm3": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "rfq-comparison",
+      "text": "Bid Comparison: Vendor Bid Sheet",
+      "w": 240,
+      "x": 0,
+      "y": 5541
+    },
+    "cm4": {
+      "kind": "title1",
+      "maxW": 8000,
+      "page": "rfq-comparison",
+      "text": "Bid Comparison: States",
+      "w": 240,
+      "x": 0,
+      "y": 6781
     }
   },
   "order": [
@@ -1484,7 +3227,157 @@
     "SignInInviteJoin.dc.html",
     "SignInInviteW375.dc.html",
     "DesignSystem.dc.html",
-    "ThemePanel.dc.html"
+    "ThemePanel.dc.html",
+    "ApprovalWorkflows.dc.html",
+    "WfListW1920.dc.html",
+    "WfListW1024.dc.html",
+    "WfListW768.dc.html",
+    "WfListW375.dc.html",
+    "WfListLoading.dc.html",
+    "WfListEmpty.dc.html",
+    "WfListError.dc.html",
+    "WfListPartial.dc.html",
+    "WfListVersions.dc.html",
+    "WorkflowBuilder.dc.html",
+    "BuildW1920.dc.html",
+    "BuildW1024.dc.html",
+    "BuildW768.dc.html",
+    "BuildW375.dc.html",
+    "BuildOutline.dc.html",
+    "BuildCond.dc.html",
+    "BuildGroup.dc.html",
+    "BuildProblems.dc.html",
+    "BuildProblemsOutline.dc.html",
+    "BuildPreview.dc.html",
+    "BuildPublish.dc.html",
+    "BuildLoading.dc.html",
+    "BuildEmpty.dc.html",
+    "BuildError.dc.html",
+    "BuildPartial.dc.html",
+    "ApprovalInbox.dc.html",
+    "ApprW1920.dc.html",
+    "ApprW1024.dc.html",
+    "ApprW768.dc.html",
+    "ApprW375.dc.html",
+    "ApprLoading.dc.html",
+    "ApprEmpty.dc.html",
+    "ApprError.dc.html",
+    "ApprPartial.dc.html",
+    "ApprOverdue.dc.html",
+    "ApprCompleted.dc.html",
+    "ApprDelegated.dc.html",
+    "ApprSheet.dc.html",
+    "ApprSheetReason.dc.html",
+    "ApprSheetStale.dc.html",
+    "ApprSheetStaleErr.dc.html",
+    "ApprSheetChanges.dc.html",
+    "ApprSheetDecided.dc.html",
+    "ApprSheetPartial.dc.html",
+    "ApprSheetDone.dc.html",
+    "ApprSheetCover.dc.html",
+    "ApprSheetSod.dc.html",
+    "ApprSheet375.dc.html",
+    "ReqDetailReturned.dc.html",
+    "ReqDetailWithdrawn.dc.html",
+    "WdDialog.dc.html",
+    "WdBusy.dc.html",
+    "WdError.dc.html",
+    "WdDecided.dc.html",
+    "WdDialog375.dc.html",
+    "RequisitionResubmit.dc.html",
+    "ResubW1920.dc.html",
+    "ResubW1024.dc.html",
+    "ResubW768.dc.html",
+    "ResubW375.dc.html",
+    "ResubMinor.dc.html",
+    "ResubNone.dc.html",
+    "ResubFunds.dc.html",
+    "ResubBusy.dc.html",
+    "ResubDone.dc.html",
+    "ResubLoading.dc.html",
+    "ResubError.dc.html",
+    "ApprovalDelegation.dc.html",
+    "DelegW1920.dc.html",
+    "DelegW1024.dc.html",
+    "DelegW768.dc.html",
+    "DelegW375.dc.html",
+    "DelegLoading.dc.html",
+    "DelegEmpty.dc.html",
+    "DelegError.dc.html",
+    "DelegErrors.dc.html",
+    "DelegRevoke.dc.html",
+    "DelegOrg.dc.html",
+    "BudgetTransferList.dc.html",
+    "TrListW1920.dc.html",
+    "TrListW1024.dc.html",
+    "TrListW768.dc.html",
+    "TrListW375.dc.html",
+    "TrListLoading.dc.html",
+    "TrListEmpty.dc.html",
+    "TrListError.dc.html",
+    "TrListPartial.dc.html",
+    "BudgetTransferCreate.dc.html",
+    "TrCreateW1920.dc.html",
+    "TrCreateW1024.dc.html",
+    "TrCreateW768.dc.html",
+    "TrCreateW375.dc.html",
+    "TrCreateCross.dc.html",
+    "TrCreatePolicy.dc.html",
+    "TrCreateAllocation.dc.html",
+    "TrCreateAdjustment.dc.html",
+    "TrCreateErrors.dc.html",
+    "TrCreateShort.dc.html",
+    "TrCreateRace.dc.html",
+    "TrCreateBusy.dc.html",
+    "TrCreateSubmitted.dc.html",
+    "TrCreateLoading.dc.html",
+    "TrCreateError.dc.html",
+    "TrCreatePartial.dc.html",
+    "BudgetTransferDetail.dc.html",
+    "TrDetailW1920.dc.html",
+    "TrDetailW1024.dc.html",
+    "TrDetailW768.dc.html",
+    "TrDetailW375.dc.html",
+    "TrDetailCross.dc.html",
+    "TrDetailPosted.dc.html",
+    "TrDetailReversed.dc.html",
+    "TrDetailRejected.dc.html",
+    "TrDetailReadOnly.dc.html",
+    "TrDetailReverse.dc.html",
+    "TrDetailReverseBusy.dc.html",
+    "TrDetailReverseBlocked.dc.html",
+    "TrDetailLoading.dc.html",
+    "TrDetailError.dc.html",
+    "TrDetailPartial.dc.html",
+    "TransferPosting.dc.html",
+    "TrMomentBefore.dc.html",
+    "TrMomentTrace.dc.html",
+    "TrMomentReduced.dc.html",
+    "TrMomentTable.dc.html",
+    "TrMomentW375.dc.html",
+    "RfqComparison.dc.html",
+    "CmpW1920.dc.html",
+    "CmpW1024.dc.html",
+    "CmpW768.dc.html",
+    "CmpW375.dc.html",
+    "CmpLines.dc.html",
+    "CmpBreakdown.dc.html",
+    "CmpBreakdownTable.dc.html",
+    "CmpScoring.dc.html",
+    "CmpAverage.dc.html",
+    "CmpSheetForeign.dc.html",
+    "CmpSheetLate.dc.html",
+    "CmpSheetPartial.dc.html",
+    "CmpSheetW375.dc.html",
+    "CmpSealed.dc.html",
+    "CmpEmpty.dc.html",
+    "CmpLoading.dc.html",
+    "CmpError.dc.html",
+    "CmpPartial.dc.html",
+    "CmpStale.dc.html",
+    "CmpOver.dc.html",
+    "ApprSheetTransfer.dc.html",
+    "ApprSheetTransferFunds.dc.html"
   ],
   "pages": [
     {
@@ -1502,6 +3395,22 @@
     {
       "id": "common-screens",
       "name": "Common Screens"
+    },
+    {
+      "id": "approval-inbox",
+      "name": "Approval Inbox"
+    },
+    {
+      "id": "approval-builder",
+      "name": "Approval Workflow Builder"
+    },
+    {
+      "id": "budget-transfer",
+      "name": "Budget Transfer"
+    },
+    {
+      "id": "rfq-comparison",
+      "name": "RFQ Comparison"
     },
     {
       "id": "design-system",

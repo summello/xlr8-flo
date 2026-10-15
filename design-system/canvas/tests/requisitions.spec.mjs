@@ -95,7 +95,7 @@ test.describe('create', () => {
     await expect(sum).toContainText('Required field: Enter a title');
     await expect(sum).toContainText('Lines: Add at least one line');
     await sum.getByRole('link', { name: 'Enter a title' }).click();
-    await expect(page.getByLabel('Title', { exact: true })).toBeFocused();
+    await expect(page.getByLabel(/^Title/)).toBeFocused();
     await expect(page.locator('#rq-title-e')).toContainText('Enter a title.');
     expect(await page.locator('#rq-title-e svg').count()).toBe(1);                           // icon with the text
   });
@@ -181,7 +181,7 @@ test.describe('create', () => {
     await open(page, '/ReqCreateError.dc.html');
     await expect(page.getByRole('alert')).toContainText('Could not load this requisition');
     await page.getByRole('button', { name: 'Try again' }).click();
-    await expect(page.getByLabel('Title', { exact: true })).toBeVisible();
+    await expect(page.getByLabel(/^Title/)).toBeVisible();
     await open(page, '/ReqCreatePartial.dc.html');
     await expect(page.getByRole('alert')).toContainText('Could not load suggestions');
     await expect(page.getByRole('button', { name: 'Add Servo drive, 7.5 kW' })).toHaveCount(0);
@@ -193,7 +193,7 @@ test.describe('create', () => {
     await open(page, CREATE, 375);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
     await expect(page.locator('.row.line [data-label="Unit Price"]').first()).toBeVisible();
-    for (const loc of [page.getByLabel('Title', { exact: true }), page.getByLabel('Quantity, line 1'), page.getByRole('button', { name: 'Submit for approval' }), page.getByRole('button', { name: 'Remove line 1' })]) expect((await loc.boundingBox()).height).toBeGreaterThanOrEqual(43.5);
+    for (const loc of [page.getByLabel(/^Title/), page.getByLabel('Quantity, line 1'), page.getByRole('button', { name: 'Submit for approval' }), page.getByRole('button', { name: 'Remove line 1' })]) expect((await loc.boundingBox()).height).toBeGreaterThanOrEqual(43.5);
   });
 
   test('lines never overflow their card at 1024 and 1100', async ({ page }) => {

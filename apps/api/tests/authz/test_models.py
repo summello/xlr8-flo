@@ -24,6 +24,7 @@ EXPECTED_ROLES = {
     "executive-viewer": "Executive/Viewer",
     "organization-administrator": "Organization Administrator",
     "project-administrator": "Project Administrator",
+    "project-manager": "Project Manager",
     "purchasing-user": "Purchasing User",
     "requestor": "Requestor",
     "sourcing-specialist": "Sourcing Specialist",
@@ -32,6 +33,10 @@ EXPECTED_ROLES = {
 }
 
 EXPECTED_PERMISSIONS = {
+    "approval.admin",
+    "approval.delegate",
+    "workflow.read",
+    "workflow.manage",
     "admin.access.read",
     "asset.create",
     "asset.edit",
@@ -47,8 +52,6 @@ EXPECTED_PERMISSIONS = {
     "project.admin",
     "project.approve",
     "project.create",
-    "project.edit",
-    "project.view",
     "purchase_order.amend",
     "purchase_order.approve",
     "purchase_order.close",
@@ -58,6 +61,9 @@ EXPECTED_PERMISSIONS = {
     "record.read",
     "report.view",
     "requisition.approve",
+    "requisition.submit",
+    "requisition.withdraw",
+    "requisition.cancel",
     "requisition.create",
     "requisition.edit",
     "requisition.view",
@@ -70,6 +76,28 @@ EXPECTED_PERMISSIONS = {
     "vendor.edit",
     "vendor.view",
     "view.archive",
+    "budget.adjust",
+    "budget.allocate",
+    "fiscal.close",
+    "fiscal.manage",
+    "fiscal.read",
+    "fiscal.reopen",
+    "fx.read",
+    "import.read",
+    "import.run",
+    "ledger.read",
+    "master.manage",
+    "master.read",
+    "master_code.substitute",
+    "org.setting.manage",
+    "org.unit.manage",
+    "org.unit.read",
+    "project.close.override",
+    "project.complete",
+    "project.read",
+    "project.submit",
+    "project.update",
+    "project_request.create",
 }
 
 ROOT = Path(__file__).resolve().parents[4]
@@ -89,9 +117,9 @@ def test_baseline_role_and_permission_catalogs_are_complete_by_name() -> None:
 
 
 def test_every_command_palette_permission_exists_in_the_server_catalog() -> None:
-    registry = (
-        ROOT / "apps" / "web" / "src" / "components" / "command" / "registry.ts"
-    ).read_text(encoding="utf-8")
+    registry = (ROOT / "apps" / "web" / "src" / "components" / "command" / "registry.ts").read_text(
+        encoding="utf-8"
+    )
     declared = set(re.findall(r'requiredPermissions: \["([a-z0-9_.]+)"\]', registry))
     assert declared == {
         "organization.admin",

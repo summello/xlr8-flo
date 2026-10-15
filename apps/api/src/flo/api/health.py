@@ -15,6 +15,7 @@ from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 
 from flo.api.admin_users import router as admin_users_router
+from flo.api.approvals import router as approvals_router
 from flo.api.auth import (
     _database_url,
     production_mfa_service_factory,
@@ -23,6 +24,9 @@ from flo.api.auth import (
 from flo.api.auth import router as auth_router
 from flo.api.authz_factory import production_authorization_resolver
 from flo.api.budget import router as budget_router
+from flo.api.catalogue import router as catalogue_router
+from flo.api.collaboration import router as collaboration_router
+from flo.api.document_types import register_document_types
 from flo.api.fiscal import router as fiscal_router
 from flo.api.fx import router as fx_router
 from flo.api.imports import router as imports_router
@@ -32,6 +36,8 @@ from flo.api.master import router as master_router
 from flo.api.org import router as org_router
 from flo.api.origin_auth import require_origin_secret
 from flo.api.projects import router as projects_router
+from flo.api.requisitions import router as requisitions_router
+from flo.api.workflows import router as workflows_router
 from flo.kernel.authz import PermissionResolverFactory, install_authorization, public_route
 from flo.kernel.config import Settings, enforce_argon2_memory_limit
 from flo.kernel.errors import ErrorCode, ProblemError, install_problem_details
@@ -104,9 +110,15 @@ app.include_router(master_router)
 app.include_router(fiscal_router)
 app.include_router(fx_router)
 app.include_router(projects_router)
+register_document_types()
+app.include_router(collaboration_router)
+app.include_router(requisitions_router)
+app.include_router(catalogue_router)
 app.include_router(budget_router)
 app.include_router(imports_router)
 app.include_router(invitations_router)
+app.include_router(workflows_router)
+app.include_router(approvals_router)
 
 
 install_authorization(

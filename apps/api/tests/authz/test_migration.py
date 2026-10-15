@@ -17,7 +17,11 @@ def test_migration_uses_assigned_chain_and_seeds_every_permission_by_name(
         cast(str, row[0])
         for row in database.connection.execute("SELECT code FROM permission").fetchall()
     }
-    assert stored == {str(permission) for permission in PERMISSION_CODES}
+    # Later migrations add the rest of the catalogue; the equality over a full chain is asserted
+    # in test_baseline_grants.py.
+    catalogue = {str(permission) for permission in PERMISSION_CODES}
+    assert stored - {"project.view", "project.edit"} <= catalogue  # retired by 0053
+    assert "admin.access.read" in stored and "workflow.manage" in stored
 
 
 def test_migration_has_rls_on_every_tenant_table(
@@ -60,3 +64,39 @@ def test_migration_downgrade_preserves_identity_and_audit_data(
         assert database.connection.execute(
             "SELECT to_regclass(%s)", (f"public.{table}",)
         ).fetchone() == (None,)
+
+
+def test_workflow_permission_migration_is_applied_independently(authorization_database):
+    from .conftest import ROOT, load_migration
+
+    migration = load_migration(
+        ROOT / "migrations/20261009_0038_workflow_permissions.py", "authz_permissions_roundtrip"
+    )
+    conn = authorization_database.connection
+    migration.downgrade(conn)
+    assert conn.execute("SELECT code FROM permission WHERE code LIKE 'workflow.%'").fetchall() == []
+    migration.upgrade(conn)
+    assert {
+        row[0]
+        for row in conn.execute(
+            "SELECT code FROM permission WHERE code LIKE 'workflow.%'"
+        ).fetchall()
+    } == {"workflow.read", "workflow.manage"}
+
+
+def test_approval_permission_migration_grants_delegate_and_admin_by_role(authorization_database):
+    from .conftest import ROOT, load_migration
+
+    migration = load_migration(
+        ROOT / "migrations/20261009_0047_approval_permissions.py", "authz_approval_roundtrip"
+    )
+    conn = authorization_database.connection
+    migration.downgrade(conn)
+    assert conn.execute("SELECT code FROM permission WHERE code LIKE 'approval.%'").fetchall() == []
+    migration.upgrade(conn)
+    assert {
+        row[0]
+        for row in conn.execute(
+            "SELECT code FROM permission WHERE code LIKE 'approval.%'"
+        ).fetchall()
+    } == {"approval.delegate", "approval.admin"}

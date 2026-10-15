@@ -116,3 +116,9 @@ Loading (skeletons at final height in the card bodies), error (`Could not load t
 ## 9. Tests the story must leave behind
 
 Lines and funding agree (three-way: line totals, estimate, available after); cents arithmetic (`3 × 0.10`); catalogue add and search; type tag and keyboard remove; empty submit lists problems, focuses the summary, links focus fields; each message in section 6; **short funds blocks submit and no control bypasses it, and a reduced estimate unblocks it**; two concurrent submissions against the last available funds, exactly one succeeds (real Postgres, FIN-006); a replayed `Idempotency-Key` reserves once; standalone mode; a requisition-generated sub-project cannot be chosen (and the server refuses it too); inactive ledger account; keyboard-only path with visible focus; the action bar stays in view; axe in light and dark on every board; phone (375) no sideways scroll and 44px targets; lines never overflow their card at 1024, 1100 and 1280.
+
+---
+
+## Required fields (DECISIONS 66)
+
+Every field this page spec calls required carries the `required` attribute and a `Required` tag in its label, which turns to `Done` with a tick when it has a value; an empty required control has a rail on its start edge. The action bar shows `Required fields are still empty` or `All required fields complete`. Submit stays enabled: an incomplete form gets the error summary, and the server enforces the same rules. Markup: `<label class="t-label" for="x">Title<span class="req-tag" aria-hidden="true"><span class="rq-need">Required</span><span class="rq-done">Done</span></span></label><input required id="x">`. `tests/lint.mjs` `requiredMarkViolations` fails a mismatch.

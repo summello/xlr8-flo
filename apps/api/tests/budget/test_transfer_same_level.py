@@ -16,8 +16,8 @@ from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.logging import correlation_context
 from flo.kernel.tenancy.context import Scope
 from flo.modules.budget import transfers
-from flo.modules.budget.schemas import TransferCreate
-from flo.modules.budget.service import get_balance, reverse_entry, transfer
+from flo.modules.budget.schemas import AllocationCreate, TransferCreate
+from flo.modules.budget.service import allocate, get_balance, reverse_entry, transfer
 from flo.modules.identity.models import AuthorizationTarget, ScopeType
 from flo.modules.org.schemas import SettingPut
 from flo.modules.org.service import OrgService
@@ -25,7 +25,7 @@ from tests.authz.conftest import authorization_database as authorization_databas
 from tests.authz.test_effective_access import grant_permissions
 from tests.authz.test_resolver import insert_identity, service_for
 from tests.budget.test_allocation import allocation_db as allocation_db
-from tests.budget.test_allocation import app, payload, request
+from tests.budget.test_allocation import app, payload, request, settle, workflow_published
 from tests.budget.test_post_entry import posting_db as posting_db
 from tests.isolation.conftest import tenant_database as tenant_database
 from tests.org.conftest import correlation as correlation
@@ -62,7 +62,8 @@ def send(db, a, b, viewer=None, key=None, **changes):
                 headers={"Idempotency-Key": key or uuid4().hex},
             )
 
-    return asyncio.run(run())
+    with workflow_published():
+        return settle(db, asyncio.run(run()))
 
 
 def call(db, a, b, key="transfer", conn=None, **changes):
@@ -361,10 +362,18 @@ def test_transfer_decimal_contract_without_database():
 def test_existing_nontransfer_leg_key_is_a_conflict(transfer_db):
     db = transfer_db
     a, b = pair(db)
-    assert request(db, a, key="collision:out").status_code == 201
-    result = send(db, a, b, key="collision")
-    assert result.status_code == 422, result.text
-    assert result.json()["checks"]["problem"] == "idempotency_conflict"
+    # Router postings use server-built bcr: keys, so collide at the service seam.
+    allocate(
+        db.connection,
+        Scope(db.org_a),
+        a.id,
+        AllocationCreate.model_validate(payload()),
+        db.actor_id,
+        "collision:out",
+    )
+    with pytest.raises(ProblemError) as caught:
+        call(db, a, b, key="collision")
+    assert caught.value.checks["problem"] == "idempotency_conflict"
     assert db.connection.execute("SELECT count(*) FROM ledger_entry").fetchone() == (2,)
     reconciles(db, a, b)
 

@@ -12,6 +12,8 @@ export const STATUS_LABELS = {
   awarded: "Awarded",
   open_for_purchase: "Open for purchase",
   cancelled: "Cancelled",
+  rejected: "Rejected",
+  withdrawn: "Withdrawn",
   approved: "Approved",
   issued: "Issued",
   partially_fulfilled: "Partially fulfilled",

@@ -2,7 +2,7 @@ import { test, expect } from 'playwright/test';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { layoutTransitions, rawColours, undefinedVars, hasReducedMotionBlock, titleCaseViolations } from './lint.mjs';
+import { layoutTransitions, rawColours, undefinedVars, hasReducedMotionBlock, titleCaseViolations, requiredMarkViolations } from './lint.mjs';
 
 const dir = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'project');
 const css = readFileSync(join(dir, 'xlr8flo.css'), 'utf8');
@@ -51,5 +51,20 @@ test.describe('static gates, each proven against a planted violation', () => {
     expect(hasReducedMotionBlock(css)).toBe(true);
     expect(hasReducedMotionBlock('.a { color: red; }')).toBe(false);
     expect(hasReducedMotionBlock('@media (prefers-reduced-motion: reduce) {\n  .a { color: red; }\n}')).toBe(false);
+  });
+});
+
+test.describe('required fields are marked, and the mark matches the control', () => {
+  test('every app board: each Required tag points at a required control and each required control is tagged', () => {
+    for (const f of appBoards) expect(requiredMarkViolations(html[f]), f).toEqual([]);
+  });
+  test('the gate fails on planted violations', () => {
+    const tag = '<span class="req-tag"><span class="rq-need">Required</span></span>';
+    expect(requiredMarkViolations(`<label for="a">A${tag}</label><input id="a">`)).toEqual(['a is tagged Required but the control is not required']);
+    expect(requiredMarkViolations('<label for="a">A</label><input required id="a">')).toEqual(['required control a has no Required tag']);
+    expect(requiredMarkViolations(`<label for="a">A${tag}</label><input required id="a">`)).toEqual([]);
+    expect(requiredMarkViolations(`<label for="a">A${tag}</label><textarea data-req id="a"></textarea>`)).toEqual([]);
+    expect(requiredMarkViolations('<input required aria-label="Quantity, line 1">')).toEqual([]);
+    expect(requiredMarkViolations(`<label><input required type="checkbox" id="t">I agree${tag}</label>`)).toEqual([]);
   });
 });

@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from dataclasses import asdict
+from decimal import Decimal
 from typing import cast
 from uuid import UUID
 
@@ -14,10 +15,13 @@ from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.budget import funding_policy
 from flo.modules.budget.aggregate import aggregate_balance as aggregate_balance
+from flo.modules.budget.change_requests import get_request as get_request
+from flo.modules.budget.change_requests import request_by_key as request_by_key
+from flo.modules.budget.change_requests import request_change as request_change
+from flo.modules.budget.ledger import ENTRY_FIELDS, LedgerRepository, invalid, read_entry
 from flo.modules.budget.ledger import (
     InsufficientBudget as InsufficientBudget,
 )
-from flo.modules.budget.ledger import LedgerRepository, invalid
 from flo.modules.budget.ledger import (
     get_balance as get_balance,
 )
@@ -37,20 +41,28 @@ from flo.modules.budget.reservations import (
 from flo.modules.budget.reservations import (
     reserve as reserve,
 )
+
+# The module boundary (AGENTS.md 3.3): other modules import these from here, never from
+# ledger, postings, reservations, transfers or queries directly.
 from flo.modules.budget.schemas import (
     AdjustmentCreate,
     AllocationCreate,
     AllocationResult,
+    BalanceRead,
     LedgerEntryRead,
+    ReservationState,
 )
-from flo.modules.budget.transfers import post_legs
+from flo.modules.budget.transfers import post_legs as post_legs
 from flo.modules.budget.transfers import transfer as transfer
 from flo.modules.org.service import OrgService
 from flo.modules.projects.service import ProjectService
 
-# The module boundary (AGENTS.md 3.3): other modules import these from here, never from
-# ledger, postings, reservations, transfers or queries directly.
 __all__ = [
+    "get_request",
+    "request_by_key",
+    "request_change",
+    "ReservationState",
+    "reservation_remaining",
     "InsufficientBudget",
     "adjust",
     "aggregate_balance",
@@ -58,10 +70,13 @@ __all__ = [
     "balance_query",
     "budget_summary",
     "commit",
-    "get_balance",
+    "entries_for_source",
     "entry_by_idempotency_key",
+    "get_balance",
     "ledger_query",
+    "lock_balance",
     "post_entry",
+    "post_legs",
     "record_actual",
     "release_commitment",
     "release_reservation",
@@ -234,10 +249,28 @@ def _funding_mode_guard(
         "OR root.bu_id IN (SELECT id FROM units)) LIMIT 1",
         {"unit": unit_id},
     ).fetchone()
-    if row:
+    has_requests = repo.execute("SELECT to_regclass('budget_change_request')").fetchone() != (None,)
+    pending = (
+        None
+        if row or not has_requests
+        else repo.execute(
+            "WITH RECURSIVE units AS (SELECT id FROM org_unit WHERE org_id=%(org_id)s "
+            "AND (%(unit)s::uuid IS NULL OR id=%(unit)s) UNION "
+            "SELECT u.id FROM org_unit u JOIN units a ON u.parent_id=a.id "
+            "WHERE u.org_id=%(org_id)s) SELECT 1 FROM budget_change_request r "
+            "JOIN project p ON p.id=r.project_id AND p.org_id=r.org_id "
+            "JOIN project root ON root.id=p.root_id AND root.org_id=p.org_id "
+            "WHERE r.org_id=%(org_id)s AND r.kind='allocation' AND r.status='pending' "
+            "AND (p.bu_id IN (SELECT id FROM units) OR root.bu_id IN (SELECT id FROM units)) "
+            "LIMIT 1",
+            {"unit": unit_id},
+        ).fetchone()
+    )
+    if row or pending:
         raise ProblemError(
             ErrorCode.CONFLICT,
-            detail="Ledger entries lock the funding mode. Keep the current mode.",
+            detail="Ledger entries and pending allocation requests lock the funding mode. "
+            "Keep the current mode.",
             checks={"problem": "funding_mode_locked"},
         )
 
@@ -254,8 +287,18 @@ class SummaryCurrency(BaseModel):
     available: str
 
 
+class AbandonedCurrency(BaseModel):
+    currency: str
+    allocated: str
+    reserved: str
+    committed: str
+    actual: str
+
+
 class BudgetSummary(BaseModel):
     totals: list[SummaryCurrency]
+    # Abandoned Project Request projects, kept out of `totals` (D-M2-22).
+    abandoned: list[AbandonedCurrency] = []
 
 
 def budget_summary(
@@ -268,7 +311,9 @@ def budget_summary(
         rows = (
             LedgerRepository(conn, scope)
             .execute(
-                "SELECT p.currency, COALESCE(sum(b.allocated),0)::text, "
+                "SELECT p.currency, (root.status='abandoned' AND root.source_requisition_id "
+                "IS NOT NULL AND root.generated_by_requisition_id IS NULL) AS abandoned, "
+                "COALESCE(sum(b.allocated),0)::text, "
                 "COALESCE(sum(b.reserved),0)::text, COALESCE(sum(b.committed),0)::text, "
                 "COALESCE(sum(b.actual),0)::text, COALESCE(sum(b.available),0)::text "
                 "FROM project p JOIN project root ON root.id=p.root_id AND root.org_id=p.org_id "
@@ -276,16 +321,24 @@ def budget_summary(
                 "ON b.project_id=p.id AND b.org_id=p.org_id "
                 "WHERE p.org_id=%(org_id)s "
                 "AND (%(unit)s::uuid IS NULL OR root.bu_id=%(unit)s) "
-                "GROUP BY p.currency ORDER BY p.currency",
+                "GROUP BY p.currency, 2 ORDER BY p.currency",
                 {"unit": unit_id},
             )
             .fetchall()
         )
-        fields = ("currency", "allocated", "reserved", "committed", "actual", "available")
+        fields = (
+            "currency",
+            "abandoned",
+            "allocated",
+            "reserved",
+            "committed",
+            "actual",
+            "available",
+        )
+        read = [dict(zip(fields, row, strict=True)) for row in rows]
         return BudgetSummary(
-            totals=[
-                SummaryCurrency.model_validate(dict(zip(fields, row, strict=True))) for row in rows
-            ]
+            totals=[SummaryCurrency.model_validate(r) for r in read if not r["abandoned"]],
+            abandoned=[AbandonedCurrency.model_validate(r) for r in read if r["abandoned"]],
         )
 
 
@@ -300,3 +353,57 @@ def entry_by_idempotency_key(
             {"key": key},
         )
         return LedgerEntryRead(**asdict(entry)) if entry else None
+
+
+def entries_for_source(
+    connection: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    source_type: str,
+    source_id: UUID,
+) -> list[LedgerEntryRead]:
+    """Every entry a source document posted, oldest first (the ledger_source index)."""
+    with tenant_transaction(cast(RlsSession, connection), scope):
+        rows = (
+            LedgerRepository(connection, scope)
+            .execute(
+                f"SELECT {', '.join(ENTRY_FIELDS)} FROM ledger_entry "
+                "WHERE org_id=%(org_id)s AND source_type=%(type)s AND source_id=%(id)s "
+                "ORDER BY posted_at,id",
+                {"type": source_type, "id": source_id},
+            )
+            .fetchall()
+        )
+        return [LedgerEntryRead(**asdict(read_entry(row))) for row in rows]
+
+
+def lock_balance(
+    conn: psycopg.Connection[tuple[object, ...]], scope: Scope, project_id: UUID
+) -> BalanceRead:
+    """Lock funding in the caller's transaction before validation or posting."""
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        balance = LedgerRepository(conn, scope).balance(project_id, lock=True)
+        if balance is None:
+            raise ProblemError(ErrorCode.NOT_FOUND)
+        return balance
+
+
+def reservation_remaining(
+    conn: psycopg.Connection[tuple[object, ...]], scope: Scope, reservation_entry_id: int
+) -> ReservationState:
+    """Read one scoped reservation and its live remainder, including released rounds."""
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        row = (
+            LedgerRepository(conn, scope)
+            .execute(
+                "SELECT e.project_id,e.amount,v.remaining,e.currency FROM ledger_entry e "
+                "JOIN reservation_remaining v ON v.org_id=e.org_id AND v.reservation_entry_id=e.id "
+                "WHERE e.org_id=%(org_id)s AND e.id=%(id)s AND e.entry_type='reservation'",
+                {"id": reservation_entry_id},
+            )
+            .fetchone()
+        )
+        if row is None:
+            raise ProblemError(ErrorCode.NOT_FOUND)
+        return ReservationState(
+            cast(UUID, row[0]), cast(Decimal, row[1]), cast(Decimal, row[2]), str(row[3])
+        )

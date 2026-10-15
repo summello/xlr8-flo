@@ -5,13 +5,20 @@ import { defineConfig } from "@playwright/test";
 // One port per checkout. Story worktrees run their suites concurrently, and a fixed
 // port made `reuseExistingServer` hand a run the *other* worktree's dev server —
 // which serves different code and fails tests that have nothing wrong with them.
+// E2E_PORT overrides it when something else already holds the hashed port.
 const port =
+  Number(process.env.E2E_PORT) ||
   4173 + (createHash("sha256").update(import.meta.dirname).digest()[0]! % 200);
 const url = `http://127.0.0.1:${port}`;
 
 export default defineConfig({
   testDir: ".",
   testMatch: ["e2e/**/*.e2e.ts", "tests/{a11y,e2e}/**/*.spec.ts"],
+  // CI serves the Vite dev server, which compiles modules on first request; under two workers
+  // a focus assertion occasionally misses its window (13 Oct: sign-in, then workflow-builder,
+  // on one commit). One retry on CI only: a pass on retry is reported as flaky, not hidden.
+  // ponytail: serve a production build (vite preview) in CI and drop the retry.
+  retries: process.env.CI ? 1 : 0,
   use: {
     baseURL: url,
   },

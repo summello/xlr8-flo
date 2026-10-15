@@ -2,7 +2,7 @@ import type { components } from "../../api/generated/schema";
 import Money from "../ui/Money";
 import { consumptionPercent } from "../../lib/money";
 import { label } from "../projects/api";
-import { difference, decimal, scaled } from "./decimal";
+import { difference, decimal, scaled } from "../../lib/decimal";
 type Buckets = components["schemas"]["SummaryCurrency"];
 export default function Kpis({ balance, asOf, navigate, href }: { balance: Buckets; asOf: string; navigate?: (href: string) => void; href?: string }) {
   const values = { ...balance, variance: difference(balance.allocated, decimal(scaled(balance.reserved) + scaled(balance.committed) + scaled(balance.actual))), consumption: consumptionPercent(balance.allocated, balance.available) };

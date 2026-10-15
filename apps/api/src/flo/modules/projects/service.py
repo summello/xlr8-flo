@@ -16,6 +16,7 @@ from flo.kernel.config import Settings
 from flo.kernel.errors import ErrorCode, ProblemError, conflict
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
+from flo.modules.approvals.service import require_workflow
 from flo.modules.identity.service import (
     IdentityAuthorizationConnection,
     register_project_scope,
@@ -26,10 +27,17 @@ from flo.modules.org.service import (
     NumberingService,
     OrgService,
     assert_usable,
+    codes_read,
     list_currencies,
 )
 from flo.modules.projects.hierarchy import Hierarchy
-from flo.modules.projects.lifecycle import Lifecycle, invalid
+from flo.modules.projects.lifecycle import Lifecycle, blocked_by_holdings, invalid
+from flo.modules.projects.lifecycle import (
+    register_open_document_counter as register_open_document_counter,
+)
+from flo.modules.projects.lifecycle import (
+    unregister_open_document_counter as unregister_open_document_counter,
+)
 from flo.modules.projects.models import COLUMNS, FIELDS, ProjectRepository
 from flo.modules.projects.risk_indicators import risk_indicators as compute_risk_indicators
 from flo.modules.projects.risks import Risks
@@ -87,9 +95,69 @@ class ProjectService:
             "SELECT name FROM org_unit WHERE org_id = %(org_id)s AND id = %(id)s",
             {"id": row["bu_id"]},
         ).fetchone()
-        return ProjectRead.model_validate(
-            with_variance(row | {"bu_name": str(unit[0]) if unit is not None else None})
+        return self._with_codes(
+            ProjectRead.model_validate(
+                with_variance(
+                    row
+                    | {
+                        "bu_name": str(unit[0]) if unit is not None else None,
+                        "sponsor_ids": [row["sponsor_id"]] if row["sponsor_id"] else [],
+                    }
+                )
+            )
         )
+
+    def sponsors(self, project_id: UUID) -> list[UUID]:
+        """Every sponsor; a project that predates sponsor lists falls back to `sponsor_id`."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            found = [
+                cast(UUID, r[0])
+                for r in self.repo.execute(
+                    "SELECT user_id FROM project_sponsor WHERE org_id = %(org_id)s "
+                    "AND project_id = %(id)s ORDER BY user_id",
+                    {"id": project_id},
+                ).fetchall()
+            ]
+            row = self._get(project_id)
+            return found or ([cast(UUID, row["sponsor_id"])] if row["sponsor_id"] else [])
+
+    def _with_codes(self, project: ProjectRead) -> ProjectRead:
+        # ponytail: four master lookups per row; batch if a page of 50 shows up in a profile.
+        project.codes = codes_read(
+            self.connection, self.scope, project.department_code, project.ledger_account_code
+        )
+        project.codes_expired = project.codes.expired
+        return project
+
+    def lock(self, project_id: UUID) -> ProjectRead:
+        """Take the project row lock and read it (callers plan against the locked state)."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            return self._read(self._get(project_id, lock=True))
+
+    def substitute_codes(
+        self, project_id: UUID, changes: dict[str, str], reason: str
+    ) -> ProjectRead:
+        """Replace master codes on a project (D-M2-25); the ledger keeps what it posted."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            before = self._get(project_id, lock=True)
+            if not changes:
+                return self._read(before)
+            after = before | changes
+            self.repo.execute(
+                "UPDATE project SET department_code=%(department_code)s,"
+                "ledger_account_code=%(ledger_account_code)s "
+                "WHERE org_id=%(org_id)s AND id=%(id)s",
+                {"id": project_id}
+                | {k: after[k] for k in ("department_code", "ledger_account_code")},
+            )
+            keys = ("department_code", "ledger_account_code")
+            self._audit(
+                "project.code_substitute",
+                project_id,
+                {k: before[k] for k in keys},
+                {k: after[k] for k in keys} | {"reason": reason},
+            )
+            return self._read(self._get(project_id))
 
     def get(self, project_id: UUID) -> ProjectRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
@@ -115,6 +183,12 @@ class ProjectService:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             lifecycle = Lifecycle(self.repo, self.actor_id)
             before, blocked = lifecycle.snapshot(project_id, for_update=True)
+            # A competing submit loses by state after waiting for the document lock.
+            if body.to == "approval_pending" and before["status"] != "draft":
+                raise conflict(
+                    "invalid_transition",
+                    "This status transition is invalid. Choose an available action.",
+                )
             if before["version"] != expected:
                 raise conflict(
                     "stale_version", "The project changed. Reload it and retry the transition."
@@ -122,6 +196,14 @@ class ProjectService:
             problems = lifecycle.evaluate(before, blocked, body, permitted)
             if problems:
                 raise problems[0]
+            if body.to == "approval_pending":
+                require_workflow(
+                    self.connection,
+                    self.scope,
+                    "project",
+                    cast(UUID | None, before["bu_id"]),
+                    "Projects",
+                )
             lifecycle.write(before, blocked, body)
             after = self._get(project_id)
             self._audit(
@@ -129,6 +211,25 @@ class ProjectService:
                 project_id,
                 before,
                 after | {"override": body.override, "blocked_by": blocked, "reason": body.reason},
+            )
+            return self._read(after)
+
+    def approval_outcome(
+        self, project_id: UUID, status: ProjectStatus, reason: str | None
+    ) -> ProjectRead:
+        """Called after the engine locks its instance, or for automatic activation."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            lifecycle = Lifecycle(self.repo, self.actor_id)
+            before, blocked = lifecycle.snapshot(project_id, for_update=True)
+            if before["status"] != "approval_pending":
+                raise conflict("invalid_transition", "The project is no longer awaiting approval.")
+            lifecycle.write(before, blocked, TransitionCreate(to=status, reason=reason))
+            after = self._get(project_id)
+            self._audit(
+                "project.activated" if status == "active" else "project.transition",
+                project_id,
+                before,
+                after | {"reason": reason},
             )
             return self._read(after)
 
@@ -226,6 +327,21 @@ class ProjectService:
             self._user("owner_id", owner)
             self._user("sponsor_id", body.sponsor_id)
             self._dates(body.planned_start, body.planned_end)
+            return self._insert_project(body, codes=codes, owner=owner, on_date=on_date)
+
+    def _insert_project(
+        self,
+        body: ProjectCreate,
+        *,
+        codes: dict[str, str],
+        owner: UUID,
+        on_date: date,
+        status: str = "draft",
+        generated_by_requisition_id: UUID | None = None,
+        audit_reason: str | None = None,
+        source_requisition_id: UUID | None = None,
+    ) -> ProjectRead:
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             number = NumberingService(self.settings or Settings(), self.scope).allocate(
                 body.bu_id, "project", on_date
             )
@@ -234,6 +350,9 @@ class ProjectService:
                 body.model_dump()
                 | codes
                 | {
+                    "status": status,
+                    "generated_by_requisition_id": generated_by_requisition_id,
+                    "source_requisition_id": source_requisition_id,
                     "id": project_id,
                     "number": number,
                     "owner_id": owner,
@@ -246,12 +365,15 @@ class ProjectService:
                         """INSERT INTO project(id, org_id, bu_id, parent_id, number, name,
                         description, external_ref,
                         owner_id, sponsor_id, department_code, ledger_account_code, currency,
-                        planned_start, planned_end, created_by)
+                        planned_start, planned_end, created_by, status,
+                        generated_by_requisition_id, source_requisition_id)
                         VALUES (%(id)s, %(org_id)s, %(bu_id)s, %(parent_id)s, %(number)s, %(name)s,
                         %(description)s, %(external_ref)s, %(owner_id)s, %(sponsor_id)s,
                         %(department_code)s,
                         %(ledger_account_code)s, %(currency)s, %(planned_start)s, %(planned_end)s,
-                        %(created_by)s) ON CONFLICT (org_id, bu_id, number)
+                        %(created_by)s, %(status)s, %(generated_by_requisition_id)s,
+                        %(source_requisition_id)s)
+                        ON CONFLICT (org_id, bu_id, number)
                         DO NOTHING RETURNING id""",
                         values,
                     ).fetchone()
@@ -289,8 +411,47 @@ class ProjectService:
                 parent_id=body.parent_id or body.bu_id,
             )
             row = self._get(project_id)
-            self._audit("project.create", project_id, None, row)
+            if source_requisition_id is None:
+                self._audit("project.create", project_id, None, row)
+            else:
+                after = row | {
+                    "requisition_id": source_requisition_id,
+                    "source": "requisition",
+                }
+                AuditWriter(cast(AuditConnection, self.connection), self.scope).write(
+                    actor=AuditActor(ActorKind.USER, self.actor_id),
+                    action="project.create",
+                    target_type="project",
+                    target_id=project_id,
+                    outcome=Outcome.SUCCESS,
+                    reason=audit_reason,
+                    after_source=after,
+                    after_fields=tuple(after),
+                )
             return self._read(row)
+
+    def create_generated(
+        self,
+        body: ProjectCreate,
+        *,
+        generated_by_requisition_id: UUID | None,
+        source_requisition_id: UUID | None,
+        reason: str,
+    ) -> ProjectRead:
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            return self._insert_project(
+                body,
+                codes={
+                    "department_code": body.department_code,
+                    "ledger_account_code": body.ledger_account_code,
+                },
+                owner=cast(UUID, body.owner_id),
+                on_date=datetime.now(UTC).date(),
+                status="active",
+                generated_by_requisition_id=generated_by_requisition_id,
+                audit_reason=reason,
+                source_requisition_id=source_requisition_id or generated_by_requisition_id,
+            )
 
     def ancestors(self, project_id: UUID) -> list[ProjectRef]:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
@@ -596,7 +757,9 @@ class ProjectService:
             ).fetchall()
             fields = (*FIELDS, "bu_name", "allocated", "available")
             records = [
-                ProjectRead.model_validate(with_variance(dict(zip(fields, row, strict=True))))
+                self._with_codes(
+                    ProjectRead.model_validate(with_variance(dict(zip(fields, row, strict=True))))
+                )
                 for row in rows[:page_size]
             ]
             next_cursor = None
@@ -615,6 +778,193 @@ class ProjectService:
                     ).encode()
                 ).decode()
             return ProjectPage(rows=records, total=int(str(count[0])), next_cursor=next_cursor)
+
+
+def create_generated_project(
+    connection: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    *,
+    settings: Settings | None,
+    actor_id: UUID,
+    parent_id: UUID | None,
+    bu_id: UUID,
+    name: str,
+    description: str,
+    department_code: str,
+    ledger_account_code: str,
+    currency: str,
+    owner_id: UUID,
+    planned_end: date | None,
+    generated_by_requisition_id: UUID | None,
+    reason: str,
+    source_requisition_id: UUID | None = None,
+) -> ProjectRead:
+    """Born active: the requisition's approval is the project's approval (E09-S06)."""
+    body = ProjectCreate(
+        bu_id=bu_id,
+        parent_id=parent_id,
+        name=name,
+        description=description,
+        department_code=department_code,
+        ledger_account_code=ledger_account_code,
+        currency=currency,
+        planned_end=planned_end,
+        owner_id=owner_id,
+    )
+    return ProjectService(connection, scope, actor_id, settings).create_generated(
+        body,
+        generated_by_requisition_id=generated_by_requisition_id,
+        source_requisition_id=source_requisition_id,
+        reason=reason,
+    )
+
+
+def apply_sponsors(
+    connection: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    project_id: UUID,
+    user_ids: list[UUID],
+) -> None:
+    """Carry a Project Request's sponsors to its project; `sponsor_id` keeps the first."""
+    if not user_ids:
+        return
+    repo = ProjectService(connection, scope).repo
+    for user_id in user_ids:
+        repo.execute(
+            "INSERT INTO project_sponsor(org_id, project_id, user_id) "
+            "VALUES (%(org_id)s, %(id)s, %(user)s) ON CONFLICT DO NOTHING",
+            {"id": project_id, "user": user_id},
+        )
+    repo.execute(
+        "UPDATE project SET sponsor_id = %(user)s WHERE org_id = %(org_id)s AND id = %(id)s",
+        {"id": project_id, "user": user_ids[0]},
+    )
+
+
+def abandon_requested(
+    connection: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    project_id: UUID,
+    *,
+    reason: str,
+    actor_id: UUID | None,
+    system_actor: str | None = None,
+) -> bool:
+    """Abandon the project a Project Request created after the request stopped (D-M2-22).
+
+    Like `abandon_generated`, but the allocation stays (it is reported apart as Abandoned) and
+    the stopping request, still open while this runs, does not count against the closing rule.
+    """
+    return _abandon(
+        connection,
+        scope,
+        project_id,
+        reason,
+        actor_id,
+        system_actor,
+        own_open_documents=1,
+        action="project.abandon",
+    )
+
+
+def abandon_generated(
+    connection: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    project_id: UUID,
+    *,
+    reason: str,
+    actor_id: UUID | None,
+    system_actor: str | None = None,
+) -> bool:
+    """Abandon a requisition-generated sub-project after its requisition stopped (E09-S07).
+
+    A system consequence, so no `project.complete` grant; the closing rule still applies and
+    the sub-project must hold nothing. Returns False when it was no longer open to abandon.
+    """
+    return _abandon(connection, scope, project_id, reason, actor_id, system_actor)
+
+
+def _abandon(
+    connection: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    project_id: UUID,
+    reason: str,
+    actor_id: UUID | None,
+    system_actor: str | None,
+    own_open_documents: int = 0,
+    action: str = "project.transition",
+) -> bool:
+    with tenant_transaction(cast(RlsSession, connection), scope):
+        service = ProjectService(connection, scope, actor_id)
+        lifecycle = Lifecycle(service.repo, actor_id)
+        before, blocked = lifecycle.snapshot(project_id, for_update=True)
+        if before["status"] not in ("active", "deferred"):
+            return False
+        blocked["open_documents"] = cast(int, blocked["open_documents"]) - own_open_documents
+        blocker = blocked_by_holdings(blocked, False, lambda _permission: False, "")
+        if blocker is not None:
+            raise blocker
+        lifecycle.write(
+            before,
+            blocked,
+            TransitionCreate(to="abandoned", reason=reason),
+            system_actor=system_actor,
+        )
+        after = service._get(project_id)
+        AuditWriter(cast(AuditConnection, connection), scope).write(
+            actor=AuditActor(ActorKind.JOB if system_actor else ActorKind.USER, actor_id),
+            action=action,
+            target_type="project",
+            target_id=project_id,
+            outcome=Outcome.SUCCESS,
+            before_source=before,
+            before_fields=tuple(before),
+            after_source=after
+            | {"reason": reason, "blocked_by": blocked}
+            | ({"source": "requisition"} if own_open_documents else {}),
+            after_fields=(
+                *after,
+                "reason",
+                "blocked_by",
+                *(("source",) if own_open_documents else ()),
+            ),
+        )
+        return True
+
+
+def generated_for(
+    connection: psycopg.Connection[tuple[object, ...]], scope: Scope, requisition_id: UUID
+) -> ProjectRef | None:
+    from flo.modules.projects.hierarchy import FIELDS as REF_FIELDS
+
+    with tenant_transaction(cast(RlsSession, connection), scope):
+        row = (
+            ProjectRepository(connection, scope)
+            .execute(
+                f"SELECT {', '.join(REF_FIELDS)} FROM project WHERE org_id=%(org_id)s "
+                "AND generated_by_requisition_id=%(id)s",
+                {"id": requisition_id},
+            )
+            .fetchone()
+        )
+        return ProjectRef.model_validate(dict(zip(REF_FIELDS, row, strict=True))) if row else None
+
+
+def requested_for(
+    connection: psycopg.Connection[tuple[object, ...]], scope: Scope, requisition_id: UUID
+) -> UUID | None:
+    """The project a Project Request's approval created (not a generated sub-project)."""
+    with tenant_transaction(cast(RlsSession, connection), scope):
+        row = (
+            ProjectRepository(connection, scope)
+            .execute(
+                "SELECT id FROM project WHERE org_id=%(org_id)s AND source_requisition_id=%(id)s "
+                "AND generated_by_requisition_id IS NULL",
+                {"id": requisition_id},
+            )
+            .fetchone()
+        )
+        return cast(UUID, row[0]) if row else None
 
 
 def get_status(
@@ -715,3 +1065,32 @@ def get_by_external_ref(
             if row
             else None
         )
+
+
+__all__ = [
+    "register_open_document_counter",
+    "unregister_open_document_counter",
+    "ProjectService",
+    "get_status",
+    "ancestors",
+    "descendants",
+    "lowest_common_ancestor",
+    "path_between",
+    "depth_of",
+    "assert_posting_allowed",
+    "risk_indicators",
+    "get_by_external_ref",
+    "is_requisition_generated",
+    "create_generated_project",
+    "generated_for",
+    "abandon_generated",
+    "abandon_requested",
+    "requested_for",
+    "apply_sponsors",
+]
+
+
+def is_requisition_generated(
+    connection: psycopg.Connection[tuple[object, ...]], scope: Scope, project_id: UUID
+) -> bool:
+    return ProjectService(connection, scope).get(project_id).generated_by_requisition_id is not None

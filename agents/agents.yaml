@@ -15,7 +15,13 @@ policy:
   # `ui` left this list deliberately: MASTER-token and a11y checks are mechanical and run
   # in flo check; Opus's UI pass moves to the train diff.
   opus_final_required_tags: [money, auth, security, migration, concurrency]
-  ungated_reviewers: [qwen, kimi]
+  # 13 Oct 2026, operator-approved: Sonnet authors, Codex reviews every story (gated ones also
+  # get a fresh Opus session), qwen then deepseek review whatever Codex authored or cannot reach.
+  # 11 Oct 2026: kimi left this list at 0.0 findings in 2 reviews; deepseek 1.0 in 6.
+  ungated_reviewers: [codex, qwen, deepseek]
+  # First author in this order that may take the story wins; sonnet drops out when every
+  # account is at max_workers_per_account, which is how the overflow lanes get work.
+  author_priority: [sonnet, opencode-nemotron, codex]
 
 # Per-milestone overrides. A milestone may concentrate authorship on one agent when
 # the cost of getting it wrong is a rewrite rather than a patch. Reviewers are NOT
@@ -92,9 +98,33 @@ agents:
       Claude Pro. Batch design per milestone. Final review only on gated stories.
       Never spend tokens reconstructing context flo already wrote into task.json.
 
+  sonnet:
+    model: sonnet                # claude CLI alias, resolves to the current Sonnet
+    reasoning: high              # passed as --effort
+    cli: "claude -p --model sonnet"
+    plan: claude-pro (two accounts)
+    metered: rate
+    # Two Claude Pro accounts. Every Claude session on an account (planner, reviewer, workers)
+    # draws the same usage window. `default` means CLAUDE_CONFIG_DIR unset (`claude-personal`):
+    # exporting it as ~/.claude is a different, logged-out login, because the keychain entry
+    # follows the variable, not the folder.
+    accounts:
+      A: default                 # claude / claude-personal
+      B: ~/.claude-summello      # claude-summello
+    max_workers_per_account: 2   # 13 Oct 2026: raised from the pilot's 1 when the operator handed B four stories (B at 8% used).
+                                 # Drop an account back to 1 if it caps more than once a day.
+    roles: [author]
+    allowed_kinds: [ledger, concurrency, migration, security, engine, api, chore, ui, crud, docs, test]
+    fallback: [opencode-nemotron, codex]
+    notes: >
+      13 Oct 2026: primary author, one session per story with a pre-assigned id
+      (flo account), resumed for review rounds and red story CI. Skill: xlr8flo-worker.
+
   codex:
     model: gpt-5.6-sol            # operator-supplied; verify the exact --model string
     reasoning: high               # the CLI flag, not a hint
+    review_reasoning: medium      # 13 Oct 2026: reviews pin model and effort on the command
+                                  # line; ~/.codex/config.toml silently ran `low` on 12 Oct
     cli: "codex exec"
     plan: chatgpt-plus
     metered: rate
@@ -115,7 +145,7 @@ agents:
     cli: "opencode run --model openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"
     plan: openrouter-credits
     metered: none                # :free variant — no credit drawdown
-    roles: [author, review]
+    roles: [author]              # 11 Oct 2026: 0.0 findings in 5 reviews; it authors, others review
     allowed_kinds: [crud, ui, api, chore, docs, test]   # 10 Oct 2026: engine, migration → codex
     avoid_tags: [money, auth, security, migration, concurrency]   # gated stories → codex
     max_author_size: M           # 10 Oct 2026: E06-S07 (ui, L) ended exit 0 with nothing committed,
@@ -188,6 +218,8 @@ agents:
     cli: "opencode run --model openrouter/deepseek/deepseek-v4-pro-0813"
     plan: openrouter-credits
     metered: spend
+    monthly_budget_usd: 20       # 11 Oct 2026: now a primary ungated reviewer, so it gets a cap
+    reserve_for_review_usd: 20
     roles: [review]              # review only - authoring stays with codex for M0
     allowed_kinds: []
     fallback: [qwen, kimi]
@@ -202,8 +234,11 @@ agents:
 #                   and (size <= max_author_size or unset)
 #                   and has remaining capacity
 #   2. author  = candidate with the lowest scarcity, preferring prefer_tags matches
+#   2a. if policy.author_priority is set, author = its first entry that is a candidate
+#       (an agent with accounts is a candidate only while one has a free worker slot)
 #   3. opus_final = story.tags ∩ policy.opus_final_required_tags is non-empty
-#      reviewers = [opus] if opus_final, else the first of policy.ungated_reviewers
+#      reviewers = the first of policy.ungated_reviewers that is not the author;
+#      opus_final adds a fresh Opus review on top (13 Oct 2026)
 #                  that is not the author and is under its monthly budget
 #   4. if fewer than min_reviewers are reachable → story waits, never merges short
 #   5. an ungated story's code is still read by Opus, once, in its train's diff

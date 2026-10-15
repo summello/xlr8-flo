@@ -13,9 +13,21 @@ import StatusGallery from "./_dev/status-gallery";
 import EffectiveAccessExplorer from "./admin/users/$id";
 import ProjectList from "./projects/list";
 import NewProject from "./projects/new";
+import WorkflowList from "./admin/approval-workflows/list";
+import WorkflowBuilder from "./admin/approval-workflows/[id]";
 import ProjectDetail from "./projects/detail";
 import Dashboard from "./projects/dashboard";
 import BudgetOverview from "./budget";
+import ApprovalInbox from "./approvals/inbox";
+import ApprovalAvailability from "./approvals/availability";
+import RequisitionList from "./requisitions/list";
+import NewRequisition from "./requisitions/new";
+import EditRequisition from "./requisitions/edit";
+import ResubmitRequisition from "./requisitions/resubmit";
+import AmendRequisition from "./requisitions/amend";
+import AmendReview from "./requisitions/amend-review";
+import RequisitionDetail from "./requisitions/detail";
+import { confirmLeave, consumeRestoring, installHistoryIndex, settlePop } from "../lib/navigation-guard";
 import type { Project } from "../components/projects/api";
 import type { RoutePath } from "./route-paths";
 
@@ -33,8 +45,14 @@ const ORGANIZATION = ["/organization", "Northstar Capital"] as const;
 const BUSINESS_UNIT = ["/organization/infrastructure", "Infrastructure BU"] as const;
 const PROJECT = ["/projects/north-plant-renewal", "North plant renewal"] as const;
 const SUB_PROJECT = ["/projects/north-plant-renewal/cooling", "Cooling system upgrade"] as const;
+const WORKFLOW_PATH = /^\/admin\/approval-workflows\/([0-9a-f-]{36})$/;
 const PROJECT_PATH = /^\/projects\/([0-9a-f-]{36})$/;
 const DASHBOARD_PATH = /^\/projects\/([0-9a-f-]{36})\/dashboard$/;
+const REQUISITION_PATH = /^\/requisitions\/([0-9a-f-]{36})$/;
+const REQUISITION_EDIT_PATH = /^\/requisitions\/([0-9a-f-]{36})\/edit$/;
+const REQUISITION_RESUBMIT_PATH = /^\/requisitions\/([0-9a-f-]{36})\/resubmit$/;
+const REQUISITION_AMEND_PATH = /^\/requisitions\/([0-9a-f-]{36})\/amend$/;
+const REQUISITION_AMEND_REVIEW_PATH = /^\/requisitions\/([0-9a-f-]{36})\/amend\/review$/;
 const ADMIN_USER_PATH = /^\/admin\/users\/([^/]+)$/;
 
 const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
@@ -52,6 +70,7 @@ const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
     phase: "foundation",
     title: "Organization",
   },
+  "/admin/approval-workflows": { activeHref: "/administration", description: "Versioned approval workflows", hierarchy: [ORGANIZATION, ["/admin/approval-workflows", "Approval Workflows"]], phase: "foundation", title: "Approval Workflows" },
   "/administration": {
     activeHref: "/administration",
     description: "Administration screens arrive with the foundation milestone.",
@@ -89,17 +108,31 @@ const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
   },
   "/requisitions": {
     activeHref: "/requisitions",
-    description: "Requisition screens arrive with the demand milestone.",
-    hierarchy: [ORGANIZATION, BUSINESS_UNIT, PROJECT, SUB_PROJECT, ["/requisitions", "Requisitions"]],
+    description: "Raise, track and withdraw requisitions.",
+    hierarchy: [ORGANIZATION, ["/requisitions", "Requisitions"]],
     phase: "demand",
     title: "Requisitions",
   },
+  "/requisitions/new": {
+    activeHref: "/requisitions",
+    description: "Raise a requisition, check its funds and submit it for approval.",
+    hierarchy: [ORGANIZATION, ["/requisitions", "Requisitions"], ["/requisitions/new", "New Requisition"]],
+    phase: "demand",
+    title: "New Requisition",
+  },
   "/approvals": {
     activeHref: "/approvals",
-    description: "Approval screens arrive with the demand milestone.",
-    hierarchy: [ORGANIZATION, BUSINESS_UNIT, PROJECT, ["/approvals", "Approvals"]],
+    description: "Decide the approvals waiting on you.",
+    hierarchy: [ORGANIZATION, ["/approvals", "Approvals"]],
     phase: "demand",
-    title: "Approvals",
+    title: "Approval Inbox",
+  },
+  "/approvals/availability": {
+    activeHref: "/approvals",
+    description: "Pass your approvals to a colleague while you are away.",
+    hierarchy: [ORGANIZATION, ["/approvals", "Approvals"], ["/approvals/availability", "Availability"]],
+    phase: "demand",
+    title: "Approval Availability",
   },
   "/vendors": {
     activeHref: "/vendors",
@@ -167,9 +200,19 @@ const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
 };
 
 function routeFor(path: string): ShellRoute {
+  if (WORKFLOW_PATH.test(path)) return { activeHref: "/administration", path, phase: "demand", title: "Approval Workflow", description: "Design and check approval routes.", breadcrumbs: [{ href: "/administration", label: "Administration" }, { href: path, label: "Approval Workflow" }] };
   if (PROJECT_PATH.test(path) || DASHBOARD_PATH.test(path)) return {
     activeHref: "/projects", path, phase: "plan", title: DASHBOARD_PATH.test(path) ? "Project Dashboard" : "Project", description: "Project details and actions.",
     breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/projects", label: "Projects" }],
+  };
+  const screen = REQUISITION_RESUBMIT_PATH.test(path) ? ["Review Changes Before Resubmitting", "Review Changes"] : REQUISITION_AMEND_PATH.test(path) ? ["Amend Requisition", "Amend"] : REQUISITION_AMEND_REVIEW_PATH.test(path) ? ["Review Amendment", "Review Amendment"] : null;
+  if (screen) return {
+    activeHref: "/requisitions", path, phase: "demand", title: screen[0]!, description: "Review what changed, what it does to funding, and send it.",
+    breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/requisitions", label: "Requisitions" }, { href: path, label: screen[1]! }],
+  };
+  if (REQUISITION_PATH.test(path) || REQUISITION_EDIT_PATH.test(path)) return {
+    activeHref: "/requisitions", path, phase: "demand", title: REQUISITION_EDIT_PATH.test(path) ? "Edit Requisition" : "Requisition", description: "Requisition details and actions.",
+    breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/requisitions", label: "Requisitions" }, { href: path, label: REQUISITION_EDIT_PATH.test(path) ? "Edit" : "Requisition" }],
   };
   const adminUser = path.match(ADMIN_USER_PATH)?.[1];
   if (adminUser !== undefined) {
@@ -207,20 +250,26 @@ export default function RootRoute() {
     document.title = project.name;
     setProjectHeading({ id: project.id, title: project.name, unit, number: project.number, buId: project.bu_id });
   }, []);
+  const [requisitionHeading, setRequisitionHeading] = useState<{ path: string; title: string } | null>(null);
+  const onRequisitionLoaded = useCallback((title: string) => { document.title = title; setRequisitionHeading({ path: window.location.pathname, title }); }, []);
   const verified = useRef(false);
   const [allowed, setAllowed] = useState(false);
   const [approvedRoute, setApprovedRoute] = useState<ShellRoute | null>(null);
   const [tenantName, setTenantName] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
-  const [route, setRoute] = useState(() => activateRoute(window.location.pathname));
+  const [route, setRoute] = useState(() => { installHistoryIndex(); return activateRoute(window.location.pathname); });
 
   useEffect(() => {
-    const onPopState = () => { setAllowed(false); setFailed(false); setRoute(activateRoute(window.location.pathname)); };
+    const onPopState = (event: PopStateEvent) => {
+      // UX-003: Back/Forward asks like in-app navigation; cancelling steps back with history.go().
+      if (consumeRestoring() || !settlePop(event.state)) return;
+      setAllowed(false); setFailed(false); setRoute(activateRoute(window.location.pathname)); };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
   const navigate = useCallback((href: string) => {
+    if (!confirmLeave()) return; // UX-003: dirty forms ask before in-app navigation
     setAllowed(false);
     if (AUTH_PATHS.includes(new URL(href, window.location.origin).pathname)) { verified.current = false; setApprovedRoute(null); }
     setFailed(false);
@@ -282,19 +331,37 @@ export default function RootRoute() {
   if (!allowed && !approvedRoute) return <main role="status">Checking your session</main>;
   // Keep the last authorized shell mounted during the probe; no new route is rendered early.
   const shellRoute = allowed ? route : approvedRoute!;
+  const workflowId = shellRoute.path.match(WORKFLOW_PATH)?.[1];
   const projectId = shellRoute.path.match(PROJECT_PATH)?.[1];
   const dashboardId = shellRoute.path.match(DASHBOARD_PATH)?.[1];
   const loadedHeading = projectHeading?.id === (projectId ?? dashboardId) ? projectHeading : null;
   const displayedRoute = loadedHeading ? { ...shellRoute, title: loadedHeading.title,
     breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: `/organization/${loadedHeading.buId}`, label: loadedHeading.unit }, { href: shellRoute.path, label: `${loadedHeading.number} ${loadedHeading.title}` }] } : shellRoute;
+  const requisitionId = shellRoute.path.match(REQUISITION_PATH)?.[1];
+  const requisitionEditId = shellRoute.path.match(REQUISITION_EDIT_PATH)?.[1];
+  const resubmitId = shellRoute.path.match(REQUISITION_RESUBMIT_PATH)?.[1];
+  const amendId = shellRoute.path.match(REQUISITION_AMEND_PATH)?.[1];
+  const amendReviewId = shellRoute.path.match(REQUISITION_AMEND_REVIEW_PATH)?.[1];
+  const titledRoute = requisitionHeading?.path === shellRoute.path ? { ...displayedRoute, title: requisitionHeading.title, breadcrumbs: displayedRoute.breadcrumbs.map((item, i, all) => i === all.length - 1 ? { ...item, label: requisitionHeading.title } : item) } : displayedRoute;
   const adminUserId = shellRoute.path.match(ADMIN_USER_PATH)?.[1];
 
   return (
-    <AppShell navigate={navigate} route={{ ...displayedRoute, breadcrumbs: displayedRoute.breadcrumbs.map(item => ({ ...item, label: item.href === "/organization" && tenantName ? tenantName : item.label })) }}>
+    <AppShell navigate={navigate} route={{ ...titledRoute, breadcrumbs: titledRoute.breadcrumbs.map(item => ({ ...item, label: item.href === "/organization" && tenantName ? tenantName : item.label })) }}>
       {shellRoute.path === "/projects" ? <ProjectList navigate={navigate} /> : undefined}
+      {shellRoute.path === "/requisitions" ? <RequisitionList key={window.location.search} navigate={navigate} /> : undefined}
+      {shellRoute.path === "/requisitions/new" ? <NewRequisition navigate={navigate} /> : undefined}
+      {requisitionId ? <RequisitionDetail key={requisitionId} id={requisitionId} navigate={navigate} onLoaded={onRequisitionLoaded} /> : undefined}
+      {requisitionEditId ? <EditRequisition key={requisitionEditId} id={requisitionEditId} navigate={navigate} onLoaded={onRequisitionLoaded} /> : undefined}
+      {resubmitId ? <ResubmitRequisition key={resubmitId} id={resubmitId} navigate={navigate} /> : undefined}
+      {amendId ? <AmendRequisition key={amendId} id={amendId} navigate={navigate} /> : undefined}
+      {amendReviewId ? <AmendReview key={amendReviewId} id={amendReviewId} navigate={navigate} /> : undefined}
       {shellRoute.path === "/projects/new" ? <NewProject navigate={navigate} /> : undefined}
       {dashboardId ? <Dashboard key={`${dashboardId}-${window.location.search}`} id={dashboardId} navigate={navigate} onLoaded={onProjectLoaded} /> : undefined}
+      {shellRoute.path === "/approvals" ? <ApprovalInbox navigate={navigate} /> : undefined}
+      {shellRoute.path === "/approvals/availability" ? <ApprovalAvailability navigate={navigate} /> : undefined}
       {shellRoute.path === "/budget" ? <BudgetOverview key={window.location.search} navigate={navigate} /> : undefined}
+      {shellRoute.path === "/admin/approval-workflows" ? <WorkflowList navigate={navigate} /> : undefined}
+      {workflowId ? <WorkflowBuilder key={workflowId} id={workflowId} /> : undefined}
       {projectId ? <ProjectDetail key={projectId} id={projectId} onLoaded={onProjectLoaded} /> : undefined}
       {shellRoute.path === "/_dev/status-gallery" ? <StatusGallery /> : undefined}
       {shellRoute.path === "/_dev/grid" ? <GridGallery /> : undefined}

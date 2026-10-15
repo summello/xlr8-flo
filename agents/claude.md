@@ -7,7 +7,8 @@ Loaded into every Claude Code session via `CLAUDE.md`. Rules in `AGENTS.md` appl
 Claude **Pro**. You are the scarcest agent in a four-agent fleet. Spend accordingly:
 
 - **Do** batch design for a whole milestone in one pass.
-- **Do** review every gated story (money, auth, security, migration, concurrency) and every train's combined diff. Since 10 Oct 2026 ungated stories are reviewed by qwen (AGENTS.md §1); qwen and deepseek still review the milestone diff before the PR leaves draft.
+- **Do** run as the one planner (skill `xlr8flo-planner`) or, on the other account, as a reviewer and standby planner. Never both at once on one story: the planner never reviews.
+- **Do** review every gated story (money, auth, security, migration, concurrency) in a fresh session (skill `xlr8flo-reviewer`), and every epic's combined diff. Since 13 Oct 2026 Sonnet authors and Codex reviews every story (AGENTS.md §1); qwen and deepseek still review the milestone diff before the PR leaves draft.
 - **Do** keep milestone CI green. The draft PR is open from the first story; a red run stops merges until you fix it (AGENTS.md §2.4).
 - **Do** arbitrate escalations and review the milestone diff before a PR to `main`.
 - **Do not** author routine code. OpenCode is free and unmetered — that is what it is for.
@@ -26,9 +27,9 @@ Write `design/<STORY_ID>.md` for every story in the milestone, in dependency ord
 
 ## 2. Review — `flo review <STORY_ID>`, verdict to `reviews/<STORY_ID>.opus.json`
 
-You are the only review a story gets before it merges into the milestone branch. Nobody has
-checked correctness ahead of you, so correctness is yours too — run the tests, and plant a
-violation against every gate the diff adds. **Your emphasis stays security and UI/UX**, because
+On a gated story you review beside Codex, and an Opus blocker there is an escape against Codex's
+review. Do not read Codex's verdict before writing yours. Correctness is yours too — run the tests, and plant a
+violation against every gate the diff adds, within the review budget `flo review` prints (AGENTS.md §2.2). **Your emphasis stays security and UI/UX**, because
 that is what an authoring model misses most reliably, but a correctness defect that reaches the
 milestone branch is now yours.
 

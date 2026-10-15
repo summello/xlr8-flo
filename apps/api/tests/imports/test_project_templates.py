@@ -4,6 +4,7 @@ import asyncio
 import csv
 import io
 from datetime import date
+from unittest import mock
 from uuid import uuid4
 
 import psycopg
@@ -21,6 +22,7 @@ from flo.modules.org.schemas import MasterCreate, OrgUnitCreate
 from flo.modules.org.service import OrgService, unit_by_code
 from flo.modules.projects.schemas import ProjectCreate, ProjectPatch
 from flo.modules.projects.service import ProjectService, get_by_external_ref
+from tests.approvals.test_project_wiring import publish
 from tests.authz.conftest import ROOT, load_migration
 from tests.imports.test_validation import send
 from tests.isolation.test_real_sessions import client, headers, login
@@ -52,7 +54,28 @@ def concrete(probe):
             ),
         )
     register_builtin()
-    return probe
+    # D-M2-21: allocations need a published budget_change workflow; routing is not under test.
+    publish((probe, None, None), "budget_change")
+    with mock.patch("flo.modules.budget.change_requests.start"):
+        yield probe
+
+
+def approve_pending(conn, scope, actor):
+    """Post every pending allocation request the way an approval would."""
+    from flo.modules.approvals.schemas import Outcome, OutcomeContext
+    from flo.modules.approvals.service import adapter_for
+
+    with tenant_transaction(conn, scope):
+        ids = [
+            row[0]
+            for row in conn.execute(
+                "SELECT id FROM budget_change_request WHERE status='pending' ORDER BY created_at"
+            ).fetchall()
+        ]
+    for id in ids:
+        adapter_for("budget_change").on_outcome(
+            conn, scope, id, Outcome.APPROVED, OutcomeContext(actor, None, None, lambda p, t: True)
+        )
 
 
 def project(ref="ROOT", **changes):
@@ -505,7 +528,7 @@ def test_allocation_recipient_lookup_direct_and_roll_down(concrete, roll_down):
 @pytest.mark.parametrize("roll_down", [False, True])
 def test_allocations_reimport_skip_reconcile_and_recipient_result(concrete, roll_down):
     from flo.modules.budget.reconcile import reconcile_org
-    from flo.modules.budget.service import entry_by_idempotency_key, get_balance
+    from flo.modules.budget.service import get_balance, request_by_key
     from flo.modules.imports.handlers import RowContext
     from flo.modules.imports.templates.budget_allocations import row_key
 
@@ -519,6 +542,9 @@ def test_allocations_reimport_skip_reconcile_and_recipient_result(concrete, roll
             root_id, batch, preview = await validate(browser, "budget_allocations", [allocation()])
             assert batch["counts"]["create"] == 1, preview
             await commit(browser, root_id)
+            # Import creates a pending request; nothing is posted until it is approved.
+            assert conn.execute("SELECT count(*) FROM ledger_entry").fetchone() == (0,)
+            approve_pending(conn, scope, actor)
             rows = (
                 [allocation("CHILD-FUNDING", "CHILD-1", amount="25.00")]
                 if roll_down
@@ -528,17 +554,18 @@ def test_allocations_reimport_skip_reconcile_and_recipient_result(concrete, roll
                 id, batch, preview = await validate(browser, "budget_allocations", rows)
                 assert batch["counts"]["create"] == 1, preview
                 await commit(browser, id)
+                approve_pending(conn, scope, actor)
             else:
                 id = root_id
             context = RowContext(conn, scope, actor, lambda permission, target: True, {})
             recipient = get_by_external_ref(conn, scope, rows[0]["project_ref"])
-            entry = entry_by_idempotency_key(conn, scope, row_key(context, rows[0]))
-            assert entry.project_id == recipient.id and entry.amount > 0
+            request = request_by_key(conn, scope, row_key(context, rows[0]))
+            assert request.project_id == recipient.id and request.status == "approved"
             with tenant_transaction(conn, scope):
                 recorded = conn.execute(
                     "SELECT record_id FROM import_result WHERE batch_id=%s", (id,)
                 ).fetchone()[0]
-                assert str(recorded) == str(entry.id)
+                assert str(recorded) == str(request.id)
                 before = conn.execute(
                     "SELECT id,project_id,amount FROM ledger_entry ORDER BY id"
                 ).fetchall()
@@ -686,14 +713,10 @@ def test_concurrent_allocation_batches_post_once(concrete):
             stale = next(response for response in results if response.status_code == 409)
             assert stale.json()["checks"]["problem"] == "stale_validation"
             with tenant_transaction(conn, Scope(org)):
-                assert conn.execute("SELECT count(*),sum(amount) FROM ledger_entry").fetchone() == (
-                    1,
-                    100,
-                )
+                assert conn.execute("SELECT count(*) FROM ledger_entry").fetchone() == (0,)
                 assert conn.execute(
-                    "SELECT allocated,available FROM project_balance p "
-                    "JOIN project j ON j.id=p.project_id WHERE j.external_ref='ROOT'"
-                ).fetchone() == (100, 100)
+                    "SELECT count(*),sum(amount) FROM budget_change_request WHERE status='pending'"
+                ).fetchone() == (1, 100)
 
     asyncio.run(scenario())
 
@@ -773,5 +796,50 @@ def test_partial_allocation_failure_preserves_rule(concrete, background):
             )
             assert stored[-1]["problem"] == "insufficient_budget"
             assert preview["rows"][0]["issues"][-1]["problem"] == "insufficient_budget"
+
+    asyncio.run(scenario())
+
+
+def test_import_of_n_rows_makes_n_pending_requests_and_none_post(concrete):
+    conn, org, _, _, _, _ = concrete
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            await create_tree(browser)
+            rows = [allocation(f"ROW-{i}", "ROOT", amount="10.00") for i in range(3)]
+            id, batch, preview = await validate(browser, "budget_allocations", rows)
+            assert batch["counts"]["create"] == 3, preview
+            assert (await commit(browser, id))["result"]["committed"] == 3
+            with tenant_transaction(conn, Scope(org)):
+                assert conn.execute(
+                    "SELECT count(*) FROM budget_change_request "
+                    "WHERE kind='allocation' AND status='pending'"
+                ).fetchone() == (3,)
+                assert conn.execute("SELECT count(*) FROM ledger_entry").fetchone() == (0,)
+                assert conn.execute(
+                    "SELECT count(*) FROM import_result WHERE batch_id=%s "
+                    "AND record_type='budget_change_request'",
+                    (id,),
+                ).fetchone() == (3,)
+
+    asyncio.run(scenario())
+
+
+def test_allocation_row_errors_without_published_workflow(concrete):
+    conn, org, _, _, _, _ = concrete
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            await create_tree(browser)
+            conn.execute("UPDATE workflow_definition SET retired_at=now() WHERE org_id=%s", (org,))
+            id, batch, preview = await validate(browser, "budget_allocations", [allocation()])
+            assert batch["counts"]["error"] == 1
+            assert any(issue["code"] == "workflow_not_set_up" for issue in preview[0]["issues"])
+            assert (
+                await send(browser, "POST", id, "commit", {"mode": "atomic"})
+            ).status_code == 409
+            assert conn.execute("SELECT count(*) FROM budget_change_request").fetchone() == (0,)
 
     asyncio.run(scenario())

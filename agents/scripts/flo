@@ -20,11 +20,12 @@ Stdlib only, except PyYAML for the two config files.
   flo budget                per-agent spend and remaining capacity
   flo roadmap [--check]     regenerate docs/claude-plan.md §5 (or verify it)
   flo board   [--watch [S]] refresh .flo/status.json and board.html from git refs, worktrees, GitHub\n  flo ack     [KEY|all]     confirm a 'waiting on you' item (list keys with no argument)\n  flo unack   <KEY|all>     reopen a confirmed item
-  flo check                 run everything CI runs, locally, on a fresh per-worktree database
+  flo check [--light]       everything CI runs, locally (stops at the first red); --light is\n                            the story gate: no full pytest/e2e, only the tests the story touched\n  flo reap    <STORY_ID>    drop a merged story's worktree once its CI is green\n  flo account <STORY_ID>    account + session id for a multi-account author (sonnet)\n  flo ci-watch              one pass: mark red story/milestone CI, reap green merged stories
   flo db      [url|reset]   this worktree's test database (reset drops and recreates it)
   flo up [--reset]          start local Postgres + MinIO + Mailpit; optionally reset data
   flo down                  stop the local stack
 """
+import ast
 import hashlib
 import json
 import os
@@ -32,6 +33,7 @@ import re
 import subprocess
 import sys
 import time
+import uuid
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -175,6 +177,8 @@ def cmd_assign(argv):
         cap = cfg.get("max_author_size")
         if cap and size_rank[st["s"]] > size_rank[cap]:
             return False
+        if cfg.get("accounts") and not free_accounts(name, cfg):
+            return False  # every worker slot on every account is busy: overflow to the next author
         if cfg.get("monthly_budget_usd"):
             spent = sp.get(name, 0.0)
             usable = cfg["monthly_budget_usd"] - cfg.get("reserve_for_review_usd", 0)
@@ -191,20 +195,118 @@ def cmd_assign(argv):
         prefers = bool(tags & set(c.get("prefer_tags", [])))
         return (0 if prefers else 1, scarcity[c.get("metered", "none")])
 
-    author = sorted(cands, key=rank)[0]
-    # 10 Oct 2026: review is scaled to risk. A gated story is Opus's alone; an ungated one
-    # goes to the first ungated reviewer with budget left, and Opus reviews the train diff.
+    # 13 Oct 2026: an explicit author_priority (sonnet, then the overflow lanes) replaces the
+    # scarcity heuristic when it is set.
+    prio = pol.get("author_priority")
+    author = (next(n for n in prio + sorted(cands, key=rank) if n in cands) if prio
+              else sorted(cands, key=rank)[0])
+    # Every story gets one reviewer from ungated_reviewers that is not its author (codex, then
+    # qwen). A gated story additionally needs Opus (opus_final), in a fresh session.
     opus_final = bool(tags & set(pol["opus_final_required_tags"]))
-    if opus_final:
-        reviewers = ["opus"]
-    else:
-        reviewers = [n for n in pol["ungated_reviewers"]
-                     if n != author and sp.get(n, 0.0) < agents[n].get("monthly_budget_usd", float("inf"))][:1]
+    reviewers = [n for n in pol["ungated_reviewers"]
+                 if n != author and sp.get(n, 0.0) < agents[n].get("monthly_budget_usd", float("inf"))][:1]
     if len(reviewers) < pol["min_reviewers"]:
         die(f"only {len(reviewers)} reviewer(s) available; minimum is {pol['min_reviewers']} — story waits")
     out = {"author": author, "reviewers": reviewers, "opus_final": opus_final}
     print(json.dumps(out, indent=2))
     return out
+
+
+def worker_load(name):
+    """Active stories per account for an agent that runs on several accounts (sonnet)."""
+    load = {}
+    for _, s in stories(roadmap()):
+        if s["st"] not in ACTIVE:
+            continue
+        task = worktree_path(s["id"]) / "task.json"
+        if not task.exists():
+            continue
+        pkt = json.loads(task.read_text())
+        acct = ((pkt.get("sessions") or {}).get(name) or {}).get("account")
+        if pkt.get("author") == name and acct:
+            load[acct] = load.get(acct, 0) + 1
+    return load
+
+
+def free_accounts(name, cfg):
+    load = worker_load(name)
+    cap = cfg.get("max_workers_per_account", 1)
+    return sorted((a for a in cfg["accounts"] if load.get(a, 0) < cap), key=lambda a: load.get(a, 0))
+
+
+def config_dir(value):
+    """`-` for the default login (CLAUDE_CONFIG_DIR unset), else the expanded folder."""
+    return "-" if value == "default" else str(Path(value).expanduser())
+
+
+def cmd_account(argv):
+    """Pick the account a multi-account author runs a story on, and its session id.
+
+    Prints `new|resume <config_dir> <session_id>`. The least-loaded account with a free slot
+    wins; a tie goes to the account not used last. A story that already has a session keeps it,
+    so a continuation, a review round or a CI fix resumes the same conversation.
+    """
+    if not argv:
+        die("usage: flo account <STORY_ID>")
+    sid = argv[0]
+    pkt, task = packet_of(sid), worktree_path(sid) / "task.json"
+    name = pkt["author"]
+    cfg = load_yaml(FLEET)["agents"][name]
+    rec = (pkt.get("sessions") or {}).get(name) or {}
+    if rec.get("id") and rec.get("account"):
+        print(f"resume {config_dir(cfg['accounts'][rec['account']])} {rec['id']} {rec['account']}")
+        return
+    free = free_accounts(name, cfg)
+    if not free:
+        die(f"{name}: every account is at max_workers_per_account — the story waits")
+    load, s = worker_load(name), state()
+    last = s.get("last_account", {}).get(name)
+    tied = [a for a in free if load.get(a, 0) == load.get(free[0], 0)]
+    acct = next((a for a in tied if a != last), tied[0])
+    pinned = os.environ.get("FLO_ACCOUNT")  # the planner may pin an account; it must have a slot
+    if pinned:
+        if pinned not in free:
+            die(f"{name}: account {pinned} has no free slot — the story waits")
+        acct = pinned
+    s.setdefault("last_account", {})[name] = acct
+    save_state(s)
+    rec = {"agent": name, "id": str(uuid.uuid4()), "source": "launch:--session-id",
+           "account": acct, "cwd": str(worktree_path(sid)), "role": "xlr8flo-worker"}
+    pkt.setdefault("sessions", {})[name] = rec
+    task.write_text(json.dumps(pkt, indent=2) + "\n")
+    print(f"new {config_dir(cfg['accounts'][acct])} {rec['id']} {acct}")
+
+
+def cmd_codex_usage(argv):
+    """Append Codex's cap reading after a review to .scratch/codex-usage.jsonl, so the pilot can
+    say what one review costs and how soon four lanes reach the cap. Source: the rate_limits
+    lines Codex writes into its own session logs (what its /status shows)."""
+    if len(argv) < 2:
+        die("usage: flo codex-usage <STORY_ID> <started-iso>")
+    root = Path.home() / ".codex" / "sessions"
+    files = sorted(root.glob("*/*/*/rollout-*.jsonl"), key=lambda f: f.stat().st_mtime)[-8:]
+    lines = [ln for f in files for ln in f.read_text().splitlines()[-300:] if '"rate_limits"' in ln]
+    # Codex also logs a per-model "premium" limit with null windows; only the account's
+    # five-hour and weekly windows answer how close the cap is.
+    readings = [j for j in map(json.loads, lines)
+                if ((j.get("payload") or {}).get("rate_limits") or {}).get("primary")]
+    latest = max(readings, key=lambda j: j.get("timestamp", ""), default={})
+    limits = (latest.get("payload") or {}).get("rate_limits") or {}
+    # The model and effort the review ran, from its own log header (`model:`, `reasoning effort:`),
+    # not from the rollouts: Codex's internal codex-auto-review session writes those too.
+    log = ROOT / ".scratch" / f"{argv[0]}.codex.log"
+    head = log.read_text(errors="replace").splitlines()[:40] if log.exists() else []
+    ran = {k: v.strip() for k, _, v in (ln.partition(":") for ln in head)
+           if k in ("model", "reasoning effort")}
+    ran["effort"] = ran.pop("reasoning effort", None)
+    rec = {"story": argv[0], "start": argv[1], "end": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+           "model": ran.get("model"), "effort": ran.get("effort"),
+           "five_hour": limits.get("primary"), "weekly": limits.get("secondary")}
+    out = ROOT / ".scratch" / "codex-usage.jsonl"
+    out.parent.mkdir(exist_ok=True)
+    with out.open("a") as f:
+        f.write(json.dumps(rec) + "\n")
+    print(json.dumps(rec))
 
 
 # ── story lifecycle ──────────────────────────────────────────────────────────
@@ -267,13 +369,18 @@ def cmd_submit(argv):
     if not argv:
         die("usage: flo submit <STORY_ID>")
     sid = argv[0]
+    wt = worktree_path(sid)
+    if not checked(wt, "light"):
+        die("flo check --light is red — fix before submitting; two of four agents are rate-limited")
     pkt = packet_of(sid)
-    if not run_check(worktree_path(sid)):
-        die("flo check is red — fix before submitting; two of four agents are rate-limited")
-    rec = detect_session(pkt["author"], worktree_path(sid))
-    if rec["id"]:
+    rec = detect_session(pkt["author"], wt)
+    if rec["id"] and not ((pkt.get("sessions") or {}).get(pkt["author"]) or {}).get("id"):
         pkt.setdefault("sessions", {})[pkt["author"]] = rec
-        (worktree_path(sid) / "task.json").write_text(json.dumps(pkt, indent=2) + "\n")
+    # Hosted CI runs the full suite on this exact commit while the reviewers work, so the
+    # gate can ask GitHub instead of re-running 25 minutes of pytest on a loaded workstation.
+    pkt["submitted_sha"] = git("rev-parse", "HEAD", cwd=wt)
+    git("push", "-u", "origin", pkt["branch"], cwd=wt)
+    (wt / "task.json").write_text(json.dumps(pkt, indent=2) + "\n")
     set_status(sid, "review")
     print(f"{sid} ready for review. Reviewers must run:\n")
     for r in pkt["reviewers"]:
@@ -286,16 +393,267 @@ def cmd_submit(argv):
 GENERATED_FILES = (
     "uv.lock", "package-lock.json", "pnpm-lock.yaml", "yarn.lock",
     "poetry.lock", "Cargo.lock", "go.sum", "Gemfile.lock", "composer.lock",
+    "openapi.json", "schema.ts",  # the generated API client; the light gate checks it is current
 )
 
 
-def cmd_review(argv):
+def _module_file(wt, module):
+    """flo.a.b -> apps/api/src/flo/a/b.py (or its package); tests.a -> apps/api/tests/a.py."""
+    base = wt / "apps" / "api" / ("src" if module.split(".")[0] == "flo" else "")
+    path = base.joinpath(*module.split("."))
+    for f in (path.with_suffix(".py"), path / "__init__.py"):
+        if f.is_file():
+            return f
+    return None
+
+
+def _signature(node):
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        ret = f" -> {ast.unparse(node.returns)}" if node.returns else ""
+        return f"def {node.name}({ast.unparse(node.args)}){ret}"
+    bases = ", ".join(ast.unparse(b) for b in node.bases)
+    fields = [ast.unparse(st.target) + ": " + ast.unparse(st.annotation)
+              for st in node.body if isinstance(st, ast.AnnAssign)]
+    methods = [st.name for st in node.body
+               if isinstance(st, (ast.FunctionDef, ast.AsyncFunctionDef)) and not st.name.startswith("_")]
+    out = f"class {node.name}({bases})" if bases else f"class {node.name}"
+    if fields:
+        out += " { " + "; ".join(fields[:10]) + (" ..." if len(fields) > 10 else "") + " }"
+    if methods:
+        out += " methods: " + ", ".join(methods[:6]) + (" ..." if len(methods) > 6 else "")
+    return out
+
+
+def _find_def(wt, module, name, hops=2):
+    f = _module_file(wt, module)
+    if f is None:
+        return None
+    tree = ast.parse(f.read_text())
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and node.name == name:
+            # an enum, protocol or exception with no fields says nothing a name does not
+            if isinstance(node, ast.ClassDef) and not any(isinstance(st, ast.AnnAssign) for st in node.body) \
+                    and {ast.unparse(b).split("[")[0] for b in node.bases} & {"StrEnum", "Enum", "Protocol", "Exception"}:
+                return None
+            sig = _signature(node)
+            sig = sig if len(sig) <= 160 else sig[:157] + "..."
+            return f"{sig}  — {f.relative_to(wt)}:{node.lineno}"
+    if hops:  # a re-export: follow the package's own import of the name
+        for node in tree.body:
+            if isinstance(node, ast.ImportFrom) and node.module and any(a.name == name for a in node.names):
+                return _find_def(wt, node.module, name, hops - 1)
+    return None
+
+
+def called_signatures(wt, rng, added_files):
+    """Signatures of repository functions and classes the diff's Python uses but does not add,
+    so a reviewer does not search the tree for them. ponytail: Python only, by-name imports;
+    add TypeScript and attribute calls if reviews keep searching for those."""
+    diff = git("diff", "-U0", rng, "--", "*.py", cwd=wt, check=False)
+    added = "\n".join(l[1:] for l in diff.splitlines() if l.startswith("+") and not l.startswith("+++"))
+    files = {l[6:] for l in diff.splitlines() if l.startswith("+++ b/")}
+    out = {}
+    for rel in sorted(files):
+        f = wt / rel
+        if not f.is_file():
+            continue
+        try:
+            tree = ast.parse(f.read_text())
+        except SyntaxError:
+            continue
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.ImportFrom) and node.module
+                    and node.module.split(".")[0] in ("flo", "tests")):
+                continue
+            for a in node.names:
+                used = a.asname or a.name
+                if used in out or not re.search(rf"\b{re.escape(used)}\b", added):
+                    continue
+                target = _module_file(wt, node.module)
+                if target is None or str(target.relative_to(wt)) in added_files:
+                    continue
+                sig = _find_def(wt, node.module, a.name)
+                if sig:
+                    out[used] = sig
+    return sorted(set(out.values()))
+
+
+def cmd_codex_guard(argv):
+    """flo codex-guard <worktree> <max_calls> <pid> [max_seconds]: stop a Codex review past
+    max_calls tool calls, past max_seconds of wall-clock time (sleep(1) pauses while the machine
+    sleeps, wall time does not), or when its session log has not moved for 5 minutes (a dead
+    connection after wake hung E09-S08's review on 13 Oct). Reads only rollouts written after the
+    guard started whose session ran in that worktree."""
+    wt, cap, pid = argv[0], int(argv[1]), int(argv[2])
+    deadline = time.time() + (int(argv[3]) if len(argv) > 3 else 900)
+    root, t0, mine = Path.home() / ".codex" / "sessions", time.time(), None
+    while True:
+        try:
+            os.kill(pid, 0)
+        except OSError:
+            return
+        if mine is None:
+            for f in sorted(root.glob("*/*/*/rollout-*.jsonl"), key=lambda f: f.stat().st_mtime)[-6:]:
+                if f.stat().st_mtime >= t0 - 5 and wt in f.read_text(errors="replace")[:6000]:
+                    mine = f
+        stop = None
+        if time.time() > deadline:
+            stop = "stopped at the time cap"
+        elif mine is not None and time.time() - mine.stat().st_mtime > 300:
+            stop = "stopped: no session activity for 5 minutes"
+        if stop:
+            os.kill(pid, 15)
+            print(stop)
+            return
+        if mine is not None:
+            calls = sum(1 for ln in mine.read_text(errors="replace").splitlines()
+                        if '"type":"function_call"' in ln or '"type":"custom_tool_call"' in ln)
+            if calls > cap:
+                os.kill(pid, 15)
+                print(f"stopped at the call cap ({calls} > {cap})")
+                return
+        time.sleep(15)
+
+
+RELEASE_FOCUS_ALL = """Read first (highest risk): money and ledger (modules/budget, modules/requisitions/approval.py,
+funding.py, lifecycle.py, amendments.py), authorization and tenancy (modules/identity, every
+api/*.py route's require/permitted, RLS on every new table in the migrations above), approval
+engine (modules/approvals), and the boundaries between modules (a module may import another's
+service and schemas only)."""
+RELEASE_AREAS = {
+    "money": """Your area: MONEY AND LEDGER only. Read apps/api/src/flo/modules/budget/ and
+modules/requisitions/{approval,funding,lifecycle,amendments,revisions,codes}.py. Check: every
+reserve, release, transfer and allocation happens under the balance lock and inside one
+transaction; releases happen exactly once; Decimal only; no float or round(); idempotency keys;
+abandoned projects kept out of totals. Ignore UI and the approval engine internals.""",
+    "auth": """Your area: AUTHORIZATION AND TENANCY only. Read apps/api/src/flo/api/*.py (each
+route's require/permitted), modules/identity/, and the new migrations' RLS/FORCE RLS/policies.
+Check: every route authorizes server-side; org_id only from the session; a foreign tenant gets
+404; every new tenant table has RLS; permission codes match the catalogue. Ignore UI and money maths.""",
+    "approvals": """Your area: THE APPROVAL ENGINE only. Read apps/api/src/flo/modules/approvals/.
+Check: version pinning, decisions and their audit, stale-version guard, delegation, workflow
+gating (no workflow => refused), adapter on_outcome inside the decision transaction. Ignore UI.""",
+    "ui": """Your area: THE WEB UI only. Read apps/web/src/routes and components for requisitions,
+approvals, projects and budget. Check against the rules: tokens only (no hardcoded colour,
+spacing, radius, duration), keyboard reachable, colour never the only signal, money with tabular
+figures and parenthesised negatives, loading/empty/error states, generated API types only.""",
+}
+
+
+def cmd_release_packet(argv):
+    """flo release-packet <MILESTONE>: a light release-review packet (no inline diff) for the
+    milestone branch against main: goal, exit criteria, stories, a per-area size table, where to
+    look first, and how to read only what a suspicion needs."""
     if not argv:
-        die("usage: flo review <STORY_ID>")
+        die("usage: flo release-packet <MILESTONE>[-<area>]  (areas: money, auth, approvals, ui)")
+    mid, _, area = argv[0].partition("-")
+    vid = argv[0]  # the verdict file's id: M2, or M2-money for an area pass
+    rm = load_yaml(ROOT / "agents" / "roadmap.yaml")
+    ms = next((m for m in rm["milestones"] if m["id"] == mid), None)
+    if ms is None:
+        die(f"unknown milestone {mid}")
+    stories = [s for e in rm["epics"] if e.get("milestone") == mid for s in e["stories"]]
+    done = [s for s in stories if s.get("st") == "done"]
+    rng = f"origin/main...{ms['branch']}"
+    areas: dict[str, list[int]] = {}
+    for ln in git("diff", "--numstat", rng, check=False).splitlines():
+        add, rem, path = (ln.split("\t") + ["", "", ""])[:3]
+        if path.rsplit("/", 1)[-1] in GENERATED_FILES or not add.isdigit():
+            continue
+        parts = path.split("/")
+        if parts[0] in ("design-system", "design", "docs", ".scratch"):
+            key = "(docs) " + parts[0]
+        elif path.startswith("apps/api/src/flo/modules/"):
+            key = "/".join(parts[:6])
+        else:
+            key = "/".join(parts[:4]) if path.startswith("apps/") else parts[0]
+        a = areas.setdefault(key, [0, 0, 0]); a[0] += 1; a[1] += int(add); a[2] += int(rem)
+    migrations = [ln for ln in git("diff", "--name-only", "--diff-filter=A", rng, "--", "migrations",
+                                   check=False).splitlines() if ln.endswith(".py")]
+    exit_row = next((ln for ln in (ROOT / "docs" / "claude-plan.md").read_text().splitlines()
+                     if ln.startswith(f"| **{mid}** |")), "")
+    focus = RELEASE_AREAS.get(area)
+    if area and focus is None:
+        die(f"unknown area {area}; choose from {', '.join(RELEASE_AREAS)}")
+    print(f"=== RELEASE REVIEW PACKET {vid} — {ms['name']}" + (f" — area: {area} only" if area else "") + " ===")
+    print(f"Goal: {' '.join(str(ms.get('goal', '')).split())}")
+    if exit_row:
+        print(f"Exit criteria: {exit_row.split('|')[4].strip()}")
+    print(f"\nStories merged ({len(done)} of {len(stories)}):")
+    for s in done:
+        print(f"  {s['id']}  {' '.join(s['t'].split())[:110]}  [{', '.join(s.get('tags') or []) or '-'}]")
+    print(f"\nDiff {rng} by area (files, +, -), generated files excluded:")
+    for k, (n, a, r) in sorted(areas.items(), key=lambda kv: (kv[0].startswith("(docs)"), -kv[1][1]))[:32]:
+        print(f"  {n:4d} {a:7d} {r:6d}  {k}")
+    print(f"\nNew migrations ({len(migrations)}): " + ", ".join(m.rsplit('/', 1)[-1][:24] for m in migrations))
+    print(f"""
+{focus or RELEASE_FOCUS_ALL}
+
+--- how to review (budget: about {25 if area else 40} commands; the run is stopped at a time and call cap) ---
+1. You are in a read-only checkout of {ms['branch']}. Do NOT open AGENTS.md, CLAUDE.md, agents/,
+   docs/ or design/; this packet is the brief. Do not print the whole diff.
+2. Write reviews/{vid}.<your-agent-id>.json at once as a draft. Within your first 8 commands, skim
+   the diff stat for your area and add up to 5 suspicions to its findings, each marked
+   "unverified" in "problem". Spend the rest confirming or deleting them, updating the file after
+   each one. The run can be stopped at any time; the file is what counts.
+3. Read only what a suspicion needs, capped:
+     git diff {rng} --stat -- <path> | tail -20
+     git diff {rng} -- <one file> | head -200
+     sed -n 'A,Bp' <file>     grep -rn '<pattern>' <dir> | head -40
+4. Static review only: no tests, no plants. Every story was planted and passed the full suite on
+   CI, and the milestone branch CI is green. Set "ran_tests": false.
+5. Look for what per-story review misses: drift between stories, duplicated helpers, a rule
+   enforced in one path but not its sibling, boundary leaks, missing RLS or audit, money moved
+   outside a lock or a transaction.
+6. Finalise and stop. Exactly this shape; severity blocker | major | minor:
+     {{"story": "{vid}", "reviewer": "<your-agent-id>", "verdict": "approve" | "changes_requested",
+      "ran_tests": false, "findings": [{{"severity": "major", "file": "path", "line": 1,
+      "requirement": "REQ-001", "problem": "what fails", "fix": "what to change"}}]}}
+   Report only what you reproduced or traced in the code as it stands. Two failed attempts to
+   confirm a suspicion: report it as unverified, never as a blocker.""")
+
+
+def cmd_log_guard(argv):
+    """flo log-guard <log> <max_calls> <pid> <max_seconds>: stop an opencode reviewer past its tool
+    call budget, its wall-clock deadline, or 10 minutes without log output. Counts the tool lines
+    opencode prints ('$ ' commands and '→ ' reads/edits)."""
+    log, cap, pid, secs = Path(argv[0]), int(argv[1]), int(argv[2]), int(argv[3])
+    deadline, ansi = time.time() + secs, re.compile(r"\x1b\[[0-9;]*m")
+    while True:
+        try:
+            os.kill(pid, 0)
+        except OSError:
+            return
+        text = ansi.sub("", log.read_text(errors="replace")) if log.exists() else ""
+        calls = sum(1 for ln in text.splitlines() if ln.startswith(("$ ", "→ ")))
+        stale = log.exists() and time.time() - log.stat().st_mtime > 600
+        why = ("stopped at the time cap" if time.time() > deadline else
+               f"stopped at the call cap ({calls} > {cap})" if calls > cap else
+               "stopped: no output for 10 minutes" if stale else None)
+        if why:
+            os.kill(pid, 15)
+            with log.open("a") as f:
+                f.write(why + "\n")
+            return
+        time.sleep(15)
+
+
+def cmd_review(argv):
+    """flo review <S> [--since <sha> --prior <verdict.json>]: with --since, a re-review packet that
+    carries the reviewer's previous findings and only the story's changes since that commit."""
+    if not argv:
+        die("usage: flo review <STORY_ID> [--since <sha> --prior <verdict.json>]")
     sid = argv[0]
+    opts = dict(zip(argv[1::2], argv[2::2]))
+    since, prior = opts.get("--since"), opts.get("--prior")
     pkt, wt = packet_of(sid), worktree_path(sid)
     rng = f"{pkt['milestone_branch']}...{pkt['branch']}"
     names = [n for n in git("diff", "--name-only", rng, cwd=wt, check=False).splitlines() if n]
+    if since:
+        # the story's own files only: submit merges the milestone in, which is not under review
+        rng = f"{since}..HEAD"
+        changed = set(git("diff", "--name-only", rng, cwd=wt, check=False).split())
+        names = [n for n in names if n in changed]
     generated = [n for n in names if n.rsplit("/", 1)[-1] in GENERATED_FILES]
     # Reviewers run in sandboxes that refuse to open dotfiles, and the refusal kills the
     # run rather than degrading it. Inline them instead of letting the reviewer try.
@@ -304,17 +662,29 @@ def cmd_review(argv):
     print(f"=== REVIEW PACKET {sid} — {pkt['title']} ===")
     print(f"kind {pkt['kind']} · size {pkt['size']} · tags {', '.join(pkt['tags']) or 'none'}")
     print(f"requirements: {', '.join(pkt['requirements'])}\n")
-    print("--- design packet ---")
-    print((ROOT / pkt["design"]).read_text())
-
-    print("--- diff vs milestone branch ---")
+    if since:
+        print(f"--- RE-REVIEW since {since[:10]}: your previous findings ---")
+        print(Path(prior).read_text() if prior and Path(prior).exists() else "(none recorded)")
+        print("\nThe design packet is not repeated; your findings above and the requirement ids")
+        print("define the scope. Open design/ only to settle a disputed acceptance criterion.\n")
+        print("--- the story's changes since your last review ---")
+    else:
+        print("--- design packet ---")
+        print((ROOT / pkt["design"]).read_text())
+        print("--- diff vs milestone branch ---")
     excludes = [f":(exclude){n}" for n in generated]
-    print(git("diff", rng, "--", ".", *excludes, cwd=wt, check=False))
+    print(git("diff", rng, "--", *(names or ["."]), *excludes, cwd=wt, check=False))
+
+    added_files = set(git("diff", "--name-only", "--diff-filter=A", rng, cwd=wt, check=False).split())
+    sigs = called_signatures(wt, rng, added_files)
+    if sigs:
+        print("--- code the diff calls into (signatures; open the file only if you need the body) ---")
+        print("\n".join(sigs) + "\n")
 
     if generated:
         print("--- generated files, body omitted ---")
         for n in generated:
-            print(f"{n} — machine-generated dependency pin. Judge that it is committed, "
+            print(f"{n} — machine-generated. Judge that it is committed, "
                   f"not its contents. Open it in the worktree if you must.")
         print()
 
@@ -326,21 +696,47 @@ def cmd_review(argv):
             print(f"--- end {n} ---\n")
 
     print("--- how to review ---")
+    deep = pkt["opus_final"] and not since
+    plants = ("a plant only for a guard or test added since your last review, to prove a fix; "
+              "do not re-plant anything unchanged" if since else
+              "every plant the design packet prescribes, every gate, contract or guard the "
+              "diff adds, and at most 2 exploratory plants of your own" if deep else
+              "every gate, contract or guard the diff adds, and at most 1 exploratory plant")
     print(f"""\
+Budget: this is {'a re-review: confirm each previous finding is fixed and review only the changes above' if since else 'a gated (money/auth/security/migration/concurrency) review' if deep else 'an ungated review'}.
+Aim for about {20 if since else 45 if deep else 25} commands in total. When the steps below are done,
+write the verdict and stop; do not widen the review.
+
 1. cd {wt}
-2. Run the tests. A verdict with ran_tests=false does not count toward the floor.
-     apps/api/.venv/bin/python agents/scripts/flo check   # every CI stage, private fresh database
-   For a single test file afterwards, use the worktree's own database, never flo_test:
+   Everything you need is in this packet. Do NOT open AGENTS.md, CLAUDE.md, agents/,
+   docs/ or design/ — their review rules are restated here.
+   Read the diff above once, then write reviews/{sid}.<your-agent-id>.json at once as a
+   draft (verdict, ran_tests false, the defects you suspect) and keep it current as you go:
+   the run is stopped at a time cap, and the draft is what survives.
+2. Tests, once each. The full suite runs on GitHub for {pkt['branch']}; do not run it here.
+     apps/api/.venv/bin/python agents/scripts/flo check --light   # lint, types, the story's tests
+   Then only the test files a suspicion needs, on the worktree's own database:
      export TEST_DATABASE_URL="$(apps/api/.venv/bin/python agents/scripts/flo db reset)"
-3. For EVERY gate, contract or guard in the diff: plant a violation, watch it fail,
-   then restore. A gate you have not seen fail is not reviewed.
-     <edit the guarded file>            # break it
-     <run the gate>                     # must fail
-     git checkout -- <file>             # restore
+     (cd apps/api && .venv/bin/pytest -x -q <one test file> 2>&1 | tail -20)
+     (cd apps/web && npx playwright test <one spec> --grep '<test>' --reporter=line 2>&1 | tail -20)
+3. Plants: {plants}. A gate you have not seen fail is not reviewed.
+   Each plant is ONE command that breaks, tests and restores, so it costs one turn:
+     perl -0pi -e 's/<guard>/<broken>/' <file> && (cd apps/api && .venv/bin/pytest -x -q <one test file> 2>&1 | tail -5); git checkout -- <file>
 4. Confirm each requirement id above is satisfied by what the diff does, not by what
    it says. Cite the id in any finding it belongs to.
-5. Write your verdict, then stop.
-     reviews/{sid}.<your-agent-id>.json   # schema in AGENTS.md §2.2
+5. Finalise the verdict file, then stop. Exactly this shape; verdict is "approve" or
+   "changes_requested", severity is "blocker", "major" or "minor":
+     {{"story": "{sid}", "reviewer": "<your-agent-id>", "verdict": "approve",
+      "ran_tests": true, "findings": [{{"severity": "major", "file": "path", "line": 1,
+      "requirement": "REQ-001", "problem": "what fails", "fix": "what to change"}}]}}
+
+--- tool discipline ---
+DO   pipe every test and build command through `| tail -20`; never print a whole log
+DO   wait for a long command to finish instead of polling it
+DO   read a file once; use `sed -n 'A,Bp'` or `grep -n` for the part you need, and cap
+     every read and search with `| head -60`
+DO   stop after 2 failed attempts to reproduce a suspicion; report it as `major` or
+     `minor` marked "unverified", never as a blocker
 
 --- rules ---
 DO   keep every scratch file inside {wt}
@@ -400,8 +796,14 @@ def cmd_gate(argv):
     pkt, wt = packet_of(sid), worktree_path(sid)
     fails = []
 
-    if not run_check(wt):
-        fails.append("flo check is red (ruff/mypy/import-linter/eslint/tsc/pytest/vitest/playwright/axe/gitleaks)")
+    if not checked(wt, "light"):
+        fails.append("flo check --light is red (ruff/mypy/import-linter/eslint/tsc/vitest/gitleaks/story tests)")
+    if pkt["opus_final"]:
+        # Gated stories wait for the full suite on GitHub; everything else merges on the light
+        # gate and the milestone CI catches the rest (AGENTS.md §2.4, 13 Oct 2026).
+        fail = story_ci_failure(pkt, wt)
+        if fail:
+            fails.append(fail)
 
     revs = reviews_for(sid)
     counted = [r for r in revs if r.get("ran_tests") is True]
@@ -409,7 +811,8 @@ def cmd_gate(argv):
     need = fleet["policy"]["min_reviewers"]
     if len(counted) < need:
         fails.append(f"{len(counted)}/{need} reviews with ran_tests=true")
-    allowed = set(pkt["reviewers"]) | {s.get("to") for s in pkt.get("substitutions", [])}
+    allowed = (set(pkt["reviewers"]) | {s.get("to") for s in pkt.get("substitutions", [])}
+               | ({"opus"} if pkt["opus_final"] else set()))
     unexpected = {r["reviewer"] for r in counted} - allowed
     if unexpected:
         fails.append(f"unassigned reviewer(s) {sorted(unexpected)} — record a substitution in task.json")
@@ -506,8 +909,23 @@ def cmd_done(argv):
     git("add", "agents/roadmap.yaml", "docs/claude-plan.md", "agents/project-memory.md",
         "agents/scorecard.json", "agents/SCORECARD.md")
     git("commit", "-m", msg)
-    git("worktree", "remove", str(worktree_path(sid)), "--force")
+    # The worktree outlives the merge: the author's session is keyed to this path, and a red
+    # story CI run is fixed by resuming that session here. `flo reap` removes it once CI is green.
     print(f"{sid} merged into {pkt['milestone_branch']}; roadmap and memory updated in the same commit")
+    print(f"worktree kept until story CI is green: flo reap {sid}")
+
+
+def cmd_reap(argv):
+    if not argv:
+        die("usage: flo reap <STORY_ID> [--force]")
+    sid, wt = argv[0], worktree_path(argv[0])
+    pkt = packet_of(sid)
+    fail = story_ci_failure(pkt, wt)
+    if fail and "--force" not in argv:
+        die(f"{sid}: {fail} — the worktree stays so its author session can fix it")
+    git("worktree", "remove", str(wt), "--force")
+    git("push", "origin", "--delete", pkt["branch"], check=False)
+    print(f"{sid}: worktree and remote story branch removed")
 
 
 def set_status(sid, status):
@@ -1467,18 +1885,22 @@ def cmd_board(argv):
 # ── shells ───────────────────────────────────────────────────────────────────
 
 CHECKS = [
+    # Cheapest first: run_check stops at the first red, so a lint slip never costs a pytest run.
     ("ruff", ["ruff", "check", "apps/api"]),
     ("mypy", ["mypy", "--strict", "apps/api/src/flo"]),
     ("boundaries", ["lint-imports"]),
-    # Same flags CI runs. Without them a green `flo check` can still fail CI on a
-    # missing pytest-cov, which is exactly how E01-S01 reached a red pull request.
-    ("pytest", ["pytest", "-q", "apps/api", "--cov=flo", "--cov-report=term-missing"]),
     ("eslint", ["npm", "--prefix", "apps/web", "run", "lint"]),
     ("tsc", ["npm", "--prefix", "apps/web", "run", "typecheck"]),
     ("vitest", ["npm", "--prefix", "apps/web", "run", "test"]),
-    ("e2e+axe", ["npm", "--prefix", "apps/web", "run", "test:e2e"]),
     ("secrets", ["gitleaks", "detect", "--no-banner"]),
+    # Same flags CI runs. Without them a green `flo check` can still fail CI on a
+    # missing pytest-cov, which is exactly how E01-S01 reached a red pull request.
+    ("pytest", ["pytest", "-q", "apps/api", "--cov=flo", "--cov-report=term-missing"]),
+    ("e2e+axe", ["npm", "--prefix", "apps/web", "run", "test:e2e"]),
 ]
+# The story gate (13 Oct 2026): everything but the two full suites, which hosted CI runs on the
+# story branch instead, plus the tests the story itself touched (story_checks).
+HEAVY = {"pytest", "e2e+axe"}
 
 # Every current M0 check is delivered and therefore mandatory. Temporary exemptions must
 # name both their reason and the story that removes them; docs/ops/ci-gates.md mirrors this.
@@ -1510,16 +1932,42 @@ def cmd_db(argv):
     print(fresh_test_database(Path.cwd()) if action == "reset" else test_database_url(Path.cwd()))
 
 
-def run_check(cwd=None):
+def story_checks(cwd):
+    """The story's own tests: the ones its diff adds or edits, against the milestone it merged."""
+    task = Path(cwd) / "task.json"
+    if not task.exists():
+        return []
+    base = git("merge-base", "HEAD", json.loads(task.read_text())["milestone_branch"],
+               cwd=cwd, check=False)
+    if not base:
+        return []
+    changed = [f for f in git("diff", "--name-only", "--diff-filter=d", base, "HEAD",
+                              cwd=cwd).splitlines()]
+    py = [f for f in changed if f.startswith("apps/api/tests/") and Path(f).name.startswith("test_")
+          and f.endswith(".py")]
+    if any(f.startswith("apps/api/migrations/") for f in changed):
+        py.append("apps/api/tests/kernel/test_migrate.py")
+    web = [f.removeprefix("apps/web/") for f in changed
+           if re.match(r"apps/web/(e2e/.+\.e2e\.ts|tests/(a11y|e2e)/.+\.spec\.ts)$", f)]
+    out = []
+    if py:
+        out.append(("story pytest", ["pytest", "-q", *sorted(set(py))]))
+    if web:
+        out.append(("story e2e", ["npm", "--prefix", "apps/web", "run", "test:e2e", "--", *web]))
+    return out
+
+
+def run_check(cwd=None, profile="full"):
     cwd = cwd or ROOT
-    ok = True
     venv_bin = Path(cwd) / "apps" / "api" / ".venv" / "bin"
-    for name, cmd in CHECKS:
+    steps = CHECKS if profile == "full" else (
+        [c for c in CHECKS if c[0] not in HEAVY] + story_checks(cwd))
+    for name, cmd in steps:
         command_environment = os.environ.copy()
         if venv_bin.is_dir():
             # lint-imports and friends live in the story venv; the codex sandbox has no other PATH
             command_environment["PATH"] = f"{venv_bin}{os.pathsep}{command_environment['PATH']}"
-        if name == "pytest" and "DATABASE_URL" not in command_environment:
+        if "pytest" in name and "DATABASE_URL" not in command_environment:
             url = fresh_test_database(cwd)
             command_environment["DATABASE_URL"] = url
             command_environment["TEST_DATABASE_URL"] = url
@@ -1541,12 +1989,98 @@ def run_check(cwd=None):
         print(f"  {'✓' if not r.returncode else '✗'}  {name}")
         if r.returncode:
             print((r.stdout + r.stderr).strip()[-2000:])
-            ok = False
-    return ok
+            return False
+    return True
+
+
+def checked(wt, profile):
+    """run_check once per tree: submit records a green tree, and the gate on an identical,
+    clean tree reuses it instead of running the same deterministic checks again."""
+    tree = git("rev-parse", "HEAD^{tree}", cwd=wt)
+    clean = not git("status", "--porcelain", cwd=wt)
+    task = Path(wt) / "task.json"
+    pkt = json.loads(task.read_text()) if task.exists() else {}
+    if clean and pkt.get("check") == {"tree": tree, "profile": profile}:
+        print(f"  ✓  check --{profile} (cached: tree {tree[:10]} unchanged since it went green)")
+        return True
+    if not run_check(wt, profile):
+        return False
+    if clean and task.exists():
+        pkt = json.loads(task.read_text())
+        pkt["check"] = {"tree": tree, "profile": profile}
+        task.write_text(json.dumps(pkt, indent=2) + "\n")
+    return True
+
+
+def story_ci_failure(pkt, wt):
+    """None when GitHub's CI is green on the submitted commit and the story has not changed
+    since; otherwise the reason. Merges of the milestone branch are not story changes."""
+    sha = pkt.get("submitted_sha")
+    if not sha:
+        return "no submitted_sha in task.json — run flo submit (it pushes the story branch)"
+    if git("log", "--first-parent", "--no-merges", "--format=%h", f"{sha}..HEAD", cwd=wt):
+        return f"story commits after {sha[:10]} were never CI'd — run flo submit again"
+    runs = gh_runs(pkt["branch"])
+    run = next((r for r in runs if r.get("headSha") == sha), None)
+    if run is None:
+        return f"no CI run for {sha[:10]} on {pkt['branch']} yet"
+    if run.get("status") != "completed":
+        return f"story CI still {run.get('status')} on {sha[:10]}"
+    if run.get("conclusion") != "success":
+        return f"story CI {run.get('conclusion')} on {sha[:10]}: gh run view {run.get('databaseId')} --log-failed"
+    return None
+
+
+def cmd_ci_watch(argv):
+    """One monitoring pass (agents/scripts/ci-watch.sh loops it). A completed red run on a
+    submitted story writes .scratch/<S>.ci-red with the failing log, for the planner to resume
+    the author's session with; green clears the marker and reaps a merged story's worktree.
+    Red on a milestone branch writes .scratch/<M>.ci-red: stop the line."""
+    rm, scratch = roadmap(), ROOT / ".scratch"
+    scratch.mkdir(exist_ok=True)
+
+    def mark(key, branch, run):
+        marker = scratch / f"{key}.ci-red"
+        if marker.exists() and run["headSha"] in marker.read_text().split("\n", 1)[0]:
+            return
+        log = subprocess.run(["gh", "run", "view", str(run["databaseId"]), "--log-failed"],
+                             cwd=ROOT, capture_output=True, text=True).stdout
+        marker.write_text(f"{branch} {run['headSha']} run {run['databaseId']} "
+                          f"{run['conclusion']}\n" + "\n".join(log.splitlines()[-200:]) + "\n")
+        print(f"RED {key}: {branch} run {run['databaseId']} — {marker}")
+
+    for _, s in stories(rm):
+        task = worktree_path(s["id"]) / "task.json"
+        if not task.exists():
+            continue
+        pkt = json.loads(task.read_text())
+        sha = pkt.get("submitted_sha")
+        run = next((r for r in gh_runs(pkt["branch"]) if sha and r.get("headSha") == sha), None)
+        if not run or run.get("status") != "completed":
+            continue
+        if run.get("conclusion") == "success":
+            (scratch / f"{s['id']}.ci-red").unlink(missing_ok=True)
+            if s["st"] == "done":
+                cmd_reap([s["id"]])
+        elif run.get("conclusion") != "cancelled":
+            mark(s["id"], pkt["branch"], run)
+    for m in rm.get("milestones", []):
+        runs = [r for r in gh_runs(m["branch"]) if r.get("status") == "completed"]
+        if runs and runs[0].get("conclusion") == "success":
+            (scratch / f"{m['id']}.ci-red").unlink(missing_ok=True)
+        elif runs and runs[0].get("conclusion") != "cancelled":
+            mark(m["id"], m["branch"], runs[0])
+
+
+def gh_runs(branch):
+    r = subprocess.run(["gh", "run", "list", "--workflow", "CI", "--branch", branch, "--limit", "10",
+                        "--json", "headSha,status,conclusion,databaseId"],
+                       cwd=ROOT, capture_output=True, text=True)
+    return json.loads(r.stdout) if r.returncode == 0 and r.stdout.strip() else []
 
 
 def cmd_check(argv):
-    sys.exit(0 if run_check(Path.cwd()) else 1)
+    sys.exit(0 if checked(Path.cwd(), "light" if "--light" in argv else "full") else 1)
 
 
 COMPOSE = ROOT / "compose.yaml"
@@ -1657,7 +2191,7 @@ COMMANDS = {
     "review": cmd_review, "gate": cmd_gate, "final": cmd_final, "escalate": cmd_escalate,
     "done": cmd_done, "design": cmd_design, "status": cmd_status, "budget": cmd_budget,
     "roadmap": cmd_roadmap, "score": cmd_score, "session": cmd_session, "board": cmd_board,
-    "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "db": cmd_db, "up": cmd_up, "down": cmd_down,
+    "reap": cmd_reap, "account": cmd_account, "codex-usage": cmd_codex_usage, "codex-guard": cmd_codex_guard, "release-packet": cmd_release_packet, "log-guard": cmd_log_guard, "ci-watch": cmd_ci_watch, "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "db": cmd_db, "up": cmd_up, "down": cmd_down,
 }
 
 if __name__ == "__main__":

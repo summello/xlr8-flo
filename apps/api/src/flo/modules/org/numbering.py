@@ -16,6 +16,15 @@ from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.org.models import OrgRepository
 
+DEFAULT_FORMATS: dict[str, tuple[str, bool, int]] = {
+    "project": ("PRJ", True, 4),
+    "requisition": ("REQ-", False, 5),
+    "rfq": ("RFQ", False, 5),
+    "award": ("AWD", False, 5),
+    "po": ("PO", False, 5),
+    "asset": ("AST", False, 5),
+}
+
 type DocumentType = Literal["project", "requisition", "rfq", "award", "po", "asset"]
 
 
@@ -38,7 +47,10 @@ class NumberingService:
                     ORDER BY (scope_id = %(scope_id)s) DESC, effective_from DESC LIMIT 1""",
                     {"scope_id": scope_id, "doc_type": doc_type, "today": on_date},
                 ).fetchone()
-                prefix, include_year, width, counter_scope = row or ("PRJ", True, 4, scope_id)
+                prefix, include_year, width, counter_scope = row or (
+                    *DEFAULT_FORMATS[doc_type],
+                    scope_id,
+                )
                 year = on_date.year if include_year else 0
                 result = repo.execute(
                     """INSERT INTO numbering_counter(org_id, scope_id, doc_type, year, last_value)

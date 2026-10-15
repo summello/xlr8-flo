@@ -8,19 +8,268 @@ from pathlib import Path
 from fastapi import APIRouter
 
 from flo.api.admin_users import router as admin_users_router
+from flo.api.approvals import router as approvals_router
 from flo.api.auth import router as auth_router
 from flo.api.budget import router as budget_router
+from flo.api.collaboration import router as collaboration_router
 from flo.api.fiscal import router as fiscal_router
 from flo.api.imports import router as imports_router
 from flo.api.invitations import router as invitations_router
 from flo.api.master import router as master_router
 from flo.api.org import router as org_router
 from flo.api.projects import router as projects_router
+from flo.api.requisitions import router as requisitions_router
+from flo.api.workflows import router as workflows_router
 
 TESTS = Path(__file__).resolve().parents[1]
 
 # (method, path) -> "file::test" that proves a foreign id returns 404.
+AMENDMENT_ROUTES = (
+    "requisitions/test_amendments.py::"
+    "test_routes_conceal_foreign_tenants_and_refuse_view_only_users"
+)
+CODES_ROUTES = (
+    "requisitions/test_expired_codes.py::"
+    "test_codes_routes_conceal_foreign_tenants_and_need_the_permission"
+)
 COVERED = {
+    ("POST", "/api/v1/requisitions/{id}/codes"): CODES_ROUTES,
+    ("POST", "/api/v1/projects/{id}/codes"): CODES_ROUTES,
+    (
+        "GET",
+        "/api/v1/budget/change-requests/{id}",
+    ): "budget/test_change_requests.py::test_change_request_foreign_tenant",
+    (
+        "GET",
+        "/api/v1/approvals/instances/{id}/explanation",
+    ): "approvals/test_explanation.py::test_explanation_foreign_tenant_admin_and_concealment",
+    (
+        "POST",
+        "/api/v1/requisitions/{id}/transitions",
+    ): "requisitions/test_lifecycle.py::test_foreign_lifecycle_routes",
+    (
+        "GET",
+        "/api/v1/requisitions/{id}/links",
+    ): "requisitions/test_links.py::test_foreign_tenant_and_ungranted_links_are_404",
+    (
+        "GET",
+        "/api/v1/requisitions/{id}/revisions",
+    ): AMENDMENT_ROUTES,
+    (
+        "GET",
+        "/api/v1/requisitions/{id}/changes",
+    ): AMENDMENT_ROUTES,
+    (
+        "POST",
+        "/api/v1/requisitions/{id}/amendments",
+    ): AMENDMENT_ROUTES,
+    (
+        "GET",
+        "/api/v1/requisitions/{id}/amendments/current",
+    ): AMENDMENT_ROUTES,
+    (
+        "PUT",
+        "/api/v1/requisitions/{id}/amendments/{revision_no}",
+    ): AMENDMENT_ROUTES,
+    (
+        "DELETE",
+        "/api/v1/requisitions/{id}/amendments/{revision_no}",
+    ): AMENDMENT_ROUTES,
+    (
+        "POST",
+        "/api/v1/requisitions/{id}/amendments/{revision_no}/submit",
+    ): AMENDMENT_ROUTES,
+    (
+        "POST",
+        "/api/v1/requisitions/{id}/amendments/{revision_no}/withdraw",
+    ): AMENDMENT_ROUTES,
+    (
+        "GET",
+        "/api/v1/requisitions/{id}/events",
+    ): "requisitions/test_lifecycle.py::test_foreign_lifecycle_routes",
+    (
+        "GET",
+        "/api/v1/requisitions/{id}/transitions/available",
+    ): "requisitions/test_lifecycle.py::test_foreign_lifecycle_routes",
+    (
+        "POST",
+        "/api/v1/approvals/tasks/{task_id}/decisions",
+    ): "approvals/test_decisions.py::test_approval_routes_foreign_tenant",
+    (
+        "POST",
+        "/api/v1/approvals/instances/{id}/withdraw",
+    ): "approvals/test_decisions.py::test_approval_routes_foreign_tenant",
+    (
+        "GET",
+        "/api/v1/approvals/instances/{id}/decisions",
+    ): "approvals/test_decisions.py::test_approval_routes_foreign_tenant",
+    (
+        "GET",
+        "/api/v1/workflows/{id}/versions/{version}/route-preview",
+    ): "approvals/test_route_preview.py::test_foreign_tenant_route_preview_and_scope_are_404",
+    (
+        "GET",
+        "/api/v1/approvals/instances/{id}",
+    ): "approvals/test_engine.py::test_instance_route_foreign_tenant_and_roles",
+    (
+        "GET",
+        "/api/v1/approvals/eligible-approvers",
+    ): "approvals/test_eligibility.py::test_picker_foreign_scope_and_authorization",
+    ("GET", "/api/v1/approvals/delegations/decided-on-my-behalf"): (
+        "approvals/test_inbox.py::test_decided_on_my_behalf_is_self_scoped_and_isolated"
+    ),
+    ("GET", "/api/v1/approvals/tasks"): (
+        "approvals/test_inbox.py::test_inbox_http_is_self_scoped_and_foreign_tenant_sees_nothing"
+    ),
+    ("POST", "/api/v1/approvals/delegations"): (
+        "approvals/test_delegation.py::"
+        "test_delegation_routes_unauthenticated_forbidden_and_foreign_scope"
+    ),
+    ("GET", "/api/v1/approvals/delegations"): (
+        "approvals/test_delegation.py::"
+        "test_delegation_routes_unauthenticated_forbidden_and_foreign_scope"
+    ),
+    ("GET", "/api/v1/approvals/delegations/eligible-delegates"): (
+        "approvals/test_delegation.py::"
+        "test_delegation_routes_unauthenticated_forbidden_and_foreign_scope"
+    ),
+    (
+        "POST",
+        "/api/v1/approvals/delegations/{id}/revoke",
+    ): (
+        "approvals/test_delegation.py::"
+        "test_revoke_http_foreign_and_unknown_ids_have_identical_problem_bodies"
+    ),
+    (
+        "POST",
+        "/api/v1/approvals/tasks/{task_id}/reassign",
+    ): (
+        "approvals/test_delegation.py::"
+        "test_delegation_routes_unauthenticated_forbidden_and_foreign_scope"
+    ),
+    (
+        "GET",
+        "/api/v1/workflows/{id}/versions/{version}/validation",
+    ): "approvals/test_workflow_definitions.py::test_foreign_tenant_routes_and_authorization",
+    (
+        "GET",
+        "/api/v1/documents/{document_type}/{document_id}/notes",
+    ): "collaboration/test_attachments.py::test_foreign_tenant_every_collaboration_route",
+    (
+        "POST",
+        "/api/v1/documents/{document_type}/{document_id}/notes",
+    ): "collaboration/test_attachments.py::test_foreign_tenant_every_collaboration_route",
+    (
+        "PATCH",
+        "/api/v1/notes/{id}",
+    ): "collaboration/test_attachments.py::test_foreign_tenant_every_collaboration_route",
+    (
+        "GET",
+        "/api/v1/notes/{id}/revisions",
+    ): "collaboration/test_attachments.py::test_foreign_tenant_every_collaboration_route",
+    (
+        "GET",
+        "/api/v1/documents/{document_type}/{document_id}/attachments",
+    ): "collaboration/test_attachments.py::test_foreign_tenant_every_collaboration_route",
+    (
+        "POST",
+        "/api/v1/documents/{document_type}/{document_id}/attachments",
+    ): "collaboration/test_attachments.py::test_foreign_tenant_every_collaboration_route",
+    (
+        "POST",
+        "/api/v1/attachments/{id}/versions",
+    ): "collaboration/test_attachments.py::test_foreign_tenant_every_collaboration_route",
+    (
+        "GET",
+        "/api/v1/attachments/{id}/content",
+    ): "collaboration/test_attachments.py::test_foreign_tenant_every_collaboration_route",
+    (
+        "DELETE",
+        "/api/v1/attachments/{id}",
+    ): "collaboration/test_attachments.py::test_foreign_tenant_every_collaboration_route",
+    (
+        "GET",
+        "/api/v1/requisitions/{id}/submission-check",
+    ): (
+        "requisitions/test_submission_check.py::"
+        "test_submission_check_foreign_tenant_and_permission_outcomes"
+    ),
+    (
+        "GET",
+        "/api/v1/requisitions/{id}/lines",
+    ): "requisitions/test_lines.py::test_foreign_tenant_line_routes_and_permissions",
+    (
+        "POST",
+        "/api/v1/requisitions/{id}/lines",
+    ): "requisitions/test_lines.py::test_foreign_tenant_line_routes_and_permissions",
+    (
+        "PUT",
+        "/api/v1/requisitions/{id}/lines",
+    ): "requisitions/test_lines.py::test_foreign_tenant_line_routes_and_permissions",
+    (
+        "PUT",
+        "/api/v1/requisitions/{id}/lines/{line_id}",
+    ): "requisitions/test_lines.py::test_foreign_tenant_line_routes_and_permissions",
+    (
+        "DELETE",
+        "/api/v1/requisitions/{id}/lines/{line_id}",
+    ): "requisitions/test_lines.py::test_foreign_tenant_line_routes_and_permissions",
+    (
+        "GET",
+        "/api/v1/catalogue",
+    ): "requisitions/test_catalogue.py::test_http_search_and_foreign_unit_is_404",
+    (
+        "GET",
+        "/api/v1/requisitions/lookups/{kind}",
+    ): "requisitions/test_lookups.py::test_unknown_kind_422_and_route_reachable",
+    (
+        "POST",
+        "/api/v1/requisitions",
+    ): "requisitions/test_header.py::test_foreign_tenant_routes_and_list_isolation",
+    (
+        "GET",
+        "/api/v1/requisitions",
+    ): "requisitions/test_header.py::test_foreign_tenant_routes_and_list_isolation",
+    (
+        "GET",
+        "/api/v1/requisitions/{id}",
+    ): "requisitions/test_header.py::test_foreign_tenant_routes_and_list_isolation",
+    (
+        "PATCH",
+        "/api/v1/requisitions/{id}",
+    ): "requisitions/test_header.py::test_foreign_tenant_routes_and_list_isolation",
+    (
+        "GET",
+        "/api/v1/workflows",
+    ): "approvals/test_workflow_definitions.py::test_foreign_tenant_routes_and_authorization",
+    (
+        "POST",
+        "/api/v1/workflows",
+    ): "approvals/test_workflow_definitions.py::test_foreign_tenant_routes_and_authorization",
+    (
+        "GET",
+        "/api/v1/workflows/{id}",
+    ): "approvals/test_workflow_definitions.py::test_foreign_tenant_routes_and_authorization",
+    (
+        "POST",
+        "/api/v1/workflows/{id}/versions",
+    ): "approvals/test_workflow_definitions.py::test_foreign_tenant_routes_and_authorization",
+    (
+        "GET",
+        "/api/v1/workflows/{id}/versions/{version}",
+    ): "approvals/test_workflow_definitions.py::test_foreign_tenant_routes_and_authorization",
+    (
+        "PUT",
+        "/api/v1/workflows/{id}/versions/{version}",
+    ): "approvals/test_workflow_definitions.py::test_foreign_tenant_routes_and_authorization",
+    (
+        "POST",
+        "/api/v1/workflows/{id}/versions/{version}/publish",
+    ): "approvals/test_workflow_definitions.py::test_foreign_tenant_routes_and_authorization",
+    (
+        "POST",
+        "/api/v1/workflows/{id}/retire",
+    ): "approvals/test_workflow_definitions.py::test_foreign_tenant_routes_and_authorization",
     (
         "GET",
         "/api/v1/projects/{id}/risk-indicators",
@@ -145,6 +394,10 @@ COVERED = {
         "POST",
         "/internal/jobs/budget-reconcile",
     ): "budget/test_reconcile.py::test_internal_trigger_rejects_tenant_session",
+    (
+        "POST",
+        "/internal/jobs/requisition-expiry",
+    ): "requisitions/test_expiry.py::test_internal_expiry_rejects_missing_key_and_origin",
     ("GET", "/api/v1/projects/{project_id}/balance/aggregate"): (
         "budget/test_funding_modes.py::test_foreign_aggregate"
     ),
@@ -302,6 +555,10 @@ def test_every_id_route_has_a_named_foreign_tenant_case() -> None:
                 budget_router,
                 imports_router,
                 invitations_router,
+                approvals_router,
+                workflows_router,
+                requisitions_router,
+                collaboration_router,
             ),
             COVERED,
         )
@@ -324,6 +581,10 @@ def test_gate_fails_on_an_uncovered_route_and_on_a_dangling_reference() -> None:
             budget_router,
             imports_router,
             invitations_router,
+            approvals_router,
+            workflows_router,
+            requisitions_router,
+            collaboration_router,
         )
         | widget
     )

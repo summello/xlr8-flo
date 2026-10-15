@@ -44,6 +44,7 @@ Every row is a decision that was contested between the two prior plans, or an op
 | D-18 | Secrets in the outbox | A single-use credential **may** sit in an outbox payload — password-reset and invitation tokens — provided the row's TTL equals the token's TTL, the payload is deleted on successful delivery, and the payload is never logged or included in an error body | Sending the email from the request handler (violates invariant 6); encrypting outbox payloads; storing only the hash and reconstructing the link at send time | A reset email must contain the plaintext token, and the outbox is the only legal path to an external effect. Encrypting payloads moves the problem to key custody for a value that is already worthless in fifteen minutes. Reconstructing at send time means the sender can mint tokens, which is a worse blast radius than a short-lived row. The compensating controls are the ones that make the token cheap: short TTL, single use, deleted on send. | An outbox payload needs to carry a long-lived secret, which this rule does not cover |
 | D-19 | Pre-authentication security events | Widen `session_security_event` to identity-scoped events with a nullable `session_id`, rather than writing them to `audit_log` | `audit_log` for everything | `audit_log` is `org_id NOT NULL` under RLS, and a password-reset request happens before any tenant scope exists — there is no org to attribute it to. `session_security_event` is already identity-scoped, append-only and trigger-enforced; it needs a nullable `session_id` and a wider `event_type` check. Two append-only tables split by whether a tenant is known is a smaller lie than a fabricated `org_id`. | Identities gain a mandatory home organization, at which point the two tables can merge |
 | D-20 | Multi-organization membership | **One identity may belong to any number of organizations, and one organization may exist as several separate tenants.** `identity_membership` is keyed `(identity_id, org_id)`; the session carries the **chosen** organization, selected after sign-in from the memberships the identity already holds and never named by a URL, body or header on any business route. A tenant is displayed as organization name plus an administrator-chosen **tenant label** (`Northwind Capital, EMEA`). Tenants stay fully isolated: nothing is shared, merged or moved between them, and a role granted in one confers nothing in another. **This supersedes E05-S09 D-M1-23**, which restricted an identity to exactly one organization and deferred this to a later migration; the clause of D-M1-24 that keeps `identity_membership` out of RLS stands, and D-M1-25 (bootstrap is a command) stands. | One identity per organization for all of Phase 1 (E05-S09 D-M1-23) · a separate identity per tenant for the same person · sharing data between a tenant pair | A consultant or group finance user working across portfolios is the normal case, not the exception, and the alternative — one login per tenant — multiplies credentials and makes MFA enrolment per tenant, which is worse security for the same person. Invitation acceptance (E05-S13) is the only way into an existing tenant and structurally requires a second membership for an existing account. The cost is that organization selection becomes part of the session lifecycle, so it is paid once, in E05-S12, behind one endpoint and one chooser screen. Keeping separate tenants for one legal organization is what allows portfolios under different data laws to be split without a second deployment — but it makes **no** data-residency claim: one pooled database in one region (D-03, D-06) is unchanged, and residency would be a new requirement and a new decision. | A customer requires data physically held in a named country (then: a database per region, reopening D-03 and D-06) · or two tenants of one organization need shared master data, which this decision forbids |
+| D-21 | Requisition reservation timing | **A project-linked requisition reserves its estimate at submit**, under the project funding row's lock, in the same transaction that validates it and starts its approval; approval keeps the reservation and generates the sub-project. REQ-002 is read as approval *confirming* the submit-time reservation. Withdraw, reject and cancel release it exactly once per funding round; return-for-changes keeps it; resubmit re-reserves the new total. A standalone requisition reserves only at approval (D-M2-5). Operator decision, 10 Oct 2026 (`docs/m2-decisions.md` D-M2-15). | Reserve at approval (the literal REQ-002 / `requirements.md` §7.1 order, which the first M2 draft followed) | A pending request that holds no money can be approved into an overspend that its approver never saw; reserving at submit makes the funds check a real guard (ACC-001: two concurrent submissions, exactly one succeeds) and matches the reviewed screens, which show the reservation from submission. | Approval latency long enough that held-but-unapproved reservations starve projects of budget |
 
 ### 1.1 Open decisions from `requirements.md` §14 — now closed
 
@@ -431,7 +432,7 @@ Each phase ends at a **milestone** (`M0`…`M5`). A milestone is the only thing 
 |---|---|---|---|---:|
 | **M0** | Rails | A deployed, empty, production-shaped application: sign in, one seeded tenant, an audited CRUD screen, CI green, agent orchestration proven end-to-end. Nothing business-valuable — everything the business logic will stand on. | Deployed to Cloud Run + Pages on a real domain; auth with MFA; RLS proven by the TEN-010 isolation suite; audit, idempotency, outbox, job runner, storage and email ports all exercised by a test; OpenAPI→TS client generated in CI; app shell with ⌘K, dark/light, virtualized grid; a11y harness failing on a seeded violation. | 26 |
 | **M1** | Budget spine | The trustworthy system of record. Organizations, BU/OUs, master data, projects to five levels with roll-up/roll-down, and the complete budget ledger including cross-hierarchy transfers, plus Excel/CSV import. | ACC-001 and ACC-003 pass against real Postgres; every dashboard balance reconciles to its ledger; nightly drift report reads zero; 10,000-row import completes as a background job with a row-level error report. | 26 |
-| **M2** | Governed demand | Capital requisitions that reserve real money, and the approval engine that authorizes them — including the visual builder and its keyboard equivalent. | A requisition moves Draft→Approved through a multi-level conditional workflow, generates its sub-project, and reserves budget atomically; editing the workflow does not alter in-flight documents (ACC-007); the builder is fully operable without a mouse (APR-002). | 24 |
+| **M2** | Governed demand | Capital requisitions that reserve real money, and the approval engine that authorizes them — including the visual builder and its keyboard equivalent. | A requisition moves Draft→Approved through a multi-level conditional workflow, generates its sub-project, and reserves budget atomically; editing the workflow does not alter in-flight documents (ACC-007); the builder is fully operable without a mouse (APR-002). | 25 |
 | **M3** | **First sellable release** | Vendors, RFQs, bid comparison, awards, and purchase orders issued by email with change orders. Closes the money loop end to end. | ACC-002, ACC-005, ACC-006 pass; a complete project→requisition→RFQ→award→PO→email flow is operable without a mouse (ACC-008); PO PDF reproduces from its snapshot (PO-014); SPF/DKIM/DMARC verified (EML-001). **This is the first release you can sell.** | 28 |
 | **M4** | Full Phase-1 scope | Warehouses and fixed assets, reporting and exports, custom fields and rules, search, notifications, preferences and help. Completes `requirements.md` Phase 1. | Every Phase-1 ✅ in `requirements.md` §2.2 is implemented and traced; HTML/PDF/Excel exports reconcile to the dashboard under identical filters (RPT-007). | 34 |
 | **M5** | Customer-ready | Self-serve tenancy, plan quotas, MAU metering, security and accessibility verification, backup/restore evidence, legal surface, graduation dashboard. | ASVS L2 self-assessment complete with no open critical/high; WCAG 2.2 AA audit passed on critical paths; restore drill evidence committed; ToS/Privacy/DPA published; graduation triggers instrumented and alerting. | 24 |
@@ -521,38 +522,45 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E08-S03** Import batch record, idempotent re-import by external key, async with progress | E08 | engine | M | IMP-008, IMP-009, IMP-012, PERF-004 | ~~E08-S02~~ |
 | ✅ | **E08-S04** Project and budget import templates end to end | E08 | crud | M | PROJ-001, IMP-001 | ~~E08-S03~~, ~~E07-S03~~ |
 
-#### M2 — Governed demand · 0/24 done
+#### M2 — Governed demand · 31/31 done
 
 > Requisitions that reserve real money, and the approval engine that authorizes them.
 
 | | Story | Epic | Kind | Size | Requirements | Depends on |
 |---|---|---|---|---|---|---|
-| ⬜ | **E09-S01** Requisition header, scoped numbering, project-linked and standalone | E09 | crud | M | REQ-001, REQ-010, SEQ-001 | ~~E06-S03~~ |
-| ⬜ | **E09-S02** Item and service lines with explicit type tagging and quantity/amount tracking | E09 | crud | M | REQ-006, REQ-015 | E09-S01 |
-| ⬜ | **E09-S03** Catalogue: BU/OU-scoped suggestions from prior requested, sourced and purchased items | E09 | engine | M | REQ-007, REQ-008, XFN-009 | E09-S02 |
-| ⬜ | **E09-S04** Submission validation: fields, active master data, eligibility, funds, routing | E09 | engine | L | REQ-011, WF-002, WF-006 | E09-S02, ~~E07-S06~~ |
-| ⬜ | **E09-S05** Requisition lifecycle state machine | E09 | engine | L | REQ-005, REQ-016, WF-002 | E09-S04 |
-| ⬜ | **E09-S06** Approval reserves budget and generates the sub-project, one transaction | E09 | ledger | L | REQ-002, REQ-003, REQ-004, PROJ-003, ACC-001, WF-003 | E09-S05, ~~E07-S04~~, E10-S05 |
-| ⬜ | **E09-S07** Release on reject, withdraw, cancel, expire or reduce — exactly once | E09 | ledger | M | REQ-013, FIN-011, ACC-006 | E09-S06 |
-| ⬜ | **E09-S08** Controlled return, amendment and resubmission preserving prior values | E09 | engine | M | REQ-012, APR-015, DATA-002 | E09-S05 |
-| ⬜ | **E09-S09** Linked-record graph: RFQs, bids, awards, POs, approvals, notes, ledger entries | E09 | api | M | REQ-009, WF-001 | E09-S06 |
-| ⬜ | **E09-S10** Notes and attachments on all business documents, upload validation, quarantine | E09 | security | L | COL-001, COL-002, COL-003, COL-004, COL-005, COL-006, COL-007, COL-008, D-14 | ~~E03-S06~~ |
-| ⬜ | **E09-S11** Requisition screens: create, lines, submit, track, quantity rollup | E09 | ui | L | REQ-015, UX-003, UX-004 | E09-S09, ~~E04-S03~~ |
-| ⬜ | **E10-S01** Workflow definition schema, versioning, active-document version pinning | E10 | migration | L | APR-011, ACC-007 | ~~E03-S04~~ |
-| ⬜ | **E10-S02** Condition evaluator over any document attribute including amount and custom fields | E10 | engine | L | APR-005, APR-010 | E10-S01 |
-| ⬜ | **E10-S03** Graph validation: cycle detection, unreachable steps, duplicate approvals, depth limit | E10 | engine | M | APR-006, APR-007, APR-008, APR-012 | E10-S01 |
-| ⬜ | **E10-S04** Approver eligibility resolution scoped to organization and BU/OU | E10 | engine | M | APR-004, APR-019, USR-007 | E10-S02, ~~E02-S05~~ |
-| ⬜ | **E10-S05** Execution engine: instances, tasks, any-one/all/quorum groups, membership snapshot | E10 | engine | L | APR-009, APR-018, WF-002 | E10-S04 |
-| ⬜ | **E10-S06** Decisions: approve, reject, return, comment, withdraw; full attribution recorded | E10 | engine | M | APR-013, APR-014, AUD-001 | E10-S05 |
-| ⬜ | **E10-S07** Stale-version guard and material-change resubmission policy | E10 | concurrency | M | APR-015, APR-016, DATA-002, WF-001 | E10-S06 |
-| ⬜ | **E10-S08** Delegation, out-of-office, due dates, reminders and escalation | E10 | engine | L | APR-017 | E10-S06 |
-| ⬜ | **E10-S09** Routing explainability: which rule matched and why this approver | E10 | api | M | APR-021 | E10-S05 |
-| ⬜ | **E10-S10** Approval inbox: pending, overdue, completed, delegated views | E10 | ui | M | APR-020 | E10-S06, ~~E04-S03~~ |
-| ⬜ | **E10-S11** Visual workflow builder, drag-and-drop canvas | E10 | ui | L | APR-001 | E10-S03, ~~E04-S02~~ |
-| ⬜ | **E10-S12** Keyboard/list workflow editor with identical capability to the canvas | E10 | ui | L | APR-002, A11Y-003 | E10-S11 |
-| ⬜ | **E10-S13** Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes | E10 | engine | M | APR-003, PROJ-002, VEN-005, BUD-007 | E10-S07 |
+| ✅ | **E09-S01** Requisition header, scoped numbering, project-linked and standalone | E09 | crud | M | REQ-001, REQ-010, SEQ-001 | ~~E06-S03~~ |
+| ✅ | **E09-S02** Item and service lines with explicit type tagging and quantity/amount tracking | E09 | crud | M | REQ-006, REQ-015 | ~~E09-S01~~ |
+| ✅ | **E09-S03** Catalogue: BU/OU-scoped suggestions from prior requested, sourced and purchased items | E09 | engine | M | REQ-007, REQ-008, XFN-009 | ~~E09-S02~~ |
+| ✅ | **E09-S04** Submission validation: fields, active master data, eligibility, funds, routing | E09 | engine | L | REQ-011, WF-002, WF-006 | ~~E09-S02~~, ~~E07-S06~~ |
+| ✅ | **E09-S05** Requisition lifecycle state machine | E09 | engine | L | REQ-005, REQ-016, WF-002 | ~~E09-S04~~, ~~E09-S03~~, ~~E10-S05~~, ~~E10-S06~~ |
+| ✅ | **E09-S06** Approval reserves budget and generates the sub-project, one transaction | E09 | ledger | L | REQ-002, REQ-003, REQ-004, PROJ-003, ACC-001, WF-003 | ~~E09-S05~~, ~~E07-S04~~, ~~E10-S05~~ |
+| ✅ | **E09-S07** Release on reject, withdraw, cancel, expire or reduce — exactly once | E09 | ledger | M | REQ-013, FIN-011, ACC-006 | ~~E09-S06~~ |
+| ✅ | **E09-S08** Controlled return, amendment and resubmission preserving prior values | E09 | engine | M | REQ-012, APR-015, DATA-002 | ~~E09-S05~~, ~~E09-S07~~, ~~E10-S07~~ |
+| ✅ | **E09-S09** Linked-record graph: RFQs, bids, awards, POs, approvals, notes, ledger entries | E09 | api | M | REQ-009, WF-001 | ~~E09-S06~~, ~~E09-S10~~, ~~E10-S07~~, ~~E09-S08~~ |
+| ✅ | **E09-S10** Notes and attachments on all business documents, upload validation, quarantine | E09 | security | L | COL-001, COL-002, COL-003, COL-004, COL-005, COL-006, COL-007, COL-008, D-14 | ~~E03-S06~~, ~~E09-S01~~ |
+| ✅ | **E09-S11** Requisition screens: create, lines, submit, track, quantity rollup | E09 | ui | L | REQ-015, UX-003, UX-004 | ~~E09-S09~~, ~~E04-S03~~, ~~E09-S08~~, ~~E10-S06~~ |
+| ✅ | **E09-S12** Resubmit and amendment screens: review changes, funding effect, version lineage | E09 | ui | L | REQ-012, APR-015, DATA-002, UX-003 | ~~E09-S08~~, ~~E09-S11~~ |
+| ✅ | **E09-S14** M2 exit criterion end to end: a requisition through a multi-level conditional workflow to approval, sub-project and reservation | E09 | test | S | WF-002, WF-003, REQ-002, ACC-001 | ~~E09-S12~~ |
+| ✅ | **E09-S13** Roles and permission catalogue: every checked permission grantable, Project Manager role, budget governance decisions and user guide | E09 | security | M | USR-007, TEN-010 | ~~E09-S12~~ |
+| ✅ | **E09-S15** Project Requests: own document type, workflow, permission and name; sponsors; abandoned on cancel and kept out of budget totals | E09 | engine | L | REQ-004 | ~~E09-S13~~ |
+| ✅ | **E09-S16** Sub-project funding: an approved requisition's sub-project draws from its main project; funds return on cancel | E09 | ledger | L | REQ-002, ACC-001, WF-003, FIN-011 | ~~E09-S13~~ |
+| ✅ | **E09-S17** Block governed actions until their approval workflow is published | E09 | engine | M | BUD-007, WF-001 | ~~E09-S13~~, ~~E09-S15~~ |
+| ✅ | **E09-S18** Expired master codes: flag, substitute at approval, block downstream; no code changes by amendment | E09 | engine | L | AUD-001 | ~~E09-S13~~ |
+| ✅ | **E10-S01** Workflow definition schema, versioning, active-document version pinning | E10 | migration | L | APR-011, ACC-007 | ~~E03-S04~~ |
+| ✅ | **E10-S02** Condition evaluator over any document attribute including amount and custom fields | E10 | engine | L | APR-005, APR-010 | ~~E10-S01~~ |
+| ✅ | **E10-S03** Graph validation: cycle detection, unreachable steps, duplicate approvals, depth limit | E10 | engine | M | APR-006, APR-007, APR-008, APR-012 | ~~E10-S01~~, ~~E10-S02~~ |
+| ✅ | **E10-S04** Approver eligibility resolution scoped to organization and BU/OU | E10 | engine | M | APR-004, APR-019, USR-007 | ~~E10-S02~~, ~~E02-S05~~, ~~E10-S03~~ |
+| ✅ | **E10-S05** Execution engine: instances, tasks, any-one/all/quorum groups, live membership | E10 | engine | L | APR-009, APR-018, WF-002 | ~~E10-S04~~ |
+| ✅ | **E10-S06** Decisions: approve, reject, return, comment, withdraw; full attribution recorded | E10 | engine | M | APR-013, APR-014, AUD-001 | ~~E10-S05~~ |
+| ✅ | **E10-S07** Stale-version guard and material-change resubmission policy | E10 | concurrency | M | APR-015, APR-016, DATA-002, WF-001 | ~~E10-S06~~ |
+| ✅ | **E10-S08** Delegation, out-of-office, due dates, reminders and escalation | E10 | engine | L | APR-017 | ~~E10-S06~~ |
+| ✅ | **E10-S09** Routing explainability: which rule matched and why this approver | E10 | api | M | APR-021 | ~~E10-S05~~, ~~E10-S06~~, ~~E10-S08~~ |
+| ✅ | **E10-S10** Approval inbox: pending, overdue, completed, delegated views | E10 | ui | L | APR-020 | ~~E10-S06~~, ~~E04-S03~~, ~~E10-S08~~, ~~E10-S09~~ |
+| ✅ | **E10-S11** Visual workflow builder, drag-and-drop canvas | E10 | ui | L | APR-001 | ~~E10-S03~~, ~~E04-S02~~ |
+| ✅ | **E10-S12** Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11) | E10 | ui | L | APR-011, APR-021, ACC-007 | ~~E10-S11~~, ~~E10-S05~~ |
+| ✅ | **E10-S13** Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes | E10 | engine | M | APR-003, PROJ-002, VEN-005, BUD-007 | ~~E10-S07~~ |
 
-#### M3 — First sellable release · 0/28 done
+#### M3 — First sellable release · 0/32 done
 
 > Vendors, RFQs, awards and purchase orders by email. Closes the money loop end to end.
 
@@ -560,12 +568,12 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 |---|---|---|---|---|---|---|
 | ⬜ | **E11-S01** Vendor profile, searchable list, global and BU/OU scope, local disable | E11 | crud | M | VEN-001, VEN-008, VEN-009, ORG-003 | ~~E05-S01~~ |
 | ⬜ | **E11-S02** Typed contacts: billing, service/delivery, additional types | E11 | crud | S | VEN-002 | E11-S01 |
-| ⬜ | **E11-S03** Vendor documents with issue/expiry, verification status, expiry notification | E11 | crud | M | VEN-003, VEN-011, OBS-004 | E11-S01, E09-S10 |
+| ⬜ | **E11-S03** Vendor documents with issue/expiry, verification status, expiry notification | E11 | crud | M | VEN-003, VEN-011, OBS-004 | E11-S01, ~~E09-S10~~ |
 | ⬜ | **E11-S04** Field-level access control and masking for tax and banking data | E11 | security | M | VEN-014, CUS-008, PRIV-001 | E11-S01, ~~E02-S05~~ |
 | ⬜ | **E11-S05** Onboarding request, configurable questionnaire, weights and scoring | E11 | engine | L | VEN-004, VEN-006 | E11-S01 |
-| ⬜ | **E11-S06** Duplicate identifier detection, approval on create/activate/suspend/reactivate | E11 | engine | M | VEN-005, VEN-010, VEN-012 | E11-S05, E10-S13 |
+| ⬜ | **E11-S06** Duplicate identifier detection, approval on create/activate/suspend/reactivate | E11 | engine | M | VEN-005, VEN-010, VEN-012 | E11-S05, ~~E10-S13~~ |
 | ⬜ | **E11-S07** Performance scoring across quality, price, delivery, service, with dispute history | E11 | crud | M | VEN-007, VEN-015 | E11-S01 |
-| ⬜ | **E12-S01** RFQ from approved requisition lines, open-quantity guard | E12 | engine | L | SRC-001, SRC-003, SRC-018 | E09-S06, E11-S01 |
+| ⬜ | **E12-S01** RFQ from approved requisition lines, open-quantity guard | E12 | engine | L | SRC-001, SRC-003, SRC-018 | ~~E09-S06~~, E11-S01 |
 | ⬜ | **E12-S02** RFQ content, invitations, deadline, terms, attachments, vendor eligibility check | E12 | crud | M | SRC-002, VEN-012 | E12-S01 |
 | ⬜ | **E12-S03** RFQ lifecycle and post-publication versioning communicated to invitees | E12 | engine | M | SRC-004, SRC-005 | E12-S02 |
 | ⬜ | **E12-S04** Bid capture: line prices, currency, tax, freight, lead time, validity, exceptions | E12 | crud | M | SRC-006 | E12-S03 |
@@ -578,14 +586,18 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E13-S01** PO from awarded requisition lines or authorized project items, scoped numbering | E13 | crud | L | PO-001, PO-002, PO-006, SEQ-001 | E12-S08 |
 | ⬜ | **E13-S02** Tax and freight per BU/OU policy, separately visible on line and document | E13 | ledger | M | FIN-008, FIN-009, PO-016 | E13-S01 |
 | ⬜ | **E13-S03** PO lifecycle state machine | E13 | engine | M | PO-007, WF-002 | E13-S01 |
-| ⬜ | **E13-S04** PO approval workflow before issue | E13 | engine | M | PO-003, APR-003 | E13-S03, E10-S13 |
+| ⬜ | **E13-S04** PO approval workflow before issue | E13 | engine | M | PO-003, APR-003 | E13-S03, ~~E10-S13~~ |
 | ⬜ | **E13-S05** Issue converts reservation to commitment atomically; partial POs reduce open quantity only | E13 | ledger | L | PO-008, PO-009, WF-003, ACC-002 | E13-S04, ~~E07-S05~~ |
 | ⬜ | **E13-S06** Immutable issued PO; numbered, approved change orders with field-level diff | E13 | engine | L | PO-010, PO-011, DATA-005, ACC-005 | E13-S05 |
 | ⬜ | **E13-S07** Cancel or reduce releases unused commitment exactly once, history preserved | E13 | ledger | M | PO-013, FIN-011, ACC-006, WF-005 | E13-S06 |
 | ⬜ | **E13-S08** PO PDF reproducible from stored snapshot and template version | E13 | engine | L | PO-014, DATA-005 | E13-S06 |
 | ⬜ | **E13-S09** Email transmission via outbox, recipient/time/result/version recorded, retry without duplication | E13 | engine | L | PO-004, PO-012, PO-015, ARCH-006, ACC-002 | E13-S08, ~~E03-S06~~ |
 | ⬜ | **E13-S10** Deliverability: SPF/DKIM/DMARC verification, bounce and complaint handling, suppression list | E13 | engine | M | EML-001, EML-002, EML-003, EML-006 | E13-S09 |
-| ⬜ | **E13-S11** Internal vs vendor-facing notes and attachments, enforced by test | E13 | security | M | PO-017, EML-005, COL-002 | E13-S09, E09-S10 |
+| ⬜ | **E13-S11** Internal vs vendor-facing notes and attachments, enforced by test | E13 | security | M | PO-017, EML-005, COL-002 | E13-S09, ~~E09-S10~~ |
+| ⬜ | **E22-S01** Create Project with budget: form and Excel, sponsors, through the project approval workflow | E22 | engine | L | PROJ-003 | ~~E09-S17~~ |
+| ⬜ | **E22-S02** Soft delete for every draft document | E22 | crud | M | DATA-002 | ~~E09-S15~~ |
+| ⬜ | **E22-S03** One audit helper instead of twelve, behaviour-preserving | E22 | chore | M | AUD-001 | — |
+| ⬜ | **E22-S04** M2 milestone review follow-ups: Money zero prop, shared lookup helper, internal collaboration readers, approvals read via service, e2e focus helper | E22 | chore | M | A11Y-001, UX-007 | — |
 
 #### M4 — Full Phase-1 scope · 0/34 done
 
@@ -658,6 +670,16 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E20-S04** Per-tenant feature flags so incomplete modules are hidden, never half-exposed | E20 | engine | M | SUP-004 | E18-S04 |
 | ⬜ | **E20-S05** Administrator and operator documentation, runbooks linked from every alert | E20 | docs | M | UX-010, SUP-005, OBS-003 | E19-S07 |
 | ⬜ | **E20-S06** Graduation dashboard: MAU, customers, storage, email, requests against §7 triggers | E20 | ui | M | OPS-002, TEN-003 | E19-S06, E18-S03 |
+
+#### M7 — Future roadmap · 0/3 done
+
+> Agreed future items with no date, logged so they are not lost. Pulled into a dated milestone when the operator schedules them.
+
+| | Story | Epic | Kind | Size | Requirements | Depends on |
+|---|---|---|---|---|---|---|
+| ⬜ | **E30-S01** Organisation budget pool: allocations draw from an organisation-level pool instead of creating budget | E30 | ledger | L | BUD-007 | — |
+| ⬜ | **E30-S02** Release and re-reserve when an amendment or substitution changes a code or ledger account | E30 | ledger | M | REQ-012 | ~~E09-S18~~ |
+| ⬜ | **E30-S03** Bin: view and restore soft-deleted drafts | E30 | ui | M | DATA-002 | E22-S02 |
 
 #### MT — Delivery tooling · 1/1 done
 

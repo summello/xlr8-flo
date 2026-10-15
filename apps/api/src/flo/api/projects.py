@@ -12,7 +12,10 @@ from flo.kernel.authz import AuthorizationTarget as TargetProtocol
 from flo.kernel.authz import permits, require
 from flo.kernel.config import Settings
 from flo.kernel.tenancy.context import current_scope
+from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
+from flo.modules.approvals.service import start
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
+from flo.modules.identity.service import AuthorizationConnection, AuthorizationResolver
 from flo.modules.org.service import OrgService
 from flo.modules.projects.schemas import (
     ChildrenPage,
@@ -41,6 +44,8 @@ from flo.modules.projects.schemas import (
     TreeRead,
 )
 from flo.modules.projects.service import ProjectService, risk_indicators
+from flo.modules.requisitions import codes
+from flo.modules.requisitions.schemas import CodeSubstitute
 
 router = APIRouter(prefix="/api/v1/projects", tags=["projects"])
 
@@ -78,6 +83,9 @@ def parent_read(
 CreateContext = Annotated[AuthorizationContext, Depends(require("project.create", create_target))]
 ReadContext = Annotated[AuthorizationContext, Depends(require("project.read", project_target))]
 UpdateContext = Annotated[AuthorizationContext, Depends(require("project.update", project_target))]
+SubstituteContext = Annotated[
+    AuthorizationContext, Depends(require("master_code.substitute", project_target))
+]
 ListContext = Annotated[AuthorizationContext, Depends(require("project.read", organization_target))]
 
 
@@ -119,8 +127,19 @@ def list_projects(
 
 
 @router.get("/{id}", response_model=ProjectRead)
-def get_project(id: UUID, context: ReadContext, connection: Connection) -> ProjectRead:
-    return ProjectService(connection, current_scope(), context.user_id).get(id)
+def get_project(
+    id: UUID, context: ReadContext, connection: Connection, request: Request
+) -> ProjectRead:
+    service = ProjectService(connection, current_scope(), context.user_id)
+    project = service.get(id)
+    project.sponsor_ids = service.sponsors(id)
+    allowed = project.codes_expired and permits(
+        request, "master_code.substitute", project_target(id, connection)
+    )
+    if allowed:
+        allowed = codes.can_substitute_project(connection, current_scope(), id)
+    project.can_substitute_codes = bool(allowed)
+    return project
 
 
 @router.patch("/{id}", response_model=ProjectRead)
@@ -132,6 +151,21 @@ def patch_project(
     version: Annotated[str | None, Header(alias="If-Match")] = None,
 ) -> ProjectRead:
     return ProjectService(connection, current_scope(), context.user_id).update(id, body, version)
+
+
+@router.post("/{id}/codes", response_model=ProjectRead)
+def substitute_project_codes(
+    id: UUID, body: CodeSubstitute, context: SubstituteContext, connection: Connection
+) -> ProjectRead:
+    codes.substitute_project(
+        connection,
+        current_scope(),
+        context.user_id,
+        id,
+        body.model_dump(exclude={"reason"}, exclude_none=True),
+        body.reason,
+    )
+    return ProjectService(connection, current_scope(), context.user_id).get(id)
 
 
 @router.get("/{id}/children", response_model=ChildrenPage)
@@ -173,9 +207,23 @@ def transition_project(
     version: Annotated[str | None, Header(alias="If-Match")] = None,
 ) -> ProjectRead:
     target = project_target(id, connection)
-    return ProjectService(connection, current_scope(), context.user_id).transition(
-        id, body, version, lambda permission: permits(request, permission, target)
-    )
+    scope = current_scope()
+    with tenant_transaction(cast(RlsSession, connection), scope):
+        service = ProjectService(connection, scope, context.user_id)
+        service.transition(
+            id, body, version, lambda permission: permits(request, permission, target)
+        )
+        if body.to == "approval_pending":
+            # Submit exception to R: status and event first; start is last.
+            start(
+                connection,
+                scope,
+                document_type="project",
+                document_id=id,
+                actor_id=context.user_id,
+                resolver=AuthorizationResolver(cast(AuthorizationConnection, connection), scope),
+            )
+        return service.get(id)
 
 
 @router.get("/{id}/transitions/available", response_model=list[TransitionAvailable])

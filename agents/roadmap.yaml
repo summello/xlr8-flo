@@ -43,6 +43,11 @@ milestones:
     branch: milestone/M5-customer-ready
     goal: Self-serve tenancy, verification, backup evidence, legal surface,
       graduation instrumentation.
+  - id: M7
+    name: Future roadmap
+    branch: milestone/M7-future
+    goal: Agreed future items with no date, logged so they are not lost. Pulled into a
+      dated milestone when the operator schedules them.
   - id: MT
     name: Delivery tooling
     branch: main
@@ -923,40 +928,43 @@ epics:
         t: Requisition header, scoped numbering, project-linked and standalone
         k: crud
         s: M
-        tags: []
+        tags:
+          - migration
         reqs:
           - REQ-001
           - REQ-010
           - SEQ-001
         dep:
           - E06-S03
-        st: todo
+        st: done
       - id: E09-S02
         t: Item and service lines with explicit type tagging and quantity/amount
           tracking
         k: crud
         s: M
         tags:
+          - migration
           - money
         reqs:
           - REQ-006
           - REQ-015
         dep:
           - E09-S01
-        st: todo
+        st: done
       - id: E09-S03
         t: 'Catalogue: BU/OU-scoped suggestions from prior requested, sourced and
           purchased items'
         k: engine
         s: M
-        tags: []
+        tags:
+          - migration
         reqs:
           - REQ-007
           - REQ-008
           - XFN-009
         dep:
           - E09-S02
-        st: todo
+        st: done
       - id: E09-S04
         t: 'Submission validation: fields, active master data, eligibility, funds,
           routing'
@@ -971,19 +979,25 @@ epics:
         dep:
           - E09-S02
           - E07-S06
-        st: todo
+        st: done
       - id: E09-S05
         t: Requisition lifecycle state machine
         k: engine
         s: L
-        tags: []
+        tags:
+          - concurrency
+          - migration
+          - money
         reqs:
           - REQ-005
           - REQ-016
           - WF-002
         dep:
           - E09-S04
-        st: todo
+          - E09-S03
+          - E10-S05
+          - E10-S06
+        st: done
       - id: E09-S06
         t: Approval reserves budget and generates the sub-project, one transaction
         k: ledger
@@ -1002,12 +1016,13 @@ epics:
           - E09-S05
           - E07-S04
           - E10-S05
-        st: todo
+        st: done
       - id: E09-S07
         t: Release on reject, withdraw, cancel, expire or reduce — exactly once
         k: ledger
         s: M
         tags:
+          - migration
           - money
         reqs:
           - REQ-013
@@ -1015,19 +1030,22 @@ epics:
           - ACC-006
         dep:
           - E09-S06
-        st: todo
+        st: done
       - id: E09-S08
         t: Controlled return, amendment and resubmission preserving prior values
         k: engine
         s: M
-        tags: []
+        tags:
+          - migration
         reqs:
           - REQ-012
           - APR-015
           - DATA-002
         dep:
           - E09-S05
-        st: todo
+          - E09-S07
+          - E10-S07
+        st: done
       - id: E09-S09
         t: 'Linked-record graph: RFQs, bids, awards, POs, approvals, notes, ledger
           entries'
@@ -1039,13 +1057,17 @@ epics:
           - WF-001
         dep:
           - E09-S06
-        st: todo
+          - E09-S10
+          - E10-S07
+          - E09-S08
+        st: done
       - id: E09-S10
         t: Notes and attachments on all business documents, upload validation,
           quarantine
         k: security
         s: L
         tags:
+          - migration
           - security
         reqs:
           - COL-001
@@ -1059,7 +1081,8 @@ epics:
           - D-14
         dep:
           - E03-S06
-        st: todo
+          - E09-S01
+        st: done
       - id: E09-S11
         t: 'Requisition screens: create, lines, submit, track, quantity rollup'
         k: ui
@@ -1073,7 +1096,113 @@ epics:
         dep:
           - E09-S09
           - E04-S03
-        st: todo
+          - E09-S08
+          - E10-S06
+        st: done
+      - id: E09-S12
+        t: 'Resubmit and amendment screens: review changes, funding effect, version
+          lineage'
+        k: ui
+        s: L
+        tags:
+          - ui
+        reqs:
+          - REQ-012
+          - APR-015
+          - DATA-002
+          - UX-003
+        dep:
+          - E09-S08
+          - E09-S11
+        st: done
+      - id: E09-S14
+        t: 'M2 exit criterion end to end: a requisition through a multi-level conditional
+          workflow to approval, sub-project and reservation'
+        k: test
+        s: S
+        tags: []
+        reqs:
+          - WF-002
+          - WF-003
+          - REQ-002
+          - ACC-001
+        dep:
+          - E09-S12
+        st: done
+      - id: E09-S13
+        t: 'Roles and permission catalogue: every checked permission grantable, Project
+          Manager role, budget governance decisions and user guide'
+        k: security
+        s: M
+        tags:
+          - auth
+          - security
+          - migration
+        reqs:
+          - USR-007
+          - TEN-010
+        dep:
+          - E09-S12
+        st: done
+      - id: E09-S15
+        t: 'Project Requests: own document type, workflow, permission and name; sponsors;
+          abandoned on cancel and kept out of budget totals'
+        k: engine
+        s: L
+        tags:
+          - money
+          - auth
+          - ui
+          - migration
+        reqs:
+          - REQ-004
+        dep:
+          - E09-S13
+        st: done
+      - id: E09-S16
+        t: 'Sub-project funding: an approved requisition''s sub-project draws from its main
+          project; funds return on cancel'
+        k: ledger
+        s: L
+        tags:
+          - money
+          - concurrency
+        reqs:
+          - REQ-002
+          - ACC-001
+          - WF-003
+          - FIN-011
+        dep:
+          - E09-S13
+        st: done
+      - id: E09-S17
+        t: Block governed actions until their approval workflow is published
+        k: engine
+        s: M
+        tags:
+          - money
+          - auth
+        reqs:
+          - BUD-007
+          - WF-001
+        dep:
+          - E09-S13
+          - E09-S15
+        st: done
+      - id: E09-S18
+        t: 'Expired master codes: flag, substitute at approval, block downstream; no code
+          changes by amendment'
+        k: engine
+        s: L
+        tags:
+          - money
+          - auth
+          - ui
+        reqs:
+          - AUD-001
+        dep:
+          - E09-S13
+        st: done
 
   - id: E10
     name: Approvals
@@ -1090,7 +1219,7 @@ epics:
           - ACC-007
         dep:
           - E03-S04
-        st: todo
+        st: done
       - id: E10-S02
         t: Condition evaluator over any document attribute including amount and custom
           fields
@@ -1103,7 +1232,7 @@ epics:
           - APR-010
         dep:
           - E10-S01
-        st: todo
+        st: done
       - id: E10-S03
         t: 'Graph validation: cycle detection, unreachable steps, duplicate approvals,
           depth limit'
@@ -1117,7 +1246,8 @@ epics:
           - APR-012
         dep:
           - E10-S01
-        st: todo
+          - E10-S02
+        st: done
       - id: E10-S04
         t: Approver eligibility resolution scoped to organization and BU/OU
         k: engine
@@ -1131,13 +1261,14 @@ epics:
         dep:
           - E10-S02
           - E02-S05
-        st: todo
+          - E10-S03
+        st: done
       - id: E10-S05
-        t: 'Execution engine: instances, tasks, any-one/all/quorum groups, membership
-          snapshot'
+        t: 'Execution engine: instances, tasks, any-one/all/quorum groups, live membership'
         k: engine
         s: L
         tags:
+          - auth
           - concurrency
         reqs:
           - APR-009
@@ -1145,7 +1276,7 @@ epics:
           - WF-002
         dep:
           - E10-S04
-        st: todo
+        st: done
       - id: E10-S06
         t: 'Decisions: approve, reject, return, comment, withdraw; full attribution
           recorded'
@@ -1159,7 +1290,7 @@ epics:
           - AUD-001
         dep:
           - E10-S05
-        st: todo
+        st: done
       - id: E10-S07
         t: Stale-version guard and material-change resubmission policy
         k: concurrency
@@ -1173,17 +1304,18 @@ epics:
           - WF-001
         dep:
           - E10-S06
-        st: todo
+        st: done
       - id: E10-S08
         t: Delegation, out-of-office, due dates, reminders and escalation
         k: engine
         s: L
-        tags: []
+        tags:
+          - migration
         reqs:
           - APR-017
         dep:
           - E10-S06
-        st: todo
+        st: done
       - id: E10-S09
         t: 'Routing explainability: which rule matched and why this approver'
         k: api
@@ -1193,11 +1325,13 @@ epics:
           - APR-021
         dep:
           - E10-S05
-        st: todo
+          - E10-S06
+          - E10-S08
+        st: done
       - id: E10-S10
         t: 'Approval inbox: pending, overdue, completed, delegated views'
         k: ui
-        s: M
+        s: L
         tags:
           - ui
         reqs:
@@ -1205,7 +1339,9 @@ epics:
         dep:
           - E10-S06
           - E04-S03
-        st: todo
+          - E10-S08
+          - E10-S09
+        st: done
       - id: E10-S11
         t: Visual workflow builder, drag-and-drop canvas
         k: ui
@@ -1217,25 +1353,29 @@ epics:
         dep:
           - E10-S03
           - E04-S02
-        st: todo
+        st: done
       - id: E10-S12
-        t: Keyboard/list workflow editor with identical capability to the canvas
+        t: 'Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11)'
         k: ui
         s: L
         tags:
           - ui
         reqs:
-          - APR-002
-          - A11Y-003
+          - APR-011
+          - APR-021
+          - ACC-007
         dep:
           - E10-S11
-        st: todo
+          - E10-S05
+        st: done
       - id: E10-S13
         t: Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget
           changes
         k: engine
         s: M
-        tags: []
+        tags:
+          - migration
+          - money
         reqs:
           - APR-003
           - PROJ-002
@@ -1243,7 +1383,7 @@ epics:
           - BUD-007
         dep:
           - E10-S07
-        st: todo
+        st: done
 
   # ──────────────────── M3 — First sellable release ────────────────────
 
@@ -1633,6 +1773,58 @@ epics:
         dep:
           - E13-S09
           - E09-S10
+        st: todo
+
+  - id: E22
+    name: Budget governance follow-ups
+    milestone: M3
+    stories:
+      - id: E22-S01
+        t: 'Create Project with budget: form and Excel, sponsors, through the project approval
+          workflow'
+        k: engine
+        s: L
+        tags:
+          - money
+          - auth
+          - ui
+        reqs:
+          - PROJ-003
+        dep:
+          - E09-S17
+        st: todo
+      - id: E22-S02
+        t: Soft delete for every draft document
+        k: crud
+        s: M
+        tags:
+          - ui
+          - migration
+        reqs:
+          - DATA-002
+        dep:
+          - E09-S15
+        st: todo
+      - id: E22-S03
+        t: One audit helper instead of twelve, behaviour-preserving
+        k: chore
+        s: M
+        tags: []
+        reqs:
+          - AUD-001
+        dep: []
+        st: todo
+      - id: E22-S04
+        t: 'M2 milestone review follow-ups: Money zero prop, shared lookup helper, internal
+          collaboration readers, approvals read via service, e2e focus helper'
+        k: chore
+        s: M
+        tags:
+          - ui
+        reqs:
+          - A11Y-001
+          - UX-007
+        dep: []
         st: todo
 
   # ─────────────────── M4 — Full Phase-1 scope ───────────────────
@@ -2450,3 +2642,42 @@ epics:
           - OBS-003
         dep: []
         st: done
+
+  - id: E30
+    name: Future roadmap
+    milestone: M7
+    stories:
+      - id: E30-S01
+        t: 'Organisation budget pool: allocations draw from an organisation-level pool instead
+          of creating budget'
+        k: ledger
+        s: L
+        tags:
+          - money
+        reqs:
+          - BUD-007
+        dep: []
+        st: todo
+      - id: E30-S02
+        t: 'Release and re-reserve when an amendment or substitution changes a code or
+          ledger account'
+        k: ledger
+        s: M
+        tags:
+          - money
+        reqs:
+          - REQ-012
+        dep:
+          - E09-S18
+        st: todo
+      - id: E30-S03
+        t: 'Bin: view and restore soft-deleted drafts'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - DATA-002
+        dep:
+          - E22-S02
+        st: todo

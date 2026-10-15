@@ -34,6 +34,8 @@ from flo.modules.org.models import OrgRepository
 from flo.modules.org.numbering import NumberingService as NumberingService
 from flo.modules.org.schemas import (
     BaseCurrencyPut,
+    CodesRead,
+    CodeState,
     CurrencyRead,
     EffectiveSetting,
     MasterCreate,
@@ -68,6 +70,7 @@ __all__ = [
     "PeriodClosed",
     "assert_postable",
     "assert_usable",
+    "codes_read",
     "create_organization",
     "known_key",
     "list_currencies",
@@ -75,6 +78,7 @@ __all__ = [
     "range_for",
     "today",
     "unit_by_code",
+    "unit_chain",
     "valid_value",
     "validate_master_dates",
 ]
@@ -188,6 +192,16 @@ class OrgService:
     def get_unit(self, unit_id: UUID) -> OrgUnitRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             return OrgUnitRead.model_validate(self._unit(unit_id))
+
+    def unit_chain(self, unit_id: UUID) -> list[UUID]:
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            chain: list[UUID] = []
+            current: UUID | None = unit_id
+            while current is not None:
+                row = self._unit(current)
+                chain.append(current)
+                current = cast(UUID | None, row["parent_id"])
+            return chain
 
     def create_unit(self, body: OrgUnitCreate) -> OrgUnitRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
@@ -629,6 +643,30 @@ class OrgService:
             return ref
 
 
+def codes_read(
+    connection: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    department_code: str | None,
+    ledger_account_code: str | None,
+) -> CodesRead:
+    """Status of a document's department and ledger-account codes at today's date."""
+    on_date = today()
+
+    def state(kind: str, code: str | None) -> CodeState:
+        if not code:
+            return CodeState(code=code, status="missing")
+        try:
+            OrgService(connection, scope).assert_usable(kind, code, on_date)
+        except MasterCodeUnusable as exc:
+            return CodeState(code=code, status=exc.reason)
+        return CodeState(code=code, status="usable")
+
+    return CodesRead(
+        department=state("department", department_code),
+        ledger_account=state("ledger_account", ledger_account_code),
+    )
+
+
 class MasterCodeUnusable(ValueError):
     def __init__(self, code: str, reason: Literal["unknown", "inactive", "not_effective"]) -> None:
         self.code = code
@@ -740,3 +778,9 @@ def unit_by_code(
             {"code": code},
         ).fetchone()
         return OrgUnitRead.model_validate(repository.unit(row[0])) if row else None
+
+
+def unit_chain(
+    connection: psycopg.Connection[tuple[object, ...]], scope: Scope, unit_id: UUID
+) -> list[UUID]:
+    return OrgService(connection, scope).unit_chain(unit_id)

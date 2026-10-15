@@ -134,7 +134,7 @@ def test_explanation_names_every_source_and_separates_future_grants(
     future = datetime(2099, 1, 1, tzinfo=UTC)
     with service_for(database, scope, "explainer-setup") as service:
         active_role = service.create_role("org-reader", "Organization reader")
-        service.grant_permission(active_role.id, "project.view")
+        service.grant_permission(active_role.id, "project.approve")
         active_grant = service.grant_role(
             user_id,
             active_role.id,
@@ -160,7 +160,7 @@ def test_explanation_names_every_source_and_separates_future_grants(
     assert [grant.id for grant in explanation.pending_grants] == [pending_grant.id]
     assert explanation.pending_grants[0].effective_from == future
     project_view = next(
-        permission for permission in explanation.permissions if permission.code == "project.view"
+        permission for permission in explanation.permissions if permission.code == "project.approve"
     )
     assert project_view.allowed is True
     assert project_view.source.via_role == "org-reader"
@@ -203,7 +203,7 @@ def test_future_grant_is_visible_but_grants_nothing_to_the_resolver(
     user_id = insert_identity(database, "pending-only")
     with service_for(database, scope, "future-resolver") as service:
         role = service.create_role("pending-reader", "Pending reader")
-        service.grant_permission(role.id, "project.view")
+        service.grant_permission(role.id, "project.approve")
         service.grant_role(
             user_id,
             role.id,
@@ -214,7 +214,7 @@ def test_future_grant_is_visible_but_grants_nothing_to_the_resolver(
     with tenant_transaction(database.connection, scope):
         decision = AuthorizationResolver(database.authorization_connection, scope).check(
             user_id,
-            "project.view",
+            "project.approve",
             AuthorizationTarget.organization(database.org_a),
         )
     assert decision.scope_matched is False
@@ -226,7 +226,7 @@ def test_guarded_endpoint_audits_allowed_view_and_rejects_unauthorized_viewer(
 ) -> None:
     database = authorization_database
     subject_id = insert_identity(database, "http-subject")
-    grant_permissions(database, subject_id, "project.view")
+    grant_permissions(database, subject_id, "project.approve")
     viewer_id = insert_identity(database, "http-viewer")
     grant_permissions(database, viewer_id, "admin.access.read")
     allowed_app = build_app(database, viewer_id)
@@ -255,20 +255,18 @@ def test_guarded_endpoint_audits_allowed_view_and_rejects_unauthorized_viewer(
         "total",
     }
     project_view_row = next(
-        row
-        for row in permission_page.json()["rows"]
-        if row["code"] == "project.view"
+        row for row in permission_page.json()["rows"] if row["code"] == "project.approve"
     )
     assert project_view_row == {
         "access": "allowed",
-        "code": "project.view",
+        "code": "project.approve",
         "explanation": f"Inherited from org:{database.org_a}.",
-        "id": f"project.view|allowed|role-{str(subject_id)[:8]}|org|{database.org_a}",
+        "id": f"project.approve|allowed|role-{str(subject_id)[:8]}|org|{database.org_a}",
         "source": f"role-{str(subject_id)[:8]} at org:{database.org_a}",
     }
 
     unauthorized_id = insert_identity(database, "http-unauthorized")
-    grant_permissions(database, unauthorized_id, "project.view")
+    grant_permissions(database, unauthorized_id, "project.approve")
     denied = run(
         get(
             build_app(database, unauthorized_id),
@@ -288,7 +286,7 @@ def test_effective_access_conceals_a_foreign_tenant_subject(
     foreign_id = insert_identity(database, "foreign-subject")
     with service_for(database, Scope(database.org_b), "foreign-subject-grant") as service:
         role = service.create_role("foreign-reader", "Foreign reader")
-        service.grant_permission(role.id, "project.view")
+        service.grant_permission(role.id, "project.approve")
         service.grant_role(
             foreign_id,
             role.id,
@@ -311,7 +309,7 @@ def test_deactivation_revokes_sessions_blocks_new_ones_and_retains_attribution(
     database = authorization_database
     scope = Scope(database.org_a)
     user_id = insert_identity(database, "deactivation-subject")
-    grant_permissions(database, user_id, "project.view")
+    grant_permissions(database, user_id, "project.approve")
     session_clock_row = database.connection.execute("SELECT clock_timestamp()").fetchone()
     assert session_clock_row is not None
     session_now = cast(datetime, session_clock_row[0])
@@ -365,7 +363,6 @@ def test_deactivation_revokes_sessions_blocks_new_ones_and_retains_attribution(
     ) == (1,)
 
 
-
 @pytest.mark.parametrize("operation", ["deactivate", "revoke"])
 def test_mutations_require_step_up_and_preserve_state_when_stale(
     authorization_database: AuthorizationDatabase,
@@ -375,7 +372,7 @@ def test_mutations_require_step_up_and_preserve_state_when_stale(
     viewer_id = insert_identity(database, f"stale-{operation}-viewer")
     grant_permissions(database, viewer_id, "organization.admin")
     subject_id = insert_identity(database, f"stale-{operation}-subject")
-    grant_id = grant_permissions(database, subject_id, "project.view")
+    grant_id = grant_permissions(database, subject_id, "project.approve")
     stale_app = build_app(
         database,
         viewer_id,
@@ -409,7 +406,7 @@ def _foreign_subject(database: AuthorizationDatabase) -> IdentityId:
     foreign_id = insert_identity(database, "foreign-subject")
     with service_for(database, Scope(database.org_b), "foreign-subject-grant") as service:
         role = service.create_role("foreign-reader", "Foreign reader")
-        service.grant_permission(role.id, "project.view")
+        service.grant_permission(role.id, "project.approve")
         service.grant_role(foreign_id, role.id, AuthorizationTarget.organization(database.org_b))
     return foreign_id
 
@@ -457,9 +454,9 @@ def test_fresh_step_up_allows_subject_bound_revoke(
     viewer_id = insert_identity(database, "fresh-viewer")
     grant_permissions(database, viewer_id, "organization.admin")
     subject_id = insert_identity(database, "fresh-subject")
-    grant_id = grant_permissions(database, subject_id, "project.view")
+    grant_id = grant_permissions(database, subject_id, "project.approve")
     other_id = insert_identity(database, "other-subject")
-    grant_permissions(database, other_id, "project.view")
+    grant_permissions(database, other_id, "project.approve")
     app = build_app(database, viewer_id)
 
     async def requests() -> tuple[httpx.Response, httpx.Response]:
@@ -503,7 +500,7 @@ def test_access_migration_revision_and_downgrade_preserve_existing_rows(
     ).fetchone() == (1,)
 
     user_id = insert_identity(database, "migration-preserved")
-    grant_id = grant_permissions(database, user_id, "project.view")
+    grant_id = grant_permissions(database, user_id, "project.approve")
     identity_before = database.connection.execute(
         "SELECT id, email FROM identity WHERE id = %s", (user_id,)
     ).fetchone()

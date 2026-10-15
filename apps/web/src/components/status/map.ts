@@ -29,7 +29,10 @@ export const STATUS = {
     awarded: "success",
     open_for_purchase: "info",
     completed: "success",
+    rejected: "danger",
+    withdrawn: "neutral",
     cancelled: "danger",
+    expired: "danger",
   },
   purchase_order: {
     draft: "neutral",

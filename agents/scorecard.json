@@ -2242,6 +2242,1173 @@
       },
       "recap": "Implemented project dashboards and currency-separated budget roll-ups with keyboard hierarchy, chart/table comparisons, ledger drill-down and fact-backed risk indicators. Generated API contracts and regression tests cover permissions, tenant isolation, decimal thresholds, drift and accessibility.",
       "title": "Project dashboard with hierarchy visual and drill-down to ledger entries"
+    },
+    {
+      "story": "E10-S01",
+      "kind": "migration",
+      "size": "L",
+      "tags": [
+        "migration"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a12977-b518-7ab2-9795-616c49b51ef0",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented tenant-scoped workflow definitions, immutable published versions, BU fallback, audit evidence, and the amended administrator/Auditor grants. Full flo check is green, all five required plants failed at their named assertions and were restored, and the OpenAPI client is regenerated.",
+      "title": "Workflow definition schema, versioning, active-document version pinning"
+    },
+    {
+      "story": "E10-S02",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a12a08-1baa-78f3-b880-495732186b1e",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented the pure condition grammar and evaluator with exact money comparisons, ordered traces, and document/custom-field catalogue hooks. All 176 condition tests and the full flo check pass; all 20 mutation plants failed as expected and were restored.",
+      "title": "Condition evaluator over any document attribute including amount and custom fields"
+    },
+    {
+      "story": "E09-S01",
+      "kind": "crud",
+      "size": "M",
+      "tags": [
+        "migration"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a12a08-2d63-7821-b395-0bc6ed64d5dd",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Added draft requisition headers with derived currency, scoped numbering, audited writes and version checks under a row lock. Added project provenance, shared unit ancestry and generated API contracts.",
+      "title": "Requisition header, scoped numbering, project-linked and standalone"
+    },
+    {
+      "story": "E09-S02",
+      "kind": "crud",
+      "size": "M",
+      "tags": [
+        "migration",
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a12bd0-7bfb-7220-ac0f-4f2df1dbc42c",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Added item and service lines with scoped master codes, currency-aware Decimal amounts, atomic estimates, stable numbering and versioned draft edits. Currency-changing project moves now fail under the requisition lock while lines exist.",
+      "title": "Item and service lines with explicit type tagging and quantity/amount tracking"
+    },
+    {
+      "story": "E10-S03",
+      "kind": "engine",
+      "size": "M",
+      "tags": [],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "qwen",
+          "to": "opus",
+          "reason": "operator instruction 12 Oct 2026: qwen and deepseek review only when all of M2 is complete"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a12ba5-d9e6-7791-815c-38411956aa24",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented graph validation and publish rejection with organization-configured approval depth. Added read-only validation, warning acknowledgement, tenant isolation coverage, and regenerated API contracts.",
+      "title": "Graph validation: cycle detection, unreachable steps, duplicate approvals, depth limit"
+    },
+    {
+      "story": "E09-S10",
+      "kind": "security",
+      "size": "L",
+      "tags": [
+        "migration",
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a12bd0-35db-72b0-96fd-e2e74d41e5ac",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Added timestamped, versioned notes and private attachments for requisitions and projects, with document permissions, signature checks, immutable history, and audited downloads. Basic-check files can be downloaded internally; unscanned or quarantined files cannot.",
+      "title": "Notes and attachments on all business documents, upload validation, quarantine"
+    },
+    {
+      "story": "E09-S04",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a12cb9-10c5-79e3-87be-7ee8f6fc5208",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Added read-only submission validation that reports all field, master-data, project, line and funds problems, with held-reservation figures and ordered funding locks. Added the guarded check endpoint, regenerated its client, and verified the submission guards with real Postgres tests and restored violation plants.",
+      "title": "Submission validation: fields, active master data, eligibility, funds, routing"
+    },
+    {
+      "story": "E10-S04",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "auth"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a12d13-d855-7a61-bfb3-bcb904dd289b",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Addressed Opus review findings: organization separation-of-duty coverage, matching validation/publish scope checks, injected permission and role resolvers, and per-user grant filtering. Unregistered adapters still fail closed with an actionable message and an operator follow-up.",
+      "title": "Approver eligibility resolution scoped to organization and BU/OU"
+    },
+    {
+      "story": "E09-S03",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "migration"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S03"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Added a BU/OU-scoped catalogue built from append-only events with record_event and record_requested, a scoped suggestion search, add-from-catalogue on lines, and one requisition-scoped lookup endpoint for the create form's selects. Written by the M2 runner after the Codex cap; reviewed separately.",
+      "title": "Catalogue: BU/OU-scoped suggestions from prior requested, sourced and purchased items"
+    },
+    {
+      "story": "E10-S05",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "auth",
+        "concurrency"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a12d7a-1d79-70c2-b279-45f0b6f88397",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Added the approval execution engine: instances and tasks with a pinned workflow version, a route walk over conditions, any/all/quorum completion over live membership with one decision per person, preview and resume, and the instance route behind new require_resolved and require_member guards. Finished by the M2 runner from Codex's partial tree after the Codex cap.",
+      "title": "Execution engine: instances, tasks, any-one/all/quorum groups, live membership"
+    },
+    {
+      "story": "E10-S11",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "qwen",
+          "to": "opus",
+          "reason": "operator instruction 12 Oct 2026: qwen and deepseek review only when all of M2 is complete"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a12d6f-fcb6-7aa1-a794-f3dfd1353cbd",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Added the approval workflow builder at /admin/approval-workflows/:id with one shared graph reducer behind the canvas, the Outline and the Inspector, so the keyboard-only path builds the same graph as dragging. It reads attribute options from the server catalogue, shows E10-S03 validation in a Problems panel, and gates publish on errors and acknowledged warnings. The runner finished the story after the Codex cap (fixed a type error and a focus-after-render bug).",
+      "title": "Visual workflow builder, drag-and-drop canvas"
+    },
+    {
+      "story": "E10-S06",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "security"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a12e4d-4e45-7a62-b3a1-e08e944177c8",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Fixed all seven review findings: decisions record the adapter version, terminal routes close, duplicate decisions are refused, and rationale and audit evidence are normalized. Rollback coverage now exercises approve, reject, return and withdraw through both service and route.",
+      "title": "Decisions: approve, reject, return, comment, withdraw; full attribution recorded"
+    },
+    {
+      "story": "E10-S07",
+      "kind": "concurrency",
+      "size": "M",
+      "tags": [
+        "concurrency"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a12ea4-495e-70a3-9705-e87108b02c8a",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Added the stale-version guard on every decision (the document's current version, not the version at start), the canonical material digest, approval_state / requires_resubmission / supersede / assert_current_approval over the in-force instance, and stored the approved material digest and version at approval. Finished by the M2 runner from Codex's partial tree after the Codex cap.",
+      "title": "Stale-version guard and material-change resubmission policy"
+    },
+    {
+      "story": "E10-S08",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "migration"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a12f2a-8d4e-7462-b160-19d865f40240",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Fixed delegated and escalated repeat-approval bypasses, made daily digests safe across same-day runs, and queued reminder work per organization. Added HTTP authorization, replay, migration preservation and guard-plant regressions for the review findings.",
+      "title": "Delegation, out-of-office, due dates, reminders and escalation"
+    },
+    {
+      "story": "E10-S09",
+      "kind": "api",
+      "size": "M",
+      "tags": [],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "qwen",
+          "to": "opus",
+          "reason": "operator instruction 12 Oct 2026: qwen and deepseek review only when all of M2 is complete"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a13138-1e45-78b1-85e6-f79fc653aa76",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "9280ec89-c7f1-42d5-b009-e7a1ae239fea",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Added GET /approvals/instances/{id}/explanation: passed steps come from the recorded route and decision-time members, the open step from live membership, with plain-language bases, exclusions and the workflow binding reason. Non-readers get 404, approval.admin 200.",
+      "title": "Routing explainability: which rule matched and why this approver"
+    },
+    {
+      "story": "E09-S05",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "concurrency",
+        "migration",
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a13062-4adc-7ec0-8215-28f750eedfe0",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "4861b1f3-4497-4dc5-9e52-282fcf7446ab",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Implemented atomic submit/reserve, requester withdraw and administrator cancel with immutable status history, permission-scoped reservation cards and closure hooks. Verified both final-approve/withdraw lock orders while retaining the E09-S06 approval-effects placeholder.",
+      "title": "Requisition lifecycle state machine"
+    },
+    {
+      "story": "E10-S12",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "qwen",
+          "to": "opus",
+          "reason": "operator instruction 12 Oct 2026: qwen and deepseek review only when all of M2 is complete"
+        }
+      ],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a1305b-c6f8-78f0-8f45-9dbcb7f7a181",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "85904ffc-1341-4f73-b873-f03a9d8baaf8",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Fixed route-preview scope authorization and required explicit eligibility requester/resolver arguments. Corrected locale dates, branch money/null wording and document labels, and added regressions for the review findings.",
+      "title": "Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11)"
+    },
+    {
+      "story": "E10-S13",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "migration",
+        "money"
+      ],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "codex": {
+          "agent": "codex",
+          "id": "01a1306b-c015-7420-8f14-a9f9ad14aaac",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "85904ffc-1341-4f73-b873-f03a9d8baaf8",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Projects now start configured workflows after submission writes, or activate automatically when none applies. Budget adjustments and transfers wait for applicable approval and post atomically with stable requester-owned posting keys.",
+      "title": "Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes"
+    },
+    {
+      "story": "E09-S06",
+      "kind": "ledger",
+      "size": "L",
+      "tags": [
+        "money",
+        "concurrency"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 3,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "e8de6dd6-eb91-42b7-abb3-78d730a2b73e",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S06",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a133e8-6c49-7c11-a04d-e62fd154d4c0",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "1b4f7384-72c5-48ef-96ac-8e83fbac7eff",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Final approval of a requisition now runs inside the decision's transaction: a project-linked one keeps its submit-time reservation and gets an active generated sub-project; a standalone one creates a project with an allocation and reservation, or reserves on an assigned project. projects.service gained create_generated_project and generated_for.",
+      "title": "Approval reserves budget and generates the sub-project, one transaction"
+    },
+    {
+      "story": "E10-S10",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [
+        {
+          "from": "codex",
+          "to": "qwen",
+          "role": "reviewer",
+          "reason": "Codex five-hour window hit its limit mid-review on 13 Oct 2026 10:09 IST (resets 13:00) with no verdict written; operator's standing rule routes ungated reviews to qwen while Codex is capped.",
+          "outcome": "qwen ran ~70 min under the pre-budget packet (10:13-11:2x) and exited without writing a verdict; Codex reset, so the review returns to Codex (13 Oct 2026)."
+        }
+      ],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "b983a3b4-1cdf-4470-a0dc-b0db6be5028d",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E10-S10",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a13400-e877-7c82-a049-130a901b06ad",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds GET /api/v1/approvals/tasks (pending, overdue, completed, delegated views over live membership with server filter, sort, paging and totals) and the /approvals inbox, decision panel and /approvals/availability screens on top of the existing decision and delegation routes.",
+      "title": "Approval inbox: pending, overdue, completed, delegated views"
+    },
+    {
+      "story": "E09-S07",
+      "kind": "ledger",
+      "size": "M",
+      "tags": [
+        "migration",
+        "money"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 3,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "af8db889-ea2d-43e0-b0d2-f05764536521",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S07",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1347f-0f89-7cd1-a604-9525e7670d67",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "1b4f7384-72c5-48ef-96ac-8e83fbac7eff",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Approved requisitions can now be withdrawn (requester, until a registered sourcing probe says sourcing started) or cancelled, and a 03:30 UTC job expires them per requisition.expiry_days; each path releases through release_live once per funding round and abandons the generated sub-project (system actor on expiry via a new project_status_event.system_actor column). reduce_to is added for M3, with a 300-run concurrent property test across all paths.",
+      "title": "Release on reject, withdraw, cancel, expire or reduce \u2014 exactly once"
+    },
+    {
+      "story": "E09-S08",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "migration"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "946666e3-3cd2-4c4f-b047-7c1e0b1d0e12",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S08",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a135d4-f919-7660-a4f6-1d03c370deeb",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "1b4f7384-72c5-48ef-96ac-8e83fbac7eff",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Every submission and applied amendment is now an immutable requisition_revision; a returned requisition resumes at its step on a non-material edit and restarts on a material one, and an approved requisition is amended through a draft/pending amendment whose reservation moves only when the amendment is approved. Adds revision, change-set and amendment routes, the revision trigger and one-open-amendment index, and the adapter branches that present and settle a pending amendment.",
+      "title": "Controlled return, amendment and resubmission preserving prior values"
+    },
+    {
+      "story": "E09-S09",
+      "kind": "api",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 3,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "18123d6f-7af8-4f1e-8567-3e151874895e",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S09",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a13610-588e-7a91-b67e-19aca034a9cd",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Added GET /requisitions/{id}/links serving provider-computed, per-node read-filtered nodes and edges, plus assert_current_upstream (WF-001) and budget.entries_for_source. Providers fail soft with partial:true; M3 kinds plug in via register_link_provider.",
+      "title": "Linked-record graph: RFQs, bids, awards, POs, approvals, notes, ledger entries"
+    },
+    {
+      "story": "E09-S11",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 4,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "081d1552-9879-4743-a60c-98bf8df2ed27",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S11",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1370a-a2ec-77e2-881d-9b90cd1b0b6c",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds the requisition screens (list with tabs, create/edit with lines, funding check, catalogue, attachments, submit with a focused error summary, and a detail page with lifecycle, reservation, history, linked records, line rollup, returned banner and withdraw dialog), plus a general unsaved-changes guard and exact BigInt line arithmetic in lib/decimal.ts. Verified by 47 stubbed Playwright cases, axe in both themes, and new vitest suites; no backend change.",
+      "title": "Requisition screens: create, lines, submit, track, quantity rollup"
+    },
+    {
+      "story": "E09-S12",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "a49c1aad-83ff-46dc-8c7d-dfe263c1cd41",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S12",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a13724-e590-73b0-b03f-7186f7f30230",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds the resubmit, amend and amend-review screens on the S08 routes: a server-driven diff, materiality, funding effect, note and version lineage, with the four failure alerts, plus an amendment editor with If-Match saves, a discard dialog and the shared navigation guard. Detail page gets Review and Resubmit and Amend/Continue amendment entry points.",
+      "title": "Resubmit and amendment screens: review changes, funding effect, version lineage"
+    },
+    {
+      "story": "E09-S14",
+      "kind": "test",
+      "size": "S",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "06d2bbe3-6dc3-4df4-a557-2441b1c26727",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S14",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1372d-d82f-7c61-a70a-06211325cd5f",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds tests/requisitions/test_exit_criterion.py: a requisition above 1000 walks two approval levels, then generates its sub-project with the submit-time reservation intact; 300 takes one level; a failing sub-project insert rolls the final approval back. Test-only, no production change.",
+      "title": "M2 exit criterion end to end: a requisition through a multi-level conditional workflow to approval, sub-project and reservation"
+    },
+    {
+      "story": "E09-S13",
+      "kind": "security",
+      "size": "M",
+      "tags": [
+        "auth",
+        "security",
+        "migration"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 4,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "cf482464-b5e0-42c3-9e2b-fa498dacc9ef",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S13",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a138f1-c804-7fc2-aee6-76876bb7d287",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "1b4f7384-72c5-48ef-96ac-8e83fbac7eff",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Every checked permission code is now in PERMISSION_CODES and granted to a baseline role, with a Project Manager role and migration 0053 that records what it changes so downgrade restores exactly that. The catalogue gate scans keyword, TRANSITIONS, adapter and constant forms; project.view/edit are retired.",
+      "title": "Roles and permission catalogue: every checked permission grantable, Project Manager role, budget governance decisions and user guide"
+    },
+    {
+      "story": "E09-S16",
+      "kind": "ledger",
+      "size": "L",
+      "tags": [
+        "money",
+        "concurrency"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "43c59831-1aaa-4b3d-a4ab-1b79573d60b4",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S16",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a139d4-73ec-7183-8e57-dd03a3b4957c",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "1b4f7384-72c5-48ef-96ac-8e83fbac7eff",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Final approval now releases the main-project reservation, transfers the amount main to sub in one balanced group and reserves it on the generated sub-project. Stop returns the remainder to the main project and amendments move the difference, all under both project locks.",
+      "title": "Sub-project funding: an approved requisition's sub-project draws from its main project; funds return on cancel"
+    },
+    {
+      "story": "E09-S18",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "money",
+        "auth",
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 3,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "56584d5c-0fed-4360-aeef-a7fa52a17ff9",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S18",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a13adc-8ed1-73c2-816b-b08317d34b72",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "1b4f7384-72c5-48ef-96ac-8e83fbac7eff",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Approval now refuses an expired department or ledger code unless the approver substitutes a usable one (audited, reservation left on the original code); after approval assert_current_upstream blocks until a Project Manager substitutes via new POST /requisitions/{id}/codes and /projects/{id}/codes. Amendments cannot change codes; project and requisition reads, lookups and UI carry an Expired code badge.",
+      "title": "Expired master codes: flag, substitute at approval, block downstream; no code changes by amendment"
+    },
+    {
+      "story": "E09-S15",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "money",
+        "auth",
+        "ui",
+        "migration"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 3,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "5e56b202-8218-443b-a865-e9d0949fc3c3",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S15",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a13b32-d62a-74e0-9a8c-750fc8acf503",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "1b4f7384-72c5-48ef-96ac-8e83fbac7eff",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Standalone requisitions are now Project Requests: own project_request approval type/workflow (fields amount, bu), project_request.create permission, sponsors carried to the created project, and cancel-after-approval abandons that project and reports its allocation under an Abandoned group outside budget totals. Migration 0054 adds the type, sponsor tables and project.source_requisition_id; the web form, list tab and budget page follow.",
+      "title": "Project Requests: own document type, workflow, permission and name; sponsors; abandoned on cancel and kept out of budget totals"
+    },
+    {
+      "story": "E09-S17",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "money",
+        "auth"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "b8db2096-975c-408c-98f1-2febe5333f66",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m2-E09-S17",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a13c4c-7719-7373-a955-0daf3d4955af",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "1b4f7384-72c5-48ef-96ac-8e83fbac7eff",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "With no published workflow, project submission and budget allocations, adjustments and transfers now refuse with 409 workflow_not_set_up. Allocations (API and import) became pending budget_change requests (202) that post on approval.",
+      "title": "Block governed actions until their approval workflow is published"
     }
   ]
 }

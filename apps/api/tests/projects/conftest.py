@@ -39,6 +39,16 @@ def project_db(org_database) -> Iterator:
             "20261008_0027_import_batch.py",
             "20261009_0034_import_rows.py",
             "20261009_0036_project_external_ref.py",
+            "20261009_0039_requisitions.py",
+            "20261009_0037_workflow_definitions.py",
+            "20261009_0043_approval_instances.py",
+            "20261009_0044_approval_decisions.py",
+            "20261009_0045_approval_material.py",
+            "20261009_0048_requisition_lifecycle.py",
+            "20261009_0050_budget_change_requests.py",
+            "20261009_0051_project_event_system_actor.py",
+            "20261014_0054_project_requests.py",
+            "20261014_0055_budget_change_allocation_kind.py",
         ]
     ]
     with db.connection.transaction():
@@ -66,6 +76,8 @@ def project_db(org_database) -> Iterator:
             identity.grant_role(db.actor_id, role.id, AuthorizationTarget.organization(db.org_b))
         yield db
     finally:
+        # The 0055 downgrade refuses while allocation requests exist; tests make them.
+        db.connection.execute("DELETE FROM budget_change_request WHERE kind='allocation'")
         for migration in reversed(migrations):
             migration.downgrade(db.connection)
 

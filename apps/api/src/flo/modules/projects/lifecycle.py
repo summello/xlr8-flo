@@ -5,9 +5,12 @@ from decimal import Decimal
 from typing import cast, get_args
 from uuid import UUID
 
+import psycopg
 from psycopg.types.json import Jsonb
 
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError, conflict
+from flo.kernel.tenancy.context import Scope
+from flo.modules.approvals.service import active_instance
 from flo.modules.projects.models import ProjectRepository
 from flo.modules.projects.schemas import ProjectStatus, TransitionAvailable, TransitionCreate
 
@@ -34,9 +37,51 @@ def invalid(field: str, message: str, label: str = "invalid_project") -> Problem
     )
 
 
-def open_documents(project_id: UUID) -> int:
-    """M1 hook; requisitions and POs supply open-document counts in M2/M3."""
-    return 0
+_open_document_counters: list[
+    Callable[[psycopg.Connection[tuple[object, ...]], Scope, UUID], int]
+] = []
+
+
+def register_open_document_counter(
+    fn: Callable[[psycopg.Connection[tuple[object, ...]], Scope, UUID], int],
+) -> None:
+    if fn not in _open_document_counters:
+        _open_document_counters.append(fn)
+
+
+def unregister_open_document_counter(
+    fn: Callable[[psycopg.Connection[tuple[object, ...]], Scope, UUID], int],
+) -> None:
+    _open_document_counters.remove(fn)
+
+
+def blocked_by_holdings(
+    blocked: dict[str, object], override: bool, permitted: Callable[[str], bool], reason: str
+) -> ProblemError | None:
+    """The closing rule: reserved, committed or open documents block completed/abandoned."""
+    if not (
+        Decimal(str(blocked["reserved"])) > 0
+        or Decimal(str(blocked["committed"])) > 0
+        or cast(int, blocked["open_documents"]) > 0
+    ):
+        return None
+    if override and permitted("project.close.override"):
+        if len(reason) < 20:
+            return ProblemError(
+                ErrorCode.VALIDATION_FAILED,
+                detail="Explain the closure override in at least 20 characters.",
+                errors=(ProblemFieldError(field="reason", message="Use at least 20 characters."),),
+            )
+        return None
+    return conflict(
+        "closing_blocked",
+        (
+            f"Reserved {blocked['reserved']} {blocked['currency']}, "
+            f"committed {blocked['committed']} {blocked['currency']}, "
+            f"and {blocked['open_documents']} open documents block closure. "
+            "Release or resolve them, or use an authorized override."
+        ),
+    )
 
 
 class Lifecycle:
@@ -68,7 +113,10 @@ class Lifecycle:
         blocked = {
             "reserved": str(balance[0]) if balance is not None else "0",
             "committed": str(balance[1]) if balance is not None else "0",
-            "open_documents": open_documents(project_id),
+            "open_documents": sum(
+                fn(self.repo.connection, self.repo.scope, project_id)
+                for fn in _open_document_counters
+            ),
             "currency": project["currency"],
         }
         return project, blocked
@@ -138,6 +186,16 @@ class Lifecycle:
                         ),
                     )
                 )
+        if project["status"] == "approval_pending" and body.to in {"active", "draft"}:
+            if active_instance(
+                self.repo.connection, self.repo.scope, "project", cast(UUID, project["id"])
+            ):
+                problems.append(
+                    conflict(
+                        "approval_workflow_active",
+                        "This project is waiting for its approval workflow.",
+                    )
+                )
         if project["status"] == "approval_pending" and body.to == "active":
             submitter = self.repo.execute(
                 "SELECT actor_id FROM project_status_event WHERE org_id = %(org_id)s "
@@ -154,36 +212,10 @@ class Lifecycle:
                         ),
                     )
                 )
-        if body.to in {"completed", "abandoned"} and (
-            Decimal(str(blocked["reserved"])) > 0
-            or Decimal(str(blocked["committed"])) > 0
-            or cast(int, blocked["open_documents"]) > 0
-        ):
-            if body.override and permitted("project.close.override"):
-                if len(reason) < 20:
-                    problems.append(
-                        ProblemError(
-                            ErrorCode.VALIDATION_FAILED,
-                            detail="Explain the closure override in at least 20 characters.",
-                            errors=(
-                                ProblemFieldError(
-                                    field="reason", message="Use at least 20 characters."
-                                ),
-                            ),
-                        )
-                    )
-            else:
-                problems.append(
-                    conflict(
-                        "closing_blocked",
-                        (
-                            f"Reserved {blocked['reserved']} {blocked['currency']}, "
-                            f"committed {blocked['committed']} {blocked['currency']}, "
-                            f"and {blocked['open_documents']} open documents block closure. "
-                            "Release or resolve them, or use an authorized override."
-                        ),
-                    )
-                )
+        if body.to in {"completed", "abandoned"}:
+            blocker = blocked_by_holdings(blocked, body.override, permitted, reason)
+            if blocker is not None:
+                problems.append(blocker)
         return problems
 
     def available(
@@ -218,7 +250,12 @@ class Lifecycle:
         return result
 
     def write(
-        self, project: dict[str, object], blocked: dict[str, object], body: TransitionCreate
+        self,
+        project: dict[str, object],
+        blocked: dict[str, object],
+        body: TransitionCreate,
+        *,
+        system_actor: str | None = None,
     ) -> None:
         self.repo.execute(
             "UPDATE project SET status = %(to)s, version = version + 1 "
@@ -227,14 +264,15 @@ class Lifecycle:
         )
         self.repo.execute(
             "INSERT INTO project_status_event(org_id, project_id, from_status, to_status, "
-            "actor_id, reason, override, blocked_by) "
-            "VALUES (%(org_id)s, %(id)s, %(from)s, %(to)s, %(actor)s, "
+            "actor_id, system_actor, reason, override, blocked_by) "
+            "VALUES (%(org_id)s, %(id)s, %(from)s, %(to)s, %(actor)s, %(system)s, "
             "%(reason)s, %(override)s, %(blocked)s)",
             {
                 "id": project["id"],
                 "from": project["status"],
                 "to": body.to,
-                "actor": self.actor_id,
+                "actor": None if system_actor else self.actor_id,
+                "system": system_actor,
                 "reason": body.reason,
                 "override": body.override,
                 "blocked": Jsonb(blocked),

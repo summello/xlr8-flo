@@ -99,7 +99,7 @@ test('keyboard-only acceptance and phone aside retains every row', async ({ page
     for (const label of ['Invited By', 'Tenant', 'Your Role', 'Access', 'Expires']) await expect(page.locator('dt', { hasText: label })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
     await page.keyboard.press('Tab'); await expect(page.getByLabel('Email', { exact: true })).toBeFocused(); await page.keyboard.press('Tab'); await expect(page.getByLabel('Full name')).toBeFocused(); await page.keyboard.press('Tab'); await expect(page.getByLabel('Password', { exact: true })).toBeFocused();
-    expect(await page.getByLabel('Password', { exact: true }).evaluate(e => getComputedStyle(e).outlineStyle)).not.toBe('none');
+    await expect.poll(() => page.getByLabel('Password', { exact: true }).evaluate(e => getComputedStyle(e).outlineStyle)).not.toBe('none');
     await page.keyboard.type('a disposable long passphrase'); await page.keyboard.press('Tab'); await page.keyboard.press('Enter'); await expect(page.getByRole('button', { name: 'Hide' })).toHaveAttribute('aria-pressed', 'true'); await page.keyboard.press('Tab'); await page.keyboard.press('Space'); await page.keyboard.press('Tab'); await page.keyboard.press('Enter'); await expect(page.getByRole('heading', { name: 'Welcome to Fixture Capital, EMEA' })).toBeVisible();
     expect(await page.locator('.auth-card').evaluate(e => getComputedStyle(e).animationName)).toBe('none');
 });

@@ -122,6 +122,8 @@ PERMISSION_CODES: tuple[PermissionCode, ...] = tuple(
     permission_code(value)
     for value in (
         "admin.access.read",
+        "approval.admin",
+        "approval.delegate",
         "asset.create",
         "asset.edit",
         "asset.view",
@@ -136,8 +138,6 @@ PERMISSION_CODES: tuple[PermissionCode, ...] = tuple(
         "project.admin",
         "project.approve",
         "project.create",
-        "project.edit",
-        "project.view",
         "purchase_order.amend",
         "purchase_order.approve",
         "purchase_order.close",
@@ -147,6 +147,9 @@ PERMISSION_CODES: tuple[PermissionCode, ...] = tuple(
         "record.read",
         "report.view",
         "requisition.approve",
+        "requisition.submit",
+        "requisition.withdraw",
+        "requisition.cancel",
         "requisition.create",
         "requisition.edit",
         "requisition.view",
@@ -159,6 +162,30 @@ PERMISSION_CODES: tuple[PermissionCode, ...] = tuple(
         "vendor.edit",
         "vendor.view",
         "view.archive",
+        "workflow.read",
+        "workflow.manage",
+        "budget.adjust",
+        "budget.allocate",
+        "fiscal.close",
+        "fiscal.manage",
+        "fiscal.read",
+        "fiscal.reopen",
+        "fx.read",
+        "import.read",
+        "import.run",
+        "ledger.read",
+        "master.manage",
+        "master.read",
+        "master_code.substitute",
+        "org.setting.manage",
+        "org.unit.manage",
+        "org.unit.read",
+        "project.close.override",
+        "project.complete",
+        "project.read",
+        "project.submit",
+        "project.update",
+        "project_request.create",
     )
 )
 
@@ -167,6 +194,7 @@ BASELINE_ROLES: tuple[tuple[RoleCode, str], ...] = tuple(
     for code, name in (
         ("organization-administrator", "Organization Administrator"),
         ("project-administrator", "Project Administrator"),
+        ("project-manager", "Project Manager"),
         ("requestor", "Requestor"),
         ("approver", "Approver"),
         ("sourcing-specialist", "Sourcing Specialist"),
@@ -204,18 +232,48 @@ BASELINE_ROLE_PERMISSIONS: dict[RoleCode, frozenset[PermissionCode]] = {
             "project.admin",
             "project.approve",
             "project.create",
-            "project.edit",
-            "project.view",
+            "project.read",
+            "project.update",
+            "project.submit",
+            "project.complete",
+            "project.close.override",
+            "budget.allocate",
+            "ledger.read",
+            "master.read",
             "record.read",
             "report.view",
             "view.archive",
         )
     ),
+    role_code("project-manager"): frozenset(
+        permission_code(value)
+        for value in (
+            "project.read",
+            "project.create",
+            "project.update",
+            "project.submit",
+            "project.complete",
+            "requisition.view",
+            "requisition.create",
+            "requisition.edit",
+            "requisition.submit",
+            "requisition.withdraw",
+            "project_request.create",
+            "master_code.substitute",
+            "budget.view",
+            "ledger.read",
+            "master.read",
+            "record.read",
+            "report.view",
+        )
+    ),
     role_code("requestor"): frozenset(
         permission_code(value)
         for value in (
-            "project.view",
+            "project.read",
             "record.read",
+            "requisition.submit",
+            "requisition.withdraw",
             "requisition.create",
             "requisition.edit",
             "requisition.view",
@@ -225,7 +283,8 @@ BASELINE_ROLE_PERMISSIONS: dict[RoleCode, frozenset[PermissionCode]] = {
     role_code("approver"): frozenset(
         permission_code(value)
         for value in (
-            "project.view",
+            "approval.delegate",
+            "project.read",
             "record.read",
             "requisition.approve",
             "requisition.view",
@@ -234,7 +293,6 @@ BASELINE_ROLE_PERMISSIONS: dict[RoleCode, frozenset[PermissionCode]] = {
     role_code("sourcing-specialist"): frozenset(
         permission_code(value)
         for value in (
-            "project.view",
             "record.read",
             "requisition.view",
             "rfq.approve",
@@ -247,7 +305,6 @@ BASELINE_ROLE_PERMISSIONS: dict[RoleCode, frozenset[PermissionCode]] = {
     role_code("purchasing-user"): frozenset(
         permission_code(value)
         for value in (
-            "project.view",
             "purchase_order.amend",
             "purchase_order.approve",
             "purchase_order.close",
@@ -275,9 +332,13 @@ BASELINE_ROLE_PERMISSIONS: dict[RoleCode, frozenset[PermissionCode]] = {
             "budget.approve",
             "budget.create",
             "budget.edit",
+            "budget.adjust",
+            "budget.allocate",
             "budget.transfer",
             "budget.view",
-            "project.view",
+            "fiscal.read",
+            "fx.read",
+            "ledger.read",
             "record.read",
             "report.view",
         )
@@ -288,7 +349,6 @@ BASELINE_ROLE_PERMISSIONS: dict[RoleCode, frozenset[PermissionCode]] = {
             "asset.create",
             "asset.edit",
             "asset.view",
-            "project.view",
             "record.read",
         )
     ),
@@ -297,7 +357,6 @@ BASELINE_ROLE_PERMISSIONS: dict[RoleCode, frozenset[PermissionCode]] = {
         for value in (
             "budget.view",
             "organization.view",
-            "project.view",
             "record.read",
             "report.view",
         )

@@ -7,6 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError
+from flo.modules.org.schemas import CodesRead
 
 type ProjectStatus = Literal[
     "draft", "approval_pending", "active", "deferred", "completed", "abandoned"
@@ -81,6 +82,7 @@ class ProjectPatch(ExternalReference):
 
 
 class ProjectRead(BaseModel):
+    generated_by_requisition_id: UUID | None
     external_ref: str | None
     id: UUID
     number: str
@@ -91,6 +93,7 @@ class ProjectRead(BaseModel):
     parent_id: UUID | None
     owner_id: UUID
     sponsor_id: UUID | None
+    sponsor_ids: list[UUID] = Field(default_factory=list)
     department_code: str
     ledger_account_code: str
     currency: str
@@ -106,6 +109,9 @@ class ProjectRead(BaseModel):
     bu_name: str | None = None
     allocated: str | None = None
     available: str | None = None
+    codes: CodesRead | None = None
+    codes_expired: bool = False
+    can_substitute_codes: bool = False
 
 
 class ProjectPage(BaseModel):

@@ -550,3 +550,14 @@ administrator grant and audit evidence together. The administrator must sign in
 and enroll MFA before using tenant routes. A repeated code with the original
 administrator is a no-op (exit 0); another administrator exits 3. Invalid code,
 currency or password exits 2. A database failure exits 1 without partial state.
+
+## Publish approval workflows before first use (D-M2-21)
+
+A new tenant has no approval workflow, and the system refuses to act as if it had one. Until an
+administrator publishes a workflow for the document type, these actions answer 409
+`workflow_not_set_up` and write nothing: submitting a project, a requisition or a Project Request,
+and requesting a budget allocation, adjustment or transfer. Publish one workflow each for
+`project`, `requisition`, `project_request` and `budget_change` (Settings, Approval workflows)
+before the first user works. Budget allocations, including imported rows, now create pending
+requests and post only when approved.
+A pending allocation request also locks the funding mode of its units, like a ledger entry does; an approval refuses (`funding_plan_changed`) if the mode changed since the request.

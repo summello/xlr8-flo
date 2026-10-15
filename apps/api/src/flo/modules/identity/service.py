@@ -37,6 +37,12 @@ from flo.modules.identity.models import (
 from flo.modules.identity.models import (
     role_code as role_code,
 )
+from flo.modules.identity.resolver import (
+    AuthorizationConnection as AuthorizationConnection,
+)
+from flo.modules.identity.resolver import (
+    AuthorizationResolver as AuthorizationResolver,
+)
 
 type DatabaseRow = Sequence[object] | Mapping[str, object]
 
@@ -456,7 +462,7 @@ class IdentityAuthorizationService:
             return role
 
     def seed_baseline_roles(self) -> dict[RoleCode, Role]:
-        """Materialize the eleven explicit system roles for the current organization."""
+        """Materialize the twelve explicit system roles for the current organization."""
 
         seeded: dict[RoleCode, Role] = {}
         for code, name in BASELINE_ROLES:
@@ -809,3 +815,15 @@ def user_id_by_email(
             repository.scoped_params({"email": email.casefold()}),
         ).fetchone()
         return None if row is None else cast(UUID, _value(row, 0, "id"))
+
+
+def emails_by_id(
+    connection: IdentityAuthorizationConnection, ids: Sequence[UUID]
+) -> dict[UUID, str]:
+    """Read attribution without depending on today's membership or a live identity."""
+    return {
+        cast(UUID, _value(row, 0, "id")): str(_value(row, 1, "email"))
+        for row in connection.execute(
+            "SELECT id,email FROM identity WHERE id=ANY(%(ids)s)", {"ids": list(ids)}
+        ).fetchall()
+    }

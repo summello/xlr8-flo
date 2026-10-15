@@ -1,4 +1,4 @@
-"""Append-only allocations keyed independently of the upload batch."""
+"""Allocation rows become pending budget-change requests; none posts at import (D-M2-21)."""
 
 import re
 from datetime import date
@@ -10,9 +10,11 @@ from uuid import UUID
 from pydantic import ValidationError
 
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
+from flo.kernel.errors import ProblemError
 from flo.kernel.money import currency_exponent
+from flo.modules.approvals.service import require_workflow
 from flo.modules.budget.schemas import AllocationCreate
-from flo.modules.budget.service import allocate, entry_by_idempotency_key
+from flo.modules.budget.service import request_by_key, request_change
 from flo.modules.identity.service import AuthorizationTarget, ScopeType
 from flo.modules.imports.handlers import Issue, RowContext, RowPlan
 from flo.modules.imports.schemas import Column, Template
@@ -123,6 +125,17 @@ class BudgetAllocationsHandler:
                         f"No budget.allocate permission for {ref!r}.",
                     )
                 )
+        if project is not None:
+            try:
+                require_workflow(
+                    context.connection,
+                    context.scope,
+                    "budget_change",
+                    project.bu_id,
+                    "Budget Changes",
+                )
+            except ProblemError as error:
+                issues.append(Issue("project_ref", "workflow_not_set_up", str(error.detail)))
         try:
             body(values)
         except ValidationError as error:
@@ -131,21 +144,20 @@ class BudgetAllocationsHandler:
                 if not any(issue.column == column for issue in issues):
                     issues.append(Issue(column, "invalid_value", str(error_entry["msg"])))
         action: Literal["create", "skip", "error"] = "create"
-        entry = entry_by_idempotency_key(
-            context.connection, context.scope, row_key(context, values)
-        )
-        if entry is not None:
+        existing = request_by_key(context.connection, context.scope, row_key(context, values))
+        if existing is not None:
+            effective = cast(date | None, values.get("effective_date"))
             if project is not None and (
-                entry.project_id,
-                entry.amount,
-                entry.currency,
-                entry.effective_date,
-                entry.reason,
+                existing.project_id,
+                existing.amount,
+                existing.currency,
+                existing.payload.get("effective_date"),
+                existing.payload.get("reason"),
             ) == (
                 project.id,
                 amount,
                 currency,
-                cast(date | None, values.get("effective_date")),
+                effective.isoformat() if effective else None,
                 values.get("reason"),
             ):
                 action = "skip"
@@ -154,7 +166,7 @@ class BudgetAllocationsHandler:
                     Issue(
                         "row_key",
                         "row_key_conflict",
-                        "This row key already posted different content. "
+                        "This row key already requested different content. "
                         "Use a new row key for a new allocation.",
                     )
                 )
@@ -168,7 +180,7 @@ class BudgetAllocationsHandler:
         project = get_by_external_ref(context.connection, context.scope, str(values["project_ref"]))
         if project is None:
             raise RuntimeError("validated project no longer exists")
-        result = allocate(
+        request = request_change(
             context.connection,
             context.scope,
             project.id,
@@ -183,6 +195,4 @@ class BudgetAllocationsHandler:
                 ),
             ),
         )
-        return "ledger_entry", next(
-            entry.id for entry in result.entries if entry.project_id == project.id
-        )
+        return "budget_change_request", request.id

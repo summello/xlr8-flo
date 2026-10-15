@@ -21,3 +21,25 @@ export function chartUnits(value: string, currency: string): bigint {
 export function share(value: bigint, maximum: bigint): string {
   return maximum === 0n ? "0" : (value * 10000n / maximum).toString().replace(/(\d{2})$/, ".$1");
 }
+
+/** Digits after the point that a currency keeps; JPY is 0, USD is 2. */
+export function currencyExponent(currency: string): number {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency }).resolvedOptions().maximumFractionDigits ?? 2;
+}
+
+/** quantity x unit price rounded ROUND_HALF_UP to `exponent` places, as kernel.money.quantize does. BigInt only. */
+export function multiplyQuantize(quantity: string, unitPrice: string, exponent: number): string {
+  const product = scaled(quantity) * scaled(unitPrice); // eight implied decimals
+  const sign = product < 0n ? -1n : 1n;
+  const magnitude = product < 0n ? -product : product;
+  const divisor = 10n ** BigInt(8 - exponent);
+  const units = sign * ((magnitude + divisor / 2n) / divisor);
+  const digits = (units < 0n ? -units : units).toString().padStart(exponent + 1, "0");
+  const text = exponent === 0 ? digits : `${digits.slice(0, -exponent)}.${digits.slice(-exponent)}`;
+  return units < 0n ? `-${text}` : text;
+}
+
+/** True when the text is a positive decimal the server accepts (14 integer digits, 4 decimals). */
+export function isPositiveDecimal(value: string): boolean {
+  return /^[0-9]{1,14}(?:\.[0-9]{1,4})?$/.test(value) && /[1-9]/.test(value);
+}
