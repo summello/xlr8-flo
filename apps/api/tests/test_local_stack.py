@@ -86,7 +86,9 @@ def test_up_survives_an_unpullable_object_store(
 ) -> None:
     waited = []
     monkeypatch.setitem(
-        FLO_GLOBALS, "_run_compose", lambda *args, optional=False, **_: None if optional else object()
+        FLO_GLOBALS,
+        "_run_compose",
+        lambda *args, optional=False, **_: None if optional else object(),
     )
     monkeypatch.setitem(FLO_GLOBALS, "_wait_for_stack", lambda **kw: waited.append(kw))
 
