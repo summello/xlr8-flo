@@ -10,7 +10,7 @@ from uuid import UUID, uuid4
 
 import psycopg
 
-from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
+from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.config import Settings
 from flo.kernel.errors import ErrorCode, ProblemError, conflict
@@ -267,16 +267,16 @@ class ProjectService:
         before: dict[str, object] | None,
         after: dict[str, object],
     ) -> None:
-        AuditWriter(cast(AuditConnection, self.connection), self.scope).write(
+        audit_event(
+            cast(AuditConnection, self.connection),
+            self.scope,
             actor=AuditActor(ActorKind.USER, self.actor_id),
             action=action,
             target_type="project",
             target_id=project_id,
             outcome=Outcome.SUCCESS,
-            before_source=before,
-            before_fields=tuple(before or ()),
-            after_source=after,
-            after_fields=tuple(after),
+            before=before,
+            after=after,
         )
 
     def _user(self, field: str, user_id: UUID | None) -> None:
@@ -426,7 +426,6 @@ class ProjectService:
                     outcome=Outcome.SUCCESS,
                     reason=audit_reason,
                     after_source=after,
-                    after_fields=tuple(after),
                 )
             return self._read(row)
 
@@ -918,7 +917,6 @@ def _abandon(
             target_id=project_id,
             outcome=Outcome.SUCCESS,
             before_source=before,
-            before_fields=tuple(before),
             after_source=after
             | {"reason": reason, "blocked_by": blocked}
             | ({"source": "requisition"} if own_open_documents else {}),

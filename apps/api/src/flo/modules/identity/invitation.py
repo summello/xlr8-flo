@@ -13,7 +13,7 @@ from uuid import UUID, uuid4
 import psycopg
 from psycopg.errors import UniqueViolation
 
-from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
+from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.config import Settings
 from flo.kernel.db.repo import ScopedRepo
@@ -225,13 +225,15 @@ class InvitationService:
         action: str,
         device: RequestDevice,
     ) -> None:
-        AuditWriter(cast(AuditConnection, self.connection), scope).write(
+        audit_event(
+            cast(AuditConnection, self.connection),
+            scope,
             actor=AuditActor(ActorKind.USER, actor),
             action="invitation." + action,
             target_type="invitation",
             target_id=row.id,
             outcome=Outcome.SUCCESS,
-            after_source=row,
+            after=row,
             after_fields=(
                 "id",
                 "org_id",

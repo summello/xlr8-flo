@@ -16,6 +16,7 @@ from flo.kernel.audit.writer import (
     AuditWriter,
     CorrelationMissing,
     Outcome,
+    audit_event,
 )
 
 __all__ = [
@@ -30,6 +31,7 @@ __all__ = [
     "CorrelationMissing",
     "Outcome",
     "allowlisted_snapshot",
+    "audit_event",
     "detach_monthly_partition",
     "ensure_monthly_partition",
     "monthly_partition",

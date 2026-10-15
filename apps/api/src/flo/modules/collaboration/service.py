@@ -8,7 +8,7 @@ from uuid import UUID, uuid4
 import psycopg
 from starlette.requests import Request
 
-from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
+from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.authz import AuthorizationTarget, permits
 from flo.kernel.errors import ErrorCode, ProblemError
@@ -102,14 +102,15 @@ class CollaborationService:
     def _audit(
         self, action: str, kind: str, id: UUID, values: dict[str, object], *, refused: bool = False
     ) -> None:
-        AuditWriter(cast(AuditConnection, self.connection), self.scope).write(
+        audit_event(
+            cast(AuditConnection, self.connection),
+            self.scope,
             actor=AuditActor(ActorKind.USER, self.actor_id),
             action=action,
             target_type=kind,
             target_id=id,
             outcome=Outcome.DENIED if refused else Outcome.SUCCESS,
-            after_source=values,
-            after_fields=tuple(values),
+            after=values,
         )
 
     def _note(self, id: UUID, *, lock: bool = False) -> NoteRead:
