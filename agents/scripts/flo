@@ -2104,10 +2104,10 @@ def _run_compose(*args, capture_output=False, optional=False):
     except FileNotFoundError:
         die("podman or docker is required for the local stack but neither was found on PATH")
     except subprocess.CalledProcessError as exc:
-        if optional:
-            return None
-        detail = (exc.stderr or exc.stdout or "no error output").strip()
-        die(f"{' '.join(cmd)} failed: {detail}")
+        if not optional:
+            detail = (exc.stderr or exc.stdout or "no error output").strip()
+            die(f"{' '.join(cmd)} failed: {detail}")
+    return None
 
 
 def _container_status(service, include_stopped=False):
