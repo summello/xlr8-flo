@@ -2095,7 +2095,7 @@ def _container_cli():
     )
 
 
-def _run_compose(*args, capture_output=False):
+def _run_compose(*args, capture_output=False, optional=False):
     if not COMPOSE.exists():
         die("compose.yaml missing — story E01-S02 delivers it")
     cmd = [_container_cli(), "compose", "-f", str(COMPOSE), *args]
@@ -2104,6 +2104,8 @@ def _run_compose(*args, capture_output=False):
     except FileNotFoundError:
         die("podman or docker is required for the local stack but neither was found on PATH")
     except subprocess.CalledProcessError as exc:
+        if optional:
+            return None
         detail = (exc.stderr or exc.stdout or "no error output").strip()
         die(f"{' '.join(cmd)} failed: {detail}")
 
@@ -2164,14 +2166,10 @@ def cmd_up(argv):
     _run_compose("up", "-d", "postgres", "mailpit")
     # The object store is optional: CI and the test suite do not use it, and its image registry
     # has withdrawn it (E22-S05 replaces it). Start it best-effort; never fail `flo up` on it.
-    store = subprocess.run(
-        [_container_cli(), "compose", "-f", str(COMPOSE), "up", "-d", "minio", "minio-init"],
-        capture_output=True,
-        text=True,
-    )
-    _wait_for_stack(object_store=store.returncode == 0)
+    store = _run_compose("up", "-d", "minio", "minio-init", capture_output=True, optional=True)
+    _wait_for_stack(object_store=store is not None)
     print("Postgres:     postgresql://localhost:5432/flo_dev")
-    if store.returncode == 0:
+    if store is not None:
         print("MinIO API:   http://localhost:9000")
         print("MinIO console: http://localhost:9001")
     else:
