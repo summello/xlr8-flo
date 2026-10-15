@@ -1826,6 +1826,15 @@ epics:
           - UX-007
         dep: []
         st: todo
+      - id: E22-S05
+        t: Replace MinIO with SeaweedFS in the local stack; bucket via the S3 API
+        k: chore
+        s: S
+        tags: []
+        reqs:
+          - OPS-007
+        dep: []
+        st: todo
 
   # ─────────────────── M4 — Full Phase-1 scope ───────────────────
 
