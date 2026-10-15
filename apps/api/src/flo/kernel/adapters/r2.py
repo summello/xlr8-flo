@@ -23,7 +23,7 @@ class _S3Paginator(Protocol):
 
 
 class S3Client(Protocol):
-    """Typed subset shared by the R2 and MinIO S3 clients."""
+    """Typed subset shared by the R2 and local S3 clients."""
 
     def put_object(self, **kwargs: object) -> object: ...
 
@@ -40,6 +40,10 @@ class S3Client(Protocol):
     ) -> str: ...
 
     def get_paginator(self, operation_name: str) -> _S3Paginator: ...
+
+    def head_bucket(self, **kwargs: object) -> object: ...
+
+    def create_bucket(self, **kwargs: object) -> object: ...
 
 
 class R2Storage(Storage):

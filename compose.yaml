@@ -18,40 +18,21 @@ services:
       timeout: 5s
       retries: 30
 
-  minio:
-    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
-    command: server /data --console-address ":9001"
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.48@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
+    command: server -dir=/data -s3 -s3.port=9000 -s3.autoCreateBucket=false
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-flo}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-flo-local-secret}
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-flo}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-flo-local-secret}
     ports:
       - "127.0.0.1:9000:9000"
-      - "127.0.0.1:9001:9001"
     volumes:
-      - minio-data:/data
+      - seaweedfs-data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD", "nc", "-z", "localhost", "9000"]
       interval: 2s
       timeout: 5s
       retries: 30
-
-  minio-init:
-    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
-    depends_on:
-      minio:
-        condition: service_healthy
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-flo}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-flo-local-secret}
-      MINIO_BUCKET: ${MINIO_BUCKET:-flo-attachments}
-    entrypoint:
-      - /bin/sh
-      - -c
-      - >-
-        until mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}"
-        "$${MINIO_ROOT_PASSWORD}" && mc mb --ignore-existing
-        "local/$${MINIO_BUCKET}"; do sleep 1; done
-    restart: "no"
 
   mailpit:
     image: axllent/mailpit:v1.31.0@sha256:c96991d9bef73594c246d89ca81411d4e916f03e76a7d2d72fa2ab5dd3c9ce24
@@ -66,4 +47,4 @@ services:
 
 volumes:
   postgres-data:
-  minio-data:
+  seaweedfs-data:
