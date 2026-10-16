@@ -2,7 +2,7 @@ import { useId } from "react";
 import type { Question } from "./api";
 import { pointsFrom } from "./api";
 
-function Control({ q }: { q: Question }) {
+function Control({ q, labelId }: { q: Question; labelId: string }) {
   const id = useId();
   const choices = pointsFrom(q.type, q.options).choices;
   const name = `${id}-${q.key}`;
@@ -10,7 +10,17 @@ function Control({ q }: { q: Question }) {
   if (q.type === "single_choice") return <>{choices.map(c => <label key={c.value}><input type="radio" name={name} />{c.label}</label>)}</>;
   if (q.type === "multi_choice") return <>{choices.map(c => <label key={c.value}><input type="checkbox" />{c.label}</label>)}</>;
   const kind = q.type === "number" ? "number" : q.type === "date" ? "date" : q.type === "file" ? "file" : "text";
-  return <input id={name} type={kind} aria-labelledby={`${name}-label`} />;
+  return <input id={name} type={kind} aria-labelledby={labelId} />;
+}
+
+function PreviewQuestion({ q }: { q: Question }) {
+  const labelId = `${useId()}-label`;
+  return (
+    <div className="vq-preview-q">
+      <p id={labelId}>{q.prompt}{q.required ? <span> (required)</span> : null}</p>
+      <Control q={q} labelId={labelId} />
+    </div>
+  );
 }
 
 /** What the requester sees: prompts, types and required marks. Never a weight or points (vendors.md 3.3). */
@@ -22,10 +32,7 @@ export default function Preview({ questions }: { questions: readonly Question[] 
         <fieldset disabled>
           <legend>Preview only. Nothing here is saved.</legend>
           {questions.map(q => (
-            <div className="vq-preview-q" key={q.key}>
-              <p id={`${q.key}-label`}>{q.prompt}{q.required ? <span> (required)</span> : null}</p>
-              <Control q={q} />
-            </div>
+            <PreviewQuestion key={q.key} q={q} />
           ))}
         </fieldset>
       )}

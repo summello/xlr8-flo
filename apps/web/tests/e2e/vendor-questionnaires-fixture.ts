@@ -64,5 +64,9 @@ export async function stubQuestionnaires(page: Page, seed: V[] = []) {
 
 export const publishedVersion = (): V => ({
   id: ID(2), number: 1, status: "published", threshold: 70, row_version: 3, published_at: "2026-10-01T09:00:00Z",
-  questions: [{ key: "insured", position: 1, prompt: "Insurance held?", type: "yes_no", required: true, weight: 100, options: { yes: 41, no: 0 }, row_version: 1 }],
+  questions: [{ key: "insured", position: 1, prompt: "Insurance held?", type: "yes_no", required: true, weight: 100, options: { yes: 41, no: 0 }, row_version: 1 },
+    ...[["years", "Years trading", "number", null], ["profile", "Company profile", "text", null], ["since", "Trading since", "date", null], ["policy", "Policy document", "file", null],
+      ["size", "Company size", "single_choice", [{ value: "s", label: "Small", points: 7 }, { value: "l", label: "Large", points: 9 }]],
+      ["regions", "Regions served", "multi_choice", [{ value: "n", label: "North", points: 7 }, { value: "s", label: "South", points: 9 }]],
+    ].map(([key, prompt, type, options], i) => ({ key: key as string, position: i + 2, prompt: prompt as string, type: type as string, required: false, weight: 0, options, row_version: 1 }))],
 });
