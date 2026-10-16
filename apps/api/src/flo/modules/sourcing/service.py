@@ -435,7 +435,8 @@ class RfqService:
                         },
                     )
             self.repo.execute(
-                "UPDATE rfq SET updated_at = now(), edit_revision = edit_revision + 1 WHERE org_id = %(org_id)s AND id = %(id)s",
+                "UPDATE rfq SET updated_at = now(), edit_revision = edit_revision + 1 "
+                "WHERE org_id = %(org_id)s AND id = %(id)s",
                 {"id": id},
             )
             self._audit(
