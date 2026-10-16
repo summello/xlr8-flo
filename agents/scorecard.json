@@ -3449,6 +3449,46 @@
       },
       "recap": "Replaced MinIO/mc with a single digest-pinned SeaweedFS service; bucket is created over the S3 API by `python -m flo.kernel.storage ensure-bucket` from `flo up`, and the object store is required again. Provider renamed to local / LocalS3Storage.",
       "title": "Replace MinIO with SeaweedFS in the local stack; bucket via the S3 API"
+    },
+    {
+      "story": "E11-S01",
+      "kind": "crud",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "85761cf2-bad9-477c-9fd8-5fe97dd9f4fd",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S01",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a142e2-14fc-73a0-bdcf-6c8fe2735031",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds the vendors module: vendor, vendor_unit and vendor_local_disable tables (migration 0056), list/get/create/patch plus local disable and enable endpoints, and one available_in() availability rule that walks the unit ancestors. Adds the V- numbering type and the vendor.allow_local_disable setting.",
+      "title": "Vendor profile, searchable list, global and BU/OU scope, local disable"
     }
   ]
 }

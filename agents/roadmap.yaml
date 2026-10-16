@@ -1403,7 +1403,7 @@ epics:
           - ORG-003
         dep:
           - E05-S01
-        st: review
+        st: done
       - id: E11-S09
         t: 'Status vocabulary aligned to MASTER 2.3: vendor, RFQ, award and purchase-order
           maps and labels'
