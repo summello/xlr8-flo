@@ -36,6 +36,22 @@ CODES_ROUTES = (
 COVERED = {
     (
         "GET",
+        "/api/v1/vendors/{id}/contacts",
+    ): "vendors/test_contacts.py::test_vendor_contact_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/api/v1/vendors/{id}/contacts",
+    ): "vendors/test_contacts.py::test_vendor_contact_routes_conceal_foreign_tenants",
+    (
+        "PATCH",
+        "/api/v1/vendors/{id}/contacts/{contact_id}",
+    ): "vendors/test_contacts.py::test_vendor_contact_routes_conceal_foreign_tenants",
+    (
+        "DELETE",
+        "/api/v1/vendors/{id}/contacts/{contact_id}",
+    ): "vendors/test_contacts.py::test_vendor_contact_routes_conceal_foreign_tenants",
+    (
+        "GET",
         "/api/v1/vendors",
     ): "vendors/test_vendors.py::test_vendor_routes_conceal_foreign_tenants",
     (
