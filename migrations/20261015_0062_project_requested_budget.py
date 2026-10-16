@@ -1,8 +1,8 @@
 """A project carries the budget it asks for until approval allocates it."""
 from typing import Protocol
 
-revision = "20261015_0061"
-down_revision = "20261014_0060"
+revision = "20261015_0062"
+down_revision = "20261014_0061"
 
 
 class MigrationConnection(Protocol):

@@ -1317,12 +1317,15 @@ def test_light_profile_skips_full_suites_and_runs_the_story_tests(
     repo = story_repo(tmp_path, monkeypatch)
     commit(repo, "apps/api/tests/budget/test_story.py")
     commit(repo, "apps/api/tests/budget/helpers.py")
-    commit(repo, "apps/api/migrations/20991231_0099_story.py")
+    commit(repo, "migrations/20991231_0099_story.py")  # the repo-root path real migrations use
     commit(repo, "apps/web/tests/e2e/story.spec.ts")
     commit(repo, "apps/web/src/Story.tsx")
 
     assert flo.story_checks(repo) == [
-        ("story pytest", ["pytest", "-q", "apps/api/tests/budget/test_story.py",
+        ("story pytest", ["pytest", "-q", "apps/api/tests/authz/test_baseline_grants.py",
+                          "apps/api/tests/budget/test_story.py",
+                          "apps/api/tests/gates/test_gates_bite.py",
+                          "apps/api/tests/isolation/test_ci_guards.py",
                           "apps/api/tests/kernel/test_migrate.py"]),
         ("story e2e", ["npm", "--prefix", "apps/web", "run", "test:e2e", "--",
                        "tests/e2e/story.spec.ts"]),
@@ -1344,7 +1347,8 @@ def test_light_profile_skips_full_suites_and_runs_the_story_tests(
     monkeypatch.setattr(flo.subprocess, "run", record)
     assert flo.run_check(repo, "light") is True
     assert ran[0] == "ruff" and "pytest" not in ran and "e2e" not in ran
-    assert any(r.startswith("pytest -q apps/api/tests/budget/test_story.py") for r in ran)
+    story = "apps/api/tests/budget/test_story.py"
+    assert any(r.startswith("pytest -q") and story in r for r in ran)
 
 
 def test_ci_watch_marks_red_once_and_reaps_green_merged_stories(

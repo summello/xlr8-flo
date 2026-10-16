@@ -1946,8 +1946,13 @@ def story_checks(cwd):
                               cwd=cwd).splitlines()]
     py = [f for f in changed if f.startswith("apps/api/tests/") and Path(f).name.startswith("test_")
           and f.endswith(".py")]
-    if any(f.startswith("apps/api/migrations/") for f in changed):
-        py.append("apps/api/tests/kernel/test_migrate.py")
+    # Migrations live at the repo root; the static tenancy gates and the grant baseline read
+    # them, and story CI caught what the light gate missed twice on M3 (0056, 0060).
+    if any(f.startswith(("migrations/", "apps/api/migrations/")) for f in changed):
+        py += ["apps/api/tests/kernel/test_migrate.py",
+               "apps/api/tests/isolation/test_ci_guards.py",
+               "apps/api/tests/gates/test_gates_bite.py",
+               "apps/api/tests/authz/test_baseline_grants.py"]
     web = [f.removeprefix("apps/web/") for f in changed
            if re.match(r"apps/web/(e2e/.+\.e2e\.ts|tests/(a11y|e2e)/.+\.spec\.ts)$", f)]
     out = []

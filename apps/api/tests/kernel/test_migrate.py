@@ -160,7 +160,8 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261014_0058",
         "20261014_0059",
         "20261014_0060",
-        "20261015_0061",
+        "20261014_0061",
+        "20261015_0062",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -767,7 +768,7 @@ def test_requisition_migration_roundtrip_preserves_existing_data_and_plants_guar
         )
         # ProjectService reads project.requested_budget; this old schema predates it (E22-S01).
         next(
-            r for r in migrate.discover_migrations(MIGRATIONS) if r.revision == "20261015_0061"
+            r for r in migrate.discover_migrations(MIGRATIONS) if r.revision == "20261015_0062"
         ).upgrade(conn)
         tenant = create(conn)
         actor = admin_id(conn)
@@ -2189,7 +2190,7 @@ def test_project_requested_budget_roundtrip_keeps_projects_and_plants_the_check(
     migrate.apply_migrations(
         [r for r in revisions if r.revision <= "20261014_0060"], empty_database
     )
-    mig = next(r for r in revisions if r.revision == "20261015_0061")
+    mig = next(r for r in revisions if r.revision == "20261015_0062")
     with (
         psycopg.connect(empty_database, autocommit=True) as conn,
         correlation_context("requested-budget-migration"),
