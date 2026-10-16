@@ -36,6 +36,30 @@ CODES_ROUTES = (
 COVERED = {
     (
         "GET",
+        "/api/v1/vendors/{id}/documents",
+    ): "vendors/test_documents.py::test_vendor_document_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/api/v1/vendors/{id}/documents",
+    ): "vendors/test_documents.py::test_vendor_document_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/api/v1/vendors/{id}/documents/{did}/replace",
+    ): "vendors/test_documents.py::test_vendor_document_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/api/v1/vendors/{id}/documents/{did}/verify",
+    ): "vendors/test_documents.py::test_vendor_document_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/api/v1/vendors/{id}/documents/{did}/reject",
+    ): "vendors/test_documents.py::test_vendor_document_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/internal/jobs/vendor-document-expiry",
+    ): "vendors/test_documents.py::test_internal_expiry_trigger_origin_key_and_nonreplay",
+    (
+        "GET",
         "/api/v1/vendors/{id}/contacts",
     ): "vendors/test_contacts.py::test_vendor_contact_routes_conceal_foreign_tenants",
     (

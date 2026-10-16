@@ -13,12 +13,16 @@ from flo.kernel.authz import require
 from flo.kernel.config import Settings
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
-from flo.modules.org.service import OrgService
+from flo.modules.org.service import OrgService, today
 from flo.modules.vendors.schemas import (
     ContactCreate,
     ContactPatch,
     ContactRead,
     DisableCreate,
+    DocState,
+    DocumentCreate,
+    DocumentReject,
+    DocumentReplace,
     VendorCreate,
     VendorDetail,
     VendorPage,
@@ -42,6 +46,9 @@ CreateContext = Annotated[
     AuthorizationContext, Depends(require("vendor.create", organization_target))
 ]
 EditContext = Annotated[AuthorizationContext, Depends(require("vendor.edit", organization_target))]
+ApproveContext = Annotated[
+    AuthorizationContext, Depends(require("vendor.approve", organization_target))
+]
 UnitEditContext = Annotated[AuthorizationContext, Depends(require("vendor.edit", unit_target))]
 
 
@@ -125,3 +132,40 @@ def delete_contact(
 ) -> Response:
     VendorService(connection, current_scope(), context.user_id).delete_contact(id, contact_id)
     return Response(status_code=204)
+
+
+@router.get("/{id}/documents", response_model=list[DocState])
+def list_documents(id: UUID, context: ViewContext, connection: Connection) -> list[DocState]:
+    return VendorService(connection, current_scope(), context.user_id).document_state(id, today())
+
+
+@router.post("/{id}/documents", status_code=201, response_model=DocState)
+def add_document(
+    id: UUID, body: DocumentCreate, context: EditContext, connection: Connection
+) -> DocState:
+    return VendorService(connection, current_scope(), context.user_id).add_document(id, body)
+
+
+@router.post("/{id}/documents/{did}/replace", response_model=DocState)
+def replace_document(
+    id: UUID, did: UUID, body: DocumentReplace, context: EditContext, connection: Connection
+) -> DocState:
+    return VendorService(connection, current_scope(), context.user_id).replace_document(
+        id, did, body
+    )
+
+
+@router.post("/{id}/documents/{did}/verify", response_model=DocState)
+def verify_document(
+    id: UUID, did: UUID, context: ApproveContext, connection: Connection
+) -> DocState:
+    return VendorService(connection, current_scope(), context.user_id).verify_document(id, did)
+
+
+@router.post("/{id}/documents/{did}/reject", response_model=DocState)
+def reject_document(
+    id: UUID, did: UUID, body: DocumentReject, context: ApproveContext, connection: Connection
+) -> DocState:
+    return VendorService(connection, current_scope(), context.user_id).reject_document(
+        id, did, body
+    )
