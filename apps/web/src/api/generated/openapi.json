@@ -8816,6 +8816,15 @@
         ],
         "type": "string"
       },
+      "RevealReason": {
+        "enum": [
+          "verify_payment",
+          "vendor_request",
+          "audit_support",
+          "other"
+        ],
+        "type": "string"
+      },
       "RevisionSummary": {
         "properties": {
           "created_at": {
@@ -9838,6 +9847,11 @@
               }
             ],
             "title": "Tax Id Country"
+          },
+          "version": {
+            "default": 0,
+            "title": "Version",
+            "type": "integer"
           }
         },
         "title": "SensitiveMasked",
@@ -9917,6 +9931,7 @@
       },
       "SensitiveReveal": {
         "additionalProperties": false,
+        "description": "A reason code from a closed list; the note is free text that must hold no figures.",
         "properties": {
           "fields": {
             "items": {
@@ -9927,28 +9942,32 @@
             "title": "Fields",
             "type": "array"
           },
-          "reason": {
+          "note": {
             "anyOf": [
               {
-                "maxLength": 500,
+                "maxLength": 200,
                 "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Reason"
+            "title": "Note"
+          },
+          "reason_code": {
+            "$ref": "#/components/schemas/RevealReason"
           }
         },
         "required": [
-          "fields"
+          "fields",
+          "reason_code"
         ],
         "title": "SensitiveReveal",
         "type": "object"
       },
       "SensitiveValues": {
         "additionalProperties": false,
-        "description": "Clear values, returned only by the audited reveal and the write.",
+        "description": "Clear values, returned only by the audited reveal.",
         "properties": {
           "bank_account": {
             "anyOf": [
@@ -10013,6 +10032,11 @@
               }
             ],
             "title": "Tax Id Country"
+          },
+          "version": {
+            "default": 0,
+            "title": "Version",
+            "type": "integer"
           }
         },
         "title": "SensitiveValues",
@@ -10026,10 +10050,15 @@
             },
             "title": "Changed",
             "type": "array"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
           }
         },
         "required": [
-          "changed"
+          "changed",
+          "version"
         ],
         "title": "SensitiveWritten",
         "type": "object"
@@ -11098,7 +11127,9 @@
           },
           "sensitive": {
             "$ref": "#/components/schemas/SensitiveMasked",
-            "default": {}
+            "default": {
+              "version": 0
+            }
           },
           "status": {
             "$ref": "#/components/schemas/VendorStatus"
@@ -11285,7 +11316,9 @@
           },
           "sensitive": {
             "$ref": "#/components/schemas/SensitiveMasked",
-            "default": {}
+            "default": {
+              "version": 0
+            }
           },
           "status": {
             "$ref": "#/components/schemas/VendorStatus"
@@ -24816,6 +24849,22 @@
               "format": "uuid",
               "title": "Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
             }
           },
           {

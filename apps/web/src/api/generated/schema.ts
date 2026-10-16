@@ -5459,6 +5459,8 @@ export interface components {
         };
         /** @enum {string} */
         RevealField: "tax_id" | "bank";
+        /** @enum {string} */
+        RevealReason: "verify_payment" | "vendor_request" | "audit_support" | "other";
         /** RevisionSummary */
         RevisionSummary: {
             /**
@@ -5814,6 +5816,11 @@ export interface components {
             tax_id?: string | null;
             /** Tax Id Country */
             tax_id_country?: string | null;
+            /**
+             * Version
+             * @default 0
+             */
+            version?: number;
         };
         /**
          * SensitivePut
@@ -5831,16 +5838,20 @@ export interface components {
             /** Tax Id Country */
             tax_id_country?: string | null;
         };
-        /** SensitiveReveal */
+        /**
+         * SensitiveReveal
+         * @description A reason code from a closed list; the note is free text that must hold no figures.
+         */
         SensitiveReveal: {
             /** Fields */
             fields: components["schemas"]["RevealField"][];
-            /** Reason */
-            reason?: string | null;
+            /** Note */
+            note?: string | null;
+            reason_code: components["schemas"]["RevealReason"];
         };
         /**
          * SensitiveValues
-         * @description Clear values, returned only by the audited reveal and the write.
+         * @description Clear values, returned only by the audited reveal.
          */
         SensitiveValues: {
             /** Bank Account */
@@ -5853,11 +5864,18 @@ export interface components {
             tax_id?: string | null;
             /** Tax Id Country */
             tax_id_country?: string | null;
+            /**
+             * Version
+             * @default 0
+             */
+            version?: number;
         };
         /** SensitiveWritten */
         SensitiveWritten: {
             /** Changed */
             changed: string[];
+            /** Version */
+            version: number;
         };
         /**
          * SessionResponse
@@ -6239,7 +6257,11 @@ export interface components {
             legal_name: string;
             /** Number */
             number: string;
-            /** @default {} */
+            /**
+             * @default {
+             *       "version": 0
+             *     }
+             */
             sensitive?: components["schemas"]["SensitiveMasked"];
             status: components["schemas"]["VendorStatus"];
             /** Trading Name */
@@ -6310,7 +6332,11 @@ export interface components {
             legal_name: string;
             /** Number */
             number: string;
-            /** @default {} */
+            /**
+             * @default {
+             *       "version": 0
+             *     }
+             */
             sensitive?: components["schemas"]["SensitiveMasked"];
             status: components["schemas"]["VendorStatus"];
             /** Trading Name */
@@ -13338,6 +13364,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                "If-Match"?: string | null;
                 "X-FLO-Origin-Secret"?: string | null;
             };
             path: {
