@@ -4,6 +4,7 @@ from typing import Annotated, cast
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Response
+from fastapi.responses import JSONResponse
 
 from flo.api.admin_users import organization_target
 from flo.api.auth import get_auth_settings
@@ -23,6 +24,10 @@ from flo.modules.vendors.schemas import (
     DocumentCreate,
     DocumentReject,
     DocumentReplace,
+    SensitivePut,
+    SensitiveReveal,
+    SensitiveValues,
+    SensitiveWritten,
     VendorCreate,
     VendorDetail,
     VendorPage,
@@ -48,6 +53,9 @@ CreateContext = Annotated[
 EditContext = Annotated[AuthorizationContext, Depends(require("vendor.edit", organization_target))]
 ApproveContext = Annotated[
     AuthorizationContext, Depends(require("vendor.approve", organization_target))
+]
+RevealContext = Annotated[
+    AuthorizationContext, Depends(require("vendor.sensitive.reveal", organization_target))
 ]
 UnitEditContext = Annotated[AuthorizationContext, Depends(require("vendor.edit", unit_target))]
 
@@ -169,3 +177,22 @@ def reject_document(
     return VendorService(connection, current_scope(), context.user_id).reject_document(
         id, did, body
     )
+
+
+@router.post("/{id}/sensitive/reveal", response_model=SensitiveValues)
+def reveal_sensitive(
+    id: UUID, body: SensitiveReveal, context: RevealContext, connection: Connection
+) -> JSONResponse:
+    values = VendorService(connection, current_scope(), context.user_id).reveal_sensitive(id, body)
+    return JSONResponse(values.model_dump(), headers={"Cache-Control": "no-store"})
+
+
+@router.put("/{id}/sensitive", response_model=SensitiveWritten)
+def put_sensitive(
+    id: UUID,
+    body: SensitivePut,
+    edit: EditContext,
+    context: RevealContext,
+    connection: Connection,
+) -> SensitiveWritten:
+    return VendorService(connection, current_scope(), context.user_id).put_sensitive(id, body)

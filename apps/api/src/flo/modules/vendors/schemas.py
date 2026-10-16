@@ -70,6 +70,16 @@ class DisableCreate(BaseModel):
         return value
 
 
+class SensitiveMasked(BaseModel):
+    """Tax and banking data as the list and detail show it: last four characters only."""
+
+    tax_id: str | None = None
+    tax_id_country: str | None = None
+    bank_name: str | None = None
+    bank_account: str | None = None
+    bank_routing: str | None = None
+
+
 class VendorRead(BaseModel):
     id: UUID
     number: str
@@ -80,6 +90,7 @@ class VendorRead(BaseModel):
     created_by_email: str
     created_at: datetime
     updated_at: datetime
+    sensitive: SensitiveMasked = SensitiveMasked()
 
 
 class VendorUnit(BaseModel):
@@ -203,3 +214,31 @@ class DocState(BaseModel):
     reviewed_at: datetime | None = None
     rejection_reason: str | None = None
     created_at: datetime | None = None
+
+
+type RevealField = Literal["tax_id", "bank"]
+
+
+class SensitiveReveal(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    fields: list[RevealField] = Field(min_length=1, max_length=2)
+    reason: str | None = Field(default=None, max_length=500)
+
+
+class SensitivePut(BaseModel):
+    """The whole record: a field left out is cleared. Values are stored as typed."""
+
+    model_config = ConfigDict(extra="forbid")
+    tax_id: str | None = Field(default=None, min_length=1, max_length=64)
+    tax_id_country: str | None = Field(default=None, pattern=r"^[A-Z]{2}$")
+    bank_name: str | None = Field(default=None, min_length=1, max_length=200)
+    bank_account: str | None = Field(default=None, min_length=1, max_length=64)
+    bank_routing: str | None = Field(default=None, min_length=1, max_length=64)
+
+
+class SensitiveValues(SensitivePut):
+    """Clear values, returned only by the audited reveal and the write."""
+
+
+class SensitiveWritten(BaseModel):
+    changed: list[str]

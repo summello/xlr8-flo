@@ -142,7 +142,11 @@ def test_upgrade_gives_every_system_role_exactly_the_baseline(pre_0053):
     conn, org, _ = pre_0053
     assert "project-manager" not in role_grants(conn, org)
     load_migration(MIGRATION, "role_catalogue_drift").upgrade(conn)
-    expected = {str(c): {str(p) for p in perms} for c, perms in BASELINE_ROLE_PERMISSIONS.items()}
+    # vendor.sensitive.reveal is granted by migration 0060 (E11-S04), after this one.
+    expected = {
+        str(c): {str(p) for p in perms if str(p) != "vendor.sensitive.reveal"}
+        for c, perms in BASELINE_ROLE_PERMISSIONS.items()
+    }
     assert role_grants(conn, org) == expected
 
 

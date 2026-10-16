@@ -65,6 +65,14 @@ COVERED = {
         "/internal/jobs/vendor-document-expiry",
     ): "vendors/test_documents.py::test_internal_expiry_trigger_origin_key_and_nonreplay",
     (
+        "POST",
+        "/api/v1/vendors/{id}/sensitive/reveal",
+    ): "vendors/test_sensitive.py::test_sensitive_routes_conceal_foreign_tenants",
+    (
+        "PUT",
+        "/api/v1/vendors/{id}/sensitive",
+    ): "vendors/test_sensitive.py::test_sensitive_routes_conceal_foreign_tenants",
+    (
         "GET",
         "/api/v1/vendors/{id}/contacts",
     ): "vendors/test_contacts.py::test_vendor_contact_routes_conceal_foreign_tenants",

@@ -15,6 +15,7 @@ from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.org.service import MasterCodeUnusable, NumberingService, OrgService, today
 from flo.modules.vendors.documents import DocumentsMixin
+from flo.modules.vendors import repo as sensitive
 from flo.modules.vendors.models import (
     ANCESTORS_CTE,
     AVAILABLE_SQL,
@@ -30,6 +31,11 @@ from flo.modules.vendors.schemas import (
     ContactRead,
     DisableCreate,
     Recipient,
+    SensitiveMasked,
+    SensitivePut,
+    SensitiveReveal,
+    SensitiveValues,
+    SensitiveWritten,
     VendorCreate,
     VendorDetail,
     VendorDisabled,
@@ -95,7 +101,8 @@ class VendorService(DocumentsMixin):
 
     def get(self, id: UUID) -> VendorDetail:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
-            base = self._row(id)
+            base = self._row(id).model_dump()
+            base["sensitive"] = self._masked([id]).get(id, SensitiveMasked())
             disabled = self.repo.execute(
                 "SELECT d.unit_id, u.code, i.email, d.disabled_at, d.reason "
                 "FROM vendor_local_disable d JOIN org_unit u "
@@ -105,7 +112,7 @@ class VendorService(DocumentsMixin):
                 {"id": id},
             ).fetchall()
             return VendorDetail(
-                **base.model_dump(),
+                **base,
                 units=self._unit_codes(id),
                 disabled_in=[
                     VendorDisabled.model_validate(
@@ -161,10 +168,43 @@ class VendorService(DocumentsMixin):
                 params,
             ).fetchall()
         page = [self._read(r) for r in rows[:limit]]
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            masks = self._masked([v.id for v in page])
+        page = [v.model_copy(update={"sensitive": masks.get(v.id, SensitiveMasked())}) for v in page]
         more = len(rows) > limit
         return VendorPage(
             rows=page, next_cursor=_cursor(page[-1].trading_name, page[-1].id) if more else None
         )
+
+    def _masked(self, ids: list[UUID]) -> dict[UUID, SensitiveMasked]:
+        return {
+            id: SensitiveMasked.model_validate(values)
+            for id, values in sensitive.masked(self.repo, ids).items()
+        }
+
+    def reveal_sensitive(self, id: UUID, body: SensitiveReveal) -> SensitiveValues:
+        """An audited read: the event names the fields, never the values (AUD-006)."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self._row(id)
+            groups = list(dict.fromkeys(body.fields))
+            self._audit(
+                "vendor.sensitive.reveal", id, None, {"fields": groups}, reason=body.reason
+            )
+            return SensitiveValues.model_validate(sensitive.reveal(self.repo, id, groups))
+
+    def put_sensitive(self, id: UUID, body: SensitivePut) -> SensitiveWritten:
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            if (
+                self.repo.execute(
+                    "SELECT 1 FROM vendor WHERE org_id = %(org_id)s AND id = %(id)s FOR UPDATE",
+                    {"id": id},
+                ).fetchone()
+                is None
+            ):
+                raise ProblemError(ErrorCode.NOT_FOUND)
+            changed = sensitive.put(self.repo, id, body.model_dump(), self.actor_id)
+            self._audit("vendor.sensitive.update", id, None, {"fields": changed})
+            return SensitiveWritten(changed=changed)
 
     def available_in(self, vendor_id: UUID, unit_id: UUID) -> bool:
         """The one implementation of the availability rule; eligibility (E11-S11) calls this."""
