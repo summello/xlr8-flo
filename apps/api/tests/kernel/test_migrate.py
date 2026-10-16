@@ -161,6 +161,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261014_0059",
         "20261014_0060",
         "20261014_0061",
+        "20261014_0062",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -2071,15 +2072,114 @@ def test_vendor_documents_roundtrip_preserves_vendors_and_attachments(empty_data
             assert conn.execute("SELECT count(*) FROM vendor_document").fetchone() == (0,)
 
 
-def test_migration_0053_tracking_table_is_tenant_isolated_and_0053_still_reverses(empty_database):
+def test_vendor_questionnaire_roundtrip_grants_the_permission_and_keeps_data(empty_database):
+    from flo.kernel.logging import correlation_context
     from flo.kernel.tenancy.context import Scope
     from flo.kernel.tenancy.rls import tenant_transaction
+    from tests.org.test_bootstrap import admin_id, create
 
     revisions = migrate.discover_migrations(MIGRATIONS)
     migrate.apply_migrations(
         [r for r in revisions if r.revision <= "20261014_0059"], empty_database
     )
     mig = next(r for r in revisions if r.revision == "20261014_0060")
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("questionnaire-migration"),
+    ):
+        tenant = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(tenant.org_id)
+        vendor_id, version_id = uuid4(), uuid4()
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO vendor(id,org_id,number,trading_name,legal_name,availability,"
+                "created_by) VALUES(%s,%s,'V-000001','T','L','global',%s)",
+                (vendor_id, tenant.org_id, actor),
+            )
+            grants_before = conn.execute(
+                "SELECT role_id,permission_code FROM role_permission ORDER BY 1,2"
+            ).fetchall()
+        mig.upgrade(conn)
+        with tenant_transaction(conn, scope):
+            granted = {
+                r[0]
+                for r in conn.execute(
+                    "SELECT r.code FROM role_permission rp JOIN role r ON r.id = rp.role_id "
+                    "WHERE rp.permission_code = 'vendor.request'"
+                ).fetchall()
+            }
+            from flo.modules.identity.models import BASELINE_ROLES
+
+            assert granted == {str(c) for c, _ in BASELINE_ROLES} - {"auditor"}
+            assert "auditor" not in granted
+            conn.execute("INSERT INTO vendor_questionnaire(org_id) VALUES(%s)", (tenant.org_id,))
+            insert_version = (
+                "INSERT INTO vendor_questionnaire_version(id,org_id,number,status,created_by) "
+                "VALUES(%s,%s,%s,%s,%s)"
+            )
+            conn.execute(insert_version, (version_id, tenant.org_id, 1, "draft", actor))
+            conn.execute(
+                "INSERT INTO vendor_question(id,org_id,version_id,position,key,prompt,type,weight)"
+                " VALUES(%s,%s,%s,1,'a','A','text',100)",
+                (uuid4(), tenant.org_id, version_id),
+            )
+            conn.execute(
+                "INSERT INTO vendor_onboarding(vendor_id,org_id,version_id,requested_by) "
+                "VALUES(%s,%s,%s,%s)",
+                (vendor_id, tenant.org_id, version_id, actor),
+            )
+            conn.execute(
+                "UPDATE vendor_questionnaire_version SET status='published' WHERE id=%s",
+                (version_id,),
+            )
+        for statement in (
+            "UPDATE vendor_question SET weight = 1",
+            "DELETE FROM vendor_question",
+            "UPDATE vendor_questionnaire_version SET threshold = 5",
+        ):
+            with (
+                pytest.raises(psycopg.errors.ObjectNotInPrerequisiteState),
+                tenant_transaction(conn, scope),
+            ):
+                conn.execute(statement)
+        with pytest.raises(psycopg.errors.UniqueViolation), tenant_transaction(conn, scope):
+            conn.execute(insert_version, (uuid4(), tenant.org_id, 2, "published", actor))
+        with pytest.raises(psycopg.errors.CheckViolation), tenant_transaction(conn, scope):
+            conn.execute(insert_version, (uuid4(), tenant.org_id, 3, "bogus", actor))
+        mig.downgrade(conn)
+        for table in (
+            "vendor_questionnaire",
+            "vendor_questionnaire_version",
+            "vendor_question",
+            "vendor_onboarding",
+        ):
+            assert conn.execute("SELECT to_regclass(%s)", (table,)).fetchone() == (None,)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT count(*) FROM vendor").fetchone() == (1,)
+            assert (
+                conn.execute(
+                    "SELECT role_id,permission_code FROM role_permission ORDER BY 1,2"
+                ).fetchall()
+                == grants_before
+            )
+        assert conn.execute(
+            "SELECT count(*) FROM permission WHERE code='vendor.request'"
+        ).fetchone() == (0,)
+        mig.upgrade(conn)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT count(*) FROM vendor_onboarding").fetchone() == (0,)
+
+
+def test_migration_0053_tracking_table_is_tenant_isolated_and_0053_still_reverses(empty_database):
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261014_0060"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261014_0061")
     base = next(r for r in revisions if r.revision == "20261014_0053")
     org_a, org_b = uuid4(), uuid4()
     role = f"app_0060_{uuid4().hex[:8]}"
@@ -2125,9 +2225,9 @@ def test_vendor_row_version_roundtrip_preserves_rows(empty_database):
 
     revisions = migrate.discover_migrations(MIGRATIONS)
     migrate.apply_migrations(
-        [r for r in revisions if r.revision <= "20261014_0060"], empty_database
+        [r for r in revisions if r.revision <= "20261014_0061"], empty_database
     )
-    mig = next(r for r in revisions if r.revision == "20261014_0061")
+    mig = next(r for r in revisions if r.revision == "20261014_0062")
     with psycopg.connect(empty_database, autocommit=True) as conn:
         tenant = create(conn)
         actor = admin_id(conn)

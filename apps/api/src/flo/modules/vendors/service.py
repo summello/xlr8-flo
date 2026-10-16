@@ -23,6 +23,8 @@ from flo.modules.vendors.models import (
     FROM,
     VendorRepository,
 )
+from flo.modules.vendors.onboarding import OnboardingMixin
+from flo.modules.vendors.questionnaire import QuestionnaireMixin
 from flo.modules.vendors.schemas import (
     REQUIRED_CONTACT_TYPES,
     ContactCreate,
@@ -85,7 +87,7 @@ def _decode(cursor: str) -> tuple[str, UUID]:
         raise invalid("cursor", "The page cursor is not valid.", "invalid_cursor") from None
 
 
-class VendorService(DocumentsMixin):
+class VendorService(DocumentsMixin, QuestionnaireMixin, OnboardingMixin):
     def __init__(
         self,
         connection: psycopg.Connection[tuple[object, ...]],

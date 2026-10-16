@@ -3705,6 +3705,46 @@
       },
       "recap": "Vendor documents are now stored as E09-S10 attachments with issue/expiry, verification, reviewer and separation of duty, and document_state gives the six-state rule E11-S11 will call. A daily vendor-document-expiry job queues one outbox digest per vendor manager per threshold crossing.",
       "title": "Vendor documents with issue/expiry, verification status, expiry notification"
+    },
+    {
+      "story": "E11-S05",
+      "kind": "engine",
+      "size": "L",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "500920ce-5ba9-4dc4-b565-71c5909df602",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S05",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a14474-f664-76d2-b60c-0a2eca597087",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds versioned weighted vendor questionnaires (admin draft/edit/reorder/publish/copy, immutable once published by service and DB trigger) and the requester's onboarding request with typed answers pinned to the version at creation. VendorService.score and answers_complete are exposed for E11-S06; weights and points never reach the requester.",
+      "title": "Onboarding request, configurable questionnaire, weights and scoring"
     }
   ]
 }

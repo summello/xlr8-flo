@@ -6,7 +6,7 @@ from datetime import date, datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator
 
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError
 
@@ -205,3 +205,118 @@ class DocState(BaseModel):
     reviewed_at: datetime | None = None
     rejection_reason: str | None = None
     created_at: datetime | None = None
+
+
+# -- onboarding questionnaire (E11-S05) -------------------------------------------------------
+
+type QuestionType = Literal[
+    "text", "number", "yes_no", "single_choice", "multi_choice", "date", "file"
+]
+type QuestionnaireStatus = Literal["draft", "published", "retired"]
+
+
+class QuestionCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    key: str = Field(min_length=1, max_length=40)
+    prompt: str = Field(min_length=1, max_length=500)
+    type: QuestionType
+    required: bool = False
+    weight: int = Field(ge=0, le=100)
+    options: JsonValue = None
+
+
+class QuestionPatch(BaseModel):
+    """The type is fixed once a question exists: delete it and add another to change it."""
+
+    model_config = ConfigDict(extra="forbid")
+    prompt: str | None = Field(default=None, min_length=1, max_length=500)
+    required: bool | None = None
+    weight: int | None = Field(default=None, ge=0, le=100)
+    options: JsonValue = None
+
+
+class VersionPatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    threshold: int = Field(ge=0, le=100)
+
+
+class QuestionMove(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    direction: Literal["up", "down"]
+
+
+class QuestionAdmin(BaseModel):
+    """The administrator's view: weights and points included."""
+
+    key: str
+    position: int
+    prompt: str
+    type: QuestionType
+    required: bool
+    weight: int
+    options: JsonValue
+    row_version: int
+
+
+class VersionRead(BaseModel):
+    id: UUID
+    number: int
+    status: QuestionnaireStatus
+    threshold: int
+    row_version: int
+    published_at: datetime | None
+    question_count: int
+    weight_total: int
+
+
+class VersionDetail(VersionRead):
+    questions: list[QuestionAdmin]
+
+
+class Choice(BaseModel):
+    value: str
+    label: str
+
+
+class QuestionPublic(BaseModel):
+    """What a requester sees: never a weight and never points."""
+
+    key: str
+    position: int
+    prompt: str
+    type: QuestionType
+    required: bool
+    choices: list[Choice] | None = None
+
+
+class AnswersPut(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    answers: dict[str, JsonValue]
+
+
+class OnboardingRead(BaseModel):
+    vendor_id: UUID
+    vendor_number: str
+    vendor_status: VendorStatus
+    version_number: int
+    questions: list[QuestionPublic]
+    answers: dict[str, JsonValue]
+    row_version: int
+
+
+class ScoreLine(BaseModel):
+    key: str
+    prompt: str
+    type: QuestionType
+    weight: int
+    answered: bool
+    points: int
+    contribution: str
+
+
+class ScoreResult(BaseModel):
+    """A score below the threshold is a fact for the approver, never a refusal (decision 6h-6)."""
+
+    score: int
+    threshold: int
+    breakdown: list[ScoreLine]
