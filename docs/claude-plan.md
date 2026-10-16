@@ -560,7 +560,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E10-S12** Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11) | E10 | ui | L | APR-011, APR-021, ACC-007 | ~~E10-S11~~, ~~E10-S05~~ |
 | ✅ | **E10-S13** Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes | E10 | engine | M | APR-003, PROJ-002, VEN-005, BUD-007 | ~~E10-S07~~ |
 
-#### M3 — First sellable release · 7/64 done
+#### M3 — First sellable release · 8/64 done
 
 > Vendors, RFQs, awards and purchase orders by email. Closes the money loop end to end.
 
@@ -572,9 +572,9 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E11-S02** Typed contacts: billing, service/delivery, additional types | E11 | crud | S | VEN-002 | ~~E11-S01~~ |
 | ✅ | **E11-S03** Vendor documents with issue/expiry, verification status, expiry notification | E11 | crud | M | VEN-003, VEN-011, OBS-004 | ~~E11-S01~~, ~~E09-S10~~ |
 | 👀 | **E11-S04** Field-level access control and masking for tax and banking data | E11 | security | M | VEN-014, CUS-008, PRIV-001 | ~~E11-S01~~, ~~E02-S05~~ |
-| 🔨 | **E11-S05** Onboarding request, configurable questionnaire, weights and scoring | E11 | engine | L | VEN-004, VEN-006 | ~~E11-S01~~ |
-| ⬜ | **E11-S06** Duplicate identifier detection, approval on create/activate/suspend/reactivate | E11 | engine | M | VEN-005, VEN-010, VEN-012 | E11-S05, ~~E10-S13~~, ~~E11-S02~~, E11-S04 |
-| ⬜ | **E11-S07** Performance scoring across quality, price, delivery, service, with dispute history | E11 | crud | M | VEN-007, VEN-015 | ~~E11-S01~~ |
+| ✅ | **E11-S05** Onboarding request, configurable questionnaire, weights and scoring | E11 | engine | L | VEN-004, VEN-006 | ~~E11-S01~~ |
+| ⬜ | **E11-S06** Duplicate identifier detection, approval on create/activate/suspend/reactivate | E11 | engine | M | VEN-005, VEN-010, VEN-012 | ~~E11-S05~~, ~~E10-S13~~, ~~E11-S02~~, E11-S04 |
+| 🔨 | **E11-S07** Performance scoring across quality, price, delivery, service, with dispute history | E11 | crud | M | VEN-007, VEN-015 | ~~E11-S01~~ |
 | ⛔ | **E11-S08** Vendor open questions for the operator (parking story) | E11 | docs | S | VEN-003, VEN-007, VEN-014 | — |
 | ⬜ | **E11-S11** Vendor eligibility: one server rule, one web component | E11 | engine | M | VEN-012, A11Y-004 | ~~E11-S03~~, E11-S06, ~~E11-S09~~ |
 | ⬜ | **E11-S12** Vendor list and profile screens, documents table and document sheet | E11 | ui | L | VEN-001, VEN-002, VEN-003, VEN-011, VEN-013, OBS-004 | ~~E11-S02~~, ~~E11-S03~~, E11-S11 |
@@ -582,7 +582,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E11-S14** Request a vendor: form, live duplicate check, drafts, submit | E11 | ui | L | VEN-004, VEN-010, A11Y-006 | E11-S06, E11-S12 |
 | ⬜ | **E11-S15** Onboarding decision panel: vendor evidence block | E11 | ui | M | VEN-005, VEN-010, APR-020 | E11-S06, E11-S10, E11-S11 |
 | ⬜ | **E11-S16** Vendor status, availability and local-disable dialogs | E11 | ui | M | VEN-005, VEN-008, VEN-009, A11Y-002 | E11-S06, E11-S12 |
-| ⬜ | **E11-S17** Questionnaire administration screen | E11 | ui | M | VEN-006, CUS-007, A11Y-003 | E11-S05 |
+| ⬜ | **E11-S17** Questionnaire administration screen | E11 | ui | M | VEN-006, CUS-007, A11Y-003 | ~~E11-S05~~ |
 | ⬜ | **E11-S18** Vendor Performance card and scorecard sheet | E11 | ui | M | VEN-007, VEN-015 | E11-S07, E11-S12 |
 | ✅ | **E12-S01** RFQ from approved requisition lines, open-quantity guard | E12 | engine | L | SRC-001, SRC-003, SRC-018 | ~~E09-S06~~, ~~E11-S01~~ |
 | ⬜ | **E12-S02** RFQ content, invitations, deadline, terms, attachments, vendor eligibility check | E12 | crud | M | SRC-002, VEN-012 | ~~E12-S01~~, ~~E11-S02~~, E11-S11 |

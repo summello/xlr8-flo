@@ -49,7 +49,7 @@ def project_db(org_database) -> Iterator:
             "20261009_0051_project_event_system_actor.py",
             "20261014_0054_project_requests.py",
             "20261014_0055_budget_change_allocation_kind.py",
-            "20261015_0060_project_requested_budget.py",
+            "20261015_0061_project_requested_budget.py",
         ]
     ]
     with db.connection.transaction():

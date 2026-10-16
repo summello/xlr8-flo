@@ -84,6 +84,128 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/vendor-questionnaires": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Versions */
+        get: operations["list_versions_api_v1_admin_vendor_questionnaires_get"];
+        put?: never;
+        /** Create Version */
+        post: operations["create_version_api_v1_admin_vendor_questionnaires_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/vendor-questionnaires/{vid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Version */
+        get: operations["get_version_api_v1_admin_vendor_questionnaires__vid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Version */
+        patch: operations["patch_version_api_v1_admin_vendor_questionnaires__vid__patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/vendor-questionnaires/{vid}/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Copy Version */
+        post: operations["copy_version_api_v1_admin_vendor_questionnaires__vid__copy_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/vendor-questionnaires/{vid}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish Version */
+        post: operations["publish_version_api_v1_admin_vendor_questionnaires__vid__publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/vendor-questionnaires/{vid}/questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Question */
+        post: operations["add_question_api_v1_admin_vendor_questionnaires__vid__questions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/vendor-questionnaires/{vid}/questions/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Question */
+        delete: operations["delete_question_api_v1_admin_vendor_questionnaires__vid__questions__key__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Question */
+        patch: operations["patch_question_api_v1_admin_vendor_questionnaires__vid__questions__key__patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/vendor-questionnaires/{vid}/questions/{key}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move Question */
+        post: operations["move_question_api_v1_admin_vendor_questionnaires__vid__questions__key__move_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/approvals/delegations": {
         parameters: {
             query?: never;
@@ -2169,6 +2291,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/vendors/onboarding-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Onboarding Request */
+        post: operations["create_onboarding_request_api_v1_vendors_onboarding_requests_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/vendors/{id}": {
         parameters: {
             query?: never;
@@ -2286,6 +2425,40 @@ export interface paths {
         put?: never;
         /** Verify Document */
         post: operations["verify_document_api_v1_vendors__id__documents__did__verify_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendors/{id}/onboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Onboarding */
+        get: operations["get_onboarding_api_v1_vendors__id__onboarding_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendors/{id}/onboarding/answers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Onboarding Answers */
+        put: operations["put_onboarding_answers_api_v1_vendors__id__onboarding_answers_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2717,6 +2890,13 @@ export interface components {
             /** Currency */
             currency: string;
         };
+        /** AnswersPut */
+        AnswersPut: {
+            /** Answers */
+            answers: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+        };
         /** ApprovalExplanation */
         ApprovalExplanation: {
             /** Decisions */
@@ -3059,6 +3239,13 @@ export interface components {
             next_cursor: string | null;
             /** Rows */
             rows: components["schemas"]["ProjectRef"][];
+        };
+        /** Choice */
+        Choice: {
+            /** Label */
+            label: string;
+            /** Value */
+            value: string;
         };
         /** CodeState */
         CodeState: {
@@ -4629,6 +4816,27 @@ export interface components {
              */
             visibility: "internal" | "shareable";
         };
+        /** OnboardingRead */
+        OnboardingRead: {
+            /** Answers */
+            answers: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Questions */
+            questions: components["schemas"]["QuestionPublic"][];
+            /** Row Version */
+            row_version: number;
+            /**
+             * Vendor Id
+             * Format: uuid
+             */
+            vendor_id: string;
+            /** Vendor Number */
+            vendor_number: string;
+            vendor_status: components["schemas"]["VendorStatus"];
+            /** Version Number */
+            version_number: number;
+        };
         /** OrgAddressClose */
         OrgAddressClose: {
             /**
@@ -5250,6 +5458,84 @@ export interface components {
              */
             acknowledge_warnings?: boolean;
         };
+        /**
+         * QuestionAdmin
+         * @description The administrator's view: weights and points included.
+         */
+        QuestionAdmin: {
+            /** Key */
+            key: string;
+            options: components["schemas"]["JsonValue"];
+            /** Position */
+            position: number;
+            /** Prompt */
+            prompt: string;
+            /** Required */
+            required: boolean;
+            /** Row Version */
+            row_version: number;
+            type: components["schemas"]["QuestionType"];
+            /** Weight */
+            weight: number;
+        };
+        /** QuestionCreate */
+        QuestionCreate: {
+            /** Key */
+            key: string;
+            options?: components["schemas"]["JsonValue"];
+            /** Prompt */
+            prompt: string;
+            /**
+             * Required
+             * @default false
+             */
+            required?: boolean;
+            type: components["schemas"]["QuestionType"];
+            /** Weight */
+            weight: number;
+        };
+        /** QuestionMove */
+        QuestionMove: {
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "up" | "down";
+        };
+        /**
+         * QuestionPatch
+         * @description The type is fixed once a question exists: delete it and add another to change it.
+         */
+        QuestionPatch: {
+            options?: components["schemas"]["JsonValue"];
+            /** Prompt */
+            prompt?: string | null;
+            /** Required */
+            required?: boolean | null;
+            /** Weight */
+            weight?: number | null;
+        };
+        /**
+         * QuestionPublic
+         * @description What a requester sees: never a weight and never points.
+         */
+        QuestionPublic: {
+            /** Choices */
+            choices?: components["schemas"]["Choice"][] | null;
+            /** Key */
+            key: string;
+            /** Position */
+            position: number;
+            /** Prompt */
+            prompt: string;
+            /** Required */
+            required: boolean;
+            type: components["schemas"]["QuestionType"];
+        };
+        /** @enum {string} */
+        QuestionType: "text" | "number" | "yes_no" | "single_choice" | "multi_choice" | "date" | "file";
+        /** @enum {string} */
+        QuestionnaireStatus: "draft" | "published" | "retired";
         /** Quorum */
         Quorum: {
             /** Quorum */
@@ -6289,6 +6575,55 @@ export interface components {
         };
         /** @enum {string} */
         Verification: "unverified" | "verified" | "rejected";
+        /** VersionDetail */
+        VersionDetail: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: number;
+            /** Published At */
+            published_at: string | null;
+            /** Question Count */
+            question_count: number;
+            /** Questions */
+            questions: components["schemas"]["QuestionAdmin"][];
+            /** Row Version */
+            row_version: number;
+            status: components["schemas"]["QuestionnaireStatus"];
+            /** Threshold */
+            threshold: number;
+            /** Weight Total */
+            weight_total: number;
+        };
+        /** VersionPatch */
+        VersionPatch: {
+            /** Threshold */
+            threshold: number;
+        };
+        /** VersionRead */
+        VersionRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: number;
+            /** Published At */
+            published_at: string | null;
+            /** Question Count */
+            question_count: number;
+            /** Row Version */
+            row_version: number;
+            status: components["schemas"]["QuestionnaireStatus"];
+            /** Threshold */
+            threshold: number;
+            /** Weight Total */
+            weight_total: number;
+        };
         /** WithdrawWrite */
         WithdrawWrite: {
             /** Comment */
@@ -6626,6 +6961,442 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    list_versions_api_v1_admin_vendor_questionnaires_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionRead"][];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    create_version_api_v1_admin_vendor_questionnaires_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionDetail"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    get_version_api_v1_admin_vendor_questionnaires__vid__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                vid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionDetail"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    patch_version_api_v1_admin_vendor_questionnaires__vid__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                vid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VersionPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionDetail"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    copy_version_api_v1_admin_vendor_questionnaires__vid__copy_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                vid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionDetail"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    publish_version_api_v1_admin_vendor_questionnaires__vid__publish_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                vid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionDetail"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    add_question_api_v1_admin_vendor_questionnaires__vid__questions_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                vid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionAdmin"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    delete_question_api_v1_admin_vendor_questionnaires__vid__questions__key__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                vid: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    patch_question_api_v1_admin_vendor_questionnaires__vid__questions__key__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                vid: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestionPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionAdmin"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    move_question_api_v1_admin_vendor_questionnaires__vid__questions__key__move_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                vid: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestionMove"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionDetail"];
+                };
             };
             /** @description Client error expressed as RFC 9457 problem details. */
             "4XX": {
@@ -12845,6 +13616,50 @@ export interface operations {
             };
         };
     };
+    create_onboarding_request_api_v1_vendors_onboarding_requests_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VendorCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     get_vendor_api_v1_vendors__id__get: {
         parameters: {
             query?: never;
@@ -13312,6 +14127,95 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DocState"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    get_onboarding_api_v1_vendors__id__onboarding_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    put_onboarding_answers_api_v1_vendors__id__onboarding_answers_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnswersPut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */
