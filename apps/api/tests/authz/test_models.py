@@ -75,6 +75,7 @@ EXPECTED_PERMISSIONS = {
     "vendor.create",
     "vendor.edit",
     "vendor.sensitive.reveal",
+    "vendor.request",
     "vendor.view",
     "view.archive",
     "budget.adjust",

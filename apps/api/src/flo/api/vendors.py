@@ -16,6 +16,7 @@ from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.org.service import OrgService, today
 from flo.modules.vendors.schemas import (
+    AnswersPut,
     ContactCreate,
     ContactPatch,
     ContactRead,
@@ -24,6 +25,7 @@ from flo.modules.vendors.schemas import (
     DocumentCreate,
     DocumentReject,
     DocumentReplace,
+    OnboardingRead,
     SensitivePut,
     SensitiveReveal,
     SensitiveValues,
@@ -57,7 +59,25 @@ ApproveContext = Annotated[
 RevealContext = Annotated[
     AuthorizationContext, Depends(require("vendor.sensitive.reveal", organization_target))
 ]
+RequestContext = Annotated[
+    AuthorizationContext, Depends(require("vendor.request", organization_target))
+]
 UnitEditContext = Annotated[AuthorizationContext, Depends(require("vendor.edit", unit_target))]
+
+
+@router.post("/onboarding-requests", status_code=201, response_model=OnboardingRead)
+def create_onboarding_request(
+    body: VendorCreate,
+    context: RequestContext,
+    connection: Connection,
+    settings: Annotated[Settings, Depends(get_auth_settings)],
+    response: Response,
+) -> OnboardingRead:
+    request = VendorService(
+        connection, current_scope(), context.user_id, settings
+    ).create_onboarding(body)
+    response.headers["ETag"] = f'"{request.row_version}"'
+    return request
 
 
 @router.get("", response_model=VendorPage)
@@ -208,3 +228,28 @@ def put_sensitive(
     )
     response.headers["ETag"] = f'"{written.version}"'
     return written
+
+
+@router.get("/{id}/onboarding", response_model=OnboardingRead)
+def get_onboarding(
+    id: UUID, context: RequestContext, connection: Connection, response: Response
+) -> OnboardingRead:
+    request = VendorService(connection, current_scope(), context.user_id).get_onboarding(id)
+    response.headers["ETag"] = f'"{request.row_version}"'
+    return request
+
+
+@router.put("/{id}/onboarding/answers", response_model=OnboardingRead)
+def put_onboarding_answers(
+    id: UUID,
+    body: AnswersPut,
+    context: RequestContext,
+    connection: Connection,
+    response: Response,
+    if_match: Annotated[str | None, Header(alias="If-Match")] = None,
+) -> OnboardingRead:
+    request = VendorService(connection, current_scope(), context.user_id).put_answers(
+        id, body, if_match
+    )
+    response.headers["ETag"] = f'"{request.row_version}"'
+    return request

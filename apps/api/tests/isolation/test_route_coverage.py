@@ -20,6 +20,7 @@ from flo.api.org import router as org_router
 from flo.api.projects import router as projects_router
 from flo.api.requisitions import router as requisitions_router
 from flo.api.sourcing import router as sourcing_router
+from flo.api.vendor_questionnaires import router as vendor_questionnaires_router
 from flo.api.vendors import router as vendors_router
 from flo.api.workflows import router as workflows_router
 
@@ -35,7 +36,22 @@ CODES_ROUTES = (
     "test_codes_routes_conceal_foreign_tenants_and_need_the_permission"
 )
 SOURCING_ROUTES = "sourcing/test_rfq.py::test_rfq_routes_conceal_foreign_tenants"
+QROUTES = "vendors/test_questionnaire.py::test_questionnaire_routes_conceal_foreign_tenants"
+OROUTES = (
+    "vendors/test_questionnaire.py::"
+    "test_onboarding_routes_conceal_foreign_tenants_and_other_requesters"
+)
 COVERED = {
+    ("GET", "/api/v1/admin/vendor-questionnaires/{vid}"): QROUTES,
+    ("PATCH", "/api/v1/admin/vendor-questionnaires/{vid}"): QROUTES,
+    ("POST", "/api/v1/admin/vendor-questionnaires/{vid}/questions"): QROUTES,
+    ("PATCH", "/api/v1/admin/vendor-questionnaires/{vid}/questions/{key}"): QROUTES,
+    ("DELETE", "/api/v1/admin/vendor-questionnaires/{vid}/questions/{key}"): QROUTES,
+    ("POST", "/api/v1/admin/vendor-questionnaires/{vid}/questions/{key}/move"): QROUTES,
+    ("POST", "/api/v1/admin/vendor-questionnaires/{vid}/publish"): QROUTES,
+    ("POST", "/api/v1/admin/vendor-questionnaires/{vid}/copy"): QROUTES,
+    ("GET", "/api/v1/vendors/{id}/onboarding"): OROUTES,
+    ("PUT", "/api/v1/vendors/{id}/onboarding/answers"): OROUTES,
     ("GET", "/api/v1/sourcing/requisition-lines"): SOURCING_ROUTES,
     ("POST", "/api/v1/sourcing/rfqs"): SOURCING_ROUTES,
     ("PATCH", "/api/v1/sourcing/rfqs/{id}/lines"): SOURCING_ROUTES,
@@ -638,6 +654,7 @@ def test_every_id_route_has_a_named_foreign_tenant_case() -> None:
                 workflows_router,
                 requisitions_router,
                 vendors_router,
+                vendor_questionnaires_router,
                 sourcing_router,
                 collaboration_router,
             ),
@@ -666,6 +683,7 @@ def test_gate_fails_on_an_uncovered_route_and_on_a_dangling_reference() -> None:
             workflows_router,
             requisitions_router,
             vendors_router,
+            vendor_questionnaires_router,
             sourcing_router,
             collaboration_router,
         )

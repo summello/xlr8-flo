@@ -2,8 +2,8 @@
 
 from typing import Protocol
 
-revision = "20261014_0060"
-down_revision = "20261014_0059"
+revision = "20261014_0061"
+down_revision = "20261014_0060"
 
 
 class MigrationConnection(Protocol):
@@ -17,7 +17,7 @@ ROLES = ("vendor-manager", "budget-finance-user", "organization-administrator")
 _ROLES = ",".join(f"'{role}'" for role in ROLES)
 
 # Every grant this migration inserts is recorded so downgrade removes exactly those.
-TRACK = "migration_0060_grant"
+TRACK = "migration_0061_grant"
 
 UPGRADE_SQL = f"""
 CREATE TABLE vendor_sensitive (
