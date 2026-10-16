@@ -305,6 +305,12 @@ Screens added around the built comparison: RFQ list, start an RFQ from approved 
 206. **(6i-11) Requisition status triggers:** `sourced` when every open line is on a published RFQ; `awarded` and `open_for_purchase` together when every line's quantity is awarded on approved awards; `completed` when every line is ordered (received, from M4).
 207. **(6i-12) Publishing an RFQ needs no approval.** It commits no money; it is the buyer's act, audited.
 
+**Operator answers, 15 Oct 2026** (M3 planner session, purchase orders; `pages/purchase-orders.md` §7):
+
+208. **(6j-13) A PO with no published PO workflow is refused** (409 `workflow_not_set_up`, D-M2-21, PO-003). The editor's `Approve when no PO workflow is published` is dropped; the board is stale.
+209. **(6j-14) Cancelling or reducing an issued PO** releases the unused commitment once and **re-reserves it on the sub-project for the reopened quantity**, so another PO can order it without re-approval. If the requisition line is cancelled as well, the amount is released and returned to the main project (as 205).
+210. **(6j-15) Budget Summary definitions confirmed** as written in `pages/purchase-orders.md` §7.9 (`Committed`, `This PO`, `Available After Issue`, `Project Actual`).
+
 **Self-review with impeccable (13 Oct 2026, two isolated assessments: design review A, detector with browser evidence B).**
 
 - **Specificity:** the generic parts (list, tabs, draft editor, scoring grid) are right for Operate. What only capital procurement carries: the justification per non-lowest line, the scope and funds check with the released amount, requisition lines with a quantity to source against an open quantity, sealed bids with `Keyed By Us` and no portal, the conflict declaration before scoring, the award evidence block on the approver's panel.

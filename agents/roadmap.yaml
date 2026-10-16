@@ -1420,7 +1420,7 @@ epics:
           - PO-007
         dep:
           - E11-S01
-        st: in_progress
+        st: review
       - id: E11-S10
         t: 'Shared decision panel at phone width: footer reflow, close button never
           covered'
@@ -1446,7 +1446,7 @@ epics:
           - VEN-002
         dep:
           - E11-S01
-        st: in_progress
+        st: review
       - id: E11-S03
         t: Vendor documents with issue/expiry, verification status, expiry notification
         k: crud
@@ -1766,7 +1766,7 @@ epics:
           - WF-005
         dep:
           - E12-S08
-        st: todo
+        st: blocked
       - id: E12-S10
         t: Comparison dashboard screen with accessible table equivalent
         k: ui
@@ -1780,7 +1780,124 @@ epics:
         dep:
           - E12-S06
           - E04-S03
+          - E12-S07
+          - E11-S09
         st: todo
+      - id: E12-S11
+        t: 'RFQ list and RFQ detail screens'
+        k: ui
+        s: L
+        tags:
+          - ui
+        reqs:
+          - SRC-004
+          - SRC-015
+          - SRC-007
+        dep:
+          - E12-S03
+          - E11-S09
+        st: todo
+      - id: E12-S12
+        t: 'New RFQ from approved lines: line picker with the open-quantity guard'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - SRC-001
+          - SRC-003
+          - REQ-014
+          - REQ-015
+        dep:
+          - E12-S01
+          - E12-S11
+        st: todo
+      - id: E12-S13
+        t: 'RFQ editor, invitations with the eligibility picker, publish and amend'
+        k: ui
+        s: L
+        tags:
+          - ui
+        reqs:
+          - SRC-002
+          - SRC-004
+          - SRC-005
+          - VEN-012
+        dep:
+          - E12-S02
+          - E12-S03
+          - E12-S07
+          - E12-S11
+          - E11-S11
+        st: todo
+      - id: E12-S14
+        t: 'Record a bid: bid sheet, two times, vendor currency, late-bid override'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - SRC-006
+          - SRC-008
+          - SRC-010
+        dep:
+          - E12-S04
+          - E12-S05
+          - E12-S11
+        st: todo
+      - id: E12-S15
+        t: 'Evaluation screen: declare first, then score'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - SRC-011
+        dep:
+          - E12-S07
+          - E12-S11
+        st: todo
+      - id: E12-S16
+        t: 'Award draft screen: lines, justification, scope and funds check'
+        k: ui
+        s: L
+        tags:
+          - ui
+        reqs:
+          - SRC-012
+          - SRC-013
+          - SRC-014
+          - SRC-016
+        dep:
+          - E12-S08
+          - E12-S10
+        st: todo
+      - id: E12-S17
+        t: 'Award decision panel: Award Evidence block'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - SRC-013
+          - APR-003
+          - APR-020
+        dep:
+          - E12-S08
+          - E11-S10
+        st: todo
+      - id: E12-S18
+        t: 'Cancel RFQ and supersede award dialogs'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - SRC-017
+        dep:
+          - E12-S09
+          - E12-S11
+        st: blocked
       - id: E12-S19
         t: Sourcing open questions for the operator (parking story)
         k: docs
@@ -1989,7 +2106,7 @@ epics:
         reqs:
           - AUD-001
         dep: []
-        st: review
+        st: done
       - id: E22-S04
         t: 'M2 milestone review follow-ups: Money zero prop, shared lookup helper, internal
           collaboration readers, approvals read via service, e2e focus helper'

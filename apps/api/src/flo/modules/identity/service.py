@@ -10,7 +10,7 @@ from uuid import UUID, uuid4
 from psycopg import sql
 from pydantic import BaseModel
 
-from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
+from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.db.repo import ScopedRepo
 from flo.kernel.errors import ErrorCode, ProblemError
@@ -436,9 +436,6 @@ class IdentityAuthorizationService:
     def _repository(self) -> RoleRepository:
         return RoleRepository(self._connection, self._scope)
 
-    def _audit(self) -> AuditWriter:
-        return AuditWriter(self._connection, self._scope)
-
     def create_role(self, code: str, name: str, *, is_system: bool = False) -> Role:
         """Create an empty role; no permission is inherited or implied."""
 
@@ -450,13 +447,15 @@ class IdentityAuthorizationService:
                 checked_code, name.strip(), is_system=is_system
             )
             if created:
-                self._audit().write(
+                audit_event(
+                    self._connection,
+                    self._scope,
                     actor=self._actor,
                     action="role.create",
                     target_type="role",
                     target_id=role.id,
                     outcome=Outcome.SUCCESS,
-                    after_source=role,
+                    after=role,
                     after_fields=("id", "code", "name", "is_system"),
                 )
             return role
@@ -479,15 +478,17 @@ class IdentityAuthorizationService:
         with tenant_transaction(self._connection, self._scope):
             attached = self._repository().attach_permission(role_id, checked_permission)
             if attached:
-                self._audit().write(
+                audit_event(
+                    self._connection,
+                    self._scope,
                     actor=self._actor,
                     action="role.permission.grant",
                     target_type="role",
                     target_id=role_id,
                     outcome=Outcome.SUCCESS,
-                    before_source={"permission": None},
+                    before={"permission": None},
                     before_fields=("permission",),
-                    after_source={"permission": checked_permission},
+                    after={"permission": checked_permission},
                     after_fields=("permission",),
                 )
             return attached
@@ -499,15 +500,17 @@ class IdentityAuthorizationService:
         with tenant_transaction(self._connection, self._scope):
             detached = self._repository().detach_permission(role_id, checked_permission)
             if detached:
-                self._audit().write(
+                audit_event(
+                    self._connection,
+                    self._scope,
                     actor=self._actor,
                     action="role.permission.revoke",
                     target_type="role",
                     target_id=role_id,
                     outcome=Outcome.SUCCESS,
-                    before_source={"permission": checked_permission},
+                    before={"permission": checked_permission},
                     before_fields=("permission",),
-                    after_source={"permission": None},
+                    after={"permission": None},
                     after_fields=("permission",),
                 )
             return detached
@@ -553,13 +556,15 @@ class IdentityAuthorizationService:
             if created:
                 if granted_role_code in MFA_REQUIRED_ROLE_CODES:
                     self._repository().adjust_privileged_role_grants(user_id, 1)
-                self._audit().write(
+                audit_event(
+                    self._connection,
+                    self._scope,
                     actor=self._actor,
                     action="user_role.grant",
                     target_type="user_role",
                     target_id=assignment.id,
                     outcome=Outcome.SUCCESS,
-                    after_source=assignment,
+                    after=assignment,
                     after_fields=(
                         "id",
                         "user_id",
@@ -583,13 +588,15 @@ class IdentityAuthorizationService:
             assignment, revoked_role_code = revoked
             if revoked_role_code in MFA_REQUIRED_ROLE_CODES:
                 self._repository().adjust_privileged_role_grants(assignment.user_id, -1)
-            self._audit().write(
+            audit_event(
+                self._connection,
+                self._scope,
                 actor=self._actor,
                 action="user_role.revoke",
                 target_type="user_role",
                 target_id=assignment.id,
                 outcome=Outcome.SUCCESS,
-                before_source=assignment,
+                before=assignment,
                 before_fields=(
                     "id",
                     "user_id",
@@ -613,13 +620,15 @@ class IdentityAuthorizationService:
             assignment, revoked_role_code = revoked
             if revoked_role_code in MFA_REQUIRED_ROLE_CODES:
                 self._repository().adjust_privileged_role_grants(assignment.user_id, -1)
-            self._audit().write(
+            audit_event(
+                self._connection,
+                self._scope,
                 actor=self._actor,
                 action="user_role.revoke",
                 target_type="user_role",
                 target_id=assignment.id,
                 outcome=Outcome.SUCCESS,
-                before_source=assignment,
+                before=assignment,
                 before_fields=(
                     "id",
                     "user_id",
@@ -654,15 +663,17 @@ class IdentityAuthorizationService:
                 user_id,
                 deactivated_at,
             )
-            self._audit().write(
+            audit_event(
+                self._connection,
+                self._scope,
                 actor=self._actor,
                 action="identity.deactivate",
                 target_type="identity",
                 target_id=user_id,
                 outcome=Outcome.SUCCESS,
-                before_source={"email": email, "status": "active"},
+                before={"email": email, "status": "active"},
                 before_fields=("email", "status"),
-                after_source={"email": email, "status": "deactivated"},
+                after={"email": email, "status": "deactivated"},
                 after_fields=("email", "status"),
             )
             return True

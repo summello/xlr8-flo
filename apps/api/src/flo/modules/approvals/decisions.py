@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 import psycopg
 from psycopg.types.json import Jsonb
 
-from flo.kernel.audit import ActorKind, AuditActor, AuditWriter
+from flo.kernel.audit import ActorKind, AuditActor, audit_event
 from flo.kernel.audit import Outcome as AuditOutcome
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.authz import PermissionHoldersResolver
@@ -166,15 +166,17 @@ def _insert(
 def _audit(
     repo: WorkflowRepository, instance: dict[str, object], actor: UUID, id: UUID, before_status: str
 ) -> None:
-    AuditWriter(cast(AuditConnection, repo.connection), repo.scope).write(
+    audit_event(
+        cast(AuditConnection, repo.connection),
+        repo.scope,
         actor=AuditActor(ActorKind.USER, actor),
         action="approval.decision",
         target_type="approval_instance",
         target_id=cast(UUID, instance["id"]),
         outcome=AuditOutcome.SUCCESS,
-        before_source={"status": before_status},
+        before={"status": before_status},
         before_fields=("status",),
-        after_source={"decision_id": id, "status": instance["status"]},
+        after={"decision_id": id, "status": instance["status"]},
         after_fields=("decision_id", "status"),
     )
     if instance["status"] in {"approved", "rejected", "returned"}:

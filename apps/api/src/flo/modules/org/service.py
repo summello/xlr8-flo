@@ -10,7 +10,7 @@ from psycopg.types.json import Jsonb
 from pydantic import JsonValue
 
 from flo.kernel import setting_guards
-from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
+from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError
 from flo.kernel.tenancy.context import Scope
@@ -171,16 +171,16 @@ class OrgService:
         before: dict[str, object] | None,
         after: dict[str, object] | None,
     ) -> None:
-        AuditWriter(cast(AuditConnection, self.connection), self.scope).write(
+        audit_event(
+            cast(AuditConnection, self.connection),
+            self.scope,
             actor=AuditActor(ActorKind.USER, self.actor_id),
             action=action,
             target_type=action.split(".")[0],
             target_id=target_id,
             outcome=Outcome.SUCCESS,
-            before_source=before,
-            before_fields=tuple(before or ()),
-            after_source=after,
-            after_fields=tuple(after or ()),
+            before=before,
+            after=after,
         )
 
     def _unit(self, unit_id: UUID) -> dict[str, object]:
