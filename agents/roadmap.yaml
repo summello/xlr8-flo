@@ -1403,7 +1403,7 @@ epics:
           - ORG-003
         dep:
           - E05-S01
-        st: in_progress
+        st: review
       - id: E11-S09
         t: 'Status vocabulary aligned to MASTER 2.3: vendor, RFQ, award and purchase-order
           maps and labels'
@@ -1976,7 +1976,7 @@ epics:
         reqs:
           - AUD-001
         dep: []
-        st: in_progress
+        st: review
       - id: E22-S04
         t: 'M2 milestone review follow-ups: Money zero prop, shared lookup helper, internal
           collaboration readers, approvals read via service, e2e focus helper'
