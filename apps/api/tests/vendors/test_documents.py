@@ -444,7 +444,8 @@ def test_replace_resets_notification_stamps(header_db):
         doc.document_id,
         DocumentReplace(attachment_version_id=versions[1], expiry_date=ON + timedelta(days=10)),
     )
-    assert expiry.run_org(db[0], Scope(db[1]), on=ON) == 1  # the new date notifies afresh
+    # the new date notifies afresh (the next day: one digest per recipient per day)
+    assert expiry.run_org(db[0], Scope(db[1]), on=ON + timedelta(days=1)) == 1
 
 
 def test_jobs_tick_runs_registered_expiry_handler(header_db, monkeypatch):
@@ -555,3 +556,21 @@ def test_expired_required_count_honours_effective_window_and_emits_business_moni
     with caplog.at_level("ERROR"):
         expiry.run_org(db[0], scope, on=ON)
     assert not [r for r in caplog.records if getattr(r, "business_monitor", None)]
+
+
+def test_second_same_day_run_sends_no_second_digest_and_defers_new_documents(header_db):
+    db = header_db
+    types(db, TAX=True, INS=True)
+    manager(db)
+    vendor = new_vendor(db)
+    scope = Scope(db[1])
+    add(db, vendor.id, "TAX", ON + timedelta(days=5))
+    assert expiry.run_org(db[0], scope, on=ON) == 1
+    add(db, vendor.id, "INS", ON + timedelta(days=6))  # found later the same day
+    assert expiry.run_org(db[0], scope, on=ON) == 0
+    assert len(digests(db)) == 1
+    keys = sql(db, "SELECT idempotency_key FROM outbox WHERE payload->>'template'=%s", (TEMPLATE,))
+    assert keys == [(f"vendor-doc-digest:{db[1]}:{db[3]}:{ON.isoformat()}",)]
+    # the deferred document goes out in the next day's digest
+    assert expiry.run_org(db[0], scope, on=ON + timedelta(days=1)) == 1
+    assert [i["type_code"] for i in digests(db)[1]["context"]["items"]] == ["INS"]

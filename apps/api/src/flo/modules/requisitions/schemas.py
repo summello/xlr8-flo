@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal, Self
@@ -541,3 +542,36 @@ class CodeSubstitute(BaseModel):
         if self.department_code is None and self.ledger_account_code is None:
             raise invalid("department_code", "Supply a replacement code.", "code_required")
         return self
+
+
+@dataclass(frozen=True)
+class LineSourcing:
+    """One change to the quantity an RFQ holds against a requisition line (SRC-003)."""
+
+    requisition_id: UUID
+    requisition_line_id: UUID
+    requisition_version: int
+    delta: Decimal
+
+
+class SourcingBasis(BaseModel):
+    """A requisition line as sourcing sees it: figures are decimal strings (REQ-015)."""
+
+    line_id: UUID
+    requisition_id: UUID
+    requisition_number: str
+    requisition_version: int
+    requisition_status: str
+    amendment_pending: bool
+    bu_id: UUID
+    currency: str
+    needed_by: date | None
+    line_no: int
+    description: str
+    uom_code: str
+    requested_qty: str
+    sourced_qty: str
+    awarded_qty: str
+    ordered_qty: str
+    cancelled_qty: str
+    open_qty: str

@@ -19,6 +19,7 @@ from flo.api.master import router as master_router
 from flo.api.org import router as org_router
 from flo.api.projects import router as projects_router
 from flo.api.requisitions import router as requisitions_router
+from flo.api.sourcing import router as sourcing_router
 from flo.api.vendors import router as vendors_router
 from flo.api.workflows import router as workflows_router
 
@@ -33,7 +34,12 @@ CODES_ROUTES = (
     "requisitions/test_expired_codes.py::"
     "test_codes_routes_conceal_foreign_tenants_and_need_the_permission"
 )
+SOURCING_ROUTES = "sourcing/test_rfq.py::test_rfq_routes_conceal_foreign_tenants"
 COVERED = {
+    ("GET", "/api/v1/sourcing/requisition-lines"): SOURCING_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs"): SOURCING_ROUTES,
+    ("PATCH", "/api/v1/sourcing/rfqs/{id}/lines"): SOURCING_ROUTES,
+    ("GET", "/api/v1/sourcing/rfqs/{id}"): SOURCING_ROUTES,
     (
         "GET",
         "/api/v1/vendors/{id}/documents",
@@ -624,6 +630,7 @@ def test_every_id_route_has_a_named_foreign_tenant_case() -> None:
                 workflows_router,
                 requisitions_router,
                 vendors_router,
+                sourcing_router,
                 collaboration_router,
             ),
             COVERED,
@@ -651,6 +658,7 @@ def test_gate_fails_on_an_uncovered_route_and_on_a_dangling_reference() -> None:
             workflows_router,
             requisitions_router,
             vendors_router,
+            sourcing_router,
             collaboration_router,
         )
         | widget

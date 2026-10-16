@@ -54,6 +54,20 @@ def expired_required_count(conn: Connection, scope: Scope, on: date) -> int:
     return cast(int, row[0]) if row else 0
 
 
+def _digest_key(scope: Scope, user: UUID, on: date) -> str:
+    return f"vendor-doc-digest:{scope.org_id}:{user}:{on.isoformat()}"
+
+
+def _sent_today(repo: VendorRepository, scope: Scope, user: UUID, on: date) -> bool:
+    return (
+        repo.execute(
+            "SELECT 1 FROM outbox WHERE org_id = %(org_id)s AND idempotency_key = %(key)s",
+            {"key": _digest_key(scope, user, on)},
+        ).fetchone()
+        is not None
+    )
+
+
 def run_org(conn: Connection, scope: Scope, *, on: date | None = None) -> int:
     """Notify each newly expiring or expired document once; returns digests enqueued."""
     on = on or today()
@@ -97,6 +111,8 @@ def run_org(conn: Connection, scope: Scope, *, on: date | None = None) -> int:
                     for h in cast(PermissionHoldersResolver, resolver).role_holders(ROLE, t)
                 }
             recipients = holders[cast(UUID, vendor_id)]
+            if any(_sent_today(repo, scope, u, on) for u in recipients):
+                continue  # one digest per recipient per day; left unstamped for tomorrow's
             if not recipients:
                 continue  # left unstamped: noticed once a vendor manager exists
             (expired if is_expired else expiring).append(cast(UUID, id))
@@ -115,17 +131,11 @@ def run_org(conn: Connection, scope: Scope, *, on: date | None = None) -> int:
             recipient = emails.get(user)
             if recipient is None:
                 continue
-            prefix = f"vendor-document-expiry:{user}:{on.isoformat()}"
-            earlier = repo.execute(
-                "SELECT count(*) FROM outbox WHERE org_id = %(org_id)s "
-                "AND idempotency_key LIKE %(like)s",
-                {"like": prefix + ":%"},
-            ).fetchone()
             outbox.add_email(
                 to=recipient,
                 template="vendor-document-expiry-v1",
                 context={"items": items},
-                idempotency_key=f"{prefix}:{(cast(int, earlier[0]) if earlier else 0) + 1}",
+                idempotency_key=_digest_key(scope, user, on),
             )
             digests += 1
         if expiring or expired:
