@@ -110,10 +110,9 @@ BEGIN
   END IF;
   RETURN OLD;
  END IF;
+ -- The one change after publishing: published -> retired, with every other column untouched.
  IF OLD.status = 'published' AND NEW.status = 'retired'
-  AND (NEW.id, NEW.org_id, NEW.number, NEW.threshold, NEW.published_at, NEW.published_by)
-   IS NOT DISTINCT FROM
-   (OLD.id, OLD.org_id, OLD.number, OLD.threshold, OLD.published_at, OLD.published_by) THEN
+  AND to_jsonb(OLD) - 'status' = to_jsonb(NEW) - 'status' THEN
   RETURN NEW;
  END IF;
  IF OLD.status <> 'draft' THEN

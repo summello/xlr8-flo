@@ -637,3 +637,22 @@ def test_a_raw_update_cannot_move_a_question_into_a_published_version(header_db)
         )
     assert [q.key for q in service.get_questionnaire(live.id).questions] == ["name", "size"]
     assert [q.key for q in service.get_questionnaire(draft.id).questions] == ["mover"]
+
+
+def test_retirement_changes_the_status_and_nothing_else(header_db):
+    db = header_db
+    live = two(db)
+    for statement in (
+        "UPDATE vendor_questionnaire_version SET status='retired', created_by=%s WHERE id=%s",
+        "UPDATE vendor_questionnaire_version SET status='retired', row_version=99 WHERE id=%s",
+        "UPDATE vendor_questionnaire_version SET status='draft' WHERE id=%s",
+    ):
+        args = (new_identity(db), live.id) if "created_by" in statement else (live.id,)
+        with pytest.raises(psycopg.errors.ObjectNotInPrerequisiteState):
+            sql(db, statement, args)
+    sql(db, "UPDATE vendor_questionnaire_version SET status='retired' WHERE id=%s", (live.id,))
+    assert svc(db).get_questionnaire(live.id).status == "retired"
+    with pytest.raises(psycopg.errors.ObjectNotInPrerequisiteState):  # retired is final
+        sql(
+            db, "UPDATE vendor_questionnaire_version SET status='published' WHERE id=%s", (live.id,)
+        )
