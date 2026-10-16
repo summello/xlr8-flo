@@ -319,8 +319,7 @@ class ProjectService:
 
         Approval repeats the check under the lock; this one only saves a doomed submission.
         """
-        from flo.modules.budget.ledger import InsufficientBudget
-        from flo.modules.budget.service import get_balance
+        from flo.modules.budget.service import InsufficientBudget, get_balance
 
         available = get_balance(self.connection, self.scope, parent_id).available
         if available < amount:
