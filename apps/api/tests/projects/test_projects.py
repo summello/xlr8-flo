@@ -45,7 +45,8 @@ def test_create_details_scope_audit_and_status(project_db):
     assert row["owner_id"] == str(db.actor_id)
     assert row["status"] == "draft" and row["version"] == 1
     assert row["number"].endswith("0001")
-    assert set(row) == set(body(bu).model_dump()) | {
+    assert set(row) == set(body(bu).model_dump()) - {"budget"} | {
+        "requested_budget",
         "id",
         "number",
         "status",

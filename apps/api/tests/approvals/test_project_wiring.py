@@ -75,6 +75,8 @@ def wiring(workflow_db):
             department_code="D",
             ledger_account_code="L",
             currency="USD",
+            budget={"amount": "1000", "currency": "USD"},
+            sponsor_ids=[db[3]],
         )
     )
     return db, row, approver

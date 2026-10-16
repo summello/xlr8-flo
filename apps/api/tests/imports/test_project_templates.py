@@ -843,3 +843,67 @@ def test_allocation_row_errors_without_published_workflow(concrete):
             assert conn.execute("SELECT count(*) FROM budget_change_request").fetchone() == (0,)
 
     asyncio.run(scenario())
+
+
+def test_budget_rows_create_a_draft_and_submit_it_for_approval(concrete):
+    conn, org, _, actor, _, _ = concrete
+    publish((concrete, None, None), "project")
+    email = conn.execute("SELECT email FROM identity WHERE id=%s", (actor,)).fetchone()[0]
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            rows = [
+                project("FUNDED", budget_amount="1250.50", sponsor_emails=email),
+                project("PLAIN"),
+            ]
+            id, batch, preview = await validate(browser, "projects", rows)
+            assert batch["counts"]["create"] == 2, preview
+            with mock.patch("flo.modules.imports.templates.projects.start") as started:
+                await commit(browser, id)
+            assert started.call_count == 1
+
+    asyncio.run(scenario())
+    funded = get_by_external_ref(conn, Scope(org), "FUNDED")
+    assert funded.status == "approval_pending" and funded.requested_budget == "1250.5000"
+    assert ProjectService(conn, Scope(org)).sponsors(funded.id) == [actor]
+    # No budget column: a plain draft, as before; nothing is allocated before approval.
+    assert get_by_external_ref(conn, Scope(org), "PLAIN").status == "draft"
+    with tenant_transaction(conn, Scope(org)):
+        assert conn.execute("SELECT count(*) FROM ledger_entry").fetchone() == (0,)
+
+
+def test_budget_row_errors_are_listed_per_row(concrete):
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            rows = [
+                project("A", budget_amount="-5", sponsor_emails="nobody@example.test"),
+                project("B", budget_amount="10"),
+                project("C", sponsor_emails="nobody@example.test"),
+                project("D", budget_amount="10.123", sponsor_emails=""),
+            ]
+            id, batch, preview = await validate(browser, "projects", rows)
+            codes = [{issue["code"] for issue in row["issues"]} for row in preview]
+            assert {"invalid_amount", "unknown_sponsor"} <= codes[0]
+            assert "sponsor_required" in codes[1]
+            assert {"unknown_sponsor", "budget_required"} <= codes[2]
+            assert "amount_precision" in codes[3]
+            assert [row["action"] for row in preview] == ["error"] * 4
+
+    asyncio.run(scenario())
+
+
+def test_budget_row_without_a_published_project_workflow_is_an_error(concrete):
+    conn, _, _, actor, _, _ = concrete
+    email = conn.execute("SELECT email FROM identity WHERE id=%s", (actor,)).fetchone()[0]
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            _, _, preview = await validate(
+                browser, "projects", [project("X", budget_amount="10", sponsor_emails=email)]
+            )
+            assert "workflow_not_set_up" in {i["code"] for i in preview[0]["issues"]}
+
+    asyncio.run(scenario())

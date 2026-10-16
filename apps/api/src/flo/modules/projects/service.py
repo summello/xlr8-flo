@@ -13,7 +13,7 @@ import psycopg
 from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.config import Settings
-from flo.kernel.errors import ErrorCode, ProblemError, conflict
+from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError, conflict
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.approvals.service import require_workflow
@@ -204,6 +204,7 @@ class ProjectService:
                     cast(UUID | None, before["bu_id"]),
                     "Projects",
                 )
+                self._submission_ready(project_id, before)
             lifecycle.write(before, blocked, body)
             after = self._get(project_id)
             self._audit(
@@ -213,6 +214,36 @@ class ProjectService:
                 after | {"override": body.override, "blocked_by": blocked, "reason": body.reason},
             )
             return self._read(after)
+
+    def _submission_ready(self, project_id: UUID, row: dict[str, object]) -> None:
+        """A project is submitted with the budget it asks for and at least one sponsor."""
+        errors = []
+        if row["requested_budget"] is None:
+            errors.append(("budget", "Enter the budget this project asks for."))
+        if not self.sponsors(project_id):
+            errors.append(("sponsor_ids", "Name at least one sponsor."))
+        if not errors and row["parent_id"] is not None:
+            self.check_main_funds(
+                cast(UUID, row["parent_id"]), cast(Decimal, row["requested_budget"])
+            )
+        if errors:
+            raise ProblemError(
+                ErrorCode.VALIDATION_FAILED,
+                detail=f"Fix {len(errors)} things before you submit. Nothing was submitted.",
+                checks={"problem": "submission_invalid"},
+                errors=tuple(ProblemFieldError(field=f, message=m) for f, m in errors),
+            )
+
+    def requested_funding(self, project_id: UUID) -> tuple[Decimal, str, UUID | None] | None:
+        """The budget a project asks for, its currency and its main project, or None."""
+        row = self._get(project_id)
+        if row["requested_budget"] is None:
+            return None
+        return (
+            cast(Decimal, row["requested_budget"]),
+            cast(str, row["currency"]),
+            cast(UUID | None, row["parent_id"]),
+        )
 
     def approval_outcome(
         self, project_id: UUID, status: ProjectStatus, reason: str | None
@@ -225,6 +256,8 @@ class ProjectService:
                 raise conflict("invalid_transition", "The project is no longer awaiting approval.")
             lifecycle.write(before, blocked, TransitionCreate(to=status, reason=reason))
             after = self._get(project_id)
+            if status == "active":
+                self._fund_on_approval(after)
             self._audit(
                 "project.activated" if status == "active" else "project.transition",
                 project_id,
@@ -232,6 +265,66 @@ class ProjectService:
                 after | {"reason": reason},
             )
             return self._read(after)
+
+    def _fund_on_approval(self, row: dict[str, object]) -> None:
+        """Allocate the requested budget: direct for a main project, a transfer for a child.
+
+        Runs inside the approval decision's transaction. Funding rows are locked, in id order,
+        before the posting validates availability; a child short of funds fails the whole
+        approval and nothing is written.
+        """
+        if row["requested_budget"] is None or self.actor_id is None:
+            return
+        from flo.modules.budget.schemas import AllocationCreate
+        from flo.modules.budget.service import allocate, lock_balance, post_entry, post_legs
+        from flo.modules.org.service import today
+
+        project_id = cast(UUID, row["id"])
+        parent_id = cast(UUID | None, row["parent_id"])
+        body = AllocationCreate.model_validate(
+            {
+                "amount": format(cast(Decimal, row["requested_budget"]), "f"),
+                "currency": row["currency"],
+                "effective_date": today(),
+                "reason": f"Project {row['number']} approved",
+                "evidence_ref": f"project:{row['number']}",
+            }
+        )
+        key = f"project:{project_id}:fund"
+        if parent_id is None:
+            allocate(self.connection, self.scope, project_id, body, self.actor_id, key)
+            return
+        for node_id in sorted((parent_id, project_id)):
+            lock_balance(self.connection, self.scope, node_id)
+        parent = self.get(parent_id)
+        if parent.currency != row["currency"]:
+            raise conflict(
+                "currency_mismatch",
+                f"The main project is in {parent.currency}, this project in {row['currency']}. "
+                "Use matching currencies.",
+            )
+        post_legs(
+            self.connection,
+            self.scope,
+            body,
+            self.actor_id,
+            key,
+            [(parent, -body.amount, ":out"), (self.get(project_id), body.amount, ":in")],
+            allow_negative=False,
+            poster=post_entry,
+        )
+
+    def check_main_funds(self, parent_id: UUID, amount: Decimal) -> None:
+        """Advisory, unlocked: refuse a child whose main project cannot cover it now.
+
+        Approval repeats the check under the lock; this one only saves a doomed submission.
+        """
+        from flo.modules.budget.ledger import InsufficientBudget
+        from flo.modules.budget.service import get_balance
+
+        available = get_balance(self.connection, self.scope, parent_id).available
+        if available < amount:
+            raise InsufficientBudget(available, amount)
 
     def available_transitions(
         self, project_id: UUID, permitted: Callable[[str], bool]
@@ -326,8 +419,24 @@ class ProjectService:
                 raise RuntimeError("project creation requires an actor")
             self._user("owner_id", owner)
             self._user("sponsor_id", body.sponsor_id)
+            for sponsor in body.sponsor_ids:
+                self._user("sponsor_ids", sponsor)
+            if body.budget is not None and body.budget.currency != body.currency:
+                raise invalid(
+                    "budget",
+                    f"The budget is in {body.budget.currency}, the project in {body.currency}. "
+                    "Use the project currency.",
+                    "currency_mismatch",
+                )
+            if body.budget is not None and body.parent_id is not None:
+                self.check_main_funds(body.parent_id, body.budget.amount)
             self._dates(body.planned_start, body.planned_end)
-            return self._insert_project(body, codes=codes, owner=owner, on_date=on_date)
+            created = self._insert_project(body, codes=codes, owner=owner, on_date=on_date)
+            if body.sponsor_ids:
+                apply_sponsors(self.connection, self.scope, created.id, body.sponsor_ids)
+                created = self.get(created.id)
+                created.sponsor_ids = self.sponsors(created.id)
+            return created
 
     def _insert_project(
         self,
@@ -357,6 +466,7 @@ class ProjectService:
                     "number": number,
                     "owner_id": owner,
                     "created_by": self.actor_id,
+                    "requested_budget": body.budget.amount if body.budget else None,
                 }
             )
             try:
@@ -366,13 +476,13 @@ class ProjectService:
                         description, external_ref,
                         owner_id, sponsor_id, department_code, ledger_account_code, currency,
                         planned_start, planned_end, created_by, status,
-                        generated_by_requisition_id, source_requisition_id)
+                        generated_by_requisition_id, source_requisition_id, requested_budget)
                         VALUES (%(id)s, %(org_id)s, %(bu_id)s, %(parent_id)s, %(number)s, %(name)s,
                         %(description)s, %(external_ref)s, %(owner_id)s, %(sponsor_id)s,
                         %(department_code)s,
                         %(ledger_account_code)s, %(currency)s, %(planned_start)s, %(planned_end)s,
                         %(created_by)s, %(status)s, %(generated_by_requisition_id)s,
-                        %(source_requisition_id)s)
+                        %(source_requisition_id)s, %(requested_budget)s)
                         ON CONFLICT (org_id, bu_id, number)
                         DO NOTHING RETURNING id""",
                         values,
