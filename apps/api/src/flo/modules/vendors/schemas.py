@@ -114,10 +114,16 @@ class ContactFields(BaseModel):
     phone: str | None = Field(default=None, max_length=40)
     receives_documents: bool | None = None
 
-    @field_validator("name", "email", "phone")
+    @field_validator("name", "email", "phone", mode="before")
     @classmethod
-    def _trimmed(cls, value: str | None) -> str | None:
-        return None if value is None else value.strip() or None
+    def _trimmed(cls, value: object) -> object:
+        """Trim before the length rules run, so a blank required field is a 422."""
+        return value.strip() if isinstance(value, str) else value
+
+    @field_validator("phone")
+    @classmethod
+    def _blank_phone_is_none(cls, value: str | None) -> str | None:
+        return value or None
 
 
 class ContactCreate(ContactFields):

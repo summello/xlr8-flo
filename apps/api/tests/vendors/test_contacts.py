@@ -72,6 +72,14 @@ def test_required_types_are_unique_immutable_and_undeletable(header_db):
             listed = (await send(browser, "GET", path)).json()
             assert [c["type"] for c in listed] == ["billing", "service_delivery"]
             assert (await send(browser, "POST", path, contact("nope"))).status_code == 422
+            blank = await send(browser, "POST", path, contact("LEGAL", name="   "))
+            assert blank.status_code == 422
+            assert blank.json()["errors"][0]["field"] == "name"
+            assert (
+                await send(browser, "PATCH", f"{path}/{sd['id']}", {"name": " "})
+            ).status_code == 422
+            cleared = await send(browser, "PATCH", f"{path}/{sd['id']}", {"phone": "  "})
+            assert cleared.status_code == 200 and cleared.json()["phone"] is None
             # the database refuses a second required contact even without the service
             with (
                 pytest.raises(psycopg.errors.UniqueViolation),
