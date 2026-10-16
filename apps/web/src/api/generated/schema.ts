@@ -3144,6 +3144,8 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /** Version */
+            version: number;
         };
         /** CurrencyAggregate */
         CurrencyAggregate: {
@@ -6156,6 +6158,8 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /** Version */
+            version: number;
         };
         /** VendorDisabled */
         VendorDisabled: {
@@ -6220,6 +6224,8 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /** Version */
+            version: number;
         };
         /** @enum {string} */
         VendorStatus: "draft" | "pending_approval" | "active" | "suspended" | "inactive" | "rejected";
@@ -12791,6 +12797,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                "If-Match"?: string | null;
                 "X-FLO-Origin-Secret"?: string | null;
             };
             path: {
@@ -12966,6 +12973,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                "If-Match"?: string | null;
                 "X-FLO-Origin-Secret"?: string | null;
             };
             path: {

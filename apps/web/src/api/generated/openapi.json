@@ -1883,6 +1883,10 @@
             "format": "date-time",
             "title": "Updated At",
             "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
           }
         },
         "required": [
@@ -1893,7 +1897,8 @@
           "phone",
           "receives_documents",
           "created_at",
-          "updated_at"
+          "updated_at",
+          "version"
         ],
         "title": "ContactRead",
         "type": "object"
@@ -10855,6 +10860,10 @@
             "format": "date-time",
             "title": "Updated At",
             "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
           }
         },
         "required": [
@@ -10866,7 +10875,8 @@
           "availability",
           "created_by_email",
           "created_at",
-          "updated_at"
+          "updated_at",
+          "version"
         ],
         "title": "VendorDetail",
         "type": "object"
@@ -11030,6 +11040,10 @@
             "format": "date-time",
             "title": "Updated At",
             "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
           }
         },
         "required": [
@@ -11041,7 +11055,8 @@
           "availability",
           "created_by_email",
           "created_at",
-          "updated_at"
+          "updated_at",
+          "version"
         ],
         "title": "VendorRead",
         "type": "object"
@@ -23757,6 +23772,22 @@
           },
           {
             "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
             "name": "X-FLO-Origin-Secret",
             "required": false,
             "schema": {
@@ -24062,6 +24093,22 @@
               "format": "uuid",
               "title": "Contact Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
             }
           },
           {

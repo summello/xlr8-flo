@@ -160,6 +160,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261014_0058",
         "20261014_0059",
         "20261014_0060",
+        "20261014_0061",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -2115,3 +2116,43 @@ def test_migration_0053_tracking_table_is_tenant_isolated_and_0053_still_reverse
         )
         base.downgrade(conn)
         assert conn.execute("SELECT to_regclass('migration_0053_change')").fetchone() == (None,)
+
+
+def test_vendor_row_version_roundtrip_preserves_rows(empty_database):
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261014_0060"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261014_0061")
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        tenant = create(conn)
+        actor = admin_id(conn)
+        vendor_id = uuid4()
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            conn.execute(
+                "INSERT INTO vendor(id,org_id,number,trading_name,legal_name,availability,"
+                "created_by) VALUES(%s,%s,'V-000001','T','L','global',%s)",
+                (vendor_id, tenant.org_id, actor),
+            )
+            conn.execute(
+                "INSERT INTO vendor_contact(id,org_id,vendor_id,type,name,email,"
+                "receives_documents) VALUES(%s,%s,%s,'billing','B','b@example.test',false)",
+                (uuid4(), tenant.org_id, vendor_id),
+            )
+        mig.upgrade(conn)
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            assert conn.execute("SELECT version FROM vendor").fetchall() == [(1,)]
+            assert conn.execute("SELECT version FROM vendor_contact").fetchall() == [(1,)]
+        mig.downgrade(conn)
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            assert conn.execute("SELECT number FROM vendor").fetchall() == [("V-000001",)]
+            assert conn.execute("SELECT count(*) FROM vendor_contact").fetchone() == (1,)
+        cols = conn.execute(
+            "SELECT count(*) FROM information_schema.columns WHERE column_name='version' "
+            "AND table_name IN ('vendor','vendor_contact')"
+        ).fetchone()
+        assert cols == (0,)

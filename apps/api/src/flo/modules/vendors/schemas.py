@@ -80,6 +80,7 @@ class VendorRead(BaseModel):
     created_by_email: str
     created_at: datetime
     updated_at: datetime
+    version: int
 
 
 class VendorUnit(BaseModel):
@@ -145,6 +146,7 @@ class ContactRead(BaseModel):
     receives_documents: bool
     created_at: datetime
     updated_at: datetime
+    version: int
 
 
 class Recipient(BaseModel):

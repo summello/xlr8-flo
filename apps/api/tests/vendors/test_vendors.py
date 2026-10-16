@@ -31,13 +31,29 @@ def allow_local_disable(db, value=True):
     org_svc(db).set_setting("vendor.allow_local_disable", SettingPut(value=value))
 
 
-async def send(browser, method, suffix="", data=None):
+async def send(browser, method, suffix="", data=None, match="auto"):
+    """`match`: "auto" sends the live version on a PATCH, None omits If-Match, else the value."""
+    extra = {}
+    if method == "PATCH" and match is not None:
+        extra["If-Match"] = str(await current_version(browser, suffix) if match == "auto" else match)
     return await browser.request(
         method,
         "/api/v1/vendors" + suffix,
         json=data,
-        headers=headers(browser, uuid4().hex),
+        headers=headers(browser, uuid4().hex) | extra,
     )
+
+
+async def current_version(browser, suffix):
+    """The live version of the vendor or contact a PATCH targets (1 when it is not visible)."""
+    parts = suffix.strip("/").split("/")
+    if len(parts) == 3:  # <vendor>/contacts/<contact>
+        got = await browser.request("GET", f"/api/v1/vendors/{parts[0]}/contacts")
+        rows = [c for c in got.json() if c["id"] == parts[2]] if got.status_code == 200 else []
+    else:
+        got = await browser.request("GET", "/api/v1/vendors/" + parts[0])
+        rows = [got.json()] if got.status_code == 200 else []
+    return rows[0]["version"] if rows else 1
 
 
 def body(name="Acme", legal="Acme Ltd", availability="global", unit_ids=()):
@@ -341,5 +357,28 @@ def test_vendor_permissions_per_role(header_db, permissions, list_status, create
             await login(browser)
             assert (await send(browser, "GET")).status_code == list_status
             assert (await send(browser, "POST", data=body())).status_code == create_status
+
+    asyncio.run(scenario())
+
+
+def test_patch_vendor_needs_if_match_and_a_stale_replay_conflicts(header_db):
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            made = (await send(browser, "POST", data=body())).json()
+            path = "/" + made["id"]
+            assert made["version"] == 1
+            missing = await send(browser, "PATCH", path, {"legal_name": "A"}, match=None)
+            assert missing.status_code == 400
+            assert missing.json()["checks"]["problem"] == "if_match_required"
+            assert (await send(browser, "PATCH", path, {"legal_name": "A"}, match="x")).status_code == 400
+            first = await send(browser, "PATCH", path, {"legal_name": "A"}, match=1)
+            assert first.status_code == 200 and first.json()["version"] == 2
+            assert first.headers["ETag"] == '"2"'
+            assert (await send(browser, "GET", path)).headers["ETag"] == '"2"'
+            replay = await send(browser, "PATCH", path, {"legal_name": "B"}, match=1)
+            assert replay.status_code == 409
+            assert replay.json()["checks"]["problem"] == "stale_version"
+            assert (await send(browser, "GET", path)).json()["legal_name"] == "A"
 
     asyncio.run(scenario())
