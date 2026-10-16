@@ -88,6 +88,12 @@ test("keyboard only: add, reorder with focus following, publish", async ({ page 
   await expect(page.getByRole("button", { name: 'Move "First question" down' })).toHaveAttribute("aria-disabled", "true");
   await page.keyboard.press("Enter");
   await expect(down).toBeFocused();
+  // Moving the other way: the pressed row is the one whose node React relocates.
+  const up = page.getByRole("button", { name: 'Move "First question" up' });
+  await up.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("list", { name: "Questions" }).getByLabel("Prompt").first()).toHaveValue("First question");
+  await expect(up).toBeFocused();
   await page.getByRole("button", { name: "Publish", exact: true }).focus();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("button", { name: "Cancel" })).toBeFocused();
