@@ -3,7 +3,7 @@
 from typing import Annotated, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 
 from flo.api.admin_users import organization_target
 from flo.api.auth import get_auth_settings
@@ -15,6 +15,9 @@ from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.org.service import OrgService
 from flo.modules.vendors.schemas import (
+    ContactCreate,
+    ContactPatch,
+    ContactRead,
     DisableCreate,
     VendorCreate,
     VendorDetail,
@@ -93,3 +96,32 @@ def enable_vendor(
     id: UUID, unit_id: UUID, context: UnitEditContext, connection: Connection
 ) -> VendorDetail:
     return VendorService(connection, current_scope(), context.user_id).enable_locally(id, unit_id)
+
+
+@router.get("/{id}/contacts", response_model=list[ContactRead])
+def list_contacts(id: UUID, context: ViewContext, connection: Connection) -> list[ContactRead]:
+    return VendorService(connection, current_scope(), context.user_id).list_contacts(id)
+
+
+@router.post("/{id}/contacts", status_code=201, response_model=ContactRead)
+def create_contact(
+    id: UUID, body: ContactCreate, context: EditContext, connection: Connection
+) -> ContactRead:
+    return VendorService(connection, current_scope(), context.user_id).create_contact(id, body)
+
+
+@router.patch("/{id}/contacts/{contact_id}", response_model=ContactRead)
+def patch_contact(
+    id: UUID, contact_id: UUID, body: ContactPatch, context: EditContext, connection: Connection
+) -> ContactRead:
+    return VendorService(connection, current_scope(), context.user_id).update_contact(
+        id, contact_id, body
+    )
+
+
+@router.delete("/{id}/contacts/{contact_id}", status_code=204)
+def delete_contact(
+    id: UUID, contact_id: UUID, context: EditContext, connection: Connection
+) -> Response:
+    VendorService(connection, current_scope(), context.user_id).delete_contact(id, contact_id)
+    return Response(status_code=204)

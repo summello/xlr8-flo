@@ -157,6 +157,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261014_0055",
         "20261014_0056",
         "20261014_0057",
+        "20261014_0058",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -1872,6 +1873,51 @@ def test_vendors_roundtrip_preserves_rows_and_down_drops_only_its_objects(empty_
             assert conn.execute("SELECT count(*) FROM vendor").fetchone() == (0,)
 
 
+def test_vendor_contacts_roundtrip_preserves_vendors_and_plants_the_unique_index(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261014_0056"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261014_0057")
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("contacts-migration"),
+    ):
+        tenant = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(tenant.org_id)
+        vendor_id = uuid4()
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO vendor(id,org_id,number,trading_name,legal_name,availability,"
+                "created_by) VALUES(%s,%s,'V-000001','T','L','global',%s)",
+                (vendor_id, tenant.org_id, actor),
+            )
+        mig.upgrade(conn)
+        insert = (
+            "INSERT INTO vendor_contact(id,org_id,vendor_id,type,name,email,receives_documents)"
+            " VALUES(%s,%s,%s,%s,'N','n@example.test',false)"
+        )
+        with tenant_transaction(conn, scope):
+            conn.execute(insert, (uuid4(), tenant.org_id, vendor_id, "billing"))
+            conn.execute(insert, (uuid4(), tenant.org_id, vendor_id, "LEGAL"))
+            conn.execute(insert, (uuid4(), tenant.org_id, vendor_id, "LEGAL"))
+        with pytest.raises(psycopg.errors.UniqueViolation), tenant_transaction(conn, scope):
+            conn.execute(insert, (uuid4(), tenant.org_id, vendor_id, "billing"))
+        mig.downgrade(conn)
+        assert conn.execute("SELECT to_regclass('vendor_contact')").fetchone() == (None,)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT count(*) FROM vendor").fetchone() == (1,)
+        mig.upgrade(conn)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT count(*) FROM vendor_contact").fetchone() == (0,)
+
+
 def test_rfq_roundtrip_preserves_rows_and_down_returns_held_quantity(empty_database):
     from flo.kernel.logging import correlation_context
     from flo.kernel.tenancy.context import Scope
@@ -1882,10 +1928,10 @@ def test_rfq_roundtrip_preserves_rows_and_down_returns_held_quantity(empty_datab
 
     revisions = migrate.discover_migrations(MIGRATIONS)
     migrate.apply_migrations(
-        [r for r in revisions if r.revision <= "20261014_0056"], empty_database
+        [r for r in revisions if r.revision <= "20261014_0057"], empty_database
     )
-    previous = next(r for r in revisions if r.revision == "20261014_0056")
-    mig = next(r for r in revisions if r.revision == "20261014_0057")
+    previous = next(r for r in revisions if r.revision == "20261014_0057")
+    mig = next(r for r in revisions if r.revision == "20261014_0058")
     with (
         psycopg.connect(empty_database, autocommit=True) as conn,
         correlation_context("rfq-migration"),

@@ -101,3 +101,52 @@ class VendorDetail(VendorRead):
 class VendorPage(BaseModel):
     rows: list[VendorRead]
     next_cursor: str | None = None
+
+
+REQUIRED_CONTACT_TYPES = ("billing", "service_delivery")
+EMAIL = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"  # the invitation rule
+
+
+class ContactFields(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    email: str | None = Field(default=None, min_length=3, max_length=254, pattern=EMAIL)
+    phone: str | None = Field(default=None, max_length=40)
+    receives_documents: bool | None = None
+
+    @field_validator("name", "email", "phone", mode="before")
+    @classmethod
+    def _trimmed(cls, value: object) -> object:
+        """Trim before the length rules run, so a blank required field is a 422."""
+        return value.strip() if isinstance(value, str) else value
+
+    @field_validator("phone")
+    @classmethod
+    def _blank_phone_is_none(cls, value: str | None) -> str | None:
+        return value or None
+
+
+class ContactCreate(ContactFields):
+    type: str = Field(min_length=1, max_length=100)
+    name: str = Field(min_length=1, max_length=200)
+    email: str = Field(min_length=3, max_length=254, pattern=EMAIL)
+
+
+class ContactPatch(ContactFields):
+    """No `type`: it is immutable, and `extra="forbid"` answers 422 if one is sent."""
+
+
+class ContactRead(BaseModel):
+    id: UUID
+    type: str
+    name: str
+    email: str
+    phone: str | None
+    receives_documents: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class Recipient(BaseModel):
+    name: str
+    email: str

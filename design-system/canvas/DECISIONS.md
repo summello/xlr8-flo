@@ -310,6 +310,7 @@ Screens added around the built comparison: RFQ list, start an RFQ from approved 
 208. **(6j-13) A PO with no published PO workflow is refused** (409 `workflow_not_set_up`, D-M2-21, PO-003). The editor's `Approve when no PO workflow is published` is dropped; the board is stale.
 209. **(6j-14) Cancelling or reducing an issued PO** releases the unused commitment once and **re-reserves it on the sub-project for the reopened quantity**, so another PO can order it without re-approval. If the requisition line is cancelled as well, the amount is released and returned to the main project (as 205).
 210. **(6j-15) Budget Summary definitions confirmed** as written in `pages/purchase-orders.md` §7.9 (`Committed`, `This PO`, `Available After Issue`, `Project Actual`).
+211. **(6j-16) Tax and freight treatment (claude-plan §14 #6, FIN-008):** two settings per BU/OU, `tax.consumes_budget` and `freight.consumes_budget`, default on. When on, that component counts against the budget (award scope check, PO commitment); when off it is shown separately on the PO and not committed. Always separately visible (PO-016).
 
 **Self-review with impeccable (13 Oct 2026, two isolated assessments: design review A, detector with browser evidence B).**
 

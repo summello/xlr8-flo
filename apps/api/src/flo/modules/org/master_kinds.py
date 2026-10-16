@@ -31,7 +31,9 @@ RULES: dict[str, dict[str, Callable[[object], bool]]] = {
     "payment_term": {"net_days": days, "discount_percent": percentage, "discount_days": days},
     "item_category": {},
     "service_category": {},
+    "vendor_contact_type": {},
 }
+RESERVED_CONTACT_TYPES = ("billing", "service_delivery")  # built in to vendors
 OPTIONAL = {"payment_term": {"discount_percent", "discount_days"}}
 
 

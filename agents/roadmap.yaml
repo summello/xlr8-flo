@@ -1420,7 +1420,7 @@ epics:
           - PO-007
         dep:
           - E11-S01
-        st: review
+        st: done
       - id: E11-S10
         t: 'Shared decision panel at phone width: footer reflow, close button never
           covered'
@@ -1446,7 +1446,7 @@ epics:
           - VEN-002
         dep:
           - E11-S01
-        st: review
+        st: done
       - id: E11-S03
         t: Vendor documents with issue/expiry, verification status, expiry notification
         k: crud
@@ -1460,7 +1460,7 @@ epics:
         dep:
           - E11-S01
           - E09-S10
-        st: todo
+        st: in_progress
       - id: E11-S04
         t: Field-level access control and masking for tax and banking data
         k: security
@@ -1661,7 +1661,7 @@ epics:
         dep:
           - E09-S06
           - E11-S01
-        st: todo
+        st: in_progress
       - id: E12-S02
         t: RFQ content, invitations, deadline, terms, attachments, vendor eligibility
           check
@@ -1951,6 +1951,7 @@ epics:
           - WF-002
         dep:
           - E13-S01
+          - E11-S09
         st: todo
       - id: E13-S04
         t: PO approval workflow before issue
@@ -1963,6 +1964,7 @@ epics:
         dep:
           - E13-S03
           - E10-S13
+          - E13-S02
         st: todo
       - id: E13-S05
         t: Issue converts reservation to commitment atomically; partial POs reduce open
@@ -2013,7 +2015,8 @@ epics:
         t: PO PDF reproducible from stored snapshot and template version
         k: engine
         s: L
-        tags: []
+        tags:
+          - security
         reqs:
           - PO-014
           - DATA-005
@@ -2067,6 +2070,162 @@ epics:
           - E13-S09
           - E09-S10
         st: todo
+      - id: E13-S12
+        t: 'PO list and PO detail screens'
+        k: ui
+        s: L
+        tags:
+          - ui
+        reqs:
+          - PO-007
+          - PO-013
+          - UX-004
+        dep:
+          - E13-S03
+          - E13-S05
+          - E11-S09
+        st: todo
+      - id: E13-S13
+        t: 'Create POs from awarded lines'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - PO-001
+          - PO-009
+          - SRC-018
+        dep:
+          - E13-S01
+          - E13-S12
+        st: todo
+      - id: E13-S14
+        t: 'PO editor: header, lines with tax and freight apart, budget preview, vendor eligibility'
+        k: ui
+        s: L
+        tags:
+          - ui
+        reqs:
+          - PO-002
+          - PO-016
+          - PO-017
+          - VEN-012
+        dep:
+          - E13-S01
+          - E13-S02
+          - E13-S04
+          - E13-S11
+          - E13-S12
+          - E11-S11
+        st: todo
+      - id: E13-S15
+        t: 'Issue: confirmation and signature moment 5'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - PO-008
+          - PO-012
+          - A11Y-009
+        dep:
+          - E13-S05
+          - E13-S09
+          - E13-S12
+        st: todo
+      - id: E13-S16
+        t: 'Transmission log, change recipient and resend'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - PO-004
+          - PO-015
+          - EML-002
+          - EML-003
+        dep:
+          - E13-S09
+          - E13-S10
+          - E13-S12
+        st: todo
+      - id: E13-S17
+        t: 'Vendor copy preview: email and PDF as the supplier sees them'
+        k: ui
+        s: M
+        tags:
+          - ui
+          - security
+        reqs:
+          - PO-014
+          - PO-017
+          - EML-005
+        dep:
+          - E13-S08
+          - E13-S11
+          - E13-S12
+        st: todo
+      - id: E13-S18
+        t: 'Change order screen: field diff, signed budget effect, reapproval line'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - PO-010
+          - PO-011
+          - ACC-005
+        dep:
+          - E13-S06
+          - E13-S12
+        st: todo
+      - id: E13-S19
+        t: 'Cancel or reduce dialog'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - PO-013
+          - ACC-006
+        dep:
+          - E13-S07
+          - E13-S12
+        st: todo
+      - id: E13-S20
+        t: 'PO decision panel: Purchase Order Evidence block'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - PO-003
+          - APR-020
+        dep:
+          - E13-S04
+          - E11-S10
+        st: todo
+      - id: E13-S21
+        t: 'Sending domain status and suppression list (Administration)'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - EML-001
+          - EML-003
+        dep:
+          - E13-S10
+        st: todo
+      - id: E13-S22
+        t: Purchase-order open questions for the operator (parking story)
+        k: docs
+        s: S
+        tags: []
+        reqs:
+          - PO-007
+        dep: []
+        st: blocked
 
   - id: E22
     name: Budget governance follow-ups
@@ -2085,7 +2244,7 @@ epics:
           - PROJ-003
         dep:
           - E09-S17
-        st: todo
+        st: in_progress
       - id: E22-S02
         t: Soft delete for every draft document
         k: crud

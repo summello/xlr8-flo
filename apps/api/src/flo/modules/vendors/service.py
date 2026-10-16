@@ -13,7 +13,7 @@ from flo.kernel.config import Settings
 from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
-from flo.modules.org.service import NumberingService, OrgService, today
+from flo.modules.org.service import MasterCodeUnusable, NumberingService, OrgService, today
 from flo.modules.vendors.models import (
     ANCESTORS_CTE,
     AVAILABLE_SQL,
@@ -23,7 +23,12 @@ from flo.modules.vendors.models import (
     VendorRepository,
 )
 from flo.modules.vendors.schemas import (
+    REQUIRED_CONTACT_TYPES,
+    ContactCreate,
+    ContactPatch,
+    ContactRead,
     DisableCreate,
+    Recipient,
     VendorCreate,
     VendorDetail,
     VendorDisabled,
@@ -37,6 +42,8 @@ from flo.modules.vendors.schemas import (
 )
 
 SETTING = "vendor.allow_local_disable"
+CONTACT_COLUMNS = "id, type, name, email, phone, receives_documents, created_at, updated_at"
+CONTACT_FIELDS = tuple(CONTACT_COLUMNS.replace(" ", "").split(","))
 
 
 def _cursor(name: str, id: UUID) -> str:
@@ -179,12 +186,13 @@ class VendorService:
         before: dict[str, object] | None,
         after: dict[str, object],
         reason: str | None = None,
+        target_type: str = "vendor",
     ) -> None:
         fields = tuple(after)
         AuditWriter(cast(AuditConnection, self.connection), self.scope).write(
             actor=AuditActor(ActorKind.USER, self.actor_id),
             action=action,
-            target_type="vendor",
+            target_type=target_type,
             target_id=id,
             outcome=Outcome.SUCCESS,
             reason=reason,
@@ -368,3 +376,153 @@ class VendorService:
                 reason=str(deleted[0]),
             )
         return self.get(id)
+
+    # -- typed contacts (E11-S02) ------------------------------------------------------------
+
+    def _contact(self, vendor_id: UUID, contact_id: UUID, lock: bool = False) -> ContactRead:
+        row = self.repo.execute(
+            f"SELECT {CONTACT_COLUMNS} FROM vendor_contact WHERE org_id = %(org_id)s "
+            f"AND vendor_id = %(vendor_id)s AND id = %(id)s{' FOR UPDATE' if lock else ''}",
+            {"vendor_id": vendor_id, "id": contact_id},
+        ).fetchone()
+        if row is None:
+            raise ProblemError(ErrorCode.NOT_FOUND)
+        return ContactRead.model_validate(dict(zip(CONTACT_FIELDS, row, strict=True)))
+
+    def _contact_audit(
+        self, action: str, vendor_id: UUID, before: ContactRead | None, after: ContactRead
+    ) -> None:
+        # The phone is deliberately not recorded: minimise personal data in the log.
+        keep = {"id", "type", "name", "email", "receives_documents"}
+        self._audit(
+            action,
+            vendor_id,
+            before.model_dump(mode="json", include=keep) if before else None,
+            after.model_dump(mode="json", include=keep),
+        )
+
+    def list_contacts(self, vendor_id: UUID) -> list[ContactRead]:
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self._row(vendor_id)
+            rows = self.repo.execute(
+                f"SELECT {CONTACT_COLUMNS} FROM vendor_contact WHERE org_id = %(org_id)s "
+                "AND vendor_id = %(vendor_id)s ORDER BY "
+                "CASE type WHEN 'billing' THEN 0 WHEN 'service_delivery' THEN 1 ELSE 2 END, "
+                "lower(name), id",
+                {"vendor_id": vendor_id},
+            ).fetchall()
+        return [ContactRead.model_validate(dict(zip(CONTACT_FIELDS, r, strict=True))) for r in rows]
+
+    def _contact_type(self, value: str) -> str:
+        value = value.strip()
+        if value in REQUIRED_CONTACT_TYPES:
+            return value
+        try:
+            return (
+                OrgService(self.connection, self.scope)
+                .assert_usable("vendor_contact_type", value, today())
+                .code
+            )
+        except MasterCodeUnusable:
+            raise invalid(
+                "type", "Choose billing, service_delivery or a defined contact type."
+            ) from None
+
+    def create_contact(self, vendor_id: UUID, body: ContactCreate) -> ContactRead:
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self._row(vendor_id)
+            type = self._contact_type(body.type)
+            id = uuid4()
+            receives = (
+                body.receives_documents
+                if body.receives_documents is not None
+                else type == "service_delivery"
+            )
+            inserted = self.repo.execute(
+                "INSERT INTO vendor_contact (id, org_id, vendor_id, type, name, email, phone, "
+                "receives_documents) VALUES (%(id)s, %(org_id)s, %(vendor_id)s, %(type)s, "
+                "%(name)s, %(email)s, %(phone)s, %(receives)s) "
+                "ON CONFLICT (vendor_id, type) WHERE type IN ('billing','service_delivery') "
+                "DO NOTHING RETURNING 1",
+                {
+                    "id": id,
+                    "vendor_id": vendor_id,
+                    "type": type,
+                    "name": body.name,
+                    "email": body.email,
+                    "phone": body.phone,
+                    "receives": receives,
+                },
+            ).fetchone()
+            if inserted is None:
+                raise conflict(
+                    "contact_type_taken", f"This vendor already has a {type} contact. Edit it."
+                )
+            created = self._contact(vendor_id, id)
+            self._contact_audit("vendor.contact.create", vendor_id, None, created)
+        return created
+
+    def update_contact(self, vendor_id: UUID, contact_id: UUID, body: ContactPatch) -> ContactRead:
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self._row(vendor_id)
+            before = self._contact(vendor_id, contact_id, lock=True)
+            given = body.model_fields_set
+            for field in ("name", "email", "receives_documents"):
+                if field in given and getattr(body, field) is None:
+                    raise invalid(field, "This field cannot be empty.")
+            values = {f: getattr(body, f) for f in given}
+            self.repo.execute(
+                "UPDATE vendor_contact SET name = %(name)s, email = %(email)s, phone = %(phone)s, "
+                "receives_documents = %(receives)s, updated_at = now() "
+                "WHERE org_id = %(org_id)s AND id = %(id)s",
+                {
+                    "id": contact_id,
+                    "name": values.get("name", before.name),
+                    "email": values.get("email", before.email),
+                    "phone": values["phone"] if "phone" in given else before.phone,
+                    "receives": values.get("receives_documents", before.receives_documents),
+                },
+            )
+            after = self._contact(vendor_id, contact_id)
+            self._contact_audit("vendor.contact.update", vendor_id, before, after)
+        return after
+
+    def delete_contact(self, vendor_id: UUID, contact_id: UUID) -> None:
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self._row(vendor_id)
+            before = self._contact(vendor_id, contact_id, lock=True)
+            if before.type in REQUIRED_CONTACT_TYPES:
+                raise conflict(
+                    "required_contact", f"The {before.type} contact is required. Edit it instead."
+                )
+            self.repo.execute(
+                "DELETE FROM vendor_contact WHERE org_id = %(org_id)s AND id = %(id)s",
+                {"id": contact_id},
+            )
+            self._contact_audit("vendor.contact.delete", vendor_id, before, before)
+
+    def contacts_complete(self, vendor_id: UUID) -> list[str]:
+        """Names the required contact types the vendor still lacks (E11-S06 calls this)."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self._row(vendor_id)
+            have = {
+                str(r[0])
+                for r in self.repo.execute(
+                    "SELECT type FROM vendor_contact WHERE org_id = %(org_id)s "
+                    "AND vendor_id = %(vendor_id)s",
+                    {"vendor_id": vendor_id},
+                ).fetchall()
+            }
+        return [t for t in REQUIRED_CONTACT_TYPES if t not in have]
+
+    def document_recipients(self, vendor_id: UUID) -> list[Recipient]:
+        """Who gets RFQs and POs: flagged contacts, service_delivery first. May be empty."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self._row(vendor_id)
+            rows = self.repo.execute(
+                "SELECT name, email FROM vendor_contact WHERE org_id = %(org_id)s "
+                "AND vendor_id = %(vendor_id)s AND receives_documents "
+                "ORDER BY (type = 'service_delivery') DESC, lower(name), id",
+                {"vendor_id": vendor_id},
+            ).fetchall()
+        return [Recipient(name=str(r[0]), email=str(r[1])) for r in rows]
