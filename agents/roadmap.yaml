@@ -1514,7 +1514,7 @@ epics:
           - VEN-015
         dep:
           - E11-S01
-        st: todo
+        st: in_progress
       - id: E11-S08
         t: Vendor open questions for the operator (parking story)
         k: docs
