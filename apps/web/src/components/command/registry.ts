@@ -180,6 +180,16 @@ export const COMMANDS: readonly Command[] = [
     requiredPermissions: ["organization.admin"],
   },
   {
+    group: "Actions",
+    href: "/admin/vendor-questionnaires",
+    icon: GearSix,
+    id: "vendor-questionnaires",
+    keywords: ["admin", "vendor", "onboarding", "questions"],
+    label: "Vendor questionnaires",
+    phase: "foundation",
+    requiredPermissions: ["organization.admin"],
+  },
+  {
     destructive: true,
     group: "Actions",
     href: "/views/archive",
