@@ -1475,7 +1475,7 @@ epics:
         dep:
           - E11-S01
           - E02-S05
-        st: in_progress
+        st: review
       - id: E11-S05
         t: Onboarding request, configurable questionnaire, weights and scoring
         k: engine
@@ -1486,7 +1486,7 @@ epics:
           - VEN-006
         dep:
           - E11-S01
-        st: todo
+        st: in_progress
       - id: E11-S06
         t: Duplicate identifier detection, approval on
           create/activate/suspend/reactivate
