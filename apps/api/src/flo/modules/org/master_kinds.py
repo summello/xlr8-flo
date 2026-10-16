@@ -17,6 +17,15 @@ def days(value: object) -> bool:
     return type(value) is int and 0 <= value <= 365
 
 
+def is_bool(value: object) -> bool:
+    return type(value) is bool
+
+
+def code_text(value: object) -> bool:
+    # ponytail: a vendor_category master kind does not exist yet; E11-S08 should check the code.
+    return isinstance(value, str) and 1 <= len(value) <= 100
+
+
 def choices(*values: str) -> Callable[[object], bool]:
     return lambda value: isinstance(value, str) and value in values
 
@@ -32,9 +41,13 @@ RULES: dict[str, dict[str, Callable[[object], bool]]] = {
     "item_category": {},
     "service_category": {},
     "vendor_contact_type": {},
+    "vendor_document_type": {"required": is_bool, "category": code_text},
 }
 RESERVED_CONTACT_TYPES = ("billing", "service_delivery")  # built in to vendors
-OPTIONAL = {"payment_term": {"discount_percent", "discount_days"}}
+OPTIONAL = {
+    "payment_term": {"discount_percent", "discount_days"},
+    "vendor_document_type": {"category"},
+}
 
 
 def known_kind(kind: str) -> None:

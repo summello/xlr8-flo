@@ -1460,7 +1460,7 @@ epics:
         dep:
           - E11-S01
           - E09-S10
-        st: review
+        st: done
       - id: E11-S04
         t: Field-level access control and masking for tax and banking data
         k: security
@@ -1475,7 +1475,7 @@ epics:
         dep:
           - E11-S01
           - E02-S05
-        st: todo
+        st: in_progress
       - id: E11-S05
         t: Onboarding request, configurable questionnaire, weights and scoring
         k: engine

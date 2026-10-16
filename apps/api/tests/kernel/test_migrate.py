@@ -158,7 +158,8 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261014_0056",
         "20261014_0057",
         "20261014_0058",
-        "20261015_0059",
+        "20261014_0059",
+        "20261015_0060",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -765,7 +766,7 @@ def test_requisition_migration_roundtrip_preserves_existing_data_and_plants_guar
         )
         # ProjectService reads project.requested_budget; this old schema predates it (E22-S01).
         next(
-            r for r in migrate.discover_migrations(MIGRATIONS) if r.revision == "20261015_0059"
+            r for r in migrate.discover_migrations(MIGRATIONS) if r.revision == "20261015_0060"
         ).upgrade(conn)
         tenant = create(conn)
         actor = admin_id(conn)
@@ -2007,6 +2008,76 @@ def test_rfq_roundtrip_preserves_rows_and_down_returns_held_quantity(empty_datab
             assert conn.execute("SELECT count(*) FROM rfq").fetchone() == (0,)
 
 
+def test_vendor_documents_roundtrip_preserves_vendors_and_attachments(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261014_0058"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261014_0059")
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("documents-migration"),
+    ):
+        tenant = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(tenant.org_id)
+        vendor_id, attachment_id, version_id = uuid4(), uuid4(), uuid4()
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO vendor(id,org_id,number,trading_name,legal_name,availability,"
+                "created_by) VALUES(%s,%s,'V-000001','T','L','global',%s)",
+                (vendor_id, tenant.org_id, actor),
+            )
+            conn.execute(
+                "INSERT INTO attachment(id,org_id,document_type,document_id,created_by) "
+                "VALUES(%s,%s,'vendor',%s,%s)",
+                (attachment_id, tenant.org_id, vendor_id, actor),
+            )
+            conn.execute(
+                "INSERT INTO attachment_version(id,org_id,attachment_id,version,original_filename,"
+                "display_name,storage_key,media_type,size_bytes,sha256,scan_status,uploaded_by) "
+                "VALUES(%s,%s,%s,1,'a.pdf','a.pdf','k1','application/pdf',5,%s,"
+                "'basic_checks_passed',%s)",
+                (version_id, tenant.org_id, attachment_id, "0" * 64, actor),
+            )
+        mig.upgrade(conn)
+        insert = (
+            "INSERT INTO vendor_document(id,org_id,vendor_id,type_code,attachment_id,"
+            "attachment_version_id,issue_date,expiry_date,verification,rejection_reason) "
+            "VALUES(%s,%s,%s,'TAX',%s,%s,%s,%s,%s,%s)"
+        )
+        base = (uuid4(), tenant.org_id, vendor_id, attachment_id, version_id)
+        for dates, verification, reason in [
+            (("2026-02-01", "2026-01-01"), "unverified", None),
+            (("2026-01-01", "2026-02-01"), "rejected", None),
+            (("2026-01-01", "2026-02-01"), "maybe", None),
+        ]:
+            with (
+                pytest.raises(psycopg.errors.CheckViolation),
+                tenant_transaction(conn, scope),
+            ):
+                conn.execute(insert, (*base, *dates, verification, reason))
+        with tenant_transaction(conn, scope):
+            conn.execute(insert, (*base, "2026-01-01", "2026-02-01", "unverified", None))
+        with pytest.raises(psycopg.errors.UniqueViolation), tenant_transaction(conn, scope):
+            conn.execute(
+                insert, (uuid4(), *base[1:], "2026-01-01", "2026-02-01", "unverified", None)
+            )
+        mig.downgrade(conn)
+        assert conn.execute("SELECT to_regclass('vendor_document')").fetchone() == (None,)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT count(*) FROM vendor").fetchone() == (1,)
+            assert conn.execute("SELECT count(*) FROM attachment").fetchone() == (1,)
+        mig.upgrade(conn)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT count(*) FROM vendor_document").fetchone() == (0,)
+
+
 def test_project_requested_budget_roundtrip_keeps_projects_and_plants_the_check(empty_database):
     from flo.kernel.logging import correlation_context
     from flo.kernel.tenancy.context import Scope
@@ -2016,9 +2087,9 @@ def test_project_requested_budget_roundtrip_keeps_projects_and_plants_the_check(
 
     revisions = migrate.discover_migrations(MIGRATIONS)
     migrate.apply_migrations(
-        [r for r in revisions if r.revision <= "20261014_0058"], empty_database
+        [r for r in revisions if r.revision <= "20261014_0059"], empty_database
     )
-    mig = next(r for r in revisions if r.revision == "20261015_0059")
+    mig = next(r for r in revisions if r.revision == "20261015_0060")
     with (
         psycopg.connect(empty_database, autocommit=True) as conn,
         correlation_context("requested-budget-migration"),

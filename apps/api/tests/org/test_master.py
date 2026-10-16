@@ -67,6 +67,7 @@ GOOD = {
     "item_category": {},
     "service_category": {},
     "vendor_contact_type": {},
+    "vendor_document_type": {"required": True},
 }
 
 

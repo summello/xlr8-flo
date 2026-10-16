@@ -14,6 +14,7 @@ from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.org.service import MasterCodeUnusable, NumberingService, OrgService, today
+from flo.modules.vendors.documents import DocumentsMixin
 from flo.modules.vendors.models import (
     ANCESTORS_CTE,
     AVAILABLE_SQL,
@@ -58,7 +59,7 @@ def _decode(cursor: str) -> tuple[str, UUID]:
         raise invalid("cursor", "The page cursor is not valid.", "invalid_cursor") from None
 
 
-class VendorService:
+class VendorService(DocumentsMixin):
     def __init__(
         self,
         connection: psycopg.Connection[tuple[object, ...]],

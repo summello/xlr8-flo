@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 from uuid import UUID
 
@@ -150,3 +150,56 @@ class ContactRead(BaseModel):
 class Recipient(BaseModel):
     name: str
     email: str
+
+
+type DocStateName = Literal["missing", "rejected", "expired", "expiring", "unverified", "ok"]
+type Verification = Literal["unverified", "verified", "rejected"]
+
+
+class DocumentDates(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    issue_date: date | None = None
+    expiry_date: date | None = None
+
+
+class DocumentCreate(DocumentDates):
+    type_code: str = Field(min_length=1, max_length=100)
+    attachment_id: UUID
+
+
+class DocumentReplace(DocumentDates):
+    attachment_version_id: UUID
+
+
+class DocumentReject(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reason: str = Field(min_length=1, max_length=500)
+
+    @field_validator("reason")
+    @classmethod
+    def _trimmed(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Give a reason.")
+        return value
+
+
+class DocState(BaseModel):
+    """One row per required type plus every supplied document; `missing` has no document."""
+
+    type_code: str
+    required: bool
+    state: DocStateName
+    days_left: int | None = None
+    document_id: UUID | None = None
+    attachment_id: UUID | None = None
+    attachment_version: int | None = None
+    latest_version_id: UUID | None = None
+    scan_status: str | None = None
+    issue_date: date | None = None
+    expiry_date: date | None = None
+    verification: Verification | None = None
+    reviewed_by: UUID | None = None
+    reviewed_at: datetime | None = None
+    rejection_reason: str | None = None
+    created_at: datetime | None = None
