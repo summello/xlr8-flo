@@ -584,7 +584,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E11-S16** Vendor status, availability and local-disable dialogs | E11 | ui | M | VEN-005, VEN-008, VEN-009, A11Y-002 | E11-S06, E11-S12 |
 | ⬜ | **E11-S17** Questionnaire administration screen | E11 | ui | M | VEN-006, CUS-007, A11Y-003 | E11-S05 |
 | ⬜ | **E11-S18** Vendor Performance card and scorecard sheet | E11 | ui | M | VEN-007, VEN-015 | E11-S07, E11-S12 |
-| ⬜ | **E12-S01** RFQ from approved requisition lines, open-quantity guard | E12 | engine | L | SRC-001, SRC-003, SRC-018 | ~~E09-S06~~, ~~E11-S01~~ |
+| 🔨 | **E12-S01** RFQ from approved requisition lines, open-quantity guard | E12 | engine | L | SRC-001, SRC-003, SRC-018 | ~~E09-S06~~, ~~E11-S01~~ |
 | ⬜ | **E12-S02** RFQ content, invitations, deadline, terms, attachments, vendor eligibility check | E12 | crud | M | SRC-002, VEN-012 | E12-S01, E11-S02, E11-S11 |
 | ⬜ | **E12-S03** RFQ lifecycle and post-publication versioning communicated to invitees | E12 | engine | M | SRC-004, SRC-005 | E12-S02 |
 | ⬜ | **E12-S04** Bid capture: line prices, currency, tax, freight, lead time, validity, exceptions | E12 | crud | M | SRC-006 | E12-S03 |
@@ -614,7 +614,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E13-S09** Email transmission via outbox, recipient/time/result/version recorded, retry without duplication | E13 | engine | L | PO-004, PO-012, PO-015, ARCH-006, ACC-002 | E13-S08, ~~E03-S06~~ |
 | ⬜ | **E13-S10** Deliverability: SPF/DKIM/DMARC verification, bounce and complaint handling, suppression list | E13 | engine | M | EML-001, EML-002, EML-003, EML-006 | E13-S09 |
 | ⬜ | **E13-S11** Internal vs vendor-facing notes and attachments, enforced by test | E13 | security | M | PO-017, EML-005, COL-002 | E13-S09, ~~E09-S10~~ |
-| ⬜ | **E22-S01** Create Project with budget: form and Excel, sponsors, through the project approval workflow | E22 | engine | L | PROJ-003 | ~~E09-S17~~ |
+| 🔨 | **E22-S01** Create Project with budget: form and Excel, sponsors, through the project approval workflow | E22 | engine | L | PROJ-003 | ~~E09-S17~~ |
 | ⬜ | **E22-S02** Soft delete for every draft document | E22 | crud | M | DATA-002 | ~~E09-S15~~ |
 | ✅ | **E22-S03** One audit helper instead of twelve, behaviour-preserving | E22 | chore | M | AUD-001 | — |
 | ⬜ | **E22-S04** M2 milestone review follow-ups: Money zero prop, shared lookup helper, internal collaboration readers, approvals read via service, e2e focus helper | E22 | chore | M | A11Y-001, UX-007 | — |
