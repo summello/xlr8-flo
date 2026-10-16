@@ -2085,7 +2085,7 @@ epics:
           - PROJ-003
         dep:
           - E09-S17
-        st: todo
+        st: in_progress
       - id: E22-S02
         t: Soft delete for every draft document
         k: crud
