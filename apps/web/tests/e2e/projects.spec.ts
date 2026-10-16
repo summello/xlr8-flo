@@ -283,10 +283,7 @@ test("create with budget, main project and sponsors shows the funds check and se
   await page.getByLabel(/^Main project\s*\*?$/).selectOption(projectId);
   const funds = page.getByTestId("funds-check");
   await expect(funds).toContainText("Available in the main project");
-  await expect(funds).toContainText("This budget is covered.");
-  await page.getByLabel(/^Budget\s*\*?$/).fill("9999");
-  await expect(funds).toContainText("more than is available");
-  await page.getByLabel(/^Budget\s*\*?$/).fill("500");
+  await expect(funds).toContainText("The server checks the budget");
   await page.getByLabel(/^Sponsors\s*\*?$/).selectOption([firstActor, secondActor]);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.getByRole("button", { name: "Create project", exact: true }).click();

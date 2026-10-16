@@ -4940,6 +4940,7 @@ export interface components {
             actual_end?: string | null;
             /** Actual Start */
             actual_start?: string | null;
+            budget?: components["schemas"]["BudgetRequest"] | null;
             /** Description */
             description?: string | null;
             /** External Ref */
@@ -4957,6 +4958,8 @@ export interface components {
             planned_start?: string | null;
             /** Sponsor Id */
             sponsor_id?: string | null;
+            /** Sponsor Ids */
+            sponsor_ids?: string[] | null;
         };
         /** ProjectRead */
         ProjectRead: {

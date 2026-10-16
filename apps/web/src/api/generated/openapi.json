@@ -7236,6 +7236,16 @@
             ],
             "title": "Actual Start"
           },
+          "budget": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BudgetRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "description": {
             "anyOf": [
               {
@@ -7341,6 +7351,22 @@
               }
             ],
             "title": "Sponsor Id"
+          },
+          "sponsor_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "maxItems": 10,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sponsor Ids"
           }
         },
         "title": "ProjectPatch",

@@ -86,8 +86,6 @@ export default function ProjectForm({ onCreated }: { onCreated: (id: string) => 
     return () => controller.abort();
   }, [parentId]);
   const funds = mainFunds?.id === parentId ? mainFunds : null;
-  const covers = funds && "available" in funds && budget.trim() !== "" && Number.isFinite(Number(budget))
-    ? Number(funds.available) >= Number(budget) : null;
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     const missing = fields.filter(([key, , , required]) => required && !values[key].trim());
@@ -128,7 +126,7 @@ export default function ProjectForm({ onCreated }: { onCreated: (id: string) => 
     {parentId && <p role="status" className="field-help" data-testid="funds-check">
       {funds && "unknown" in funds ? "The main project's available funds are not shown to you. They are checked again when the project is approved."
         : funds ? <>Available in the main project: <Money value={funds.available} currency={funds.currency} />
-          {covers === true && ". This budget is covered."}{covers === false && ". This budget is more than is available; the project cannot be funded."}</>
+. The server checks the budget against it when you create the project and again when it is approved.</>
         : "Checking the main project's available funds…"}</p>}
     <Field id="project-sponsor_ids" label="Sponsors" help="Choose one to ten people who sponsor the project. Hold Ctrl or Command to choose several. Required to submit." error={errors.find(e => e.fieldId === "project-sponsor_ids")?.message}>
       <Select multiple size={5} value={sponsorIds} onChange={e => setSponsorIds(Array.from(e.target.selectedOptions, o => o.value).slice(0, 10))}>
