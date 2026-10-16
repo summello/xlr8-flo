@@ -759,6 +759,10 @@ def test_requisition_migration_roundtrip_preserves_existing_data_and_plants_guar
         psycopg.connect(empty_database, autocommit=True) as conn,
         correlation_context("requisition-migration"),
     ):
+        # ProjectService reads project_sponsor; this old schema predates it (E22-S01).
+        conn.execute(
+            "CREATE TABLE project_sponsor(org_id uuid, project_id uuid, user_id uuid)"
+        )
         # ProjectService reads project.requested_budget; this old schema predates it (E22-S01).
         next(
             r for r in migrate.discover_migrations(MIGRATIONS) if r.revision == "20261015_0059"
