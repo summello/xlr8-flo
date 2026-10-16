@@ -47,7 +47,6 @@ from flo.modules.projects.schemas import (
     BudgetRequest,
     ChildrenPage,
     Direction,
-    LookupOption,
     MilestoneCreate,
     MilestonePatch,
     MilestoneRead,
@@ -57,6 +56,7 @@ from flo.modules.projects.schemas import (
     PhaseRead,
     ProjectCreate,
     ProjectGroup,
+    ProjectLookupOption,
     ProjectPage,
     ProjectPatch,
     ProjectRead,
@@ -346,7 +346,7 @@ class ProjectService:
 
     def lookup_projects(
         self, q: str, limit: int, can_read: Callable[[UUID], bool]
-    ) -> list[LookupOption]:
+    ) -> list[ProjectLookupOption]:
         """Active projects that can be a main project, filtered to those the caller may read."""
         if not 1 <= limit <= 50:
             raise invalid("limit", "Choose a limit from 1 to 50.")
@@ -359,7 +359,7 @@ class ProjectService:
                 continue
             full = self.depth_of(project.id) >= 5
             rows.append(
-                LookupOption(
+                ProjectLookupOption(
                     value=str(project.id),
                     label=f"{project.number} {project.name}",
                     disabled=full,
@@ -370,7 +370,7 @@ class ProjectService:
                 break
         return rows
 
-    def lookup_people(self, q: str, limit: int) -> list[LookupOption]:
+    def lookup_people(self, q: str, limit: int) -> list[ProjectLookupOption]:
         """Active members of the organization, matched by email, for naming sponsors."""
         if not 1 <= limit <= 50:
             raise invalid("limit", "Choose a limit from 1 to 50.")
@@ -382,7 +382,7 @@ class ProjectService:
                 "AND lower(i.email) LIKE %(like)s ORDER BY lower(i.email) LIMIT %(limit)s",
                 {"like": "%" + escaped + "%", "limit": limit},
             ).fetchall()
-        return [LookupOption(value=str(r[0]), label=str(r[1])) for r in found]
+        return [ProjectLookupOption(value=str(r[0]), label=str(r[1])) for r in found]
 
     def check_main_funds(self, parent_id: UUID, amount: Decimal) -> None:
         """Advisory, unlocked: refuse a child whose main project cannot cover it now.

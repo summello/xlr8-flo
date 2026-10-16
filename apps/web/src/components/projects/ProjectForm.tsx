@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { apiClient } from "../../api/client";
 import type { components } from "../../api/generated/schema";
 import { writeHeaders } from "../../features/auth/api";
@@ -7,8 +7,8 @@ import ErrorSummary, { type SummaryError } from "../form/ErrorSummary";
 import Field from "../form/Field";
 import Input from "../form/Input";
 import MoneyInput from "../form/MoneyInput";
-import Select from "../form/Select";
 import Money from "../ui/Money";
+import Picker, { type PickerOption } from "./Picker";
 import { failure } from "./api";
 
 type Create = components["schemas"]["ProjectCreate"];
@@ -23,7 +23,6 @@ const fields = [
   ["planned_end", "Planned end", "Optional planned end date.", false],
 ] as const;
 type Key = typeof fields[number][0];
-type Person = { value: string; label: string };
 const fieldLabels: Record<string, string> = { budget: "Budget", parent_id: "Main project", sponsor_ids: "Sponsors" };
 
 export default function ProjectForm({ onCreated }: { onCreated: (id: string) => void }) {
@@ -35,9 +34,8 @@ export default function ProjectForm({ onCreated }: { onCreated: (id: string) => 
   const [busy, setBusy] = useState(false);
   const [budget, setBudget] = useState("");
   const [parentId, setParentId] = useState("");
-  const [sponsorIds, setSponsorIds] = useState<string[]>([]);
-  const [people, setPeople] = useState<Person[]>([]);
-  const [mains, setMains] = useState<Person[]>([]);
+  const [parentOption, setParentOption] = useState<PickerOption[]>([]);
+  const [sponsors, setSponsors] = useState<PickerOption[]>([]);
   const [mainFunds, setMainFunds] = useState<{ id: string; available: string; currency: string } | { id: string; unknown: true } | null>(null);
   const summary = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -66,17 +64,15 @@ export default function ProjectForm({ onCreated }: { onCreated: (id: string) => 
     }).catch(() => { if (!signal.aborted) setLoadError("Suggestions could not load. Your entries are preserved; check your connection and retry."); });
     return () => controller.abort();
   }, [values.bu_id, values.department_code, values.ledger_account_code, retry]);
-  useEffect(() => {
-    const controller = new AbortController();
-    const signal = controller.signal;
-    const load = (kind: "user" | "project") => apiClient.GET("/api/v1/requisitions/lookups/{kind}", { signal, params: { path: { kind }, query: { limit: 50 } } });
-    void Promise.all([load("user"), load("project")]).then(([users, projects]) => {
-      if (signal.aborted) return;
-      setPeople(users.data?.rows.map(r => ({ value: r.value, label: r.label })) ?? []);
-      setMains(projects.data?.rows.map(r => ({ value: r.value, label: r.label })) ?? []);
-    }).catch(() => undefined);
-    return () => controller.abort();
-  }, [retry]);
+  const unit = values.bu_id;
+  const lookup = useCallback(async (kind: "main_projects" | "people", q: string): Promise<PickerOption[]> => {
+    if (!/^[0-9a-f-]{36}$/i.test(unit)) return [];
+    const { data } = await apiClient.GET("/api/v1/projects/lookups/{kind}", { params: { path: { kind }, query: { bu_id: unit, q, limit: 20 } } });
+    if (!data) throw new Error("lookup failed");
+    return data.rows;
+  }, [unit]);
+  const loadMains = useCallback((q: string) => lookup("main_projects", q), [lookup]);
+  const loadPeople = useCallback((q: string) => lookup("people", q), [lookup]);
   useEffect(() => {
     if (!parentId) return;
     const controller = new AbortController();
@@ -94,7 +90,7 @@ export default function ProjectForm({ onCreated }: { onCreated: (id: string) => 
       bu_id: values.bu_id, name: values.name, department_code: values.department_code,
       ledger_account_code: values.ledger_account_code, currency: values.currency,
       description: values.description || null, planned_start: values.planned_start || null, planned_end: values.planned_end || null,
-      parent_id: parentId || null, sponsor_ids: sponsorIds,
+      parent_id: parentId || null, sponsor_ids: sponsors.map(o => o.value),
       budget: budget.trim() ? { amount: budget.trim(), currency: values.currency } : null,
     };
     setBusy(true);
@@ -120,17 +116,15 @@ export default function ProjectForm({ onCreated }: { onCreated: (id: string) => 
       <MoneyInput autoComplete="off" currency={values.currency || "—"} value={budget} onChange={e => setBudget(e.target.value)} />
     </Field>
     <Field id="project-parent_id" label="Main project" help="Optional. Choose a main project to draw this project's budget from; leave empty for a main project of its own." error={errors.find(e => e.fieldId === "project-parent_id")?.message}>
-      <Select value={parentId} onChange={e => setParentId(e.target.value)}><option value="">None, this is a main project</option>
-        {mains.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</Select>
+      <Picker load={loadMains} selected={parentOption} max={1} noun="main projects" onChange={next => { setParentOption(next); setParentId(next[0]?.value ?? ""); }} />
     </Field>
     {parentId && <p role="status" className="field-help" data-testid="funds-check">
       {funds && "unknown" in funds ? "The main project's available funds are not shown to you. They are checked again when the project is approved."
         : funds ? <>Available in the main project: <Money value={funds.available} currency={funds.currency} />
 . The server checks the budget against it when you create the project and again when it is approved.</>
         : "Checking the main project's available funds…"}</p>}
-    <Field id="project-sponsor_ids" label="Sponsors" help="Choose one to ten people who sponsor the project. Hold Ctrl or Command to choose several. Required to submit." error={errors.find(e => e.fieldId === "project-sponsor_ids")?.message}>
-      <Select multiple size={5} value={sponsorIds} onChange={e => setSponsorIds(Array.from(e.target.selectedOptions, o => o.value).slice(0, 10))}>
-        {people.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</Select>
+    <Field id="project-sponsor_ids" label="Sponsors" help="Choose one to ten people who sponsor the project. Search by email and add each person. Required to submit." error={errors.find(e => e.fieldId === "project-sponsor_ids")?.message}>
+      <Picker load={loadPeople} selected={sponsors} max={10} noun="sponsors" onChange={setSponsors} />
     </Field>
     <button className="form-submit" disabled={busy} type="submit">{busy ? "Creating project…" : "Create project"}</button>
   </form>;

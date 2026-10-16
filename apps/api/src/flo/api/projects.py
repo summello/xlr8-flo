@@ -20,7 +20,6 @@ from flo.modules.org.service import OrgService
 from flo.modules.projects.schemas import (
     ChildrenPage,
     Direction,
-    LookupRows,
     MilestoneCreate,
     MilestonePatch,
     MilestoneRead,
@@ -29,6 +28,7 @@ from flo.modules.projects.schemas import (
     PhaseRead,
     ProjectCreate,
     ProjectGroup,
+    ProjectLookupRows,
     ProjectPage,
     ProjectPatch,
     ProjectRead,
@@ -99,7 +99,7 @@ LookupContext = Annotated[AuthorizationContext, Depends(require("project.create"
 
 
 # Registered before "/{id}" so "lookups" is never parsed as a project id.
-@router.get("/lookups/{kind}", response_model=LookupRows)
+@router.get("/lookups/{kind}", response_model=ProjectLookupRows)
 def lookups(
     kind: Literal["main_projects", "people"],
     bu_id: UUID,
@@ -108,12 +108,12 @@ def lookups(
     request: Request,
     q: str = "",
     limit: Annotated[int, Query(ge=1, le=50)] = 20,
-) -> LookupRows:
+) -> ProjectLookupRows:
     """Options for the Create Project pickers; gated on project.create in the chosen unit."""
     service = ProjectService(connection, current_scope(), context.user_id)
     if kind == "people":
-        return LookupRows(rows=service.lookup_people(q, limit))
-    return LookupRows(
+        return ProjectLookupRows(rows=service.lookup_people(q, limit))
+    return ProjectLookupRows(
         rows=service.lookup_projects(
             q,
             limit,
