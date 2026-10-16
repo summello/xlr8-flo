@@ -576,8 +576,12 @@ def test_authorization_outcomes_and_unauthenticated_routes(header_db, grant):
                     else 403
                 )
                 assert result.status_code == expected, result.text
+            # The list is self-scoped: it shows only the scopes where requisition.view is held.
             result = await send(browser, "GET")
-            assert result.status_code == 403
+            assert result.status_code == 200
+            assert [r["id"] for r in result.json()["rows"]] == (
+                [str(row.id)] if grant == "bu_view" else []
+            )
 
     asyncio.run(scenario())
 
