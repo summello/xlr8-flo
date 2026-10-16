@@ -10,16 +10,7 @@ class MigrationConnection(Protocol):
     def execute(self, query: str) -> object: ...
 
 
-def _rls(table: str) -> str:
-    return f"""
-ALTER TABLE {table} ENABLE ROW LEVEL SECURITY;
-ALTER TABLE {table} FORCE ROW LEVEL SECURITY;
-CREATE POLICY tenant_isolation ON {table}
- USING(org_id=current_setting('app.org_id')::uuid) WITH CHECK(org_id=current_setting('app.org_id')::uuid);
-"""
-
-
-UPGRADE_SQL = f"""
+UPGRADE_SQL = """
 CREATE TABLE rfq (
  id uuid PRIMARY KEY, org_id uuid NOT NULL REFERENCES organization(id),
  number text NOT NULL,
@@ -35,7 +26,11 @@ CREATE TABLE rfq (
  FOREIGN KEY (org_id, unit_id) REFERENCES org_unit(org_id, id)
 );
 CREATE INDEX rfq_org_status ON rfq(org_id, status);
-{_rls("rfq")}
+ALTER TABLE rfq ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rfq FORCE ROW LEVEL SECURITY;
+CREATE POLICY tenant_isolation ON rfq
+ USING (org_id = current_setting('app.org_id')::uuid)
+ WITH CHECK (org_id = current_setting('app.org_id')::uuid);
 CREATE TABLE rfq_line (
  id uuid PRIMARY KEY, org_id uuid NOT NULL REFERENCES organization(id),
  rfq_id uuid NOT NULL, line_no int NOT NULL,
@@ -49,7 +44,11 @@ CREATE TABLE rfq_line (
  FOREIGN KEY (org_id, requisition_id) REFERENCES requisition(org_id, id)
 );
 CREATE INDEX rfq_line_requisition ON rfq_line(org_id, requisition_id);
-{_rls("rfq_line")}
+ALTER TABLE rfq_line ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rfq_line FORCE ROW LEVEL SECURITY;
+CREATE POLICY tenant_isolation ON rfq_line
+ USING (org_id = current_setting('app.org_id')::uuid)
+ WITH CHECK (org_id = current_setting('app.org_id')::uuid);
 """
 
 DOWNGRADE_SQL = """
