@@ -37,7 +37,10 @@ CODES_ROUTES = (
 )
 SOURCING_ROUTES = "sourcing/test_rfq.py::test_rfq_routes_conceal_foreign_tenants"
 QROUTES = "vendors/test_questionnaire.py::test_questionnaire_routes_conceal_foreign_tenants"
-OROUTES = "vendors/test_questionnaire.py::test_onboarding_routes_conceal_foreign_tenants_and_other_requesters"
+OROUTES = (
+    "vendors/test_questionnaire.py::"
+    "test_onboarding_routes_conceal_foreign_tenants_and_other_requesters"
+)
 COVERED = {
     ("GET", "/api/v1/admin/vendor-questionnaires/{vid}"): QROUTES,
     ("PATCH", "/api/v1/admin/vendor-questionnaires/{vid}"): QROUTES,
