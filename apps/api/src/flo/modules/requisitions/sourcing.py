@@ -144,9 +144,8 @@ def source_lines(
                 checks=checks,
             )
         for line_id, delta in deltas.items():
-            if (
-                cast(Decimal, lines[line_id][4]) + delta < 0
-            ):  # the CHECK constraint stays a backstop
+            # The CHECK constraint stays as the backstop; this is the readable failure.
+            if cast(Decimal, lines[line_id][4]) + delta < 0:
                 raise conflict(
                     "over_return",
                     f"More quantity was returned than the line has sourced ({line_id}). "
