@@ -10,7 +10,7 @@ import psycopg
 
 from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
-from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError
+from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError, conflict
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.requisitions.lifecycle import read_row
@@ -143,11 +143,20 @@ def source_lines(
                 ),
                 checks=checks,
             )
+        for line_id, delta in deltas.items():
+            if (
+                cast(Decimal, lines[line_id][4]) + delta < 0
+            ):  # the CHECK constraint stays a backstop
+                raise conflict(
+                    "over_return",
+                    f"More quantity was returned than the line has sourced ({line_id}). "
+                    "Reload the RFQ and retry.",
+                )
         audit: dict[UUID, tuple[dict[str, object], dict[str, object]]] = {}
         for line_id, delta in deltas.items():
             _, owner, _, _, sourced = lines[line_id]
             requisition_id = cast(UUID, owner)
-            updated = max(Decimal(0), cast(Decimal, sourced) + delta)
+            updated = cast(Decimal, sourced) + delta
             repo.execute(
                 "UPDATE requisition_line SET sourced_qty = %(sourced)s, updated_at = now() "
                 "WHERE org_id = %(org_id)s AND id = %(id)s",

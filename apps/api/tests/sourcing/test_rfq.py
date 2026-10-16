@@ -16,6 +16,8 @@ from flo.kernel.logging import correlation_context
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import tenant_transaction
 from flo.modules.requisitions.links import links
+from flo.modules.requisitions.schemas import LineSourcing
+from flo.modules.requisitions.service import source_lines
 from flo.modules.sourcing.schemas import RfqCreate, RfqLineIn, RfqLinesPatch
 from flo.modules.sourcing.service import RfqService
 from tests.isolation.test_real_sessions import client, headers, login
@@ -400,3 +402,26 @@ def test_a_replayed_patch_cannot_restore_older_quantities(lifecycle_db):
 
 def audit_count(db, id):
     return sql(db, "SELECT count(*) FROM audit_log WHERE target_id=%s", (id,))[0][0]
+
+
+def test_returning_more_than_is_held_fails_loudly_and_writes_nothing(lifecycle_db):
+    db, _ = lifecycle_db
+    row, line = approved(db)
+    bu = row.bu_id
+    other, other_line = approved(db, bu=unit(db, uuid4().hex))
+    draft_rfq(db, entry(row, line, "2"))
+    audits = sql(db, "SELECT count(*) FROM audit_log")[0][0]
+
+    def give_back(*pairs):
+        changes = [LineSourcing(r.id, ln, r.version, Decimal(delta)) for r, ln, delta in pairs]
+        with tenant_transaction(db[0], Scope(db[1])):
+            source_lines(db[0], Scope(db[1]), changes, db[3])
+
+    error = refused(lambda: give_back((row, line, "-3")))
+    assert error.checks["problem"] == "over_return" and bu
+    # All or nothing: a valid return alongside the bad one is not applied either.
+    refused(lambda: give_back((row, line, "-1"), (other, other_line, "-1")))
+    assert sourced(db, line) == 2 and sourced(db, other_line) == 0
+    assert sql(db, "SELECT count(*) FROM audit_log")[0][0] == audits
+    give_back((row, line, "-2"))
+    assert sourced(db, line) == 0
