@@ -161,6 +161,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261014_0059",
         "20261014_0060",
         "20261014_0061",
+        "20261014_0062",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -2178,9 +2179,9 @@ def test_vendor_sensitive_roundtrip_grants_and_removes_only_what_it_added(empty_
 
     revisions = migrate.discover_migrations(MIGRATIONS)
     migrate.apply_migrations(
-        [r for r in revisions if r.revision <= "20261014_0060"], empty_database
+        [r for r in revisions if r.revision <= "20261014_0061"], empty_database
     )
-    mig = next(r for r in revisions if r.revision == "20261014_0061")
+    mig = next(r for r in revisions if r.revision == "20261014_0062")
     with (
         psycopg.connect(empty_database, autocommit=True) as conn,
         correlation_context("sensitive-migration"),
@@ -2243,9 +2244,9 @@ def test_vendor_sensitive_downgrade_keeps_a_preexisting_permission_and_its_grant
 
     revisions = migrate.discover_migrations(MIGRATIONS)
     migrate.apply_migrations(
-        [r for r in revisions if r.revision <= "20261014_0060"], empty_database
+        [r for r in revisions if r.revision <= "20261014_0061"], empty_database
     )
-    mig = next(r for r in revisions if r.revision == "20261014_0061")
+    mig = next(r for r in revisions if r.revision == "20261014_0062")
     with psycopg.connect(empty_database, autocommit=True) as conn:
         tenant = create(conn)
         scope = Scope(tenant.org_id)

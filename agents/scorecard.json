@@ -3745,6 +3745,46 @@
       },
       "recap": "Adds versioned weighted vendor questionnaires (admin draft/edit/reorder/publish/copy, immutable once published by service and DB trigger) and the requester's onboarding request with typed answers pinned to the version at creation. VendorService.score and answers_complete are exposed for E11-S06; weights and points never reach the requester.",
       "title": "Onboarding request, configurable questionnaire, weights and scoring"
+    },
+    {
+      "story": "E11-S07",
+      "kind": "crud",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "fcb2ac47-4e25-4d40-9c50-79e4db7062b8",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S07",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1455d-2a97-7101-840c-2e6b04f15e86",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Added append-only vendor_score and vendor_score_dispute tables (migration 0061), a vendors PerformanceMixin and five routes for scoring, listing, disputing, resolving and per-category averages over current rows. An upheld dispute writes a superseding adjustment in one transaction; the original stays.",
+      "title": "Performance scoring across quality, price, delivery, service, with dispute history"
     }
   ]
 }

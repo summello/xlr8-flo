@@ -41,7 +41,13 @@ OROUTES = (
     "vendors/test_questionnaire.py::"
     "test_onboarding_routes_conceal_foreign_tenants_and_other_requesters"
 )
+PROUTES = "vendors/test_performance.py::test_score_routes_conceal_foreign_tenants"
 COVERED = {
+    ("GET", "/api/v1/vendors/{id}/scores"): PROUTES,
+    ("POST", "/api/v1/vendors/{id}/scores"): PROUTES,
+    ("POST", "/api/v1/vendors/{id}/scores/{sid}/disputes"): PROUTES,
+    ("POST", "/api/v1/vendors/{id}/scores/{sid}/disputes/{did}/resolve"): PROUTES,
+    ("GET", "/api/v1/vendors/{id}/performance"): PROUTES,
     ("GET", "/api/v1/admin/vendor-questionnaires/{vid}"): QROUTES,
     ("PATCH", "/api/v1/admin/vendor-questionnaires/{vid}"): QROUTES,
     ("POST", "/api/v1/admin/vendor-questionnaires/{vid}/questions"): QROUTES,
