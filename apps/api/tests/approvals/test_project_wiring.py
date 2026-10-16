@@ -342,6 +342,8 @@ def test_submit_interleaves_decide_and_old_withdraw_without_deadlock(wiring):
             department_code="D",
             ledger_account_code="L",
             currency="USD",
+            budget={"amount": "10", "currency": "USD"},
+            sponsor_ids=[db[3]],
         )
     )
     with tenant_transaction(db[0], Scope(db[1])):
