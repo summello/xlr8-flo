@@ -254,30 +254,40 @@ def test_write_needs_if_match_and_a_current_version_and_reads_carry_the_etag(hea
 def test_reveal_is_never_stored_or_replayed_by_the_idempotency_layer(header_db):
     db = header_db
     vendor = new_vendor(db)
-    path = f"/{vendor.id}/sensitive/reveal"
+    # every textual form of the id (and a trailing slash) that the router accepts
+    paths = [
+        f"/{vendor.id}/sensitive/reveal",
+        f"/{vendor.id.hex}/sensitive/reveal",
+        f"/{vendor.id}/sensitive/reveal/",
+    ]
 
     async def scenario():
         async with client(app) as browser:
             await login(browser)
             await call(browser, "PUT", f"/{vendor.id}/sensitive", PAYLOAD, 0)
             sent = headers(browser, "same-key")
-            first = await browser.post(
-                "/api/v1/vendors" + path, headers=sent, json=reveal(["bank"])
-            )
-            second = await browser.post(
-                "/api/v1/vendors" + path, headers=sent, json=reveal(["bank"])
-            )
-            keyless = await call(browser, "POST", path, reveal(["bank"]), key=False)
+            revealed = []
+            for path in paths:
+                for _ in range(2):
+                    revealed.append(
+                        await browser.post(
+                            "/api/v1/vendors" + path, headers=sent, json=reveal(["bank"])
+                        )
+                    )
+            keyless = await call(browser, "POST", paths[0], reveal(["bank"]), key=False)
             regrant(db, ["vendor.view"])
-            replay = await browser.post(
-                "/api/v1/vendors" + path, headers=sent, json=reveal(["bank"])
-            )
-            return first, second, keyless, replay
+            replays = [
+                await browser.post("/api/v1/vendors" + p, headers=sent, json=reveal(["bank"]))
+                for p in paths
+            ]
+            return revealed, keyless, replays
 
-    first, second, keyless, replay = asyncio.run(scenario())
-    assert (first.status_code, second.status_code, keyless.status_code) == (200, 200, 200)
-    assert replay.status_code == 403 and ACCOUNT not in replay.text
-    assert len(audit_rows(db, "vendor.sensitive.reveal")) == 3  # every reveal is audited
+    revealed, keyless, replays = asyncio.run(scenario())
+    # the router redirects a trailing slash (307) and never reveals on it
+    assert [r.status_code for r in (*revealed, keyless)] == [200] * 4 + [307] * 2 + [200]
+    assert [r.status_code for r in replays] == [403, 403, 307]
+    assert all(ACCOUNT not in r.text for r in replays)
+    assert len(audit_rows(db, "vendor.sensitive.reveal")) == 5  # every reveal is audited
     with tenant_transaction(db[0], Scope(db[1])):
         stored = db[0].execute("SELECT response_body::text FROM idempotency_key").fetchall()
     assert all(secret not in str(stored) for secret in (*SECRETS, NAME))
@@ -359,4 +369,6 @@ def test_only_the_reveal_route_skips_idempotency():
     assert IDEMPOTENCY_BYPASS_PATTERN.match(base + "/sensitive/reveal")
     for other in ("/sensitive", "/documents", "/sensitive/reveal/x", "/units/1/disable"):
         assert not IDEMPOTENCY_BYPASS_PATTERN.match(base + other)
-    assert not IDEMPOTENCY_BYPASS_PATTERN.match("/api/v1/vendors/abc/sensitive/reveal")
+    assert IDEMPOTENCY_BYPASS_PATTERN.match("/api/v1/vendors/abc/sensitive/reveal")
+    assert not IDEMPOTENCY_BYPASS_PATTERN.match("/api/v1/vendors//sensitive/reveal")
+    assert not IDEMPOTENCY_BYPASS_PATTERN.match("/api/v1/vendors/a/b/sensitive/reveal")

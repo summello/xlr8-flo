@@ -45,11 +45,10 @@ IDEMPOTENCY_BYPASS_PATHS = frozenset(
 )
 
 # Reads that must never be stored or replayed: a stored response would copy cleartext into
-# idempotency_key and a replay would skip authorization and audit (E11-S04 vendor reveal).
-IDEMPOTENCY_BYPASS_PATTERN = re.compile(
-    r"^/api/v1/vendors/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
-    r"[0-9a-fA-F]{12}/sensitive/reveal$"
-)
+# idempotency_key and a replay would skip authorization and audit (E11-S04 vendor reveal). The
+# path shape, not the id format: FastAPI also accepts a 32-hex UUID, and any form it accepts
+# must skip storage.
+IDEMPOTENCY_BYPASS_PATTERN = re.compile(r"^/api/v1/vendors/[^/]+/sensitive/reveal/?$")
 
 _logger = logging.getLogger(__name__)
 
