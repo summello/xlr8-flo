@@ -12,14 +12,6 @@ class MigrationConnection(Protocol):
     def execute(self, query: str) -> object: ...
 
 
-def _rls(table: str) -> str:
-    return f"""
-ALTER TABLE {table} ENABLE ROW LEVEL SECURITY;
-ALTER TABLE {table} FORCE ROW LEVEL SECURITY;
-CREATE POLICY tenant_isolation ON {table}
- USING(org_id=current_setting('app.org_id')::uuid) WITH CHECK(org_id=current_setting('app.org_id')::uuid);
-"""
-
 
 UPGRADE_SQL = f"""
 ALTER TABLE numbering_format DROP CONSTRAINT numbering_format_doc_type_check;
@@ -41,7 +33,10 @@ CREATE TABLE vendor (
 CREATE INDEX vendor_org_status ON vendor(org_id, status);
 CREATE INDEX vendor_trading_name_lower ON vendor(org_id, lower(trading_name));
 CREATE INDEX vendor_legal_name_lower ON vendor(org_id, lower(legal_name));
-{_rls("vendor")}
+ALTER TABLE vendor ENABLE ROW LEVEL SECURITY;
+ALTER TABLE vendor FORCE ROW LEVEL SECURITY;
+CREATE POLICY tenant_isolation ON vendor
+ USING(org_id=current_setting('app.org_id')::uuid) WITH CHECK(org_id=current_setting('app.org_id')::uuid);
 CREATE TABLE vendor_unit (
  org_id uuid NOT NULL REFERENCES organization(id),
  vendor_id uuid NOT NULL, unit_id uuid NOT NULL,
@@ -49,7 +44,10 @@ CREATE TABLE vendor_unit (
  FOREIGN KEY (org_id, vendor_id) REFERENCES vendor(org_id, id),
  FOREIGN KEY (org_id, unit_id) REFERENCES org_unit(org_id, id)
 );
-{_rls("vendor_unit")}
+ALTER TABLE vendor_unit ENABLE ROW LEVEL SECURITY;
+ALTER TABLE vendor_unit FORCE ROW LEVEL SECURITY;
+CREATE POLICY tenant_isolation ON vendor_unit
+ USING(org_id=current_setting('app.org_id')::uuid) WITH CHECK(org_id=current_setting('app.org_id')::uuid);
 CREATE TABLE vendor_local_disable (
  org_id uuid NOT NULL REFERENCES organization(id),
  vendor_id uuid NOT NULL, unit_id uuid NOT NULL,
@@ -60,7 +58,10 @@ CREATE TABLE vendor_local_disable (
  FOREIGN KEY (org_id, vendor_id) REFERENCES vendor(org_id, id),
  FOREIGN KEY (org_id, unit_id) REFERENCES org_unit(org_id, id)
 );
-{_rls("vendor_local_disable")}
+ALTER TABLE vendor_local_disable ENABLE ROW LEVEL SECURITY;
+ALTER TABLE vendor_local_disable FORCE ROW LEVEL SECURITY;
+CREATE POLICY tenant_isolation ON vendor_local_disable
+ USING(org_id=current_setting('app.org_id')::uuid) WITH CHECK(org_id=current_setting('app.org_id')::uuid);
 """
 
 DOWNGRADE_SQL = f"""
