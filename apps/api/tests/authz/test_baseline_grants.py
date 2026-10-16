@@ -142,7 +142,13 @@ def test_upgrade_gives_every_system_role_exactly_the_baseline(pre_0053):
     conn, org, _ = pre_0053
     assert "project-manager" not in role_grants(conn, org)
     load_migration(MIGRATION, "role_catalogue_drift").upgrade(conn)
-    expected = {str(c): {str(p) for p in perms} for c, perms in BASELINE_ROLE_PERMISSIONS.items()}
+    # Later migrations add catalogue codes (vendor.request, ...); 0053 can only grant codes that
+    # exist once it has run, so compare against the baseline restricted to those codes.
+    known = {row[0] for row in conn.execute("SELECT code FROM permission").fetchall()}
+    expected = {
+        str(c): {str(p) for p in perms if str(p) in known}
+        for c, perms in BASELINE_ROLE_PERMISSIONS.items()
+    }
     assert role_grants(conn, org) == expected
 
 
