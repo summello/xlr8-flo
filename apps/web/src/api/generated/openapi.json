@@ -5640,6 +5640,15 @@
         "title": "Node",
         "type": "object"
       },
+      "NotSelectable": {
+        "enum": [
+          "another_unit",
+          "different_currency",
+          "amendment_pending",
+          "on_rfq"
+        ],
+        "type": "string"
+      },
       "NoteCreate": {
         "additionalProperties": false,
         "properties": {
@@ -8632,6 +8641,246 @@
         "title": "RevisionSummary",
         "type": "object"
       },
+      "RfqCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/RfqLineIn"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Lines",
+            "type": "array"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "lines"
+        ],
+        "title": "RfqCreate",
+        "type": "object"
+      },
+      "RfqLineIn": {
+        "additionalProperties": false,
+        "properties": {
+          "quantity": {
+            "title": "Quantity",
+            "type": "string"
+          },
+          "requisition_line_id": {
+            "format": "uuid",
+            "title": "Requisition Line Id",
+            "type": "string"
+          },
+          "requisition_version": {
+            "minimum": 1.0,
+            "title": "Requisition Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "requisition_line_id",
+          "requisition_version",
+          "quantity"
+        ],
+        "title": "RfqLineIn",
+        "type": "object"
+      },
+      "RfqLineRead": {
+        "properties": {
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "line_no": {
+            "title": "Line No",
+            "type": "integer"
+          },
+          "needed_by": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Needed By"
+          },
+          "open_qty": {
+            "title": "Open Qty",
+            "type": "string"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "string"
+          },
+          "requisition_id": {
+            "format": "uuid",
+            "title": "Requisition Id",
+            "type": "string"
+          },
+          "requisition_line_id": {
+            "format": "uuid",
+            "title": "Requisition Line Id",
+            "type": "string"
+          },
+          "requisition_line_no": {
+            "title": "Requisition Line No",
+            "type": "integer"
+          },
+          "requisition_number": {
+            "title": "Requisition Number",
+            "type": "string"
+          },
+          "requisition_version": {
+            "title": "Requisition Version",
+            "type": "integer"
+          },
+          "uom_code": {
+            "title": "Uom Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "line_no",
+          "requisition_id",
+          "requisition_number",
+          "requisition_line_id",
+          "requisition_line_no",
+          "requisition_version",
+          "quantity",
+          "description",
+          "uom_code",
+          "needed_by",
+          "currency",
+          "open_qty"
+        ],
+        "title": "RfqLineRead",
+        "type": "object"
+      },
+      "RfqLinesPatch": {
+        "additionalProperties": false,
+        "description": "The complete line list wanted: new lines added, absent ones removed, others requantified.",
+        "properties": {
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/RfqLineIn"
+            },
+            "maxItems": 500,
+            "title": "Lines",
+            "type": "array"
+          }
+        },
+        "required": [
+          "lines"
+        ],
+        "title": "RfqLinesPatch",
+        "type": "object"
+      },
+      "RfqRead": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "edit_revision": {
+            "title": "Edit Revision",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/RfqLineRead"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "owner_email": {
+            "title": "Owner Email",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RfqStatus"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "unit_id": {
+            "format": "uuid",
+            "title": "Unit Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "title",
+          "status",
+          "unit_id",
+          "currency",
+          "owner_email",
+          "version",
+          "edit_revision",
+          "created_at",
+          "updated_at",
+          "lines"
+        ],
+        "title": "RfqRead",
+        "type": "object"
+      },
+      "RfqStatus": {
+        "enum": [
+          "draft",
+          "published",
+          "closed",
+          "under_evaluation",
+          "awarded",
+          "cancelled"
+        ],
+        "type": "string"
+      },
       "RiskCreate": {
         "additionalProperties": false,
         "properties": {
@@ -9412,6 +9661,149 @@
           "scope"
         ],
         "title": "SettingSource",
+        "type": "object"
+      },
+      "SourceableLine": {
+        "properties": {
+          "awarded_qty": {
+            "title": "Awarded Qty",
+            "type": "string"
+          },
+          "cancelled_qty": {
+            "title": "Cancelled Qty",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "line_id": {
+            "format": "uuid",
+            "title": "Line Id",
+            "type": "string"
+          },
+          "line_no": {
+            "title": "Line No",
+            "type": "integer"
+          },
+          "needed_by": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Needed By"
+          },
+          "open_qty": {
+            "title": "Open Qty",
+            "type": "string"
+          },
+          "ordered_qty": {
+            "title": "Ordered Qty",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NotSelectable"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "requested_qty": {
+            "title": "Requested Qty",
+            "type": "string"
+          },
+          "requisition_id": {
+            "format": "uuid",
+            "title": "Requisition Id",
+            "type": "string"
+          },
+          "requisition_number": {
+            "title": "Requisition Number",
+            "type": "string"
+          },
+          "requisition_version": {
+            "title": "Requisition Version",
+            "type": "integer"
+          },
+          "selectable": {
+            "title": "Selectable",
+            "type": "boolean"
+          },
+          "sourced_qty": {
+            "title": "Sourced Qty",
+            "type": "string"
+          },
+          "unit_id": {
+            "format": "uuid",
+            "title": "Unit Id",
+            "type": "string"
+          },
+          "uom_code": {
+            "title": "Uom Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "line_id",
+          "requisition_id",
+          "requisition_number",
+          "requisition_version",
+          "line_no",
+          "unit_id",
+          "currency",
+          "description",
+          "uom_code",
+          "needed_by",
+          "requested_qty",
+          "sourced_qty",
+          "awarded_qty",
+          "ordered_qty",
+          "cancelled_qty",
+          "open_qty",
+          "selectable",
+          "reason"
+        ],
+        "title": "SourceableLine",
+        "type": "object"
+      },
+      "SourceablePage": {
+        "properties": {
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/SourceableLine"
+            },
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rows",
+          "next_cursor"
+        ],
+        "title": "SourceablePage",
         "type": "object"
       },
       "StatusEventRead": {
@@ -22463,6 +22855,387 @@
         "summary": "Available Transitions",
         "tags": [
           "requisitions"
+        ]
+      }
+    },
+    "/api/v1/sourcing/requisition-lines": {
+      "get": {
+        "operationId": "list_requisition_lines_api_v1_sourcing_requisition_lines_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "unit_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Unit Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "currency",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^[A-Z]{3}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Currency"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "with_rfq",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "With Rfq"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceablePage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "List Requisition Lines",
+        "tags": [
+          "sourcing"
+        ]
+      }
+    },
+    "/api/v1/sourcing/rfqs": {
+      "post": {
+        "operationId": "create_rfq_api_v1_sourcing_rfqs_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RfqCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RfqRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Create Rfq",
+        "tags": [
+          "sourcing"
+        ]
+      }
+    },
+    "/api/v1/sourcing/rfqs/{id}": {
+      "get": {
+        "operationId": "get_rfq_api_v1_sourcing_rfqs__id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RfqRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Get Rfq",
+        "tags": [
+          "sourcing"
+        ]
+      }
+    },
+    "/api/v1/sourcing/rfqs/{id}/lines": {
+      "patch": {
+        "operationId": "patch_rfq_lines_api_v1_sourcing_rfqs__id__lines_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RfqLinesPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RfqRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Patch Rfq Lines",
+        "tags": [
+          "sourcing"
         ]
       }
     },

@@ -59,6 +59,9 @@ from flo.modules.requisitions.schemas import (
     invalid,
 )
 from flo.modules.requisitions.schemas import SubmissionInvalid as SubmissionInvalid
+from flo.modules.requisitions.sourcing import source_lines as source_lines
+from flo.modules.requisitions.sourcing import sourceable_lines as sourceable_lines
+from flo.modules.requisitions.sourcing import sourcing_basis as sourcing_basis
 from flo.modules.requisitions.validation import check_submission as check_submission
 
 __all__ = [
@@ -71,6 +74,9 @@ __all__ = [
     "routing_check",
     "assert_completable",
     "assert_current_upstream",
+    "source_lines",
+    "sourceable_lines",
+    "sourcing_basis",
     "links",
     "register_link_provider",
     "register_downstream_counter",
