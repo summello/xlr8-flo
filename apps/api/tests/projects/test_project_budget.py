@@ -18,7 +18,7 @@ from flo.modules.approvals.service import decide, start
 from flo.modules.budget.schemas import AllocationCreate
 from flo.modules.budget.service import allocate
 from flo.modules.identity.service import AuthorizationResolver
-from flo.modules.projects.schemas import ProjectCreate, TransitionCreate
+from flo.modules.projects.schemas import ProjectCreate, ProjectPatch, TransitionCreate
 from flo.modules.projects.service import ProjectService
 from tests.approvals.test_project_wiring import publish
 from tests.approvals.test_project_wiring import wiring as wiring
@@ -62,11 +62,11 @@ def submit(wiring, project, conn=None):
         )
 
 
-def decision(wiring, instance, outcome="approve", conn=None):
+def decision(wiring, instance, outcome="approve", conn=None, version=2):
     db, _, approver = wiring
     body = DecisionWrite(
         outcome=outcome,
-        document_version=2,
+        document_version=version,
         **({"reject_mode": "return_to_draft", "comment": "Revise"} if outcome == "reject" else {}),
     )
     return decide(
@@ -302,3 +302,121 @@ def test_reads_and_lists_return_every_sponsor(wiring):
     db[0].execute("UPDATE project SET sponsor_id=%s WHERE id=%s", (approver, legacy.id))
     assert service.get(legacy.id).sponsor_ids == [approver]
     assert [r.sponsor_ids for r in service.list(q="Legacy sponsor").rows] == [[approver]]
+
+
+def test_a_creator_without_ledger_read_gets_no_balance_figures(project_db):
+    from tests.authz.test_effective_access import grant_permissions
+    from tests.authz.test_resolver import insert_identity
+    from tests.projects.conftest import body, service, unit
+    from tests.projects.test_projects import request
+
+    db = project_db
+    bu = unit(db)
+    main = service(db).create(body(bu))  # nothing allocated: available 0
+    creator = insert_identity(db, "creator")
+    grant_permissions(db, creator, "project.create", "project.read")
+    child = body(
+        bu, parent_id=main.id, budget={"amount": "100", "currency": "USD"}, sponsor_ids=[creator]
+    )
+    refused = request(db, "POST", json=child.model_dump(mode="json"), viewer=creator)
+    assert refused.status_code == 409, refused.text
+    assert refused.json()["checks"] == {"problem": "insufficient_budget"}
+    assert "0.0000" not in refused.text and "100" not in refused.text
+
+
+def test_submit_refusal_for_a_short_main_project_carries_no_figures(wiring):
+    publish(wiring)
+    main = create(wiring, "Main", "100")
+    decision(wiring, submit(wiring, main))
+    child = create(wiring, "Child", "50", parent_id=main.id)
+    wiring[0][0].execute("UPDATE project SET requested_budget=500 WHERE id=%s", (child.id,))
+    with pytest.raises(ProblemError) as error:
+        submit(wiring, child)
+    assert error.value.code == ErrorCode.INSUFFICIENT_BUDGET
+    assert error.value.checks == {"problem": "insufficient_budget"}
+
+
+def test_a_draft_without_budget_gets_one_by_patch_and_then_submits(wiring):
+    publish(wiring)
+    db, _, approver = wiring
+    scope = Scope(db[1])
+    draft = create(wiring, "Blank", sponsors=False)
+    with pytest.raises(ProblemError):
+        submit(wiring, draft)
+    service = ProjectService(db[0], scope, db[3])
+    patched = service.update(
+        draft.id,
+        ProjectPatch(budget={"amount": "250.25", "currency": "USD"}, sponsor_ids=[db[3], approver]),
+        "1",
+    )
+    assert patched.requested_budget == "250.2500" and patched.version == 2
+    assert sorted(patched.sponsor_ids) == sorted([db[3], approver])
+    # Replacing the list replaces it; clearing the budget clears the request.
+    again = service.update(draft.id, ProjectPatch(sponsor_ids=[approver]), "2")
+    assert again.sponsor_ids == [approver]
+    cleared = service.update(draft.id, ProjectPatch(budget=None), "3")
+    assert cleared.requested_budget is None
+    service.update(draft.id, ProjectPatch(budget={"amount": "10", "currency": "USD"}), "4")
+    decision(wiring, submit_at(wiring, draft, "5"), version=6)
+    assert entries(wiring, draft.id) == [("allocation", Decimal("10.0000"))]
+
+
+def submit_at(wiring, project, version):
+    db, _, _ = wiring
+    scope = Scope(db[1])
+    with tenant_transaction(db[0], scope):
+        ProjectService(db[0], scope, db[3]).transition(
+            project.id, TransitionCreate(to="approval_pending"), version, lambda p: True
+        )
+        return start(
+            db[0],
+            scope,
+            document_type="project",
+            document_id=project.id,
+            actor_id=db[3],
+            resolver=AuthorizationResolver(db[0], scope),
+        )
+
+
+def test_patch_budget_applies_the_create_checks_and_only_while_draft(wiring):
+    publish(wiring)
+    db, _, _ = wiring
+    service = ProjectService(db[0], Scope(db[1]), db[3])
+    main = create(wiring, "Main", "100")
+    decision(wiring, submit(wiring, main))
+    child = create(wiring, "Child", sponsors=False, parent_id=main.id)
+    for patch, problem in [
+        ({"amount": "1.234", "currency": "USD"}, "amount_precision"),
+        ({"amount": "1", "currency": "EUR"}, "currency_mismatch"),
+        ({"amount": "100.01", "currency": "USD"}, "insufficient_budget"),
+    ]:
+        with pytest.raises(ProblemError) as error:
+            service.update(child.id, ProjectPatch(budget=patch), "1")
+        assert error.value.checks == {"problem": problem}
+    with pytest.raises(ProblemError) as error:
+        service.update(child.id, ProjectPatch(sponsor_ids=[uuid4()]), "1")
+    assert error.value.errors[0].field == "sponsor_ids"
+    assert service.get(child.id).version == 1
+    # Once submitted, the request is frozen.
+    ready = create(wiring, "Ready", "5")
+    submit(wiring, ready)
+    with pytest.raises(ProblemError) as error:
+        service.update(ready.id, ProjectPatch(budget={"amount": "6", "currency": "USD"}), "2")
+    assert error.value.checks == {"problem": "invalid_transition"}
+    assert service.get(ready.id).requested_budget == "5.0000"
+
+
+def test_patch_route_sets_budget_and_sponsors_with_if_match(project_db):
+    from tests.projects.conftest import body, service, unit
+    from tests.projects.test_projects import request
+
+    db = project_db
+    draft = service(db).create(body(unit(db)))
+    payload = {"budget": {"amount": "75", "currency": "USD"}, "sponsor_ids": [str(db.actor_id)]}
+    patched = request(
+        db, "PATCH", f"/{draft.id}", json=payload, headers={"If-Match": "1"}
+    )
+    assert patched.status_code == 200, patched.text
+    assert patched.json()["requested_budget"] == "75.0000"
+    stale = request(db, "PATCH", f"/{draft.id}", json=payload, headers={"If-Match": "1"})
+    assert stale.status_code == 409

@@ -44,6 +44,7 @@ from flo.modules.projects.risk_indicators import risk_indicators as compute_risk
 from flo.modules.projects.risks import Risks
 from flo.modules.projects.schedule import Schedule, with_variance
 from flo.modules.projects.schemas import (
+    BudgetRequest,
     ChildrenPage,
     Direction,
     MilestoneCreate,
@@ -325,13 +326,41 @@ class ProjectService:
     def check_main_funds(self, parent_id: UUID, amount: Decimal) -> None:
         """Advisory, unlocked: refuse a child whose main project cannot cover it now.
 
-        Approval repeats the check under the lock; this one only saves a doomed submission.
+        Approval repeats the check under the lock. This path needs only project.create and
+        project.read, so the refusal carries no balance: the figures need ledger.read.
         """
-        from flo.modules.budget.service import InsufficientBudget, get_balance
+        from flo.modules.budget.service import get_balance
 
-        available = get_balance(self.connection, self.scope, parent_id).available
-        if available < amount:
-            raise InsufficientBudget(available, amount)
+        if get_balance(self.connection, self.scope, parent_id).available < amount:
+            raise ProblemError(
+                ErrorCode.INSUFFICIENT_BUDGET,
+                detail="The main project cannot cover this budget. Lower the budget or ask "
+                "for funds to be added to the main project.",
+                checks={"problem": "insufficient_budget"},
+            )
+
+    def _check_budget(
+        self, budget: BudgetRequest | None, currency: str, parent_id: UUID | None
+    ) -> None:
+        """Currency, precision and (for a child) main-project funds of a requested budget."""
+        if budget is None:
+            return
+        if budget.currency != currency:
+            raise invalid(
+                "budget",
+                f"The budget is in {budget.currency}, the project in {currency}. "
+                "Use the project currency.",
+                "currency_mismatch",
+            )
+        if quantize(budget.amount, currency) != budget.amount:
+            raise invalid(
+                "budget",
+                f"{currency} allows {currency_exponent(currency)} decimal places. "
+                "Round the budget to that precision.",
+                "amount_precision",
+            )
+        if parent_id is not None:
+            self.check_main_funds(parent_id, budget.amount)
 
     def available_transitions(
         self, project_id: UUID, permitted: Callable[[str], bool]
@@ -428,24 +457,7 @@ class ProjectService:
             self._user("sponsor_id", body.sponsor_id)
             for sponsor in body.sponsor_ids:
                 self._user("sponsor_ids", sponsor)
-            if body.budget is not None and body.budget.currency != body.currency:
-                raise invalid(
-                    "budget",
-                    f"The budget is in {body.budget.currency}, the project in {body.currency}. "
-                    "Use the project currency.",
-                    "currency_mismatch",
-                )
-            if body.budget is not None and quantize(
-                body.budget.amount, body.currency
-            ) != body.budget.amount:
-                raise invalid(
-                    "budget",
-                    f"{body.currency} allows {currency_exponent(body.currency)} decimal places. "
-                    "Round the budget to that precision.",
-                    "amount_precision",
-                )
-            if body.budget is not None and body.parent_id is not None:
-                self.check_main_funds(body.parent_id, body.budget.amount)
+            self._check_budget(body.budget, body.currency, body.parent_id)
             self._dates(body.planned_start, body.planned_end)
             created = self._insert_project(body, codes=codes, owner=owner, on_date=on_date)
             if body.sponsor_ids:
@@ -731,6 +743,24 @@ class ProjectService:
                     checks={"problem": "stale_version"},
                 )
             changes = body.model_dump(exclude_unset=True)
+            budget_set = "budget" in changes
+            sponsors_set = changes.get("sponsor_ids") is not None
+            changes.pop("sponsor_ids", None)
+            requested = changes.pop("budget", None)
+            if budget_set or sponsors_set:
+                if before["status"] != "draft":
+                    raise conflict(
+                        "invalid_transition",
+                        "Budget and sponsors can change only while the project is a draft.",
+                    )
+                if budget_set:
+                    self._check_budget(
+                        None if requested is None else BudgetRequest.model_validate(requested),
+                        cast(str, before["currency"]),
+                        cast(UUID | None, before["parent_id"]),
+                    )
+                for sponsor in body.sponsor_ids or []:
+                    self._user("sponsor_ids", sponsor)
             if "external_ref" in changes:
                 if (
                     before["external_ref"] is not None
@@ -751,6 +781,8 @@ class ProjectService:
                 if field in changes:
                     self._user(field, cast(UUID | None, changes[field]))
             after = before | changes
+            if budget_set:
+                after["requested_budget"] = None if requested is None else requested["amount"]
             self._dates(
                 cast(date | None, after["planned_start"]), cast(date | None, after["planned_end"])
             )
@@ -769,6 +801,7 @@ class ProjectService:
                         planned_start = %(planned_start)s, planned_end = %(planned_end)s,
                         health = %(health)s, percent_complete = %(percent_complete)s,
                         actual_start = %(actual_start)s, actual_end = %(actual_end)s,
+                        requested_budget = %(requested_budget)s,
                         version = version + 1 WHERE org_id = %(org_id)s AND id = %(id)s""",
                         after,
                     )
@@ -776,6 +809,19 @@ class ProjectService:
                 if exc.diag.constraint_name != "project_external_ref":
                     raise
                 raise external_ref_locked() from exc
+            if sponsors_set:
+                self.repo.execute(
+                    "DELETE FROM project_sponsor WHERE org_id = %(org_id)s AND project_id = %(id)s",
+                    {"id": project_id},
+                )
+                if body.sponsor_ids:
+                    apply_sponsors(self.connection, self.scope, project_id, body.sponsor_ids)
+                else:
+                    self.repo.execute(
+                        "UPDATE project SET sponsor_id = NULL "
+                        "WHERE org_id = %(org_id)s AND id = %(id)s",
+                        {"id": project_id},
+                    )
             after = self._get(project_id)
             self._audit("project.update", project_id, before, after)
             return self._read(after)

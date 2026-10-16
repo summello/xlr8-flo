@@ -73,6 +73,16 @@ class ProjectPatch(ExternalReference):
     percent_complete: int | None = Field(default=None, ge=0, le=100)
     actual_start: date | None = None
     actual_end: date | None = None
+    # Draft only; `budget: null` clears the request, `sponsor_ids` replaces the list.
+    budget: BudgetRequest | None = None
+    sponsor_ids: list[UUID] | None = Field(default=None, max_length=10)
+
+    @field_validator("sponsor_ids")
+    @classmethod
+    def distinct_sponsors(cls, value: list[UUID] | None) -> list[UUID] | None:
+        if value is not None and len(set(value)) != len(value):
+            raise ValueError("Name each sponsor once.")
+        return value
 
     @model_validator(mode="before")
     @classmethod
