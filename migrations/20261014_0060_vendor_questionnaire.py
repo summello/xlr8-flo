@@ -87,8 +87,11 @@ CREATE TABLE vendor_onboarding (
 CREATE FUNCTION vendor_question_guard() RETURNS trigger LANGUAGE plpgsql AS $guard$
 DECLARE locked boolean;
 BEGIN
- SELECT status <> 'draft' INTO locked FROM vendor_questionnaire_version
-  WHERE id = (CASE WHEN TG_OP = 'INSERT' THEN NEW.version_id ELSE OLD.version_id END);
+ -- Every version the row leaves or enters must be a draft: an UPDATE can move a question.
+ SELECT bool_or(status <> 'draft') INTO locked FROM vendor_questionnaire_version
+  WHERE id IN (CASE WHEN TG_OP = 'INSERT' THEN NEW.version_id ELSE OLD.version_id END,
+               CASE WHEN TG_OP = 'UPDATE' THEN NEW.version_id ELSE OLD.version_id END,
+               CASE WHEN TG_OP = 'INSERT' THEN NEW.version_id ELSE OLD.version_id END);
  IF locked IS DISTINCT FROM false THEN
   RAISE EXCEPTION 'vendor_question of a published or retired version is immutable: % is forbidden', TG_OP
    USING ERRCODE = '55000';

@@ -622,3 +622,18 @@ def test_onboarding_routes_conceal_foreign_tenants_and_other_requesters(header_d
                     assert response.status_code == 404, (method, suffix, response.text)
 
     asyncio.run(scenario())
+
+
+def test_a_raw_update_cannot_move_a_question_into_a_published_version(header_db):
+    db, service = header_db, svc(header_db)
+    live = two(db)
+    draft = service.create_questionnaire()
+    service.add_question(draft.id, question("mover", weight=0))
+    with pytest.raises(psycopg.errors.ObjectNotInPrerequisiteState):
+        sql(
+            db,
+            "UPDATE vendor_question SET version_id = %s, position = 9 WHERE version_id = %s",
+            (live.id, draft.id),
+        )
+    assert [q.key for q in service.get_questionnaire(live.id).questions] == ["name", "size"]
+    assert [q.key for q in service.get_questionnaire(draft.id).questions] == ["mover"]
