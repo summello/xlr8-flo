@@ -1951,6 +1951,7 @@ epics:
           - WF-002
         dep:
           - E13-S01
+          - E11-S09
         st: todo
       - id: E13-S04
         t: PO approval workflow before issue
@@ -1963,6 +1964,7 @@ epics:
         dep:
           - E13-S03
           - E10-S13
+          - E13-S02
         st: todo
       - id: E13-S05
         t: Issue converts reservation to commitment atomically; partial POs reduce open
@@ -2013,7 +2015,8 @@ epics:
         t: PO PDF reproducible from stored snapshot and template version
         k: engine
         s: L
-        tags: []
+        tags:
+          - security
         reqs:
           - PO-014
           - DATA-005

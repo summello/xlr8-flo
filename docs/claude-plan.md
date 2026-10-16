@@ -605,8 +605,8 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⛔ | **E12-S19** Sourcing open questions for the operator (parking story) | E12 | docs | S | SRC-016, SRC-017 | — |
 | ⬜ | **E13-S01** PO from awarded requisition lines or authorized project items, scoped numbering | E13 | crud | L | PO-001, PO-002, PO-006, SEQ-001 | E12-S08 |
 | ⬜ | **E13-S02** Tax and freight per BU/OU policy, separately visible on line and document | E13 | ledger | M | FIN-008, FIN-009, PO-016 | E13-S01 |
-| ⬜ | **E13-S03** PO lifecycle state machine | E13 | engine | M | PO-007, WF-002 | E13-S01 |
-| ⬜ | **E13-S04** PO approval workflow before issue | E13 | engine | M | PO-003, APR-003 | E13-S03, ~~E10-S13~~ |
+| ⬜ | **E13-S03** PO lifecycle state machine | E13 | engine | M | PO-007, WF-002 | E13-S01, ~~E11-S09~~ |
+| ⬜ | **E13-S04** PO approval workflow before issue | E13 | engine | M | PO-003, APR-003 | E13-S03, ~~E10-S13~~, E13-S02 |
 | ⬜ | **E13-S05** Issue converts reservation to commitment atomically; partial POs reduce open quantity only | E13 | ledger | L | PO-008, PO-009, WF-003, ACC-002 | E13-S04, ~~E07-S05~~ |
 | ⬜ | **E13-S06** Immutable issued PO; numbered, approved change orders with field-level diff | E13 | engine | L | PO-010, PO-011, DATA-005, ACC-005 | E13-S05 |
 | ⬜ | **E13-S07** Cancel or reduce releases unused commitment exactly once, history preserved | E13 | ledger | M | PO-013, FIN-011, ACC-006, WF-005 | E13-S06 |
