@@ -821,3 +821,32 @@ def test_list_page_size_and_filtered_totals_per_currency(header_db):
                 assert (await send(browser, "GET", "?page_size=" + bad)).status_code == 422
 
     asyncio.run(scenario())
+
+
+def test_list_is_filtered_to_the_scopes_where_the_caller_may_view(header_db):
+    from flo.modules.identity.models import AuthorizationTarget
+    from flo.modules.identity.service import ScopeType
+    from tests.vendors.test_vendors import regrant
+
+    db = header_db
+    mine, other = unit(db, "MINE"), unit(db, "OTHER")
+    in_mine, in_other = draft(db, mine), draft(db, other)
+
+    async def listed(browser):
+        return {r["id"] for r in (await send(browser, "GET")).json()["rows"]}
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            assert await listed(browser) == {str(in_mine.id), str(in_other.id)}
+            # a grant on one business unit lists that unit only; the other unit stays hidden
+            regrant(
+                db, ["requisition.view"], AuthorizationTarget(ScopeType.BU, mine.id, None, None)
+            )
+            assert await listed(browser) == {str(in_mine.id)}
+            assert (await send(browser, "GET", f"/{in_other.id}")).status_code == 404
+            # no grant at all: an empty list, not an error
+            regrant(db, ["vendor.view"])
+            assert await listed(browser) == set()
+
+    asyncio.run(scenario())

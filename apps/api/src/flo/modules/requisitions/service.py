@@ -500,7 +500,9 @@ class RequisitionService:
         direction: Direction = "asc",
         cursor: str | None = None,
         page_size: int = 50,
+        visible: tuple[list[UUID], list[UUID]] | None = None,
     ) -> RequisitionPage:
+        """`visible` is (business units, projects) the caller may view; None means everything."""
         if not 1 <= page_size <= 50:
             raise invalid("page_size", "Choose a page size from 1 to 50.")
         # Only these constant strings ever reach the SQL text; the request values pick one.
@@ -525,6 +527,11 @@ class RequisitionService:
           AND (%(standalone)s::boolean IS NULL OR r.standalone=%(standalone)s)
           AND (%(requester_id)s::uuid IS NULL OR r.requester_id=%(requester_id)s)
           AND (r.number ILIKE %(prefix)s OR r.title ILIKE %(substring)s)"""
+        if visible is not None:
+            params.update(visible_units=visible[0], visible_projects=visible[1])
+            filters += """
+          AND ((r.standalone AND r.bu_id = ANY(%(visible_units)s::uuid[]))
+            OR (NOT r.standalone AND r.project_id = ANY(%(visible_projects)s::uuid[])))"""
         boundary = ""
         if cursor is not None:
             try:
