@@ -2713,6 +2713,13 @@ export interface components {
              */
             status: "pending" | "approved" | "rejected" | "withdrawn";
         };
+        /** BudgetRequest */
+        BudgetRequest: {
+            /** Amount */
+            amount: number | string;
+            /** Currency */
+            currency: string;
+        };
         /** BudgetSummary */
         BudgetSummary: {
             /**
@@ -4727,6 +4734,7 @@ export interface components {
              * Format: uuid
              */
             bu_id: string;
+            budget?: components["schemas"]["BudgetRequest"] | null;
             /** Currency */
             currency: string;
             /** Department Code */
@@ -4749,6 +4757,8 @@ export interface components {
             planned_start?: string | null;
             /** Sponsor Id */
             sponsor_id?: string | null;
+            /** Sponsor Ids */
+            sponsor_ids?: string[];
         };
         /** @enum {string} */
         ProjectGroup: "status" | "bu";
@@ -4855,6 +4865,8 @@ export interface components {
             planned_end: string | null;
             /** Planned Start */
             planned_start: string | null;
+            /** Requested Budget */
+            requested_budget?: string | null;
             /** Schedule Variance Days */
             schedule_variance_days: number | null;
             /** Sponsor Id */

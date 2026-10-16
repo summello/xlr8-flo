@@ -276,6 +276,30 @@ test("loadPage still rejects an oversized server envelope and retries without lo
   await expect(page.locator("tr[data-grid-row]")).toHaveCount(1);
 });
 
+test("create with budget, main project and sponsors shows the funds check and sends them", async ({ page }) => {
+  const state = await stubProjects(page); await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
+  await createFields(page);
+  await page.getByLabel(/^Budget\s*\*?$/).fill("500");
+  await page.getByLabel(/^Main project\s*\*?$/).selectOption(projectId);
+  const funds = page.getByTestId("funds-check");
+  await expect(funds).toContainText("Available in the main project");
+  await expect(funds).toContainText("This budget is covered.");
+  await page.getByLabel(/^Budget\s*\*?$/).fill("9999");
+  await expect(funds).toContainText("more than is available");
+  await page.getByLabel(/^Budget\s*\*?$/).fill("500");
+  await page.getByLabel(/^Sponsors\s*\*?$/).selectOption([firstActor, secondActor]);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.getByRole("button", { name: "Create project", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/projects/${projectId}$`));
+  const post = state.requests.find(r => r.path === "/api/v1/projects" && r.method === "POST")!;
+  expect(post.body).toMatchObject({ budget: { amount: "500", currency: "USD" }, parent_id: projectId, sponsor_ids: expect.arrayContaining([firstActor, secondActor]) });
+});
+
+test("keyboard-only path reaches budget, main project and sponsors in order", async ({ page }) => {
+  await stubProjects(page); await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
+  for (const label of ["Planned end", "Budget", "Main project", "Sponsors"]) await keyboardFocus(page, page.getByLabel(new RegExp(`^${label}\\s*\\*?$`)));
+});
+
 test("required create fields fail locally with a focused summary and no POST", async ({ page }) => {
   const state = await stubProjects(page); await page.goto("/projects/new");
   await page.getByRole("button", { name: "Create project", exact: true }).click();

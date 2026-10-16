@@ -1131,6 +1131,34 @@
         "title": "BudgetChangeRequestRead",
         "type": "object"
       },
+      "BudgetRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,14}|(?=[\\d.]{1,19}0*$)\\d{0,14}\\.\\d{0,4}0*$)",
+                "type": "string"
+              }
+            ],
+            "title": "Amount"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "currency"
+        ],
+        "title": "BudgetRequest",
+        "type": "object"
+      },
       "BudgetSummary": {
         "properties": {
           "abandoned": {
@@ -6823,6 +6851,16 @@
             "title": "Bu Id",
             "type": "string"
           },
+          "budget": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BudgetRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "currency": {
             "title": "Currency",
             "type": "string"
@@ -6922,6 +6960,15 @@
               }
             ],
             "title": "Sponsor Id"
+          },
+          "sponsor_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 10,
+            "title": "Sponsor Ids",
+            "type": "array"
           }
         },
         "required": [
@@ -7315,6 +7362,17 @@
               }
             ],
             "title": "Planned Start"
+          },
+          "requested_budget": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requested Budget"
           },
           "schedule_variance_days": {
             "anyOf": [

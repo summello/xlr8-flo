@@ -39,6 +39,8 @@ export async function stubProjects(page: Page, settings: { total?: number; rows?
     if (path === `/api/v1/org/units/${unitId}`) return send(unit);
     if (path === "/api/v1/master/currency") return send([{ code: "USD", exponent: 2 }, { code: "JPY", exponent: 0 }]);
     if (path.startsWith("/api/v1/master/")) return send({ rows: [{ id: unitId, code: path.endsWith("department") ? "D" : "L", name: "Master code", active: true }], next_cursor: null });
+    if (path === "/api/v1/requisitions/lookups/user") return send({ rows: [{ value: firstActor, label: "Maker Person" }, { value: secondActor, label: "Approver Person" }] });
+    if (path === "/api/v1/requisitions/lookups/project") return send({ rows: [{ value: projectId, label: "Existing main project" }] });
     if (path === "/api/v1/projects" && method === "POST") {
       if (state.failCreate) return send({ status: 422, detail: "Unknown or inactive department code. Choose an active code.", errors: [{ field: "department_code", message: "Unknown or inactive department code." }] }, 422);
       state.row = { ...state.row, ...body } as typeof state.row; state.created = true;
