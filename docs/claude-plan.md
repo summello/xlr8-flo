@@ -570,7 +570,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E11-S09** Status vocabulary aligned to MASTER 2.3: vendor, RFQ, award and purchase-order maps and labels | E11 | ui | S | TAG-001, TAG-002, TAG-003, A11Y-004, VEN-012, PO-007 | ~~E11-S01~~ |
 | ⬜ | **E11-S10** Shared decision panel at phone width: footer reflow, close button never covered | E11 | ui | M | A11Y-011, A11Y-002, UX-008, APR-020 | ~~E11-S09~~, E22-S04 |
 | ✅ | **E11-S02** Typed contacts: billing, service/delivery, additional types | E11 | crud | S | VEN-002 | ~~E11-S01~~ |
-| ⬜ | **E11-S03** Vendor documents with issue/expiry, verification status, expiry notification | E11 | crud | M | VEN-003, VEN-011, OBS-004 | ~~E11-S01~~, ~~E09-S10~~ |
+| 🔨 | **E11-S03** Vendor documents with issue/expiry, verification status, expiry notification | E11 | crud | M | VEN-003, VEN-011, OBS-004 | ~~E11-S01~~, ~~E09-S10~~ |
 | ⬜ | **E11-S04** Field-level access control and masking for tax and banking data | E11 | security | M | VEN-014, CUS-008, PRIV-001 | ~~E11-S01~~, ~~E02-S05~~ |
 | ⬜ | **E11-S05** Onboarding request, configurable questionnaire, weights and scoring | E11 | engine | L | VEN-004, VEN-006 | ~~E11-S01~~ |
 | ⬜ | **E11-S06** Duplicate identifier detection, approval on create/activate/suspend/reactivate | E11 | engine | M | VEN-005, VEN-010, VEN-012 | E11-S05, ~~E10-S13~~, ~~E11-S02~~, E11-S04 |
