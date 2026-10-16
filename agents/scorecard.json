@@ -3611,6 +3611,53 @@
       },
       "recap": "Adds vendor_contact (migration 0057) with billing/service_delivery uniqueness enforced by a partial unique index, CRUD routes, contacts_complete and document_recipients, and a vendor_contact_type master kind. Phone is kept out of audit rows.",
       "title": "Typed contacts: billing, service/delivery, additional types"
+    },
+    {
+      "story": "E12-S01",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "money"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "09aefd4c-7097-496d-b49b-23a24bc6f8bb",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S01",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a14324-e52c-7482-a406-d46ab12bd6d4",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "78bb5a81-0cbb-4911-9231-4be810388692",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Adds the sourcing module: RFQ drafts built from approved requisition lines, with requisitions.service.source_lines as the only writer of sourced_qty (locks requisitions then lines, runs assert_current_upstream, refuses over-open quantity all-or-nothing) and four /api/v1/sourcing routes plus the rfq link provider. Drafts hold quantity from creation; removing or lowering a line returns it.",
+      "title": "RFQ from approved requisition lines, open-quantity guard"
     }
   ]
 }

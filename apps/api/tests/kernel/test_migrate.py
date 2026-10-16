@@ -157,6 +157,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261014_0055",
         "20261014_0056",
         "20261014_0057",
+        "20261014_0058",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -1915,3 +1916,83 @@ def test_vendor_contacts_roundtrip_preserves_vendors_and_plants_the_unique_index
         mig.upgrade(conn)
         with tenant_transaction(conn, scope):
             assert conn.execute("SELECT count(*) FROM vendor_contact").fetchone() == (0,)
+
+
+def test_rfq_roundtrip_preserves_rows_and_down_returns_held_quantity(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.org.schemas import OrgUnitCreate
+    from flo.modules.org.service import OrgService
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261014_0057"], empty_database
+    )
+    previous = next(r for r in revisions if r.revision == "20261014_0057")
+    mig = next(r for r in revisions if r.revision == "20261014_0058")
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("rfq-migration"),
+    ):
+        tenant = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(tenant.org_id)
+        bu = OrgService(conn, scope, actor).create_unit(
+            OrgUnitCreate(code="BU", name="BU", kind="bu")
+        )
+        requisition, line = uuid4(), uuid4()
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO requisition(id,org_id,number,title,bu_id,requester_id,created_by,"
+                "currency,standalone)"
+                " VALUES(%s,%s,'REQ-1','R',%s,%s,%s,'USD',true)",
+                (requisition, tenant.org_id, bu.id, actor, actor),
+            )
+            conn.execute(
+                "INSERT INTO requisition_line(id,org_id,requisition_id,line_no,line_type,"
+                "description,quantity,uom_code,unit_price,amount,currency,sourced_qty)"
+                " VALUES(%s,%s,%s,1,'item','Pump',10,'EA',1,10,'USD',4)",
+                (line, tenant.org_id, requisition),
+            )
+        mig.upgrade(conn)
+        rfq = uuid4()
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO rfq(id,org_id,number,title,unit_id,currency,owner_id)"
+                " VALUES(%s,%s,'RFQ-00001','T',%s,'USD',%s)",
+                (rfq, tenant.org_id, bu.id, actor),
+            )
+            conn.execute(
+                "INSERT INTO rfq_line(id,org_id,rfq_id,line_no,requisition_id,"
+                "requisition_line_id,requisition_version,quantity,description,uom_code,currency)"
+                " VALUES(%s,%s,%s,1,%s,%s,1,4,'Pump','EA','USD')",
+                (uuid4(), tenant.org_id, rfq, requisition, line),
+            )
+        with pytest.raises(psycopg.errors.UniqueViolation), tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO rfq_line(id,org_id,rfq_id,line_no,requisition_id,"
+                "requisition_line_id,requisition_version,quantity,description,uom_code,currency)"
+                " VALUES(%s,%s,%s,2,%s,%s,1,1,'Pump','EA','USD')",
+                (uuid4(), tenant.org_id, rfq, requisition, line),
+            )
+        with pytest.raises(psycopg.errors.CheckViolation), tenant_transaction(conn, scope):
+            conn.execute("UPDATE rfq SET status='bogus' WHERE id=%s", (rfq,))
+        with tenant_transaction(conn, scope):
+            snapshot = conn.execute("SELECT id,number,status FROM rfq").fetchall()
+        # The previous revision round-trips without touching RFQ data.
+        previous.downgrade(conn)
+        previous.upgrade(conn)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT id,number,status FROM rfq").fetchall() == snapshot
+        mig.downgrade(conn)
+        for table in ("rfq", "rfq_line"):
+            assert conn.execute("SELECT to_regclass(%s)", (table,)).fetchone() == (None,)
+        with tenant_transaction(conn, scope):
+            assert conn.execute(
+                "SELECT sourced_qty FROM requisition_line WHERE id=%s", (line,)
+            ).fetchone() == (0,)
+        mig.upgrade(conn)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT count(*) FROM rfq").fetchone() == (0,)
