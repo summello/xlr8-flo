@@ -29,7 +29,7 @@ from flo.modules.org.fx import convert as convert
 from flo.modules.org.fx import rate_for as rate_for
 from flo.modules.org.fx import status as fx_status
 from flo.modules.org.fx import validate_currency
-from flo.modules.org.master_kinds import known_kind, validate_attributes
+from flo.modules.org.master_kinds import RESERVED_CONTACT_TYPES, known_kind, validate_attributes
 from flo.modules.org.models import OrgRepository
 from flo.modules.org.numbering import NumberingService as NumberingService
 from flo.modules.org.schemas import (
@@ -530,6 +530,13 @@ class OrgService:
     def create_master(self, kind: str, body: MasterCreate) -> MasterRef:
         validate_attributes(kind, dict(body.attributes))
         validate_master_dates(body.effective_from, body.effective_to)
+        if kind == "vendor_contact_type" and body.code.strip().lower() in RESERVED_CONTACT_TYPES:
+            raise ProblemError(
+                ErrorCode.VALIDATION_FAILED,
+                detail="Billing and service_delivery are built in. Choose another code.",
+                errors=(ProblemFieldError(field="code", message="Reserved code."),),
+                checks={"problem": "reserved_code"},
+            )
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             record_id = uuid4()
             inserted = self.repo.execute(

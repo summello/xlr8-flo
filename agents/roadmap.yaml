@@ -1446,7 +1446,7 @@ epics:
           - VEN-002
         dep:
           - E11-S01
-        st: review
+        st: done
       - id: E11-S03
         t: Vendor documents with issue/expiry, verification status, expiry notification
         k: crud

@@ -3571,6 +3571,46 @@
       },
       "recap": "Status map and labels now match MASTER 2.3: PO delivered/accepted spellings, vendor draft/pending_approval/rejected, rfq.closed info, new award doc type. Vocabulary test updated; three planted regressions failed it.",
       "title": "Status vocabulary aligned to MASTER 2.3: vendor, RFQ, award and purchase-order maps and labels"
+    },
+    {
+      "story": "E11-S02",
+      "kind": "crud",
+      "size": "S",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "51b512d4-5a2f-48cc-9d22-1634f4a0596d",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S02",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a142f3-b0a2-7d50-b27a-439305724114",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds vendor_contact (migration 0057) with billing/service_delivery uniqueness enforced by a partial unique index, CRUD routes, contacts_complete and document_recipients, and a vendor_contact_type master kind. Phone is kept out of audit rows.",
+      "title": "Typed contacts: billing, service/delivery, additional types"
     }
   ]
 }
