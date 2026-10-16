@@ -55,6 +55,12 @@ def service(db, connection=None):
     return RfqService(connection or db[0], Scope(db[1]), db[3], Settings())
 
 
+def patch(db, id, body):
+    """An edit made with the current edit revision, as a client that just read the RFQ would."""
+    revision = sql(db, "SELECT edit_revision FROM rfq WHERE id=%s", (id,))[0][0]
+    return service(db).update_lines(id, body, str(revision))
+
+
 def draft_rfq(db, *entries, title="Pumps"):
     return service(db).create(RfqCreate(title=title, lines=list(entries)))
 
@@ -131,20 +137,18 @@ def test_removing_or_lowering_a_line_returns_exactly_the_quantity(lifecycle_db):
     bu = unit(db, uuid4().hex)
     (a, line_a), (b, line_b) = approved(db, bu=bu), approved(db, "4", bu=bu)
     rfq = draft_rfq(db, entry(a, line_a, "7.5"), entry(b, line_b, "4"))
-    lowered = service(db).update_lines(
-        rfq.id, RfqLinesPatch(lines=[entry(a, line_a, "2.25"), entry(b, line_b, "4")])
+    lowered = patch(
+        db, rfq.id, RfqLinesPatch(lines=[entry(a, line_a, "2.25"), entry(b, line_b, "4")])
     )
     assert [line.quantity for line in lowered.lines] == ["2.2500", "4.0000"]
     assert open_qty(db, line_a) == Decimal("7.75")
-    removed = service(db).update_lines(rfq.id, RfqLinesPatch(lines=[entry(a, line_a, "2.25")]))
+    removed = patch(db, rfq.id, RfqLinesPatch(lines=[entry(a, line_a, "2.25")]))
     assert len(removed.lines) == 1 and open_qty(db, line_b) == Decimal("4")
-    grown = service(db).update_lines(
-        rfq.id, RfqLinesPatch(lines=[entry(a, line_a, "10"), entry(b, line_b, "1")])
-    )
+    grown = patch(db, rfq.id, RfqLinesPatch(lines=[entry(a, line_a, "10"), entry(b, line_b, "1")]))
     assert [line.line_no for line in grown.lines] == [1, 2]
     assert open_qty(db, line_a) == 0
-    refused(lambda: service(db).update_lines(rfq.id, RfqLinesPatch(lines=[entry(a, line_a, "11")])))
-    service(db).update_lines(rfq.id, RfqLinesPatch(lines=[]))
+    refused(lambda: patch(db, rfq.id, RfqLinesPatch(lines=[entry(a, line_a, "11")])))
+    patch(db, rfq.id, RfqLinesPatch(lines=[]))
     assert open_qty(db, line_a) == 10 and open_qty(db, line_b) == 4
     actions = {r[0] for r in sql(db, "SELECT action FROM audit_log WHERE target_id=%s", (rfq.id,))}
     assert actions == {"rfq.create", "rfq.lines.update"}
@@ -155,7 +159,7 @@ def test_lines_of_an_rfq_that_is_not_a_draft_do_not_change(lifecycle_db):
     row, line = approved(db)
     rfq = draft_rfq(db, entry(row, line, "3"))
     sql(db, "UPDATE rfq SET status='published' WHERE id=%s RETURNING 1", (rfq.id,))
-    error = refused(lambda: service(db).update_lines(rfq.id, RfqLinesPatch(lines=[])))
+    error = refused(lambda: patch(db, rfq.id, RfqLinesPatch(lines=[])))
     assert error.checks["problem"] == "not_draft" and sourced(db, line) == 3
 
 
@@ -211,7 +215,7 @@ def test_returning_quantity_is_allowed_while_an_amendment_is_pending(lifecycle_d
     row, line = approved(db)
     rfq = draft_rfq(db, entry(row, line, "6"))
     amend(db, row, "100")
-    service(db).update_lines(rfq.id, RfqLinesPatch(lines=[]))
+    patch(db, rfq.id, RfqLinesPatch(lines=[]))
     assert sourced(db, line) == 0
 
 
@@ -232,12 +236,12 @@ def line_body(row, line, qty):
     return {"requisition_line_id": str(line), "requisition_version": row.version, "quantity": qty}
 
 
-async def send(browser, method, suffix="", data=None):
+async def send(browser, method, suffix="", data=None, extra=None):
     return await browser.request(
         method,
         "/api/v1/sourcing" + suffix,
         json=data,
-        headers=headers(browser, uuid4().hex),
+        headers=headers(browser, uuid4().hex) | (extra or {}),
     )
 
 
@@ -282,7 +286,9 @@ def test_routes_create_read_list_and_replay_through_the_real_middleware(lifecycl
                 "PATCH",
                 f"/rfqs/{first.json()['id']}/lines",
                 {"lines": [line_body(row, line, "1")]},
+                {"If-Match": first.headers["ETag"]},
             )
+            assert first.headers["ETag"] == '"1"' and patched.headers["ETag"] == '"2"'
             assert patched.status_code == 200 and patched.json()["lines"][0]["quantity"] == "1.0000"
 
     asyncio.run(scenario())
@@ -358,3 +364,39 @@ def test_only_sourcing_roles_create_rfqs(lifecycle_db, permissions, status):
 
     assert asyncio.run(scenario()).status_code == status
     assert sourced(db, line) == (1 if status == 201 else 0)
+
+
+def test_a_replayed_patch_cannot_restore_older_quantities(lifecycle_db):
+    db, _ = lifecycle_db
+    row, line = approved(db)
+    rfq = draft_rfq(db, entry(row, line, "4"))
+    assert rfq.edit_revision == 1
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            path = f"/rfqs/{rfq.id}/lines"
+
+            def edit(qty, match):
+                return send(browser, "PATCH", path, {"lines": [line_body(row, line, qty)]}, match)
+
+            assert (await send(browser, "GET", f"/rfqs/{rfq.id}")).headers["ETag"] == '"1"'
+            first = await edit("6", {"If-Match": '"1"'})
+            assert first.status_code == 200 and first.headers["ETag"] == '"2"', first.text
+            second = await edit("2", {"If-Match": '"2"'})
+            assert second.status_code == 200 and second.headers["ETag"] == '"3"'
+            held, audits = sourced(db, line), audit_count(db, rfq.id)
+            replay = await edit("6", {"If-Match": '"1"'})
+            assert replay.status_code == 409 and replay.json()["checks"]["problem"] == (
+                "stale_version"
+            )
+            assert (await edit("6", {})).json()["checks"]["problem"] == "if_match_required"
+            assert (await edit("6", {"If-Match": "x"})).status_code == 400
+            return held, audits
+
+    held, audits = asyncio.run(scenario())
+    assert held == sourced(db, line) == 2 and audit_count(db, rfq.id) == audits
+
+
+def audit_count(db, id):
+    return sql(db, "SELECT count(*) FROM audit_log WHERE target_id=%s", (id,))[0][0]

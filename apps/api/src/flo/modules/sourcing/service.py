@@ -94,7 +94,7 @@ class RfqService:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             head = self.repo.execute(
                 "SELECT r.id, r.number, r.title, r.status, r.unit_id, r.currency, i.email, "
-                "r.version, r.created_at, r.updated_at FROM rfq r "
+                "r.version, r.edit_revision, r.created_at, r.updated_at FROM rfq r "
                 "JOIN identity i ON i.id = r.owner_id "
                 "WHERE r.org_id = %(org_id)s AND r.id = %(id)s",
                 {"id": id},
@@ -134,8 +134,9 @@ class RfqService:
             {
                 **dict(zip(keys, head[:7], strict=True)),
                 "version": head[7],
-                "created_at": head[8],
-                "updated_at": head[9],
+                "edit_revision": head[8],
+                "created_at": head[9],
+                "updated_at": head[10],
                 "lines": lines,
             }
         )
@@ -340,15 +341,36 @@ class RfqService:
             )
         return self.get(id)
 
-    def update_lines(self, id: UUID, body: RfqLinesPatch) -> RfqRead:
+    @staticmethod
+    def _check_edit_revision(current: int, if_match: str | None) -> None:
+        """PATCH is not replayed by the idempotency middleware; If-Match stops a stale retry."""
+        if if_match is None:
+            raise ProblemError(
+                ErrorCode.BAD_REQUEST,
+                detail="Supply If-Match with the RFQ edit revision.",
+                checks={"problem": "if_match_required"},
+            )
+        try:
+            expected = int(if_match.strip('"'))
+        except ValueError:
+            raise ProblemError(
+                ErrorCode.BAD_REQUEST,
+                detail="If-Match must contain an integer edit revision.",
+                checks={"problem": "if_match_invalid"},
+            ) from None
+        if expected != current:
+            raise conflict("stale_version", "The RFQ changed. Reload it and retry your update.")
+
+    def update_lines(self, id: UUID, body: RfqLinesPatch, if_match: str | None) -> RfqRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             head = self.repo.execute(
-                "SELECT status, unit_id, currency FROM rfq "
+                "SELECT status, unit_id, currency, edit_revision FROM rfq "
                 "WHERE org_id = %(org_id)s AND id = %(id)s FOR UPDATE",
                 {"id": id},
             ).fetchone()
             if head is None:
                 raise ProblemError(ErrorCode.NOT_FOUND)
+            self._check_edit_revision(cast(int, head[3]), if_match)
             if head[0] != "draft":
                 raise conflict(
                     "not_draft", "Only a draft RFQ can change its lines. Reload it and retry."
@@ -413,7 +435,7 @@ class RfqService:
                         },
                     )
             self.repo.execute(
-                "UPDATE rfq SET updated_at = now() WHERE org_id = %(org_id)s AND id = %(id)s",
+                "UPDATE rfq SET updated_at = now(), edit_revision = edit_revision + 1 WHERE org_id = %(org_id)s AND id = %(id)s",
                 {"id": id},
             )
             self._audit(

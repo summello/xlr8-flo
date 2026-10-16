@@ -20,6 +20,7 @@ CREATE TABLE rfq (
  unit_id uuid NOT NULL, currency char(3) NOT NULL,
  owner_id uuid NOT NULL REFERENCES identity(id),
  version int NOT NULL DEFAULT 0,
+ edit_revision int NOT NULL DEFAULT 1,
  created_at timestamptz NOT NULL DEFAULT now(),
  updated_at timestamptz NOT NULL DEFAULT now(),
  UNIQUE (org_id, number), UNIQUE (org_id, id),

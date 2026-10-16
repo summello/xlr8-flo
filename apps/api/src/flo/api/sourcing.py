@@ -3,7 +3,7 @@
 from typing import Annotated, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Header, Query, Response
 
 from flo.api.admin_users import organization_target
 from flo.api.auth import get_auth_settings
@@ -75,17 +75,29 @@ def create_rfq(
     context: CreateContext,
     connection: Connection,
     settings: Annotated[Settings, Depends(get_auth_settings)],
+    response: Response,
 ) -> RfqRead:
-    return RfqService(connection, current_scope(), context.user_id, settings).create(body)
+    rfq = RfqService(connection, current_scope(), context.user_id, settings).create(body)
+    response.headers["ETag"] = f'"{rfq.edit_revision}"'
+    return rfq
 
 
 @router.patch("/rfqs/{id}/lines", response_model=RfqRead)
 def patch_rfq_lines(
-    id: UUID, body: RfqLinesPatch, context: EditContext, connection: Connection
+    id: UUID,
+    body: RfqLinesPatch,
+    context: EditContext,
+    connection: Connection,
+    response: Response,
+    revision: Annotated[str | None, Header(alias="If-Match")] = None,
 ) -> RfqRead:
-    return RfqService(connection, current_scope(), context.user_id).update_lines(id, body)
+    rfq = RfqService(connection, current_scope(), context.user_id).update_lines(id, body, revision)
+    response.headers["ETag"] = f'"{rfq.edit_revision}"'
+    return rfq
 
 
 @router.get("/rfqs/{id}", response_model=RfqRead)
-def get_rfq(id: UUID, context: ViewContext, connection: Connection) -> RfqRead:
-    return RfqService(connection, current_scope(), context.user_id).get(id)
+def get_rfq(id: UUID, context: ViewContext, connection: Connection, response: Response) -> RfqRead:
+    rfq = RfqService(connection, current_scope(), context.user_id).get(id)
+    response.headers["ETag"] = f'"{rfq.edit_revision}"'
+    return rfq

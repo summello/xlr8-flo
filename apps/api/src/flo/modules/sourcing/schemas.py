@@ -104,6 +104,7 @@ class RfqRead(BaseModel):
     currency: str
     owner_email: str
     version: int
+    edit_revision: int
     created_at: datetime
     updated_at: datetime
     lines: list[RfqLineRead]
