@@ -1420,7 +1420,7 @@ epics:
           - PO-007
         dep:
           - E11-S01
-        st: todo
+        st: in_progress
       - id: E11-S10
         t: 'Shared decision panel at phone width: footer reflow, close button never
           covered'
