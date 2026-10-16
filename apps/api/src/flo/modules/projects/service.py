@@ -996,19 +996,28 @@ class ProjectService:
                 "b.allocated::text, b.available::text" if balances else "NULL::text, NULL::text"
             )
             rows = self.repo.execute(
-                f"SELECT {projection}, u.name, {amounts} FROM project p "
+                f"SELECT {projection}, u.name, {amounts}, COALESCE((SELECT array_agg(s.user_id "
+                "ORDER BY s.user_id) FROM project_sponsor s WHERE s.org_id = p.org_id "
+                "AND s.project_id = p.id), '{}') FROM project p "
                 "LEFT JOIN org_unit u ON u.org_id = p.org_id AND u.id = p.bu_id "
                 "LEFT JOIN project_balance b ON b.org_id = p.org_id AND b.project_id = p.id "
                 "WHERE " + filters + boundary + f" ORDER BY {order} LIMIT %(limit)s",
                 params,
             ).fetchall()
-            fields = (*FIELDS, "bu_name", "allocated", "available")
+            fields = (*FIELDS, "bu_name", "allocated", "available", "sponsors")
             dicts = [dict(zip(fields, row, strict=True)) for row in rows[:page_size]]
-            sponsors = self._sponsors_of(dicts) if dicts else {}
             records = [
                 self._with_codes(
                     ProjectRead.model_validate(
-                        with_variance(d | {"sponsor_ids": sponsors[cast(UUID, d["id"])]})
+                        with_variance(
+                            {k: v for k, v in d.items() if k != "sponsors"}
+                            | {
+                                # Sponsors ride in the page query; a project that predates
+                                # sponsor lists falls back to its `sponsor_id`.
+                                "sponsor_ids": d["sponsors"]
+                                or ([d["sponsor_id"]] if d["sponsor_id"] else [])
+                            }
+                        )
                     )
                 )
                 for d in dicts
