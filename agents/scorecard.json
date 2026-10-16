@@ -3529,6 +3529,48 @@
       },
       "recap": "Added kernel.audit.audit_event and routed the module _audit wrappers, identity's call sites and the two direct project audit calls through it. A golden test runs real module commands and compares every audit row's shape (action, actor, outcome, reason, snapshot fields) with a baseline captured before the change.",
       "title": "One audit helper instead of twelve, behaviour-preserving"
+    },
+    {
+      "story": "E11-S09",
+      "kind": "ui",
+      "size": "S",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "15177579-1013-4c05-b6c6-f219dadb4457",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S09",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a142f1-9050-7a00-9156-e1f4eca96070",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Status map and labels now match MASTER 2.3: PO delivered/accepted spellings, vendor draft/pending_approval/rejected, rfq.closed info, new award doc type. Vocabulary test updated; three planted regressions failed it.",
+      "title": "Status vocabulary aligned to MASTER 2.3: vendor, RFQ, award and purchase-order maps and labels"
     }
   ]
 }
