@@ -10,16 +10,7 @@ class MigrationConnection(Protocol):
     def execute(self, query: str) -> object: ...
 
 
-def _tenant_table(name: str) -> str:
-    return f"""
-ALTER TABLE {name} ENABLE ROW LEVEL SECURITY;
-ALTER TABLE {name} FORCE ROW LEVEL SECURITY;
-CREATE POLICY tenant_isolation ON {name}
- USING(org_id=current_setting('app.org_id')::uuid) WITH CHECK(org_id=current_setting('app.org_id')::uuid);
-"""
-
-
-UPGRADE_SQL = f"""
+UPGRADE_SQL = """
 CREATE TABLE vendor_score (
  id uuid PRIMARY KEY, org_id uuid NOT NULL REFERENCES organization(id),
  vendor_id uuid NOT NULL, category_code text NOT NULL,
@@ -43,7 +34,10 @@ CREATE TRIGGER vendor_score_append_only BEFORE UPDATE OR DELETE ON vendor_score
  FOR EACH ROW EXECUTE FUNCTION raise_append_only();
 CREATE TRIGGER vendor_score_append_only_truncate BEFORE TRUNCATE ON vendor_score
  FOR EACH STATEMENT EXECUTE FUNCTION raise_append_only();
-{_tenant_table("vendor_score")}
+ALTER TABLE vendor_score ENABLE ROW LEVEL SECURITY;
+ALTER TABLE vendor_score FORCE ROW LEVEL SECURITY;
+CREATE POLICY tenant_isolation ON vendor_score
+ USING(org_id=current_setting('app.org_id')::uuid) WITH CHECK(org_id=current_setting('app.org_id')::uuid);
 
 CREATE TABLE vendor_score_dispute (
  id uuid PRIMARY KEY, org_id uuid NOT NULL REFERENCES organization(id),
@@ -77,7 +71,10 @@ CREATE TRIGGER vendor_score_dispute_append_only BEFORE UPDATE OR DELETE ON vendo
  FOR EACH ROW EXECUTE FUNCTION vendor_score_dispute_guard();
 CREATE TRIGGER vendor_score_dispute_append_only_truncate BEFORE TRUNCATE ON vendor_score_dispute
  FOR EACH STATEMENT EXECUTE FUNCTION raise_append_only();
-{_tenant_table("vendor_score_dispute")}
+ALTER TABLE vendor_score_dispute ENABLE ROW LEVEL SECURITY;
+ALTER TABLE vendor_score_dispute FORCE ROW LEVEL SECURITY;
+CREATE POLICY tenant_isolation ON vendor_score_dispute
+ USING(org_id=current_setting('app.org_id')::uuid) WITH CHECK(org_id=current_setting('app.org_id')::uuid);
 """
 
 DOWNGRADE_SQL = """
