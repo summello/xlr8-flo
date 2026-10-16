@@ -8749,6 +8749,10 @@
             "title": "Currency",
             "type": "string"
           },
+          "edit_revision": {
+            "title": "Edit Revision",
+            "type": "integer"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -8800,6 +8804,7 @@
           "currency",
           "owner_email",
           "version",
+          "edit_revision",
           "created_at",
           "updated_at",
           "lines"
@@ -23093,6 +23098,22 @@
               "format": "uuid",
               "title": "Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
             }
           },
           {

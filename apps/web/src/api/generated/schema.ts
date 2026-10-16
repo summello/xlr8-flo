@@ -5386,6 +5386,8 @@ export interface components {
             created_at: string;
             /** Currency */
             currency: string;
+            /** Edit Revision */
+            edit_revision: number;
             /**
              * Id
              * Format: uuid
@@ -12470,6 +12472,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                "If-Match"?: string | null;
                 "X-FLO-Origin-Secret"?: string | null;
             };
             path: {
