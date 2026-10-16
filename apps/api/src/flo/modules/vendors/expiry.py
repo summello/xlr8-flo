@@ -44,7 +44,9 @@ def expired_required_count(conn: Connection, scope: Scope, on: date) -> int:
                 "SELECT count(*) FROM vendor_document d WHERE d.org_id = %(org_id)s "
                 "AND d.expiry_date < %(on)s AND EXISTS (SELECT 1 FROM master_record m "
                 "WHERE m.org_id = d.org_id AND m.kind = %(kind)s AND m.code = d.type_code "
-                "AND m.active AND m.attributes @> '{\"required\": true}'::jsonb)",
+                "AND m.active AND m.effective_from <= %(on)s "
+                "AND (m.effective_to IS NULL OR m.effective_to >= %(on)s) "
+                "AND m.attributes @> '{\"required\": true}'::jsonb)",
                 {"on": on, "kind": KIND},
             )
             .fetchone()
@@ -135,7 +137,17 @@ def run_org(conn: Connection, scope: Scope, *, on: date | None = None) -> int:
                 {"expired": expired, "ids": expiring + expired},
             )
     count = expired_required_count(conn, scope, on)
-    _logger.info("vendor documents expired_required=%d digests=%d", count, digests)
+    if count:
+        _logger.error(
+            "business_monitor=expired_vendor_documents org_id=%s count=%s",
+            scope.org_id,
+            count,
+            extra={
+                "business_monitor": "expired_vendor_documents",
+                "org_id": str(scope.org_id),
+                "count": count,
+            },
+        )
     return digests
 
 

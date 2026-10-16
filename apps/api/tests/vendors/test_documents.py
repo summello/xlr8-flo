@@ -519,3 +519,39 @@ def test_document_type_master_attributes(header_db):
                 "vendor_document_type", MasterCreate(code="B", name="B", attributes=attributes)
             )
         assert caught.value.code is ErrorCode.VALIDATION_FAILED, attributes
+
+
+def test_expired_required_count_honours_effective_window_and_emits_business_monitor(
+    header_db, caplog
+):
+    db = header_db
+    types(db, TAX=True)
+    manager(db)
+    vendor = new_vendor(db)
+    scope = Scope(db[1])
+    add(db, vendor.id, "TAX", ON - timedelta(days=1))
+    assert expiry.expired_required_count(db[0], scope, ON) == 1
+    with caplog.at_level("ERROR"):
+        expiry.run_org(db[0], scope, on=ON)
+    [event] = [r for r in caplog.records if getattr(r, "business_monitor", None)]
+    assert event.business_monitor == "expired_vendor_documents"
+    assert event.org_id == str(db[1]) and event.count == 1
+    # the requirement ended before the reporting date: not counted, no event
+    sql(
+        db,
+        "UPDATE master_record SET effective_to=%s WHERE kind='vendor_document_type'",
+        (ON - timedelta(days=10),),
+    )
+    assert expiry.expired_required_count(db[0], scope, ON) == 0
+    # and not yet started
+    sql(
+        db,
+        "UPDATE master_record SET effective_from=%s, effective_to=NULL "
+        "WHERE kind='vendor_document_type'",
+        (ON + timedelta(days=10),),
+    )
+    assert expiry.expired_required_count(db[0], scope, ON) == 0
+    caplog.clear()
+    with caplog.at_level("ERROR"):
+        expiry.run_org(db[0], scope, on=ON)
+    assert not [r for r in caplog.records if getattr(r, "business_monitor", None)]
