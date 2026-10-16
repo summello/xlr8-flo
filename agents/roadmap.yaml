@@ -2277,7 +2277,7 @@ epics:
           - A11Y-001
           - UX-007
         dep: []
-        st: todo
+        st: in_progress
       - id: E22-S05
         t: Replace MinIO with SeaweedFS in the local stack; bucket via the S3 API
         k: chore
