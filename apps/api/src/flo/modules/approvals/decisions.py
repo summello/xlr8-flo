@@ -13,7 +13,6 @@ from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.authz import PermissionHoldersResolver
 from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.identity import IdentityId
-from flo.kernel.outbox.store import OutboxConnection, OutboxStore
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.approvals import delegation, engine
@@ -179,28 +178,7 @@ def _audit(
         after={"decision_id": id, "status": instance["status"]},
         after_fields=("decision_id", "status"),
     )
-    if instance["status"] in {"approved", "rejected", "returned"}:
-        adapter = engine.adapter_for(str(instance["document_type"]))
-        summary = adapter.summaries(
-            repo.connection, repo.scope, [cast(UUID, instance["document_id"])]
-        )[cast(UUID, instance["document_id"])]
-        emails = emails_by_id(
-            cast(IdentityAuthorizationConnection, repo.connection),
-            [cast(UUID, instance["requester_id"])],
-        )
-        recipient = emails.get(cast(UUID, instance["requester_id"]))
-        if recipient is not None:
-            OutboxStore(cast(OutboxConnection, repo.connection), repo.scope).add_email(
-                to=recipient,
-                template="approval-outcome-v1",
-                context={
-                    "document_type": instance["document_type"],
-                    "number": summary.number,
-                    "outcome": instance["status"],
-                    "link": summary.href,
-                },
-                idempotency_key=f"approval:{instance['id']}:{instance['status']}",
-            )
+    engine.notify_outcome(repo, instance)
 
 
 def _end(

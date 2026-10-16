@@ -21,7 +21,7 @@ from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import tenant_transaction
 from flo.modules.approvals import conditions, engine
 from flo.modules.approvals.models import WorkflowRepository
-from flo.modules.approvals.schemas import DocumentSnapshot, Outcome, OutcomeContext
+from flo.modules.approvals.schemas import DocumentSnapshot, DocumentSummary, Outcome, OutcomeContext
 from flo.modules.approvals.service import (
     active_instance,
     advance,
@@ -80,7 +80,17 @@ class Adapter:
         return self.value
 
     def summaries(self, conn, scope, document_ids):
-        return {}
+        return {
+            id: DocumentSummary(
+                number="R-1",
+                title="T",
+                amount=None,
+                requester_id=self.value.requester_id,
+                href="/r/1",
+                note=None,
+            )
+            for id in document_ids
+        }
 
     def on_outcome(self, conn, scope, document_id, outcome, context):
         assert conn.info.transaction_status == psycopg.pq.TransactionStatus.INTRANS
@@ -252,6 +262,14 @@ def test_condition_route_auto_approval_and_atomic_callback(setup):
     approved = begin(setup)
     assert approved.status == "approved" and not approved.tasks and approved.finished_at
     assert len(adapter.calls) == 1 and adapter.calls[0][0] == Outcome.APPROVED
+    # The auto-approval leaves the same decision audit an interactive approval does.
+    assert db[0].execute(
+        "SELECT count(*) FROM audit_log WHERE action='approval.decision' AND target_id=%s",
+        (approved.id,),
+    ).fetchone() == (1,)
+    assert db[0].execute(
+        "SELECT count(*) FROM outbox WHERE payload->>'template'='approval-outcome-v1'"
+    ).fetchone() == (1,)
     ctx = adapter.calls[0][1]
     assert ctx.actor_id == db[3] and ctx.decision_id is None and ctx.assign_project_id is None
     assert ctx.permitted("requisition.view", adapter.value.target)
