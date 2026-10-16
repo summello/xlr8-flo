@@ -126,10 +126,10 @@ class CollaborationService:
 
     def notes(self, request: Request, document_type: str, document_id: UUID) -> list[NoteRead]:
         self.authorize(request, document_type, document_id)
-        return self.notes_for(document_type, document_id)
+        return self.notes_unchecked(document_type, document_id)
 
-    def notes_for(self, document_type: str, document_id: UUID) -> list[NoteRead]:
-        """Unauthorized list; the caller has already checked read access to the document."""
+    def notes_unchecked(self, document_type: str, document_id: UUID) -> list[NoteRead]:
+        """Internal, no authorization: the caller must already have checked read access. The authorizing method is the public API."""
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             rows = self.repo.execute(
                 NOTE_SQL + " WHERE n.org_id=%(org_id)s AND "
@@ -242,10 +242,10 @@ class CollaborationService:
         self, request: Request, document_type: str, document_id: UUID
     ) -> list[AttachmentRead]:
         self.authorize(request, document_type, document_id)
-        return self.attachments_for(document_type, document_id)
+        return self.attachments_unchecked(document_type, document_id)
 
-    def attachments_for(self, document_type: str, document_id: UUID) -> list[AttachmentRead]:
-        """Unauthorized list; the caller has already checked read access to the document."""
+    def attachments_unchecked(self, document_type: str, document_id: UUID) -> list[AttachmentRead]:
+        """Internal, no authorization: the caller must already have checked read access. The authorizing method is the public API."""
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             rows = self.repo.execute(
                 "SELECT id FROM attachment WHERE org_id=%(org_id)s "

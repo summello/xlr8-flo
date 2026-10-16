@@ -1,5 +1,5 @@
 import { CheckCircle, Circle, Info, Warning, XCircle } from "@phosphor-icons/react";
-import Money from "./ReqMoney";
+import Money from "../ui/Money";
 import { qty } from "./model";
 import { formatDate, formatDateTime, label, type Decision, type Linked, type Requisition, type RequisitionLine, type StatusEvent } from "./api";
 
@@ -24,7 +24,7 @@ export function RequestCard({ row, delivery }: { row: Requisition; delivery: str
     ["Justification", row.justification ?? "—"],
     ["Project", row.project_id ? <a href={`/projects/${row.project_id}`}>{row.project_number} {row.project_name}</a> : "Project Request"],
     ["Business unit", row.bu_name], ["Department", row.department_code ?? "—"], ["Ledger account", row.ledger_account_code ?? "—"],
-    ["Needed by", formatDate(row.needed_by)], ["Delivery", delivery ?? "—"], ["Estimate", <Money key="e" value={row.estimate} currency={row.currency} />],
+    ["Needed by", formatDate(row.needed_by)], ["Delivery", delivery ?? "—"], ["Estimate", <Money zero="value" key="e" value={row.estimate} currency={row.currency} />],
   ];
   return <section className="req-card req-wide" aria-labelledby="request-title">
     <header className="req-card-head"><h2 id="request-title">Request</h2></header>
@@ -37,11 +37,11 @@ export function ReservationCard({ row }: { row: Requisition }) {
   return <section className="req-card" aria-labelledby="reservation-title">
     <header className="req-card-head"><h2 id="reservation-title">Reservation</h2></header>
     {row.standalone && !r ? <p>Funding is assigned when a Project Request is approved. Nothing is reserved until then.</p> :
-      !r ? <p>{row.status === "draft" ? <>Nothing is reserved yet. Submitting would reserve <Money value={row.estimate} currency={row.currency} /> against {row.project_name ?? "the project"}.</> : "Nothing is reserved."}</p> :
+      !r ? <p>{row.status === "draft" ? <>Nothing is reserved yet. Submitting would reserve <Money zero="value" value={row.estimate} currency={row.currency} /> against {row.project_name ?? "the project"}.</> : "Nothing is reserved."}</p> :
       <dl className="req-funds">
-        <div><dt>Reserved</dt><dd className="req-big"><Money value={r.remaining} currency={r.currency} /></dd></div>
-        <div><dt>Released</dt><dd><Money value={r.released} currency={r.currency} /></dd></div>
-        <div><dt>Project Available</dt><dd>{r.project_available === null ? <span>Not shown<span className="visually-hidden">: you do not hold access to this project's balance</span></span> : <Money value={r.project_available} currency={r.currency} />}</dd></div>
+        <div><dt>Reserved</dt><dd className="req-big"><Money zero="value" value={r.remaining} currency={r.currency} /></dd></div>
+        <div><dt>Released</dt><dd><Money zero="value" value={r.released} currency={r.currency} /></dd></div>
+        <div><dt>Project Available</dt><dd>{r.project_available === null ? <span>Not shown<span className="visually-hidden">: you do not hold access to this project's balance</span></span> : <Money zero="value" value={r.project_available} currency={r.currency} />}</dd></div>
       </dl>}
     {r && r.project_available === null && <p className="field-help">Not shown: your access does not include this project's balance.</p>}
     <p className="field-help">Whatever is not used by the time this closes is released once, and never twice.</p>

@@ -1,19 +1,10 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page, type Locator } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { firstActor, project, projectId, secondActor, stubProjects, unitId } from "./projects-fixture";
+import { keyboardFocus } from "./helpers";
 
 async function createFields(page: Page) {
   for (const [label, value] of [["Business unit", unitId], ["Project name", "Plant renewal"], ["Department", "D"], ["Ledger account", "L"], ["Currency", "USD"], ["Description", "Preserved description"], ["Planned start", "2026-10-01"], ["Planned end", "2026-12-31"]]) await page.getByLabel(new RegExp(`^${label}\\s*\\*?$`)).fill(value!);
-}
-async function keyboardFocus(page: Page, locator: Locator) {
-  for (let i = 0; i < 150; i++) {
-    await page.keyboard.press("Tab");
-    if (await locator.evaluate(node => node === document.activeElement)) {
-      await expect.poll(() => locator.evaluate(node => getComputedStyle(node).outlineStyle)).not.toBe("none");
-      return;
-    }
-  }
-  throw new Error("Control is unreachable by keyboard");
 }
 
 test("create, list, submit and approve with a second identity sends version and idempotency headers", async ({ page }) => {

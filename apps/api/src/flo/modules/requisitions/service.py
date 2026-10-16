@@ -59,6 +59,7 @@ from flo.modules.requisitions.schemas import (
     invalid,
 )
 from flo.modules.requisitions.schemas import SubmissionInvalid as SubmissionInvalid
+from flo.modules.requisitions.revisions import latest_instance
 from flo.modules.requisitions.sourcing import source_lines as source_lines
 from flo.modules.requisitions.sourcing import sourceable_lines as sourceable_lines
 from flo.modules.requisitions.sourcing import sourcing_basis as sourcing_basis
@@ -200,16 +201,9 @@ class RequisitionService:
                     if can_view_budget(held.project_id)
                     else None,
                 )
-            instance = self.repo.execute(
-                "SELECT id,status FROM approval_instance WHERE org_id=%(org_id)s AND "
-                "document_type IN ('requisition','project_request') AND document_id=%(id)s"
-                " ORDER BY started_at DESC,id DESC LIMIT 1",
-                {"id": id},
-            ).fetchone()
+            instance = latest_instance(self.connection, self.scope, id)
             if instance:
-                result.approval = ApprovalRead(
-                    instance_id=cast(UUID, instance[0]), status=str(instance[1])
-                )
+                result.approval = ApprovalRead(instance_id=instance[0], status=instance[1])
             amendment = open_amendment(self.repo, id)
             if amendment and row["status"] == "sourcing_in_progress":
                 result.amendment = AmendmentRef(
