@@ -14,6 +14,7 @@ from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.config import Settings
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError, conflict
+from flo.kernel.money import currency_exponent, quantize
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.approvals.service import require_workflow
@@ -101,25 +102,32 @@ class ProjectService:
                     row
                     | {
                         "bu_name": str(unit[0]) if unit is not None else None,
-                        "sponsor_ids": [row["sponsor_id"]] if row["sponsor_id"] else [],
+                        "sponsor_ids": self._sponsors_of([row])[cast(UUID, row["id"])],
                     }
                 )
             )
         )
 
+    def _sponsors_of(self, rows: list[dict[str, object]]) -> dict[UUID, list[UUID]]:
+        """Every sponsor per project in one query; a project that predates sponsor lists
+        falls back to its `sponsor_id`."""
+        found: dict[UUID, list[UUID]] = {}
+        ids = [cast(UUID, r["id"]) for r in rows]
+        for project_id, user_id in self.repo.execute(
+            "SELECT project_id, user_id FROM project_sponsor WHERE org_id = %(org_id)s "
+            "AND project_id = ANY(%(ids)s) ORDER BY user_id",
+            {"ids": ids},
+        ).fetchall():
+            found.setdefault(cast(UUID, project_id), []).append(cast(UUID, user_id))
+        return {
+            cast(UUID, r["id"]): found.get(cast(UUID, r["id"]))
+            or ([cast(UUID, r["sponsor_id"])] if r["sponsor_id"] else [])
+            for r in rows
+        }
+
     def sponsors(self, project_id: UUID) -> list[UUID]:
-        """Every sponsor; a project that predates sponsor lists falls back to `sponsor_id`."""
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
-            found = [
-                cast(UUID, r[0])
-                for r in self.repo.execute(
-                    "SELECT user_id FROM project_sponsor WHERE org_id = %(org_id)s "
-                    "AND project_id = %(id)s ORDER BY user_id",
-                    {"id": project_id},
-                ).fetchall()
-            ]
-            row = self._get(project_id)
-            return found or ([cast(UUID, row["sponsor_id"])] if row["sponsor_id"] else [])
+            return self._sponsors_of([self._get(project_id)])[project_id]
 
     def _with_codes(self, project: ProjectRead) -> ProjectRead:
         # ponytail: four master lookups per row; batch if a page of 50 shows up in a profile.
@@ -426,6 +434,15 @@ class ProjectService:
                     f"The budget is in {body.budget.currency}, the project in {body.currency}. "
                     "Use the project currency.",
                     "currency_mismatch",
+                )
+            if body.budget is not None and quantize(
+                body.budget.amount, body.currency
+            ) != body.budget.amount:
+                raise invalid(
+                    "budget",
+                    f"{body.currency} allows {currency_exponent(body.currency)} decimal places. "
+                    "Round the budget to that precision.",
+                    "amount_precision",
                 )
             if body.budget is not None and body.parent_id is not None:
                 self.check_main_funds(body.parent_id, body.budget.amount)
@@ -866,11 +883,15 @@ class ProjectService:
                 params,
             ).fetchall()
             fields = (*FIELDS, "bu_name", "allocated", "available")
+            dicts = [dict(zip(fields, row, strict=True)) for row in rows[:page_size]]
+            sponsors = self._sponsors_of(dicts) if dicts else {}
             records = [
                 self._with_codes(
-                    ProjectRead.model_validate(with_variance(dict(zip(fields, row, strict=True))))
+                    ProjectRead.model_validate(
+                        with_variance(d | {"sponsor_ids": sponsors[cast(UUID, d["id"])]})
+                    )
                 )
-                for row in rows[:page_size]
+                for d in dicts
             ]
             next_cursor = None
             if len(rows) > page_size:

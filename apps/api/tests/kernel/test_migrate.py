@@ -761,7 +761,7 @@ def test_requisition_migration_roundtrip_preserves_existing_data_and_plants_guar
     ):
         # ProjectService reads project.requested_budget; this old schema predates it (E22-S01).
         next(
-            r for r in migrate.discover_migrations(MIGRATIONS) if r.revision == "20261015_0058"
+            r for r in migrate.discover_migrations(MIGRATIONS) if r.revision == "20261015_0059"
         ).upgrade(conn)
         tenant = create(conn)
         actor = admin_id(conn)

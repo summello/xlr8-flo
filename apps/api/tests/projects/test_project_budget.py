@@ -246,3 +246,59 @@ def test_create_route_carries_budget_and_sponsors_and_keeps_the_gates(project_db
     grant_permissions(db, reader, "project.read")
     forbidden = request(db, "POST", json=payload.model_dump(mode="json"), viewer=reader)
     assert forbidden.status_code == 403
+
+
+@pytest.mark.parametrize("currency,amount", [("USD", "10.123"), ("JPY", "10.5")])
+def test_budget_precision_follows_the_currency_exponent(wiring, currency, amount):
+    db, row, _ = wiring
+    with pytest.raises(ProblemError) as error:
+        ProjectService(db[0], Scope(db[1]), db[3]).create(
+            ProjectCreate(
+                bu_id=row.bu_id,
+                name="Precise",
+                department_code="D",
+                ledger_account_code="L",
+                currency=currency,
+                budget={"amount": amount, "currency": currency},
+            )
+        )
+    assert error.value.code == ErrorCode.VALIDATION_FAILED
+    assert error.value.checks == {"problem": "amount_precision"}
+    assert [e.field for e in error.value.errors] == ["budget"]
+    assert db[0].execute("SELECT count(*) FROM project WHERE name='Precise'").fetchone() == (0,)
+    ok = ProjectService(db[0], Scope(db[1]), db[3]).create(
+        ProjectCreate(
+            bu_id=row.bu_id,
+            name="Exact",
+            department_code="D",
+            ledger_account_code="L",
+            currency="JPY",
+            budget={"amount": "10", "currency": "JPY"},
+        )
+    )
+    assert ok.requested_budget == "10.0000"
+
+
+def test_reads_and_lists_return_every_sponsor(wiring):
+    db, _, approver = wiring
+    scope = Scope(db[1])
+    two = ProjectService(db[0], scope, db[3]).create(
+        ProjectCreate(
+            bu_id=wiring[1].bu_id,
+            name="Two sponsors",
+            department_code="D",
+            ledger_account_code="L",
+            currency="USD",
+            sponsor_ids=[db[3], approver],
+        )
+    )
+    expected = sorted([db[3], approver])
+    service = ProjectService(db[0], scope)
+    assert sorted(service.get(two.id).sponsor_ids) == expected
+    page = service.list(q="Two sponsors")
+    assert [sorted(r.sponsor_ids) for r in page.rows] == [expected]
+    # A project with no sponsor list keeps the legacy single-column fallback.
+    legacy = create(wiring, "Legacy sponsor", sponsors=False)
+    db[0].execute("UPDATE project SET sponsor_id=%s WHERE id=%s", (approver, legacy.id))
+    assert service.get(legacy.id).sponsor_ids == [approver]
+    assert [r.sponsor_ids for r in service.list(q="Legacy sponsor").rows] == [[approver]]
