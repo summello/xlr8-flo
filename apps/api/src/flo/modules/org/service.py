@@ -10,7 +10,7 @@ from psycopg.types.json import Jsonb
 from pydantic import JsonValue
 
 from flo.kernel import setting_guards
-from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
+from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError
 from flo.kernel.tenancy.context import Scope
@@ -29,7 +29,15 @@ from flo.modules.org.fx import convert as convert
 from flo.modules.org.fx import rate_for as rate_for
 from flo.modules.org.fx import status as fx_status
 from flo.modules.org.fx import validate_currency
-from flo.modules.org.master_kinds import known_kind, validate_attributes
+from flo.modules.org.master_kinds import (
+    CORE_SCORE_CATEGORIES as CORE_SCORE_CATEGORIES,
+)
+from flo.modules.org.master_kinds import (
+    RESERVED_CONTACT_TYPES,
+    core_category_active,
+    known_kind,
+    validate_attributes,
+)
 from flo.modules.org.models import OrgRepository
 from flo.modules.org.numbering import NumberingService as NumberingService
 from flo.modules.org.schemas import (
@@ -171,16 +179,16 @@ class OrgService:
         before: dict[str, object] | None,
         after: dict[str, object] | None,
     ) -> None:
-        AuditWriter(cast(AuditConnection, self.connection), self.scope).write(
+        audit_event(
+            cast(AuditConnection, self.connection),
+            self.scope,
             actor=AuditActor(ActorKind.USER, self.actor_id),
             action=action,
             target_type=action.split(".")[0],
             target_id=target_id,
             outcome=Outcome.SUCCESS,
-            before_source=before,
-            before_fields=tuple(before or ()),
-            after_source=after,
-            after_fields=tuple(after or ()),
+            before=before,
+            after=after,
         )
 
     def _unit(self, unit_id: UUID) -> dict[str, object]:
@@ -530,6 +538,14 @@ class OrgService:
     def create_master(self, kind: str, body: MasterCreate) -> MasterRef:
         validate_attributes(kind, dict(body.attributes))
         validate_master_dates(body.effective_from, body.effective_to)
+        core_category_active(kind, body.code.strip().upper(), body.active, body.effective_to)
+        if kind == "vendor_contact_type" and body.code.strip().lower() in RESERVED_CONTACT_TYPES:
+            raise ProblemError(
+                ErrorCode.VALIDATION_FAILED,
+                detail="Billing and service_delivery are built in. Choose another code.",
+                errors=(ProblemFieldError(field="code", message="Reserved code."),),
+                checks={"problem": "reserved_code"},
+            )
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             record_id = uuid4()
             inserted = self.repo.execute(
@@ -563,6 +579,9 @@ class OrgService:
             if before is None:
                 raise ProblemError(ErrorCode.NOT_FOUND)
             after = before | body.model_dump(exclude_unset=True)
+            core_category_active(
+                kind, str(before["code"]), cast(bool, after["active"]), after["effective_to"]
+            )
             validate_attributes(kind, cast(dict[str, object], after["attributes"]))
             validate_master_dates(
                 cast(date, after["effective_from"]), cast(date | None, after["effective_to"])

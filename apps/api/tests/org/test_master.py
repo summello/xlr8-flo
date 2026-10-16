@@ -66,6 +66,8 @@ GOOD = {
     "payment_term": {"net_days": 30, "discount_percent": "2", "discount_days": 10},
     "item_category": {},
     "service_category": {},
+    "vendor_contact_type": {},
+    "vendor_document_type": {"required": True},
 }
 
 

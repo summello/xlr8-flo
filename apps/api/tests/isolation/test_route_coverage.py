@@ -19,6 +19,9 @@ from flo.api.master import router as master_router
 from flo.api.org import router as org_router
 from flo.api.projects import router as projects_router
 from flo.api.requisitions import router as requisitions_router
+from flo.api.sourcing import router as sourcing_router
+from flo.api.vendor_questionnaires import router as vendor_questionnaires_router
+from flo.api.vendors import router as vendors_router
 from flo.api.workflows import router as workflows_router
 
 TESTS = Path(__file__).resolve().parents[1]
@@ -32,7 +35,97 @@ CODES_ROUTES = (
     "requisitions/test_expired_codes.py::"
     "test_codes_routes_conceal_foreign_tenants_and_need_the_permission"
 )
+SOURCING_ROUTES = "sourcing/test_rfq.py::test_rfq_routes_conceal_foreign_tenants"
+QROUTES = "vendors/test_questionnaire.py::test_questionnaire_routes_conceal_foreign_tenants"
+OROUTES = (
+    "vendors/test_questionnaire.py::"
+    "test_onboarding_routes_conceal_foreign_tenants_and_other_requesters"
+)
+PROUTES = "vendors/test_performance.py::test_score_routes_conceal_foreign_tenants"
 COVERED = {
+    ("GET", "/api/v1/vendors/{id}/scores"): PROUTES,
+    ("POST", "/api/v1/vendors/{id}/scores"): PROUTES,
+    ("POST", "/api/v1/vendors/{id}/scores/{sid}/disputes"): PROUTES,
+    ("POST", "/api/v1/vendors/{id}/scores/{sid}/disputes/{did}/resolve"): PROUTES,
+    ("GET", "/api/v1/vendors/{id}/performance"): PROUTES,
+    ("GET", "/api/v1/admin/vendor-questionnaires/{vid}"): QROUTES,
+    ("PATCH", "/api/v1/admin/vendor-questionnaires/{vid}"): QROUTES,
+    ("POST", "/api/v1/admin/vendor-questionnaires/{vid}/questions"): QROUTES,
+    ("PATCH", "/api/v1/admin/vendor-questionnaires/{vid}/questions/{key}"): QROUTES,
+    ("DELETE", "/api/v1/admin/vendor-questionnaires/{vid}/questions/{key}"): QROUTES,
+    ("POST", "/api/v1/admin/vendor-questionnaires/{vid}/questions/{key}/move"): QROUTES,
+    ("POST", "/api/v1/admin/vendor-questionnaires/{vid}/publish"): QROUTES,
+    ("POST", "/api/v1/admin/vendor-questionnaires/{vid}/copy"): QROUTES,
+    ("GET", "/api/v1/vendors/{id}/onboarding"): OROUTES,
+    ("PUT", "/api/v1/vendors/{id}/onboarding/answers"): OROUTES,
+    ("GET", "/api/v1/sourcing/requisition-lines"): SOURCING_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs"): SOURCING_ROUTES,
+    ("PATCH", "/api/v1/sourcing/rfqs/{id}/lines"): SOURCING_ROUTES,
+    ("GET", "/api/v1/sourcing/rfqs/{id}"): SOURCING_ROUTES,
+    (
+        "GET",
+        "/api/v1/vendors/{id}/documents",
+    ): "vendors/test_documents.py::test_vendor_document_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/api/v1/vendors/{id}/documents",
+    ): "vendors/test_documents.py::test_vendor_document_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/api/v1/vendors/{id}/documents/{did}/replace",
+    ): "vendors/test_documents.py::test_vendor_document_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/api/v1/vendors/{id}/documents/{did}/verify",
+    ): "vendors/test_documents.py::test_vendor_document_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/api/v1/vendors/{id}/documents/{did}/reject",
+    ): "vendors/test_documents.py::test_vendor_document_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/internal/jobs/vendor-document-expiry",
+    ): "vendors/test_documents.py::test_internal_expiry_trigger_origin_key_and_nonreplay",
+    (
+        "GET",
+        "/api/v1/vendors/{id}/contacts",
+    ): "vendors/test_contacts.py::test_vendor_contact_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/api/v1/vendors/{id}/contacts",
+    ): "vendors/test_contacts.py::test_vendor_contact_routes_conceal_foreign_tenants",
+    (
+        "PATCH",
+        "/api/v1/vendors/{id}/contacts/{contact_id}",
+    ): "vendors/test_contacts.py::test_vendor_contact_routes_conceal_foreign_tenants",
+    (
+        "DELETE",
+        "/api/v1/vendors/{id}/contacts/{contact_id}",
+    ): "vendors/test_contacts.py::test_vendor_contact_routes_conceal_foreign_tenants",
+    (
+        "GET",
+        "/api/v1/vendors",
+    ): "vendors/test_vendors.py::test_vendor_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/api/v1/vendors",
+    ): "vendors/test_vendors.py::test_vendor_routes_conceal_foreign_tenants",
+    (
+        "GET",
+        "/api/v1/vendors/{id}",
+    ): "vendors/test_vendors.py::test_vendor_routes_conceal_foreign_tenants",
+    (
+        "PATCH",
+        "/api/v1/vendors/{id}",
+    ): "vendors/test_vendors.py::test_vendor_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/api/v1/vendors/{id}/units/{unit_id}/disable",
+    ): "vendors/test_vendors.py::test_vendor_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/api/v1/vendors/{id}/units/{unit_id}/enable",
+    ): "vendors/test_vendors.py::test_vendor_routes_conceal_foreign_tenants",
     ("POST", "/api/v1/requisitions/{id}/codes"): CODES_ROUTES,
     ("POST", "/api/v1/projects/{id}/codes"): CODES_ROUTES,
     (
@@ -558,6 +651,9 @@ def test_every_id_route_has_a_named_foreign_tenant_case() -> None:
                 approvals_router,
                 workflows_router,
                 requisitions_router,
+                vendors_router,
+                vendor_questionnaires_router,
+                sourcing_router,
                 collaboration_router,
             ),
             COVERED,
@@ -584,6 +680,9 @@ def test_gate_fails_on_an_uncovered_route_and_on_a_dangling_reference() -> None:
             approvals_router,
             workflows_router,
             requisitions_router,
+            vendors_router,
+            vendor_questionnaires_router,
+            sourcing_router,
             collaboration_router,
         )
         | widget

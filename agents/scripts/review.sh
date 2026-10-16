@@ -59,9 +59,10 @@ if [ "$A" = codex ]; then
   # calls: the packet's budget plus 10 (re-review 20, gated 45, ungated 25)
   CALLS=$(python3 -c 'import json,sys; print(55 if json.load(open(sys.argv[1]))["opus_final"] else 35)' "$W/task.json")
   [ -n "$ARGS" ] && CALLS=30
-  # One Codex review at a time across every planner and checkout: two in parallel share the
-  # five-hour window and both die at the cap.
-  nohup sh -c "while pgrep -f '^codex exec' > /dev/null; do sleep 30; done; \
+  # At most FLO_CODEX_PARALLEL (default 2, operator 15 Oct) Codex reviews at once, and only on
+  # independent stories — the planner's call. Unbounded parallel shared the five-hour window and
+  # both died at the cap on 13 Oct.
+  nohup sh -c "while [ \$(pgrep -f '^codex exec' | wc -l) -ge ${FLO_CODEX_PARALLEL:-2} ]; do sleep 30; done; \
     mkdir -p '$D/$S.aside' && mv reviews/*.json '$D/$S.aside/' 2>/dev/null; \
     codex exec -m $1 -c model_reasoning_effort=$2 -c project_doc_max_bytes=0 -s workspace-write --skip-git-repo-check \"\$(cat '$P')\" > '$D/$S.$A.log' 2>&1 & CP=\$!; \
     ( sleep $CAP; kill \$CP 2>/dev/null && echo 'stopped at the time cap' >> '$D/$S.$A.log' ) & KP=\$!; \

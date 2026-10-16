@@ -560,35 +560,53 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E10-S12** Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11) | E10 | ui | L | APR-011, APR-021, ACC-007 | ~~E10-S11~~, ~~E10-S05~~ |
 | ✅ | **E10-S13** Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes | E10 | engine | M | APR-003, PROJ-002, VEN-005, BUD-007 | ~~E10-S07~~ |
 
-#### M3 — First sellable release · 0/35 done
+#### M3 — First sellable release · 10/64 done
 
 > Vendors, RFQs, awards and purchase orders by email. Closes the money loop end to end.
 
 | | Story | Epic | Kind | Size | Requirements | Depends on |
 |---|---|---|---|---|---|---|
-| ⬜ | **E11-S01** Vendor profile, searchable list, global and BU/OU scope, local disable | E11 | crud | M | VEN-001, VEN-008, VEN-009, ORG-003 | ~~E05-S01~~ |
-| ⬜ | **E11-S09** Status vocabulary aligned to MASTER 2.3: vendor, RFQ, award and purchase-order maps and labels | E11 | ui | S | TAG-001, TAG-002, TAG-003, A11Y-004, VEN-012, PO-007 | E11-S01 |
-| ⬜ | **E11-S10** Shared decision panel at phone width: footer reflow, close button never covered | E11 | ui | M | A11Y-011, A11Y-002, UX-008, APR-020 | E11-S09, E22-S04 |
-| ⬜ | **E11-S02** Typed contacts: billing, service/delivery, additional types | E11 | crud | S | VEN-002 | E11-S01 |
-| ⬜ | **E11-S03** Vendor documents with issue/expiry, verification status, expiry notification | E11 | crud | M | VEN-003, VEN-011, OBS-004 | E11-S01, ~~E09-S10~~ |
-| ⬜ | **E11-S04** Field-level access control and masking for tax and banking data | E11 | security | M | VEN-014, CUS-008, PRIV-001 | E11-S01, ~~E02-S05~~ |
-| ⬜ | **E11-S05** Onboarding request, configurable questionnaire, weights and scoring | E11 | engine | L | VEN-004, VEN-006 | E11-S01 |
-| ⬜ | **E11-S06** Duplicate identifier detection, approval on create/activate/suspend/reactivate | E11 | engine | M | VEN-005, VEN-010, VEN-012 | E11-S05, ~~E10-S13~~ |
-| ⬜ | **E11-S07** Performance scoring across quality, price, delivery, service, with dispute history | E11 | crud | M | VEN-007, VEN-015 | E11-S01 |
-| ⬜ | **E12-S01** RFQ from approved requisition lines, open-quantity guard | E12 | engine | L | SRC-001, SRC-003, SRC-018 | ~~E09-S06~~, E11-S01 |
-| ⬜ | **E12-S02** RFQ content, invitations, deadline, terms, attachments, vendor eligibility check | E12 | crud | M | SRC-002, VEN-012 | E12-S01 |
+| ✅ | **E11-S01** Vendor profile, searchable list, global and BU/OU scope, local disable | E11 | crud | M | VEN-001, VEN-008, VEN-009, ORG-003 | ~~E05-S01~~ |
+| ✅ | **E11-S09** Status vocabulary aligned to MASTER 2.3: vendor, RFQ, award and purchase-order maps and labels | E11 | ui | S | TAG-001, TAG-002, TAG-003, A11Y-004, VEN-012, PO-007 | ~~E11-S01~~ |
+| ⬜ | **E11-S10** Shared decision panel at phone width: footer reflow, close button never covered | E11 | ui | M | A11Y-011, A11Y-002, UX-008, APR-020 | ~~E11-S09~~, E22-S04 |
+| ✅ | **E11-S02** Typed contacts: billing, service/delivery, additional types | E11 | crud | S | VEN-002 | ~~E11-S01~~ |
+| ✅ | **E11-S03** Vendor documents with issue/expiry, verification status, expiry notification | E11 | crud | M | VEN-003, VEN-011, OBS-004 | ~~E11-S01~~, ~~E09-S10~~ |
+| 👀 | **E11-S04** Field-level access control and masking for tax and banking data | E11 | security | M | VEN-014, CUS-008, PRIV-001 | ~~E11-S01~~, ~~E02-S05~~ |
+| ✅ | **E11-S05** Onboarding request, configurable questionnaire, weights and scoring | E11 | engine | L | VEN-004, VEN-006 | ~~E11-S01~~ |
+| ⬜ | **E11-S06** Duplicate identifier detection, approval on create/activate/suspend/reactivate | E11 | engine | M | VEN-005, VEN-010, VEN-012 | ~~E11-S05~~, ~~E10-S13~~, ~~E11-S02~~, E11-S04 |
+| ✅ | **E11-S07** Performance scoring across quality, price, delivery, service, with dispute history | E11 | crud | M | VEN-007, VEN-015 | ~~E11-S01~~ |
+| ⛔ | **E11-S08** Vendor open questions for the operator (parking story) | E11 | docs | S | VEN-003, VEN-007, VEN-014 | — |
+| ⬜ | **E11-S11** Vendor eligibility: one server rule, one web component | E11 | engine | M | VEN-012, A11Y-004 | ~~E11-S03~~, E11-S06, ~~E11-S09~~ |
+| ⬜ | **E11-S12** Vendor list and profile screens, documents table and document sheet | E11 | ui | L | VEN-001, VEN-002, VEN-003, VEN-011, VEN-013, OBS-004 | ~~E11-S02~~, ~~E11-S03~~, E11-S11 |
+| ⬜ | **E11-S13** Tax and Banking card: masked by default, audited reveal | E11 | ui | M | VEN-014, CUS-008, PRIV-001 | E11-S04, E11-S12 |
+| ⬜ | **E11-S14** Request a vendor: form, live duplicate check, drafts, submit | E11 | ui | L | VEN-004, VEN-010, A11Y-006 | E11-S06, E11-S12 |
+| ⬜ | **E11-S15** Onboarding decision panel: vendor evidence block | E11 | ui | M | VEN-005, VEN-010, APR-020 | E11-S06, E11-S10, E11-S11 |
+| ⬜ | **E11-S16** Vendor status, availability and local-disable dialogs | E11 | ui | M | VEN-005, VEN-008, VEN-009, A11Y-002 | E11-S06, E11-S12 |
+| ✅ | **E11-S17** Questionnaire administration screen | E11 | ui | M | VEN-006, CUS-007, A11Y-003 | ~~E11-S05~~ |
+| ⬜ | **E11-S18** Vendor Performance card and scorecard sheet | E11 | ui | M | VEN-007, VEN-015 | ~~E11-S07~~, E11-S12 |
+| ✅ | **E12-S01** RFQ from approved requisition lines, open-quantity guard | E12 | engine | L | SRC-001, SRC-003, SRC-018 | ~~E09-S06~~, ~~E11-S01~~ |
+| ⬜ | **E12-S02** RFQ content, invitations, deadline, terms, attachments, vendor eligibility check | E12 | crud | M | SRC-002, VEN-012 | ~~E12-S01~~, ~~E11-S02~~, E11-S11 |
 | ⬜ | **E12-S03** RFQ lifecycle and post-publication versioning communicated to invitees | E12 | engine | M | SRC-004, SRC-005 | E12-S02 |
 | ⬜ | **E12-S04** Bid capture: line prices, currency, tax, freight, lead time, validity, exceptions | E12 | crud | M | SRC-006 | E12-S03 |
 | ⬜ | **E12-S05** Bid confidentiality and late-bid block with audited override | E12 | security | M | SRC-007, SRC-008 | E12-S04 |
-| ⬜ | **E12-S06** Comparison engine: normalized total and unit cost, tax, freight, lead time, vendor score | E12 | engine | L | SRC-009, SRC-010 | E12-S04, ~~E05-S05~~ |
+| ⬜ | **E12-S06** Comparison engine: normalized total and unit cost, tax, freight, lead time, vendor score | E12 | engine | L | SRC-009, SRC-010 | E12-S04, ~~E05-S05~~, E12-S05 |
 | ⬜ | **E12-S07** Evaluation scoring with comments and conflict-of-interest declarations | E12 | crud | M | SRC-011 | E12-S06 |
 | ⬜ | **E12-S08** Award: split by line/quantity, scope and reserved-funds guard, non-lowest justification | E12 | ledger | L | SRC-012, SRC-013, SRC-014, SRC-016, REQ-014 | E12-S07, ~~E07-S04~~ |
-| ⬜ | **E12-S09** Cancel or supersede RFQ/award, preserve history, reconcile budget effect | E12 | ledger | M | SRC-017, SRC-015, WF-005 | E12-S08 |
-| ⬜ | **E12-S10** Comparison dashboard screen with accessible table equivalent | E12 | ui | L | SRC-009, A11Y-009, RPT-013 | E12-S06, ~~E04-S03~~ |
+| ⛔ | **E12-S09** Cancel or supersede RFQ/award, preserve history, reconcile budget effect | E12 | ledger | M | SRC-017, SRC-015, WF-005 | E12-S08 |
+| ⬜ | **E12-S10** Comparison dashboard screen with accessible table equivalent | E12 | ui | L | SRC-009, A11Y-009, RPT-013 | E12-S06, ~~E04-S03~~, E12-S07, ~~E11-S09~~ |
+| ⬜ | **E12-S11** RFQ list and RFQ detail screens | E12 | ui | L | SRC-004, SRC-015, SRC-007 | E12-S03, ~~E11-S09~~ |
+| ⬜ | **E12-S12** New RFQ from approved lines: line picker with the open-quantity guard | E12 | ui | M | SRC-001, SRC-003, REQ-014, REQ-015 | ~~E12-S01~~, E12-S11 |
+| ⬜ | **E12-S13** RFQ editor, invitations with the eligibility picker, publish and amend | E12 | ui | L | SRC-002, SRC-004, SRC-005, VEN-012 | E12-S02, E12-S03, E12-S07, E12-S11, E11-S11 |
+| ⬜ | **E12-S14** Record a bid: bid sheet, two times, vendor currency, late-bid override | E12 | ui | M | SRC-006, SRC-008, SRC-010 | E12-S04, E12-S05, E12-S11 |
+| ⬜ | **E12-S15** Evaluation screen: declare first, then score | E12 | ui | M | SRC-011 | E12-S07, E12-S11 |
+| ⬜ | **E12-S16** Award draft screen: lines, justification, scope and funds check | E12 | ui | L | SRC-012, SRC-013, SRC-014, SRC-016 | E12-S08, E12-S10 |
+| ⬜ | **E12-S17** Award decision panel: Award Evidence block | E12 | ui | M | SRC-013, APR-003, APR-020 | E12-S08, E11-S10 |
+| ⛔ | **E12-S18** Cancel RFQ and supersede award dialogs | E12 | ui | M | SRC-017 | E12-S09, E12-S11 |
+| ⛔ | **E12-S19** Sourcing open questions for the operator (parking story) | E12 | docs | S | SRC-016, SRC-017 | — |
 | ⬜ | **E13-S01** PO from awarded requisition lines or authorized project items, scoped numbering | E13 | crud | L | PO-001, PO-002, PO-006, SEQ-001 | E12-S08 |
 | ⬜ | **E13-S02** Tax and freight per BU/OU policy, separately visible on line and document | E13 | ledger | M | FIN-008, FIN-009, PO-016 | E13-S01 |
-| ⬜ | **E13-S03** PO lifecycle state machine | E13 | engine | M | PO-007, WF-002 | E13-S01 |
-| ⬜ | **E13-S04** PO approval workflow before issue | E13 | engine | M | PO-003, APR-003 | E13-S03, ~~E10-S13~~ |
+| ⬜ | **E13-S03** PO lifecycle state machine | E13 | engine | M | PO-007, WF-002 | E13-S01, ~~E11-S09~~ |
+| ⬜ | **E13-S04** PO approval workflow before issue | E13 | engine | M | PO-003, APR-003 | E13-S03, ~~E10-S13~~, E13-S02 |
 | ⬜ | **E13-S05** Issue converts reservation to commitment atomically; partial POs reduce open quantity only | E13 | ledger | L | PO-008, PO-009, WF-003, ACC-002 | E13-S04, ~~E07-S05~~ |
 | ⬜ | **E13-S06** Immutable issued PO; numbered, approved change orders with field-level diff | E13 | engine | L | PO-010, PO-011, DATA-005, ACC-005 | E13-S05 |
 | ⬜ | **E13-S07** Cancel or reduce releases unused commitment exactly once, history preserved | E13 | ledger | M | PO-013, FIN-011, ACC-006, WF-005 | E13-S06 |
@@ -596,11 +614,22 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E13-S09** Email transmission via outbox, recipient/time/result/version recorded, retry without duplication | E13 | engine | L | PO-004, PO-012, PO-015, ARCH-006, ACC-002 | E13-S08, ~~E03-S06~~ |
 | ⬜ | **E13-S10** Deliverability: SPF/DKIM/DMARC verification, bounce and complaint handling, suppression list | E13 | engine | M | EML-001, EML-002, EML-003, EML-006 | E13-S09 |
 | ⬜ | **E13-S11** Internal vs vendor-facing notes and attachments, enforced by test | E13 | security | M | PO-017, EML-005, COL-002 | E13-S09, ~~E09-S10~~ |
-| ⬜ | **E22-S01** Create Project with budget: form and Excel, sponsors, through the project approval workflow | E22 | engine | L | PROJ-003 | ~~E09-S17~~ |
-| ⬜ | **E22-S02** Soft delete for every draft document | E22 | crud | M | DATA-002 | ~~E09-S15~~ |
-| ⬜ | **E22-S03** One audit helper instead of twelve, behaviour-preserving | E22 | chore | M | AUD-001 | — |
-| ⬜ | **E22-S04** M2 milestone review follow-ups: Money zero prop, shared lookup helper, internal collaboration readers, approvals read via service, e2e focus helper | E22 | chore | M | A11Y-001, UX-007 | — |
-| ⬜ | **E22-S05** Replace MinIO with SeaweedFS in the local stack; bucket via the S3 API | E22 | chore | S | OPS-007 | — |
+| ⬜ | **E13-S12** PO list and PO detail screens | E13 | ui | L | PO-007, PO-013, UX-004 | E13-S03, E13-S05, ~~E11-S09~~ |
+| ⬜ | **E13-S13** Create POs from awarded lines | E13 | ui | M | PO-001, PO-009, SRC-018 | E13-S01, E13-S12 |
+| ⬜ | **E13-S14** PO editor: header, lines with tax and freight apart, budget preview, vendor eligibility | E13 | ui | L | PO-002, PO-016, PO-017, VEN-012 | E13-S01, E13-S02, E13-S04, E13-S11, E13-S12, E11-S11 |
+| ⬜ | **E13-S15** Issue: confirmation and signature moment 5 | E13 | ui | M | PO-008, PO-012, A11Y-009 | E13-S05, E13-S09, E13-S12 |
+| ⬜ | **E13-S16** Transmission log, change recipient and resend | E13 | ui | M | PO-004, PO-015, EML-002, EML-003 | E13-S09, E13-S10, E13-S12 |
+| ⬜ | **E13-S17** Vendor copy preview: email and PDF as the supplier sees them | E13 | ui | M | PO-014, PO-017, EML-005 | E13-S08, E13-S11, E13-S12 |
+| ⬜ | **E13-S18** Change order screen: field diff, signed budget effect, reapproval line | E13 | ui | M | PO-010, PO-011, ACC-005 | E13-S06, E13-S12 |
+| ⬜ | **E13-S19** Cancel or reduce dialog | E13 | ui | M | PO-013, ACC-006 | E13-S07, E13-S12 |
+| ⬜ | **E13-S20** PO decision panel: Purchase Order Evidence block | E13 | ui | M | PO-003, APR-020 | E13-S04, E11-S10 |
+| ⬜ | **E13-S21** Sending domain status and suppression list (Administration) | E13 | ui | M | EML-001, EML-003 | E13-S10 |
+| ⛔ | **E13-S22** Purchase-order open questions for the operator (parking story) | E13 | docs | S | PO-007 | — |
+| 👀 | **E22-S01** Create Project with budget: form and Excel, sponsors, through the project approval workflow | E22 | engine | L | PROJ-003 | ~~E09-S17~~ |
+| 🔨 | **E22-S02** Soft delete for every draft document | E22 | crud | M | DATA-002 | ~~E09-S15~~ |
+| ✅ | **E22-S03** One audit helper instead of twelve, behaviour-preserving | E22 | chore | M | AUD-001 | — |
+| 👀 | **E22-S04** M2 milestone review follow-ups: Money zero prop, shared lookup helper, internal collaboration readers, approvals read via service, e2e focus helper | E22 | chore | M | A11Y-001, UX-007 | — |
+| ✅ | **E22-S05** Replace MinIO with SeaweedFS in the local stack; bucket via the S3 API | E22 | chore | S | OPS-007 | — |
 
 #### M4 — Full Phase-1 scope · 0/34 done
 

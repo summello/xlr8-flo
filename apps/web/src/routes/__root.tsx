@@ -15,6 +15,7 @@ import ProjectList from "./projects/list";
 import NewProject from "./projects/new";
 import WorkflowList from "./admin/approval-workflows/list";
 import WorkflowBuilder from "./admin/approval-workflows/[id]";
+import VendorQuestionnaires from "./admin/vendor-questionnaires";
 import ProjectDetail from "./projects/detail";
 import Dashboard from "./projects/dashboard";
 import BudgetOverview from "./budget";
@@ -71,6 +72,7 @@ const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
     title: "Organization",
   },
   "/admin/approval-workflows": { activeHref: "/administration", description: "Versioned approval workflows", hierarchy: [ORGANIZATION, ["/admin/approval-workflows", "Approval Workflows"]], phase: "foundation", title: "Approval Workflows" },
+  "/admin/vendor-questionnaires": { activeHref: "/administration", description: "Versioned onboarding questionnaires for new vendors", hierarchy: [ORGANIZATION, ["/administration", "Administration"], ["/admin/vendor-questionnaires", "Vendor Questionnaires"]], phase: "foundation", title: "Vendor Questionnaires" },
   "/administration": {
     activeHref: "/administration",
     description: "Administration screens arrive with the foundation milestone.",
@@ -361,6 +363,7 @@ export default function RootRoute() {
       {shellRoute.path === "/approvals/availability" ? <ApprovalAvailability navigate={navigate} /> : undefined}
       {shellRoute.path === "/budget" ? <BudgetOverview key={window.location.search} navigate={navigate} /> : undefined}
       {shellRoute.path === "/admin/approval-workflows" ? <WorkflowList navigate={navigate} /> : undefined}
+      {shellRoute.path === "/admin/vendor-questionnaires" ? <VendorQuestionnaires /> : undefined}
       {workflowId ? <WorkflowBuilder key={workflowId} id={workflowId} /> : undefined}
       {projectId ? <ProjectDetail key={projectId} id={projectId} onLoaded={onProjectLoaded} /> : undefined}
       {shellRoute.path === "/_dev/status-gallery" ? <StatusGallery /> : undefined}

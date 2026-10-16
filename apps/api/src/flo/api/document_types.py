@@ -19,6 +19,7 @@ from flo.modules.requisitions.service import (
     RequisitionService,
     open_document_count,
 )
+from flo.modules.vendors.documents import register_access as register_vendor_access
 
 
 def requisition_access(
@@ -55,3 +56,4 @@ def register_document_types() -> None:
     register_document_access(
         DocumentAccess("project", "project.read", "project.update", project_access)
     )
+    register_vendor_access()

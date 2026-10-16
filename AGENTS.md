@@ -367,7 +367,7 @@ Opus milestone review: <verdict>
 ## 6. Environment
 
 ```bash
-flo up            # local stack: Postgres 17, MinIO (R2 stand-in), Mailpit — no cloud account (OPS-007)
+flo up            # local stack: Postgres 17, SeaweedFS (R2 stand-in), Mailpit — no cloud account (OPS-007)
 flo check         # everything CI runs, locally
 flo status        # roadmap state, budgets, in-flight stories
 flo budget        # per-agent spend and remaining capacity

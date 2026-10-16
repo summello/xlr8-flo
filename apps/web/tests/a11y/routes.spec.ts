@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 import { stubWorkflows } from "../e2e/workflow-list-fixture";
+import { stubQuestionnaires } from "../e2e/vendor-questionnaires-fixture";
 import { stubApprovals } from "../e2e/approvals-fixture";
 import { instanceId, requisition, reqId, reservation, stubRequisitions } from "../e2e/requisitions-fixture";
 import { amendmentRead, quantityChange, stubChanges } from "../e2e/requisition-changes-fixture";
@@ -23,6 +24,7 @@ for (const theme of ["light", "dark"] as const) {
         localStorage.setItem("xlr8flo.theme", selectedTheme);
       }, theme);
       if (route === "/admin/approval-workflows") await stubWorkflows(page);
+      if (route === "/admin/vendor-questionnaires") await stubQuestionnaires(page);
       if (route.startsWith("/approvals")) await stubApprovals(page);
       if (route.startsWith("/requisitions")) await stubRequisitions(page);
       await page.goto(route);
