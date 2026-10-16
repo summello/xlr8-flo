@@ -3489,6 +3489,46 @@
       },
       "recap": "Adds the vendors module: vendor, vendor_unit and vendor_local_disable tables (migration 0056), list/get/create/patch plus local disable and enable endpoints, and one available_in() availability rule that walks the unit ancestors. Adds the V- numbering type and the vendor.allow_local_disable setting.",
       "title": "Vendor profile, searchable list, global and BU/OU scope, local disable"
+    },
+    {
+      "story": "E22-S03",
+      "kind": "chore",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "61edc6b0-4315-46ab-81f5-ef068c49ee58",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S03",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a142ea-f27b-7221-a2d5-5641ca48b161",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Added kernel.audit.audit_event and routed the module _audit wrappers, identity's call sites and the two direct project audit calls through it. A golden test runs real module commands and compares every audit row's shape (action, actor, outcome, reason, snapshot fields) with a baseline captured before the change.",
+      "title": "One audit helper instead of twelve, behaviour-preserving"
     }
   ]
 }

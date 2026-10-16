@@ -10,7 +10,7 @@ from uuid import UUID, uuid4
 
 import psycopg
 
-from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
+from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.config import Settings
 from flo.kernel.errors import ErrorCode, ProblemError
@@ -289,7 +289,9 @@ class RequisitionService:
     def _audit(
         self, action: str, id: UUID, before: dict[str, object] | None, after: dict[str, object]
     ) -> None:
-        AuditWriter(cast(AuditConnection, self.connection), self.scope).write(
+        audit_event(
+            cast(AuditConnection, self.connection),
+            self.scope,
             actor=AuditActor(ActorKind.USER, self.actor_id)
             if self.actor_id != SYSTEM_ACTOR_ID
             else AuditActor(ActorKind.JOB, None),
@@ -297,10 +299,8 @@ class RequisitionService:
             target_type="requisition",
             target_id=id,
             outcome=Outcome.SUCCESS,
-            before_source=before,
-            before_fields=tuple(before or ()),
-            after_source=after,
-            after_fields=tuple(after),
+            before=before,
+            after=after,
         )
 
     @staticmethod
