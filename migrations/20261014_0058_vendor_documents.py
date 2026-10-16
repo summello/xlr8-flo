@@ -50,6 +50,6 @@ def upgrade(connection: MigrationConnection) -> None:
 
 
 def downgrade(connection: MigrationConnection) -> None:
-    # irreversible: document metadata created since upgrade has no earlier home; down drops it.
-    # The attachments themselves stay readable through the collaboration routes.
+    # down drops the vendor_document metadata; the attachments stay readable through the
+    # collaboration routes.
     connection.execute(DOWNGRADE_SQL)
