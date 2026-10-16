@@ -320,3 +320,98 @@ class ScoreResult(BaseModel):
     score: int
     threshold: int
     breakdown: list[ScoreLine]
+
+
+class ScoreCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    category: str = Field(min_length=1, max_length=100)
+    score: int = Field(ge=1, le=5)
+    period: date
+    source_ref: str = Field(min_length=1, max_length=200)
+    source_type: Literal["po", "manual"] = "po"
+    rationale: str = Field(min_length=1, max_length=1000)
+
+    @field_validator("category", "source_ref", "rationale")
+    @classmethod
+    def _stripped(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Enter a value.")
+        return value
+
+
+class DisputeCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reason: str = Field(min_length=1, max_length=1000)
+
+    @field_validator("reason")
+    @classmethod
+    def _stripped(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Enter a reason.")
+        return value
+
+
+class DisputeResolve(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    resolution: Literal["upheld", "dismissed"]
+    note: str = Field(min_length=1, max_length=1000)
+    adjusted_score: int | None = Field(default=None, ge=1, le=5)
+    adjusted_rationale: str | None = Field(default=None, min_length=1, max_length=1000)
+
+    @field_validator("note", "adjusted_rationale")
+    @classmethod
+    def _stripped(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        if not value:
+            raise ValueError("Enter a value.")
+        return value
+
+
+class DisputeRead(BaseModel):
+    id: UUID
+    score_id: UUID
+    raised_by_email: str
+    raised_at: datetime
+    reason: str
+    resolution: Literal["upheld", "dismissed"] | None
+    resolved_by_email: str | None
+    resolved_at: datetime | None
+    resolution_note: str | None
+
+
+class ScoreRead(BaseModel):
+    id: UUID
+    category_code: str
+    score: int
+    period: date
+    source_type: Literal["po", "manual"]
+    source_ref: str
+    rationale: str
+    scored_by_email: str
+    scored_at: datetime
+    supersedes: UUID | None
+    superseded_by: UUID | None
+    disputes: list[DisputeRead]
+
+
+class ScorePage(BaseModel):
+    rows: list[ScoreRead]
+    next_cursor: str | None
+
+
+class CategoryAverage(BaseModel):
+    category_code: str
+    average: str
+    count: int
+
+
+class PerformanceRead(BaseModel):
+    """Figures are computed here from current rows only, never in the browser (VEN-007)."""
+
+    categories: list[CategoryAverage]
+    overall: str | None
+    count: int

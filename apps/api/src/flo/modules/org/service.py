@@ -29,7 +29,15 @@ from flo.modules.org.fx import convert as convert
 from flo.modules.org.fx import rate_for as rate_for
 from flo.modules.org.fx import status as fx_status
 from flo.modules.org.fx import validate_currency
-from flo.modules.org.master_kinds import RESERVED_CONTACT_TYPES, known_kind, validate_attributes
+from flo.modules.org.master_kinds import (
+    CORE_SCORE_CATEGORIES as CORE_SCORE_CATEGORIES,
+)
+from flo.modules.org.master_kinds import (
+    RESERVED_CONTACT_TYPES,
+    core_category_active,
+    known_kind,
+    validate_attributes,
+)
 from flo.modules.org.models import OrgRepository
 from flo.modules.org.numbering import NumberingService as NumberingService
 from flo.modules.org.schemas import (
@@ -530,6 +538,7 @@ class OrgService:
     def create_master(self, kind: str, body: MasterCreate) -> MasterRef:
         validate_attributes(kind, dict(body.attributes))
         validate_master_dates(body.effective_from, body.effective_to)
+        core_category_active(kind, body.code.strip().upper(), body.active, body.effective_to)
         if kind == "vendor_contact_type" and body.code.strip().lower() in RESERVED_CONTACT_TYPES:
             raise ProblemError(
                 ErrorCode.VALIDATION_FAILED,
@@ -570,6 +579,9 @@ class OrgService:
             if before is None:
                 raise ProblemError(ErrorCode.NOT_FOUND)
             after = before | body.model_dump(exclude_unset=True)
+            core_category_active(
+                kind, str(before["code"]), cast(bool, after["active"]), after["effective_to"]
+            )
             validate_attributes(kind, cast(dict[str, object], after["attributes"]))
             validate_master_dates(
                 cast(date, after["effective_from"]), cast(date | None, after["effective_to"])

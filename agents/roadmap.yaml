@@ -1514,7 +1514,7 @@ epics:
           - VEN-015
         dep:
           - E11-S01
-        st: in_progress
+        st: done
       - id: E11-S08
         t: Vendor open questions for the operator (parking story)
         k: docs
@@ -1629,7 +1629,7 @@ epics:
           - A11Y-003
         dep:
           - E11-S05
-        st: todo
+        st: done
       - id: E11-S18
         t: Vendor Performance card and scorecard sheet
         k: ui
@@ -2256,7 +2256,7 @@ epics:
           - DATA-002
         dep:
           - E09-S15
-        st: todo
+        st: in_progress
       - id: E22-S03
         t: One audit helper instead of twelve, behaviour-preserving
         k: chore
@@ -2277,7 +2277,7 @@ epics:
           - A11Y-001
           - UX-007
         dep: []
-        st: in_progress
+        st: review
       - id: E22-S05
         t: Replace MinIO with SeaweedFS in the local stack; bucket via the S3 API
         k: chore

@@ -2445,6 +2445,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/vendors/{id}/performance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Performance */
+        get: operations["performance_api_v1_vendors__id__performance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendors/{id}/scores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Scores */
+        get: operations["list_scores_api_v1_vendors__id__scores_get"];
+        put?: never;
+        /**
+         * Add Score
+         * @description Purchasing users score: they hold purchase_order.view and vendor.view (E11-S07).
+         */
+        post: operations["add_score_api_v1_vendors__id__scores_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendors/{id}/scores/{sid}/disputes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Dispute Score */
+        post: operations["dispute_score_api_v1_vendors__id__scores__sid__disputes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendors/{id}/scores/{sid}/disputes/{did}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resolve Dispute */
+        post: operations["resolve_dispute_api_v1_vendors__id__scores__sid__disputes__did__resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/vendors/{id}/units/{unit_id}/disable": {
         parameters: {
             query?: never;
@@ -3131,6 +3203,15 @@ export interface components {
             /** Rows */
             rows: components["schemas"]["CatalogueItemRead"][];
         };
+        /** CategoryAverage */
+        CategoryAverage: {
+            /** Average */
+            average: string;
+            /** Category Code */
+            category_code: string;
+            /** Count */
+            count: number;
+        };
         /** ChangeDelta */
         ChangeDelta: {
             /** Amount */
@@ -3506,6 +3587,55 @@ export interface components {
         DisableCreate: {
             /** Reason */
             reason: string;
+        };
+        /** DisputeCreate */
+        DisputeCreate: {
+            /** Reason */
+            reason: string;
+        };
+        /** DisputeRead */
+        DisputeRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Raised At
+             * Format: date-time
+             */
+            raised_at: string;
+            /** Raised By Email */
+            raised_by_email: string;
+            /** Reason */
+            reason: string;
+            /** Resolution */
+            resolution: ("upheld" | "dismissed") | null;
+            /** Resolution Note */
+            resolution_note: string | null;
+            /** Resolved At */
+            resolved_at: string | null;
+            /** Resolved By Email */
+            resolved_by_email: string | null;
+            /**
+             * Score Id
+             * Format: uuid
+             */
+            score_id: string;
+        };
+        /** DisputeResolve */
+        DisputeResolve: {
+            /** Adjusted Rationale */
+            adjusted_rationale?: string | null;
+            /** Adjusted Score */
+            adjusted_score?: number | null;
+            /** Note */
+            note: string;
+            /**
+             * Resolution
+             * @enum {string}
+             */
+            resolution: "upheld" | "dismissed";
         };
         /**
          * DocState
@@ -5002,6 +5132,18 @@ export interface components {
             /** Email */
             email: string;
         };
+        /**
+         * PerformanceRead
+         * @description Figures are computed here from current rows only, never in the browser (VEN-007).
+         */
+        PerformanceRead: {
+            /** Categories */
+            categories: components["schemas"]["CategoryAverage"][];
+            /** Count */
+            count: number;
+            /** Overall */
+            overall: string | null;
+        };
         /** PermissionApprovers */
         PermissionApprovers: {
             /**
@@ -6051,6 +6193,74 @@ export interface components {
          * @enum {string}
          */
         ScopeType: "org" | "bu" | "project";
+        /** ScoreCreate */
+        ScoreCreate: {
+            /** Category */
+            category: string;
+            /**
+             * Period
+             * Format: date
+             */
+            period: string;
+            /** Rationale */
+            rationale: string;
+            /** Score */
+            score: number;
+            /** Source Ref */
+            source_ref: string;
+            /**
+             * Source Type
+             * @default po
+             * @enum {string}
+             */
+            source_type?: "po" | "manual";
+        };
+        /** ScorePage */
+        ScorePage: {
+            /** Next Cursor */
+            next_cursor: string | null;
+            /** Rows */
+            rows: components["schemas"]["ScoreRead"][];
+        };
+        /** ScoreRead */
+        ScoreRead: {
+            /** Category Code */
+            category_code: string;
+            /** Disputes */
+            disputes: components["schemas"]["DisputeRead"][];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Period
+             * Format: date
+             */
+            period: string;
+            /** Rationale */
+            rationale: string;
+            /** Score */
+            score: number;
+            /**
+             * Scored At
+             * Format: date-time
+             */
+            scored_at: string;
+            /** Scored By Email */
+            scored_by_email: string;
+            /** Source Ref */
+            source_ref: string;
+            /**
+             * Source Type
+             * @enum {string}
+             */
+            source_type: "po" | "manual";
+            /** Superseded By */
+            superseded_by: string | null;
+            /** Supersedes */
+            supersedes: string | null;
+        };
         /**
          * SessionResponse
          * @description Privacy-minimized active-session representation.
@@ -14124,6 +14334,240 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OnboardingRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    performance_api_v1_vendors__id__performance_get: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                to?: string | null;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PerformanceRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    list_scores_api_v1_vendors__id__scores_get: {
+        parameters: {
+            query?: {
+                category?: string | null;
+                from?: string | null;
+                to?: string | null;
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScorePage"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    add_score_api_v1_vendors__id__scores_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScoreCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScoreRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    dispute_score_api_v1_vendors__id__scores__sid__disputes_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                sid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DisputeCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisputeRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    resolve_dispute_api_v1_vendors__id__scores__sid__disputes__did__resolve_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                sid: string;
+                did: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DisputeResolve"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisputeRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

@@ -162,6 +162,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261014_0060",
         "20261014_0061",
         "20261014_0062",
+        "20261014_0063",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -2177,9 +2178,9 @@ def test_migration_0053_tracking_table_is_tenant_isolated_and_0053_still_reverse
 
     revisions = migrate.discover_migrations(MIGRATIONS)
     migrate.apply_migrations(
-        [r for r in revisions if r.revision <= "20261014_0060"], empty_database
+        [r for r in revisions if r.revision <= "20261014_0061"], empty_database
     )
-    mig = next(r for r in revisions if r.revision == "20261014_0061")
+    mig = next(r for r in revisions if r.revision == "20261014_0062")
     base = next(r for r in revisions if r.revision == "20261014_0053")
     org_a, org_b = uuid4(), uuid4()
     role = f"app_0060_{uuid4().hex[:8]}"
@@ -2225,9 +2226,9 @@ def test_vendor_row_version_roundtrip_preserves_rows(empty_database):
 
     revisions = migrate.discover_migrations(MIGRATIONS)
     migrate.apply_migrations(
-        [r for r in revisions if r.revision <= "20261014_0061"], empty_database
+        [r for r in revisions if r.revision <= "20261014_0062"], empty_database
     )
-    mig = next(r for r in revisions if r.revision == "20261014_0062")
+    mig = next(r for r in revisions if r.revision == "20261014_0063")
     with psycopg.connect(empty_database, autocommit=True) as conn:
         tenant = create(conn)
         actor = admin_id(conn)
