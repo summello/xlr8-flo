@@ -129,7 +129,7 @@ class CollaborationService:
         return self.notes_unchecked(document_type, document_id)
 
     def notes_unchecked(self, document_type: str, document_id: UUID) -> list[NoteRead]:
-        """Internal, no authorization: the caller must already have checked read access. The authorizing method is the public API."""
+        """Internal, no authorization: the caller must already have checked read access."""
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             rows = self.repo.execute(
                 NOTE_SQL + " WHERE n.org_id=%(org_id)s AND "
@@ -245,7 +245,7 @@ class CollaborationService:
         return self.attachments_unchecked(document_type, document_id)
 
     def attachments_unchecked(self, document_type: str, document_id: UUID) -> list[AttachmentRead]:
-        """Internal, no authorization: the caller must already have checked read access. The authorizing method is the public API."""
+        """Internal, no authorization: the caller must already have checked read access."""
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             rows = self.repo.execute(
                 "SELECT id FROM attachment WHERE org_id=%(org_id)s "

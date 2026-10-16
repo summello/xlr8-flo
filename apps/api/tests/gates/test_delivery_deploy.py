@@ -7,10 +7,16 @@ from pathlib import Path
 from tests.gates.test_delivery_status import D, commit, git, repo  # noqa: F401  (repo is a fixture)
 
 
-def run(deploy: str, ids: list[str], status: str = "completed",
-        conclusion: str | None = "success") -> dict:
-    return {"sha": "s" + deploy + "".join(ids), "status": status, "conclusion": conclusion,
-            "deploy": deploy, "ids": set(ids)}
+def run(
+    deploy: str, ids: list[str], status: str = "completed", conclusion: str | None = "success"
+) -> dict:
+    return {
+        "sha": "s" + deploy + "".join(ids),
+        "status": status,
+        "conclusion": conclusion,
+        "deploy": deploy,
+        "ids": set(ids),
+    }
 
 
 def test_a_story_shipped_if_any_run_containing_it_deployed() -> None:

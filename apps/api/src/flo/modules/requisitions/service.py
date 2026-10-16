@@ -46,6 +46,7 @@ from flo.modules.requisitions.links import assert_current_upstream as assert_cur
 from flo.modules.requisitions.links import links as links
 from flo.modules.requisitions.links import register_link_provider as register_link_provider
 from flo.modules.requisitions.models import READ_FIELDS, READ_SQL, RequisitionRepository
+from flo.modules.requisitions.revisions import latest_instance
 from flo.modules.requisitions.schemas import (
     AmountTotal,
     Direction,
@@ -59,7 +60,6 @@ from flo.modules.requisitions.schemas import (
     invalid,
 )
 from flo.modules.requisitions.schemas import SubmissionInvalid as SubmissionInvalid
-from flo.modules.requisitions.revisions import latest_instance
 from flo.modules.requisitions.sourcing import source_lines as source_lines
 from flo.modules.requisitions.sourcing import sourceable_lines as sourceable_lines
 from flo.modules.requisitions.sourcing import sourcing_basis as sourcing_basis

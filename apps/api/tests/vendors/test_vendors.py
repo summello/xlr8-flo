@@ -35,7 +35,9 @@ async def send(browser, method, suffix="", data=None, match="auto"):
     """`match`: "auto" sends the live version on a PATCH, None omits If-Match, else the value."""
     extra = {}
     if method == "PATCH" and match is not None:
-        extra["If-Match"] = str(await current_version(browser, suffix) if match == "auto" else match)
+        extra["If-Match"] = str(
+            await current_version(browser, suffix) if match == "auto" else match
+        )
     return await browser.request(
         method,
         "/api/v1/vendors" + suffix,
@@ -371,7 +373,9 @@ def test_patch_vendor_needs_if_match_and_a_stale_replay_conflicts(header_db):
             missing = await send(browser, "PATCH", path, {"legal_name": "A"}, match=None)
             assert missing.status_code == 400
             assert missing.json()["checks"]["problem"] == "if_match_required"
-            assert (await send(browser, "PATCH", path, {"legal_name": "A"}, match="x")).status_code == 400
+            assert (
+                await send(browser, "PATCH", path, {"legal_name": "A"}, match="x")
+            ).status_code == 400
             first = await send(browser, "PATCH", path, {"legal_name": "A"}, match=1)
             assert first.status_code == 200 and first.json()["version"] == 2
             assert first.headers["ETag"] == '"2"'

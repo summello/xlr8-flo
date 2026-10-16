@@ -25,7 +25,9 @@ async def send(browser, method, suffix="", data=None, match="auto"):
     """`match`: "auto" sends the live version on a PATCH, None omits If-Match, else the value."""
     extra = {}
     if method == "PATCH" and match is not None:
-        extra["If-Match"] = str(await current_version(browser, suffix) if match == "auto" else match)
+        extra["If-Match"] = str(
+            await current_version(browser, suffix) if match == "auto" else match
+        )
     return await browser.request(
         method,
         "/api/v1/vendors" + suffix,

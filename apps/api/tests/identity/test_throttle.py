@@ -265,7 +265,8 @@ def test_jitter_order():
 def test_migration_reverses_and_preserves_existing_data(db):
     connection, _ = db
     revision = next(
-        item for item in discover_migrations(ROOT / "migrations")
+        item
+        for item in discover_migrations(ROOT / "migrations")
         if item.revision == "20261009_0029"
     )
     connection.execute("CREATE TABLE preserved (value text)")

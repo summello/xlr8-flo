@@ -238,7 +238,9 @@ def _attachments(
             relation="attached",
             access=access,
         )
-        for a in CollaborationService(conn, scope).attachments_unchecked("requisition", requisition_id)
+        for a in CollaborationService(conn, scope).attachments_unchecked(
+            "requisition", requisition_id
+        )
         if a.deleted_at is None
     ]
 

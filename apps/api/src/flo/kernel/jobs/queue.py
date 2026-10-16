@@ -186,9 +186,7 @@ class WorkerJobQueue:
     def claim(self) -> Job | None:
         # Tenant RLS remains forced for application queries. This transaction-
         # local marker opens only the two worker policies on the queue tables.
-        self._connection.execute(
-            "SET LOCAL app.org_id = '00000000-0000-0000-0000-000000000000'"
-        )
+        self._connection.execute("SET LOCAL app.org_id = '00000000-0000-0000-0000-000000000000'")
         self._connection.execute("SET LOCAL app.worker = 'jobs'")
         row = self._connection.execute(
             f"""
