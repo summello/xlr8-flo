@@ -29,7 +29,14 @@ from flo.modules.org.fx import convert as convert
 from flo.modules.org.fx import rate_for as rate_for
 from flo.modules.org.fx import status as fx_status
 from flo.modules.org.fx import validate_currency
-from flo.modules.org.master_kinds import RESERVED_CONTACT_TYPES, known_kind, validate_attributes
+from flo.modules.org.master_kinds import (
+    CORE_SCORE_CATEGORIES as CORE_SCORE_CATEGORIES,
+)
+from flo.modules.org.master_kinds import (
+    RESERVED_CONTACT_TYPES,
+    known_kind,
+    validate_attributes,
+)
 from flo.modules.org.models import OrgRepository
 from flo.modules.org.numbering import NumberingService as NumberingService
 from flo.modules.org.schemas import (
@@ -570,6 +577,16 @@ class OrgService:
             if before is None:
                 raise ProblemError(ErrorCode.NOT_FOUND)
             after = before | body.model_dump(exclude_unset=True)
+            if (
+                kind == "vendor_score_category"
+                and before["code"] in CORE_SCORE_CATEGORIES
+                and (after["active"] is False or after["effective_to"] is not None)
+            ):
+                raise ProblemError(
+                    ErrorCode.CONFLICT,
+                    detail="Quality, pricing, delivery and service always apply. Keep them active.",
+                    checks={"problem": "core_category"},
+                )
             validate_attributes(kind, cast(dict[str, object], after["attributes"]))
             validate_master_dates(
                 cast(date, after["effective_from"]), cast(date | None, after["effective_to"])

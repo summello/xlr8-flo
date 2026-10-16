@@ -42,8 +42,11 @@ RULES: dict[str, dict[str, Callable[[object], bool]]] = {
     "service_category": {},
     "vendor_contact_type": {},
     "vendor_document_type": {"required": is_bool, "category": code_text},
+    "vendor_score_category": {},
 }
 RESERVED_CONTACT_TYPES = ("billing", "service_delivery")  # built in to vendors
+# Seeded per org by vendors.performance on first use; they cannot be deactivated (VEN-007).
+CORE_SCORE_CATEGORIES = ("QUALITY", "PRICING", "DELIVERY", "SERVICE")
 OPTIONAL = {
     "payment_term": {"discount_percent", "discount_days"},
     "vendor_document_type": {"category"},
