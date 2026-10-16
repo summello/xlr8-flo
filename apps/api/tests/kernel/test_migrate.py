@@ -159,6 +159,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261014_0057",
         "20261014_0058",
         "20261014_0059",
+        "20261014_0060",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -2067,3 +2068,50 @@ def test_vendor_documents_roundtrip_preserves_vendors_and_attachments(empty_data
         mig.upgrade(conn)
         with tenant_transaction(conn, scope):
             assert conn.execute("SELECT count(*) FROM vendor_document").fetchone() == (0,)
+
+
+def test_migration_0053_tracking_table_is_tenant_isolated_and_0053_still_reverses(empty_database):
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261014_0059"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261014_0060")
+    base = next(r for r in revisions if r.revision == "20261014_0053")
+    org_a, org_b = uuid4(), uuid4()
+    role = f"app_0060_{uuid4().hex[:8]}"
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        total = conn.execute("SELECT count(*) FROM migration_0053_change").fetchone()
+        assert total is not None
+        for org in (org_a, org_b, None):
+            conn.execute(
+                "INSERT INTO migration_0053_change(kind,org_id,code) VALUES('grant_added',%s,'x')",
+                (org,),
+            )
+        mig.upgrade(conn)
+        assert conn.execute(
+            "SELECT relrowsecurity,relforcerowsecurity FROM pg_class "
+            "WHERE relname='migration_0053_change'"
+        ).fetchone() == (True, True)
+        # The test connection is a superuser and bypasses RLS, so read as a plain role.
+        conn.execute(f"CREATE ROLE {role}")
+        conn.execute(f"GRANT SELECT ON migration_0053_change TO {role}")
+        conn.execute(f"SET ROLE {role}")
+        try:
+            assert conn.execute("SELECT count(*) FROM migration_0053_change").fetchone() == (0,)
+            with tenant_transaction(conn, Scope(org_a)):
+                assert conn.execute("SELECT org_id FROM migration_0053_change").fetchall() == [
+                    (org_a,)
+                ]
+        finally:
+            conn.execute("RESET ROLE")
+            conn.execute(f"DROP OWNED BY {role}")
+            conn.execute(f"DROP ROLE {role}")
+        mig.downgrade(conn)
+        assert conn.execute("SELECT count(*) FROM migration_0053_change").fetchone() == (
+            total[0] + 3,
+        )
+        base.downgrade(conn)
+        assert conn.execute("SELECT to_regclass('migration_0053_change')").fetchone() == (None,)
