@@ -28,9 +28,7 @@ def require_origin_secret(
     configured_secret = settings.origin_shared_secret
     presented = (presented_secret or "").encode()
     configured = (
-        configured_secret.get_secret_value().encode()
-        if configured_secret is not None
-        else b""
+        configured_secret.get_secret_value().encode() if configured_secret is not None else b""
     )
     if configured_secret is None or not hmac.compare_digest(presented, configured):
         raise ProblemError(ErrorCode.NOT_FOUND)

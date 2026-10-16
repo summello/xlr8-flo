@@ -57,8 +57,7 @@ def audit_rows(db, action):
 def all_audit_text(db):
     with tenant_transaction(db[0], Scope(db[1])):
         return " ".join(
-            str(r)
-            for r in db[0].execute("SELECT before, after, reason FROM audit_log").fetchall()
+            str(r) for r in db[0].execute("SELECT before, after, reason FROM audit_log").fetchall()
         )
 
 

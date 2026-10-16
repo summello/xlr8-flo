@@ -14,8 +14,8 @@ from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.org.service import MasterCodeUnusable, NumberingService, OrgService, today
-from flo.modules.vendors.documents import DocumentsMixin
 from flo.modules.vendors import repo as sensitive
+from flo.modules.vendors.documents import DocumentsMixin
 from flo.modules.vendors.models import (
     ANCESTORS_CTE,
     AVAILABLE_SQL,
@@ -170,7 +170,9 @@ class VendorService(DocumentsMixin):
         page = [self._read(r) for r in rows[:limit]]
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             masks = self._masked([v.id for v in page])
-        page = [v.model_copy(update={"sensitive": masks.get(v.id, SensitiveMasked())}) for v in page]
+        page = [
+            v.model_copy(update={"sensitive": masks.get(v.id, SensitiveMasked())}) for v in page
+        ]
         more = len(rows) > limit
         return VendorPage(
             rows=page, next_cursor=_cursor(page[-1].trading_name, page[-1].id) if more else None
@@ -187,9 +189,7 @@ class VendorService(DocumentsMixin):
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             self._row(id)
             groups = list(dict.fromkeys(body.fields))
-            self._audit(
-                "vendor.sensitive.reveal", id, None, {"fields": groups}, reason=body.reason
-            )
+            self._audit("vendor.sensitive.reveal", id, None, {"fields": groups}, reason=body.reason)
             return SensitiveValues.model_validate(sensitive.reveal(self.repo, id, groups))
 
     def put_sensitive(self, id: UUID, body: SensitivePut) -> SensitiveWritten:
