@@ -560,7 +560,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E10-S12** Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11) | E10 | ui | L | APR-011, APR-021, ACC-007 | ~~E10-S11~~, ~~E10-S05~~ |
 | ✅ | **E10-S13** Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes | E10 | engine | M | APR-003, PROJ-002, VEN-005, BUD-007 | ~~E10-S07~~ |
 
-#### M3 — First sellable release · 2/53 done
+#### M3 — First sellable release · 3/53 done
 
 > Vendors, RFQs, awards and purchase orders by email. Closes the money loop end to end.
 
@@ -569,7 +569,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E11-S01** Vendor profile, searchable list, global and BU/OU scope, local disable | E11 | crud | M | VEN-001, VEN-008, VEN-009, ORG-003 | ~~E05-S01~~ |
 | 👀 | **E11-S09** Status vocabulary aligned to MASTER 2.3: vendor, RFQ, award and purchase-order maps and labels | E11 | ui | S | TAG-001, TAG-002, TAG-003, A11Y-004, VEN-012, PO-007 | ~~E11-S01~~ |
 | ⬜ | **E11-S10** Shared decision panel at phone width: footer reflow, close button never covered | E11 | ui | M | A11Y-011, A11Y-002, UX-008, APR-020 | E11-S09, E22-S04 |
-| 🔨 | **E11-S02** Typed contacts: billing, service/delivery, additional types | E11 | crud | S | VEN-002 | ~~E11-S01~~ |
+| 👀 | **E11-S02** Typed contacts: billing, service/delivery, additional types | E11 | crud | S | VEN-002 | ~~E11-S01~~ |
 | ⬜ | **E11-S03** Vendor documents with issue/expiry, verification status, expiry notification | E11 | crud | M | VEN-003, VEN-011, OBS-004 | ~~E11-S01~~, ~~E09-S10~~ |
 | ⬜ | **E11-S04** Field-level access control and masking for tax and banking data | E11 | security | M | VEN-014, CUS-008, PRIV-001 | ~~E11-S01~~, ~~E02-S05~~ |
 | ⬜ | **E11-S05** Onboarding request, configurable questionnaire, weights and scoring | E11 | engine | L | VEN-004, VEN-006 | ~~E11-S01~~ |
@@ -616,7 +616,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E13-S11** Internal vs vendor-facing notes and attachments, enforced by test | E13 | security | M | PO-017, EML-005, COL-002 | E13-S09, ~~E09-S10~~ |
 | ⬜ | **E22-S01** Create Project with budget: form and Excel, sponsors, through the project approval workflow | E22 | engine | L | PROJ-003 | ~~E09-S17~~ |
 | ⬜ | **E22-S02** Soft delete for every draft document | E22 | crud | M | DATA-002 | ~~E09-S15~~ |
-| 👀 | **E22-S03** One audit helper instead of twelve, behaviour-preserving | E22 | chore | M | AUD-001 | — |
+| ✅ | **E22-S03** One audit helper instead of twelve, behaviour-preserving | E22 | chore | M | AUD-001 | — |
 | ⬜ | **E22-S04** M2 milestone review follow-ups: Money zero prop, shared lookup helper, internal collaboration readers, approvals read via service, e2e focus helper | E22 | chore | M | A11Y-001, UX-007 | — |
 | ✅ | **E22-S05** Replace MinIO with SeaweedFS in the local stack; bucket via the S3 API | E22 | chore | S | OPS-007 | — |
 

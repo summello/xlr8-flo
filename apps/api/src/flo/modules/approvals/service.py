@@ -11,7 +11,7 @@ from uuid import UUID, uuid4
 import psycopg
 from psycopg.types.json import Jsonb
 
-from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
+from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
 from flo.kernel.authz import PermissionHoldersResolver
@@ -282,16 +282,16 @@ class WorkflowService:
     def _audit(
         self, action: str, id: UUID, before: dict[str, object] | None, after: dict[str, object]
     ) -> None:
-        AuditWriter(cast(AuditConnection, self.connection), self.scope).write(
+        audit_event(
+            cast(AuditConnection, self.connection),
+            self.scope,
             actor=AuditActor(ActorKind.USER, self.actor_id),
             action=action,
             target_type="workflow",
             target_id=id,
             outcome=Outcome.SUCCESS,
-            before_source=before,
-            before_fields=tuple(before or ()),
-            after_source=after,
-            after_fields=tuple(after),
+            before=before,
+            after=after,
         )
 
     def get(self, id: UUID) -> WorkflowRead:

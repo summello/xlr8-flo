@@ -1446,7 +1446,7 @@ epics:
           - VEN-002
         dep:
           - E11-S01
-        st: in_progress
+        st: review
       - id: E11-S03
         t: Vendor documents with issue/expiry, verification status, expiry notification
         k: crud
@@ -2106,7 +2106,7 @@ epics:
         reqs:
           - AUD-001
         dep: []
-        st: review
+        st: done
       - id: E22-S04
         t: 'M2 milestone review follow-ups: Money zero prop, shared lookup helper, internal
           collaboration readers, approvals read via service, e2e focus helper'
