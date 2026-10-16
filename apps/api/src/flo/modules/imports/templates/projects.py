@@ -24,7 +24,12 @@ from flo.modules.identity.service import (
 from flo.modules.imports.handlers import Issue, RowContext, RowPlan
 from flo.modules.imports.schemas import Column, Template
 from flo.modules.org.service import MasterCodeUnusable, assert_usable, list_currencies, unit_by_code
-from flo.modules.projects.schemas import ProjectCreate, ProjectPatch, TransitionCreate
+from flo.modules.projects.schemas import (
+    ProjectCreate,
+    ProjectPatch,
+    ProjectRead,
+    TransitionCreate,
+)
 from flo.modules.projects.service import ProjectService, get_by_external_ref
 
 TEMPLATE = Template(
@@ -172,7 +177,18 @@ class ProjectsHandler:
                     )
                 )
         if project is None:
-            issues.extend(self.budget_issues(context, values, unit, currency))
+            in_batch = bool(parent_ref) and parent is None and parent_ref in planned
+            issues.extend(self.budget_issues(context, values, unit, currency, parent, in_batch))
+        elif text(values, "budget_amount") or text(values, "sponsor_emails"):
+            issues.append(
+                Issue(
+                    "budget_amount",
+                    "budget_not_applied",
+                    f"Budget and sponsors apply only to new projects, so {ref!r} keeps what it "
+                    "has. Edit a draft's budget and sponsors on the project.",
+                    "warning",
+                )
+            )
         mutable: dict[str, object] = {
             "name": text(values, "name"),
             "description": text(values, "description") or None,
@@ -254,7 +270,13 @@ class ProjectsHandler:
         )
 
     def budget_issues(
-        self, context: RowContext, values: dict[str, object], unit: object, currency: str
+        self,
+        context: RowContext,
+        values: dict[str, object],
+        unit: object,
+        currency: str,
+        parent: ProjectRead | None,
+        parent_in_batch: bool,
     ) -> list[Issue]:
         """A row with a budget is created and submitted: it needs sponsors, the right to submit
         and a published `project` workflow, so allocation happens on approval (E22-S01)."""
@@ -288,6 +310,8 @@ class ProjectsHandler:
                 pass  # the currency column already carries the issue
         if not found:
             issues.append(Issue("sponsor_emails", "sponsor_required", "Name at least one sponsor."))
+        if parent_in_batch or parent is not None:
+            issues.extend(self.main_issues(context, amount_text, parent, parent_in_batch))
         unit_id = getattr(unit, "id", None)
         if unit_id is not None:
             if not context.can(
@@ -301,6 +325,32 @@ class ProjectsHandler:
             except ProblemError as error:
                 issues.append(Issue("budget_amount", "workflow_not_set_up", str(error.detail)))
         return issues
+
+    def main_issues(
+        self, context: RowContext, amount_text: str, parent: ProjectRead | None, in_batch: bool
+    ) -> list[Issue]:
+        """A child draws its budget from the main project when approved, so the main project
+        must already hold the funds: one listed in this file is only submitted, not funded."""
+        if in_batch:
+            return [
+                Issue(
+                    "budget_amount",
+                    "main_not_funded",
+                    "The main project is in this file, so it holds no funds until it is "
+                    "approved. Import this child after the main project is approved.",
+                )
+            ]
+        try:
+            amount = Decimal(amount_text)
+        except ArithmeticError:
+            return []  # the amount column already carries the issue
+        if parent is None or amount <= 0:
+            return []
+        try:
+            ProjectService(context.connection, context.scope).check_main_funds(parent.id, amount)
+        except ProblemError as error:
+            return [Issue("budget_amount", "insufficient_budget", str(error.detail))]
+        return []
 
     def apply_row(
         self, context: RowContext, plan: RowPlan, values: dict[str, object]

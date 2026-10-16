@@ -94,16 +94,24 @@ def fund(wiring, project_id, amount):
 
 
 def entries(wiring, project_id):
-    return wiring[0][0].execute(
-        "SELECT entry_type, amount FROM ledger_entry WHERE project_id=%s ORDER BY id",
-        (project_id,),
-    ).fetchall()
+    return (
+        wiring[0][0]
+        .execute(
+            "SELECT entry_type, amount FROM ledger_entry WHERE project_id=%s ORDER BY id",
+            (project_id,),
+        )
+        .fetchall()
+    )
 
 
 def balance(wiring, project_id):
-    return wiring[0][0].execute(
-        "SELECT allocated, available FROM project_balance WHERE project_id=%s", (project_id,)
-    ).fetchone()
+    return (
+        wiring[0][0]
+        .execute(
+            "SELECT allocated, available FROM project_balance WHERE project_id=%s", (project_id,)
+        )
+        .fetchone()
+    )
 
 
 def test_standalone_approval_allocates_once_and_rejection_posts_nothing(wiring):
@@ -130,9 +138,11 @@ def test_child_approval_transfers_from_main_with_both_legs(wiring):
     assert entries(wiring, main.id)[-1] == ("transfer", Decimal("-400.0000"))
     assert balance(wiring, main.id)[1] == Decimal("600.0000")
     assert balance(wiring, child.id) == (Decimal("400.0000"), Decimal("400.0000"))
-    total = wiring[0][0].execute(
-        "SELECT sum(amount) FROM ledger_entry WHERE entry_type='transfer'"
-    ).fetchone()[0]
+    total = (
+        wiring[0][0]
+        .execute("SELECT sum(amount) FROM ledger_entry WHERE entry_type='transfer'")
+        .fetchone()[0]
+    )
     assert total == 0
 
 
@@ -413,10 +423,110 @@ def test_patch_route_sets_budget_and_sponsors_with_if_match(project_db):
     db = project_db
     draft = service(db).create(body(unit(db)))
     payload = {"budget": {"amount": "75", "currency": "USD"}, "sponsor_ids": [str(db.actor_id)]}
-    patched = request(
-        db, "PATCH", f"/{draft.id}", json=payload, headers={"If-Match": "1"}
-    )
+    patched = request(db, "PATCH", f"/{draft.id}", json=payload, headers={"If-Match": "1"})
     assert patched.status_code == 200, patched.text
     assert patched.json()["requested_budget"] == "75.0000"
     stale = request(db, "PATCH", f"/{draft.id}", json=payload, headers={"If-Match": "1"})
     assert stale.status_code == 409
+
+
+def test_approval_refusal_for_a_short_main_project_carries_no_figures(wiring):
+    publish(wiring)
+    main = create(wiring, "Main", "1000")
+    decision(wiring, submit(wiring, main))
+    kids = [create(wiring, f"Kid {n}", "700", parent_id=main.id) for n in (1, 2)]
+    instances = [submit(wiring, kid) for kid in kids]
+    decision(wiring, instances[0])
+    with pytest.raises(ProblemError) as error:
+        decision(wiring, instances[1])
+    assert error.value.code == ErrorCode.INSUFFICIENT_BUDGET
+    assert error.value.checks == {"problem": "insufficient_budget"}
+
+
+def foreign_user(db):
+    """A real member of tenant B."""
+    from tests.authz.test_resolver import insert_identity, service_for
+
+    user = insert_identity(db, "tenant-b")
+    with service_for(db, Scope(db.org_b), "tenant-b-grant") as identity:
+        role = identity.create_role("b-reader", "B reader")
+        identity.grant_permission(role.id, "project.read")
+        from flo.modules.identity.models import AuthorizationTarget
+
+        identity.grant_role(user, role.id, AuthorizationTarget.organization(db.org_b))
+    return user
+
+
+def test_ten_010_foreign_sponsor_and_foreign_main_project_never_reach_funds(project_db):
+    from tests.projects.conftest import body, service, unit
+    from tests.projects.test_projects import foreign_project, request
+
+    db = project_db
+    bu = unit(db)
+    stranger = foreign_user(db)
+    other = foreign_project(db)
+    budget = {"amount": "100", "currency": "USD"}
+    # Tenant B's user cannot be named a sponsor: a field error, on create and on PATCH.
+    create_body = body(bu, budget=budget, sponsor_ids=[stranger]).model_dump(mode="json")
+    refused = request(db, "POST", json=create_body)
+    assert refused.status_code == 422
+    assert refused.json()["errors"][0]["field"] == "sponsor_ids"
+    draft = service(db).create(body(bu))
+    patched = request(
+        db,
+        "PATCH",
+        f"/{draft.id}",
+        json={"sponsor_ids": [str(stranger)]},
+        headers={"If-Match": "1"},
+    )
+    assert patched.status_code == 422 and patched.json()["errors"][0]["field"] == "sponsor_ids"
+    # Tenant B's project as the main project: 404, never a funds answer.
+    child = body(bu, parent_id=other.id, budget=budget).model_dump(mode="json")
+    missing = request(db, "POST", json=child)
+    assert missing.status_code == 404
+    assert "insufficient" not in missing.text.lower() and "checks" not in missing.json()
+    # Tenant B's project id with a budget on PATCH: 404 as well.
+    foreign_patch = request(
+        db, "PATCH", f"/{other.id}", json={"budget": budget}, headers={"If-Match": "1"}
+    )
+    assert foreign_patch.status_code == 404
+
+
+def test_lookup_gated_scoped_searchable(project_db):
+    from tests.authz.test_effective_access import grant_permissions
+    from tests.authz.test_resolver import insert_identity
+    from tests.projects.conftest import body, service, unit
+    from tests.projects.test_projects import foreign_project, request
+
+    db = project_db
+    bu = unit(db)
+    foreign_unit = unit(db, "FB", org=db.org_b)
+    main = service(db).create(body(bu).model_copy(update={"name": "Plant expansion"}))
+    db.connection.execute("UPDATE project SET status='active' WHERE id=%s", (main.id,))
+    foreign_project(db)
+    stranger = foreign_user(db)
+    creator = insert_identity(db, "creator")
+    grant_permissions(db, creator, "project.create", "project.read")
+    url = f"/lookups/people?bu_id={bu.id}&q=creator"
+    people = request(db, "GET", url, viewer=creator)
+    assert people.status_code == 200, people.text
+    assert [r["label"] for r in people.json()["rows"]] == [
+        r["label"] for r in people.json()["rows"] if "creator" in r["label"]
+    ] and people.json()["rows"]
+    assert (
+        str(stranger)
+        not in request(db, "GET", f"/lookups/people?bu_id={bu.id}", viewer=creator).text
+    )
+    projects = request(db, "GET", f"/lookups/main_projects?bu_id={bu.id}&q=Plant", viewer=creator)
+    assert [r["value"] for r in projects.json()["rows"]] == [str(main.id)]
+    assert request(
+        db, "GET", f"/lookups/main_projects?bu_id={bu.id}&q=zzz", viewer=creator
+    ).json() == {"rows": []}
+    # No project.create: 403. A foreign unit: 404.
+    reader = insert_identity(db, "reader")
+    grant_permissions(db, reader, "project.read")
+    assert request(db, "GET", url, viewer=reader).status_code == 403
+    assert (
+        request(db, "GET", f"/lookups/people?bu_id={foreign_unit.id}", viewer=creator).status_code
+        == 404
+    )

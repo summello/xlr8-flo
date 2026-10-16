@@ -20,6 +20,7 @@ from flo.modules.org.service import OrgService
 from flo.modules.projects.schemas import (
     ChildrenPage,
     Direction,
+    LookupRows,
     MilestoneCreate,
     MilestonePatch,
     MilestoneRead,
@@ -55,6 +56,11 @@ def create_target(body: ProjectCreate, connection: Connection) -> TargetProtocol
     return cast(TargetProtocol, AuthorizationTarget(ScopeType.BU, unit.id))
 
 
+def lookup_target(bu_id: UUID, connection: Connection) -> TargetProtocol:
+    unit = OrgService(connection, current_scope()).get_unit(bu_id)  # 404 for a foreign unit
+    return cast(TargetProtocol, AuthorizationTarget(ScopeType.BU, unit.id))
+
+
 def project_target(id: UUID, connection: Connection) -> TargetProtocol:
     project = ProjectService(connection, current_scope()).get(id)
     return cast(
@@ -87,6 +93,40 @@ SubstituteContext = Annotated[
     AuthorizationContext, Depends(require("master_code.substitute", project_target))
 ]
 ListContext = Annotated[AuthorizationContext, Depends(require("project.read", organization_target))]
+
+
+LookupContext = Annotated[AuthorizationContext, Depends(require("project.create", lookup_target))]
+
+
+# Registered before "/{id}" so "lookups" is never parsed as a project id.
+@router.get("/lookups/{kind}", response_model=LookupRows)
+def lookups(
+    kind: Literal["main_projects", "people"],
+    bu_id: UUID,
+    context: LookupContext,
+    connection: Connection,
+    request: Request,
+    q: str = "",
+    limit: Annotated[int, Query(ge=1, le=50)] = 20,
+) -> LookupRows:
+    """Options for the Create Project pickers; gated on project.create in the chosen unit."""
+    service = ProjectService(connection, current_scope(), context.user_id)
+    if kind == "people":
+        return LookupRows(rows=service.lookup_people(q, limit))
+    return LookupRows(
+        rows=service.lookup_projects(
+            q,
+            limit,
+            lambda id: permits(
+                request,
+                "project.read",
+                cast(
+                    TargetProtocol,
+                    AuthorizationTarget(ScopeType.PROJECT, id, "project", id),
+                ),
+            ),
+        )
+    )
 
 
 @router.post("", status_code=201, response_model=ProjectRead, dependencies=[Depends(parent_read)])

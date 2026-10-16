@@ -147,6 +147,17 @@ class ProjectRead(BaseModel):
         return format(value, "f") if isinstance(value, Decimal) else value
 
 
+class LookupOption(BaseModel):
+    value: str
+    label: str
+    disabled: bool = False
+    note: str | None = None
+
+
+class LookupRows(BaseModel):
+    rows: list[LookupOption]
+
+
 class ProjectPage(BaseModel):
     total: int
     rows: list[ProjectRead]

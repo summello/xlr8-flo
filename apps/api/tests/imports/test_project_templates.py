@@ -907,3 +907,62 @@ def test_budget_row_without_a_published_project_workflow_is_an_error(concrete):
             assert "workflow_not_set_up" in {i["code"] for i in preview[0]["issues"]}
 
     asyncio.run(scenario())
+
+
+def issues_of(preview):
+    return [{(i["code"], i["severity"]) for i in row["issues"]} for row in preview]
+
+
+def test_child_rows_name_their_row_when_the_main_project_cannot_fund_them(concrete):
+    conn, _, _, actor, _, _ = concrete
+    publish((concrete, None, None), "project")
+    email = conn.execute("SELECT email FROM identity WHERE id=%s", (actor,)).fetchone()[0]
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            # The main project is in the same file: it is only submitted, never funded first.
+            rows = [
+                project("MAIN", budget_amount="1000", sponsor_emails=email),
+                project(
+                    "KID", parent_external_ref="MAIN", budget_amount="10", sponsor_emails=email
+                ),
+            ]
+            _, batch, preview = await validate(browser, "projects", rows)
+            assert batch["counts"]["error"] == 1, preview
+            assert ("main_not_funded", "error") in issues_of(preview)[1]
+            assert preview[0]["action"] == "create" and preview[1]["action"] == "error"
+            # An existing main project holding no funds: a per-row funds issue, not a batch abort.
+            plain, _, _ = await validate(browser, "projects", [project("HELD")])
+            await commit(browser, plain)
+            rows = [
+                project(
+                    "KID2", parent_external_ref="HELD", budget_amount="10", sponsor_emails=email
+                )
+            ]
+            _, batch, preview = await validate(browser, "projects", rows)
+            assert batch["counts"]["error"] == 1, preview
+            assert ("insufficient_budget", "error") in issues_of(preview)[0]
+
+    asyncio.run(scenario())
+
+
+def test_budget_columns_on_an_update_row_warn_and_are_not_applied(concrete):
+    conn, org, _, actor, _, _ = concrete
+    email = conn.execute("SELECT email FROM identity WHERE id=%s", (actor,)).fetchone()[0]
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            first, _, _ = await validate(browser, "projects", [project("EXISTING")])
+            await commit(browser, first)
+            rows = [project("EXISTING", name="Renamed", budget_amount="-5", sponsor_emails=email)]
+            id, batch, preview = await validate(browser, "projects", rows)
+            assert ("budget_not_applied", "warning") in issues_of(preview)[0]
+            assert batch["counts"]["error"] == 0 and preview[0]["action"] == "update"
+            await commit(browser, id)
+
+    asyncio.run(scenario())
+    row = get_by_external_ref(conn, Scope(org), "EXISTING")
+    assert row.name == "Renamed" and row.requested_budget is None
+    assert ProjectService(conn, Scope(org)).sponsors(row.id) == []

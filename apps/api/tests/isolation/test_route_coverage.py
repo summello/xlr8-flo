@@ -489,6 +489,10 @@ COVERED = {
         "/api/v1/projects/{id}/tree",
     ): "projects/test_risk_indicators.py::test_foreign_dashboard_reads",
     ("POST", "/api/v1/projects"): "projects/test_projects.py::test_create_foreign_bu",
+    (
+        "GET",
+        "/api/v1/projects/lookups/{kind}",
+    ): "projects/test_project_budget.py::test_lookup_gated_scoped_searchable",
     ("GET", "/api/v1/projects"): "projects/test_projects.py::test_list_tenant_isolation",
     ("GET", "/api/v1/projects/{id}"): "projects/test_projects.py::test_get_foreign_project",
     ("PATCH", "/api/v1/projects/{id}"): "projects/test_projects.py::test_patch_foreign_project",

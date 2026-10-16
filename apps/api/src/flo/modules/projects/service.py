@@ -47,6 +47,7 @@ from flo.modules.projects.schemas import (
     BudgetRequest,
     ChildrenPage,
     Direction,
+    LookupOption,
     MilestoneCreate,
     MilestonePatch,
     MilestoneRead,
@@ -68,6 +69,17 @@ from flo.modules.projects.schemas import (
     TreeNode,
     TreeRead,
 )
+
+
+def main_project_short() -> ProblemError:
+    """The refusal for a child the main project cannot cover; it carries no balance figures
+    (they need ledger.read, which neither the creator nor the approver necessarily holds)."""
+    return ProblemError(
+        ErrorCode.INSUFFICIENT_BUDGET,
+        detail="The main project cannot cover this budget. Lower the budget or ask "
+        "for funds to be added to the main project.",
+        checks={"problem": "insufficient_budget"},
+    )
 
 
 class ProjectService:
@@ -285,7 +297,13 @@ class ProjectService:
         if row["requested_budget"] is None or self.actor_id is None:
             return
         from flo.modules.budget.schemas import AllocationCreate
-        from flo.modules.budget.service import allocate, lock_balance, post_entry, post_legs
+        from flo.modules.budget.service import (
+            InsufficientBudget,
+            allocate,
+            lock_balance,
+            post_entry,
+            post_legs,
+        )
         from flo.modules.org.service import today
 
         project_id = cast(UUID, row["id"])
@@ -312,16 +330,59 @@ class ProjectService:
                 f"The main project is in {parent.currency}, this project in {row['currency']}. "
                 "Use matching currencies.",
             )
-        post_legs(
-            self.connection,
-            self.scope,
-            body,
-            self.actor_id,
-            key,
-            [(parent, -body.amount, ":out"), (self.get(project_id), body.amount, ":in")],
-            allow_negative=False,
-            poster=post_entry,
-        )
+        try:
+            post_legs(
+                self.connection,
+                self.scope,
+                body,
+                self.actor_id,
+                key,
+                [(parent, -body.amount, ":out"), (self.get(project_id), body.amount, ":in")],
+                allow_negative=False,
+                poster=post_entry,
+            )
+        except InsufficientBudget as exc:
+            raise main_project_short() from exc
+
+    def lookup_projects(
+        self, q: str, limit: int, can_read: Callable[[UUID], bool]
+    ) -> list[LookupOption]:
+        """Active projects that can be a main project, filtered to those the caller may read."""
+        if not 1 <= limit <= 50:
+            raise invalid("limit", "Choose a limit from 1 to 50.")
+        # ponytail: filters the first 50 matches per call; add a resolver-side filter when an
+        # organization holds thousands of projects the caller cannot read.
+        page = self.list(q=q.strip(), status="active", page_size=50)
+        rows = []
+        for project in page.rows:
+            if not can_read(project.id):
+                continue
+            full = self.depth_of(project.id) >= 5
+            rows.append(
+                LookupOption(
+                    value=str(project.id),
+                    label=f"{project.number} {project.name}",
+                    disabled=full,
+                    note="at the five-level limit" if full else None,
+                )
+            )
+            if len(rows) == limit:
+                break
+        return rows
+
+    def lookup_people(self, q: str, limit: int) -> list[LookupOption]:
+        """Active members of the organization, matched by email, for naming sponsors."""
+        if not 1 <= limit <= 50:
+            raise invalid("limit", "Choose a limit from 1 to 50.")
+        escaped = q.strip().casefold().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            found = self.repo.execute(
+                "SELECT i.id,i.email FROM identity i WHERE i.status='active' AND EXISTS ("
+                "SELECT 1 FROM user_role r WHERE r.org_id=%(org_id)s AND r.user_id=i.id) "
+                "AND lower(i.email) LIKE %(like)s ORDER BY lower(i.email) LIMIT %(limit)s",
+                {"like": "%" + escaped + "%", "limit": limit},
+            ).fetchall()
+        return [LookupOption(value=str(r[0]), label=str(r[1])) for r in found]
 
     def check_main_funds(self, parent_id: UUID, amount: Decimal) -> None:
         """Advisory, unlocked: refuse a child whose main project cannot cover it now.
@@ -332,12 +393,7 @@ class ProjectService:
         from flo.modules.budget.service import get_balance
 
         if get_balance(self.connection, self.scope, parent_id).available < amount:
-            raise ProblemError(
-                ErrorCode.INSUFFICIENT_BUDGET,
-                detail="The main project cannot cover this budget. Lower the budget or ask "
-                "for funds to be added to the main project.",
-                checks={"problem": "insufficient_budget"},
-            )
+            raise main_project_short()
 
     def _check_budget(
         self, budget: BudgetRequest | None, currency: str, parent_id: UUID | None
