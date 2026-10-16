@@ -530,3 +530,48 @@ def test_lookup_gated_scoped_searchable(project_db):
         request(db, "GET", f"/lookups/people?bu_id={foreign_unit.id}", viewer=creator).status_code
         == 404
     )
+
+
+def jpy_child(wiring, parent_id, name, budget=None):
+    db, row, _ = wiring
+    return ProjectService(db[0], Scope(db[1]), db[3]).create(
+        ProjectCreate(
+            bu_id=row.bu_id,
+            parent_id=parent_id,
+            name=name,
+            department_code="D",
+            ledger_account_code="L",
+            currency="JPY",
+            budget={"amount": budget, "currency": "JPY"} if budget else None,
+            sponsor_ids=[db[3]],
+        )
+    )
+
+
+def test_a_child_in_another_currency_than_its_main_project_is_refused_early(wiring):
+    publish(wiring)
+    db, _, _ = wiring
+    main = create(wiring, "Main", "1000")
+    decision(wiring, submit(wiring, main))
+    # JPY 900 would pass a bare numeric funds comparison against USD 1000 available.
+    for budget in ("900", None):
+        with pytest.raises(ProblemError) as error:
+            jpy_child(wiring, main.id, "Yen", budget)
+        assert error.value.checks == {"problem": "currency_mismatch"}
+        assert [e.field for e in error.value.errors] == ["parent_id"]
+    assert db[0].execute("SELECT count(*) FROM project WHERE name='Yen'").fetchone() == (0,)
+    # A draft whose currency no longer matches cannot be submitted (the submit check).
+    child = create(wiring, "Child", "50", parent_id=main.id)
+    db[0].execute("UPDATE project SET currency='JPY' WHERE id=%s", (child.id,))
+    with pytest.raises(ProblemError) as error:
+        submit(wiring, child)
+    assert error.value.checks == {"problem": "currency_mismatch"}
+    assert ProjectService(db[0], Scope(db[1])).get(child.id).status == "draft"
+    # PATCH applies the same check through the budget.
+    other = create(wiring, "Other", sponsors=True, parent_id=main.id)
+    db[0].execute("UPDATE project SET currency='JPY' WHERE id=%s", (other.id,))
+    with pytest.raises(ProblemError) as error:
+        ProjectService(db[0], Scope(db[1]), db[3]).update(
+            other.id, ProjectPatch(budget={"amount": "900", "currency": "JPY"}), "1"
+        )
+    assert error.value.checks == {"problem": "currency_mismatch"}

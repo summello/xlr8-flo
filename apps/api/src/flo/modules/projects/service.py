@@ -244,6 +244,7 @@ class ProjectService:
         if not self.sponsors(project_id):
             errors.append(("sponsor_ids", "Name at least one sponsor."))
         if not errors and row["parent_id"] is not None:
+            self.check_main_currency(cast(UUID, row["parent_id"]), cast(str, row["currency"]))
             self.check_main_funds(
                 cast(UUID, row["parent_id"]), cast(Decimal, row["requested_budget"])
             )
@@ -321,6 +322,9 @@ class ProjectService:
         if parent_id is None:
             allocate(self.connection, self.scope, project_id, body, self.actor_id, key)
             return
+        # Ascending id order fixes the lock order against every other funding command;
+        # post_entry also takes the FOR UPDATE lock before it validates availability, which is
+        # what gives lock-before-validate.
         for node_id in sorted((parent_id, project_id)):
             lock_balance(self.connection, self.scope, node_id)
         parent = self.get(parent_id)
@@ -395,6 +399,17 @@ class ProjectService:
         if get_balance(self.connection, self.scope, parent_id).available < amount:
             raise main_project_short()
 
+    def check_main_currency(self, parent_id: UUID, currency: str) -> None:
+        """A child draws from its main project, so both must hold the same currency."""
+        parent = self.get(parent_id)  # 404 for an unknown or foreign project
+        if parent.currency != currency:
+            raise invalid(
+                "parent_id",
+                f"The main project is in {parent.currency}, this project in {currency}. "
+                "Choose a main project in the same currency.",
+                "currency_mismatch",
+            )
+
     def _check_budget(
         self, budget: BudgetRequest | None, currency: str, parent_id: UUID | None
     ) -> None:
@@ -416,6 +431,7 @@ class ProjectService:
                 "amount_precision",
             )
         if parent_id is not None:
+            self.check_main_currency(parent_id, currency)
             self.check_main_funds(parent_id, budget.amount)
 
     def available_transitions(
@@ -513,6 +529,8 @@ class ProjectService:
             self._user("sponsor_id", body.sponsor_id)
             for sponsor in body.sponsor_ids:
                 self._user("sponsor_ids", sponsor)
+            if body.parent_id is not None:
+                self.check_main_currency(body.parent_id, body.currency)
             self._check_budget(body.budget, body.currency, body.parent_id)
             self._dates(body.planned_start, body.planned_end)
             created = self._insert_project(body, codes=codes, owner=owner, on_date=on_date)

@@ -176,6 +176,15 @@ class ProjectsHandler:
                         "external_ref", "permission_denied", f"No project permission for {ref!r}."
                     )
                 )
+        if project is None and parent is not None and parent.currency != currency:
+            issues.append(
+                Issue(
+                    "currency",
+                    "currency_mismatch",
+                    f"The main project is in {parent.currency}, this row in {currency}. "
+                    "Use the main project's currency.",
+                )
+            )
         if project is None:
             in_batch = bool(parent_ref) and parent is None and parent_ref in planned
             issues.extend(self.budget_issues(context, values, unit, currency, parent, in_batch))
@@ -327,7 +336,11 @@ class ProjectsHandler:
         return issues
 
     def main_issues(
-        self, context: RowContext, amount_text: str, parent: ProjectRead | None, in_batch: bool
+        self,
+        context: RowContext,
+        amount_text: str,
+        parent: ProjectRead | None,
+        in_batch: bool,
     ) -> list[Issue]:
         """A child draws its budget from the main project when approved, so the main project
         must already hold the funds: one listed in this file is only submitted, not funded."""

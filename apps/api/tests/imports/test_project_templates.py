@@ -966,3 +966,17 @@ def test_budget_columns_on_an_update_row_warn_and_are_not_applied(concrete):
     row = get_by_external_ref(conn, Scope(org), "EXISTING")
     assert row.name == "Renamed" and row.requested_budget is None
     assert ProjectService(conn, Scope(org)).sponsors(row.id) == []
+
+
+def test_child_row_in_another_currency_than_its_main_project_is_a_row_error(concrete):
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            first, _, _ = await validate(browser, "projects", [project("USDMAIN")])
+            await commit(browser, first)
+            rows = [project("YEN", parent_external_ref="USDMAIN", currency="JPY")]
+            _, batch, preview = await validate(browser, "projects", rows)
+            assert batch["counts"]["error"] == 1, preview
+            assert ("currency_mismatch", "error") in issues_of(preview)[0]
+
+    asyncio.run(scenario())
