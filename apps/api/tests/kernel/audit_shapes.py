@@ -50,5 +50,3 @@ def pytest_unconfigure(config: object) -> None:
     out = os.environ["AUDIT_SHAPES_OUT"]
     with open(out, "w") as handle:
         json.dump(sorted(SHAPES), handle)
-
-
