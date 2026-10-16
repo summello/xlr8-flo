@@ -1673,6 +1673,8 @@ epics:
           - VEN-012
         dep:
           - E12-S01
+          - E11-S02
+          - E11-S11
         st: todo
       - id: E12-S03
         t: RFQ lifecycle and post-publication versioning communicated to invitees
@@ -1723,6 +1725,7 @@ epics:
         dep:
           - E12-S04
           - E05-S05
+          - E12-S05
         st: todo
       - id: E12-S07
         t: Evaluation scoring with comments and conflict-of-interest declarations
