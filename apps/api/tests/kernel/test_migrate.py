@@ -1899,7 +1899,8 @@ def test_rfq_roundtrip_preserves_rows_and_down_returns_held_quantity(empty_datab
         requisition, line = uuid4(), uuid4()
         with tenant_transaction(conn, scope):
             conn.execute(
-                "INSERT INTO requisition(id,org_id,number,title,bu_id,requester_id,created_by,currency,standalone)"
+                "INSERT INTO requisition(id,org_id,number,title,bu_id,requester_id,created_by,"
+                "currency,standalone)"
                 " VALUES(%s,%s,'REQ-1','R',%s,%s,%s,'USD',true)",
                 (requisition, tenant.org_id, bu.id, actor, actor),
             )
