@@ -3785,6 +3785,48 @@
       },
       "recap": "Added append-only vendor_score and vendor_score_dispute tables (migration 0061), a vendors PerformanceMixin and five routes for scoring, listing, disputing, resolving and per-category averages over current rows. An upheld dispute writes a superseding adjustment in one transaction; the original stays.",
       "title": "Performance scoring across quality, price, delivery, service, with dispute history"
+    },
+    {
+      "story": "E11-S17",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "aa1bb286-2f07-46b6-bf1e-01dcb491f0d1",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S17",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1457c-66dd-7f51-bd89-1763a3fbd635",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds /admin/vendor-questionnaires: versions list, draft editor with typed questions, points, Move Up/Down buttons that keep focus, a server-computed weights Signal, publish dialog with 409 weights_total summary, read-only published view with Copy to New Draft, and a closed request-form preview with no weights.",
+      "title": "Questionnaire administration screen"
     }
   ]
 }
