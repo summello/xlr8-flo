@@ -1,5 +1,6 @@
 """Parse and authorize vendor operations (VEN-001, VEN-008, VEN-009)."""
 
+from datetime import date
 from typing import Annotated, cast
 from uuid import UUID
 
@@ -20,11 +21,18 @@ from flo.modules.vendors.schemas import (
     ContactPatch,
     ContactRead,
     DisableCreate,
+    DisputeCreate,
+    DisputeRead,
+    DisputeResolve,
     DocState,
     DocumentCreate,
     DocumentReject,
     DocumentReplace,
     OnboardingRead,
+    PerformanceRead,
+    ScoreCreate,
+    ScorePage,
+    ScoreRead,
     VendorCreate,
     VendorDetail,
     VendorPage,
@@ -53,6 +61,9 @@ ApproveContext = Annotated[
 ]
 RequestContext = Annotated[
     AuthorizationContext, Depends(require("vendor.request", organization_target))
+]
+ScoreOrdersContext = Annotated[
+    AuthorizationContext, Depends(require("purchase_order.view", organization_target))
 ]
 UnitEditContext = Annotated[AuthorizationContext, Depends(require("vendor.edit", unit_target))]
 
@@ -214,3 +225,63 @@ def put_onboarding_answers(
     )
     response.headers["ETag"] = f'"{request.row_version}"'
     return request
+
+
+@router.get("/{id}/scores", response_model=ScorePage)
+def list_scores(
+    id: UUID,
+    context: ViewContext,
+    connection: Connection,
+    category: str | None = None,
+    start: Annotated[date | None, Query(alias="from")] = None,
+    end: Annotated[date | None, Query(alias="to")] = None,
+    cursor: str | None = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+) -> ScorePage:
+    return VendorService(connection, current_scope(), context.user_id).list_scores(
+        id, category, start, end, cursor, limit
+    )
+
+
+@router.post("/{id}/scores", status_code=201, response_model=ScoreRead)
+def add_score(
+    id: UUID,
+    body: ScoreCreate,
+    context: ViewContext,
+    orders: ScoreOrdersContext,
+    connection: Connection,
+) -> ScoreRead:
+    """Purchasing users score: they hold purchase_order.view and vendor.view (E11-S07)."""
+    return VendorService(connection, current_scope(), context.user_id).add_score(id, body)
+
+
+@router.post("/{id}/scores/{sid}/disputes", status_code=201, response_model=DisputeRead)
+def dispute_score(
+    id: UUID, sid: UUID, body: DisputeCreate, context: EditContext, connection: Connection
+) -> DisputeRead:
+    return VendorService(connection, current_scope(), context.user_id).dispute_score(id, sid, body)
+
+
+@router.post("/{id}/scores/{sid}/disputes/{did}/resolve", response_model=DisputeRead)
+def resolve_dispute(
+    id: UUID,
+    sid: UUID,
+    did: UUID,
+    body: DisputeResolve,
+    context: ApproveContext,
+    connection: Connection,
+) -> DisputeRead:
+    return VendorService(connection, current_scope(), context.user_id).resolve_dispute(
+        id, sid, did, body
+    )
+
+
+@router.get("/{id}/performance", response_model=PerformanceRead)
+def performance(
+    id: UUID,
+    context: ViewContext,
+    connection: Connection,
+    start: Annotated[date | None, Query(alias="from")] = None,
+    end: Annotated[date | None, Query(alias="to")] = None,
+) -> PerformanceRead:
+    return VendorService(connection, current_scope(), context.user_id).performance(id, start, end)
