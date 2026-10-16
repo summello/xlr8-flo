@@ -26,21 +26,16 @@ class MigrationConnection(Protocol):
     def execute(self, query: str) -> object: ...
 
 
-def _tenant_table(name: str) -> str:
-    return f"""
-ALTER TABLE {name} ENABLE ROW LEVEL SECURITY;
-ALTER TABLE {name} FORCE ROW LEVEL SECURITY;
-CREATE POLICY tenant_isolation ON {name}
- USING(org_id=current_setting('app.org_id')::uuid) WITH CHECK(org_id=current_setting('app.org_id')::uuid);
-"""
-
 
 UPGRADE_SQL = f"""
 CREATE TABLE vendor_questionnaire (
  org_id uuid PRIMARY KEY REFERENCES organization(id),
  created_at timestamptz NOT NULL DEFAULT now()
 );
-{_tenant_table("vendor_questionnaire")}
+ALTER TABLE vendor_questionnaire ENABLE ROW LEVEL SECURITY;
+ALTER TABLE vendor_questionnaire FORCE ROW LEVEL SECURITY;
+CREATE POLICY tenant_isolation ON vendor_questionnaire
+ USING(org_id=current_setting('app.org_id')::uuid) WITH CHECK(org_id=current_setting('app.org_id')::uuid);
 CREATE TABLE vendor_questionnaire_version (
  id uuid PRIMARY KEY, org_id uuid NOT NULL REFERENCES vendor_questionnaire(org_id),
  number int NOT NULL CHECK (number >= 1),
@@ -54,7 +49,10 @@ CREATE TABLE vendor_questionnaire_version (
 );
 CREATE UNIQUE INDEX vendor_questionnaire_one_published
  ON vendor_questionnaire_version(org_id) WHERE status = 'published';
-{_tenant_table("vendor_questionnaire_version")}
+ALTER TABLE vendor_questionnaire_version ENABLE ROW LEVEL SECURITY;
+ALTER TABLE vendor_questionnaire_version FORCE ROW LEVEL SECURITY;
+CREATE POLICY tenant_isolation ON vendor_questionnaire_version
+ USING(org_id=current_setting('app.org_id')::uuid) WITH CHECK(org_id=current_setting('app.org_id')::uuid);
 CREATE TABLE vendor_question (
  id uuid PRIMARY KEY, org_id uuid NOT NULL REFERENCES organization(id),
  version_id uuid NOT NULL, position int NOT NULL CHECK (position >= 1),
@@ -69,7 +67,10 @@ CREATE TABLE vendor_question (
  UNIQUE (version_id, position) DEFERRABLE INITIALLY DEFERRED,
  FOREIGN KEY (org_id, version_id) REFERENCES vendor_questionnaire_version(org_id, id)
 );
-{_tenant_table("vendor_question")}
+ALTER TABLE vendor_question ENABLE ROW LEVEL SECURITY;
+ALTER TABLE vendor_question FORCE ROW LEVEL SECURITY;
+CREATE POLICY tenant_isolation ON vendor_question
+ USING(org_id=current_setting('app.org_id')::uuid) WITH CHECK(org_id=current_setting('app.org_id')::uuid);
 CREATE TABLE vendor_onboarding (
  vendor_id uuid PRIMARY KEY, org_id uuid NOT NULL REFERENCES organization(id),
  version_id uuid NOT NULL,
@@ -81,7 +82,10 @@ CREATE TABLE vendor_onboarding (
  FOREIGN KEY (org_id, vendor_id) REFERENCES vendor(org_id, id),
  FOREIGN KEY (org_id, version_id) REFERENCES vendor_questionnaire_version(org_id, id)
 );
-{_tenant_table("vendor_onboarding")}
+ALTER TABLE vendor_onboarding ENABLE ROW LEVEL SECURITY;
+ALTER TABLE vendor_onboarding FORCE ROW LEVEL SECURITY;
+CREATE POLICY tenant_isolation ON vendor_onboarding
+ USING(org_id=current_setting('app.org_id')::uuid) WITH CHECK(org_id=current_setting('app.org_id')::uuid);
 
 -- A published or retired version, and its questions, never change again (CUS-007).
 CREATE FUNCTION vendor_question_guard() RETURNS trigger LANGUAGE plpgsql AS $guard$
