@@ -3,7 +3,7 @@
 from typing import Annotated, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, Header, Query, Response
 from fastapi.responses import JSONResponse
 
 from flo.api.admin_users import organization_target
@@ -86,8 +86,12 @@ def create_vendor(
 
 
 @router.get("/{id}", response_model=VendorDetail)
-def get_vendor(id: UUID, context: ViewContext, connection: Connection) -> VendorDetail:
-    return VendorService(connection, current_scope(), context.user_id).get(id)
+def get_vendor(
+    id: UUID, context: ViewContext, connection: Connection, response: Response
+) -> VendorDetail:
+    detail = VendorService(connection, current_scope(), context.user_id).get(id)
+    response.headers["ETag"] = f'"{detail.sensitive.version}"'  # the sensitive record's version
+    return detail
 
 
 @router.patch("/{id}", response_model=VendorDetail)
@@ -184,7 +188,9 @@ def reveal_sensitive(
     id: UUID, body: SensitiveReveal, context: RevealContext, connection: Connection
 ) -> JSONResponse:
     values = VendorService(connection, current_scope(), context.user_id).reveal_sensitive(id, body)
-    return JSONResponse(values.model_dump(), headers={"Cache-Control": "no-store"})
+    return JSONResponse(
+        values.model_dump(), headers={"Cache-Control": "no-store", "ETag": f'"{values.version}"'}
+    )
 
 
 @router.put("/{id}/sensitive", response_model=SensitiveWritten)
@@ -194,5 +200,11 @@ def put_sensitive(
     edit: EditContext,
     context: RevealContext,
     connection: Connection,
+    response: Response,
+    version: Annotated[str | None, Header(alias="If-Match")] = None,
 ) -> SensitiveWritten:
-    return VendorService(connection, current_scope(), context.user_id).put_sensitive(id, body)
+    written = VendorService(connection, current_scope(), context.user_id).put_sensitive(
+        id, body, version
+    )
+    response.headers["ETag"] = f'"{written.version}"'
+    return written

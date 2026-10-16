@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import date, datetime
 from typing import Literal
 from uuid import UUID
@@ -78,6 +79,7 @@ class SensitiveMasked(BaseModel):
     bank_name: str | None = None
     bank_account: str | None = None
     bank_routing: str | None = None
+    version: int = 0  # the ETag of the sensitive record; 0 until one is written
 
 
 class VendorRead(BaseModel):
@@ -217,12 +219,27 @@ class DocState(BaseModel):
 
 
 type RevealField = Literal["tax_id", "bank"]
+type RevealReason = Literal["verify_payment", "vendor_request", "audit_support", "other"]
+DIGIT_RUN = re.compile(r"\d{6,}")
 
 
 class SensitiveReveal(BaseModel):
+    """A reason code from a closed list; the note is free text that must hold no figures."""
+
     model_config = ConfigDict(extra="forbid")
     fields: list[RevealField] = Field(min_length=1, max_length=2)
-    reason: str | None = Field(default=None, max_length=500)
+    reason_code: RevealReason
+    note: str | None = Field(default=None, max_length=200)
+
+    @field_validator("note")
+    @classmethod
+    def _no_figures(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip() or None
+        if value and DIGIT_RUN.search(re.sub(r"[\s\-._/]", "", value)):
+            raise ValueError("Leave account and tax numbers out of the note.")
+        return value
 
 
 class SensitivePut(BaseModel):
@@ -237,8 +254,11 @@ class SensitivePut(BaseModel):
 
 
 class SensitiveValues(SensitivePut):
-    """Clear values, returned only by the audited reveal and the write."""
+    """Clear values, returned only by the audited reveal."""
+
+    version: int = 0
 
 
 class SensitiveWritten(BaseModel):
     changed: list[str]
+    version: int

@@ -28,6 +28,7 @@ CREATE TABLE vendor_sensitive (
  bank_account_name text CHECK (char_length(bank_account_name) BETWEEN 1 AND 200),
  bank_account_number text CHECK (char_length(bank_account_number) BETWEEN 1 AND 64),
  bank_routing text CHECK (char_length(bank_routing) BETWEEN 1 AND 64),
+ version integer NOT NULL DEFAULT 1,
  updated_by uuid REFERENCES identity(id),
  updated_at timestamptz NOT NULL DEFAULT now(),
  PRIMARY KEY (org_id, vendor_id),
@@ -44,8 +45,12 @@ ALTER TABLE {TRACK} FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation ON {TRACK}
  USING(org_id=current_setting('app.org_id')::uuid) WITH CHECK(org_id=current_setting('app.org_id')::uuid);
 
-INSERT INTO permission(code) VALUES ('{CODE}') ON CONFLICT DO NOTHING;
-DO $$ DECLARE org uuid; BEGIN
+DO $$ DECLARE org uuid; added integer; BEGIN
+ INSERT INTO permission(code) VALUES ('{CODE}') ON CONFLICT DO NOTHING;
+ GET DIAGNOSTICS added = ROW_COUNT;
+ -- the tracking table is tenant-scoped, so whether this migration inserted the permission
+ -- itself is kept in its comment
+ IF added > 0 THEN COMMENT ON TABLE {TRACK} IS 'permission_inserted'; END IF;
  FOR org IN SELECT DISTINCT org_id FROM role LOOP
   PERFORM set_config('app.org_id',org::text,true);
   WITH ins AS (INSERT INTO role_permission(org_id,role_id,permission_code)
@@ -59,15 +64,18 @@ END $$;
 
 # irreversible: down drops vendor_sensitive and the tax and banking values in it.
 DOWNGRADE_SQL = f"""
-DO $$ DECLARE org uuid; BEGIN
+DO $$ DECLARE org uuid; inserted boolean;
+BEGIN
+ inserted := coalesce(obj_description('{TRACK}'::regclass, 'pg_class'), '') = 'permission_inserted';
  FOR org IN SELECT DISTINCT org_id FROM role LOOP
   PERFORM set_config('app.org_id',org::text,true);
   DELETE FROM role_permission rp USING {TRACK} t
    WHERE t.org_id=org AND rp.org_id=org AND rp.role_id=t.role_id AND rp.permission_code='{CODE}';
-  DELETE FROM role_permission WHERE permission_code='{CODE}';
+  -- a permission this migration created has no grants that predate it
+  IF inserted THEN DELETE FROM role_permission WHERE permission_code='{CODE}'; END IF;
  END LOOP;
+ IF inserted THEN DELETE FROM permission WHERE code='{CODE}'; END IF;
 END $$;
-DELETE FROM permission WHERE code='{CODE}';
 DROP TABLE {TRACK};
 DROP TABLE vendor_sensitive;
 """

@@ -185,14 +185,29 @@ class VendorService(DocumentsMixin):
         }
 
     def reveal_sensitive(self, id: UUID, body: SensitiveReveal) -> SensitiveValues:
-        """An audited read: the event names the fields, never the values (AUD-006)."""
+        """An audited read: the event names the fields and a reason code, never values."""
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             self._row(id)
+            if body.note and sensitive.leaks(self.repo, id, body.note):
+                raise invalid("note", "Leave account and tax numbers out of the note.")
             groups = list(dict.fromkeys(body.fields))
-            self._audit("vendor.sensitive.reveal", id, None, {"fields": groups}, reason=body.reason)
+            reason = body.reason_code + (f": {body.note}" if body.note else "")
+            self._audit("vendor.sensitive.reveal", id, None, {"fields": groups}, reason=reason)
             return SensitiveValues.model_validate(sensitive.reveal(self.repo, id, groups))
 
-    def put_sensitive(self, id: UUID, body: SensitivePut) -> SensitiveWritten:
+    def put_sensitive(self, id: UUID, body: SensitivePut, version: str | None) -> SensitiveWritten:
+        if version is None:
+            raise ProblemError(
+                ErrorCode.BAD_REQUEST,
+                detail="Supply If-Match with the sensitive record version.",
+                checks={"problem": "if_match_required"},
+            )
+        try:
+            expected = int(version.strip().strip('"'))
+        except ValueError as exc:
+            raise ProblemError(
+                ErrorCode.BAD_REQUEST, detail="If-Match must contain an integer version."
+            ) from exc
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             if (
                 self.repo.execute(
@@ -202,9 +217,15 @@ class VendorService(DocumentsMixin):
                 is None
             ):
                 raise ProblemError(ErrorCode.NOT_FOUND)
-            changed = sensitive.put(self.repo, id, body.model_dump(), self.actor_id)
+            written = sensitive.put(self.repo, id, body.model_dump(), self.actor_id, expected)
+            if written is None:
+                raise conflict(
+                    "stale_version",
+                    "The tax and banking record changed. Reload it and retry your update.",
+                )
+            changed, new_version = written
             self._audit("vendor.sensitive.update", id, None, {"fields": changed})
-            return SensitiveWritten(changed=changed)
+            return SensitiveWritten(changed=changed, version=new_version)
 
     def available_in(self, vendor_id: UUID, unit_id: UUID) -> bool:
         """The one implementation of the availability rule; eligibility (E11-S11) calls this."""

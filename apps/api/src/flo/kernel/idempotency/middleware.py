@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from collections.abc import Callable
 from contextlib import AbstractContextManager
 from hashlib import sha256
@@ -41,6 +42,13 @@ IDEMPOTENCY_KEY_EXEMPT_PATHS = frozenset(
 
 IDEMPOTENCY_BYPASS_PATHS = frozenset(
     {"/api/v1/imports", "/api/v1/auth/organization", "/api/v1/invitations/accept"}
+)
+
+# Reads that must never be stored or replayed: a stored response would copy cleartext into
+# idempotency_key and a replay would skip authorization and audit (E11-S04 vendor reveal).
+IDEMPOTENCY_BYPASS_PATTERN = re.compile(
+    r"^/api/v1/vendors/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
+    r"[0-9a-fA-F]{12}/sensitive/reveal$"
 )
 
 _logger = logging.getLogger(__name__)
@@ -224,7 +232,8 @@ class IdempotencyMiddleware:
             return
 
         # D-M1-19 and E05-S12: uploads and session selections must never replay.
-        if str(scope.get("path", "")).rstrip("/") in IDEMPOTENCY_BYPASS_PATHS:
+        path = str(scope.get("path", "")).rstrip("/")
+        if path in IDEMPOTENCY_BYPASS_PATHS or IDEMPOTENCY_BYPASS_PATTERN.match(path):
             await self._app(scope, receive, send)
             return
 

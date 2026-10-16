@@ -2132,3 +2132,41 @@ def test_vendor_sensitive_roundtrip_grants_and_removes_only_what_it_added(empty_
         mig.upgrade(conn)
         with tenant_transaction(conn, scope):
             assert conn.execute("SELECT count(*) FROM vendor_sensitive").fetchone() == (0,)
+
+
+def test_vendor_sensitive_downgrade_keeps_a_preexisting_permission_and_its_grants(
+    empty_database,
+):
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from tests.org.test_bootstrap import create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261014_0059"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261014_0060")
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        tenant = create(conn)
+        scope = Scope(tenant.org_id)
+        conn.execute("INSERT INTO permission(code) VALUES ('vendor.sensitive.reveal')")
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO role_permission(org_id,role_id,permission_code) "
+                "SELECT org_id,id,'vendor.sensitive.reveal' FROM role WHERE code='auditor'"
+            )
+
+        def holders():
+            with tenant_transaction(conn, scope):
+                return conn.execute(
+                    "SELECT r.code FROM role_permission p JOIN role r ON r.id=p.role_id "
+                    "WHERE p.permission_code='vendor.sensitive.reveal' ORDER BY 1"
+                ).fetchall()
+
+        mig.upgrade(conn)
+        assert ("vendor-manager",) in holders() and ("auditor",) in holders()
+        mig.downgrade(conn)
+        assert holders() == [("auditor",)]  # only what the migration added is gone
+        assert conn.execute(
+            "SELECT count(*) FROM permission WHERE code='vendor.sensitive.reveal'"
+        ).fetchone() == (1,)
