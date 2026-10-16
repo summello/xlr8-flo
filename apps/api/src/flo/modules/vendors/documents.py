@@ -31,7 +31,8 @@ SEPARATION_KEY = "approval.separation_of_duty"
 # Joined to the version in force, so the file's current scan state and uploader come with it.
 DOC_COLUMNS = (
     "d.id, d.type_code, d.attachment_id, v.version, v.scan_status, v.uploaded_by, d.issue_date, "
-    "d.expiry_date, d.verification, d.reviewed_by, d.reviewed_at, d.rejection_reason, d.created_at, "
+    "d.expiry_date, d.verification, d.reviewed_by, d.reviewed_at, d.rejection_reason, "
+    "d.created_at, "
     # The newest uploaded version, which a replace names; the row's own version is the one in force.
     "(SELECT l.id FROM attachment_version l WHERE l.org_id = d.org_id "
     "AND l.attachment_id = d.attachment_id ORDER BY l.version DESC LIMIT 1)"
