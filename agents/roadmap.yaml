@@ -1460,7 +1460,7 @@ epics:
         dep:
           - E11-S01
           - E09-S10
-        st: review
+        st: done
       - id: E11-S04
         t: Field-level access control and masking for tax and banking data
         k: security

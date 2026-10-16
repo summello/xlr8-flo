@@ -3658,6 +3658,53 @@
       },
       "recap": "Adds the sourcing module: RFQ drafts built from approved requisition lines, with requisitions.service.source_lines as the only writer of sourced_qty (locks requisitions then lines, runs assert_current_upstream, refuses over-open quantity all-or-nothing) and four /api/v1/sourcing routes plus the rfq link provider. Drafts hold quantity from creation; removing or lowering a line returns it.",
       "title": "RFQ from approved requisition lines, open-quantity guard"
+    },
+    {
+      "story": "E11-S03",
+      "kind": "crud",
+      "size": "M",
+      "tags": [
+        "security"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "788b761f-f978-43c8-81c3-db8248cdd647",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S03",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a143fc-b057-7782-be13-6f11620caa33",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "78bb5a81-0cbb-4911-9231-4be810388692",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Vendor documents are now stored as E09-S10 attachments with issue/expiry, verification, reviewer and separation of duty, and document_state gives the six-state rule E11-S11 will call. A daily vendor-document-expiry job queues one outbox digest per vendor manager per threshold crossing.",
+      "title": "Vendor documents with issue/expiry, verification status, expiry notification"
     }
   ]
 }
