@@ -34,6 +34,7 @@ from flo.modules.org.master_kinds import (
 )
 from flo.modules.org.master_kinds import (
     RESERVED_CONTACT_TYPES,
+    core_category_active,
     known_kind,
     validate_attributes,
 )
@@ -537,6 +538,7 @@ class OrgService:
     def create_master(self, kind: str, body: MasterCreate) -> MasterRef:
         validate_attributes(kind, dict(body.attributes))
         validate_master_dates(body.effective_from, body.effective_to)
+        core_category_active(kind, body.code.strip().upper(), body.active, body.effective_to)
         if kind == "vendor_contact_type" and body.code.strip().lower() in RESERVED_CONTACT_TYPES:
             raise ProblemError(
                 ErrorCode.VALIDATION_FAILED,
@@ -577,16 +579,9 @@ class OrgService:
             if before is None:
                 raise ProblemError(ErrorCode.NOT_FOUND)
             after = before | body.model_dump(exclude_unset=True)
-            if (
-                kind == "vendor_score_category"
-                and before["code"] in CORE_SCORE_CATEGORIES
-                and (after["active"] is False or after["effective_to"] is not None)
-            ):
-                raise ProblemError(
-                    ErrorCode.CONFLICT,
-                    detail="Quality, pricing, delivery and service always apply. Keep them active.",
-                    checks={"problem": "core_category"},
-                )
+            core_category_active(
+                kind, str(before["code"]), cast(bool, after["active"]), after["effective_to"]
+            )
             validate_attributes(kind, cast(dict[str, object], after["attributes"]))
             validate_master_dates(
                 cast(date, after["effective_from"]), cast(date | None, after["effective_to"])

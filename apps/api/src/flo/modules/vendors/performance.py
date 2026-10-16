@@ -121,7 +121,11 @@ class PerformanceMixin:
                 "INSERT INTO master_record (id, org_id, kind, code, name, attributes, "
                 "effective_from, active) VALUES (%(id)s, %(org_id)s, %(kind)s, %(code)s, "
                 "%(name)s, '{}'::jsonb, DATE '2000-01-01', true) "
-                "ON CONFLICT (org_id, kind, code) DO NOTHING",
+                "ON CONFLICT (org_id, kind, code) DO UPDATE SET active = true, "
+                "effective_to = NULL, "
+                "effective_from = LEAST(master_record.effective_from, DATE '2000-01-01') "
+                "WHERE NOT master_record.active OR master_record.effective_to IS NOT NULL "
+                "OR master_record.effective_from > DATE '2000-01-01'",
                 {"id": uuid4(), "kind": KIND, "code": code, "name": code.capitalize()},
             )
 

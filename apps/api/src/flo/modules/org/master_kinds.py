@@ -53,6 +53,18 @@ OPTIONAL = {
 }
 
 
+def core_category_active(kind: str, code: str, active: bool, effective_to: object) -> None:
+    """The four core score categories always apply: never inactive, never end-dated."""
+    if kind == "vendor_score_category" and code in CORE_SCORE_CATEGORIES:
+        if not active or effective_to is not None:
+            raise ProblemError(
+                ErrorCode.VALIDATION_FAILED,
+                detail="Quality, pricing, delivery and service always apply. Keep them active.",
+                errors=(ProblemFieldError(field="active", message="Must stay active."),),
+                checks={"problem": "core_category"},
+            )
+
+
 def known_kind(kind: str) -> None:
     if kind not in RULES:
         raise ProblemError(

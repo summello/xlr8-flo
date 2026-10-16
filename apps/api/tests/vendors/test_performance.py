@@ -8,7 +8,7 @@ import psycopg
 import pytest
 
 from flo.api.health import app
-from flo.kernel.errors import ProblemError
+from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import tenant_transaction
 from flo.modules.org.schemas import MasterPatch
@@ -227,6 +227,36 @@ def test_core_categories_cannot_be_deactivated(header_db):
             org.deactivate_master("vendor_score_category", record.id)
         assert problem(raised) == "core_category"
     assert org.update_master("vendor_score_category", records[0].id, MasterPatch(name="Renamed"))
+
+
+def test_core_categories_cannot_be_created_unusable_and_seeding_repairs_them(header_db):
+    from flo.modules.org.schemas import MasterCreate
+
+    db = header_db
+    org = org_svc(db)
+    for extra in ({"active": False}, {"effective_to": date(2001, 1, 1)}):
+        with pytest.raises(ProblemError) as raised:
+            org.create_master(
+                "vendor_score_category",
+                MasterCreate(code="quality", name="Q", effective_from=date(2000, 1, 1), **extra),
+            )
+        assert (
+            raised.value.code == ErrorCode.VALIDATION_FAILED and problem(raised) == "core_category"
+        )
+    # An unusable core record that got in anyway (a row written before the guard) is repaired.
+    with tenant_transaction(db[0], Scope(db[1])):
+        db[0].execute(
+            "INSERT INTO master_record (id, org_id, kind, code, name, attributes, "
+            "effective_from, effective_to, active) VALUES (%s, %s, 'vendor_score_category', "
+            "'QUALITY', 'Q', '{}'::jsonb, DATE '2000-01-01', DATE '2001-01-01', false)",
+            (uuid4(), db[1]),
+        )
+    assert score(service(db), vendor(db), "quality", 4, AUG, "PO-1").category_code == "QUALITY"
+    quality = next(r for r in org.list_master("vendor_score_category").rows if r.code == "QUALITY")
+    assert quality.active and quality.effective_to is None
+    with pytest.raises(ProblemError) as raised:
+        org.deactivate_master("vendor_score_category", quality.id)
+    assert raised.value.code == ErrorCode.VALIDATION_FAILED and problem(raised) == "core_category"
 
 
 def test_pagination_and_filters(header_db):
