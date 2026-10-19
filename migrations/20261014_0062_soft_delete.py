@@ -1,0 +1,50 @@
+"""Soft delete of drafts: a `deleted` status on requisitions, projects and workflow versions (E22-S02)."""
+
+from typing import Protocol
+
+revision = "20261014_0062"
+down_revision = "20261014_0061"
+
+
+class MigrationConnection(Protocol):
+    def execute(self, query: str) -> object: ...
+
+
+UPGRADE_SQL = """
+ALTER TABLE requisition DROP CONSTRAINT requisition_status_check;
+ALTER TABLE requisition ADD CONSTRAINT requisition_status_check CHECK (status IN
+ ('draft','approval_pending','sourcing_in_progress','sourced','awarded','open_for_purchase',
+ 'completed','rejected','withdrawn','cancelled','expired','deleted'));
+ALTER TABLE project DROP CONSTRAINT project_status_check;
+ALTER TABLE project ADD CONSTRAINT project_status_check CHECK
+ (status IN ('draft','approval_pending','active','deferred','completed','abandoned','deleted'));
+ALTER TABLE workflow_version DROP CONSTRAINT workflow_version_status_check;
+ALTER TABLE workflow_version ADD CONSTRAINT workflow_version_status_check
+ CHECK (status IN ('draft','published','superseded','deleted'));
+"""
+# Rows are kept on the way down, mapped to the closest status the old constraints accept.
+DOWNGRADE_SQL = """
+UPDATE requisition SET status = 'withdrawn' WHERE status = 'deleted';
+UPDATE project SET status = 'abandoned' WHERE status = 'deleted';
+ALTER TABLE workflow_version DISABLE TRIGGER workflow_version_immutable;
+UPDATE workflow_version SET status = 'superseded' WHERE status = 'deleted';
+ALTER TABLE workflow_version ENABLE TRIGGER workflow_version_immutable;
+ALTER TABLE requisition DROP CONSTRAINT requisition_status_check;
+ALTER TABLE requisition ADD CONSTRAINT requisition_status_check CHECK (status IN
+ ('draft','approval_pending','sourcing_in_progress','sourced','awarded','open_for_purchase',
+ 'completed','rejected','withdrawn','cancelled','expired'));
+ALTER TABLE project DROP CONSTRAINT project_status_check;
+ALTER TABLE project ADD CONSTRAINT project_status_check CHECK
+ (status IN ('draft','approval_pending','active','deferred','completed','abandoned'));
+ALTER TABLE workflow_version DROP CONSTRAINT workflow_version_status_check;
+ALTER TABLE workflow_version ADD CONSTRAINT workflow_version_status_check
+ CHECK (status IN ('draft','published','superseded'));
+"""
+
+
+def upgrade(connection: MigrationConnection) -> None:
+    connection.execute(UPGRADE_SQL)
+
+
+def downgrade(connection: MigrationConnection) -> None:
+    connection.execute(DOWNGRADE_SQL)

@@ -53,7 +53,8 @@ class WorkflowRepository(ScopedRepo[object]):
     def version(self, id: UUID, version: int) -> dict[str, object] | None:
         row = self.execute(
             f"SELECT {', '.join(VERSION_FIELDS)} FROM workflow_version "
-            "WHERE org_id=%(org_id)s AND definition_id=%(id)s AND version=%(version)s",
+            "WHERE org_id=%(org_id)s AND definition_id=%(id)s AND version=%(version)s "
+            "AND status<>'deleted'",
             {"id": id, "version": version},
         ).fetchone()
         return dict(zip(VERSION_FIELDS, row, strict=True)) if row else None

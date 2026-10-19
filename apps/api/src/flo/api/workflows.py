@@ -115,6 +115,14 @@ def update_version(
     )
 
 
+@router.delete("/{id}/versions/{version}", status_code=204)
+def delete_version(
+    id: UUID, version: int, context: ManageContext, connection: Connection
+) -> Response:
+    WorkflowService(connection, current_scope(), context.user_id).delete_version(id, version)
+    return Response(status_code=204)
+
+
 @router.post("/{id}/versions/{version}/publish", response_model=WorkflowVersionRead)
 def publish_version(
     id: UUID, version: int, body: PublishWrite, context: ManageContext, connection: Connection

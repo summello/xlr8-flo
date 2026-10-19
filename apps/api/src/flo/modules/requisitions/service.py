@@ -13,7 +13,7 @@ import psycopg
 from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.config import Settings
-from flo.kernel.errors import ErrorCode, ProblemError
+from flo.kernel.errors import ErrorCode, ProblemError, conflict
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.org.service import (
@@ -119,7 +119,7 @@ class RequisitionService:
     def _get(self, id: UUID, *, lock: bool = False) -> RequisitionRead:
         row = self.repo.execute(
             READ_SQL
-            + " WHERE r.org_id=%(org_id)s AND r.id=%(id)s"
+            + " WHERE r.org_id=%(org_id)s AND r.id=%(id)s AND r.status<>'deleted'"
             + (" FOR UPDATE OF r" if lock else ""),
             {"id": id},
         ).fetchone()
@@ -135,6 +135,36 @@ class RequisitionService:
         )
         read.codes_expired = read.codes.expired
         return read
+
+    def delete(self, id: UUID) -> None:
+        """Soft-delete a draft: the row and its number are kept, hidden everywhere (D-M2-27)."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            row = self.repo.execute(
+                "SELECT status,standalone,reservation_entry_id FROM requisition "
+                "WHERE org_id=%(org_id)s AND id=%(id)s AND status<>'deleted' FOR UPDATE",
+                {"id": id},
+            ).fetchone()
+            if row is None:
+                raise ProblemError(ErrorCode.NOT_FOUND)
+            if row[0] != "draft":
+                raise conflict("not_draft", "Only a draft can be deleted.")
+            if row[2] is not None:
+                raise conflict(
+                    "reservation_held",
+                    "This draft still holds a budget reservation. Withdraw it to release the "
+                    "reservation, then it cannot be deleted.",
+                )
+            self.repo.execute(
+                "UPDATE requisition SET status='deleted',version=version+1,updated_at=now() "
+                "WHERE org_id=%(org_id)s AND id=%(id)s",
+                {"id": id},
+            )
+            self._audit(
+                "project_request.delete" if row[1] else "requisition.delete",
+                id,
+                {"status": "draft"},
+                {"status": "deleted"},
+            )
 
     def _sponsors(self, id: UUID) -> list[UUID]:
         return [
@@ -525,7 +555,8 @@ class RequisitionService:
         }
         escaped = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         params.update(prefix=escaped + "%", substring="%" + escaped + "%")
-        filters = """r.org_id=%(org_id)s AND (%(status)s::text IS NULL OR r.status=%(status)s)
+        filters = """r.org_id=%(org_id)s AND r.status<>'deleted'
+          AND (%(status)s::text IS NULL OR r.status=%(status)s)
           AND (%(project_id)s::uuid IS NULL OR r.project_id=%(project_id)s)
           AND (%(bu_id)s::uuid IS NULL OR r.bu_id=%(bu_id)s)
           AND (%(standalone)s::boolean IS NULL OR r.standalone=%(standalone)s)

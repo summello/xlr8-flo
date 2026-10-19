@@ -3,7 +3,7 @@
 from typing import Annotated, Literal, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, Query, Request
+from fastapi import APIRouter, Depends, Header, Query, Request, Response
 
 from flo.api.admin_users import organization_target
 from flo.api.auth import get_auth_settings
@@ -151,6 +151,12 @@ def patch_project(
     version: Annotated[str | None, Header(alias="If-Match")] = None,
 ) -> ProjectRead:
     return ProjectService(connection, current_scope(), context.user_id).update(id, body, version)
+
+
+@router.delete("/{id}", status_code=204)
+def delete_project(id: UUID, context: UpdateContext, connection: Connection) -> Response:
+    ProjectService(connection, current_scope(), context.user_id).delete(id)
+    return Response(status_code=204)
 
 
 @router.post("/{id}/codes", response_model=ProjectRead)

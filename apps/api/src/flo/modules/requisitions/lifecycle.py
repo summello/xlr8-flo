@@ -124,7 +124,7 @@ def read_row(repo: RequisitionRepository, id: UUID, *, lock: bool = False) -> di
     row = repo.execute(
         "SELECT "
         + ",".join(fields)
-        + " FROM requisition WHERE org_id=%(org_id)s AND id=%(id)s"
+        + " FROM requisition WHERE org_id=%(org_id)s AND id=%(id)s AND status<>'deleted'"
         + (" FOR UPDATE" if lock else ""),
         {"id": id},
     ).fetchone()

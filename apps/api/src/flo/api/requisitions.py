@@ -513,6 +513,12 @@ def withdraw_amendment(
     return row
 
 
+@router.delete("/{id}", status_code=204)
+def delete_requisition(id: UUID, context: EditContext, connection: Connection) -> Response:
+    RequisitionService(connection, current_scope(), context.user_id).delete(id)
+    return Response(status_code=204)
+
+
 @router.post("/{id}/codes", response_model=RequisitionRead)
 def substitute_requisition_codes(
     id: UUID, body: CodeSubstitute, context: SubstituteContext, connection: Connection

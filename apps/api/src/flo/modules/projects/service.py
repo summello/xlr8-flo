@@ -257,6 +257,35 @@ class ProjectService:
     ) -> MilestoneRead:
         return cast(MilestoneRead, Schedule(self.repo, self.actor_id).write(project_id, body, mid))
 
+    def delete(self, project_id: UUID) -> None:
+        """Soft-delete a draft project that holds nothing; its number is never reused."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            before = self._get(project_id, lock=True)
+            if before["status"] != "draft":
+                raise conflict("not_draft", "Only a draft can be deleted.")
+            held = self.repo.execute(
+                "SELECT EXISTS(SELECT 1 FROM project WHERE org_id=%(org_id)s AND parent_id=%(id)s "
+                "AND status<>'deleted'), "
+                "EXISTS(SELECT 1 FROM requisition WHERE org_id=%(org_id)s AND project_id=%(id)s "
+                "AND status<>'deleted'), "
+                "EXISTS(SELECT 1 FROM ledger_entry WHERE org_id=%(org_id)s AND project_id=%(id)s), "
+                "%(ref)s::text IS NOT NULL",
+                {"id": project_id, "ref": before["external_ref"]},
+            ).fetchone()
+            assert held is not None
+            if any(held):
+                raise conflict(
+                    "not_empty",
+                    "This draft has sub-projects, requisitions, budget postings or an external "
+                    "reference. Remove them first, or abandon the project instead.",
+                )
+            self.repo.execute(
+                "UPDATE project SET status='deleted',version=version+1 "
+                "WHERE org_id=%(org_id)s AND id=%(id)s",
+                {"id": project_id},
+            )
+            self._audit("project.delete", project_id, before, {"status": "deleted"})
+
     def get_status(self, project_id: UUID) -> str:
         return self.get(project_id).status
 
@@ -498,7 +527,7 @@ class ProjectService:
             self._get(project_id)
             rows = self.repo.execute(
                 """SELECT id, parent_id, root_id, number, name, status, depth FROM project
-                WHERE org_id = %(org_id)s AND parent_id = %(parent)s
+                WHERE org_id = %(org_id)s AND parent_id = %(parent)s AND status <> 'deleted'
                 AND (number, id) > (%(number)s, %(cursor_id)s)
                 ORDER BY number, id LIMIT %(limit)s""",
                 {
@@ -531,10 +560,11 @@ class ProjectService:
             rows = self.repo.execute(
                 """WITH RECURSIVE walk AS (
                 SELECT id, parent_id, number, name, status, depth, 1 AS depth_guard
-                FROM project WHERE org_id = %(org_id)s AND id = %(id)s
+                FROM project WHERE org_id = %(org_id)s AND id = %(id)s AND status <> 'deleted'
                 UNION
                 SELECT p.id, p.parent_id, p.number, p.name, p.status, p.depth, depth_guard + 1
                 FROM walk JOIN project p ON p.parent_id = walk.id AND p.org_id = %(org_id)s
+                AND p.status <> 'deleted'
                 WHERE depth_guard < 6 AND depth_guard < %(max_depth)s
                 ) , bounded AS (SELECT DISTINCT ON (depth, id) * FROM walk
                 ORDER BY depth, id LIMIT 501)
@@ -721,7 +751,8 @@ class ProjectService:
             filters = """p.org_id = %(org_id)s
                 AND (p.number ILIKE %(q)s OR p.name ILIKE %(q)s)
                 AND (%(status)s::text IS NULL OR p.status = %(status)s)
-                AND (%(bu_id)s::uuid IS NULL OR p.bu_id = %(bu_id)s)"""
+                AND (%(bu_id)s::uuid IS NULL OR p.bu_id = %(bu_id)s)
+                AND p.status <> 'deleted'"""
             count = self.repo.execute(
                 "SELECT count(*) FROM project p WHERE " + filters, params
             ).fetchone()
@@ -1057,7 +1088,8 @@ def get_by_external_ref(
         row = (
             ProjectRepository(connection, scope)
             .execute(
-                f"SELECT {COLUMNS} FROM project WHERE org_id=%(org_id)s AND external_ref=%(ref)s",
+                f"SELECT {COLUMNS} FROM project WHERE org_id=%(org_id)s AND external_ref=%(ref)s "
+                "AND status<>'deleted'",
                 {"ref": ref},
             )
             .fetchone()

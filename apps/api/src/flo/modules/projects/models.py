@@ -47,8 +47,8 @@ class ProjectRepository(ScopedRepo[object]):
 
     def get(self, project_id: UUID, *, lock: bool = False) -> dict[str, object] | None:
         row = self.execute(
-            f"SELECT {COLUMNS} FROM project WHERE org_id = %(org_id)s AND id = %(id)s"
-            + (" FOR UPDATE" if lock else ""),
+            f"SELECT {COLUMNS} FROM project WHERE org_id = %(org_id)s AND id = %(id)s "
+            "AND status <> 'deleted'" + (" FOR UPDATE" if lock else ""),
             {"id": project_id},
         ).fetchone()
         return dict(zip(FIELDS, row, strict=True)) if row else None

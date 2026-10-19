@@ -391,6 +391,38 @@ class WorkflowService:
             self._audit("workflow.version.update", id, before, after)
             return WorkflowVersionRead.model_validate(after)
 
+    def delete_version(self, id: UUID, version: int) -> None:
+        """Soft-delete the draft version; the number is kept so it is never reused."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self._definition(id, lock=True)
+            before = self._version(id, version)
+            if before["status"] != "draft":
+                raise conflict("not_draft")
+            self.repo.execute(
+                "UPDATE workflow_version SET status='deleted',row_version=row_version+1 "
+                "WHERE org_id=%(org_id)s AND definition_id=%(id)s AND version=%(version)s",
+                {"id": id, "version": version},
+            )
+            # A workflow that never had a published version frees its scope with its last draft.
+            live = self.repo.execute(
+                "SELECT 1 FROM workflow_version WHERE org_id=%(org_id)s AND definition_id=%(id)s "
+                "AND status<>'deleted' LIMIT 1",
+                {"id": id},
+            ).fetchone()
+            retired = live is None
+            if retired:
+                self.repo.execute(
+                    "UPDATE workflow_definition SET retired_at=now() "
+                    "WHERE org_id=%(org_id)s AND id=%(id)s AND retired_at IS NULL",
+                    {"id": id},
+                )
+            self._audit(
+                "workflow.version.delete",
+                id,
+                {"version": version, "status": "draft"},
+                {"version": version, "status": "deleted", "definition_retired": retired},
+            )
+
     def validation(self, id: UUID, version: int) -> ValidationReport:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             definition = self._definition(id)
