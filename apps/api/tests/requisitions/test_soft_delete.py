@@ -90,9 +90,10 @@ def test_requisition_with_a_live_reservation_is_not_deletable(header_db):
             db[0]
             .execute(
                 "INSERT INTO ledger_entry(org_id,bu_id,project_id,entry_type,bucket,amount,"
-                "currency,"
+                "currency,department_code,ledger_account_code,"
                 "source_type,source_id,effective_date,actor_id,idempotency_key) "
-                "SELECT org_id,bu_id,project_id,'reserve','reserved',1,'USD','requisition',id,"
+                "SELECT org_id,bu_id,project_id,'reservation','reserved',1,'USD','D','L',"
+                "'requisition',id,"
                 "now()::date,requester_id,'k-' || id FROM requisition WHERE id=%s RETURNING id",
                 (row.id,),
             )
@@ -127,11 +128,20 @@ def test_project_delete_only_when_an_empty_draft(header_db):
     bu = unit(db)
     empty, parent, busy = project(db, bu), project(db, bu), project(db, bu)
     child = draft(db, p=busy)
-    with tenant_transaction(db[0], Scope(db[1])):
-        db[0].execute(
-            "UPDATE project SET parent_id=%s,root_id=%s,depth=2 WHERE id=%s",
-            (parent.id, parent.id, project(db, bu).id),
+    from flo.modules.projects.schemas import ProjectCreate
+    from flo.modules.projects.service import ProjectService
+    from tests.org.test_bootstrap import settings
+
+    ProjectService(db[0], Scope(db[1]), db[3], settings(db[0])).create(
+        ProjectCreate(
+            bu_id=bu.id,
+            name="Child",
+            currency="USD",
+            parent_id=parent.id,
+            department_code="D",
+            ledger_account_code="L",
         )
+    )
     active = project(db, bu)
     db[0].execute("UPDATE project SET status='active' WHERE id=%s", (active.id,))
 

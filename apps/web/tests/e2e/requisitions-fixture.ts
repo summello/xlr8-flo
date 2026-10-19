@@ -122,6 +122,7 @@ export async function stubRequisitions(page: Page, initial: { row?: Req; lines?:
       return send((["approval_pending", "withdrawn", "cancelled"] as const).map(to => ({ to, allowed: to === "withdrawn" ? state.withdrawAllowed && ["draft", "approval_pending", "sourcing_in_progress"].includes(status) : to === "cancelled" ? state.cancelAllowed : status === "draft",
         blocked_reasons: to === "withdrawn" && !state.withdrawAllowed ? ["Only the requester can withdraw. Ask an administrator to cancel it."] : [] })));
     }
+    if (path === `/api/v1/requisitions/${reqId}` && method === "DELETE") return route.fulfill({ status: 204 });
     if (path === `/api/v1/requisitions/${reqId}/transitions` && method === "POST") {
       if (state.transitionDelay) await new Promise(r => setTimeout(r, state.transitionDelay));
       const to = String(body?.to);

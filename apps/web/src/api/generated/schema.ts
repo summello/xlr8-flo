@@ -1557,7 +1557,8 @@ export interface paths {
         get: operations["get_project_api_v1_projects__id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Delete Project */
+        delete: operations["delete_project_api_v1_projects__id__delete"];
         options?: never;
         head?: never;
         /** Patch Project */
@@ -1919,7 +1920,8 @@ export interface paths {
         get: operations["get_requisition_api_v1_requisitions__id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Delete Requisition */
+        delete: operations["delete_requisition_api_v1_requisitions__id__delete"];
         options?: never;
         head?: never;
         /** Patch Requisition */
@@ -2652,7 +2654,8 @@ export interface paths {
         /** Update Version */
         put: operations["update_version_api_v1_workflows__id__versions__version__put"];
         post?: never;
-        delete?: never;
+        /** Delete Version */
+        delete: operations["delete_version_api_v1_workflows__id__versions__version__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -11377,6 +11380,46 @@ export interface operations {
             };
         };
     };
+    delete_project_api_v1_projects__id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     patch_project_api_v1_projects__id__patch: {
         parameters: {
             query?: never;
@@ -12548,6 +12591,46 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["RequisitionRead"];
                 };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    delete_requisition_api_v1_requisitions__id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Client error expressed as RFC 9457 problem details. */
             "4XX": {
@@ -15004,6 +15087,47 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["WorkflowVersionRead"];
                 };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    delete_version_api_v1_workflows__id__versions__version__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Client error expressed as RFC 9457 problem details. */
             "4XX": {
