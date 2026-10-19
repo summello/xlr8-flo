@@ -1320,13 +1320,17 @@ def test_light_profile_skips_full_suites_and_runs_the_story_tests(
     commit(repo, "migrations/20991231_0099_story.py")  # the repo-root path real migrations use
     commit(repo, "apps/web/tests/e2e/story.spec.ts")
     commit(repo, "apps/web/src/Story.tsx")
+    (repo / "apps/api/tests/org").mkdir(parents=True)  # the module's suite, untouched by the story
+    commit(repo, "apps/api/src/flo/modules/org/master_kinds.py")  # module source, suite untouched
+    commit(repo, "apps/api/src/flo/modules/ghost/service.py")  # no tests/ghost: nothing to add
 
     assert flo.story_checks(repo) == [
         ("story pytest", ["pytest", "-q", "apps/api/tests/authz/test_baseline_grants.py",
                           "apps/api/tests/budget/test_story.py",
                           "apps/api/tests/gates/test_gates_bite.py",
                           "apps/api/tests/isolation/test_ci_guards.py",
-                          "apps/api/tests/kernel/test_migrate.py"]),
+                          "apps/api/tests/kernel/test_migrate.py",
+                          "apps/api/tests/org"]),
         ("story e2e", ["npm", "--prefix", "apps/web", "run", "test:e2e", "--",
                        "tests/e2e/story.spec.ts"]),
     ]
