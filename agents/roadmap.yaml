@@ -1435,8 +1435,7 @@ epics:
           - APR-020
         dep:
           - E11-S09
-          - E22-S04
-        st: todo
+        st: in_progress
       - id: E11-S02
         t: 'Typed contacts: billing, service/delivery, additional types'
         k: crud
@@ -1766,7 +1765,7 @@ epics:
           - WF-005
         dep:
           - E12-S08
-        st: blocked
+        st: todo
       - id: E12-S10
         t: Comparison dashboard screen with accessible table equivalent
         k: ui
@@ -1897,7 +1896,7 @@ epics:
         dep:
           - E12-S09
           - E12-S11
-        st: blocked
+        st: todo
       - id: E12-S19
         t: Sourcing open questions for the operator (parking story)
         k: docs

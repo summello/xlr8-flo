@@ -1161,6 +1161,21 @@ def test_assignment_routes_authors_by_priority_and_free_slots(
     assert out["opus_final"] is bool(tags)
 
 
+def test_worker_load_counts_only_stories_whose_author_is_working(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    flo = load_flo()
+    rows = {"E99-S01": "in_progress", "E99-S02": "review", "E99-S03": "done", "E99-S04": "design"}
+    for sid in rows:
+        (tmp_path / sid).mkdir()
+        (tmp_path / sid / "task.json").write_text(json.dumps(
+            {"author": "sonnet", "sessions": {"sonnet": {"account": "B"}}}))
+    monkeypatch.setattr(flo, "roadmap", lambda: {"epics": [
+        {"stories": [{"id": sid, "st": st} for sid, st in rows.items()]}]})
+    monkeypatch.setattr(flo, "worktree_path", lambda sid: tmp_path / sid)
+    assert flo.worker_load("sonnet") == {"B": 2}  # in_progress and design; review holds no session
+
+
 def test_account_picker_balances_load_and_resumes_a_recorded_session(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -1323,6 +1338,7 @@ def test_light_profile_skips_full_suites_and_runs_the_story_tests(
     (repo / "apps/api/tests/org").mkdir(parents=True)  # the module's suite, untouched by the story
     commit(repo, "apps/api/src/flo/modules/org/master_kinds.py")  # module source, suite untouched
     commit(repo, "apps/api/src/flo/modules/ghost/service.py")  # no tests/ghost: nothing to add
+    commit(repo, "apps/api/src/flo/modules/budget/service.py")  # story edits tests/budget: those run
 
     assert flo.story_checks(repo) == [
         ("story pytest", ["pytest", "-q", "apps/api/tests/authz/test_baseline_grants.py",
