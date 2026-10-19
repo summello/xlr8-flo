@@ -214,10 +214,14 @@ def cmd_assign(argv):
 
 
 def worker_load(name):
-    """Active stories per account for an agent that runs on several accounts (sonnet)."""
+    """Stories whose author is working, per account, for an agent on several accounts (sonnet).
+
+    A story in review or finishing holds no author session; counting it (19 Oct) filled both
+    accounts and sent E11-S10 to the overflow lane while account B sat idle.
+    """
     load = {}
     for _, s in stories(roadmap()):
-        if s["st"] not in ACTIVE:
+        if s["st"] not in {"design", "in_progress"}:
             continue
         task = worktree_path(s["id"]) / "task.json"
         if not task.exists():

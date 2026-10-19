@@ -312,6 +312,11 @@ Screens added around the built comparison: RFQ list, start an RFQ from approved 
 210. **(6j-15) Budget Summary definitions confirmed** as written in `pages/purchase-orders.md` §7.9 (`Committed`, `This PO`, `Available After Issue`, `Project Actual`).
 211. **(6j-16) Tax and freight treatment (claude-plan §14 #6, FIN-008):** two settings per BU/OU, `tax.consumes_budget` and `freight.consumes_budget`, default on. When on, that component counts against the budget (award scope check, PO commitment); when off it is shown separately on the PO and not committed. Always separately visible (PO-016).
 
+**Operator answers, 19 Oct 2026** (M3 planner session, `design/E12-S19.md` item 3, SRC-017):
+
+212. **(6i-13) Cancelling an RFQ leaves the reservation with the requisition.** No ledger entry; the RFQ's quantity returns to the lines as open and the requisition can be sourced again. Releasing the money stays the job of cancelling the requisition.
+213. **(6i-14) Superseding an approved award is the exact reversal of its approval's money (205):** the awarded quantity returns as open, and the amount released and returned to the main project at approval is transferred back main → sub-project and re-reserved, in one transaction. Refused with `InsufficientBudget` when the main project no longer has it available. Allowed only before any PO exists.
+
 **Self-review with impeccable (13 Oct 2026, two isolated assessments: design review A, detector with browser evidence B).**
 
 - **Specificity:** the generic parts (list, tabs, draft editor, scoring grid) are right for Operate. What only capital procurement carries: the justification per non-lowest line, the scope and funds check with the released amount, requisition lines with a quantity to source against an open quantity, sealed bids with `Keyed By Us` and no portal, the conflict declaration before scoring, the award evidence block on the approver's panel.
