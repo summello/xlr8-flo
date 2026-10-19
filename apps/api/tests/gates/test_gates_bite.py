@@ -1338,6 +1338,7 @@ def test_light_profile_skips_full_suites_and_runs_the_story_tests(
     (repo / "apps/api/tests/org").mkdir(parents=True)  # the module's suite, untouched by the story
     commit(repo, "apps/api/src/flo/modules/org/master_kinds.py")  # module source, suite untouched
     commit(repo, "apps/api/src/flo/modules/ghost/service.py")  # no tests/ghost: nothing to add
+    commit(repo, "apps/api/src/flo/modules/budget/service.py")  # story edits tests/budget: those run
 
     assert flo.story_checks(repo) == [
         ("story pytest", ["pytest", "-q", "apps/api/tests/authz/test_baseline_grants.py",

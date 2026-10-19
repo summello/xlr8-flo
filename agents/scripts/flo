@@ -1957,11 +1957,13 @@ def story_checks(cwd):
                "apps/api/tests/isolation/test_ci_guards.py",
                "apps/api/tests/gates/test_gates_bite.py",
                "apps/api/tests/authz/test_baseline_grants.py"]
-    # A module's own suite runs when its source changes: E11-S07 added a master kind without
-    # touching tests/org, and only full CI found test_master's per-kind table missing it.
+    # A module's own suite runs when its source changes and the story touched none of its tests:
+    # E11-S07 added a master kind without touching tests/org, and only full CI found
+    # test_master's per-kind table missing it. A story that edits the module's tests runs those.
     for m in {f.split("/")[5] for f in changed if f.startswith("apps/api/src/flo/modules/")
               and f.count("/") > 5}:
-        if (Path(cwd) / "apps/api/tests" / m).is_dir():
+        if (Path(cwd) / "apps/api/tests" / m).is_dir() and not any(
+                f.startswith(f"apps/api/tests/{m}/") for f in py):
             py.append(f"apps/api/tests/{m}")
     web = [f.removeprefix("apps/web/") for f in changed
            if re.match(r"apps/web/(e2e/.+\.e2e\.ts|tests/(a11y|e2e)/.+\.spec\.ts)$", f)]
