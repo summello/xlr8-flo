@@ -169,7 +169,7 @@ def test_contact_audit_records_email_but_not_phone(header_db):
             )
             assert dump.count("vendor.contact.") == 2
             assert "new@example.test" in dump and "bea@example.test" in dump
-            assert "555" not in dump
+            assert "555 0100" not in dump  # bare "555" also matches a UUID or timestamp
 
     asyncio.run(scenario())
 
