@@ -1435,7 +1435,6 @@ epics:
           - APR-020
         dep:
           - E11-S09
-          - E22-S04
         st: todo
       - id: E11-S02
         t: 'Typed contacts: billing, service/delivery, additional types'
