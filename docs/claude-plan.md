@@ -560,7 +560,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E10-S12** Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11) | E10 | ui | L | APR-011, APR-021, ACC-007 | ~~E10-S11~~, ~~E10-S05~~ |
 | ✅ | **E10-S13** Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes | E10 | engine | M | APR-003, PROJ-002, VEN-005, BUD-007 | ~~E10-S07~~ |
 
-#### M3 — First sellable release · 11/64 done
+#### M3 — First sellable release · 14/69 done
 
 > Vendors, RFQs, awards and purchase orders by email. Closes the money loop end to end.
 
@@ -575,7 +575,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E11-S05** Onboarding request, configurable questionnaire, weights and scoring | E11 | engine | L | VEN-004, VEN-006 | ~~E11-S01~~ |
 | ⬜ | **E11-S06** Duplicate identifier detection, approval on create/activate/suspend/reactivate | E11 | engine | M | VEN-005, VEN-010, VEN-012 | ~~E11-S05~~, ~~E10-S13~~, ~~E11-S02~~, ~~E11-S04~~ |
 | ✅ | **E11-S07** Performance scoring across quality, price, delivery, service, with dispute history | E11 | crud | M | VEN-007, VEN-015 | ~~E11-S01~~ |
-| ⛔ | **E11-S08** Vendor open questions for the operator (parking story) | E11 | docs | S | VEN-003, VEN-007, VEN-014 | — |
+| ✅ | **E11-S08** Vendor open questions for the operator (parking story) | E11 | docs | S | VEN-003, VEN-007, VEN-014 | — |
 | ⬜ | **E11-S11** Vendor eligibility: one server rule, one web component | E11 | engine | M | VEN-012, A11Y-004 | ~~E11-S03~~, E11-S06, ~~E11-S09~~ |
 | ⬜ | **E11-S12** Vendor list and profile screens, documents table and document sheet | E11 | ui | L | VEN-001, VEN-002, VEN-003, VEN-011, VEN-013, OBS-004 | ~~E11-S02~~, ~~E11-S03~~, E11-S11 |
 | ⬜ | **E11-S13** Tax and Banking card: masked by default, audited reveal | E11 | ui | M | VEN-014, CUS-008, PRIV-001 | ~~E11-S04~~, E11-S12 |
@@ -602,7 +602,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E12-S16** Award draft screen: lines, justification, scope and funds check | E12 | ui | L | SRC-012, SRC-013, SRC-014, SRC-016 | E12-S08, E12-S10 |
 | ⬜ | **E12-S17** Award decision panel: Award Evidence block | E12 | ui | M | SRC-013, APR-003, APR-020 | E12-S08, E11-S10 |
 | ⬜ | **E12-S18** Cancel RFQ and supersede award dialogs | E12 | ui | M | SRC-017 | E12-S09, E12-S11 |
-| ⛔ | **E12-S19** Sourcing open questions for the operator (parking story) | E12 | docs | S | SRC-016, SRC-017 | — |
+| ✅ | **E12-S19** Sourcing open questions for the operator (parking story) | E12 | docs | S | SRC-016, SRC-017 | — |
 | ⬜ | **E13-S01** PO from awarded requisition lines or authorized project items, scoped numbering | E13 | crud | L | PO-001, PO-002, PO-006, SEQ-001 | E12-S08 |
 | ⬜ | **E13-S02** Tax and freight per BU/OU policy, separately visible on line and document | E13 | ledger | M | FIN-008, FIN-009, PO-016 | E13-S01 |
 | ⬜ | **E13-S03** PO lifecycle state machine | E13 | engine | M | PO-007, WF-002 | E13-S01, ~~E11-S09~~ |
@@ -624,12 +624,17 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E13-S19** Cancel or reduce dialog | E13 | ui | M | PO-013, ACC-006 | E13-S07, E13-S12 |
 | ⬜ | **E13-S20** PO decision panel: Purchase Order Evidence block | E13 | ui | M | PO-003, APR-020 | E13-S04, E11-S10 |
 | ⬜ | **E13-S21** Sending domain status and suppression list (Administration) | E13 | ui | M | EML-001, EML-003 | E13-S10 |
-| ⛔ | **E13-S22** Purchase-order open questions for the operator (parking story) | E13 | docs | S | PO-007 | — |
+| ✅ | **E13-S22** Purchase-order open questions for the operator (parking story) | E13 | docs | S | PO-007 | — |
 | 👀 | **E22-S01** Create Project with budget: form and Excel, sponsors, through the project approval workflow | E22 | engine | L | PROJ-003 | ~~E09-S17~~ |
 | 👀 | **E22-S02** Soft delete for every draft document | E22 | crud | M | DATA-002 | ~~E09-S15~~ |
 | ✅ | **E22-S03** One audit helper instead of twelve, behaviour-preserving | E22 | chore | M | AUD-001 | — |
 | 👀 | **E22-S04** M2 milestone review follow-ups: Money zero prop, shared lookup helper, internal collaboration readers, approvals read via service, e2e focus helper | E22 | chore | M | A11Y-001, UX-007 | — |
 | ✅ | **E22-S05** Replace MinIO with SeaweedFS in the local stack; bucket via the S3 API | E22 | chore | S | OPS-007 | — |
+| ⬜ | **E22-S06** Baseline roles read the projects and master data they work against | E22 | auth | S | USR-003, USR-005, USR-006, USR-008, ACC-004 | — |
+| ⬜ | **E22-S07** People have a display name, stored, copied at acceptance, returned beside every email | E22 | migration | M | USR-009, USR-010, SEC-011 | — |
+| ⬜ | **E22-S08** Expired requisitions use the warning tone | E22 | ui | S | A11Y-004 | — |
+| ⬜ | **E22-S09** Show people by name, with the email as secondary text | E22 | ui | M | A11Y-004, UX-007 | E22-S07 |
+| ⬜ | **E22-S10** Approval Availability: set, list and revoke an out-of-office delegation | E22 | ui | M | APR-004, APR-014, APR-017, APR-019, A11Y-006 | — |
 
 #### M4 — Full Phase-1 scope · 0/34 done
 
