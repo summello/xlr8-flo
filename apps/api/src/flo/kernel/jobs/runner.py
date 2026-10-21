@@ -101,8 +101,9 @@ class JobRunner:
         try:
             if handler is None:
                 raise PermanentJobError("job kind has no registered handler")
-            with correlation_context(job.correlation_id), tenant_transaction(
-                cast(RlsSession, self._connection), Scope(job.org_id)
+            with (
+                correlation_context(job.correlation_id),
+                tenant_transaction(cast(RlsSession, self._connection), Scope(job.org_id)),
             ):
                 handler(job)
                 self._queue.complete(job)
@@ -113,8 +114,9 @@ class JobRunner:
                 self._record_dead(job, _safe_error(error))
                 return "dead"
             delay = backoff_seconds(job.attempts, self._random_fraction)
-            with correlation_context(job.correlation_id), tenant_transaction(
-                cast(RlsSession, self._connection), Scope(job.org_id)
+            with (
+                correlation_context(job.correlation_id),
+                tenant_transaction(cast(RlsSession, self._connection), Scope(job.org_id)),
             ):
                 self._queue.retry(job, delay_seconds=delay, last_error=_safe_error(error))
                 self._audit(job, "job.retry", Outcome.ERROR, _safe_error(error))
@@ -124,8 +126,9 @@ class JobRunner:
             return "dead"
 
     def _record_dead(self, job: Job, last_error: str) -> None:
-        with correlation_context(job.correlation_id), tenant_transaction(
-            cast(RlsSession, self._connection), Scope(job.org_id)
+        with (
+            correlation_context(job.correlation_id),
+            tenant_transaction(cast(RlsSession, self._connection), Scope(job.org_id)),
         ):
             self._queue.dead(job, last_error=last_error)
             self._audit(job, "job.dead", Outcome.ERROR, last_error)

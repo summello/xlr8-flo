@@ -160,6 +160,7 @@ PERMISSION_CODES: tuple[PermissionCode, ...] = tuple(
         "vendor.approve",
         "vendor.create",
         "vendor.edit",
+        "vendor.sensitive.reveal",
         "vendor.request",
         "vendor.view",
         "view.archive",
@@ -331,6 +332,7 @@ BASELINE_ROLE_PERMISSIONS: dict[RoleCode, frozenset[PermissionCode]] = {
             "vendor.approve",
             "vendor.create",
             "vendor.edit",
+            "vendor.sensitive.reveal",
             "vendor.view",
         )
     ),
@@ -350,6 +352,7 @@ BASELINE_ROLE_PERMISSIONS: dict[RoleCode, frozenset[PermissionCode]] = {
             "ledger.read",
             "record.read",
             "report.view",
+            "vendor.sensitive.reveal",
         )
     ),
     role_code("warehouse-asset-user"): frozenset(

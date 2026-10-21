@@ -3827,6 +3827,55 @@
       },
       "recap": "Adds /admin/vendor-questionnaires: versions list, draft editor with typed questions, points, Move Up/Down buttons that keep focus, a server-computed weights Signal, publish dialog with 409 weights_total summary, read-only published view with Copy to New Draft, and a closed request-form preview with no weights.",
       "title": "Questionnaire administration screen"
+    },
+    {
+      "story": "E11-S04",
+      "kind": "security",
+      "size": "M",
+      "tags": [
+        "security",
+        "auth"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "b2bf6997-3bdf-4798-a7f2-2f8d1450ddc3",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S04",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1444d-8388-7223-a904-2cbb667cfa13",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Vendor tax and banking values live in vendor_sensitive behind vendors/repo.py: list and detail show last-four masks computed in SQL, POST /vendors/{id}/sensitive/reveal is audited (field names only) and no-store, PUT /vendors/{id}/sensitive needs vendor.edit plus the new vendor.sensitive.reveal grant (vendor-manager, finance, org admin; migration 0060).",
+      "title": "Field-level access control and masking for tax and banking data"
     }
   ]
 }

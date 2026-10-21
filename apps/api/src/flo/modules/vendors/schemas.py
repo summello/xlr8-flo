@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import date, datetime
 from typing import Literal
 from uuid import UUID
@@ -70,6 +71,17 @@ class DisableCreate(BaseModel):
         return value
 
 
+class SensitiveMasked(BaseModel):
+    """Tax and banking data as the list and detail show it: last four characters only."""
+
+    tax_id: str | None = None
+    tax_id_country: str | None = None
+    bank_name: str | None = None
+    bank_account: str | None = None
+    bank_routing: str | None = None
+    version: int = 0  # the ETag of the sensitive record; 0 until one is written
+
+
 class VendorRead(BaseModel):
     id: UUID
     number: str
@@ -80,6 +92,7 @@ class VendorRead(BaseModel):
     created_by_email: str
     created_at: datetime
     updated_at: datetime
+    sensitive: SensitiveMasked = SensitiveMasked()
 
 
 class VendorUnit(BaseModel):
@@ -203,6 +216,52 @@ class DocState(BaseModel):
     reviewed_at: datetime | None = None
     rejection_reason: str | None = None
     created_at: datetime | None = None
+
+
+type RevealField = Literal["tax_id", "bank"]
+type RevealReason = Literal["verify_payment", "vendor_request", "audit_support", "other"]
+DIGIT_RUN = re.compile(r"\d{6,}")
+
+
+class SensitiveReveal(BaseModel):
+    """A reason code from a closed list; the note is free text that must hold no figures."""
+
+    model_config = ConfigDict(extra="forbid")
+    fields: list[RevealField] = Field(min_length=1, max_length=2)
+    reason_code: RevealReason
+    note: str | None = Field(default=None, max_length=200)
+
+    @field_validator("note")
+    @classmethod
+    def _no_figures(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip() or None
+        if value and DIGIT_RUN.search(re.sub(r"[\s\-._/]", "", value)):
+            raise ValueError("Leave account and tax numbers out of the note.")
+        return value
+
+
+class SensitivePut(BaseModel):
+    """The whole record: a field left out is cleared. Values are stored as typed."""
+
+    model_config = ConfigDict(extra="forbid")
+    tax_id: str | None = Field(default=None, min_length=1, max_length=64)
+    tax_id_country: str | None = Field(default=None, pattern=r"^[A-Z]{2}$")
+    bank_name: str | None = Field(default=None, min_length=1, max_length=200)
+    bank_account: str | None = Field(default=None, min_length=1, max_length=64)
+    bank_routing: str | None = Field(default=None, min_length=1, max_length=64)
+
+
+class SensitiveValues(SensitivePut):
+    """Clear values, returned only by the audited reveal."""
+
+    version: int = 0
+
+
+class SensitiveWritten(BaseModel):
+    changed: list[str]
+    version: int
 
 
 # -- onboarding questionnaire (E11-S05) -------------------------------------------------------

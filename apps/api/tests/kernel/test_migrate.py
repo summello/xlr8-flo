@@ -2169,3 +2169,105 @@ def test_vendor_questionnaire_roundtrip_grants_the_permission_and_keeps_data(emp
         mig.upgrade(conn)
         with tenant_transaction(conn, scope):
             assert conn.execute("SELECT count(*) FROM vendor_onboarding").fetchone() == (0,)
+
+
+def test_vendor_sensitive_roundtrip_grants_and_removes_only_what_it_added(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261014_0061"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261014_0062")
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("sensitive-migration"),
+    ):
+        tenant = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(tenant.org_id)
+        vendor_id = uuid4()
+
+        def grants():
+            with tenant_transaction(conn, scope):
+                return conn.execute(
+                    "SELECT r.code FROM role_permission p JOIN role r ON r.id=p.role_id "
+                    "WHERE p.permission_code='vendor.sensitive.reveal' ORDER BY 1"
+                ).fetchall()
+
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO vendor(id,org_id,number,trading_name,legal_name,availability,"
+                "created_by) VALUES(%s,%s,'V-000001','T','L','global',%s)",
+                (vendor_id, tenant.org_id, actor),
+            )
+            before = conn.execute("SELECT count(*) FROM role_permission").fetchone()[0]
+        mig.upgrade(conn)
+        assert grants() == [
+            ("budget-finance-user",),
+            ("organization-administrator",),
+            ("vendor-manager",),
+        ]  # not the auditor
+        # the tracking table is tenant-isolated like every table that holds an org_id
+        assert conn.execute(
+            "SELECT relrowsecurity AND relforcerowsecurity FROM pg_class "
+            "WHERE relname='migration_0062_grant'"
+        ).fetchone() == (True,)
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO vendor_sensitive(org_id,vendor_id,tax_id) VALUES(%s,%s,'X1')",
+                (tenant.org_id, vendor_id),
+            )
+        mig.downgrade(conn)
+        assert conn.execute("SELECT to_regclass('vendor_sensitive')").fetchone() == (None,)
+        assert conn.execute("SELECT to_regclass('migration_0062_grant')").fetchone() == (None,)
+        assert conn.execute(
+            "SELECT count(*) FROM permission WHERE code='vendor.sensitive.reveal'"
+        ).fetchone() == (0,)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT count(*) FROM vendor").fetchone() == (1,)
+            assert conn.execute("SELECT count(*) FROM role_permission").fetchone() == (before,)
+        mig.upgrade(conn)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT count(*) FROM vendor_sensitive").fetchone() == (0,)
+
+
+def test_vendor_sensitive_downgrade_keeps_a_preexisting_permission_and_its_grants(
+    empty_database,
+):
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from tests.org.test_bootstrap import create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261014_0061"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261014_0062")
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        tenant = create(conn)
+        scope = Scope(tenant.org_id)
+        conn.execute("INSERT INTO permission(code) VALUES ('vendor.sensitive.reveal')")
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO role_permission(org_id,role_id,permission_code) "
+                "SELECT org_id,id,'vendor.sensitive.reveal' FROM role WHERE code='auditor'"
+            )
+
+        def holders():
+            with tenant_transaction(conn, scope):
+                return conn.execute(
+                    "SELECT r.code FROM role_permission p JOIN role r ON r.id=p.role_id "
+                    "WHERE p.permission_code='vendor.sensitive.reveal' ORDER BY 1"
+                ).fetchall()
+
+        mig.upgrade(conn)
+        assert ("vendor-manager",) in holders() and ("auditor",) in holders()
+        mig.downgrade(conn)
+        assert holders() == [("auditor",)]  # only what the migration added is gone
+        assert conn.execute(
+            "SELECT count(*) FROM permission WHERE code='vendor.sensitive.reveal'"
+        ).fetchone() == (1,)
