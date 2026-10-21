@@ -439,6 +439,8 @@ The three parking stories (E11-S08 vendors, E12-S19 sourcing, E13-S22 purchase o
 231. **Requisition tones:** `rejected` danger, `withdrawn` neutral (the requester's own act), **`expired` warning** (recoverable by resubmitting, not an error). MASTER §2.3 gains the three rows. Change story **E22-S08** (E09-S11 shipped `expired` as danger).
 232. **People are shown by display name with the email as secondary text and as the fallback** (E11-S08 #10). **Amends D-M2-16:** the identity gains a display name, copied from the invitation's `full_name` at acceptance. Change story **E22-S07**; boards that show email only are stale for the design session.
 
+233. **Approval delegation gets its screen in M3** (STORY-NOTES §3; the E10-S08 engine had none). Built from `pages/approval-inbox.md` §5 and boards `ApprovalDelegation`, `Deleg*`, under the rules already accepted (59, 66, 80, 81). Story **E22-S10**.
+
 ## 7. Findings to feed back into MASTER.md (amended 9 Oct 2026, see 97)
 
 - **The MASTER amendment is deferred until after Budget Transfer (item 84), which is now built: the next session can draft it for the operator.** It would fold in the items below plus the ancestry state rows (6f item 86).

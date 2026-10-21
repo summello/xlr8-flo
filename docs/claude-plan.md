@@ -560,7 +560,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E10-S12** Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11) | E10 | ui | L | APR-011, APR-021, ACC-007 | ~~E10-S11~~, ~~E10-S05~~ |
 | ✅ | **E10-S13** Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes | E10 | engine | M | APR-003, PROJ-002, VEN-005, BUD-007 | ~~E10-S07~~ |
 
-#### M3 — First sellable release · 14/68 done
+#### M3 — First sellable release · 14/69 done
 
 > Vendors, RFQs, awards and purchase orders by email. Closes the money loop end to end.
 
@@ -634,6 +634,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E22-S07** People have a display name, stored, copied at acceptance, returned beside every email | E22 | migration | M | USR-009, USR-010, SEC-011 | — |
 | ⬜ | **E22-S08** Expired requisitions use the warning tone | E22 | ui | S | A11Y-004 | — |
 | ⬜ | **E22-S09** Show people by name, with the email as secondary text | E22 | ui | M | A11Y-004, UX-007 | E22-S07 |
+| ⬜ | **E22-S10** Approval Availability: set, list and revoke an out-of-office delegation | E22 | ui | M | APR-004, APR-014, APR-017, APR-019, A11Y-006 | — |
 
 #### M4 — Full Phase-1 scope · 0/34 done
 

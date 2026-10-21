@@ -2336,6 +2336,20 @@ epics:
         dep:
           - E22-S07
         st: todo
+      - id: E22-S10
+        t: 'Approval Availability: set, list and revoke an out-of-office delegation'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - APR-004
+          - APR-014
+          - APR-017
+          - APR-019
+          - A11Y-006
+        dep: []
+        st: todo
 
   # ─────────────────── M4 — Full Phase-1 scope ───────────────────
 

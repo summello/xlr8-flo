@@ -8,7 +8,7 @@ Loaded into every agent session. Updated by `flo done` (status) and by Opus at e
 | | |
 |---|---|
 | Milestone | **M3 — First sellable release** |
-| Stories | 104 / 219 done |
+| Stories | 104 / 220 done |
 | Branch | milestone/M3-sellable |
 | In flight | E11-S10, E22-S01, E22-S02, E22-S04 |
 | Blocked | — |
@@ -203,7 +203,9 @@ E11-S08, E12-S19 and E13-S22 and the M2 follow-ups. Decision 99 became E30-S01 (
 standalone-to-project assignment stays with the final approver (216); baseline read grants are
 E22-S06 (217); requisition tones are in MASTER §2.3 and E22-S08 (231); people by name are E22-S07 and
 E22-S09 (232); a PO commits against the requisition's sub-project (209).
-- **No UI story owns the delegation screen** (STORY-NOTES §3). Still open.
+The delegation screen is E22-S10 (233).
+
+_(none open)_
 
 ## Session handoff — 25 Aug 2026
 
