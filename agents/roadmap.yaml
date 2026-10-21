@@ -2243,7 +2243,7 @@ epics:
           - PROJ-003
         dep:
           - E09-S17
-        st: review
+        st: done
       - id: E22-S02
         t: Soft delete for every draft document
         k: crud
@@ -2323,7 +2323,7 @@ epics:
         reqs:
           - A11Y-004
         dep: []
-        st: in_progress
+        st: review
       - id: E22-S09
         t: Show people by name, with the email as secondary text
         k: ui
@@ -2349,7 +2349,7 @@ epics:
           - APR-019
           - A11Y-006
         dep: []
-        st: in_progress
+        st: review
 
   # ─────────────────── M4 — Full Phase-1 scope ───────────────────
 

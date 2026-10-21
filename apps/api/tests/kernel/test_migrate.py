@@ -162,6 +162,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261014_0060",
         "20261014_0061",
         "20261014_0062",
+        "20261015_0063",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -762,6 +763,14 @@ def test_requisition_migration_roundtrip_preserves_existing_data_and_plants_guar
         psycopg.connect(empty_database, autocommit=True) as conn,
         correlation_context("requisition-migration"),
     ):
+        # ProjectService reads project_sponsor; this old schema predates it (E22-S01).
+        conn.execute(
+            "CREATE TABLE project_sponsor(org_id uuid, project_id uuid, user_id uuid)"
+        )
+        # ProjectService reads project.requested_budget; this old schema predates it (E22-S01).
+        next(
+            r for r in migrate.discover_migrations(MIGRATIONS) if r.revision == "20261015_0063"
+        ).upgrade(conn)
         tenant = create(conn)
         actor = admin_id(conn)
         scope = Scope(tenant.org_id)
@@ -2271,3 +2280,55 @@ def test_vendor_sensitive_downgrade_keeps_a_preexisting_permission_and_its_grant
         assert conn.execute(
             "SELECT count(*) FROM permission WHERE code='vendor.sensitive.reveal'"
         ).fetchone() == (1,)
+
+
+def test_project_requested_budget_roundtrip_keeps_projects_and_plants_the_check(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.modules.org.schemas import OrgUnitCreate
+    from flo.modules.org.service import OrgService
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261014_0060"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261015_0063")
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("requested-budget-migration"),
+    ):
+        tenant = create(conn)
+        actor = admin_id(conn)
+        bu = OrgService(conn, Scope(tenant.org_id), actor).create_unit(
+            OrgUnitCreate(code="BU", name="BU", kind="bu")
+        )
+        insert = (
+            "INSERT INTO project(id,org_id,bu_id,number,name,owner_id,department_code,"
+            "ledger_account_code,currency,created_by{extra}) "
+            "VALUES(%s,%s,%s,%s,'P',%s,'D','L','USD',%s{value})"
+        )
+        old = uuid4()
+        conn.execute(
+            insert.format(extra="", value=""), (old, tenant.org_id, bu.id, "P-1", actor, actor)
+        )
+        mig.upgrade(conn)
+        assert conn.execute(
+            "SELECT name, requested_budget FROM project WHERE id=%s", (old,)
+        ).fetchone() == ("P", None)
+        with pytest.raises(psycopg.errors.CheckViolation):
+            conn.execute(
+                insert.format(extra=",requested_budget", value=",0"),
+                (uuid4(), tenant.org_id, bu.id, "P-2", actor, actor),
+            )
+        conn.execute(
+            insert.format(extra=",requested_budget", value=",1250.5"),
+            (uuid4(), tenant.org_id, bu.id, "P-3", actor, actor),
+        )
+        mig.downgrade(conn)
+        assert conn.execute("SELECT count(*) FROM project").fetchone() == (2,)
+        assert conn.execute(
+            "SELECT count(*) FROM information_schema.columns "
+            "WHERE table_name='project' AND column_name='requested_budget'"
+        ).fetchone() == (0,)
+        mig.upgrade(conn)

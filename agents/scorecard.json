@@ -3876,6 +3876,56 @@
       },
       "recap": "Vendor tax and banking values live in vendor_sensitive behind vendors/repo.py: list and detail show last-four masks computed in SQL, POST /vendors/{id}/sensitive/reveal is audited (field names only) and no-store, PUT /vendors/{id}/sensitive needs vendor.edit plus the new vendor.sensitive.reveal grant (vendor-manager, finance, org admin; migration 0060).",
       "title": "Field-level access control and masking for tax and banking data"
+    },
+    {
+      "story": "E22-S01",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "money",
+        "auth",
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "cc369c6f-9d48-4027-aaa1-94d78fb0869b",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S01",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a14577-bea0-7ef1-873e-e7f79b80758d",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "A project is now drafted with a requested budget, an optional main project and 1-10 sponsors (form, API and the Excel projects template), and cannot be submitted without a budget and sponsor. Final approval allocates the budget inside the decision transaction: directly for a standalone project, or as a locked two-leg transfer from the main project for a child, so a short main project fails the approval and writes nothing.",
+      "title": "Create Project with budget: form and Excel, sponsors, through the project approval workflow"
     }
   ]
 }

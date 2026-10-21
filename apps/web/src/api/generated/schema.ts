@@ -1546,6 +1546,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/lookups/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lookups
+         * @description Options for the Create Project pickers; gated on project.create in the chosen unit.
+         */
+        get: operations["lookups_api_v1_projects_lookups__kind__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{id}": {
         parameters: {
             query?: never;
@@ -3171,6 +3191,13 @@ export interface components {
              * @enum {string}
              */
             status: "pending" | "approved" | "rejected" | "withdrawn";
+        };
+        /** BudgetRequest */
+        BudgetRequest: {
+            /** Amount */
+            amount: number | string;
+            /** Currency */
+            currency: string;
         };
         /** BudgetSummary */
         BudgetSummary: {
@@ -5410,6 +5437,7 @@ export interface components {
              * Format: uuid
              */
             bu_id: string;
+            budget?: components["schemas"]["BudgetRequest"] | null;
             /** Currency */
             currency: string;
             /** Department Code */
@@ -5432,11 +5460,32 @@ export interface components {
             planned_start?: string | null;
             /** Sponsor Id */
             sponsor_id?: string | null;
+            /** Sponsor Ids */
+            sponsor_ids?: string[];
         };
         /** @enum {string} */
         ProjectGroup: "status" | "bu";
         /** @enum {string} */
         ProjectHealth: "unknown" | "on_track" | "at_risk" | "off_track";
+        /** ProjectLookupOption */
+        ProjectLookupOption: {
+            /**
+             * Disabled
+             * @default false
+             */
+            disabled?: boolean;
+            /** Label */
+            label: string;
+            /** Note */
+            note?: string | null;
+            /** Value */
+            value: string;
+        };
+        /** ProjectLookupRows */
+        ProjectLookupRows: {
+            /** Rows */
+            rows: components["schemas"]["ProjectLookupOption"][];
+        };
         /** ProjectPage */
         ProjectPage: {
             /** Next Cursor */
@@ -5452,6 +5501,7 @@ export interface components {
             actual_end?: string | null;
             /** Actual Start */
             actual_start?: string | null;
+            budget?: components["schemas"]["BudgetRequest"] | null;
             /** Description */
             description?: string | null;
             /** External Ref */
@@ -5469,6 +5519,8 @@ export interface components {
             planned_start?: string | null;
             /** Sponsor Id */
             sponsor_id?: string | null;
+            /** Sponsor Ids */
+            sponsor_ids?: string[] | null;
         };
         /** ProjectRead */
         ProjectRead: {
@@ -5538,6 +5590,8 @@ export interface components {
             planned_end: string | null;
             /** Planned Start */
             planned_start: string | null;
+            /** Requested Budget */
+            requested_budget?: string | null;
             /** Schedule Variance Days */
             schedule_variance_days: number | null;
             /** Sponsor Id */
@@ -11439,6 +11493,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    lookups_api_v1_projects_lookups__kind__get: {
+        parameters: {
+            query: {
+                bu_id: string;
+                q?: string;
+                limit?: number;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                kind: "main_projects" | "people";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectLookupRows"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */
