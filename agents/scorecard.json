@@ -3969,6 +3969,49 @@
       },
       "recap": "Requisition expired now maps to the warning tone (Warning icon + Expired text); map test and a new icon assertion cover it.",
       "title": "Expired requisitions use the warning tone"
+    },
+    {
+      "story": "E11-S10",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 1,
+          "blockers": 1,
+          "blockers_dismissed": 1
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "225c2611-95eb-4a11-9f79-171355f17ec6",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S10",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a15f00-dd30-7032-98f5-952f272a08ee",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Decision panel footer is a two-column grid below the sheet's content width of 560px (Approve spans row 3), DOM and tab order unchanged. The close button was already unobscured in the app; e2e and axe tests at 375/768 lock it in.",
+      "title": "Shared decision panel at phone width: footer reflow, close button never covered"
     }
   ]
 }

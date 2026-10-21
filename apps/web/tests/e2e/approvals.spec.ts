@@ -293,3 +293,79 @@ test("a failed revoke keeps the dialog open and says nothing changed", async ({ 
   await expect(page.getByRole("alertdialog")).toHaveCount(0);
   await expect(page.getByRole("row", { name: /delegate@example.test/ })).toContainText("Revoked");
 });
+
+// E11-S10: the shared decision panel at phone width. Self-contained so it merges beside other helper edits.
+const footer = (page: Page) => page.locator(".appr-sheet-body .appr-actions");
+type Btn = { name: string; x: number; y: number; w: number; h: number; clipped: boolean };
+const footerButtons = async (page: Page) => footer(page).locator("button").evaluateAll((els) => els.map((el) => {
+  const r = el.getBoundingClientRect();
+  return { name: (el.textContent ?? "").trim(), x: r.x, y: r.y, w: r.width, h: r.height, clipped: el.scrollWidth > el.clientWidth };
+}));
+
+test("at 375 the footer is three rows in reading order, 44px targets, no scroll, close is not covered", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await stubApprovals(page);
+  await open(page);
+  await openPanel(page, /REQ-00401/);
+  const names = ["Close", "Post Comment", "Return for Changes", "Reject", "Approve"];
+  const [close, post, ret, reject, approve] = (await footerButtons(page)) as [Btn, Btn, Btn, Btn, Btn];
+  expect([close, post, ret, reject, approve].map((b) => b.name)).toEqual(names);
+  expect(close.y).toBe(post.y);
+  expect(close.x).toBeLessThan(post.x);
+  expect(ret.y).toBe(reject.y);
+  expect(ret.x).toBeLessThan(reject.x);
+  expect(ret.y).toBeGreaterThan(close.y);
+  expect(approve.y).toBeGreaterThan(ret.y);
+  for (const b of [close, post, ret, reject, approve]) { expect(b.h).toBeGreaterThanOrEqual(44); expect(b.clipped).toBe(false); }
+  // The footer contains its buttons (a fixed height would let them overflow it).
+  expect(await footer(page).evaluate((el) => el.scrollHeight <= el.clientHeight)).toBe(true);
+  expect(approve.w).toBeGreaterThanOrEqual(Math.max(close.w, post.w, ret.w, reject.w));
+  expect(await page.locator(".appr-sheet").evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+  // The header close button is the element at its own centre.
+  const hit = await page.locator(".appr-close").evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest(".appr-close") === el;
+  });
+  expect(hit).toBe(true);
+  // Tab order equals the visual order.
+  await page.getByLabel("Comment or Reason").focus();
+  const seen: string[] = [];
+  for (let i = 0; i < 12 && seen.length < 5; i += 1) {
+    await page.keyboard.press("Tab");
+    const label = await page.evaluate(() => document.activeElement?.closest(".appr-actions") ? (document.activeElement.textContent ?? "").trim() : "");
+    if (label) seen.push(label);
+  }
+  expect(seen).toEqual(names);
+});
+
+test("at 768 the close button is not covered by the shell", async ({ page }) => {
+  await page.setViewportSize({ width: 768, height: 900 });
+  await stubApprovals(page);
+  await open(page);
+  await openPanel(page, /REQ-00401/);
+  const hit = await page.locator(".appr-close").evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest(".appr-close") === el;
+  });
+  expect(hit).toBe(true);
+});
+
+test("at 375 a task the caller cannot decide shows Close and Post Comment's place only, without a gap", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await stubApprovals(page);
+  await open(page, "completed");
+  await openPanel(page, /REQ-00404/);
+  const buttons = await footerButtons(page);
+  expect(buttons.map((b) => b.name)).toEqual(["Close"]);
+  expect(buttons[0]!.x).toBeLessThan(40);
+});
+
+test("at 1440 the footer is one right-aligned flex row", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await stubApprovals(page);
+  await open(page);
+  await openPanel(page, /REQ-00401/);
+  await expect(footer(page)).toHaveCSS("display", "flex");
+  const ys = (await footerButtons(page)).map((b) => Math.round(b.y));
+  expect(new Set(ys).size).toBe(1);
+});

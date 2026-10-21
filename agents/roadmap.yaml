@@ -1435,7 +1435,7 @@ epics:
           - APR-020
         dep:
           - E11-S09
-        st: review
+        st: done
       - id: E11-S02
         t: 'Typed contacts: billing, service/delivery, additional types'
         k: crud
