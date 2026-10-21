@@ -228,7 +228,7 @@ def test_soft_delete_migration_down_keeps_rows_then_up_again(header_db):
     from flo.modules.projects.service import ProjectService
 
     ProjectService(db[0], Scope(db[1]), db[3]).delete(proj.id)
-    migration = load_migration(ROOT / "migrations" / "20261014_0062_soft_delete.py", "soft_delete")
+    migration = load_migration(ROOT / "migrations" / "20261021_0063_soft_delete.py", "soft_delete")
     migration.downgrade(db[0])
     assert status_of(db, "requisition", req.id) == "withdrawn"
     assert status_of(db, "project", proj.id) == "abandoned"
