@@ -573,7 +573,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E11-S03** Vendor documents with issue/expiry, verification status, expiry notification | E11 | crud | M | VEN-003, VEN-011, OBS-004 | ~~E11-S01~~, ~~E09-S10~~ |
 | ✅ | **E11-S04** Field-level access control and masking for tax and banking data | E11 | security | M | VEN-014, CUS-008, PRIV-001 | ~~E11-S01~~, ~~E02-S05~~ |
 | ✅ | **E11-S05** Onboarding request, configurable questionnaire, weights and scoring | E11 | engine | L | VEN-004, VEN-006 | ~~E11-S01~~ |
-| ⬜ | **E11-S06** Duplicate identifier detection, approval on create/activate/suspend/reactivate | E11 | engine | M | VEN-005, VEN-010, VEN-012 | ~~E11-S05~~, ~~E10-S13~~, ~~E11-S02~~, ~~E11-S04~~ |
+| 🔨 | **E11-S06** Duplicate identifier detection, approval on create/activate/suspend/reactivate | E11 | engine | M | VEN-005, VEN-010, VEN-012 | ~~E11-S05~~, ~~E10-S13~~, ~~E11-S02~~, ~~E11-S04~~ |
 | ✅ | **E11-S07** Performance scoring across quality, price, delivery, service, with dispute history | E11 | crud | M | VEN-007, VEN-015 | ~~E11-S01~~ |
 | ✅ | **E11-S08** Vendor open questions for the operator (parking story) | E11 | docs | S | VEN-003, VEN-007, VEN-014 | — |
 | ⬜ | **E11-S11** Vendor eligibility: one server rule, one web component | E11 | engine | M | VEN-012, A11Y-004 | ~~E11-S03~~, E11-S06, ~~E11-S09~~ |

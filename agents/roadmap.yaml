@@ -1501,7 +1501,7 @@ epics:
           - E10-S13
           - E11-S02
           - E11-S04
-        st: todo
+        st: in_progress
       - id: E11-S07
         t: Performance scoring across quality, price, delivery, service, with dispute
           history
