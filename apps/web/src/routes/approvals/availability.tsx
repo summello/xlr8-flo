@@ -6,22 +6,24 @@ import { apiClient } from "../../api/client";
 import type { components } from "../../api/generated/schema";
 import { writeHeaders } from "../../features/auth/api";
 import {
-  DOCUMENT_TYPES,
-  type DocumentType,
   buildDelegation,
   validateAvailability,
   type AvailabilityForm,
   type Problem,
 } from "../../components/approvals/availability-model";
+import InboxStatus from "../../components/approvals/InboxStatus";
+import type { StatusTone } from "../../components/approvals/inbox-model";
 import "../../styles/approvals.css";
 
 type Delegation = components["schemas"]["DelegationRead"];
 type Person = components["schemas"]["PickerRow"];
 const STATE_WORDS: Record<Delegation["state"], string> = { active: "Active", scheduled: "Upcoming", ended: "Ended", revoked: "Revoked" };
-const blank: AvailabilityForm = { starts: "", ends: "", delegate: "", reason: "Out of office", covers: "all", types: [] };
+const STATE_TONES: Record<Delegation["state"], StatusTone> = { active: "success", scheduled: "info", ended: "neutral", revoked: "danger" };
+const blank: AvailabilityForm = { starts: "", ends: "", delegate: "", reason: "Out of office", covers: "all" };
 
 export default function Availability({ navigate }: { navigate: (href: string) => void }) {
-  const [tab, setTab] = useState<"mine" | "organization">("mine");
+  const [tab, setTab] = useState<"mine" | "organization">(() => new URLSearchParams(window.location.search).get("view") === "organization" ? "organization" : "mine");
+  const [organizationFailed, setOrganizationFailed] = useState(false);
   const [form, setForm] = useState<AvailabilityForm>(blank);
   const [problems, setProblems] = useState<Problem[]>([]);
   const [saving, setSaving] = useState(false);
@@ -38,6 +40,7 @@ export default function Availability({ navigate }: { navigate: (href: string) =>
   const [revoking, setRevoking] = useState<Delegation>();
   const [revokeError, setRevokeError] = useState("");
   const summary = useRef<HTMLDivElement>(null);
+  const opener = useRef<HTMLElement | null>(null);
   const key = useRef(crypto.randomUUID());
   const set = (patch: Partial<AvailabilityForm>) => { setForm((f) => ({ ...f, ...patch })); key.current = crypto.randomUUID(); };
 
@@ -52,6 +55,7 @@ export default function Availability({ navigate }: { navigate: (href: string) =>
       setLoadFailed(!a.data);
       if (a.data) setMine(a.data.rows);
       setCovering(b.data?.rows ?? []);
+      setOrganizationFailed(!c.data);
       setOrganization(c.data?.rows); // refused for people without approval.admin: the tab stays hidden
     }).catch(() => { if (active) setLoadFailed(true); });
     return () => { active = false; };
@@ -65,11 +69,11 @@ export default function Availability({ navigate }: { navigate: (href: string) =>
     return () => { active = false; };
   }, [reload]);
 
-  // Eligibility is asked for the whole selection: a colleague must hold every selected type.
-  const selection = form.covers === "some" ? [...form.types].sort().join(",") : "";
+  // Eligibility is asked for what is covered: a colleague must hold that type.
+  const selection = form.covers === "po" ? "po" : "";
   useEffect(() => {
     let active = true;
-    const document_types = selection === "" ? undefined : (selection.split(",") as DocumentType[]);
+    const document_types = selection === "" ? undefined : (["po"] as "po"[]);
     void apiClient.GET("/api/v1/approvals/delegations/eligible-delegates", { params: { query: { document_types } } })
       .then((r) => { if (!active) return; setPeople(r.data?.rows ?? []); setPeopleFailed(!r.data); })
       .catch(() => { if (active) setPeopleFailed(true); });
@@ -173,10 +177,7 @@ export default function Availability({ navigate }: { navigate: (href: string) =>
             <fieldset className="appr-field">
               <legend>Covers</legend>
               <label><input type="radio" name="avail-covers" checked={form.covers === "all"} onChange={() => set({ covers: "all" })} /> All my approvals</label>
-              <label><input type="radio" name="avail-covers" checked={form.covers === "some"} onChange={() => set({ covers: "some" })} /> Only some types</label>
-              {form.covers === "some" && DOCUMENT_TYPES.map(([value, label]) => (
-                <label key={value} className="appr-sub-option"><input type="checkbox" checked={form.types.includes(value)} onChange={(e) => set({ types: e.target.checked ? [...form.types, value] : form.types.filter((t) => t !== value) })} /> {label}</label>
-              ))}
+              <label><input type="radio" name="avail-covers" checked={form.covers === "po"} onChange={() => set({ covers: "po" })} /> Purchase orders only</label>
             </fieldset>
             <div className="appr-field">
               <label htmlFor="avail-reason">Reason</label>
@@ -192,7 +193,9 @@ export default function Availability({ navigate }: { navigate: (href: string) =>
               {organization !== undefined && <button role="tab" type="button" aria-selected={tab === "organization"} tabIndex={tab === "organization" ? 0 : -1} onClick={() => setTab("organization")}>Organization</button>}
             </div>
             <div role="tabpanel">
-              {loadFailed ? (
+              {tab === "organization" && organizationFailed ? (
+                <div role="alert" className="appr-state"><h3>Could not load organization delegations</h3><p>You may not have access to this view. No organization data is shown.</p><button type="button" onClick={() => setTab("mine")}>Back to My Delegations</button></div>
+              ) : loadFailed ? (
                 <div role="alert" className="appr-state"><h3>Could not load your delegations</h3><p>Anything you typed above is kept.</p><button type="button" onClick={() => setReload((n) => n + 1)}>Try again</button></div>
               ) : rows === undefined ? (
                 <p role="status">Loading delegations</p>
@@ -207,9 +210,9 @@ export default function Availability({ navigate }: { navigate: (href: string) =>
                       <tr key={d.id}>
                         <th scope="row">{tab === "organization" ? `${d.delegator_email} to ${d.delegate_email}` : d.delegate_email}</th>
                         <td data-label="Period"><time dateTime={d.starts_at}>{formatDay(d.starts_at)}</time> to <time dateTime={d.ends_at}>{formatDay(d.ends_at)}</time></td>
-                        <td data-label="Covers">{d.document_types ? d.document_types.join(", ") : "All my approvals"}</td>
-                        <td data-label="Status">{STATE_WORDS[d.state]}</td>
-                        <td data-label="Action">{d.state === "active" || d.state === "scheduled" ? <button type="button" onClick={() => { setRevokeError(""); setRevoking(d); }}>Revoke<span className="visually-hidden"> delegation to {d.delegate_email}</span></button> : <span className="appr-meta">Kept in the record</span>}</td>
+                        <td data-label="Covers">{d.document_types ? (d.document_types.join() === "po" ? "Purchase orders only" : d.document_types.join(", ")) : "All my approvals"}</td>
+                        <td data-label="Status"><InboxStatus word={STATE_WORDS[d.state]} tone={STATE_TONES[d.state]} /></td>
+                        <td data-label="Action">{d.state === "active" || d.state === "scheduled" ? <button type="button" onClick={(event) => { opener.current = event.currentTarget; setRevokeError(""); setRevoking(d); }}>Revoke<span className="visually-hidden"> delegation to {d.delegate_email}</span></button> : <span className="appr-meta">Kept in the record</span>}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -254,7 +257,7 @@ export default function Availability({ navigate }: { navigate: (href: string) =>
       <Dialog.Root open={revoking !== undefined} onOpenChange={(open) => { if (!open) setRevoking(undefined); }}>
         <Dialog.Portal>
           <Dialog.Overlay className="appr-scrim" />
-          <Dialog.Content role="alertdialog" className="appr-dialog" onOpenAutoFocus={(event) => { event.preventDefault(); document.getElementById("avail-keep")?.focus(); }}>
+          <Dialog.Content role="alertdialog" className="appr-dialog" onCloseAutoFocus={(event) => { event.preventDefault(); if (opener.current?.isConnected) opener.current.focus(); }} onOpenAutoFocus={(event) => { event.preventDefault(); document.getElementById("avail-keep")?.focus(); }}>
             <Dialog.Title>Revoke this delegation?</Dialog.Title>
             <Dialog.Description>
               New approvals stop going to {revoking?.delegate_email}. Tasks still undecided come back to you. Decisions already made stay recorded as made by {revoking?.delegate_email}, acting for you.

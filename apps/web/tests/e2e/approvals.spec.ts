@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 import { inboxRow, stubApprovals } from "./approvals-fixture";
@@ -240,12 +241,14 @@ test("availability: the summary lists problems, values are kept, a good save lis
   await expect(page.getByRole("status").first()).toContainText("Approvals pass to delegate@example.test");
   expect(String(state.posts.at(-1)?.body.starts_at)).toMatch(/^2030-0[12]-\d\dT/);
   await expect(page.getByRole("row", { name: /delegate@example.test/ })).toContainText("Upcoming");
+  await expect(page.getByRole("row", { name: /delegate@example.test/ }).locator('.appr-pill[data-tone="info"] svg')).toBeVisible();
   await page.getByRole("button", { name: /^Revoke/ }).click();
   await expect(page.getByRole("alertdialog")).toBeVisible();
   await expect(page.getByRole("button", { name: "Keep Delegation" })).toBeFocused();
   await expect(page.getByRole("alertdialog")).toContainText("Tasks still undecided come back to you");
   await page.getByRole("button", { name: "Revoke Delegation" }).click();
   await expect(page.getByRole("row", { name: /delegate@example.test/ })).toContainText("Revoked");
+  await expect(page.getByRole("row", { name: /delegate@example.test/ }).locator('.appr-pill[data-tone="danger"]')).toBeVisible();
   await expect(page.getByRole("row", { name: /delegate@example.test/ })).toContainText("Kept in the record");
 });
 
@@ -255,7 +258,7 @@ test("the organization tab appears for administrators", async ({ page }) => {
   await expect(page.getByRole("tab", { name: "Organization" })).toBeVisible();
 });
 
-test("eligibility is requested for the whole selection and decisions on my behalf render every state", async ({ page }) => {
+test("eligibility is requested for what is covered and decisions on my behalf render every state", async ({ page }) => {
   const state = await stubApprovals(page);
   state.behalfFails = true;
   await page.goto("/approvals/availability");
@@ -269,10 +272,8 @@ test("eligibility is requested for the whole selection and decisions on my behal
   const table = page.getByRole("table", { name: "Decisions made on your behalf" });
   await expect(table).toContainText("delegate@example.test");
   await expect(table).toContainText("Finance");
-  await page.getByLabel("Only some types").check();
-  await page.getByLabel("Requisitions").check();
-  await page.getByLabel("Purchase orders").check();
-  await expect.poll(() => state.eligibleQueries.at(-1)?.getAll("document_types").sort()).toEqual(["po", "requisition"]);
+  await page.getByLabel("Purchase orders only").check();
+  await expect.poll(() => state.eligibleQueries.at(-1)?.getAll("document_types")).toEqual(["po"]);
   await expect(page.getByText("No one else may approve everything you cover")).toBeVisible();
 });
 
@@ -293,6 +294,59 @@ test("a failed revoke keeps the dialog open and says nothing changed", async ({ 
   await expect(page.getByRole("alertdialog")).toHaveCount(0);
   await expect(page.getByRole("row", { name: /delegate@example.test/ })).toContainText("Revoked");
 });
+
+test("Pass Approvals To lists only the eligible people the server returned", async ({ page }) => {
+  await stubApprovals(page);
+  await page.goto("/approvals/availability");
+  await expect(page.getByLabel(/^Pass Approvals To/).locator("option")).toHaveText(["Choose a colleague", "delegate@example.test"]);
+});
+
+test("keyboard only: fill the form, revoke from the row, Escape returns focus to the row's button", async ({ page }) => {
+  await stubApprovals(page);
+  await page.goto("/approvals/availability");
+  // Native date segments differ per browser; the dates are set directly and every control after them is reached by keyboard.
+  await page.getByLabel(/^Starts/).fill("2030-02-01");
+  await page.getByLabel(/^Ends/).fill("2030-02-05");
+  await page.getByLabel(/^Ends/).focus();
+  while (!(await page.getByLabel(/^Pass Approvals To/).evaluate((el) => el === document.activeElement))) await page.keyboard.press("Tab");
+  await expect(page.getByLabel(/^Pass Approvals To/)).toBeFocused();
+  await page.keyboard.type("delegate");
+  await expect(page.getByLabel(/^Pass Approvals To/)).toHaveValue(/.+/);
+  await page.getByRole("button", { name: "Save Out-of-Office" }).focus();
+  await page.keyboard.press("Enter");
+  const revoke = page.getByRole("button", { name: /^Revoke/ });
+  await revoke.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("button", { name: "Keep Delegation" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
+  await expect(revoke).toBeFocused();
+});
+
+test("a forced organization view that the server refuses shows the error state, not data", async ({ page }) => {
+  await stubApprovals(page);
+  await page.goto("/approvals/availability?view=organization");
+  await expect(page.getByRole("tab", { name: "Organization" })).toHaveCount(0);
+  await expect(page.getByText("Could not load organization delegations")).toBeVisible();
+  await expect(page.getByRole("table")).toHaveCount(0);
+});
+
+for (const theme of ["light", "dark"] as const) {
+  test(`availability page and the open revoke dialog have no axe violations in ${theme}`, async ({ page }) => {
+    await page.addInitScript((t) => localStorage.setItem("xlr8flo.theme", t), theme);
+    await stubApprovals(page);
+    await page.goto("/approvals/availability");
+    await expect(page.getByRole("heading", { name: "Approval Availability" })).toBeVisible();
+    expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
+    await page.getByLabel(/^Starts/).fill("2030-02-01");
+    await page.getByLabel(/^Ends/).fill("2030-02-05");
+    await page.getByLabel(/^Pass Approvals To/).selectOption({ label: "delegate@example.test" });
+    await page.getByRole("button", { name: "Save Out-of-Office" }).click();
+    await page.getByRole("button", { name: /^Revoke/ }).click();
+    await expect(page.getByRole("alertdialog")).toBeVisible();
+    expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
+  });
+}
 
 // E11-S10: the shared decision panel at phone width. Self-contained so it merges beside other helper edits.
 const footer = (page: Page) => page.locator(".appr-sheet-body .appr-actions");

@@ -4012,6 +4012,49 @@
       },
       "recap": "Decision panel footer is a two-column grid below the sheet's content width of 560px (Approve spans row 3), DOM and tab order unchanged. The close button was already unobscured in the app; e2e and axe tests at 375/768 lock it in.",
       "title": "Shared decision panel at phone width: footer reflow, close button never covered"
+    },
+    {
+      "story": "E22-S10",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 7,
+          "findings": 9,
+          "blockers": 7,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "0034377a-920b-473c-a89b-a2e859704270",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S10",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a15fea-552d-71b2-88fc-53be3dc37c12",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Approval Availability screen already existed; added the Account menu link, fixed focus return to the row's Revoke button after the dialog closes, and added eligibility, keyboard-only and forced-organization e2e tests.",
+      "title": "Approval Availability: set, list and revoke an out-of-office delegation"
     }
   ]
 }
