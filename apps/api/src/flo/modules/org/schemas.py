@@ -1,6 +1,6 @@
 """Organization HTTP contracts."""
 
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from typing import Literal
 from uuid import UUID
 
@@ -110,7 +110,9 @@ class MasterCreate(BaseModel):
     code: str = Field(min_length=1, description="Immutable; trimmed and stored uppercase.")
     name: str = Field(min_length=1)
     attributes: dict[str, JsonValue] = Field(default_factory=dict)
-    effective_from: date = Field(default_factory=date.today)
+    # UTC, like org.service.today() that lookups use: a local date made new master data not yet
+    # effective in a time zone ahead of UTC (22 Oct 2026, IST before 05:30).
+    effective_from: date = Field(default_factory=lambda: datetime.now(UTC).date())
     effective_to: date | None = None
     active: bool = True
 
