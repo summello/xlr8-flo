@@ -2350,6 +2350,15 @@ epics:
           - A11Y-006
         dep: []
         st: done
+      - id: E22-S11
+        t: 'Faster checks: template test databases, sharded backend and E2E CI'
+        k: chore
+        s: M
+        tags: []
+        reqs:
+          - SEC-012
+        dep: []
+        st: todo
 
   # ─────────────────── M4 — Full Phase-1 scope ───────────────────
 
