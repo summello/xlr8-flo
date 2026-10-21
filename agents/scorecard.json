@@ -3926,6 +3926,49 @@
       },
       "recap": "A project is now drafted with a requested budget, an optional main project and 1-10 sponsors (form, API and the Excel projects template), and cannot be submitted without a budget and sponsor. Final approval allocates the budget inside the decision transaction: directly for a standalone project, or as a locked two-leg transfer from the main project for a child, so a short main project fails the approval and writes nothing.",
       "title": "Create Project with budget: form and Excel, sponsors, through the project approval workflow"
+    },
+    {
+      "story": "E22-S08",
+      "kind": "ui",
+      "size": "S",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "3bd90f61-6379-4eee-9fb7-305c0a69a657",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S08",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a15fa1-4ff9-7730-ac65-b193abb282b1",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Requisition expired now maps to the warning tone (Warning icon + Expired text); map test and a new icon assertion cover it.",
+      "title": "Expired requisitions use the warning tone"
     }
   ]
 }

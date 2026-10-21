@@ -2323,7 +2323,7 @@ epics:
         reqs:
           - A11Y-004
         dep: []
-        st: review
+        st: done
       - id: E22-S09
         t: Show people by name, with the email as secondary text
         k: ui

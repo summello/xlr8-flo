@@ -35,7 +35,7 @@ const expectedStatus = {
     rejected: "danger",
     withdrawn: "neutral",
     cancelled: "danger",
-    expired: "danger",
+    expired: "warning",
   },
   purchase_order: {
     draft: "neutral",
@@ -168,6 +168,17 @@ describe("StatusPill", () => {
       expect(markup).toContain('aria-hidden="true"');
       expect(markup.match(new RegExp(`>${label}<`, "g"))).toHaveLength(1);
     }
+  });
+
+  it("renders an expired requisition with the warning tone and Warning icon, not XCircle", () => {
+    const markup = renderSelection({ docType: "requisition", status: "expired" });
+    const icon = (node: React.ReactElement) => renderToStaticMarkup(node).replace(/^<svg[^>]*>/, "");
+
+    expect(markup).toContain('data-tone="warning"');
+    expect(markup).toContain(icon(<Warning />));
+    expect(markup).not.toContain(icon(<XCircle />));
+    expect(renderSelection({ docType: "requisition", status: "rejected" })).toContain('data-tone="danger"');
+    expect(renderSelection({ docType: "requisition", status: "withdrawn" })).toContain('data-tone="neutral"');
   });
 
   it("snapshots square status geometry through the dedicated pill tokens", () => {
