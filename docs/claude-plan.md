@@ -635,7 +635,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E22-S08** Expired requisitions use the warning tone | E22 | ui | S | A11Y-004 | — |
 | ⬜ | **E22-S09** Show people by name, with the email as secondary text | E22 | ui | M | A11Y-004, UX-007 | E22-S07 |
 | ✅ | **E22-S10** Approval Availability: set, list and revoke an out-of-office delegation | E22 | ui | M | APR-004, APR-014, APR-017, APR-019, A11Y-006 | — |
-| ⬜ | **E22-S11** Faster checks: template test databases, sharded backend and E2E CI | E22 | chore | M | SEC-012 | — |
+| 🔨 | **E22-S11** Faster checks: template test databases, sharded backend and E2E CI | E22 | chore | M | SEC-012 | — |
 
 #### M4 — Full Phase-1 scope · 0/34 done
 
