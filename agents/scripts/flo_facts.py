@@ -59,6 +59,13 @@ def ci_red(marker: str | None, submitted_sha: str | None) -> bool:
     return bool(marker and submitted_sha and submitted_sha in marker.split("\n", 1)[0])
 
 
+def open_blockers(reviews: list[dict]) -> list[dict]:
+    """Blocker findings still open: every blocker except those Opus dismissed in arbitration
+    (`"arbitration": "dismissed"`, AGENTS.md §2.3; the scorecard counts them against the reviewer)."""
+    return [f for r in reviews for f in r.get("findings", [])
+            if f.get("severity") == "blocker" and f.get("arbitration") != "dismissed"]
+
+
 def rounds_done(names: list[str], sid: str) -> int:
     """Highest round number among .scratch/<sid>.roundN.md files."""
     nums = [int(m.group(1)) for n in names if n.startswith(f"{sid}.") and (m := ROUND.search(n))]

@@ -101,3 +101,15 @@ def test_ci_red_counts_only_a_marker_naming_the_submitted_commit() -> None:
     assert not F.ci_red(marker, None)
     # a sha appearing only in the log body does not count
     assert not F.ci_red("story/E1-S1 abc123 run 9 failure\ndef456\n", "def456")
+
+
+def test_open_blockers_skip_only_what_arbitration_dismissed() -> None:
+    reviews = [
+        {"findings": [
+            {"severity": "blocker", "problem": "real"},
+            {"severity": "blocker", "problem": "ruled out", "arbitration": "dismissed"},
+            {"severity": "major", "problem": "not a blocker"},
+        ]},
+        {"findings": [{"severity": "blocker", "problem": "upheld", "arbitration": "upheld"}]},
+    ]
+    assert [f["problem"] for f in F.open_blockers(reviews)] == ["real", "upheld"]

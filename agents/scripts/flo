@@ -844,7 +844,8 @@ def cmd_gate(argv):
         fails.append(f"unassigned reviewer(s) {sorted(unexpected)} — record a substitution in task.json")
     if pkt["author"] in {r["reviewer"] for r in counted}:
         fails.append("the author reviewed their own story")
-    blockers = [f for r in revs for f in r.get("findings", []) if f.get("severity") == "blocker"]
+    import flo_facts as F
+    blockers = F.open_blockers(revs)
     if blockers:
         fails.append(f"{len(blockers)} open blocker finding(s)")
     unreadable = [r for r in counted if verdict_of(r) is None]
