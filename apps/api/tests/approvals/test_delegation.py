@@ -36,7 +36,9 @@ from tests.isolation.test_real_sessions import client, headers, login
 from tests.kernel.test_migrate import empty_database as empty_database  # noqa: F401
 from tests.org.test_bootstrap import bootstrap_db as bootstrap_db  # noqa: F401
 
-NOW = datetime(2026, 10, 12, 9, 0, tzinfo=UTC)
+# Relative to today: decide() checks a delegation's window against the real clock, so a fixed date
+# expired every delegation here once the 7-day window passed (CI red from 19 Oct 2026).
+NOW = datetime.now(UTC).replace(hour=9, minute=0, second=0, microsecond=0)
 
 
 def users_graph(*user_ids, repeat=False, due_days=None, escalate=None):

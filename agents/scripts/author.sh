@@ -12,7 +12,8 @@ A="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["author"])'
 P="$D/$S.prompt"
 cat > "$P" <<EOP
 You are the AUTHOR for story $S. Your working directory is this story worktree; stay inside it and never touch the parent repo or another worktree.
-Read AGENTS.md, agents/project-memory.md, docs/m1-conventions.md, docs/author-traps.md and design/$S.md, then implement the packet exactly.
+Read AGENTS.md, agents/project-memory.md, docs/m1-conventions.md, docs/m2-conventions.md, docs/author-traps.md and design/$S.md, then implement the packet exactly.
+Write it the ponytail way (use the ponytail skill if you have it): trace the real flow first, then take the laziest solution that is correct. In order: does it need to exist, is it already in kernel/ or a module service, does the stdlib do it, does Postgres or the browser do it, does an installed dependency do it, can it be one line. No interface with one implementation, no config for a value that never changes, no scaffolding for later, the shortest diff in the right place. A deliberate shortcut with a ceiling gets a "ponytail:" comment naming the ceiling and the upgrade path (AGENTS.md 3.6). Never simplify away validation at a trust boundary, authorization, money rules, accessibility or a test.
 Environment: dependencies are installed (apps/api/.venv, apps/web/node_modules); there is no network. A real Postgres 17 runs at 127.0.0.1:5432. NEVER use the shared flo_test database: get your own with
   export TEST_DATABASE_URL="\$(apps/api/.venv/bin/python agents/scripts/flo db reset)"
 From apps/api: uv run --offline pytest -q, uv run --offline ruff check ., uv run --offline mypy --strict src/flo. From apps/web: npm run lint, npm run typecheck, npm run test. Regenerate the OpenAPI client when you add or change an endpoint (PATH must include apps/api/.venv/bin; npm run generate:api in apps/web) and commit the generated files.
@@ -34,7 +35,7 @@ case "$A" in
     MODE="$1"; CFG="$2"; SID="$3"; ACCT="$4"
     # A resumed session already holds the packet and its own work: send only the new input
     # (review findings, a CI log, a continuation note), never the whole brief again.
-    { printf 'ROLE xlr8flo-worker %s account %s. Use the xlr8flo-worker skill.\n\n' "$S" "$ACCT"
+    { printf 'ROLE xlr8flo-worker %s account %s. Use the xlr8flo-worker and ponytail skills.\n\n' "$S" "$ACCT"
       if [ "$MODE" = new ]; then cat "$P"; elif [ -n "$EXTRA" ]; then cat "$EXTRA"
       else echo "Continue the story from where you stopped; the tree is as you left it."; fi; } > "$P.role"
     if [ "$MODE" = new ]; then
@@ -57,4 +58,6 @@ case "$A" in
     ;;
   *) echo "author.sh: no launcher for author '$A'" >&2; exit 1 ;;
 esac
+# the fleet supervisor (flo facts) and the manual runners tell a running author from a finished one by this
+echo $! > "$D/$S.author.pid"
 echo "launched $S ($A)"

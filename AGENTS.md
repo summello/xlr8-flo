@@ -177,9 +177,9 @@ while the reviewers work — the repository is public, so those minutes are unme
 `flo done` refuses unless: `flo gate` is green, the reviewer floor in `policy.min_reviewers`
 is met with `ran_tests: true` and `verdict: approve`, and — for gated stories — Opus's final
 review is recorded **and** the story's CI run is green on the submitted commit with no story
-commits since. An ungated story merges without waiting for its CI; `agents/scripts/ci-watch.sh`
-reports a red run to the planner, who resumes the author's session with the failing log
-(`agents/scripts/fix.sh`). The fix lands on the milestone branch as `<STORY>: fix CI ...`. What
+commits since. An ungated story merges without waiting for its CI; `flo ci-watch` (one pass on
+every fleet supervisor tick) marks a red run, and the supervisor resumes the author's session with
+the failing log (`agents/scripts/fix.sh`). The fix lands on the milestone branch as `<STORY>: fix CI ...`. What
 this trades: an ungated defect the light gate misses reaches the milestone branch, found by its
 own story CI within the hour, and stops the line like any red milestone run.
 
@@ -214,9 +214,17 @@ agents/scripts/begin.sh  E09-S01        # flo start, installs, launch the assign
 agents/scripts/submit.sh E09-S01        # merge the milestone in, light check, push story/<id>
 agents/scripts/review.sh E09-S01 codex  # every story; gated ones also get a fresh Opus session
 agents/scripts/finish.sh E09-S01        # gate + done + push; one finish at a time (lock)
-agents/scripts/ci-watch.sh &            # once, in the background: red story CI -> .scratch/<S>.ci-red
-agents/scripts/fix.sh    E09-S01        # resume the author's session with the red log
+agents/scripts/fix.sh    E09-S01        # resume the author's session with the red log (after flo ci-watch)
 ```
+
+**The fleet supervisor runs these steps itself (21 Oct 2026, operator-approved).** A user-scoped
+supervisor (`~/.claude/fleet/fleet.py`, configured by `agents/fleet.toml`) runs one tick every five
+minutes under launchd: it reads `flo facts`, starts each in-flight story's next step in the order
+above, runs a review round from the verdicts (`flo round`), starts the next story when there is
+room, and gates every step on the Claude and Codex limits. It never merges to `main`, never picks a
+model and never answers a blocked question; those, arbitration after three rounds and red
+milestone CI go to the operator and the planner. It is installed paused, and while it is active
+the manual runners (`story-run`, `review-run`, `ship`, `codex-run`) refuse to run.
 
 - **One planner.** Exactly one session assigns, dispatches and finishes (`xlr8flo-planner`); a
   second would race on `flo assign`, `roadmap.yaml` and the finish lock. The Opus session on the
