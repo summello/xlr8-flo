@@ -2129,6 +2129,7 @@ def cmd_facts(argv):
             continue
         pkt = json.loads((wt / "task.json").read_text())
         author, sub = pkt["author"], pkt.get("submitted_sha")
+        red = F.ci_red(_read(sc / f"{sid}.ci-red"), sub)
         running = ["author"] if _alive(sc / f"{sid}.author.pid") else []
         verdicts = {}
         for r in _reviewers(pkt):

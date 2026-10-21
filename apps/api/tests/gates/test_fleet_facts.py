@@ -90,3 +90,14 @@ def test_round_file_sends_changes_requested_findings_most_severe_first() -> None
     assert "(blocker, FIN-006, codex) b.py:9: no lock" in body and "Fix: lock first" in body
     assert "approver's note" not in text
     assert "No submit, push or merge." in text
+
+
+def test_ci_red_counts_only_a_marker_naming_the_submitted_commit() -> None:
+    marker = "story/E1-S1 abc123 run 9 failure\nFAILED test_x\n"
+    assert F.ci_red(marker, "abc123")
+    # re-submitted: the old run's marker is stale until the new run completes
+    assert not F.ci_red(marker, "def456")
+    assert not F.ci_red(None, "abc123")
+    assert not F.ci_red(marker, None)
+    # a sha appearing only in the log body does not count
+    assert not F.ci_red("story/E1-S1 abc123 run 9 failure\ndef456\n", "def456")

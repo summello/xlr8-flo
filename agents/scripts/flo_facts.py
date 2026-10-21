@@ -52,6 +52,13 @@ def verdict_state(review: dict | None, reviewed_sha: str | None, submitted_sha: 
     return "malformed"
 
 
+def ci_red(marker: str | None, submitted_sha: str | None) -> bool:
+    """A .ci-red marker counts only for the commit it names (its first line). A re-submit leaves the
+    old marker until the new run completes, and reading it as red resumes the author to fix a run
+    that the milestone merge in that re-submit may already have fixed."""
+    return bool(marker and submitted_sha and submitted_sha in marker.split("\n", 1)[0])
+
+
 def rounds_done(names: list[str], sid: str) -> int:
     """Highest round number among .scratch/<sid>.roundN.md files."""
     nums = [int(m.group(1)) for n in names if n.startswith(f"{sid}.") and (m := ROUND.search(n))]
