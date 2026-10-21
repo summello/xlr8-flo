@@ -162,9 +162,7 @@ class AuditWriter(ScopedRepo[AuditRecord]):
             else None
         )
         after = (
-            allowlisted_snapshot(after_source, after_fields)
-            if after_source is not None
-            else None
+            allowlisted_snapshot(after_source, after_fields) if after_source is not None else None
         )
         occurred = self._connection.execute("SELECT clock_timestamp()").fetchone()
         if occurred is None:

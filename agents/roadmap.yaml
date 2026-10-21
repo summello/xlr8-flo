@@ -1435,7 +1435,7 @@ epics:
           - APR-020
         dep:
           - E11-S09
-        st: in_progress
+        st: review
       - id: E11-S02
         t: 'Typed contacts: billing, service/delivery, additional types'
         k: crud
@@ -1474,7 +1474,7 @@ epics:
         dep:
           - E11-S01
           - E02-S05
-        st: review
+        st: done
       - id: E11-S05
         t: Onboarding request, configurable questionnaire, weights and scoring
         k: engine
@@ -2255,7 +2255,7 @@ epics:
           - DATA-002
         dep:
           - E09-S15
-        st: in_progress
+        st: review
       - id: E22-S03
         t: One audit helper instead of twelve, behaviour-preserving
         k: chore

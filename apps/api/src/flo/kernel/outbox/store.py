@@ -191,13 +191,10 @@ class WorkerOutboxStore:
     def claim(self) -> OutboxRecord | None:
         # See WorkerJobQueue: the marker is local to this authenticated cron
         # transaction and grants only SELECT/UPDATE on durable work tables.
-        self._connection.execute(
-            "SET LOCAL app.org_id = '00000000-0000-0000-0000-000000000000'"
-        )
+        self._connection.execute("SET LOCAL app.org_id = '00000000-0000-0000-0000-000000000000'")
         self._connection.execute("SET LOCAL app.worker = 'jobs'")
         self._connection.execute(
-            "DELETE FROM outbox "
-            "WHERE identity_id IS NOT NULL AND expires_at <= CURRENT_TIMESTAMP"
+            "DELETE FROM outbox WHERE identity_id IS NOT NULL AND expires_at <= CURRENT_TIMESTAMP"
         )
         row = self._connection.execute(
             f"""
@@ -292,9 +289,7 @@ class IdentityOutboxStore:
             raise CorrelationMissing("outbox writes require a correlation id")
         if not idempotency_key:
             raise ValueError("outbox idempotency key must be non-empty")
-        self._connection.execute(
-            "SET LOCAL app.org_id = '00000000-0000-0000-0000-000000000000'"
-        )
+        self._connection.execute("SET LOCAL app.org_id = '00000000-0000-0000-0000-000000000000'")
         self._connection.execute(
             "SELECT set_config('app.identity_id', %(identity_id)s::text, true)",
             {"identity_id": self._identity_id},
@@ -315,9 +310,7 @@ class IdentityOutboxStore:
                 {
                     "id": uuid4(),
                     "identity_id": self._identity_id,
-                    "payload": Jsonb(
-                        {"to": to, "template": template, "context": dict(context)}
-                    ),
+                    "payload": Jsonb({"to": to, "template": template, "context": dict(context)}),
                     "idempotency_key": idempotency_key,
                     "correlation_id": correlation_id,
                     "created_at": created_at,
@@ -335,9 +328,7 @@ class IdentityOutboxStore:
     def discard_pending_email(self, template: str) -> int:
         """Remove obsolete, unsent reset links before issuing a replacement."""
 
-        self._connection.execute(
-            "SET LOCAL app.org_id = '00000000-0000-0000-0000-000000000000'"
-        )
+        self._connection.execute("SET LOCAL app.org_id = '00000000-0000-0000-0000-000000000000'")
         self._connection.execute(
             "SELECT set_config('app.identity_id', %(identity_id)s::text, true)",
             {"identity_id": self._identity_id},

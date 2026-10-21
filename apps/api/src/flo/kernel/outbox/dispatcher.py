@@ -79,8 +79,10 @@ def email_handler(sender: EmailSender) -> OutboxHandler:
         to = row.payload["to"]
         template = row.payload["template"]
         context = row.payload["context"]
-        if not isinstance(to, str) or not isinstance(template, str) or not isinstance(
-            context, Mapping
+        if (
+            not isinstance(to, str)
+            or not isinstance(template, str)
+            or not isinstance(context, Mapping)
         ):
             raise PermanentOutboxError("outbox email payload has invalid field types")
         try:
@@ -172,9 +174,7 @@ class OutboxDispatcher:
     @contextmanager
     def _delivery_transaction(self, row: OutboxRecord) -> Iterator[None]:
         if row.org_id is not None:
-            with tenant_transaction(
-                cast(RlsSession, self._connection), Scope(row.org_id)
-            ):
+            with tenant_transaction(cast(RlsSession, self._connection), Scope(row.org_id)):
                 yield
             return
 

@@ -5,6 +5,7 @@ from typing import Annotated, cast
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Query, Response
+from fastapi.responses import JSONResponse
 
 from flo.api.admin_users import organization_target
 from flo.api.auth import get_auth_settings
@@ -33,6 +34,10 @@ from flo.modules.vendors.schemas import (
     ScoreCreate,
     ScorePage,
     ScoreRead,
+    SensitivePut,
+    SensitiveReveal,
+    SensitiveValues,
+    SensitiveWritten,
     VendorCreate,
     VendorDetail,
     VendorPage,
@@ -58,6 +63,9 @@ CreateContext = Annotated[
 EditContext = Annotated[AuthorizationContext, Depends(require("vendor.edit", organization_target))]
 ApproveContext = Annotated[
     AuthorizationContext, Depends(require("vendor.approve", organization_target))
+]
+RevealContext = Annotated[
+    AuthorizationContext, Depends(require("vendor.sensitive.reveal", organization_target))
 ]
 RequestContext = Annotated[
     AuthorizationContext, Depends(require("vendor.request", organization_target))
@@ -109,8 +117,12 @@ def create_vendor(
 
 
 @router.get("/{id}", response_model=VendorDetail)
-def get_vendor(id: UUID, context: ViewContext, connection: Connection) -> VendorDetail:
-    return VendorService(connection, current_scope(), context.user_id).get(id)
+def get_vendor(
+    id: UUID, context: ViewContext, connection: Connection, response: Response
+) -> VendorDetail:
+    detail = VendorService(connection, current_scope(), context.user_id).get(id)
+    response.headers["ETag"] = f'"{detail.sensitive.version}"'  # the sensitive record's version
+    return detail
 
 
 @router.patch("/{id}", response_model=VendorDetail)
@@ -200,6 +212,33 @@ def reject_document(
     return VendorService(connection, current_scope(), context.user_id).reject_document(
         id, did, body
     )
+
+
+@router.post("/{id}/sensitive/reveal", response_model=SensitiveValues)
+def reveal_sensitive(
+    id: UUID, body: SensitiveReveal, context: RevealContext, connection: Connection
+) -> JSONResponse:
+    values = VendorService(connection, current_scope(), context.user_id).reveal_sensitive(id, body)
+    return JSONResponse(
+        values.model_dump(), headers={"Cache-Control": "no-store", "ETag": f'"{values.version}"'}
+    )
+
+
+@router.put("/{id}/sensitive", response_model=SensitiveWritten)
+def put_sensitive(
+    id: UUID,
+    body: SensitivePut,
+    edit: EditContext,
+    context: RevealContext,
+    connection: Connection,
+    response: Response,
+    version: Annotated[str | None, Header(alias="If-Match")] = None,
+) -> SensitiveWritten:
+    written = VendorService(connection, current_scope(), context.user_id).put_sensitive(
+        id, body, version
+    )
+    response.headers["ETag"] = f'"{written.version}"'
+    return written
 
 
 @router.get("/{id}/onboarding", response_model=OnboardingRead)

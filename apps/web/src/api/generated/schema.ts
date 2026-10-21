@@ -2517,6 +2517,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/vendors/{id}/sensitive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Sensitive */
+        put: operations["put_sensitive_api_v1_vendors__id__sensitive_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendors/{id}/sensitive/reveal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reveal Sensitive */
+        post: operations["reveal_sensitive_api_v1_vendors__id__sensitive_reveal_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/vendors/{id}/units/{unit_id}/disable": {
         parameters: {
             query?: never;
@@ -5851,6 +5885,10 @@ export interface components {
             /** Reserved */
             reserved: string;
         };
+        /** @enum {string} */
+        RevealField: "tax_id" | "bank";
+        /** @enum {string} */
+        RevealReason: "verify_payment" | "vendor_request" | "audit_support" | "other";
         /** RevisionSummary */
         RevisionSummary: {
             /**
@@ -6260,6 +6298,82 @@ export interface components {
             supersedes: string | null;
         };
         /**
+         * SensitiveMasked
+         * @description Tax and banking data as the list and detail show it: last four characters only.
+         */
+        SensitiveMasked: {
+            /** Bank Account */
+            bank_account?: string | null;
+            /** Bank Name */
+            bank_name?: string | null;
+            /** Bank Routing */
+            bank_routing?: string | null;
+            /** Tax Id */
+            tax_id?: string | null;
+            /** Tax Id Country */
+            tax_id_country?: string | null;
+            /**
+             * Version
+             * @default 0
+             */
+            version?: number;
+        };
+        /**
+         * SensitivePut
+         * @description The whole record: a field left out is cleared. Values are stored as typed.
+         */
+        SensitivePut: {
+            /** Bank Account */
+            bank_account?: string | null;
+            /** Bank Name */
+            bank_name?: string | null;
+            /** Bank Routing */
+            bank_routing?: string | null;
+            /** Tax Id */
+            tax_id?: string | null;
+            /** Tax Id Country */
+            tax_id_country?: string | null;
+        };
+        /**
+         * SensitiveReveal
+         * @description A reason code from a closed list; the note is free text that must hold no figures.
+         */
+        SensitiveReveal: {
+            /** Fields */
+            fields: components["schemas"]["RevealField"][];
+            /** Note */
+            note?: string | null;
+            reason_code: components["schemas"]["RevealReason"];
+        };
+        /**
+         * SensitiveValues
+         * @description Clear values, returned only by the audited reveal.
+         */
+        SensitiveValues: {
+            /** Bank Account */
+            bank_account?: string | null;
+            /** Bank Name */
+            bank_name?: string | null;
+            /** Bank Routing */
+            bank_routing?: string | null;
+            /** Tax Id */
+            tax_id?: string | null;
+            /** Tax Id Country */
+            tax_id_country?: string | null;
+            /**
+             * Version
+             * @default 0
+             */
+            version?: number;
+        };
+        /** SensitiveWritten */
+        SensitiveWritten: {
+            /** Changed */
+            changed: string[];
+            /** Version */
+            version: number;
+        };
+        /**
          * SessionResponse
          * @description Privacy-minimized active-session representation.
          */
@@ -6639,6 +6753,12 @@ export interface components {
             legal_name: string;
             /** Number */
             number: string;
+            /**
+             * @default {
+             *       "version": 0
+             *     }
+             */
+            sensitive?: components["schemas"]["SensitiveMasked"];
             status: components["schemas"]["VendorStatus"];
             /** Trading Name */
             trading_name: string;
@@ -6708,6 +6828,12 @@ export interface components {
             legal_name: string;
             /** Number */
             number: string;
+            /**
+             * @default {
+             *       "version": 0
+             *     }
+             */
+            sensitive?: components["schemas"]["SensitiveMasked"];
             status: components["schemas"]["VendorStatus"];
             /** Trading Name */
             trading_name: string;
@@ -14560,6 +14686,99 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DisputeRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    put_sensitive_api_v1_vendors__id__sensitive_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SensitivePut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SensitiveWritten"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    reveal_sensitive_api_v1_vendors__id__sensitive_reveal_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SensitiveReveal"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SensitiveValues"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */
