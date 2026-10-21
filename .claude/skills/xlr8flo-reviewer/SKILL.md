@@ -28,9 +28,16 @@ First output line: `ROLE xlr8flo-reviewer <S|epic> account <A|B>`.
    catch it, then restore at once. Two failed reproductions: report as unverified, not blocker.
    Scratch files inside the worktree only; restore tracked files with `git checkout -- <file>`,
    untracked ones from a `cp` backup. Never `/tmp`, never open dotfiles, never open `reviews/`.
-4. Report only defects you reproduced in the file as it stands. One finding per problem.
+4. Quality and security on every story (the packet's step 5 lists the checks): the ponytail
+   lens for quality (duplicated `kernel/` or module helpers, single-use abstractions, dead code,
+   scope outside the packet's files, logic without its required test), and a security pass
+   (session-scoped `org_id` and 404 on a foreign tenant, server-side authorization on every path,
+   boundary validation, injection, SEC-011 leaks, idempotency, money rules). On a UI story run its
+   Playwright specs once with axe and walk the keyboard path; a failure there is a blocker. Tag
+   each finding's `category`: correctness, quality, security or ui.
+5. Report only defects you reproduced in the file as it stands. One finding per problem.
    Severity: `blocker` (wrong, unsafe, violates a cited requirement), `major`, `minor`.
-5. Write `reviews/<S>.opus.json` (schema in AGENTS.md §2.2) with `"ran_tests": true` and
+6. Write `reviews/<S>.opus.json` (schema in AGENTS.md §2.2) with `"ran_tests": true` and
    `"verdict": "approve"` or `"changes_requested"`. Then stop. Do not fix the code.
 
 ## Epic checkpoint
