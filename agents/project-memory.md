@@ -179,6 +179,13 @@ Review and CI are the bottleneck, not authoring, so more lanes overlap them. New
 with no migration first (migration lanes renumber at merge, three times on 21 Oct). Revisit if a
 milestone merge conflict or a gate collision traces to lane count.
 
+**22 Oct 2026 — Codex story reviews: 55 calls for every story, tests within the first 10.**
+Three ungated Codex reviews (E11-S10, E22-S04 twice, E22-S10) hit the 35-call cap after a milestone
+merge while still reading, and left `approve, ran_tests: false`, which the gate rejects; each cost a
+second review and a manual finish. Ungated budget 25 -> 40 commands, hard cap 35 -> 55 (gated was
+already 55), and the packet says to run `flo check --light` and set `ran_tests` within 10 commands.
+Revisit if Codex's 5-hour window starts capping.
+
 **Merge authority:** the operator has delegated GitHub merges for M0 to Opus, with the
 instruction to space them out so the repository does not read as bot-driven. Outside M0 the
 standing rule holds: push, never merge.
