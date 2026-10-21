@@ -2349,7 +2349,7 @@ epics:
           - APR-019
           - A11Y-006
         dep: []
-        st: todo
+        st: in_progress
 
   # ─────────────────── M4 — Full Phase-1 scope ───────────────────
 
