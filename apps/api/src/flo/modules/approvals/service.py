@@ -273,8 +273,10 @@ class WorkflowService:
             raise ProblemError(ErrorCode.NOT_FOUND)
         return row
 
-    def _version(self, id: UUID, version: int) -> dict[str, object]:
-        row = self.repo.version(id, version)
+    def _version(
+        self, id: UUID, version: int, *, include_deleted: bool = False
+    ) -> dict[str, object]:
+        row = self.repo.version(id, version, include_deleted=include_deleted)
         if row is None:
             raise ProblemError(ErrorCode.NOT_FOUND)
         return row
@@ -322,10 +324,14 @@ class WorkflowService:
             self._audit("workflow.create", id, None, self._definition(id))
             return self.get(id)
 
-    def get_version(self, id: UUID, version: int) -> WorkflowVersionRead:
+    def get_version(
+        self, id: UUID, version: int, *, include_deleted: bool = False
+    ) -> WorkflowVersionRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             self._definition(id)
-            return WorkflowVersionRead.model_validate(self._version(id, version))
+            return WorkflowVersionRead.model_validate(
+                self._version(id, version, include_deleted=include_deleted)
+            )
 
     def create_version(self, id: UUID, body: WorkflowVersionWrite) -> WorkflowVersionRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):

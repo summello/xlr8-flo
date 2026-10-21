@@ -8,7 +8,9 @@ import Transitions from "../../components/projects/Transitions";
 import Schedule from "../../components/projects/Schedule";
 import Risks from "../../components/projects/Risks";
 import Budget from "../../components/projects/Budget";
-import { failure, label, type Project, type Transition } from "../../components/projects/api";
+import DeleteDraftDialog from "../../components/drafts/DeleteDraftDialog";
+import { mutationHeaders, type Problem } from "../../components/requisitions/api";
+import { failure, label, type Project, type ProjectStatus, type Transition } from "../../components/projects/api";
 import "../../styles/projects.css";
 const tabs = ["overview", "schedule", "risks", "budget"] as const;
 type Tab = typeof tabs[number];
@@ -16,7 +18,7 @@ function currentTab(): Tab {
   const value = new URLSearchParams(window.location.search).get("tab");
   return tabs.includes(value as Tab) ? value as Tab : "overview";
 }
-export default function ProjectDetail({ id, onLoaded }: { id: string; onLoaded: (project: Project, unit: string) => void }) {
+export default function ProjectDetail({ id, navigate, onLoaded }: { id: string; navigate: (href: string) => void; onLoaded: (project: Project, unit: string) => void }) {
   const [project, setProject] = useState<Project | null>(null);
   const [options, setOptions] = useState<Transition[]>([]);
   const [tab, setTab] = useState<Tab>(currentTab);
@@ -55,9 +57,11 @@ export default function ProjectDetail({ id, onLoaded }: { id: string; onLoaded: 
     {loading && !project && tab === "overview" ? <ProjectLoading /> : loading && <p role="status">Loading project… Previously loaded details are preserved.</p>}
     {errors.length > 0 && <div role="alert">{errors.map(e => <p key={e}>{e}</p>)}<button onClick={() => { setLoading(true); void load(); }}>Retry project</button></div>}
     {project && <>
-      <header className="project-record-heading"><p className="numeric">{project.number}</p><StatusPill docType="project" status={project.status} />
+      <header className="project-record-heading"><p className="numeric">{project.number}</p><StatusPill docType="project" status={project.status as ProjectStatus} />
         {project.codes_expired && <ExpiredCodeBadge />}
-        {project.can_substitute_codes && project.codes && <SubstituteCodes target="project" id={id} codes={project.codes} onDone={() => { setLoading(true); void load(); }} />}</header>
+        {project.can_substitute_codes && project.codes && <SubstituteCodes target="project" id={id} codes={project.codes} onDone={() => { setLoading(true); void load(); }} />}
+        {project.status === "draft" && <DeleteDraftDialog kind="Project" reference={project.number} onDone={() => navigate("/projects")}
+          remove={async key => { const { response, error } = await apiClient.DELETE("/api/v1/projects/{id}", { params: { path: { id } }, headers: mutationHeaders(key) }); return { ok: response.ok, error: error as Problem | undefined }; }} />}</header>
       <div role="tablist" aria-label="Project sections" className="project-tabs">{tabs.map((name, index) => <button key={name} type="button" id={`tab-${name}`} role="tab" aria-controls={`panel-${name}`} aria-selected={tab === name} tabIndex={tab === name ? 0 : -1} onClick={() => activate(name)} onKeyDown={e => {
         const next = e.key === "ArrowRight" ? tabs[(index + 1) % tabs.length] : e.key === "ArrowLeft" ? tabs[(index + tabs.length - 1) % tabs.length] : e.key === "Home" ? tabs[0] : e.key === "End" ? tabs[tabs.length - 1] : undefined;
         if (next) { e.preventDefault(); activate(next); document.getElementById(`tab-${next}`)?.focus(); }

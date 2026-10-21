@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { apiClient } from "../../../api/client";
 import type { paths, components } from "../../../api/generated/schema";
 import { writeHeaders } from "../../../features/auth/api";
+import DeleteDraftDialog from "../../../components/drafts/DeleteDraftDialog";
+import { mutationHeaders, type Problem } from "../../../components/requisitions/api";
 import { Canvas, Connections, Outline } from "../../../components/workflows/Editors";
 import { operate, type Graph, type Node, type Operation } from "../../../components/workflows/graph-reducer";
 import Preview from "../../../components/workflows/preview/Preview";
@@ -16,8 +18,9 @@ type Version = components["schemas"]["WorkflowVersionRead"];
 type Report = components["schemas"]["ValidationReport"];
 type Picker = components["schemas"]["PickerRow"];
 const blank: Graph = { nodes: [{ id: "start", kind: "start", name: "Start" }, { id: "end", kind: "end", name: "End" }], edges: [], layout: {} };
-export default function WorkflowBuilder({ id }: {
+export default function WorkflowBuilder({ id, navigate }: {
     id: string;
+    navigate: (href: string) => void;
 }) {
     const [previewOpen, setPreviewOpen] = useState(false);
     const [previewGraph, setPreviewGraph] = useState<Graph>();
@@ -198,7 +201,9 @@ export default function WorkflowBuilder({ id }: {
         setBusy(false);
     } }
     const issues = [...(report.errors ?? []), ...(report.warnings ?? [])], readonly = version?.status !== "draft";
-    return <section className="wf-builder" aria-label="Approval workflow builder"><header><h2>{workflow?.name ?? "Approval workflow"}</h2><p>{workflow ? `Applies to ${workflow.document_type} · ${version?.status ?? "Draft"} version ${version?.version ?? ""}` : "Loading workflow…"}</p><p>Approval depth limit: {depth}. In-flight count: Not available.</p><button onClick={() => { if (current.current !== saved.current) void check().then(() => { if (current.current === saved.current) setPreviewOpen(true); }); else setPreviewOpen(true); }}>Route Preview</button>{!readonly && <><button onClick={() => void check()} aria-busy={busy}>Check</button><button className="form-submit" onClick={() => void check(true)} aria-busy={busy}>Publish</button></>}</header>
+    return <section className="wf-builder" aria-label="Approval workflow builder"><header><h2>{workflow?.name ?? "Approval workflow"}</h2><p>{workflow ? `Applies to ${workflow.document_type} · ${version?.status ?? "Draft"} version ${version?.version ?? ""}` : "Loading workflow…"}</p><p>Approval depth limit: {depth}. In-flight count: Not available.</p><button onClick={() => { if (current.current !== saved.current) void check().then(() => { if (current.current === saved.current) setPreviewOpen(true); }); else setPreviewOpen(true); }}>Route Preview</button>{!readonly && <><button onClick={() => void check()} aria-busy={busy}>Check</button><button className="form-submit" onClick={() => void check(true)} aria-busy={busy}>Publish</button>
+  <DeleteDraftDialog kind="Workflow Version" reference={`${workflow?.name ?? "This workflow"} version ${version?.version}`} onDone={() => navigate("/admin/approval-workflows")}
+    remove={async key => { const { response, error } = await apiClient.DELETE("/api/v1/workflows/{id}/versions/{version}", { params: { path: { id, version: version!.version } }, headers: mutationHeaders(key) }); return { ok: response.ok, error: error as Problem | undefined }; }} /></>}</header>
  {error && <div role="alert" tabIndex={-1} ref={alert}><WarningCircle aria-hidden="true"/>{error}{stale ? <button onClick={() => void load()}>Reload draft</button> : !workflow ? <button onClick={() => void load()}>Retry loading workflow</button> : null}</div>}<p role="status">{status}</p>
  {loading ? <div className="wf-loading" role="status">Loading workflow and draft…</div> : workflow && <div className="wf-columns"><section className="wf-card"><h3 ref={heading} tabIndex={-1}>Workflow</h3>
  <div role="tablist" aria-label="Workflow view">{(["canvas", "outline"] as const).map(v => <button key={v} role="tab" id={`wf-${v}-tab`} aria-controls="wf-editor" aria-selected={view === v} tabIndex={view === v ? 0 : -1} onClick={() => setView(v)} onKeyDown={e => { if (["ArrowLeft", "ArrowRight"].includes(e.key)) {

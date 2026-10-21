@@ -13,7 +13,7 @@ export const project: components["schemas"]["ProjectRead"] = {
 export type Fixture = Awaited<ReturnType<typeof stubProjects>>;
 export async function stubProjects(page: Page, settings: { total?: number; rows?: components["schemas"]["ProjectRead"][]; transitions?: components["schemas"]["TransitionAvailable"][] } = {}) {
   const state = {
-    actor: firstActor, row: { ...project }, created: false, failCreate: false, stale: false, overrideDenied: false,
+    actor: firstActor, row: { ...project }, created: false, failCreate: false, failDelete: false, stale: false, overrideDenied: false,
     requests: [] as { path: string; method: string; query: URLSearchParams; body: Record<string, unknown> | null; headers: Record<string, string> }[],
     phases: [] as components["schemas"]["PhaseRead"][], milestones: [] as components["schemas"]["MilestoneRead"][], risks: [] as components["schemas"]["RiskRead"][],
     fail: new Set<string>(),
@@ -53,6 +53,7 @@ export async function stubProjects(page: Page, settings: { total?: number; rows?
       if (url.searchParams.get("group_by") === "status") rows = [...rows].sort((a, b) => a.status.localeCompare(b.status) || a.number.localeCompare(b.number));
       return send({ rows, total: settings.total ? total : rows.length, next_cursor: settings.total && offset + 50 < total ? String(offset + 50) : null });
     }
+    if (path === `/api/v1/projects/${projectId}` && method === "DELETE") return state.failDelete ? problem("Only a draft can be deleted.", 409, { problem: "not_draft" }) : route.fulfill({ status: 204 });
     if (path === `/api/v1/projects/${projectId}`) return send(state.row);
     if (path.endsWith("/transitions/available")) {
       if (settings.transitions) return send(settings.transitions);

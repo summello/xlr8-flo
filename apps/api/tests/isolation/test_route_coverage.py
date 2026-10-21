@@ -548,6 +548,9 @@ COVERED = {
     ("DELETE", "/api/v1/projects/{id}"): (
         "requisitions/test_soft_delete.py::test_foreign_tenant_delete_routes_are_404"
     ),
+    ("DELETE", "/api/v1/budget/change-requests/{id}"): (
+        "budget/test_change_requests.py::test_change_request_foreign_tenant"
+    ),
     ("DELETE", "/api/v1/workflows/{id}/versions/{version}"): (
         "requisitions/test_soft_delete.py::test_workflow_draft_delete_keeps_the_version_number"
     ),

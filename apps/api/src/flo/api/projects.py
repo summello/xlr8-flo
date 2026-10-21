@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Query, Request, Response
 
-from flo.api.admin_users import organization_target
+from flo.api.admin_users import deleted_visible, organization_target
 from flo.api.auth import get_auth_settings
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
@@ -55,8 +55,10 @@ def create_target(body: ProjectCreate, connection: Connection) -> TargetProtocol
     return cast(TargetProtocol, AuthorizationTarget(ScopeType.BU, unit.id))
 
 
-def project_target(id: UUID, connection: Connection) -> TargetProtocol:
-    project = ProjectService(connection, current_scope()).get(id)
+def project_target(
+    id: UUID, connection: Connection, *, include_deleted: bool = False
+) -> TargetProtocol:
+    project = ProjectService(connection, current_scope()).get(id, include_deleted=include_deleted)
     return cast(
         TargetProtocol, AuthorizationTarget(ScopeType.PROJECT, project.id, "project", project.id)
     )
@@ -82,6 +84,17 @@ def parent_read(
 
 CreateContext = Annotated[AuthorizationContext, Depends(require("project.create", create_target))]
 ReadContext = Annotated[AuthorizationContext, Depends(require("project.read", project_target))]
+
+
+def project_bin_target(
+    id: UUID, connection: Connection, include_deleted: bool = False
+) -> TargetProtocol:
+    return project_target(id, connection, include_deleted=include_deleted)
+
+
+BinReadContext = Annotated[
+    AuthorizationContext, Depends(require("project.read", project_bin_target))
+]
 UpdateContext = Annotated[AuthorizationContext, Depends(require("project.update", project_target))]
 SubstituteContext = Annotated[
     AuthorizationContext, Depends(require("master_code.substitute", project_target))
@@ -128,11 +141,16 @@ def list_projects(
 
 @router.get("/{id}", response_model=ProjectRead)
 def get_project(
-    id: UUID, context: ReadContext, connection: Connection, request: Request
+    id: UUID,
+    context: BinReadContext,
+    connection: Connection,
+    request: Request,
+    include_deleted: bool = False,
 ) -> ProjectRead:
     service = ProjectService(connection, current_scope(), context.user_id)
-    project = service.get(id)
-    project.sponsor_ids = service.sponsors(id)
+    visible = deleted_visible(request, include_deleted)
+    project = service.get(id, include_deleted=visible)
+    project.sponsor_ids = service.sponsors(id, include_deleted=visible)
     allowed = project.codes_expired and permits(
         request, "master_code.substitute", project_target(id, connection)
     )

@@ -116,10 +116,13 @@ class RequisitionService:
         )
         self.repo = RequisitionRepository(connection, scope)
 
-    def _get(self, id: UUID, *, lock: bool = False) -> RequisitionRead:
+    def _get(
+        self, id: UUID, *, lock: bool = False, include_deleted: bool = False
+    ) -> RequisitionRead:
         row = self.repo.execute(
             READ_SQL
-            + " WHERE r.org_id=%(org_id)s AND r.id=%(id)s AND r.status<>'deleted'"
+            + " WHERE r.org_id=%(org_id)s AND r.id=%(id)s"
+            + ("" if include_deleted else " AND r.status<>'deleted'")
             + (" FOR UPDATE OF r" if lock else ""),
             {"id": id},
         ).fetchone()
@@ -137,33 +140,53 @@ class RequisitionService:
         return read
 
     def delete(self, id: UUID) -> None:
-        """Soft-delete a draft: the row and its number are kept, hidden everywhere (D-M2-27)."""
+        """Soft-delete a draft: the row and its number are kept, hidden everywhere (D-M2-27).
+
+        A returned draft still holds its reservation; it is released exactly once, with the
+        funding lock taken before the document lock, as a withdrawal does.
+        """
+        from flo.modules.budget.service import lock_balance, reservation_remaining
+        from flo.modules.requisitions.funding import release_live
+
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            probe = self.repo.execute(
+                "SELECT reservation_entry_id FROM requisition "
+                "WHERE org_id=%(org_id)s AND id=%(id)s AND status<>'deleted'",
+                {"id": id},
+            ).fetchone()
+            if probe is None:
+                raise ProblemError(ErrorCode.NOT_FOUND)
+            if probe[0] is not None:
+                held = reservation_remaining(self.connection, self.scope, cast(int, probe[0]))
+                lock_balance(self.connection, self.scope, held.project_id)
             row = self.repo.execute(
-                "SELECT status,standalone,reservation_entry_id FROM requisition "
+                "SELECT id,status,standalone,reservation_entry_id,funding_round FROM requisition "
                 "WHERE org_id=%(org_id)s AND id=%(id)s AND status<>'deleted' FOR UPDATE",
                 {"id": id},
             ).fetchone()
             if row is None:
                 raise ProblemError(ErrorCode.NOT_FOUND)
-            if row[0] != "draft":
+            if row[1] != "draft":
                 raise conflict("not_draft", "Only a draft can be deleted.")
-            if row[2] is not None:
-                raise conflict(
-                    "reservation_held",
-                    "This draft still holds a budget reservation. Withdraw it to release the "
-                    "reservation, then it cannot be deleted.",
-                )
+            if row[3] != probe[0]:
+                raise conflict("stale_version", "The reservation changed. Retry.")
+            release_live(
+                self.connection,
+                self.scope,
+                {"id": row[0], "reservation_entry_id": row[3], "funding_round": row[4]},
+                "deleted",
+                actor_id=cast(UUID, self.actor_id),
+            )
             self.repo.execute(
                 "UPDATE requisition SET status='deleted',version=version+1,updated_at=now() "
                 "WHERE org_id=%(org_id)s AND id=%(id)s",
                 {"id": id},
             )
             self._audit(
-                "project_request.delete" if row[1] else "requisition.delete",
+                "project_request.delete" if row[2] else "requisition.delete",
                 id,
                 {"status": "draft"},
-                {"status": "deleted"},
+                {"status": "deleted", "reservation_released": row[3] is not None},
             )
 
     def _sponsors(self, id: UUID) -> list[UUID]:
@@ -203,6 +226,7 @@ class RequisitionService:
         id: UUID,
         can_view_budget: Callable[[UUID], bool],
         can_edit: Callable[[], bool] | None = None,
+        include_deleted: bool = False,
     ) -> RequisitionRead:
         from flo.modules.budget.service import get_balance, reservation_remaining
         from flo.modules.requisitions.lifecycle import read_row
@@ -210,9 +234,9 @@ class RequisitionService:
         from flo.modules.requisitions.schemas import AmendmentRef, ApprovalRead, ReservationRead
 
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
-            result = self._get(id)
+            result = self._get(id, include_deleted=include_deleted)
             result.sponsor_ids = self._sponsors(id)
-            row = read_row(self.repo, id)
+            row = read_row(self.repo, id, include_deleted=include_deleted)
             if row["reservation_entry_id"] is not None:
                 held = reservation_remaining(
                     self.connection, self.scope, cast(int, row["reservation_entry_id"])
@@ -267,9 +291,9 @@ class RequisitionService:
             )
             return self.detail(id, can_view_budget, can_edit)
 
-    def get(self, id: UUID) -> RequisitionRead:
+    def get(self, id: UUID, *, include_deleted: bool = False) -> RequisitionRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
-            return self._get(id)
+            return self._get(id, include_deleted=include_deleted)
 
     def _project(
         self, id: UUID, permitted: Callable[[UUID], bool] | None = None

@@ -6,9 +6,9 @@ import ExpiredCodeBadge from "../../components/codes/ExpiredCodeBadge";
 import SubstituteCodes from "../../components/codes/SubstituteCodes";
 import { CardSkeleton, HistoryCard, LinesCard, LinkedCard, CardState, RequestCard, ReservationCard } from "../../components/requisitions/DetailCards";
 import Stepper from "../../components/requisitions/Stepper";
-import DiscardDialog from "../../components/requisitions/DiscardDialog";
+import DeleteDraftDialog from "../../components/drafts/DeleteDraftDialog";
 import WithdrawDialog from "../../components/requisitions/WithdrawDialog";
-import { failure, formatDateTime, type Problem, type Requisition } from "../../components/requisitions/api";
+import { failure, formatDateTime, mutationHeaders, type Problem, type Requisition, type RequisitionStatus } from "../../components/requisitions/api";
 import { useLoad } from "../../components/requisitions/useLoad";
 import "../../styles/projects.css";
 import "../../styles/requisitions.css";
@@ -62,12 +62,13 @@ export default function RequisitionDetail({ id, navigate, onLoaded }: { id: stri
   return <section className="req-page req-detail" aria-label={row.standalone ? "Project Request" : "Requisition"}>
     <header className="req-heading">
       <p>{row.number} · {row.project_name ?? "Project Request"} · requested by {row.requester_email}</p>
-      <StatusPill docType="requisition" status={row.status} />
+      <StatusPill docType="requisition" status={row.status as RequisitionStatus} />
       {row.codes_expired && <ExpiredCodeBadge />}
       <div className="req-actions">
         {row.can_substitute_codes && row.codes && <SubstituteCodes target="requisition" id={id} codes={row.codes} onDone={main.reload} />}
         {row.status === "draft" && !returned && <a className="req-link-button" href={`/requisitions/${id}/edit`} onClick={e => { e.preventDefault(); navigate(`/requisitions/${id}/edit`); }}><PencilSimple aria-hidden="true" weight="regular" />Edit draft</a>}
-        {row.status === "draft" && !held && can("withdrawn")?.allowed && <DiscardDialog row={row} onDone={() => navigate("/requisitions")} />}
+        {row.status === "draft" && !held && can("withdrawn")?.allowed && <DeleteDraftDialog kind={row.standalone ? "Project Request" : "Requisition"} reference={row.number} onDone={() => navigate("/requisitions")}
+          remove={async key => { const { response, error } = await apiClient.DELETE("/api/v1/requisitions/{id}", { params: { path: { id } }, headers: mutationHeaders(key) }); return { ok: response.ok, error: error as Problem | undefined }; }} />}
         {withdrawReady && (row.status !== "draft" || held) && can("withdrawn")?.allowed && <WithdrawDialog row={row} mode="withdraw" approvers={approvers} onDone={next => changed(next, "Requisition withdrawn.")} onStale={main.reload} />}
         {row.status === "sourcing_in_progress" && (!row.amendment || row.amendment.status === "draft") && <a className="req-link-button" href={`/requisitions/${id}/amend`} onClick={e => { e.preventDefault(); navigate(`/requisitions/${id}/amend`); }}><NotePencil aria-hidden="true" weight="regular" />{row.amendment ? "Continue amendment" : "Amend"}</a>}
         {row.amendment?.status === "pending" && <p className="req-pill" data-tone="info">Amendment pending approval</p>}
@@ -85,7 +86,7 @@ export default function RequisitionDetail({ id, navigate, onLoaded }: { id: stri
         <a className="form-submit" href={`/requisitions/${id}/resubmit`} onClick={e => { e.preventDefault(); navigate(`/requisitions/${id}/resubmit`); }}>Review and Resubmit <ArrowRight aria-hidden="true" weight="regular" /></a>
       </div>
     </section>}
-    <Stepper status={row.status} events={events.data} />
+    <Stepper status={row.status as RequisitionStatus} events={events.data} />
     <div className="req-grid-detail">
       <RequestCard row={row} delivery={delivery.data} />
       <ReservationCard row={row} />

@@ -1125,7 +1125,8 @@
               "pending",
               "approved",
               "rejected",
-              "withdrawn"
+              "withdrawn",
+              "deleted"
             ],
             "title": "Status",
             "type": "string"
@@ -8109,7 +8110,16 @@
             "type": "array"
           },
           "status": {
-            "$ref": "#/components/schemas/ProjectStatus"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectStatus"
+              },
+              {
+                "const": "deleted",
+                "type": "string"
+              }
+            ],
+            "title": "Status"
           },
           "version": {
             "title": "Version",
@@ -9143,7 +9153,16 @@
             "type": "boolean"
           },
           "status": {
-            "$ref": "#/components/schemas/RequisitionStatus"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RequisitionStatus"
+              },
+              {
+                "const": "deleted",
+                "type": "string"
+              }
+            ],
+            "title": "Status"
           },
           "submitted_at": {
             "anyOf": [
@@ -12561,7 +12580,8 @@
             "enum": [
               "draft",
               "published",
-              "superseded"
+              "superseded",
+              "deleted"
             ],
             "title": "Status",
             "type": "string"
@@ -12627,7 +12647,8 @@
             "enum": [
               "draft",
               "published",
-              "superseded"
+              "superseded",
+              "deleted"
             ],
             "title": "Status",
             "type": "string"
@@ -16083,6 +16104,76 @@
       }
     },
     "/api/v1/budget/change-requests/{id}": {
+      "delete": {
+        "operationId": "delete_change_request_api_v1_budget_change_requests__id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Delete Change Request",
+        "tags": [
+          "budget"
+        ]
+      },
       "get": {
         "operationId": "read_change_request_api_v1_budget_change_requests__id__get",
         "parameters": [
@@ -16094,6 +16185,16 @@
               "format": "uuid",
               "title": "Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
             }
           },
           {
@@ -20661,6 +20762,16 @@
             }
           },
           {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
+            }
+          },
+          {
             "in": "header",
             "name": "X-FLO-Origin-Secret",
             "required": false,
@@ -20718,6 +20829,16 @@
               "format": "uuid",
               "title": "Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
             }
           },
           {
@@ -20785,6 +20906,16 @@
               "format": "uuid",
               "title": "Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
             }
           },
           {
@@ -20911,6 +21042,16 @@
             }
           },
           {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
+            }
+          },
+          {
             "in": "header",
             "name": "X-FLO-Origin-Secret",
             "required": false,
@@ -20977,6 +21118,16 @@
               "format": "uuid",
               "title": "Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
             }
           },
           {
@@ -21059,6 +21210,16 @@
             }
           },
           {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
+            }
+          },
+          {
             "in": "header",
             "name": "X-FLO-Origin-Secret",
             "required": false,
@@ -21127,6 +21288,16 @@
               "format": "uuid",
               "title": "Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
             }
           },
           {
@@ -21219,6 +21390,16 @@
             }
           },
           {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
+            }
+          },
+          {
             "in": "header",
             "name": "X-FLO-Origin-Secret",
             "required": false,
@@ -21298,6 +21479,16 @@
             }
           },
           {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
+            }
+          },
+          {
             "in": "header",
             "name": "X-FLO-Origin-Secret",
             "required": false,
@@ -21366,6 +21557,16 @@
               "format": "uuid",
               "title": "Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
             }
           },
           {
@@ -21458,6 +21659,16 @@
             }
           },
           {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
+            }
+          },
+          {
             "in": "header",
             "name": "X-FLO-Origin-Secret",
             "required": false,
@@ -21534,6 +21745,16 @@
               "format": "uuid",
               "title": "Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
             }
           },
           {
@@ -21668,6 +21889,16 @@
             }
           },
           {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
+            }
+          },
+          {
             "in": "header",
             "name": "X-FLO-Origin-Secret",
             "required": false,
@@ -21732,6 +21963,16 @@
               "format": "uuid",
               "title": "Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
             }
           },
           {
@@ -21821,6 +22062,16 @@
               "format": "uuid",
               "title": "Risk Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
             }
           },
           {
@@ -21919,6 +22170,16 @@
             }
           },
           {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
+            }
+          },
+          {
             "in": "header",
             "name": "If-Match",
             "required": false,
@@ -22011,6 +22272,16 @@
               "format": "uuid",
               "title": "Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
             }
           },
           {
@@ -22113,6 +22384,16 @@
               "minimum": 1,
               "title": "Max Depth",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
             }
           },
           {
@@ -23327,6 +23608,16 @@
             }
           },
           {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
+            }
+          },
+          {
             "in": "header",
             "name": "X-FLO-Origin-Secret",
             "required": false,
@@ -23384,6 +23675,16 @@
               "format": "uuid",
               "title": "Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
             }
           },
           {
@@ -23451,6 +23752,16 @@
               "format": "uuid",
               "title": "Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
             }
           },
           {
@@ -23549,6 +23860,16 @@
             }
           },
           {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
+            }
+          },
+          {
             "in": "header",
             "name": "If-Match",
             "required": false,
@@ -23634,6 +23955,16 @@
             }
           },
           {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
+            }
+          },
+          {
             "in": "header",
             "name": "X-FLO-Origin-Secret",
             "required": false,
@@ -23712,6 +24043,16 @@
             }
           },
           {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
+            }
+          },
+          {
             "in": "header",
             "name": "X-FLO-Origin-Secret",
             "required": false,
@@ -23778,6 +24119,16 @@
             "schema": {
               "title": "Revision No",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
             }
           },
           {
@@ -23882,6 +24233,16 @@
             "schema": {
               "title": "Revision No",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
             }
           },
           {
@@ -23996,6 +24357,16 @@
             }
           },
           {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
+            }
+          },
+          {
             "in": "header",
             "name": "X-FLO-Origin-Secret",
             "required": false,
@@ -24081,6 +24452,16 @@
             }
           },
           {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
+            }
+          },
+          {
             "in": "header",
             "name": "X-FLO-Origin-Secret",
             "required": false,
@@ -24147,6 +24528,16 @@
               "format": "uuid",
               "title": "Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
             }
           },
           {
@@ -24229,6 +24620,16 @@
             }
           },
           {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
+            }
+          },
+          {
             "in": "header",
             "name": "X-FLO-Origin-Secret",
             "required": false,
@@ -24302,6 +24703,16 @@
             }
           },
           {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
+            }
+          },
+          {
             "in": "header",
             "name": "X-FLO-Origin-Secret",
             "required": false,
@@ -24366,6 +24777,16 @@
               "format": "uuid",
               "title": "Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
             }
           },
           {
@@ -24459,6 +24880,16 @@
               "format": "uuid",
               "title": "Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
             }
           },
           {
@@ -24567,6 +24998,16 @@
             }
           },
           {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
+            }
+          },
+          {
             "in": "header",
             "name": "If-Match",
             "required": false,
@@ -24657,6 +25098,16 @@
               "format": "uuid",
               "title": "Line Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
             }
           },
           {
@@ -24755,6 +25206,16 @@
             }
           },
           {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
+            }
+          },
+          {
             "in": "header",
             "name": "X-FLO-Origin-Secret",
             "required": false,
@@ -24821,6 +25282,16 @@
               "format": "uuid",
               "title": "Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
             }
           },
           {
@@ -24897,6 +25368,16 @@
             }
           },
           {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
+            }
+          },
+          {
             "in": "header",
             "name": "X-FLO-Origin-Secret",
             "required": false,
@@ -24963,6 +25444,16 @@
               "format": "uuid",
               "title": "Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
             }
           },
           {
@@ -25058,6 +25549,16 @@
               "format": "uuid",
               "title": "Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
             }
           },
           {
@@ -28230,6 +28731,16 @@
             "schema": {
               "title": "Version",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_deleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
             }
           },
           {

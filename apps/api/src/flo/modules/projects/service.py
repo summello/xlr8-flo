@@ -83,8 +83,10 @@ class ProjectService:
         self.repo = ProjectRepository(connection, scope)
         self.risks = Risks(self.repo, actor_id)
 
-    def _get(self, project_id: UUID, *, lock: bool = False) -> dict[str, object]:
-        row = self.repo.get(project_id, lock=lock)
+    def _get(
+        self, project_id: UUID, *, lock: bool = False, include_deleted: bool = False
+    ) -> dict[str, object]:
+        row = self.repo.get(project_id, lock=lock, include_deleted=include_deleted)
         if row is None:
             raise ProblemError(ErrorCode.NOT_FOUND)
         return row
@@ -107,7 +109,7 @@ class ProjectService:
             )
         )
 
-    def sponsors(self, project_id: UUID) -> list[UUID]:
+    def sponsors(self, project_id: UUID, *, include_deleted: bool = False) -> list[UUID]:
         """Every sponsor; a project that predates sponsor lists falls back to `sponsor_id`."""
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             found = [
@@ -118,7 +120,7 @@ class ProjectService:
                     {"id": project_id},
                 ).fetchall()
             ]
-            row = self._get(project_id)
+            row = self._get(project_id, include_deleted=include_deleted)
             return found or ([cast(UUID, row["sponsor_id"])] if row["sponsor_id"] else [])
 
     def _with_codes(self, project: ProjectRead) -> ProjectRead:
@@ -159,9 +161,9 @@ class ProjectService:
             )
             return self._read(self._get(project_id))
 
-    def get(self, project_id: UUID) -> ProjectRead:
+    def get(self, project_id: UUID, *, include_deleted: bool = False) -> ProjectRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
-            return self._read(self._get(project_id))
+            return self._read(self._get(project_id, include_deleted=include_deleted))
 
     def transition(
         self,
@@ -258,27 +260,15 @@ class ProjectService:
         return cast(MilestoneRead, Schedule(self.repo, self.actor_id).write(project_id, body, mid))
 
     def delete(self, project_id: UUID) -> None:
-        """Soft-delete a draft project that holds nothing; its number is never reused."""
+        """Soft-delete a draft project; its number and external reference stay on the row.
+
+        # ponytail: dependents (sub-projects, requisitions) are left as they are, hidden from the
+        # tree; cascade them in the Bin story if a draft parent with live children must be refused.
+        """
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             before = self._get(project_id, lock=True)
             if before["status"] != "draft":
                 raise conflict("not_draft", "Only a draft can be deleted.")
-            held = self.repo.execute(
-                "SELECT EXISTS(SELECT 1 FROM project WHERE org_id=%(org_id)s AND parent_id=%(id)s "
-                "AND status<>'deleted'), "
-                "EXISTS(SELECT 1 FROM requisition WHERE org_id=%(org_id)s AND project_id=%(id)s "
-                "AND status<>'deleted'), "
-                "EXISTS(SELECT 1 FROM ledger_entry WHERE org_id=%(org_id)s AND project_id=%(id)s), "
-                "%(ref)s::text IS NOT NULL",
-                {"id": project_id, "ref": before["external_ref"]},
-            ).fetchone()
-            assert held is not None
-            if any(held):
-                raise conflict(
-                    "not_empty",
-                    "This draft has sub-projects, requisitions, budget postings or an external "
-                    "reference. Remove them first, or abandon the project instead.",
-                )
             self.repo.execute(
                 "UPDATE project SET status='deleted',version=version+1 "
                 "WHERE org_id=%(org_id)s AND id=%(id)s",

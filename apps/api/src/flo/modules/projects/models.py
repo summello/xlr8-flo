@@ -45,10 +45,13 @@ class ProjectRepository(ScopedRepo[object]):
     ) -> psycopg.Cursor[tuple[object, ...]]:
         return self.connection.execute(query, self.scoped_params(params))
 
-    def get(self, project_id: UUID, *, lock: bool = False) -> dict[str, object] | None:
+    def get(
+        self, project_id: UUID, *, lock: bool = False, include_deleted: bool = False
+    ) -> dict[str, object] | None:
         row = self.execute(
-            f"SELECT {COLUMNS} FROM project WHERE org_id = %(org_id)s AND id = %(id)s "
-            "AND status <> 'deleted'" + (" FOR UPDATE" if lock else ""),
+            f"SELECT {COLUMNS} FROM project WHERE org_id = %(org_id)s AND id = %(id)s"
+            + ("" if include_deleted else " AND status <> 'deleted'")
+            + (" FOR UPDATE" if lock else ""),
             {"id": project_id},
         ).fetchone()
         return dict(zip(FIELDS, row, strict=True)) if row else None

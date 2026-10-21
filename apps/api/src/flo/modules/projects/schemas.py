@@ -88,7 +88,7 @@ class ProjectRead(BaseModel):
     number: str
     name: str
     description: str | None
-    status: ProjectStatus
+    status: ProjectStatus | Literal["deleted"]
     bu_id: UUID
     parent_id: UUID | None
     owner_id: UUID

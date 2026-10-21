@@ -6,7 +6,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Query, Request, Response
 
-from flo.api.admin_users import organization_target
+from flo.api.admin_users import deleted_visible, organization_target
 from flo.api.auth import get_auth_settings
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
@@ -69,8 +69,10 @@ def create_target(body: RequisitionCreate, connection: Connection) -> tuple[str,
     )
 
 
-def requisition_target(id: UUID, connection: Connection) -> TargetProtocol:
-    row = RequisitionService(connection, current_scope()).get(id)
+def requisition_target(
+    id: UUID, connection: Connection, *, include_deleted: bool = False
+) -> TargetProtocol:
+    row = RequisitionService(connection, current_scope()).get(id, include_deleted=include_deleted)
     return cast(
         TargetProtocol,
         AuthorizationTarget(
@@ -85,6 +87,17 @@ def requisition_target(id: UUID, connection: Connection) -> TargetProtocol:
 CreateContext = Annotated[AuthorizationContext, Depends(require_resolved(create_target))]
 ReadContext = Annotated[
     AuthorizationContext, Depends(require("requisition.view", requisition_target))
+]
+
+
+def requisition_bin_target(
+    id: UUID, connection: Connection, include_deleted: bool = False
+) -> TargetProtocol:
+    return requisition_target(id, connection, include_deleted=include_deleted)
+
+
+BinReadContext = Annotated[
+    AuthorizationContext, Depends(require("requisition.view", requisition_bin_target))
 ]
 EditContext = Annotated[
     AuthorizationContext, Depends(require("requisition.edit", requisition_target))
@@ -181,7 +194,12 @@ def lookups(
 
 @router.get("/{id}", response_model=RequisitionRead)
 def get_requisition(
-    id: UUID, context: ReadContext, connection: Connection, response: Response, request: Request
+    id: UUID,
+    context: BinReadContext,
+    connection: Connection,
+    response: Response,
+    request: Request,
+    include_deleted: bool = False,
 ) -> RequisitionRead:
     row = RequisitionService(connection, current_scope(), context.user_id).detail(
         id,
@@ -191,6 +209,7 @@ def get_requisition(
             cast(TargetProtocol, AuthorizationTarget(ScopeType.PROJECT, project_id)),
         ),
         lambda: permits(request, "requisition.edit", requisition_target(id, connection)),
+        deleted_visible(request, include_deleted),
     )
     row.can_substitute_codes = (
         row.codes_expired

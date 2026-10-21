@@ -3,9 +3,9 @@
 from typing import Annotated, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, Response
+from fastapi import APIRouter, Depends, Header, Request, Response
 
-from flo.api.admin_users import organization_target
+from flo.api.admin_users import deleted_visible, organization_target
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
 from flo.kernel.authz import require
@@ -94,9 +94,17 @@ def create_version(
 
 @router.get("/{id}/versions/{version}", response_model=WorkflowVersionRead)
 def get_version(
-    id: UUID, version: int, context: ReadContext, connection: Connection, response: Response
+    id: UUID,
+    version: int,
+    context: ReadContext,
+    connection: Connection,
+    response: Response,
+    request: Request,
+    include_deleted: bool = False,
 ) -> WorkflowVersionRead:
-    row = WorkflowService(connection, current_scope(), context.user_id).get_version(id, version)
+    row = WorkflowService(connection, current_scope(), context.user_id).get_version(
+        id, version, include_deleted=deleted_visible(request, include_deleted)
+    )
     response.headers["ETag"] = str(row.row_version)
     return row
 

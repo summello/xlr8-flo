@@ -116,7 +116,7 @@ class RequisitionRead(BaseModel):
     id: UUID
     number: str
     title: str
-    status: RequisitionStatus
+    status: RequisitionStatus | Literal["deleted"]
     standalone: bool
     project_id: UUID | None
     project_number: str | None

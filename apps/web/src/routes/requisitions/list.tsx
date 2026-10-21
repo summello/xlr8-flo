@@ -86,7 +86,7 @@ export default function RequisitionList({ navigate }: { navigate: (href: string)
     helper.accessor("title", { header: "Title", meta: { label: "Title" }, cell: ({ row }) => <span className="req-title-cell"><span>{row.original.title}</span><span className="req-sub">{row.original.requester_email}</span></span> }),
     helper.accessor("project_name", { header: "Project", meta: { label: "Project" }, enableSorting: false, cell: ({ row }) => row.original.project_name ? `${row.original.project_number} ${row.original.project_name}` : "Project Request" }),
     helper.accessor("estimate", { header: "Amount", meta: { label: "Amount", numeric: true }, cell: ({ row }) => <Money value={row.original.estimate} currency={row.original.currency} /> }),
-    helper.accessor("status", { header: "Status", meta: { label: "Status" }, enableSorting: false, cell: ({ getValue }) => <StatusPill docType="requisition" status={getValue()} /> }),
+    helper.accessor("status", { header: "Status", meta: { label: "Status" }, enableSorting: false, cell: ({ getValue }) => <StatusPill docType="requisition" status={getValue() as RequisitionStatus} /> }),
     helper.accessor("needed_by", { header: "Needed by", meta: { label: "Needed by" }, cell: ({ getValue }) => formatDate(getValue()) }),
     helper.accessor("updated_at", { header: "Updated", meta: { label: "Updated" }, cell: ({ getValue }) => formatDate(getValue()) }),
   ]), [navigate]);

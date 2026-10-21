@@ -33,7 +33,7 @@ from flo.modules.org.schemas import CodesRead
 DocumentType = Literal[
     "project", "requisition", "project_request", "budget_change", "vendor", "rfq", "award", "po"
 ]
-VersionStatus = Literal["draft", "published", "superseded"]
+VersionStatus = Literal["draft", "published", "superseded", "deleted"]
 
 
 def invalid(field: str, message: str) -> ProblemError:
