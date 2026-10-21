@@ -404,6 +404,41 @@ Three open comments on the published canvas. Where a comment left a choice open,
 202. **The two onboarding decision panels** (`ApprSheetVendor`, `ApprSheetVendorLow`) stay on the Approval Inbox page; their tests moved to `canvas/tests/vendor-decision.spec.mjs`.
 203. **Specs and rules that named `design-system/canvas/`** now name both (AGENTS.md authority 3, `agents/claude.md`, `author.sh`, `docs/author-traps.md`, CodeQL ignore).
 
+## 6n. M3 open questions closed (21 Oct 2026; operator, in batches, planner session)
+
+The three parking stories (E11-S08 vendors, E12-S19 sourcing, E13-S22 purchase orders) and the M2 follow-ups were put to the operator in five batches. Each answer is below; "assumption confirmed" means the packet's stated behaviour ships as written and nothing changes.
+
+**Money and authorization**
+
+214. **Vendor minimum order value, and split awards below it, are deferred to M4** (E11-S08 #2, E12-S19 #6). MOV is not captured in M3 (6h-9 stands); splitting below a vendor's minimum is the buyer's judgement.
+215. **An override by an RFQ author who also holds `rfq.approve` is allowed and audited** (E12-S19 #7, E13-S22 #5: a non-lowest award, or a PO issued to a vendor suspended after approval). The reason field and the audit row are the control. Assumption confirmed.
+216. **Assigning a standalone request to an existing project:** the final approver, who must hold `requisition.approve` on the target project (M2 follow-up, E09-S06). Assumption confirmed.
+217. **Baseline roles from Requestor up gain `project.read` and `master.read` in their scope** (M2 follow-up, `docs/m2-decisions.md`). Requestors can see the projects they spend against. Change story **E22-S06**.
+
+**Vendor data**
+
+218. **Required document types stay org-wide in M3; per-category requirements are M4** (E11-S08 #1). The category is already stored. Assumption confirmed.
+219. **One scoring set for every vendor** (four fixed dimensions plus org-wide extras; E11-S08 #4). Scores stay comparable across vendors. Assumption confirmed.
+220. **A questionnaire draft finishes on the version it started on** (E11-S08 #6). Assumption confirmed.
+221. **A reveal of masked tax or banking data lasts 60 s and re-masks on leaving the card** (E11-S08 #3). Assumption confirmed.
+
+**Sourcing and purchase-order operations**
+
+222. **Evaluation criteria and weights are set per RFQ by its owner while draft, prefilled from an organisation default** an administrator maintains (E12-S19 #8). Folded into **E12-S07**.
+223. **The RFQ deadline is in the organisation's time zone, editable per RFQ** (E12-S19 #9). Assumption confirmed.
+224. **An attachment that fails its scan blocks publish until removed or replaced;** no override (E12-S19 #10). Assumption confirmed.
+225. **`Closed` is manual in M3;** from M4 a fully received purchase order closes automatically, and manual close stays for short-closes (E13-S22 #3).
+226. **Supplier acknowledgement is deferred to the M4 vendor portal** (E13-S22 #6). Not captured in M3.
+227. **The PO PDF is one code-versioned system layout carrying the organisation's address block and terms text,** set by an administrator and copied into each version's snapshot so issued PDFs never change (PO-014). No template editor, no template approval (E13-S22 #7). **The organisation logo follows when uploads are scanned** (decision 171, D-14): it is an uploaded image embedded in a document sent outside the company. Folded into **E13-S08**.
+228. **Email allowance (100/day, the platform's Resend account):** transactional PO sends still go and digests wait, as shipped; **the operator is alerted once a day when 80 sends are used.** The cap is the platform's, not an organisation's, so the alert goes to the operator's monitoring, not to an org admin (E13-S22 #8). Folded into **E13-S09**.
+
+**UI**
+
+229. **Questionnaire rows reorder with Move Up and Move Down only;** no drag (E11-S08 #5). Assumption confirmed.
+230. **The vendor profile ships with its eight cards as drawn, and the 375 tab strip wraps;** a horizontally scrolling tab strip becomes one cross-list follow-up (E11-S08 #8, #9).
+231. **Requisition tones:** `rejected` danger, `withdrawn` neutral (the requester's own act), **`expired` warning** (recoverable by resubmitting, not an error). MASTER §2.3 gains the three rows. Change story **E22-S08** (E09-S11 shipped `expired` as danger).
+232. **People are shown by display name with the email as secondary text and as the fallback** (E11-S08 #10). **Amends D-M2-16:** the identity gains a display name, copied from the invitation's `full_name` at acceptance. Change story **E22-S07**; boards that show email only are stale for the design session.
+
 ## 7. Findings to feed back into MASTER.md (amended 9 Oct 2026, see 97)
 
 - **The MASTER amendment is deferred until after Budget Transfer (item 84), which is now built: the next session can draft it for the operator.** It would fold in the items below plus the ancestry state rows (6f item 86).

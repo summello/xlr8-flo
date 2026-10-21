@@ -8,10 +8,10 @@ Loaded into every agent session. Updated by `flo done` (status) and by Opus at e
 | | |
 |---|---|
 | Milestone | **M3 — First sellable release** |
-| Stories | 101 / 215 done |
+| Stories | 104 / 219 done |
 | Branch | milestone/M3-sellable |
 | In flight | E11-S10, E22-S01, E22-S02, E22-S04 |
-| Blocked | E11-S08, E12-S19, E13-S22 |
+| Blocked | — |
 <!-- STATE:END -->
 
 ## What this product is
@@ -198,13 +198,12 @@ M1 handoff: `docs/handoff-2026-10-09.md` (9 Oct 2026): where M1 stands, the E05-
 
 ## Open questions for the human
 
-Raised by the M2 design pass (details in `docs/m2-decisions.md` Follow-ups). Each packet implements the conservative reading meanwhile; do not block on them.
-- **Decision 99 vs D-M2-5:** should a standalone request's approval draw on the organization's available budget instead of creating new budget? (E09-S06)
-- **Who may assign a standalone request to an existing project?** The packet's reading: the final approver holds `requisition.approve` there. (E09-S06)
-- **MASTER §2.3** has no requisition tones for `rejected`, `withdrawn` and `expired`. E09-S11 uses danger, neutral and danger. (MASTER amendment)
-- **M1 permissions gap:** no baseline role holds `project.read` or `master.read`. (E09-S03 works around it with requisition lookups.)
-- **No UI story** owns the delegation screen (STORY-NOTES §3). The resubmit and amendment screens are E09-S12.
-- Whether a PO commits against the parent project or the requisition-generated sub-project (M3).
+**Closed 21 Oct 2026** (operator, in batches; canvas DECISIONS 214 to 232): every question parked in
+E11-S08, E12-S19 and E13-S22 and the M2 follow-ups. Decision 99 became E30-S01 (organisation pool);
+standalone-to-project assignment stays with the final approver (216); baseline read grants are
+E22-S06 (217); requisition tones are in MASTER §2.3 and E22-S08 (231); people by name are E22-S07 and
+E22-S09 (232); a PO commits against the requisition's sub-project (209).
+- **No UI story owns the delegation screen** (STORY-NOTES §3). Still open.
 
 ## Session handoff — 25 Aug 2026
 

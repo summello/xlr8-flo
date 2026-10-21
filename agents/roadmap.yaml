@@ -1524,7 +1524,7 @@ epics:
           - VEN-007
           - VEN-014
         dep: []
-        st: blocked
+        st: done
       - id: E11-S11
         t: 'Vendor eligibility: one server rule, one web component'
         k: engine
@@ -1906,7 +1906,7 @@ epics:
           - SRC-016
           - SRC-017
         dep: []
-        st: blocked
+        st: done
 
   - id: E13
     name: Purchase orders
@@ -2224,7 +2224,7 @@ epics:
         reqs:
           - PO-007
         dep: []
-        st: blocked
+        st: done
 
   - id: E22
     name: Budget governance follow-ups
@@ -2286,6 +2286,56 @@ epics:
           - OPS-007
         dep: []
         st: done
+      - id: E22-S06
+        t: Baseline roles read the projects and master data they work against
+        k: auth
+        s: S
+        tags:
+          - auth
+          - security
+          - migration
+        reqs:
+          - USR-003
+          - USR-005
+          - USR-006
+          - USR-008
+          - ACC-004
+        dep: []
+        st: todo
+      - id: E22-S07
+        t: People have a display name, stored, copied at acceptance, returned beside every email
+        k: migration
+        s: M
+        tags:
+          - migration
+        reqs:
+          - USR-009
+          - USR-010
+          - SEC-011
+        dep: []
+        st: todo
+      - id: E22-S08
+        t: Expired requisitions use the warning tone
+        k: ui
+        s: S
+        tags:
+          - ui
+        reqs:
+          - A11Y-004
+        dep: []
+        st: todo
+      - id: E22-S09
+        t: Show people by name, with the email as secondary text
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - A11Y-004
+          - UX-007
+        dep:
+          - E22-S07
+        st: todo
 
   # ─────────────────── M4 — Full Phase-1 scope ───────────────────
 
