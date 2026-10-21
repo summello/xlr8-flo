@@ -4,7 +4,7 @@
 version: 1
 
 policy:
-  max_stories_in_flight: 4      # 10 Oct 2026: parallel trains, one test database per worktree
+  max_stories_in_flight: 6      # 21 Oct 2026: 4 -> 6, review-bound lanes left both Claude accounts idle (see project-memory); 10 Oct: parallel trains, one test DB per worktree
   min_reviewers: 1              # one review per story, scaled to risk (below)
   release_reviewers: [qwen, deepseek]   # second and third pass on the whole milestone
                                         # diff, before the PR to main — not per story

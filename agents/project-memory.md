@@ -173,6 +173,12 @@ Epic checkpoints replace train reviews; one PR per milestone stays. Revisit afte
 finish wall time, red-after-merge rate, Codex findings and blocker precision against Opus on the
 first ten gated stories (Codex ≥ Opus → Opus moves to epic level only).
 
+**21 Oct 2026 — `max_stories_in_flight` 4 → 6.** Four lanes sat in review or CI for hours while
+both Claude accounts had 75–80% of their five-hour window left and the ready queue held five stories.
+Review and CI are the bottleneck, not authoring, so more lanes overlap them. New lanes take stories
+with no migration first (migration lanes renumber at merge, three times on 21 Oct). Revisit if a
+milestone merge conflict or a gate collision traces to lane count.
+
 **Merge authority:** the operator has delegated GitHub merges for M0 to Opus, with the
 instruction to space them out so the repository does not read as bot-driven. Outside M0 the
 standing rule holds: push, never merge.

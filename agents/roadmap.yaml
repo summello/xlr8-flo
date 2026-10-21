@@ -2288,7 +2288,7 @@ epics:
         st: done
       - id: E22-S06
         t: Baseline roles read the projects and master data they work against
-        k: auth
+        k: security
         s: S
         tags:
           - auth
