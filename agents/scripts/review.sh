@@ -33,6 +33,18 @@ fi
 if [ -n "$RELEASE" ]; then "$R/apps/api/.venv/bin/python" "$R/agents/scripts/flo" release-packet "$S" > "$P"
 else "$W/apps/api/.venv/bin/python" "$R/agents/scripts/flo" review "$S" $ARGS > "$P"; fi
 git -C "$W" rev-parse HEAD > "$SHA.new"  # becomes the baseline only if the run succeeds
+# what this run reviews, for the supervisor's freshness check (flo facts): a verdict counts only
+# for the commit it was launched on
+cp "$SHA.new" "$D/$S.$A.launched"
+# Keep every round's verdict: the scorecard counts findings across rounds (flo done), and the
+# file in reviews/ is overwritten by this run. An identical copy (a relaunch) is not a new round.
+if [ -f "$W/reviews/$S.$A.json" ]; then
+  mkdir -p "$D/reviews"; LAST="$(ls "$D/reviews/$S.$A".r*.json 2>/dev/null | sort -V | tail -1)"
+  if [ -z "$LAST" ] || ! cmp -s "$LAST" "$W/reviews/$S.$A.json"; then
+    N="$(ls "$D/reviews/$S.$A".r*.json 2>/dev/null | wc -l | tr -d ' ')"
+    cp "$W/reviews/$S.$A.json" "$D/reviews/$S.$A.r$((N + 1)).json"
+  fi
+fi
 printf '\nYour agent id is %s. Write reviews/%s.%s.json and stop.\n' "$A" "$S" "$A" >> "$P"
 cd "$W"
 # a waiter polls this log for "exit N": clear the previous run's now, not when the job starts
@@ -44,6 +56,7 @@ if [ "$A" = opus ]; then
   nohup sh -c "mkdir -p '$D/$S.aside' && mv reviews/*.json '$D/$S.aside/' 2>/dev/null; \
     $ENV claude -p --model opus -n 'xlr8flo-reviewer $S' --permission-mode auto \"\$(cat '$P.role')\" > '$D/$S.$A.log' 2>&1; echo \"exit \$?\" >> '$D/$S.$A.log'; \
     mv -n '$D/$S.aside/'*.json reviews/ 2>/dev/null; rmdir '$D/$S.aside'" > /dev/null 2>&1 &
+  echo $! > "$D/$S.$A.pid"
   echo "review launched: $S by opus (account ${3:-B})"
   exit 0
 fi
@@ -70,6 +83,7 @@ if [ "$A" = codex ]; then
     wait \$CP; RC=\$?; echo \"exit \$RC\" >> '$D/$S.$A.log'; kill \$KP 2>/dev/null; { [ \$RC = 0 ] || grep -q '\"ran_tests\": *true' 'reviews/$S.$A.json' 2>/dev/null; } && mv '$SHA.new' '$SHA'; \
     mv -n '$D/$S.aside/'*.json reviews/ 2>/dev/null; rmdir '$D/$S.aside'; \
     '$W/apps/api/.venv/bin/python' '$R/agents/scripts/flo' codex-usage '$S' '$T0' > /dev/null" > /dev/null 2>&1 &
+  echo $! > "$D/$S.$A.pid"
   echo "review launched: $S by codex ($1, $2)${ARGS:+, re-review}"
   exit 0
 fi
@@ -88,5 +102,6 @@ nohup sh -c "mkdir -p '$D/$S.aside' && mv reviews/*.json '$D/$S.aside/' 2>/dev/n
   '$R/apps/api/.venv/bin/python' '$R/agents/scripts/flo' log-guard '$D/$S.$A.log' $CALLS \$OP $CAP & \
   wait \$OP; echo \"exit \$?\" >> '$D/$S.$A.log'; \
   mv -n '$D/$S.aside/'*.json reviews/ 2>/dev/null; rmdir '$D/$S.aside'" > /dev/null 2>&1 &
+echo $! > "$D/$S.$A.pid"
 echo "OpenRouter balance \$$LEFT; caps $CALLS calls, $CAP s"
 echo "review launched: $S by $A"

@@ -20,7 +20,7 @@ Stdlib only, except PyYAML for the two config files.
   flo budget                per-agent spend and remaining capacity
   flo roadmap [--check]     regenerate docs/claude-plan.md §5 (or verify it)
   flo board   [--watch [S]] refresh .flo/status.json and board.html from git refs, worktrees, GitHub\n  flo ack     [KEY|all]     confirm a 'waiting on you' item (list keys with no argument)\n  flo unack   <KEY|all>     reopen a confirmed item
-  flo check [--light]       everything CI runs, locally (stops at the first red); --light is\n                            the story gate: no full pytest/e2e, only the tests the story touched\n  flo reap    <STORY_ID>    drop a merged story's worktree once its CI is green\n  flo account <STORY_ID>    account + session id for a multi-account author (sonnet)\n  flo ci-watch              one pass: mark red story/milestone CI, reap green merged stories
+  flo check [--light]       everything CI runs, locally (stops at the first red); --light is\n                            the story gate: no full pytest/e2e, only the tests the story touched\n  flo reap    <STORY_ID>    drop a merged story's worktree once its CI is green\n  flo account <STORY_ID>    account + session id for a multi-account author (sonnet)\n  flo ci-watch              one pass: mark red story/milestone CI, reap green merged stories\n  flo facts                 delivery state as JSON for the fleet supervisor (~/.claude/fleet)\n  flo round   <STORY_ID>    write the next review-round file from the verdicts; print its path
   flo db      [url|reset]   this worktree's test database (reset drops and recreates it)
   flo up [--reset]          start local Postgres + SeaweedFS + Mailpit; optionally reset data
   flo down                  stop the local stack
@@ -37,7 +37,8 @@ import time
 import uuid
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+# FLO_ROOT points this code at another checkout (a dry run of new flo code against the runner's state).
+ROOT = Path(os.environ.get("FLO_ROOT") or Path(__file__).resolve().parents[2]).expanduser().resolve()
 ROADMAP = ROOT / "agents" / "roadmap.yaml"
 FLEET = ROOT / "agents" / "agents.yaml"
 PLAN = ROOT / "docs" / "claude-plan.md"
@@ -702,6 +703,13 @@ def cmd_review(argv):
 
     print("--- how to review ---")
     deep = pkt["opus_final"] and not since
+    ui = pkt["kind"] == "ui" or "ui" in pkt["tags"]
+    ui_step = f"""
+   UI story: run the story's Playwright specs once, axe included, and check the keyboard path:
+     (cd apps/web && npx playwright test <the spec files this diff adds or changes> --reporter=line 2>&1 | tail -20)
+   A failing e2e, an axe violation on a changed route, a control the keyboard cannot reach, a
+   hardcoded colour, spacing, radius or duration (tokens only, design-system/MASTER.md), or a
+   missing loading, empty or error state is a blocker.""" if ui else ""
     plants = ("a plant only for a guard or test added since your last review, to prove a fix; "
               "do not re-plant anything unchanged" if since else
               "every plant the design packet prescribes, every gate, contract or guard the "
@@ -709,7 +717,7 @@ def cmd_review(argv):
               "every gate, contract or guard the diff adds, and at most 1 exploratory plant")
     print(f"""\
 Budget: this is {'a re-review: confirm each previous finding is fixed and review only the changes above' if since else 'a gated (money/auth/security/migration/concurrency) review' if deep else 'an ungated review'}.
-Aim for about {20 if since else 45 if deep else 25} commands in total. When the steps below are done,
+Aim for about {(20 if since else 45 if deep else 25) + (5 if ui else 0)} commands in total. When the steps below are done,
 write the verdict and stop; do not widen the review.
 
 1. cd {wt}
@@ -729,11 +737,24 @@ write the verdict and stop; do not widen the review.
      perl -0pi -e 's/<guard>/<broken>/' <file> && (cd apps/api && .venv/bin/pytest -x -q <one test file> 2>&1 | tail -5); git checkout -- <file>
 4. Confirm each requirement id above is satisfied by what the diff does, not by what
    it says. Cite the id in any finding it belongs to.
-5. Finalise the verdict file, then stop. Exactly this shape; verdict is "approve" or
-   "changes_requested", severity is "blocker", "major" or "minor":
+5. Quality and security, on every story, from the diff you already read:
+   Quality (the ponytail lens): a helper that duplicates kernel/ or another module's service;
+   an abstraction with one use; config for a value that never changes; dead code; a change
+   outside the files the packet names; logic without the test AGENTS.md 3.5 requires. Name the
+   file and line, and the simpler form that already exists.
+   Security: org_id only from the session and every query scoped (a foreign-tenant id must
+   return 404); authorization server-side on every path, the ones the UI hides included;
+   input validated at the boundary; no injection (raw SQL built from input, unescaped HTML);
+   no secret, stack trace or internal detail in a response, log or error (SEC-011); every
+   state-changing POST honours Idempotency-Key; money in Decimal, lock before validate, one
+   transaction.{ui_step}
+6. Finalise the verdict file, then stop. Exactly this shape; verdict is "approve" or
+   "changes_requested", severity is "blocker", "major" or "minor", category is
+   "correctness", "quality", "security" or "ui":
      {{"story": "{sid}", "reviewer": "<your-agent-id>", "verdict": "approve",
-      "ran_tests": true, "findings": [{{"severity": "major", "file": "path", "line": 1,
-      "requirement": "REQ-001", "problem": "what fails", "fix": "what to change"}}]}}
+      "ran_tests": true, "findings": [{{"severity": "major", "category": "security",
+      "file": "path", "line": 1, "requirement": "REQ-001", "problem": "what fails",
+      "fix": "what to change"}}]}}
 
 --- tool discipline ---
 DO   pipe every test and build command through `| tail -20`; never print a whole log
@@ -1083,10 +1104,20 @@ def record_score(sid, pkt, story):
         if r["reviewer"] == "opus":
             continue
         findings = r.get("findings", [])
+        # earlier rounds' verdicts, archived by review.sh before each re-review: without them a
+        # reviewer that requested changes twice and then approved read as 0 findings (20 Oct)
+        earlier = []
+        for f in sorted((ROOT / ".scratch" / "reviews").glob(f"{sid}.{r['reviewer']}.r*.json")):
+            try:
+                earlier.append(json.loads(f.read_text()))
+            except json.JSONDecodeError:
+                pass
+        every = findings + [x for e in earlier for x in e.get("findings", [])]
         per_reviewer[r["reviewer"]] = {
             "ran_tests": bool(r.get("ran_tests")),
-            "findings": len(findings),
-            "blockers": sum(1 for f in findings if f.get("severity") == "blocker"),
+            "reviews": 1 + len(earlier),
+            "findings": len(every),
+            "blockers": sum(1 for f in every if f.get("severity") == "blocker"),
             # An escalation records which blockers Opus dismissed as invalid.
             "blockers_dismissed": sum(1 for f in findings
                                       if f.get("severity") == "blocker" and f.get("arbitration") == "dismissed"),
@@ -1140,7 +1171,7 @@ def compute_scores():
             missed = sum(s["escapes"] for s in reviewed if s["opus_final"])
             gated = sum(1 for s in reviewed if s["opus_final"]) or 1
             m["test_compliance"] = sum(1 for x in r if x["ran_tests"]) / len(r)
-            m["findings_per_review"] = sum(x["findings"] for x in r) / len(r)
+            m["findings_per_review"] = sum(x["findings"] for x in r) / sum(x.get("reviews", 1) for x in r)
             m["blocker_precision"] = (raised - dismissed) / raised if raised else None
             m["escapes_missed"] = missed
             prec = m["blocker_precision"] if m["blocker_precision"] is not None else 0.5
@@ -2049,6 +2080,116 @@ def story_ci_failure(pkt, wt):
     return None
 
 
+def _alive(pidfile):
+    try:
+        os.kill(int(pidfile.read_text().split()[0]), 0)
+        return True
+    except (OSError, ValueError):
+        return False
+
+
+def _read(path):
+    try:
+        return path.read_text()
+    except OSError:
+        return None
+
+
+def _ci_on(branch, sha):
+    """green | red | pending | none: the story CI run on the submitted commit."""
+    run = next((r for r in gh_runs(branch) if r.get("headSha") == sha), None) if sha else None
+    if not run:
+        return "none"
+    if run.get("status") != "completed":
+        return "pending"
+    return "green" if run.get("conclusion") == "success" else "red"
+
+
+def _reviewers(pkt):
+    rev = list(pkt.get("reviewers") or [])
+    return rev + (["opus"] if pkt.get("opus_final") and "opus" not in rev else [])
+
+
+def cmd_facts(argv):
+    """flo facts: the delivery state as JSON, for the fleet supervisor (~/.claude/fleet/fleet.py).
+
+    Facts only; the supervisor decides. Per in-flight story: who authors it and on which account,
+    which processes run (pidfiles author.sh and review.sh write), how the author's last run ended,
+    whether the head is submitted, each reviewer's verdict on the submitted commit, rounds so far,
+    and red CI. Plus what may start next and which red milestone, if any, stopped the line."""
+    import flo_facts as F
+    rm, fleet = roadmap(), load_yaml(FLEET)
+    pol, sc = fleet["policy"], ROOT / ".scratch"
+    names = [p.name for p in sc.iterdir()] if sc.exists() else []
+    out = []
+    for _, s in stories(rm):
+        sid, wt = s["id"], worktree_path(s["id"])
+        red = (sc / f"{sid}.ci-red").exists()
+        if not (s["st"] in ACTIVE or (s["st"] == "done" and red)) or not (wt / "task.json").exists():
+            continue
+        pkt = json.loads((wt / "task.json").read_text())
+        author, sub = pkt["author"], pkt.get("submitted_sha")
+        running = ["author"] if _alive(sc / f"{sid}.author.pid") else []
+        verdicts = {}
+        for r in _reviewers(pkt):
+            if _alive(sc / f"{sid}.{r}.pid"):
+                running.append(f"review:{r}")
+            raw = _read(wt / "reviews" / f"{sid}.{r}.json")
+            try:
+                review = json.loads(raw) if raw else None
+            except json.JSONDecodeError:
+                review = {"verdict": "malformed"}
+            # .launched is written at each launch; older runs left .sha (codex) or .sha.new (opus)
+            seen = next((t.strip() for t in (_read(sc / f"{sid}.{r}.{x}") for x in ("launched", "sha", "sha.new")) if t), None)
+            verdicts[r] = F.verdict_state(review, seen, sub)
+        approved = bool(verdicts) and all(v == "approve" for v in verdicts.values())
+        out.append({
+            "id": sid, "title": s["t"], "st": s["st"], "merged": s["st"] == "done",
+            "author": author, "account": ((pkt.get("sessions") or {}).get(author) or {}).get("account"),
+            "gated": bool(pkt.get("opus_final")),
+            "blocked": s["st"] == "blocked" or bool((pkt.get("notes") or {}).get("blocked")),
+            "rounds": F.rounds_done(names, sid), "running": running,
+            "author_result": F.author_result(_read(sc / f"{sid}.log")),
+            "head": git("rev-parse", "HEAD", cwd=wt, check=False), "submitted_sha": sub,
+            "verdicts": verdicts, "ci_red": red,
+            # asked of GitHub only where it decides something: a gated story waiting to finish
+            "ci": _ci_on(pkt["branch"], sub) if approved and pkt.get("opus_final") else None,
+        })
+    sonnet = fleet["agents"].get("sonnet") or {}
+    print(json.dumps({
+        "project": ROOT.name, "max_in_flight": pol["max_stories_in_flight"],
+        "max_rounds": pol.get("max_review_rounds", 3),
+        "in_flight": sum(1 for _, s in stories(rm) if s["st"] in ACTIVE),
+        "line_stopped": [m["id"] for m in rm["milestones"] if (sc / f"{m['id']}.ci-red").exists()],
+        "next": [s["id"] for _, s in stories(rm) if s["st"] == "todo" and deps_satisfied(rm, s)
+                 and (ROOT / "design" / f"{s['id']}.md").exists()][:5],
+        "free_accounts": free_accounts("sonnet", sonnet) if sonnet.get("accounts") else [],
+        "stories": out,
+    }, indent=1))
+
+
+def cmd_round(argv):
+    """flo round <S>: write the next round file from the reviewers' changes_requested verdicts and
+    print its path, for agents/scripts/author.sh to resume the author with."""
+    import flo_facts as F
+    if not argv:
+        die("usage: flo round <STORY_ID>")
+    sid = argv[0]
+    pkt, wt, sc = packet_of(sid), worktree_path(sid), ROOT / ".scratch"
+    verdicts = {}
+    for r in _reviewers(pkt):
+        raw = _read(wt / "reviews" / f"{sid}.{r}.json")
+        if raw:
+            try:
+                verdicts[r] = json.loads(raw)
+            except json.JSONDecodeError:
+                die(f"malformed review: reviews/{sid}.{r}.json")
+    n = F.rounds_done([p.name for p in sc.iterdir()] if sc.exists() else [], sid) + 1
+    path = sc / f"{sid}.round{n}.md"
+    path.write_text(F.round_file(sid, n, verdicts))
+    print(path)
+
+
 def cmd_ci_watch(argv):
     """One monitoring pass (agents/scripts/ci-watch.sh loops it). A completed red run on a
     submitted story writes .scratch/<S>.ci-red with the failing log, for the planner to resume
@@ -2232,7 +2373,7 @@ COMMANDS = {
     "review": cmd_review, "gate": cmd_gate, "final": cmd_final, "escalate": cmd_escalate,
     "done": cmd_done, "design": cmd_design, "status": cmd_status, "budget": cmd_budget,
     "roadmap": cmd_roadmap, "score": cmd_score, "session": cmd_session, "board": cmd_board,
-    "reap": cmd_reap, "account": cmd_account, "codex-usage": cmd_codex_usage, "codex-guard": cmd_codex_guard, "release-packet": cmd_release_packet, "log-guard": cmd_log_guard, "ci-watch": cmd_ci_watch, "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "db": cmd_db, "up": cmd_up, "down": cmd_down,
+    "reap": cmd_reap, "account": cmd_account, "codex-usage": cmd_codex_usage, "codex-guard": cmd_codex_guard, "release-packet": cmd_release_packet, "log-guard": cmd_log_guard, "ci-watch": cmd_ci_watch, "facts": cmd_facts, "round": cmd_round, "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "db": cmd_db, "up": cmd_up, "down": cmd_down,
 }
 
 if __name__ == "__main__":
