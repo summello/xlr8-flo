@@ -573,11 +573,18 @@ start with an empty database.
 CI distributes sorted API test files across four `backend-shard` runners using
 `apps/api/scripts/test_shard.py N 4`, pinning the exactly-once property file to shard 1. Coverage
 artifacts combine in `backend`, which retains the 80% floor and fails if any shard fails. Static
-backend checks and TEN-010 run once. Gitleaks is installed once by governance and shared with all
+backend checks, TEN-010 and the Python SBOM run once in `backend-static`, which `backend` also
+requires. Gitleaks is installed once by governance and shared with all
 shards because gate self-tests need it. Frontend static checks run once in `frontend-static`;
-Playwright uses three `frontend-e2e` shards. The final `frontend` job requires both to succeed.
+Playwright uses three `frontend-e2e` shards with `fullyParallel: true` to split by test. CI builds
+the SPA once per shard and serves it with `vite preview`; dev-only grid and form HTTP fixtures
+are also registered for preview. The `perf` project still runs after `main`. The final `frontend`
+job requires static checks and every E2E shard to succeed. Both combined checks unconditionally
+require successful `detect`, even when the area output is missing; successful detection of an
+untouched area still skips its checks.
 Branch protection continues to require `detect`, `governance`, `security`, `backend` and `frontend`.
-Local Playwright configuration is unchanged.
+Local Playwright still uses the dev server and reuses an existing server. CI retains one retry;
+remove it only after three consecutive green milestone runs report zero flaky tests.
 
 
 Local evidence, 22 Oct 2026 (same worktree and Postgres 17): full API `pytest -q` wall time was

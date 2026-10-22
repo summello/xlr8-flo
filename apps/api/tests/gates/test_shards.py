@@ -109,27 +109,54 @@ def test_required_checks_reject_failed_or_missing_shards(tmp_path):
     source = (ROOT / ".github/workflows/ci.yml").read_text()
     backend = source.split("\n  backend:\n", 1)[1].split("\n  frontend-static:", 1)[0]
     frontend = source.split("\n  frontend:\n", 1)[1].split("\n  security:", 1)[0]
-    assert "needs: [detect, backend-shard]" in backend
+    assert "needs: [detect, backend-static, backend-shard]" in backend
     assert "needs: [detect, frontend-static, frontend-e2e]" in frontend
     for job in (backend, frontend):
         assert "if: always()" in job
         assert "continue-on-error" not in job
     assert "RESULT: ${{ needs.backend-shard.result }}" in backend
+    assert "STATIC_RESULT: ${{ needs.backend-static.result }}" in backend
     assert "STATIC_RESULT: ${{ needs.frontend-static.result }}" in frontend
     assert "E2E_RESULT: ${{ needs.frontend-e2e.result }}" in frontend
     backend_command = next(
-        line.strip()[5:] for line in backend.splitlines() if line.strip().startswith("run: test ")
+        line.strip()[5:]
+        for line in backend.splitlines()
+        if line.strip().startswith('run: test "$RESULT"')
     )
     frontend_command = next(
-        line.strip()[5:] for line in frontend.splitlines() if line.strip().startswith("run: test ")
+        line.strip()[5:]
+        for line in frontend.splitlines()
+        if line.strip().startswith('run: test "$STATIC_RESULT"')
     )
     for result in ("success", "failure", "cancelled", "skipped"):
-        run = subprocess.run(["sh", "-c", backend_command], cwd=tmp_path, env={"RESULT": result})
-        assert (run.returncode == 0) == (result == "success")
+        for variable in ("RESULT", "STATIC_RESULT"):
+            env = {"RESULT": "success", "STATIC_RESULT": "success", variable: result}
+            run = subprocess.run(["sh", "-c", backend_command], cwd=tmp_path, env=env)
+            assert (run.returncode == 0) == (result == "success")
         for variable in ("STATIC_RESULT", "E2E_RESULT"):
             env = {"STATIC_RESULT": "success", "E2E_RESULT": "success", variable: result}
             run = subprocess.run(["sh", "-c", frontend_command], cwd=tmp_path, env=env)
             assert (run.returncode == 0) == (result == "success")
+
+
+@pytest.mark.parametrize("name", ["backend", "frontend"])
+def test_combined_checks_require_successful_detect_even_when_area_is_untouched(name, tmp_path):
+    import yaml
+
+    job = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())["jobs"][name]
+    assert "detect" in job["needs"]
+    assert job["if"] == "always()"
+    step = next(step for step in job["steps"] if "DETECT_RESULT" in step.get("env", {}))
+    assert "if" not in step  # Must run even with missing/false area outputs.
+    assert step["env"]["DETECT_RESULT"] == "${{ needs.detect.result }}"
+    for result in ("success", "failure", "cancelled", "skipped", ""):
+        run = subprocess.run(
+            ["sh", "-c", step["run"]], cwd=tmp_path, env={"DETECT_RESULT": result}
+        )
+        assert (run.returncode == 0) == (result == "success")
+    area = "api" if name == "backend" else "web"
+    checks = next(step for step in job["steps"] if "STATIC_RESULT" in step.get("env", {}))
+    assert checks["if"] == f"needs.detect.outputs.{area} == 'true'"
 
 
 def test_combined_coverage_rejects_below_eighty_percent(tmp_path):
