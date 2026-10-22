@@ -7,6 +7,7 @@ Stdlib only, except PyYAML for the two config files.
   flo next                  next story whose dependencies are satisfied
   flo preflight <STORY_ID> --reviewer NAME --verdict pass|fail   file the packet pre-flight flo start requires
   flo start   <STORY_ID>    branch + worktree + task packet (refuses without a passing pre-flight record)
+  flo reassign <STORY_ID> [--reason T]   new author for a story whose worker is gone (live pid, dirty tree, own commits: refused)
   flo assign  <STORY_ID>    compute author and two reviewers from agents.yaml
   flo submit  <STORY_ID>    mark ready for review, print reviewer commands
   flo review  <STORY_ID>    print the reviewer packet (diff + design + requirements)
@@ -39,6 +40,7 @@ import subprocess
 import sys
 import time
 import uuid
+from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 
@@ -248,36 +250,37 @@ def cmd_next(argv):
     print(f"\n  flo start {st['id']}")
 
 
-def cmd_assign(argv):
-    """Implements the algorithm documented at the foot of agents/agents.yaml."""
-    if not argv:
-        die("usage: flo assign <STORY_ID>")
-    rm, fleet = roadmap(), load_yaml(FLEET)
-    epic, st = find(rm, argv[0])
-    pol, agents, sp = fleet["policy"], fleet["agents"], state().get("spend", {})
+def assignment_for(epic, st, fleet, sp, exclude=()):
+    """The author, reviewers and opus_final that `flo assign` chooses for a story, never picking an
+    agent in `exclude`. The one place eligibility lives: `flo reassign` calls it too, so it cannot
+    hand a story to an agent `flo assign` would have refused. Exits when nobody qualifies."""
+    sid = st["id"]
+    pol, agents = fleet["policy"], fleet["agents"]
     tags = set(st.get("tags", []))
 
     # Step 0 — a milestone override wins outright over the capacity heuristic.
     ov = (fleet.get("milestone_overrides") or {}).get(epic["milestone"])
     if ov:
         author = ov["sole_author"]
+        if author in exclude:
+            die(f"{sid}: milestone override makes {author} the sole author — no other agent may take it")
         if st["k"] not in agents[author].get("allowed_kinds", []):
-            die(f"{argv[0]}: milestone override makes {author} sole author but kind="
+            die(f"{sid}: milestone override makes {author} sole author but kind="
                 f"{st['k']} is not in its allowed_kinds — widen it in agents.yaml")
         reviewers = [r for r in ov["reviewers"] if r != author]
         if len(reviewers) < pol["min_reviewers"]:
             die(f"override for {epic['milestone']} leaves {len(reviewers)} reviewer(s); "
                 f"minimum is {pol['min_reviewers']}")
-        out = {"author": author, "reviewers": reviewers,
-               "opus_final": bool(ov.get("opus_final_all")) or bool(tags & set(pol["opus_final_required_tags"])),
-               "override": epic["milestone"]}
-        print(json.dumps(out, indent=2))
-        return out
+        return {"author": author, "reviewers": reviewers,
+                "opus_final": bool(ov.get("opus_final_all")) or bool(tags & set(pol["opus_final_required_tags"])),
+                "override": epic["milestone"]}
 
     size_rank = {"S": 1, "M": 2, "L": 3}
     scarcity = {"none": 0, "spend": 1, "rate": 2}
 
     def can_author(name, cfg):
+        if name in exclude:
+            return False
         if "author" not in cfg.get("roles", []):
             return False
         if st["k"] not in cfg.get("allowed_kinds", []):
@@ -317,9 +320,84 @@ def cmd_assign(argv):
                  if n != author and sp.get(n, 0.0) < agents[n].get("monthly_budget_usd", float("inf"))][:1]
     if len(reviewers) < pol["min_reviewers"]:
         die(f"only {len(reviewers)} reviewer(s) available; minimum is {pol['min_reviewers']} — story waits")
-    out = {"author": author, "reviewers": reviewers, "opus_final": opus_final}
+    return {"author": author, "reviewers": reviewers, "opus_final": opus_final}
+
+
+def cmd_assign(argv):
+    """Implements the algorithm documented at the foot of agents/agents.yaml."""
+    if not argv:
+        die("usage: flo assign <STORY_ID>")
+    rm, fleet = roadmap(), load_yaml(FLEET)
+    epic, st = find(rm, argv[0])
+    out = assignment_for(epic, st, fleet, state().get("spend", {}))
     print(json.dumps(out, indent=2))
     return out
+
+
+@contextmanager
+def story_lock(sid):
+    """One launch or reassign per story at a time: an atomic mkdir, the convention finish.sh uses
+    and author.sh takes too. ponytail: a crash leaves the directory behind; remove
+    .scratch/<story>.lock by hand (macOS has no flock(1), so no kernel-released lock)."""
+    lock = ROOT / ".scratch" / f"{sid}.lock"
+    lock.parent.mkdir(exist_ok=True)
+    try:
+        lock.mkdir()
+    except FileExistsError:
+        die(f"{sid}: {lock} is held by a launch or another reassign; if none is running, remove it")
+    try:
+        yield
+    finally:
+        lock.rmdir()
+
+
+def cmd_reassign(argv):
+    """flo reassign <STORY_ID> [--reason TEXT]: give a story whose author is not running to the
+    agent `flo assign` would pick without the current one. Refuses unless the worker is gone, the
+    worktree is clean with no commit of its own, and nobody else holds the story lock."""
+    usage = "usage: flo reassign <STORY_ID> [--reason TEXT]"
+    args, reason = list(argv), "reassign"
+    if "--reason" in args:
+        i = args.index("--reason")
+        if i + 1 >= len(args):
+            die(usage)
+        reason = args[i + 1]
+        del args[i:i + 2]
+    if len(args) != 1:
+        die(usage)
+    sid = args[0]
+    epic, st = find(roadmap(), sid)
+    if st["st"] not in ("design", "in_progress"):
+        die(f"{sid} is {st['st']}: only a story whose author has not submitted can be reassigned")
+    task = worktree_path(sid) / "task.json"
+    if not task.exists():
+        die(f"no task packet for {sid} — run: flo start {sid}")
+    seen = json.loads(task.read_text())["author"]  # read before the lock: see _reassign_locked
+    with story_lock(sid):
+        _reassign_locked(sid, epic, st, seen, reason)
+
+
+def _reassign_locked(sid, epic, st, seen, reason):
+    wt = worktree_path(sid)
+    task = wt / "task.json"
+    pkt = json.loads(task.read_text())
+    # a second reassign that waited for the lock saw the old author: refuse rather than move it again
+    if pkt["author"] != seen:
+        die(f"{sid}: author changed from {seen} to {pkt['author']} while waiting — already reassigned")
+    # task.json and reviews/ are gitignored, so a clean tree says nothing about a running worker
+    if _alive(ROOT / ".scratch" / f"{sid}.author.pid"):
+        die(f"{sid}: {seen}'s worker is still running — not reassigned")
+    if git("status", "--porcelain", cwd=wt):
+        die(f"{sid}: the worktree has uncommitted changes — not reassigned")
+    ahead = git("rev-list", "--count", f"{pkt['milestone_branch']}..HEAD", cwd=wt)
+    if ahead != "0":
+        die(f"{sid}: {ahead} commit(s) past {pkt['milestone_branch']} — not reassigned")
+    new = assignment_for(epic, st, load_yaml(FLEET), state().get("spend", {}), exclude={seen})
+    pkt["author"], pkt["reviewers"], pkt["opus_final"] = new["author"], new["reviewers"], new["opus_final"]
+    pkt.setdefault("substitutions", []).append({"from": seen, "to": new["author"], "reason": reason})
+    task.write_text(json.dumps(pkt, indent=2) + "\n")
+    print(f"{sid}: {seen} -> {new['author']}; reviewers {', '.join(new['reviewers'])}; "
+          f"opus final {'required' if new['opus_final'] else 'not required'}")
 
 
 def worker_load(name):
@@ -2587,7 +2665,7 @@ COMMANDS = {
     "review": cmd_review, "gate": cmd_gate, "final": cmd_final, "escalate": cmd_escalate,
     "done": cmd_done, "design": cmd_design, "status": cmd_status, "budget": cmd_budget,
     "roadmap": cmd_roadmap, "score": cmd_score, "session": cmd_session, "board": cmd_board,
-    "reap": cmd_reap, "account": cmd_account, "launch-model": cmd_launch_model, "preflight": cmd_preflight, "codex-usage": cmd_codex_usage, "codex-guard": cmd_codex_guard, "release-packet": cmd_release_packet, "log-guard": cmd_log_guard, "ci-watch": cmd_ci_watch, "facts": cmd_facts, "round": cmd_round, "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "db": cmd_db, "up": cmd_up, "down": cmd_down,
+    "reap": cmd_reap, "account": cmd_account, "launch-model": cmd_launch_model, "preflight": cmd_preflight, "reassign": cmd_reassign, "codex-usage": cmd_codex_usage, "codex-guard": cmd_codex_guard, "release-packet": cmd_release_packet, "log-guard": cmd_log_guard, "ci-watch": cmd_ci_watch, "facts": cmd_facts, "round": cmd_round, "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "db": cmd_db, "up": cmd_up, "down": cmd_down,
 }
 
 if __name__ == "__main__":

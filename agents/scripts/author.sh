@@ -8,6 +8,16 @@ S="$1"; EXTRA="${2:-}"; R="$(cd "$(dirname "$0")/../.." && pwd)"; W="$R-$S"; D="
 # the launch cds into the worktree, so a relative findings path would be lost
 [ -n "$EXTRA" ] && EXTRA="$(cd "$(dirname "$EXTRA")" && pwd)/$(basename "$EXTRA")"
 mkdir -p "$D"
+# one launch or reassign per story at a time (E23-S06): flo reassign takes the same lock, so it
+# cannot move the story between this read of task.json and the pid file below. Bounded wait.
+# ponytail: a crash leaves the directory; remove it by hand (macOS has no flock(1)).
+LOCK="$D/$S.lock"; N=0
+until mkdir "$LOCK" 2>/dev/null; do
+  N=$((N + 1))
+  [ "$N" -gt 30 ] && { echo "author.sh: $LOCK is held; if no launch or reassign runs, remove it" >&2; exit 1; }
+  sleep 1
+done
+trap 'rmdir "$LOCK"' EXIT
 A="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["author"])' "$W/task.json")"
 P="$D/$S.prompt"
 cat > "$P" <<EOP

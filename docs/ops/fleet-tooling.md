@@ -79,3 +79,33 @@ flo preflight E23-S05 --reviewer qwen --verdict pass [--findings N]
 - `apps/api/tests/gates/test_flo_assign.py` pins the order, the nemotron limits and the
   reviewer-is-not-author rule. Changing the order means changing that test on purpose.
 - Only the planner edits `agents/agents.yaml` (`agents/claude.md` §5).
+
+## Reassigning an author: `flo reassign`
+
+```bash
+flo reassign E23-S06 --reason "codex weekly cap reached"
+```
+
+Gives a story whose author has not submitted to the agent `flo assign` would pick **without the
+current author**. It uses the same eligibility code as `flo assign` (role, kind, `avoid_tags`,
+size, capacity, budget, milestone overrides, reviewer independence), so it can never choose an
+agent `flo assign` would refuse. It refuses unless all of these hold, checked in this order while
+holding the story lock:
+
+1. The story is `design` or `in_progress`.
+2. The author did not change while this command waited (a second reassign cannot move it again).
+3. `.scratch/<STORY>.author.pid` is not a live process. A reused pid reads as alive, which errs
+   toward refusing.
+4. The worktree has no uncommitted or untracked change.
+5. The story branch has no commit of its own past the milestone branch.
+
+On success `task.json` gets the new `author`, `reviewers` and `opus_final` (always recomputed from
+the story's tags, never from the author), and a `substitutions` entry. The old author's session
+record stays. A gated story keeps its fresh Opus review whoever authors it.
+
+The lock is `.scratch/<STORY>.lock`, an atomic `mkdir` as in `finish.sh`. `author.sh` takes the
+same lock around reading the author and writing the pid file (30 s, then it gives up), so a launch
+and a reassign cannot interleave. A crash leaves the directory behind; remove it by hand.
+
+Not done here: the supervisor does not call `flo reassign` yet. Its source is not in this
+repository, so wiring it in is a separate decision (E23-S07).
