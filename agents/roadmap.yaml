@@ -1641,7 +1641,7 @@ epics:
         dep:
           - E11-S07
           - E11-S12
-        st: todo
+        st: in_progress
 
   - id: E12
     name: Sourcing
