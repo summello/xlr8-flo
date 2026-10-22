@@ -579,7 +579,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E11-S11** Vendor eligibility: one server rule, one web component | E11 | engine | M | VEN-012, A11Y-004 | ~~E11-S03~~, ~~E11-S06~~, ~~E11-S09~~ |
 | ✅ | **E11-S12** Vendor list and profile screens, documents table and document sheet | E11 | ui | L | VEN-001, VEN-002, VEN-003, VEN-011, VEN-013, OBS-004 | ~~E11-S02~~, ~~E11-S03~~, ~~E11-S11~~ |
 | 🔨 | **E11-S13** Tax and Banking card: masked by default, audited reveal | E11 | ui | M | VEN-014, CUS-008, PRIV-001 | ~~E11-S04~~, ~~E11-S12~~ |
-| ⬜ | **E11-S14** Request a vendor: form, live duplicate check, drafts, submit | E11 | ui | L | VEN-004, VEN-010, A11Y-006 | ~~E11-S06~~, ~~E11-S12~~ |
+| 🔨 | **E11-S14** Request a vendor: form, live duplicate check, drafts, submit | E11 | ui | L | VEN-004, VEN-010, A11Y-006 | ~~E11-S06~~, ~~E11-S12~~ |
 | ✅ | **E11-S15** Onboarding decision panel: vendor evidence block | E11 | ui | M | VEN-005, VEN-010, APR-020 | ~~E11-S06~~, ~~E11-S10~~, ~~E11-S11~~ |
 | ⬜ | **E11-S16** Vendor status, availability and local-disable dialogs | E11 | ui | M | VEN-005, VEN-008, VEN-009, A11Y-002 | ~~E11-S06~~, ~~E11-S12~~ |
 | ✅ | **E11-S17** Questionnaire administration screen | E11 | ui | M | VEN-006, CUS-007, A11Y-003 | ~~E11-S05~~ |

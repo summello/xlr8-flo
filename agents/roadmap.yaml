@@ -1585,7 +1585,7 @@ epics:
         dep:
           - E11-S06
           - E11-S12
-        st: todo
+        st: in_progress
       - id: E11-S15
         t: 'Onboarding decision panel: vendor evidence block'
         k: ui
