@@ -9,9 +9,7 @@ set -e
 S="$1"; A="${2:-codex}"; R="$(cd "$(dirname "$0")/../.." && pwd)"; W="$R-$S"; D="$R/.scratch"
 case "$A" in
   codex|opus) ;;
-  qwen) M=openrouter/qwen/qwen3.8-27b ;;
-  kimi) M=openrouter/moonshotai/kimi-k2.6 ;;
-  deepseek) M=openrouter/deepseek/deepseek-v4-pro-0813 ;;
+  qwen|kimi|deepseek) ;;   # their models come from agents.yaml via flo launch-model, below
   *) echo "review.sh: unknown reviewer $A" >&2; exit 1 ;;
 esac
 P="$D/$S.$A.review.prompt"; X="$D/xdg-$A"; mkdir -p "$X"
@@ -90,6 +88,9 @@ if [ "$A" = codex ]; then
   echo "review launched: $S by codex ($1, $2)${ARGS:+, re-review}"
   exit 0
 fi
+# the model comes from agents.yaml and is recorded in task.json by the same call (E23-S03)
+PY="$W/apps/api/.venv/bin/python"; [ -n "$RELEASE" ] && PY="$R/apps/api/.venv/bin/python"
+M="openrouter/$("$PY" "$R/agents/scripts/flo" launch-model "$S" --reviewer "$A")"
 # OpenRouter is metered: refuse to start below a floor rather than die halfway without a verdict.
 LEFT="$(K="$(security find-generic-password -a "$USER" -s OPENROUTER_API_KEY -w)"; curl -s --max-time 20 \
   -H "Authorization: Bearer $K" https://openrouter.ai/api/v1/credits \

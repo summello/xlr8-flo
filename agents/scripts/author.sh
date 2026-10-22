@@ -54,7 +54,10 @@ case "$A" in
   opencode-nemotron)
     # isolated auth store; the key is read at the point of use and never exported to this shell
     X="$D/xdg-$A"; mkdir -p "$X"
-    nohup sh -c "XDG_DATA_HOME='$X' OPENROUTER_API_KEY=\"\$(security find-generic-password -a \"\$USER\" -s OPENROUTER_API_KEY -w)\" opencode run --auto -m openrouter/nvidia/nemotron-3-ultra-550b-a55b:free \"\$(cat '$P')\" > '$D/$S.log' 2>&1; echo \"exit \$?\" >> '$D/$S.log'" > /dev/null 2>&1 &
+    # the model comes from agents.yaml and is recorded in task.json by the same call (E23-S03);
+    # set -e stops the launch if the config has no model for this agent
+    M="$("$W/apps/api/.venv/bin/python" "$R/agents/scripts/flo" launch-model "$S")"
+    nohup sh -c "XDG_DATA_HOME='$X' OPENROUTER_API_KEY=\"\$(security find-generic-password -a \"\$USER\" -s OPENROUTER_API_KEY -w)\" opencode run --auto -m openrouter/$M \"\$(cat '$P')\" > '$D/$S.log' 2>&1; echo \"exit \$?\" >> '$D/$S.log'" > /dev/null 2>&1 &
     ;;
   *) echo "author.sh: no launcher for author '$A'" >&2; exit 1 ;;
 esac

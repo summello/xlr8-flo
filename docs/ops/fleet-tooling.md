@@ -30,3 +30,17 @@ What it cannot tell you:
   from git commit times would include waiting, not work. The last line of the report says how
   many records carry them.
 - Only the last review round is timed.
+
+## Launch models: `flo launch-model`
+
+`author.sh` (the nemotron lane) and `review.sh` (qwen, kimi, deepseek) no longer name a model.
+They ask `flo launch-model <STORY> [--reviewer NAME]`, which prints the `model` that
+`agents/agents.yaml` gives that agent and writes it to `task.json` as `sessions.<agent>.model`.
+The scorecard copies `sessions`, so each story's record says which model authored or reviewed it.
+
+- Changing `model` in `agents.yaml` now changes the next launch. Before, it changed nothing.
+- An agent with no `model` stops the launch. There is no default model.
+- A release review (a milestone id) has no story packet, so the model is printed and not recorded.
+- Not covered: Sonnet's `--effort medium` in `author.sh` while `agents.yaml` says
+  `reasoning: high`. That is a value disagreement, not a missing link; the planner decides
+  which is right and edits `agents.yaml` (`agents/claude.md` §5).
