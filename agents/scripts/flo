@@ -24,7 +24,7 @@ Stdlib only, except PyYAML for the two config files.
   flo roadmap [--check]     regenerate docs/claude-plan.md §5 (or verify it)
   flo board   [--watch [S]] refresh .flo/status.json and board.html from git refs, worktrees, GitHub\n  flo ack     [KEY|all]     confirm a 'waiting on you' item (list keys with no argument)\n  flo unack   <KEY|all>     reopen a confirmed item
   flo check [--light]       everything CI runs, locally (stops at the first red); --light is\n                            the story gate: no full pytest/e2e, only the tests the story touched\n  flo reap    <STORY_ID>    drop a merged story's worktree once its CI is green\n  flo account <STORY_ID>    account + session id for a multi-account author (sonnet)\n  flo ci-watch              one pass: mark red story/milestone CI, reap green merged stories\n  flo facts                 delivery state as JSON for the fleet supervisor (~/.claude/fleet)\n  flo round   <STORY_ID>    write the next review-round file from the verdicts; print its path
-  flo launch-model <STORY_ID> [--reviewer NAME]   the model agents.yaml names for a launch; recorded in task.json
+  flo launch-model <STORY_ID> [--reviewer NAME] [--effort]   the model (or effort) agents.yaml names for a launch; recorded in task.json
   flo db      [url|reset]   this worktree's test database (reset drops and recreates it)
   flo up [--reset]          start local Postgres + SeaweedFS + Mailpit; optionally reset data
   flo down                  stop the local stack
@@ -470,20 +470,25 @@ def cmd_account(argv):
 
 
 def cmd_launch_model(argv):
-    """flo launch-model <STORY_ID> [--reviewer NAME]: print the model agents.yaml names for the
-    story's author (or for NAME) and record it in task.json sessions, so the string a launcher
-    uses is the string the scorecard keeps. Never falls back to a default model."""
+    """flo launch-model <STORY_ID> [--reviewer NAME] [--effort]: print the model agents.yaml names
+    for the story's author (or for NAME) and record it in task.json sessions, so the string a
+    launcher uses is the string the scorecard keeps. With --effort, print and record the agent's
+    `reasoning` instead. Never falls back to a default."""
+    usage = "usage: flo launch-model <STORY_ID> [--reviewer NAME] [--effort]"
     args, reviewer = list(argv), None
+    effort = "--effort" in args
+    if effort:
+        args.remove("--effort")
     if "--reviewer" in args:
         i = args.index("--reviewer")
         if i + 1 >= len(args):
-            die("usage: flo launch-model <STORY_ID> [--reviewer NAME]")
+            die(usage)
         reviewer = args[i + 1]
         del args[i:i + 2]
     if not args:
-        die("usage: flo launch-model <STORY_ID> [--reviewer NAME]")
+        die(usage)
     task = worktree_path(args[0]) / "task.json"
-    # a release review (a milestone id) has no story packet: the model is printed, not recorded
+    # a release review (a milestone id) has no story packet: the value is printed, not recorded
     pkt = json.loads(task.read_text()) if task.exists() else None
     agent = reviewer or (pkt or {}).get("author")
     if not agent:
@@ -491,15 +496,16 @@ def cmd_launch_model(argv):
     cfg = (load_yaml(FLEET).get("agents") or {}).get(agent)
     if not cfg:
         die(f"{agent}: not in agents/agents.yaml")
-    model = cfg.get("model")
-    if not model:
-        die(f"{agent}: agents/agents.yaml names no model for it")
+    key, field = ("reasoning", "effort") if effort else ("model", "model")
+    value = cfg.get(key)
+    if not value:
+        die(f"{agent}: agents/agents.yaml names no {key} for it")
     if pkt is not None:
         rec = pkt.setdefault("sessions", {}).setdefault(
             agent, {"agent": agent, "id": None, "source": "launch-model"})
-        rec["model"] = model
+        rec[field] = value
         task.write_text(json.dumps(pkt, indent=2) + "\n")
-    print(model)
+    print(value)
 
 
 def cmd_codex_usage(argv):

@@ -41,9 +41,11 @@ The scorecard copies `sessions`, so each story's record says which model authore
 - Changing `model` in `agents.yaml` now changes the next launch. Before, it changed nothing.
 - An agent with no `model` stops the launch. There is no default model.
 - A release review (a milestone id) has no story packet, so the model is printed and not recorded.
-- Not covered: Sonnet's `--effort medium` in `author.sh` while `agents.yaml` says
-  `reasoning: high`. That is a value disagreement, not a missing link; the planner decides
-  which is right and edits `agents.yaml` (`agents/claude.md` §5).
+- **Effort.** `flo launch-model <STORY> --effort` prints and records the agent's `reasoning`
+  (`sessions.<agent>.effort`) the same way. `author.sh` passes Sonnet's model and effort from it
+  (E23-S12). `agents.yaml` says `medium` for Sonnet: the operator decided that on 13 Oct 2026
+  (`5ba2460`), and the old `high` line had never been updated. Trying `high` is a separate,
+  measured experiment; only the planner edits `agents.yaml` (`agents/claude.md` §5).
 
 ## Packet pre-flight: `flo preflight`
 

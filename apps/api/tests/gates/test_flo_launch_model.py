@@ -121,3 +121,71 @@ def test_real_config_names_a_model_for_every_launched_agent():
     for name in ("opencode-nemotron", "qwen", "kimi", "deepseek"):
         block = re.search(rf"^  {name}:\n((?:    .*\n|\n|  #.*\n)*)", text, re.M)
         assert block and re.search(r"^    model: \S+", block.group(1), re.M), name
+
+
+def sonnet_story(write, wt, **session):
+    """The story's author is Sonnet, with a session record flo account wrote earlier."""
+    write({"sonnet": {"model": "sonnet", "reasoning": "medium"}})
+    record = {"agent": "sonnet", "id": "s-9", "source": "launch:--session-id", "account": "B"}
+    record.update(session)
+    packet = {"author": "sonnet", "sessions": {"sonnet": record}}
+    (wt / "task.json").write_text(json.dumps(packet))
+
+
+def test_effort_is_printed_and_recorded_without_touching_the_session(story, capsys):
+    write, wt = story
+    sonnet_story(write, wt, model="sonnet")
+    F.cmd_launch_model(["E00-S01", "--effort"])
+    assert capsys.readouterr().out.strip() == "medium"
+    rec = record(wt)["sonnet"]
+    assert rec["effort"] == "medium"
+    assert (rec["id"], rec["account"], rec["source"], rec["model"]) == (
+        "s-9",
+        "B",
+        "launch:--session-id",
+        "sonnet",
+    )
+
+
+def test_a_config_change_changes_the_printed_effort(story, capsys):
+    write, wt = story
+    sonnet_story(write, wt)
+    write({"sonnet": {"model": "sonnet", "reasoning": "high"}})
+    F.cmd_launch_model(["E00-S01", "--effort"])
+    assert capsys.readouterr().out.strip() == "high"
+
+
+def test_an_agent_without_reasoning_fails_and_prints_nothing(story, capsys):
+    write, wt = story
+    sonnet_story(write, wt)
+    write({"sonnet": {"model": "sonnet"}})
+    before = (wt / "task.json").read_text()
+    with pytest.raises(SystemExit) as exc:
+        F.cmd_launch_model(["E00-S01", "--effort"])
+    assert exc.value.code != 0
+    out = capsys.readouterr()
+    assert out.out == "" and "sonnet" in out.err and "reasoning" in out.err
+    assert (wt / "task.json").read_text() == before
+
+
+def test_the_model_flag_still_prints_the_model_for_the_same_agent(story, capsys):
+    write, wt = story
+    sonnet_story(write, wt)
+    F.cmd_launch_model(["E00-S01"])
+    assert capsys.readouterr().out.strip() == "sonnet"
+    assert "effort" not in record(wt)["sonnet"]
+
+
+def test_author_launcher_names_no_sonnet_model_or_effort_and_asks_flo():
+    text = (SCRIPTS / "author.sh").read_text()
+    assert "--effort medium" not in text and "--model sonnet" not in text
+    assert text.count("launch-model") >= 3  # nemotron's model, then sonnet's model and effort
+    assert "launch-model" in text and '"$S" --effort' in text
+    assert text.index('"$S" --effort') < text.index("claude -p --model")
+
+
+def test_the_committed_config_says_sonnet_runs_at_medium():
+    text = (SCRIPTS.parents[1] / "agents" / "agents.yaml").read_text()
+    block = re.search(r"^  sonnet:\n((?:    .*\n|\n|  #.*\n)*)", text, re.M)
+    assert block, "sonnet block not found"
+    assert re.search(r"^    reasoning: medium\b", block.group(1), re.M)

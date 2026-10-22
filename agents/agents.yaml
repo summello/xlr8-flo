@@ -104,7 +104,7 @@ agents:
 
   sonnet:
     model: sonnet                # claude CLI alias, resolves to the current Sonnet
-    reasoning: high              # passed as --effort
+    reasoning: medium            # operator decision 13 Oct 2026 (5ba2460); passed as --effort
     cli: "claude -p --model sonnet"
     plan: claude-pro (two accounts)
     metered: rate

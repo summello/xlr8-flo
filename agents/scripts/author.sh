@@ -43,15 +43,18 @@ case "$A" in
     # launch (continuation, review round, CI fix) resumes that same session (flo account).
     set -- $("$W/apps/api/.venv/bin/python" "$R/agents/scripts/flo" account "$S")
     MODE="$1"; CFG="$2"; SID="$3"; ACCT="$4"
+    # model and effort come from agents.yaml and are recorded in task.json by the same calls (E23-S12)
+    M="$("$W/apps/api/.venv/bin/python" "$R/agents/scripts/flo" launch-model "$S")"
+    E="$("$W/apps/api/.venv/bin/python" "$R/agents/scripts/flo" launch-model "$S" --effort)"
     # A resumed session already holds the packet and its own work: send only the new input
     # (review findings, a CI log, a continuation note), never the whole brief again.
     { printf 'ROLE xlr8flo-worker %s account %s. Use the xlr8flo-worker and ponytail skills.\n\n' "$S" "$ACCT"
       if [ "$MODE" = new ]; then cat "$P"; elif [ -n "$EXTRA" ]; then cat "$EXTRA"
       else echo "Continue the story from where you stopped; the tree is as you left it."; fi; } > "$P.role"
     if [ "$MODE" = new ]; then
-      RUN="claude -p --model sonnet --effort medium --session-id $SID -n 'xlr8flo-worker $S' --permission-mode auto"
+      RUN="claude -p --model $M --effort $E --session-id $SID -n 'xlr8flo-worker $S' --permission-mode auto"
     else
-      RUN="claude -p --model sonnet --effort medium --resume $SID --permission-mode auto"
+      RUN="claude -p --model $M --effort $E --resume $SID --permission-mode auto"
     fi
     # "-" is the default login: unset the variable rather than point it at ~/.claude.
     if [ "$CFG" = - ]; then ENV="env -u CLAUDE_CONFIG_DIR"; else ENV="env CLAUDE_CONFIG_DIR='$CFG'"; fi

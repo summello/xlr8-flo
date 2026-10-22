@@ -203,6 +203,14 @@ record, so 10 clean of 11 attempts is the honest figure. **Revisit trigger:** if
 three stories after this change needs a second round or is re-authored by another agent, restore the
 old order.
 
+**22 Oct 2026 — Sonnet's effort now comes from `agents.yaml`, and it says `medium` (E23-S12).** The
+config said `reasoning: high` while `author.sh` passed `--effort medium`. The launcher was right:
+commit `5ba2460` (13 Oct) records the operator decision "claude-sonnet-5-5 at medium, not high", and
+the config line, written earlier that day, was never updated. Nothing that runs changed. `author.sh`
+now reads model and effort through `flo launch-model` and `task.json` records `sessions.sonnet.effort`,
+so a scorecard row says which effort produced it. Trying `high` is a separate, measured experiment,
+after the Codex A/B on gated authorship (`docs/ops/sonnet-round-churn.md`).
+
 **Merge authority:** the operator has delegated GitHub merges for M0 to Opus, with the
 instruction to space them out so the repository does not read as bot-driven. Outside M0 the
 standing rule holds: push, never merge.
