@@ -2,7 +2,7 @@
 
 # Agent scorecard
 
-**107 merged stories.** Scores appear once an agent has 3+ samples in that role —
+**108 merged stories.** Scores appear once an agent has 3+ samples in that role —
 before that the number would be noise, so it reads `—`.
 
 ## As author
@@ -11,13 +11,13 @@ before that the number would be noise, so it reads `—`.
 |---|---:|---:|---:|---:|---:|
 | `opencode-nemotron` | 10 | 100% | 1.00 | 0.00 | **100.0** |
 | `codex` | 68 | 97% | 1.04 | 0.00 | **97.9** |
-| `sonnet` | 29 | 59% | 1.72 | 0.00 | **68.4** |
+| `sonnet` | 30 | 60% | 1.70 | 0.00 | **69.5** |
 
 ## As reviewer
 
 | Agent | Reviews | Ran tests | Findings/review | Blocker precision | Escapes missed | Score |
 |---|---:|---:|---:|---:|---:|---:|
-| `codex` | 29 | 100% | 0.3 | 92% | 0 | **85.3** |
+| `codex` | 30 | 100% | 0.3 | 92% | 0 | **85.3** |
 | `deepseek` | 6 | 100% | 1.0 | — | 0 | **77.5** |
 | `opencode-nemotron` | 5 | 100% | 0.0 | — | 0 | **70.0** |
 | `qwen` | 9 | 100% | 1.8 | 0% | 0 | **68.3** |

@@ -142,6 +142,8 @@ def test_upgrade_gives_every_system_role_exactly_the_baseline(pre_0053):
     conn, org, _ = pre_0053
     assert "project-manager" not in role_grants(conn, org)
     load_migration(MIGRATION, "role_catalogue_drift").upgrade(conn)
+    # E22-S06's 0066 backfills the project and master reads the baseline gained since 0053.
+    load_migration(ROOT / "migrations/20261022_0066_baseline_role_reads.py", "reads").upgrade(conn)
     # Later migrations add catalogue codes (vendor.request, ...); 0053 can only grant codes that
     # exist once it has run, so compare against the baseline restricted to those codes.
     known = {row[0] for row in conn.execute("SELECT code FROM permission").fetchall()}

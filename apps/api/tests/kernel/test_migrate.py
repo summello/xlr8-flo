@@ -165,6 +165,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261015_0063",
         "20261021_0064",
         "20261021_0065",
+        "20261022_0066",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -2419,3 +2420,72 @@ def test_vendor_row_version_roundtrip_preserves_rows(empty_database):
             "AND table_name IN ('vendor','vendor_contact')"
         ).fetchone()
         assert cols == (0,)
+
+
+def test_baseline_role_reads_grant_system_roles_only_and_roundtrip_keeps_other_grants(
+    empty_database,
+):
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from tests.org.test_bootstrap import create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261021_0065"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261022_0066")
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        tenant = create(conn)
+        scope = Scope(tenant.org_id)
+        with tenant_transaction(conn, scope):
+            # seeding already applies the new grants; strip them to look like a tenant that
+            # predates this story, keeping approver's master.read as one already held
+            conn.execute(
+                "DELETE FROM role_permission USING role r WHERE r.id=role_id "
+                "AND r.is_system AND permission_code IN ('project.read','master.read') "
+                "AND r.code IN ('requestor','approver','sourcing-specialist','purchasing-user',"
+                "'vendor-manager')"
+            )
+            # an administrator's custom role that reuses a baseline code is never touched
+            conn.execute("UPDATE role SET is_system=false WHERE code='sourcing-specialist'")
+            # an unrelated grant, and one a system role already held before the migration
+            conn.execute(
+                "INSERT INTO role_permission(org_id,role_id,permission_code) "
+                "SELECT org_id,id,'master.read' FROM role "
+                "WHERE code='approver' ON CONFLICT DO NOTHING"
+            )
+            conn.execute(
+                "INSERT INTO role_permission(org_id,role_id,permission_code) "
+                "SELECT org_id,id,'asset.view' FROM role WHERE code='requestor'"
+            )
+
+        def grants():
+            with tenant_transaction(conn, scope):
+                return conn.execute(
+                    "SELECT r.code,p.permission_code FROM role_permission p "
+                    "JOIN role r ON r.id=p.role_id "
+                    "WHERE p.permission_code IN ('project.read','master.read','asset.view') "
+                    "AND r.code IN ('requestor','approver','sourcing-specialist',"
+                    "'purchasing-user','vendor-manager','project-manager') "
+                    "ORDER BY 1,2"
+                ).fetchall()
+
+        before = grants()
+        mig.upgrade(conn)
+        after = set(grants()) - set(before)
+        assert after == {
+            ("requestor", "master.read"),
+            ("purchasing-user", "project.read"),
+            ("purchasing-user", "master.read"),
+            ("vendor-manager", "project.read"),
+            ("vendor-manager", "master.read"),
+        }
+        assert not [g for g in grants() if g[0] == "sourcing-specialist" and g not in before]
+        with tenant_transaction(conn, scope):
+            assert conn.execute(
+                "SELECT count(*) FROM audit_log WHERE action='role.permission.grant' "
+                "AND correlation_id='migration-20261022_0066'"
+            ).fetchone() == (1,)
+        mig.downgrade(conn)
+        assert grants() == before  # the custom role, approver and asset.view survive
+        mig.upgrade(conn)

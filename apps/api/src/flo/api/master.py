@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Query
 from flo.api.admin_users import organization_target
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
-from flo.kernel.authz import require
+from flo.kernel.authz import GrantedScopes, require, require_granted
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.org.schemas import CurrencyRead, MasterCreate, MasterPage, MasterPatch, MasterRef
@@ -26,7 +26,9 @@ def record_target(kind: str, id: UUID, connection: Connection) -> TargetProtocol
     )
 
 
-ReadContext = Annotated[AuthorizationContext, Depends(require("master.read", organization_target))]
+# Master rows carry no unit, so every row is organization-level and visible to a reader at any
+# scope; the tenant filter in the service is the only narrowing.
+ReadContext = Annotated[GrantedScopes, Depends(require_granted("master.read"))]
 CreateContext = Annotated[
     AuthorizationContext, Depends(require("master.manage", organization_target))
 ]

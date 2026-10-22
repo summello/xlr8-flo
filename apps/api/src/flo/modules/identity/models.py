@@ -277,6 +277,7 @@ BASELINE_ROLE_PERMISSIONS: dict[RoleCode, frozenset[PermissionCode]] = {
             "vendor.request",
             "project.read",
             "record.read",
+            "master.read",
             "requisition.submit",
             "requisition.withdraw",
             "requisition.create",
@@ -292,6 +293,7 @@ BASELINE_ROLE_PERMISSIONS: dict[RoleCode, frozenset[PermissionCode]] = {
             "approval.delegate",
             "project.read",
             "record.read",
+            "master.read",
             "requisition.approve",
             "requisition.view",
         )
@@ -301,6 +303,8 @@ BASELINE_ROLE_PERMISSIONS: dict[RoleCode, frozenset[PermissionCode]] = {
         for value in (
             "vendor.request",
             "record.read",
+            "project.read",
+            "master.read",
             "requisition.view",
             "rfq.approve",
             "rfq.create",
@@ -320,6 +324,8 @@ BASELINE_ROLE_PERMISSIONS: dict[RoleCode, frozenset[PermissionCode]] = {
             "purchase_order.issue",
             "purchase_order.view",
             "record.read",
+            "project.read",
+            "master.read",
             "requisition.view",
             "rfq.view",
         )
@@ -329,6 +335,8 @@ BASELINE_ROLE_PERMISSIONS: dict[RoleCode, frozenset[PermissionCode]] = {
         for value in (
             "vendor.request",
             "record.read",
+            "project.read",
+            "master.read",
             "vendor.approve",
             "vendor.create",
             "vendor.edit",

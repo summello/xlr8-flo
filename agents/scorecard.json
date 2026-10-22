@@ -4174,6 +4174,56 @@
       },
       "recap": "CI serves a production build, splits E2E by test with two workers, separates backend static checks, and requires successful detection in both combined jobs. The full production suite passed 441 tests; final production-mode light check passed all static checks, 12 shard tests and 178 changed browser tests.",
       "title": "Balanced E2E shards on a production build; backend static job; combined checks need detect"
+    },
+    {
+      "story": "E22-S06",
+      "kind": "security",
+      "size": "S",
+      "tags": [
+        "auth",
+        "security",
+        "migration"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 3,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "4f123d89-24b4-48fe-af76-a7a3410a0071",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S06",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1626d-38d1-7372-809b-69d3b0ef7034",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Gave requestor/approver master.read and sourcing-specialist/purchasing-user/vendor-manager project.read+master.read in BASELINE_ROLE_PERMISSIONS, plus migration 0066 backfilling system roles only (tracked, reversible, one audit row per org).",
+      "title": "Baseline roles read the projects and master data they work against"
     }
   ]
 }
