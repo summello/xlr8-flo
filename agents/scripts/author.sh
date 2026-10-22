@@ -8,6 +8,16 @@ S="$1"; EXTRA="${2:-}"; R="$(cd "$(dirname "$0")/../.." && pwd)"; W="$R-$S"; D="
 # the launch cds into the worktree, so a relative findings path would be lost
 [ -n "$EXTRA" ] && EXTRA="$(cd "$(dirname "$EXTRA")" && pwd)/$(basename "$EXTRA")"
 mkdir -p "$D"
+# one launch or reassign per story at a time (E23-S06): flo reassign takes the same lock, so it
+# cannot move the story between this read of task.json and the pid file below. Bounded wait.
+# ponytail: a crash leaves the directory; remove it by hand (macOS has no flock(1)).
+LOCK="$D/$S.lock"; N=0
+until mkdir "$LOCK" 2>/dev/null; do
+  N=$((N + 1))
+  [ "$N" -gt 30 ] && { echo "author.sh: $LOCK is held; if no launch or reassign runs, remove it" >&2; exit 1; }
+  sleep 1
+done
+trap 'rmdir "$LOCK"' EXIT
 A="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["author"])' "$W/task.json")"
 P="$D/$S.prompt"
 cat > "$P" <<EOP
@@ -33,15 +43,18 @@ case "$A" in
     # launch (continuation, review round, CI fix) resumes that same session (flo account).
     set -- $("$W/apps/api/.venv/bin/python" "$R/agents/scripts/flo" account "$S")
     MODE="$1"; CFG="$2"; SID="$3"; ACCT="$4"
+    # model and effort come from agents.yaml and are recorded in task.json by the same calls (E23-S12)
+    M="$("$W/apps/api/.venv/bin/python" "$R/agents/scripts/flo" launch-model "$S")"
+    E="$("$W/apps/api/.venv/bin/python" "$R/agents/scripts/flo" launch-model "$S" --effort)"
     # A resumed session already holds the packet and its own work: send only the new input
     # (review findings, a CI log, a continuation note), never the whole brief again.
     { printf 'ROLE xlr8flo-worker %s account %s. Use the xlr8flo-worker and ponytail skills.\n\n' "$S" "$ACCT"
       if [ "$MODE" = new ]; then cat "$P"; elif [ -n "$EXTRA" ]; then cat "$EXTRA"
       else echo "Continue the story from where you stopped; the tree is as you left it."; fi; } > "$P.role"
     if [ "$MODE" = new ]; then
-      RUN="claude -p --model sonnet --effort medium --session-id $SID -n 'xlr8flo-worker $S' --permission-mode auto"
+      RUN="claude -p --model $M --effort $E --session-id $SID -n 'xlr8flo-worker $S' --permission-mode auto"
     else
-      RUN="claude -p --model sonnet --effort medium --resume $SID --permission-mode auto"
+      RUN="claude -p --model $M --effort $E --resume $SID --permission-mode auto"
     fi
     # "-" is the default login: unset the variable rather than point it at ~/.claude.
     if [ "$CFG" = - ]; then ENV="env -u CLAUDE_CONFIG_DIR"; else ENV="env CLAUDE_CONFIG_DIR='$CFG'"; fi
@@ -54,7 +67,10 @@ case "$A" in
   opencode-nemotron)
     # isolated auth store; the key is read at the point of use and never exported to this shell
     X="$D/xdg-$A"; mkdir -p "$X"
-    nohup sh -c "XDG_DATA_HOME='$X' OPENROUTER_API_KEY=\"\$(security find-generic-password -a \"\$USER\" -s OPENROUTER_API_KEY -w)\" opencode run --auto -m openrouter/nvidia/nemotron-3-ultra-550b-a55b:free \"\$(cat '$P')\" > '$D/$S.log' 2>&1; echo \"exit \$?\" >> '$D/$S.log'" > /dev/null 2>&1 &
+    # the model comes from agents.yaml and is recorded in task.json by the same call (E23-S03);
+    # set -e stops the launch if the config has no model for this agent
+    M="$("$W/apps/api/.venv/bin/python" "$R/agents/scripts/flo" launch-model "$S")"
+    nohup sh -c "XDG_DATA_HOME='$X' OPENROUTER_API_KEY=\"\$(security find-generic-password -a \"\$USER\" -s OPENROUTER_API_KEY -w)\" opencode run --auto -m openrouter/$M \"\$(cat '$P')\" > '$D/$S.log' 2>&1; echo \"exit \$?\" >> '$D/$S.log'" > /dev/null 2>&1 &
     ;;
   *) echo "author.sh: no launcher for author '$A'" >&2; exit 1 ;;
 esac
