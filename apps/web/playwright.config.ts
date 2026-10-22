@@ -15,8 +15,8 @@ export default defineConfig({
   testDir: ".",
   testMatch: ["e2e/**/*.e2e.ts", "tests/{a11y,e2e}/**/*.spec.ts"],
   fullyParallel: true,
-  // ponytail: cap local fleet contention at two workers; use --workers on an idle host.
-  workers: process.env.CI ? undefined : 2,
+  // ponytail: cap browser contention at two workers; use --workers on an idle host.
+  workers: 2,
   // A pass on retry is reported as flaky, not hidden.
   // ponytail: drop the CI retry after three consecutive green milestone runs with zero flakes.
   retries: process.env.CI ? 1 : 0,
