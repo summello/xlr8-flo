@@ -99,6 +99,17 @@ class Eligibility(BaseModel):
     warnings: list[Reason] = []
 
 
+type AttentionState = Literal["expiring", "expired", "missing", "rejected"]
+
+
+class DocSummary(BaseModel):
+    """How many of a vendor's documents stand in one attention state (VEN-011, OBS-004)."""
+
+    state: AttentionState
+    count: int
+    days_left: int | None = None  # the soonest expiry, for `expiring`
+
+
 class VendorRead(BaseModel):
     id: UUID
     number: str
@@ -112,6 +123,7 @@ class VendorRead(BaseModel):
     version: int
     sensitive: SensitiveMasked = SensitiveMasked()
     eligibility: Eligibility | None = None  # set on a list read that names a unit
+    documents: list[DocSummary] | None = None  # set on a list read; empty when all is well
 
 
 class VendorUnit(BaseModel):
@@ -129,6 +141,16 @@ class VendorDetail(VendorRead):
     units: list[VendorUnit] = []
     disabled_in: list[VendorDisabled] = []
     identifiers: dict[str, str] = {}  # type code -> normalised value
+
+
+class VendorCounts(BaseModel):
+    """One server count per list tab (PERF-005: never worked out from a fetched page)."""
+
+    active: int
+    pending: int
+    attention: int
+    inactive: int
+    all: int
 
 
 class VendorPage(BaseModel):

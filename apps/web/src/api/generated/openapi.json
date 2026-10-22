@@ -904,6 +904,15 @@
         "title": "AttachmentRead",
         "type": "object"
       },
+      "AttentionState": {
+        "enum": [
+          "expiring",
+          "expired",
+          "missing",
+          "rejected"
+        ],
+        "type": "string"
+      },
       "Availability": {
         "enum": [
           "global",
@@ -2981,6 +2990,35 @@
           "ok"
         ],
         "type": "string"
+      },
+      "DocSummary": {
+        "description": "How many of a vendor's documents stand in one attention state (VEN-011, OBS-004).",
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "days_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Days Left"
+          },
+          "state": {
+            "$ref": "#/components/schemas/AttentionState"
+          }
+        },
+        "required": [
+          "state",
+          "count"
+        ],
+        "title": "DocSummary",
+        "type": "object"
       },
       "DocumentCreate": {
         "additionalProperties": false,
@@ -12222,6 +12260,40 @@
         "title": "ValidationReport",
         "type": "object"
       },
+      "VendorCounts": {
+        "description": "One server count per list tab (PERF-005: never worked out from a fetched page).",
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "integer"
+          },
+          "all": {
+            "title": "All",
+            "type": "integer"
+          },
+          "attention": {
+            "title": "Attention",
+            "type": "integer"
+          },
+          "inactive": {
+            "title": "Inactive",
+            "type": "integer"
+          },
+          "pending": {
+            "title": "Pending",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "active",
+          "pending",
+          "attention",
+          "inactive",
+          "all"
+        ],
+        "title": "VendorCounts",
+        "type": "object"
+      },
       "VendorCreate": {
         "additionalProperties": false,
         "properties": {
@@ -12287,6 +12359,20 @@
             },
             "title": "Disabled In",
             "type": "array"
+          },
+          "documents": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/DocSummary"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Documents"
           },
           "eligibility": {
             "anyOf": [
@@ -12514,6 +12600,20 @@
           "created_by_email": {
             "title": "Created By Email",
             "type": "string"
+          },
+          "documents": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/DocSummary"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Documents"
           },
           "eligibility": {
             "anyOf": [
@@ -26073,6 +26173,25 @@
           },
           {
             "in": "query",
+            "name": "documents",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/AttentionState"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Documents"
+            }
+          },
+          {
+            "in": "query",
             "name": "cursor",
             "required": false,
             "schema": {
@@ -26216,6 +26335,65 @@
           }
         },
         "summary": "Create Vendor",
+        "tags": [
+          "vendors"
+        ]
+      }
+    },
+    "/api/v1/vendors/counts": {
+      "get": {
+        "operationId": "vendor_counts_api_v1_vendors_counts_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendorCounts"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Vendor Counts",
         "tags": [
           "vendors"
         ]

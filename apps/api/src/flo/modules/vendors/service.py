@@ -32,16 +32,19 @@ from flo.modules.vendors.performance import PerformanceMixin
 from flo.modules.vendors.questionnaire import QuestionnaireMixin
 from flo.modules.vendors.schemas import (
     REQUIRED_CONTACT_TYPES,
+    AttentionState,
     ContactCreate,
     ContactPatch,
     ContactRead,
     DisableCreate,
+    DocSummary,
     Recipient,
     SensitiveMasked,
     SensitivePut,
     SensitiveReveal,
     SensitiveValues,
     SensitiveWritten,
+    VendorCounts,
     VendorCreate,
     VendorDetail,
     VendorDisabled,
@@ -59,6 +62,9 @@ CONTACT_COLUMNS = (
     "id, type, name, email, phone, receives_documents, created_at, updated_at, version"
 )
 CONTACT_FIELDS = tuple(CONTACT_COLUMNS.replace(" ", "").split(","))
+
+# the order the list shows them: look ahead before looking back (VEN-011)
+ATTENTION: tuple[AttentionState, ...] = ("expiring", "expired", "missing", "rejected")
 
 
 def expected_version(header: str | None, thing: str) -> int:
@@ -168,17 +174,86 @@ class VendorService(
                 ],
             )
 
+    def _attention(self, ids: list[UUID]) -> dict[UUID, list[DocSummary]]:
+        """Per vendor, the documents that need a look, soonest-to-lapse first (document_state)."""
+        on, out = today(), {}
+        for id in ids:
+            states = self.document_state(id, on)
+            out[id] = [
+                DocSummary(
+                    state=name,
+                    count=len(hit),
+                    days_left=min(
+                        (d.days_left for d in hit if d.days_left is not None), default=None
+                    ),
+                )
+                for name in ATTENTION
+                if (hit := [d for d in states if d.state == name])
+            ]
+        return out
+
     def search(
         self,
         *,
         q: str = "",
         statuses: list[VendorStatus] | None = None,
         available_in: UUID | None = None,
+        documents: list[AttentionState] | None = None,
         cursor: str | None = None,
         limit: int = 50,
     ) -> VendorPage:
         if not 1 <= limit <= 100:
             raise invalid("limit", "Choose a limit from 1 to 100.")
+        if not documents:
+            return self._page(q, statuses, available_in, cursor, limit)
+        # ponytail: walks keyset pages of 100, testing documents in Python; move the document
+        # state into SQL (a view over vendor_document) past a few thousand vendors.
+        found: list[VendorRead] = []
+        while True:
+            page = self._page(q, statuses, available_in, cursor, 100)
+            for v in page.rows:
+                if any(d.state in documents for d in v.documents or []):
+                    found.append(v)
+                    if len(found) > limit:
+                        last = found[limit - 1]
+                        return VendorPage(
+                            rows=found[:limit], next_cursor=_cursor(last.trading_name, last.id)
+                        )
+            if page.next_cursor is None:
+                return VendorPage(rows=found)
+            cursor = page.next_cursor
+
+    def counts(self) -> VendorCounts:
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            by = {
+                str(r[0]): int(str(r[1]))
+                for r in self.repo.execute(
+                    "SELECT status, count(*) FROM vendor WHERE org_id = %(org_id)s GROUP BY status"
+                ).fetchall()
+            }
+        attention, cursor = 0, None
+        while True:  # ponytail: same scan as search(documents=...)
+            page = self.search(documents=list(ATTENTION), cursor=cursor, limit=100)
+            attention += len(page.rows)
+            if page.next_cursor is None:
+                break
+            cursor = page.next_cursor
+        return VendorCounts(
+            active=by.get("active", 0),
+            pending=by.get("pending_approval", 0) + by.get("draft", 0),
+            attention=attention,
+            inactive=sum(by.get(k, 0) for k in ("suspended", "inactive", "rejected")),
+            all=sum(by.values()),
+        )
+
+    def _page(
+        self,
+        q: str,
+        statuses: list[VendorStatus] | None,
+        available_in: UUID | None,
+        cursor: str | None,
+        limit: int,
+    ) -> VendorPage:
         where, params = ["v.org_id = %(org_id)s"], cast(dict[str, object], {"limit": limit + 1})
         needle = q.strip().casefold()
         if needle:
@@ -213,6 +288,9 @@ class VendorService(
         page = [
             v.model_copy(update={"sensitive": masks.get(v.id, SensitiveMasked())}) for v in page
         ]
+        if page:
+            attention = self._attention([v.id for v in page])
+            page = [v.model_copy(update={"documents": attention[v.id]}) for v in page]
         if available_in is not None and page:
             rules = self.eligibility([v.id for v in page], available_in, today())
             page = [v.model_copy(update={"eligibility": rules.get(v.id)}) for v in page]

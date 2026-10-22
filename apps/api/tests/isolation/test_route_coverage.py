@@ -43,7 +43,12 @@ OROUTES = (
 )
 PROUTES = "vendors/test_performance.py::test_score_routes_conceal_foreign_tenants"
 CROUTES = "vendors/test_changes.py::test_vendor_change_routes_conceal_foreign_tenants"
+LISTDOCS = (
+    "vendors/test_list_documents.py::"
+    "test_counts_and_documents_filter_routes_conceal_foreign_tenants"
+)
 COVERED = {
+    ("GET", "/api/v1/vendors/counts"): LISTDOCS,
     ("GET", "/api/v1/vendors/duplicate-check"): CROUTES,
     ("POST", "/api/v1/vendors/{id}/submit"): CROUTES,
     ("POST", "/api/v1/vendors/{id}/revise"): CROUTES,

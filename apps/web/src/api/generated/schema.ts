@@ -2291,6 +2291,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/vendors/counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Vendor Counts */
+        get: operations["vendor_counts_api_v1_vendors_counts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/vendors/duplicate-check": {
         parameters: {
             query?: never;
@@ -3224,6 +3241,8 @@ export interface components {
             versions: number;
         };
         /** @enum {string} */
+        AttentionState: "expiring" | "expired" | "missing" | "rejected";
+        /** @enum {string} */
         Availability: "global" | "restricted";
         /** AvailabilityPayload */
         AvailabilityPayload: {
@@ -3919,6 +3938,17 @@ export interface components {
         };
         /** @enum {string} */
         DocStateName: "missing" | "rejected" | "expired" | "expiring" | "unverified" | "ok";
+        /**
+         * DocSummary
+         * @description How many of a vendor's documents stand in one attention state (VEN-011, OBS-004).
+         */
+        DocSummary: {
+            /** Count */
+            count: number;
+            /** Days Left */
+            days_left?: number | null;
+            state: components["schemas"]["AttentionState"];
+        };
         /** DocumentCreate */
         DocumentCreate: {
             /**
@@ -7024,6 +7054,22 @@ export interface components {
             /** Warnings */
             warnings?: components["schemas"]["Issue"][];
         };
+        /**
+         * VendorCounts
+         * @description One server count per list tab (PERF-005: never worked out from a fetched page).
+         */
+        VendorCounts: {
+            /** Active */
+            active: number;
+            /** All */
+            all: number;
+            /** Attention */
+            attention: number;
+            /** Inactive */
+            inactive: number;
+            /** Pending */
+            pending: number;
+        };
         /** VendorCreate */
         VendorCreate: {
             availability: components["schemas"]["Availability"];
@@ -7053,6 +7099,8 @@ export interface components {
              * @default []
              */
             disabled_in?: components["schemas"]["VendorDisabled"][];
+            /** Documents */
+            documents?: components["schemas"]["DocSummary"][] | null;
             eligibility?: components["schemas"]["Eligibility"] | null;
             /**
              * Id
@@ -7142,6 +7190,8 @@ export interface components {
             created_at: string;
             /** Created By Email */
             created_by_email: string;
+            /** Documents */
+            documents?: components["schemas"]["DocSummary"][] | null;
             eligibility?: components["schemas"]["Eligibility"] | null;
             /**
              * Id
@@ -14140,6 +14190,7 @@ export interface operations {
                 q?: string;
                 status?: components["schemas"]["VendorStatus"][] | null;
                 available_in?: string | null;
+                documents?: components["schemas"]["AttentionState"][] | null;
                 cursor?: string | null;
                 limit?: number;
             };
@@ -14202,6 +14253,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VendorDetail"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    vendor_counts_api_v1_vendors_counts_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorCounts"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

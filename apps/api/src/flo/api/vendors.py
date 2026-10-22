@@ -20,6 +20,7 @@ from flo.modules.identity.models import AuthorizationContext, AuthorizationTarge
 from flo.modules.org.service import OrgService, today
 from flo.modules.vendors.schemas import (
     AnswersPut,
+    AttentionState,
     ChangeCreate,
     ChangeRead,
     ContactCreate,
@@ -46,6 +47,7 @@ from flo.modules.vendors.schemas import (
     SensitiveValues,
     SensitiveWritten,
     SubmitCreate,
+    VendorCounts,
     VendorCreate,
     VendorDetail,
     VendorPage,
@@ -106,12 +108,23 @@ def list_vendors(
     q: str = "",
     status: Annotated[list[VendorStatus] | None, Query()] = None,
     available_in: UUID | None = None,
+    documents: Annotated[list[AttentionState] | None, Query()] = None,
     cursor: str | None = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
 ) -> VendorPage:
     return VendorService(connection, current_scope(), context.user_id).search(
-        q=q, statuses=status, available_in=available_in, cursor=cursor, limit=limit
+        q=q,
+        statuses=status,
+        available_in=available_in,
+        documents=documents,
+        cursor=cursor,
+        limit=limit,
     )
+
+
+@router.get("/counts", response_model=VendorCounts)
+def vendor_counts(context: ViewContext, connection: Connection) -> VendorCounts:
+    return VendorService(connection, current_scope(), context.user_id).counts()
 
 
 @router.get("/{id}/eligibility", response_model=Eligibility)

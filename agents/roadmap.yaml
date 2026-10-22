@@ -1556,7 +1556,7 @@ epics:
           - E11-S02
           - E11-S03
           - E11-S11
-        st: review
+        st: done
       - id: E11-S13
         t: 'Tax and Banking card: masked by default, audited reveal'
         k: ui
@@ -1674,7 +1674,7 @@ epics:
           - E12-S01
           - E11-S02
           - E11-S11
-        st: in_progress
+        st: review
       - id: E12-S03
         t: RFQ lifecycle and post-publication versioning communicated to invitees
         k: engine

@@ -4356,6 +4356,49 @@
       },
       "recap": "InstanceRead now carries the adapter snapshot's evidence (built in the approvals engine, existing read guard unchanged); the vendors module masks sensitive payload fields and adds duplicate matches and availability units. The decision panel renders a VendorEvidence block for vendor tasks from instance.evidence.",
       "title": "Onboarding decision panel: vendor evidence block"
+    },
+    {
+      "story": "E11-S12",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "10963418-4272-48ef-96d5-818c8b7ae21a",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S12",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a163a6-075a-7e31-9879-6801dc948c8a",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds the /vendors list (tabs with server counts, search, documents and availability filters, server paging) and the /vendors/:id profile with Documents table and a focus-trapped document sheet to verify or reject. API gets a documents filter, a per-row document summary and GET /vendors/counts.",
+      "title": "Vendor list and profile screens, documents table and document sheet"
     }
   ]
 }
