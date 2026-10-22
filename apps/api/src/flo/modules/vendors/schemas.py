@@ -92,6 +92,7 @@ class VendorRead(BaseModel):
     created_by_email: str
     created_at: datetime
     updated_at: datetime
+    version: int
     sensitive: SensitiveMasked = SensitiveMasked()
 
 
@@ -158,6 +159,7 @@ class ContactRead(BaseModel):
     receives_documents: bool
     created_at: datetime
     updated_at: datetime
+    version: int
 
 
 class Recipient(BaseModel):

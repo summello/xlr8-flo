@@ -163,6 +163,8 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261014_0061",
         "20261014_0062",
         "20261015_0063",
+        "20261021_0064",
+        "20261021_0065",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -764,9 +766,7 @@ def test_requisition_migration_roundtrip_preserves_existing_data_and_plants_guar
         correlation_context("requisition-migration"),
     ):
         # ProjectService reads project_sponsor; this old schema predates it (E22-S01).
-        conn.execute(
-            "CREATE TABLE project_sponsor(org_id uuid, project_id uuid, user_id uuid)"
-        )
+        conn.execute("CREATE TABLE project_sponsor(org_id uuid, project_id uuid, user_id uuid)")
         # ProjectService reads project.requested_budget; this old schema predates it (E22-S01).
         next(
             r for r in migrate.discover_migrations(MIGRATIONS) if r.revision == "20261015_0063"
@@ -2332,3 +2332,90 @@ def test_project_requested_budget_roundtrip_keeps_projects_and_plants_the_check(
             "WHERE table_name='project' AND column_name='requested_budget'"
         ).fetchone() == (0,)
         mig.upgrade(conn)
+
+
+def test_migration_0053_tracking_table_is_tenant_isolated_and_0053_still_reverses(empty_database):
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261015_0063"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261021_0064")
+    base = next(r for r in revisions if r.revision == "20261014_0053")
+    org_a, org_b = uuid4(), uuid4()
+    role = f"app_0060_{uuid4().hex[:8]}"
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        total = conn.execute("SELECT count(*) FROM migration_0053_change").fetchone()
+        assert total is not None
+        for org in (org_a, org_b, None):
+            conn.execute(
+                "INSERT INTO migration_0053_change(kind,org_id,code) VALUES('grant_added',%s,'x')",
+                (org,),
+            )
+        mig.upgrade(conn)
+        assert conn.execute(
+            "SELECT relrowsecurity,relforcerowsecurity FROM pg_class "
+            "WHERE relname='migration_0053_change'"
+        ).fetchone() == (True, True)
+        # The test connection is a superuser and bypasses RLS, so read as a plain role.
+        conn.execute(f"CREATE ROLE {role}")
+        conn.execute(f"GRANT SELECT ON migration_0053_change TO {role}")
+        conn.execute(f"SET ROLE {role}")
+        try:
+            assert conn.execute("SELECT count(*) FROM migration_0053_change").fetchone() == (0,)
+            with tenant_transaction(conn, Scope(org_a)):
+                assert conn.execute("SELECT org_id FROM migration_0053_change").fetchall() == [
+                    (org_a,)
+                ]
+        finally:
+            conn.execute("RESET ROLE")
+            conn.execute(f"DROP OWNED BY {role}")
+            conn.execute(f"DROP ROLE {role}")
+        mig.downgrade(conn)
+        assert conn.execute("SELECT count(*) FROM migration_0053_change").fetchone() == (
+            total[0] + 3,
+        )
+        base.downgrade(conn)
+        assert conn.execute("SELECT to_regclass('migration_0053_change')").fetchone() == (None,)
+
+
+def test_vendor_row_version_roundtrip_preserves_rows(empty_database):
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261021_0064"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261021_0065")
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        tenant = create(conn)
+        actor = admin_id(conn)
+        vendor_id = uuid4()
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            conn.execute(
+                "INSERT INTO vendor(id,org_id,number,trading_name,legal_name,availability,"
+                "created_by) VALUES(%s,%s,'V-000001','T','L','global',%s)",
+                (vendor_id, tenant.org_id, actor),
+            )
+            conn.execute(
+                "INSERT INTO vendor_contact(id,org_id,vendor_id,type,name,email,"
+                "receives_documents) VALUES(%s,%s,%s,'billing','B','b@example.test',false)",
+                (uuid4(), tenant.org_id, vendor_id),
+            )
+        mig.upgrade(conn)
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            assert conn.execute("SELECT version FROM vendor").fetchall() == [(1,)]
+            assert conn.execute("SELECT version FROM vendor_contact").fetchall() == [(1,)]
+        mig.downgrade(conn)
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            assert conn.execute("SELECT number FROM vendor").fetchall() == [("V-000001",)]
+            assert conn.execute("SELECT count(*) FROM vendor_contact").fetchone() == (1,)
+        cols = conn.execute(
+            "SELECT count(*) FROM information_schema.columns WHERE column_name='version' "
+            "AND table_name IN ('vendor','vendor_contact')"
+        ).fetchone()
+        assert cols == (0,)

@@ -132,9 +132,7 @@ def test_internal_reminder_trigger_origin_key_and_nonreplay(setup, monkeypatch):
     async def scenario():
         async with client(app) as browser:
             # Use the production CSRF protocol even on internal routes.
-            await browser.get(
-                "/api/v1/auth/sessions", headers={"X-FLO-Origin-Secret": token}
-            )
+            await browser.get("/api/v1/auth/sessions", headers={"X-FLO-Origin-Secret": token})
             path = "/internal/jobs/approval-reminders"
             for secret in (None, "incorrect"):
                 h = headers(browser, uuid4().hex)

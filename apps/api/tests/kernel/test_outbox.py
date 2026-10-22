@@ -99,15 +99,20 @@ def _add_email(
     *,
     key: str = "send-purchase-order-42",
 ) -> UUID:
-    with correlation_context("po-issue-request"), tenant_transaction(
-        cast(OutboxConnection, connection), Scope(org_id)
+    with (
+        correlation_context("po-issue-request"),
+        tenant_transaction(cast(OutboxConnection, connection), Scope(org_id)),
     ):
-        return OutboxStore(cast(OutboxConnection, connection), Scope(org_id)).add_email(
-            to="buyer@example.invalid",
-            template="purchase-order-issued-v1",
-            context={"purchase_order": "PO-00042"},
-            idempotency_key=key,
-        ).id
+        return (
+            OutboxStore(cast(OutboxConnection, connection), Scope(org_id))
+            .add_email(
+                to="buyer@example.invalid",
+                template="purchase-order-issued-v1",
+                context={"purchase_order": "PO-00042"},
+                idempotency_key=key,
+            )
+            .id
+        )
 
 
 def test_business_change_and_outbox_row_commit_or_roll_back_together(
@@ -121,8 +126,9 @@ def test_business_change_and_outbox_row_commit_or_roll_back_together(
         sql.SQL("CREATE TABLE {} (id uuid PRIMARY KEY)").format(sql.Identifier(business_table))
     )
     try:
-        with correlation_context("commit-request"), tenant_transaction(
-            cast(OutboxConnection, connection), Scope(org_id)
+        with (
+            correlation_context("commit-request"),
+            tenant_transaction(cast(OutboxConnection, connection), Scope(org_id)),
         ):
             connection.execute(
                 sql.SQL("INSERT INTO {} VALUES (%s)").format(sql.Identifier(business_table)),
@@ -135,9 +141,11 @@ def test_business_change_and_outbox_row_commit_or_roll_back_together(
                 idempotency_key="committed-effect",
             )
 
-        with pytest.raises(RuntimeError, match="forced rollback"), correlation_context(
-            "rollback-request"
-        ), tenant_transaction(cast(OutboxConnection, connection), Scope(org_id)):
+        with (
+            pytest.raises(RuntimeError, match="forced rollback"),
+            correlation_context("rollback-request"),
+            tenant_transaction(cast(OutboxConnection, connection), Scope(org_id)),
+        ):
             connection.execute(
                 sql.SQL("INSERT INTO {} VALUES (%s)").format(sql.Identifier(business_table)),
                 (rolled_back,),
@@ -322,9 +330,10 @@ def test_resend_adapter_passes_idempotency_and_returns_message_id() -> None:
         requester=request,
     )
 
-    assert sender.send(
-        "buyer@example.invalid", "template-v2", {"name": "Buyer"}, "effect-key-7"
-    ) == "resend-message-7"
+    assert (
+        sender.send("buyer@example.invalid", "template-v2", {"name": "Buyer"}, "effect-key-7")
+        == "resend-message-7"
+    )
     headers = cast(Mapping[str, str], captured["headers"])
     assert headers["Idempotency-Key"] == "effect-key-7"
     assert headers["Authorization"] == "Bearer provider-secret"

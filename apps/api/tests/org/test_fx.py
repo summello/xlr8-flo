@@ -238,8 +238,7 @@ def test_doctype_guard_removal_plant(monkeypatch):
 
 
 ENCODED_ENTITY_XML = (
-    '<?xml version="1.0" encoding="UTF-16"?>'
-    '<!DOCTYPE x [<!ENTITY e "expanded">]><x>&e;</x>'
+    '<?xml version="1.0" encoding="UTF-16"?><!DOCTYPE x [<!ENTITY e "expanded">]><x>&e;</x>'
 )
 
 
@@ -266,7 +265,7 @@ def test_undecodable_payload_rejected_before_parser(monkeypatch, payload):
 @pytest.mark.parametrize("encoding", ["utf-16", "utf-16-le", "utf-16-be"])
 def test_utf8_guard_removal_plant(monkeypatch, encoding):
     source = Path(fx.__file__).read_text()
-    start = source.index('    try:\n        text = payload.decode')
+    start = source.index("    try:\n        text = payload.decode")
     end = source.index('    if "<!DOCTYPE"', start)
     namespace = dict(vars(fx))
     # Without strict decoding, the declaration scan sees interleaved NUL bytes.

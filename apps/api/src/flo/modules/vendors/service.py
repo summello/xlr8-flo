@@ -52,8 +52,34 @@ from flo.modules.vendors.schemas import (
 )
 
 SETTING = "vendor.allow_local_disable"
-CONTACT_COLUMNS = "id, type, name, email, phone, receives_documents, created_at, updated_at"
+CONTACT_COLUMNS = (
+    "id, type, name, email, phone, receives_documents, created_at, updated_at, version"
+)
 CONTACT_FIELDS = tuple(CONTACT_COLUMNS.replace(" ", "").split(","))
+
+
+def expected_version(header: str | None, thing: str) -> int:
+    """Parse If-Match (convention O): missing is 400, a non-integer is 400."""
+    if header is None:
+        raise ProblemError(
+            ErrorCode.BAD_REQUEST,
+            detail=f"Supply If-Match with the {thing} version.",
+            checks={"problem": "if_match_required"},
+        )
+    try:
+        return int(header.strip('"'))
+    except ValueError as exc:
+        raise ProblemError(
+            ErrorCode.BAD_REQUEST, detail="If-Match must contain an integer version."
+        ) from exc
+
+
+def stale(thing: str) -> ProblemError:
+    return ProblemError(
+        ErrorCode.CONFLICT,
+        detail=f"The {thing} changed. Reload it and retry your update.",
+        checks={"problem": "stale_version"},
+    )
 
 
 def _cursor(name: str, id: UUID) -> str:
@@ -336,7 +362,8 @@ class VendorService(DocumentsMixin, QuestionnaireMixin, OnboardingMixin, Perform
             )
         return self.get(id)
 
-    def update(self, id: UUID, body: VendorPatch) -> VendorDetail:
+    def update(self, id: UUID, body: VendorPatch, if_match: str | None) -> VendorDetail:
+        expected = expected_version(if_match, "vendor")
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             row = self.repo.execute(
                 "SELECT status FROM vendor WHERE org_id = %(org_id)s AND id = %(id)s FOR UPDATE",
@@ -345,6 +372,8 @@ class VendorService(DocumentsMixin, QuestionnaireMixin, OnboardingMixin, Perform
             if row is None:
                 raise ProblemError(ErrorCode.NOT_FOUND)
             before = self._row(id)
+            if before.version != expected:
+                raise stale("vendor")
             before_units = [u.unit_id for u in self._unit_codes(id)]
             availability = body.availability or before.availability
             changes_availability = body.availability not in (None, before.availability) or (
@@ -373,7 +402,7 @@ class VendorService(DocumentsMixin, QuestionnaireMixin, OnboardingMixin, Perform
             legal = body.legal_name or before.legal_name
             self.repo.execute(
                 "UPDATE vendor SET trading_name = %(trading)s, legal_name = %(legal)s, "
-                "availability = %(availability)s, updated_at = now() "
+                "availability = %(availability)s, updated_at = now(), version = version + 1 "
                 "WHERE org_id = %(org_id)s AND id = %(id)s",
                 {"id": id, "trading": trading, "legal": legal, "availability": availability},
             )
@@ -527,10 +556,15 @@ class VendorService(DocumentsMixin, QuestionnaireMixin, OnboardingMixin, Perform
             self._contact_audit("vendor.contact.create", vendor_id, None, created)
         return created
 
-    def update_contact(self, vendor_id: UUID, contact_id: UUID, body: ContactPatch) -> ContactRead:
+    def update_contact(
+        self, vendor_id: UUID, contact_id: UUID, body: ContactPatch, if_match: str | None
+    ) -> ContactRead:
+        expected = expected_version(if_match, "contact")
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             self._row(vendor_id)
             before = self._contact(vendor_id, contact_id, lock=True)
+            if before.version != expected:
+                raise stale("contact")
             given = body.model_fields_set
             for field in ("name", "email", "receives_documents"):
                 if field in given and getattr(body, field) is None:
@@ -538,7 +572,7 @@ class VendorService(DocumentsMixin, QuestionnaireMixin, OnboardingMixin, Perform
             values = {f: getattr(body, f) for f in given}
             self.repo.execute(
                 "UPDATE vendor_contact SET name = %(name)s, email = %(email)s, phone = %(phone)s, "
-                "receives_documents = %(receives)s, updated_at = now() "
+                "receives_documents = %(receives)s, updated_at = now(), version = version + 1 "
                 "WHERE org_id = %(org_id)s AND id = %(id)s",
                 {
                     "id": contact_id,

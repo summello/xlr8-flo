@@ -121,15 +121,22 @@ def get_vendor(
     id: UUID, context: ViewContext, connection: Connection, response: Response
 ) -> VendorDetail:
     detail = VendorService(connection, current_scope(), context.user_id).get(id)
-    response.headers["ETag"] = f'"{detail.sensitive.version}"'  # the sensitive record's version
+    response.headers["ETag"] = f'"{detail.version}"'  # the vendor's version; PATCH's If-Match
     return detail
 
 
 @router.patch("/{id}", response_model=VendorDetail)
 def patch_vendor(
-    id: UUID, body: VendorPatch, context: EditContext, connection: Connection
+    id: UUID,
+    body: VendorPatch,
+    context: EditContext,
+    connection: Connection,
+    response: Response,
+    version: Annotated[str | None, Header(alias="If-Match")] = None,
 ) -> VendorDetail:
-    return VendorService(connection, current_scope(), context.user_id).update(id, body)
+    vendor = VendorService(connection, current_scope(), context.user_id).update(id, body, version)
+    response.headers["ETag"] = f'"{vendor.version}"'
+    return vendor
 
 
 @router.post("/{id}/units/{unit_id}/disable", response_model=VendorDetail)
@@ -162,11 +169,19 @@ def create_contact(
 
 @router.patch("/{id}/contacts/{contact_id}", response_model=ContactRead)
 def patch_contact(
-    id: UUID, contact_id: UUID, body: ContactPatch, context: EditContext, connection: Connection
+    id: UUID,
+    contact_id: UUID,
+    body: ContactPatch,
+    context: EditContext,
+    connection: Connection,
+    response: Response,
+    version: Annotated[str | None, Header(alias="If-Match")] = None,
 ) -> ContactRead:
-    return VendorService(connection, current_scope(), context.user_id).update_contact(
-        id, contact_id, body
+    contact = VendorService(connection, current_scope(), context.user_id).update_contact(
+        id, contact_id, body, version
     )
+    response.headers["ETag"] = f'"{contact.version}"'
+    return contact
 
 
 @router.delete("/{id}/contacts/{contact_id}", status_code=204)

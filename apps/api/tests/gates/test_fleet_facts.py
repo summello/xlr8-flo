@@ -29,8 +29,7 @@ spec.loader.exec_module(F)
         ("working on it", "running"),
         ("done\nexit 0\n", "ok"),
         ("boom\nexit 1\n", "failed"),
-        ("You've hit your session limit · resets 7:30pm\nexit 1\n",
-         "limit"),
+        ("You've hit your session limit · resets 7:30pm\nexit 1\n", "limit"),
         ("getaddrinfo ENOTFOUND api.anthropic.com\nexit 1\n", "limit"),
         # this product has rate-limiting stories: an author reporting on one is not limited
         ("Added the edge rate limit for login; usage limit docs updated.\nexit 0\n", "ok"),
@@ -65,8 +64,13 @@ def test_verdict_state(
 
 
 def test_rounds_done_counts_only_this_storys_round_files() -> None:
-    names = ["E1-S1.round1.md", "E1-S1.round2.md", "E1-S10.round5.md",
-             "E1-S1.rechain.md", "E1-S1.log"]
+    names = [
+        "E1-S1.round1.md",
+        "E1-S1.round2.md",
+        "E1-S10.round5.md",
+        "E1-S1.rechain.md",
+        "E1-S1.log",
+    ]
     assert F.rounds_done(names, "E1-S1") == 2
     assert F.rounds_done(names, "E1-S10") == 5
     assert F.rounds_done(names, "E2-S1") == 0
@@ -74,14 +78,26 @@ def test_rounds_done_counts_only_this_storys_round_files() -> None:
 
 def test_round_file_sends_changes_requested_findings_most_severe_first() -> None:
     verdicts = {
-        "codex": {"verdict": "changes_requested", "findings": [
-            {"severity": "minor", "file": "a.py", "line": 3, "problem": "naming"},
-            {"severity": "blocker", "file": "b.py", "line": 9, "requirement": "FIN-006",
-             "problem": "no lock", "fix": "lock first"},
-        ]},
-        "opus": {"verdict": "approve", "findings": [
-            {"severity": "major", "file": "c.py", "problem": "approver's note"},
-        ]},
+        "codex": {
+            "verdict": "changes_requested",
+            "findings": [
+                {"severity": "minor", "file": "a.py", "line": 3, "problem": "naming"},
+                {
+                    "severity": "blocker",
+                    "file": "b.py",
+                    "line": 9,
+                    "requirement": "FIN-006",
+                    "problem": "no lock",
+                    "fix": "lock first",
+                },
+            ],
+        },
+        "opus": {
+            "verdict": "approve",
+            "findings": [
+                {"severity": "major", "file": "c.py", "problem": "approver's note"},
+            ],
+        },
     }
     text = F.round_file("E1-S1", 2, verdicts)
     assert text.startswith("REVIEW ROUND 2 for E1-S1.")

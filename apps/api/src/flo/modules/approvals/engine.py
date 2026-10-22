@@ -12,9 +12,13 @@ import psycopg
 from psycopg.types.json import Jsonb
 from pydantic import TypeAdapter
 
+from flo.kernel.audit import ActorKind, AuditActor, audit_event
+from flo.kernel.audit import Outcome as AuditOutcome
+from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.authz import AuthorizationTarget, PermissionHoldersResolver
 from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.identity import IdentityId
+from flo.kernel.outbox.store import OutboxConnection, OutboxStore
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.approvals import conditions
@@ -40,7 +44,12 @@ from flo.modules.approvals.schemas import (
     WorkflowGraph,
     WorkflowVersionRead,
 )
-from flo.modules.identity.service import AuthorizationConnection, AuthorizationResolver
+from flo.modules.identity.service import (
+    AuthorizationConnection,
+    AuthorizationResolver,
+    IdentityAuthorizationConnection,
+    emails_by_id,
+)
 from flo.modules.identity.service import AuthorizationTarget as IdentityTarget
 
 INSTANCE_FIELDS = (
@@ -418,6 +427,33 @@ def _save(repo: WorkflowRepository, instance: Mapping[str, object]) -> None:
     )
 
 
+def notify_outcome(repo: WorkflowRepository, instance: Mapping[str, object]) -> None:
+    """Email the requester the outcome (outbox); shared by decisions and the zero-step path."""
+    if instance["status"] not in {"approved", "rejected", "returned"}:
+        return
+    adapter = adapter_for(str(instance["document_type"]))
+    summary = adapter.summaries(repo.connection, repo.scope, [cast(UUID, instance["document_id"])])[
+        cast(UUID, instance["document_id"])
+    ]
+    emails = emails_by_id(
+        cast(IdentityAuthorizationConnection, repo.connection),
+        [cast(UUID, instance["requester_id"])],
+    )
+    recipient = emails.get(cast(UUID, instance["requester_id"]))
+    if recipient is not None:
+        OutboxStore(cast(OutboxConnection, repo.connection), repo.scope).add_email(
+            to=recipient,
+            template="approval-outcome-v1",
+            context={
+                "document_type": instance["document_type"],
+                "number": summary.number,
+                "outcome": instance["status"],
+                "link": summary.href,
+            },
+            idempotency_key=f"approval:{instance['id']}:{instance['status']}",
+        )
+
+
 def _outcome(
     repo: WorkflowRepository, instance: dict[str, object], context: OutcomeContext
 ) -> None:
@@ -680,6 +716,22 @@ def start(
                     ),
                 ),
             )
+            # No task or decision row exists on this path, so write the decision audit and the
+            # requester notice here, as an interactive approval does (M2 release review).
+            audit_event(
+                cast(AuditConnection, conn),
+                scope,
+                actor=AuditActor(ActorKind.SYSTEM),
+                action="approval.decision",
+                target_type="approval_instance",
+                target_id=id,
+                outcome=AuditOutcome.SUCCESS,
+                before={"status": "running"},
+                before_fields=("status",),
+                after={"status": "approved", "auto": True},
+                after_fields=("status", "auto"),
+            )
+            notify_outcome(repo, instance)
         else:
             _open(repo, instance, node, snapshot, resolver)
             _save(repo, instance)
