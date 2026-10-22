@@ -44,3 +44,23 @@ The scorecard copies `sessions`, so each story's record says which model authore
 - Not covered: Sonnet's `--effort medium` in `author.sh` while `agents.yaml` says
   `reasoning: high`. That is a value disagreement, not a missing link; the planner decides
   which is right and edits `agents.yaml` (`agents/claude.md` §5).
+
+## Packet pre-flight: `flo preflight`
+
+`flo start` refuses a story unless a passing pre-flight was filed for its design packet. The
+pre-flight itself (a reviewer checking the packet against the real code before an author starts)
+is still run by hand or by the supervisor; this only records that it happened.
+
+```bash
+flo preflight E23-S05 --reviewer qwen --verdict pass [--findings N]
+```
+
+- The record is `.scratch/<STORY>.preflight.json` (runner-local, git-ignored). It holds the
+  SHA-256 of `design/<STORY>.md` **as it was when you ran the command**. Any later edit to the
+  packet, an amendment included, makes `flo start` refuse again until the pre-flight is re-run.
+- A `fail` verdict is recorded and does not unlock the start. There is no bypass flag.
+- `flo start` copies the record into `task.json` as `preflight`.
+- `flo facts` leaves a story without a valid record out of `next` and lists it in
+  `needs_preflight`, so a supervisor that starts from `next` never attempts a refused start.
+  Whether the supervisor reads `next` that way cannot be checked from this repository.
+- It proves a pass was filed for this packet text. It does not prove the pre-flight was good.

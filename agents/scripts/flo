@@ -5,7 +5,8 @@ Every rule in AGENTS.md that can be machine-checked lives here instead of in pro
 Stdlib only, except PyYAML for the two config files.
 
   flo next                  next story whose dependencies are satisfied
-  flo start   <STORY_ID>    branch + worktree + task packet
+  flo preflight <STORY_ID> --reviewer NAME --verdict pass|fail   file the packet pre-flight flo start requires
+  flo start   <STORY_ID>    branch + worktree + task packet (refuses without a passing pre-flight record)
   flo assign  <STORY_ID>    compute author and two reviewers from agents.yaml
   flo submit  <STORY_ID>    mark ready for review, print reviewer commands
   flo review  <STORY_ID>    print the reviewer packet (diff + design + requirements)
@@ -166,6 +167,65 @@ def milestone_of(rm, epic):
 def deps_satisfied(rm, st):
     done = {s["id"] for _, s in stories(rm) if s["st"] == "done"}
     return all(d in done for d in st.get("dep", []))
+
+
+def preflight_state(sid):
+    """(record, None) when a passing pre-flight was filed for the packet exactly as it is now,
+    else (None, reason). The record proves a pass was filed for this packet text, not that the
+    pre-flight was good (ponytail: measure the packet amendment rate after start before adding
+    quality scoring here)."""
+    packet = ROOT / "design" / f"{sid}.md"
+    path = ROOT / ".scratch" / f"{sid}.preflight.json"
+    if not path.exists():
+        return None, "no pre-flight record"
+    try:
+        rec = json.loads(path.read_text())
+    except json.JSONDecodeError:
+        return None, "pre-flight record is unreadable"
+    if rec.get("story") != sid:
+        return None, "pre-flight record is for another story"
+    if rec.get("verdict") != "pass":
+        return None, f"pre-flight verdict is {rec.get('verdict')!r}, not 'pass'"
+    if not packet.exists() or rec.get("packet_sha256") != hashlib.sha256(packet.read_bytes()).hexdigest():
+        return None, "packet changed since pre-flight"
+    return rec, None
+
+
+def cmd_preflight(argv):
+    """flo preflight <STORY_ID> --reviewer NAME --verdict pass|fail [--findings N]: file the
+    result of a packet pre-flight (the packet checked against the real code) so flo start can
+    require it. The hash is taken now, so a later edit to the packet invalidates the record."""
+    usage = "usage: flo preflight <STORY_ID> --reviewer NAME --verdict pass|fail [--findings N]"
+    args = list(argv)
+
+    def option(name, default=None):
+        if name not in args:
+            return default
+        i = args.index(name)
+        if i + 1 >= len(args):
+            die(usage)
+        value = args[i + 1]
+        del args[i:i + 2]
+        return value
+
+    reviewer, verdict, findings = option("--reviewer"), option("--verdict"), option("--findings", "0")
+    if len(args) != 1 or not reviewer or verdict not in ("pass", "fail") or not findings.isdigit():
+        die(usage)
+    sid = args[0]
+    find(roadmap(), sid)
+    if reviewer not in (load_yaml(FLEET).get("agents") or {}):
+        die(f"{reviewer}: not in agents/agents.yaml")
+    packet = ROOT / "design" / f"{sid}.md"
+    if not packet.exists():
+        die(f"no design packet at design/{sid}.md")
+    rec = {"story": sid, "packet_sha256": hashlib.sha256(packet.read_bytes()).hexdigest(),
+           "reviewer": reviewer, "verdict": verdict, "at": now_iso(), "findings": int(findings)}
+    path = ROOT / ".scratch" / f"{sid}.preflight.json"
+    path.parent.mkdir(exist_ok=True)
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(rec, indent=2) + "\n")
+    os.replace(tmp, path)
+    print(f"{sid}: pre-flight {verdict} by {reviewer} recorded for packet {rec['packet_sha256'][:10]}")
 
 
 def cmd_next(argv):
@@ -412,6 +472,10 @@ def cmd_start(argv):
     design = ROOT / "design" / f"{sid}.md"
     if not design.exists():
         die(f"no design packet at design/{sid}.md — run: flo design {epic['milestone']}")
+    preflight, why = preflight_state(sid)
+    if not preflight:
+        die(f"{sid}: {why} — pre-flight the packet against the code, then run: "
+            f"flo preflight {sid} --reviewer NAME --verdict pass")
 
     ms = milestone_of(rm, epic)
     branches = git("branch", "--list", ms["branch"])
@@ -429,7 +493,7 @@ def cmd_start(argv):
         "kind": st["k"], "size": st["s"], "tags": st.get("tags", []),
         "requirements": st["reqs"], "depends_on": st.get("dep", []),
         "branch": branch, "milestone_branch": ms["branch"], "worktree": str(wt),
-        "started_at": now_iso(),
+        "started_at": now_iso(), "preflight": preflight,
         "design": f"design/{sid}.md", **assignment,
         "rounds": 0, "substitutions": [], "notes": {"blocked": None, "followup": [], "recap": None},
         "traceability": {},
@@ -2303,13 +2367,16 @@ def cmd_facts(argv):
             "ci": _ci_on(pkt["branch"], sub) if approved and pkt.get("opus_final") else None,
         })
     sonnet = fleet["agents"].get("sonnet") or {}
+    # a story flo start would refuse (no valid pre-flight record) is not offered as startable
+    ready = [s["id"] for _, s in stories(rm) if s["st"] == "todo" and deps_satisfied(rm, s)
+             and (ROOT / "design" / f"{s['id']}.md").exists()]
     print(json.dumps({
         "project": ROOT.name, "max_in_flight": pol["max_stories_in_flight"],
         "max_rounds": pol.get("max_review_rounds", 3),
         "in_flight": sum(1 for _, s in stories(rm) if s["st"] in ACTIVE),
         "line_stopped": [m["id"] for m in rm["milestones"] if (sc / f"{m['id']}.ci-red").exists()],
-        "next": [s["id"] for _, s in stories(rm) if s["st"] == "todo" and deps_satisfied(rm, s)
-                 and (ROOT / "design" / f"{s['id']}.md").exists()][:5],
+        "next": [i for i in ready if preflight_state(i)[0]][:5],
+        "needs_preflight": [i for i in ready if not preflight_state(i)[0]],
         "free_accounts": free_accounts("sonnet", sonnet) if sonnet.get("accounts") else [],
         "stories": out,
     }, indent=1))
@@ -2520,7 +2587,7 @@ COMMANDS = {
     "review": cmd_review, "gate": cmd_gate, "final": cmd_final, "escalate": cmd_escalate,
     "done": cmd_done, "design": cmd_design, "status": cmd_status, "budget": cmd_budget,
     "roadmap": cmd_roadmap, "score": cmd_score, "session": cmd_session, "board": cmd_board,
-    "reap": cmd_reap, "account": cmd_account, "launch-model": cmd_launch_model, "codex-usage": cmd_codex_usage, "codex-guard": cmd_codex_guard, "release-packet": cmd_release_packet, "log-guard": cmd_log_guard, "ci-watch": cmd_ci_watch, "facts": cmd_facts, "round": cmd_round, "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "db": cmd_db, "up": cmd_up, "down": cmd_down,
+    "reap": cmd_reap, "account": cmd_account, "launch-model": cmd_launch_model, "preflight": cmd_preflight, "codex-usage": cmd_codex_usage, "codex-guard": cmd_codex_guard, "release-packet": cmd_release_packet, "log-guard": cmd_log_guard, "ci-watch": cmd_ci_watch, "facts": cmd_facts, "round": cmd_round, "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "db": cmd_db, "up": cmd_up, "down": cmd_down,
 }
 
 if __name__ == "__main__":
