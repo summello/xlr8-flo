@@ -3198,7 +3198,7 @@ epics:
           - SUP-005
           - OBS-002
         dep: []
-        st: todo
+        st: done
       - id: E23-S02
         t: Sonnet round-churn analysis by kind and tag, with a routing recommendation
         k: chore
@@ -3207,7 +3207,7 @@ epics:
         reqs:
           - SUP-005
         dep: []
-        st: todo
+        st: done
       - id: E23-S03
         t: The nemotron launcher reads its model from agents.yaml and records what it launched
         k: chore
@@ -3216,7 +3216,7 @@ epics:
         reqs:
           - SUP-005
         dep: []
-        st: todo
+        st: done
       - id: E23-S04
         t: Reorder author_priority by measured record, reconcile nemotron history, pin it with tests
         k: chore
@@ -3226,7 +3226,7 @@ epics:
           - SUP-005
         dep:
           - E23-S02
-        st: todo
+        st: done
       - id: E23-S05
         t: flo start refuses a story with no packet pre-flight record
         k: chore
@@ -3235,7 +3235,7 @@ epics:
         reqs:
           - SUP-005
         dep: []
-        st: todo
+        st: done
       - id: E23-S06
         t: 'flo reassign: capacity-aware, liveness-checked, per-story locked author reassignment'
         k: concurrency
@@ -3246,7 +3246,7 @@ epics:
           - SUP-005
         dep:
           - E23-S04
-        st: todo
+        st: done
       - id: E23-S11
         t: Track the fleet supervisor in the repo, with tests for its decision rules
         k: chore
@@ -3255,7 +3255,7 @@ epics:
         reqs:
           - SUP-005
         dep: []
-        st: todo
+        st: done
       - id: E23-S12
         t: Sonnet's effort comes from agents.yaml, which now says medium
         k: chore
@@ -3264,7 +3264,7 @@ epics:
         reqs:
           - SUP-005
         dep: []
-        st: todo
+        st: done
       - id: E23-S13
         t: Scorecard rounds come from the round files; void rounds are not charged; older records are marked
         k: chore
@@ -3275,7 +3275,7 @@ epics:
           - OBS-002
         dep:
           - E22-S12
-        st: todo
+        st: done
       - id: E23-S07
         t: Start a story when its would-be author has room, not only when a Claude account does
         k: chore
@@ -3296,7 +3296,7 @@ epics:
           - SUP-005
           - SEC-012
         dep: []
-        st: todo
+        st: done
       - id: E23-S09
         t: Build the SPA bundle once in CI and deploy the same artifact
         k: chore
