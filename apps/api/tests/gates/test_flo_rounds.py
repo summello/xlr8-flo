@@ -175,8 +175,6 @@ def test_the_committed_scorecard_says_its_legacy_records_are_unverified():
 
 
 def judgement_script():
-    import re
-
     doc = (REPO / "docs" / "ops" / "sonnet-round-churn.md").read_text()
     section = doc.split("## Judgement day", 1)[1]
     match = re.search(r"```python\n(.*?)\n```", section, re.S)
@@ -256,7 +254,6 @@ def test_the_scorecard_shows_progress_and_says_when_judgement_day_is_due(monkeyp
 
 def test_tags_and_threshold_agree_across_the_scorecard_the_config_and_the_doc_script():
     import ast
-    import re
 
     config = (REPO / "agents" / "agents.yaml").read_text()
     listed = re.search(r"^  opus_final_required_tags: \[(.*)\]", config, re.M)
