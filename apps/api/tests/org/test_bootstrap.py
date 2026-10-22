@@ -18,7 +18,7 @@ from flo.kernel.config import Settings
 from flo.kernel.identity.hashing import build_argon2_hasher
 from flo.kernel.identity.mfa import MfaAccessRequirement, MfaService, SecretCipher
 from flo.kernel.logging import correlation_context
-from flo.kernel.migrate import apply_migrations, discover_migrations
+from flo.kernel.migrate import discover_migrations
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import tenant_transaction
 from flo.modules.identity.resolver import AuthorizationResolver
@@ -36,9 +36,8 @@ ROOT = Path(__file__).resolve().parents[4]
 
 
 @pytest.fixture
-def bootstrap_db(empty_database):
-    apply_migrations(discover_migrations(ROOT / "migrations"), empty_database)
-    with psycopg.connect(empty_database, autocommit=True) as conn:
+def bootstrap_db(migrated_database):
+    with psycopg.connect(migrated_database, autocommit=True) as conn:
         yield conn
 
 

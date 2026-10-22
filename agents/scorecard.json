@@ -4055,6 +4055,39 @@
       },
       "recap": "Approval Availability screen already existed; added the Account menu link, fixed focus return to the row's Revoke button after the dialog closes, and added eligibility, keyboard-only and forced-organization e2e tests.",
       "title": "Approval Availability: set, list and revoke an out-of-office delegation"
+    },
+    {
+      "story": "E22-S11",
+      "kind": "chore",
+      "size": "M",
+      "tags": [],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": null,
+          "source": "unavailable: no detector for sonnet"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a16030-d66b-7ce0-b6bc-24f5a2904acd",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "fb1c05b9-e423-4f89-824c-46c9b8381ef1",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Reused migrated database templates and sharded backend/E2E CI while preserving required check names and the 80% coverage floor. Local plants caught all three violations, traceability and timing evidence are recorded, and flo check --light is green.",
+      "title": "Faster checks: template test databases, sharded backend and E2E CI"
     }
   ]
 }
