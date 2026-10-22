@@ -22,6 +22,7 @@ from flo.modules.identity.service import (
 )
 from flo.modules.vendors import approval as approval  # registers the "vendor" document type
 from flo.modules.vendors import duplicates
+from flo.modules.vendors import repo as sensitive
 from flo.modules.vendors.models import VendorRepository
 from flo.modules.vendors.schemas import (
     ChangeCreate,
@@ -434,9 +435,16 @@ class ChangesMixin:
             out: dict[str, object] = {
                 "kind": change.kind,
                 "reason": change.reason,
-                "payload": change.payload,
+                # a sensitive field never leaves this module raw; revealing is the audited route
+                "payload": {
+                    k: sensitive.mask_text(v)
+                    if k in sensitive.COLUMNS and isinstance(v, str)
+                    else v
+                    for k, v in change.payload.items()
+                },
             }
             if change.kind == "create":
+                out["duplicate_matches"] = self._duplicate_matches(change)
                 out["document_state"] = [
                     d.model_dump(mode="json")
                     for d in self.document_state(change.vendor_id, change.requested_at.date())
@@ -447,9 +455,59 @@ class ChangesMixin:
             else:
                 # ponytail: RFQs (E12) and POs (E13) do not exist yet; take both counts through
                 # the link-graph providers when they register, never by importing those modules.
+                if change.kind == "availability":
+                    units = [str(u) for u in cast(list[str], change.payload.get("unit_ids", []))]
+                    current = self.repo.execute(
+                        "SELECT v.availability, coalesce(array_agg(u.code ORDER BY u.code) "
+                        "FILTER (WHERE u.code IS NOT NULL), '{}') FROM vendor v "
+                        "LEFT JOIN vendor_unit vu ON vu.org_id = v.org_id AND vu.vendor_id = v.id "
+                        "LEFT JOIN org_unit u ON u.org_id = vu.org_id AND u.id = vu.unit_id "
+                        "WHERE v.org_id = %(org_id)s AND v.id = %(id)s GROUP BY v.availability",
+                        {"id": change.vendor_id},
+                    ).fetchone()
+                    assert current is not None
+                    out["current_availability"] = str(current[0])
+                    out["current_units"] = list(cast(list[str], current[1]))
+                    out["new_units"] = [
+                        str(r[0])
+                        for r in self.repo.execute(
+                            "SELECT code FROM org_unit WHERE org_id = %(org_id)s "
+                            "AND id::text = ANY(%(ids)s) ORDER BY code",
+                            {"ids": units},
+                        ).fetchall()
+                    ]
                 out["open_rfqs"] = 0
                 out["issued_purchase_orders"] = 0
             return out
+
+    def _duplicate_matches(self, change: ChangeRead) -> list[dict[str, str]]:
+        """Who holds the identifier the override waived, with the identifier masked."""
+        if "duplicates" not in change.payload:
+            return []
+        out = []
+        for field, match in duplicates.find(self.repo, vendor_id=change.vendor_id):
+            row = self.repo.execute(
+                "SELECT number, trading_name FROM vendor WHERE org_id = %(org_id)s AND id = %(id)s",
+                {"id": match},
+            ).fetchone()
+            if row is None:
+                continue
+            if field == "tax_id":
+                value = str(sensitive.masked(self.repo, [match]).get(match, {}).get("tax_id") or "")
+            else:
+                value = sensitive.mask_text(
+                    duplicates.stored(self.repo, match).get(field.removeprefix("identifiers."), "")
+                )
+            out.append(
+                {
+                    "field": field,
+                    "vendor_id": str(match),
+                    "vendor_number": str(row[0]),
+                    "trading_name": str(row[1]),
+                    "masked_value": value,
+                }
+            )
+        return out
 
     # -- live duplicate check --------------------------------------------------------------------
 

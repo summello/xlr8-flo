@@ -4496,6 +4496,10 @@ export interface components {
             document_type: string;
             /** Document Version */
             document_version: number;
+            /** Evidence */
+            evidence?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
             /** Finished At */
             finished_at: string | null;
             /**

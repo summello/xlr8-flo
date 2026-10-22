@@ -4308,6 +4308,54 @@
       },
       "recap": "Added vendors.service.eligibility (batched, 5 queries, status never changed) with GET /vendors/{id}/eligibility and an eligibility field on list rows that name available_in. Added the shared Signal primitive and the Eligibility component that renders the server's answer.",
       "title": "Vendor eligibility: one server rule, one web component"
+    },
+    {
+      "story": "E11-S15",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "73407004-b79f-41c3-984d-3666186effb5",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S15",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1633d-cdc0-78e2-9fbd-be2d0dfa4d69",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "InstanceRead now carries the adapter snapshot's evidence (built in the approvals engine, existing read guard unchanged); the vendors module masks sensitive payload fields and adds duplicate matches and availability units. The decision panel renders a VendorEvidence block for vendor tasks from instance.evidence.",
+      "title": "Onboarding decision panel: vendor evidence block"
     }
   ]
 }

@@ -231,6 +231,9 @@ def test_availability_change_is_visible_only_after_approval(vdb):
         ),
     )
     assert s.available_in(vendor.id, bu.id) is True  # global: the old availability
+    shown = s.evidence(change.id)
+    assert shown["current_availability"] == "global" and shown["current_units"] == []
+    assert len(shown["new_units"]) == 1 and shown["payload"]["availability"] == "restricted"
     other = unit(db, "OTHER")
     assert s.available_in(vendor.id, other.id) is True
     decide_change(db, reviewer, change.id)
@@ -512,6 +515,52 @@ def test_evidence_for_the_decision_panel(vdb):
         "open_rfqs": 0,
         "issued_purchase_orders": 0,
     }
+
+
+def test_evidence_masks_sensitive_payload_fields_and_names_the_duplicate(vdb):
+    db, _ = vdb
+    s = service(db)
+    mine = ready(db, "Mine", TAX)
+    first = s.submit(mine.id, SubmitCreate())
+    decide_change(db, vdb[1], first.id)
+    twin = ready(db, "Twin", TAX)
+    change = s.submit(twin.id, SubmitCreate(override_reason="Same group"))
+    # a raw sensitive value in a payload must not leave the module (plant: drop the masking)
+    sql(
+        db,
+        'UPDATE vendor_change SET payload = payload || \'{"bank_account": "98765432109"}\' '
+        "WHERE id = %s",
+        (change.id,),
+    )
+    evidence = s.evidence(change.id)
+    assert evidence["payload"]["bank_account"] == "•••• 2109"
+    assert "98765432109" not in json.dumps(evidence) and "12-345" not in json.dumps(evidence)
+    (match,) = evidence["duplicate_matches"]
+    assert match["vendor_id"] == str(mine.id) and match["masked_value"] == "•••• 78 9"
+    assert evidence["payload"]["override_reason"] == "Same group"
+
+
+def test_instance_route_carries_the_vendor_evidence_under_the_read_guard(vdb):
+    db, _ = vdb
+    vendor = ready(db, "Mine", TAX)
+    change = service(db).submit(vendor.id, SubmitCreate())
+    instance = active_instance(db[0], Scope(db[1]), "vendor", change.id)
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            path = f"/api/v1/approvals/instances/{instance.id}"
+            seen = await browser.get(path)
+            assert seen.status_code == 200, seen.text
+            assert seen.json()["evidence"]["kind"] == "create"
+            assert "12-345" not in seen.text
+            regrant(db, ["vendor.edit"])  # no vendor.view: the guard is unchanged
+            assert (await browser.get(path)).status_code == 403  # plant: drop the guard, 200
+        async with client(app) as browser:
+            await login(browser, "second@example.test")
+            assert (await browser.get(path)).status_code == 404  # foreign tenant
+
+    asyncio.run(scenario())
 
 
 # -- routes ---------------------------------------------------------------------------------------

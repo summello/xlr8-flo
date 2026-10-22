@@ -31,6 +31,11 @@ def _mask(column: str) -> str:
     )
 
 
+def mask_text(value: str) -> str:
+    """The same shape `_mask` gives a stored value, for a value already in hand (a payload)."""
+    return "••••" if len(value) <= 4 else "•••• " + value[-4:]
+
+
 def masked(
     repo: VendorRepository, vendor_ids: Sequence[UUID]
 ) -> dict[UUID, dict[str, str | int | None]]:

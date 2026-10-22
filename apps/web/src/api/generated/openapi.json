@@ -4572,6 +4572,20 @@
             "title": "Document Version",
             "type": "integer"
           },
+          "evidence": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence"
+          },
           "finished_at": {
             "anyOf": [
               {

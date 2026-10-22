@@ -36,6 +36,7 @@ export async function stubApprovals(page: Page, options: { delegateAdmin?: boole
     pageTwo: false,
     totalAmount: [{ amount: "601.5000", currency: "USD" }],
     version: 1,
+    evidence: {} as Record<string, Record<string, unknown>>,
     tasksQueries: [] as URLSearchParams[],
     posts: [] as { path: string; body: Record<string, unknown>; headers: Record<string, string> }[],
   };
@@ -85,7 +86,7 @@ export async function stubApprovals(page: Page, options: { delegateAdmin?: boole
         return send({ instance_id: row.instance_id, why_this_workflow: "Capital Review applies to requisitions.", workflow: { bound_scope: "organization", definition_id: uuid(1), name: "Capital Review", version: 1 }, steps: [{ kind: "approval", node_id: "one", name: "Finance", rule: "role approver", mode: "any", status: "open", members_as_of: "as_of_now", members: [{ basis: "role", email: "me@example.test", user_id: uuid(1) }], excluded: [{ user_id: uuid(5), email: "requester@example.test", reason: "separation_of_duty", detail: "Requested this document, so cannot approve it" }], decisions: [] }] });
       }
       const open = !state.closedInstance && !state.completed.some((r) => r.instance_id === row.instance_id);
-      return send({ id: row.instance_id, document_type: "requisition", document_id: row.document_id, workflow_version: 1, workflow_version_id: uuid(2), document_version: 1, status: open ? "running" : "approved", requester_email: requester, current_node_id: "one", route: [], tasks: [{ id: row.task_id, node_id: "one", label: "Finance", mode: "any", quorum: null, status: open ? "open" : "completed", outcome: null, approver_emails: [], due_at: row.due_at, completed_at: null }], started_at: "2026-10-12T00:00:00Z", finished_at: null, separation_of_duty_applied: true });
+      return send({ id: row.instance_id, document_type: row.document_type, document_id: row.document_id, workflow_version: 1, workflow_version_id: uuid(2), document_version: 1, status: open ? "running" : "approved", requester_email: requester, current_node_id: "one", route: [], tasks: [{ id: row.task_id, node_id: "one", label: "Finance", mode: "any", quorum: null, status: open ? "open" : "completed", outcome: null, approver_emails: [], due_at: row.due_at, completed_at: null }], started_at: "2026-10-12T00:00:00Z", finished_at: null, separation_of_duty_applied: true, evidence: state.evidence[row.instance_id] ?? null });
     }
     if (path === "/api/v1/approvals/delegations/eligible-delegates") {
       state.eligibleQueries.push(url.searchParams);
