@@ -593,6 +593,12 @@ then retains the same guard-failure assertion. Parallel runs also exposed two sk
 whose fixed delays expired during geometry inspection; their responses now wait for the test
 to release them. Colour comparisons resolve the token in the browser so production CSS
 minification cannot turn equivalent spellings into a false failure.
+E22-S12 local validation: three complete fully parallel runs (dev, production, production).
+The final production run passed 441/441 in 5.2 min with two workers, no retries and no serial
+groups, including the dependent frame-budget test. Discovery runs under load found the fixture
+races and representation differences above; four-route axe scans also exceeded their 30 s
+budget while browser runs overlapped. No timeout or assertion was weakened for those scans.
+The planner still records hosted shard spread, combined wall times and failure-plant links.
 
 
 Local evidence, 22 Oct 2026 (same worktree and Postgres 17): full API `pytest -q` wall time was
