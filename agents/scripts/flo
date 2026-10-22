@@ -571,7 +571,7 @@ def cmd_start(argv):
         "kind": st["k"], "size": st["s"], "tags": st.get("tags", []),
         "requirements": st["reqs"], "depends_on": st.get("dep", []),
         "branch": branch, "milestone_branch": ms["branch"], "worktree": str(wt),
-        "started_at": now_iso(), "preflight": preflight,
+        "started_at": now_iso(), "preflight": preflight, "evidence_required": True,
         "design": f"design/{sid}.md", **assignment,
         "rounds": 0, "substitutions": [], "notes": {"blocked": None, "followup": [], "recap": None},
         "traceability": {},
@@ -930,6 +930,15 @@ def cmd_review(argv):
             print(f"--- end {n} ---\n")
 
     print("--- how to review ---")
+    submitted = pkt.get("submitted_sha")
+    if not submitted:
+        evidence_line = "the story has no submitted commit yet; ask the planner before reviewing."
+    elif evidence_for(pkt, submitted, "light"):
+        evidence_line = (f"flo already holds a passing, clean light check for {submitted[:10]}. You may cite it "
+                         f"instead of re-running, if your worktree is on that commit and clean.")
+    else:
+        evidence_line = (f"flo holds no passing light check for {submitted[:10]} yet: run "
+                         f"flo check --light on a clean tree at that commit, then cite it.")
     deep = pkt["opus_final"] and not since
     ui = pkt["kind"] == "ui" or "ui" in pkt["tags"]
     ui_step = f"""
@@ -955,8 +964,11 @@ write the verdict and stop; do not widen the review.
    draft (verdict, ran_tests false, the defects you suspect) and keep it current as you go:
    the run is stopped at a time cap, and the draft is what survives.
 2. Tests, once each, **within your first 10 commands**, and set `ran_tests` true in the draft as
-   soon as `flo check --light` has run: a verdict without it does not count, and three Codex runs
-   on 21-22 Oct spent their whole call cap reading before testing. The full suite runs on GitHub
+   soon as `flo check --light` has run or you have cited flo's record: a verdict without it does not
+   count, and three Codex runs on 21-22 Oct spent their whole call cap reading before testing.
+   Evidence: put "evidence": {{"commit": "{submitted}", "profile": "light"}} in the verdict. The
+   gate checks it against what flo recorded, and a claim with no matching record does not count.
+   {evidence_line} The full suite runs on GitHub
    for {pkt['branch']}; do not run it here.
      apps/api/.venv/bin/python agents/scripts/flo check --light   # lint, types, the story's tests
    Then only the test files a suspicion needs, on the worktree's own database:
@@ -983,7 +995,8 @@ write the verdict and stop; do not widen the review.
    "changes_requested", severity is "blocker", "major" or "minor", category is
    "correctness", "quality", "security" or "ui":
      {{"story": "{sid}", "reviewer": "<your-agent-id>", "verdict": "approve",
-      "ran_tests": true, "findings": [{{"severity": "major", "category": "security",
+      "ran_tests": true, "evidence": {{"commit": "{submitted}", "profile": "light"}},
+      "findings": [{{"severity": "major", "category": "security",
       "file": "path", "line": 1, "requirement": "REQ-001", "problem": "what fails",
       "fix": "what to change"}}]}}
 
@@ -1046,6 +1059,22 @@ def reviews_for(sid):
     return out
 
 
+def evidence_failure(pkt, review):
+    """None when the review's evidence block names the submitted commit and flo holds a passing,
+    clean record for it; else the reason. The commit is the submitted one, not HEAD: finish.sh
+    merges the milestone in before the gate, so HEAD never equals what the reviewer saw."""
+    block = review.get("evidence")
+    if not isinstance(block, dict) or not block.get("commit"):
+        return "it carries no evidence block"
+    submitted = pkt.get("submitted_sha")
+    if block["commit"] != submitted:
+        return f"its evidence is for {str(block['commit'])[:10]}, not the submitted {str(submitted)[:10]}"
+    profile = block.get("profile") or "light"
+    if not evidence_for(pkt, submitted, profile):
+        return f"flo holds no passing clean {profile} check for commit {str(submitted)[:10]}"
+    return None
+
+
 def cmd_gate(argv):
     if not argv:
         die("usage: flo gate <STORY_ID>")
@@ -1065,6 +1094,16 @@ def cmd_gate(argv):
 
     revs = reviews_for(sid)
     counted = [r for r in revs if r.get("ran_tests") is True]
+    if pkt.get("evidence_required"):
+        # a claim of "ran tests" counts only with a record flo wrote for the commit that was reviewed
+        verified = []
+        for r in counted:
+            why = evidence_failure(pkt, r)
+            if why:
+                fails.append(f"{r.get('reviewer', '?')}: ran_tests=true but {why}")
+            else:
+                verified.append(r)
+        counted = verified
     fleet = load_yaml(FLEET)
     need = fleet["policy"]["min_reviewers"]
     if len(counted) < need:
@@ -2294,6 +2333,11 @@ def story_checks(cwd):
     return out
 
 
+# The steps the last run_check ran, as {name, ok}. A module list rather than a parameter so
+# run_check keeps its two-argument signature: tests/gates/test_gates_bite.py stubs it that way.
+LAST_STEPS = []
+
+
 def run_check(cwd=None, profile="full"):
     cwd = cwd or ROOT
     venv_bin = Path(cwd) / "apps" / "api" / ".venv" / "bin"
@@ -2324,23 +2368,55 @@ def run_check(cwd=None, profile="full"):
                 print(f"  ?  {name:<12} missing-tool opt-out: {exemption}")
                 continue
         print(f"  {'✓' if not r.returncode else '✗'}  {name}")
+        LAST_STEPS.append({"name": name, "ok": not r.returncode})
         if r.returncode:
             print((r.stdout + r.stderr).strip()[-2000:])
             return False
     return True
 
 
+def record_evidence(task, rec):
+    """Append one evidence record to task.json. Only flo writes these: the gate checks a reviewer's
+    claim against them, so a verdict cannot vouch for itself. ponytail: the threat is a wrong or
+    stale claim, not an agent editing runner state; sign the records if that ever changes."""
+    pkt = json.loads(task.read_text())
+    pkt["evidence"] = (pkt.get("evidence") or []) + [rec]
+    pkt["evidence"] = pkt["evidence"][-50:]
+    task.write_text(json.dumps(pkt, indent=2) + "\n")
+
+
+def evidence_for(pkt, commit, profile):
+    """A passing, clean record for this commit; a full run also vouches for a light claim."""
+    return next((r for r in pkt.get("evidence") or []
+                 if r.get("commit") == commit and r.get("result") == "pass" and r.get("clean") is True
+                 and r.get("profile") in (profile, "full")), None)
+
+
 def checked(wt, profile):
     """run_check once per tree: submit records a green tree, and the gate on an identical,
-    clean tree reuses it instead of running the same deterministic checks again."""
+    clean tree reuses it instead of running the same deterministic checks again. Every run, and
+    every cache hit on a commit with no record yet, leaves an evidence record in task.json."""
     tree = git("rev-parse", "HEAD^{tree}", cwd=wt)
+    commit = git("rev-parse", "HEAD", cwd=wt)
     clean = not git("status", "--porcelain", cwd=wt)
     task = Path(wt) / "task.json"
     pkt = json.loads(task.read_text()) if task.exists() else {}
     if clean and pkt.get("check") == {"tree": tree, "profile": profile}:
         print(f"  ✓  check --{profile} (cached: tree {tree[:10]} unchanged since it went green)")
+        if not evidence_for(pkt, commit, profile):  # same tree, new commit: the result carries over
+            record_evidence(task, {"profile": profile, "commit": commit, "tree": tree, "clean": True,
+                                   "result": "pass", "cached": True, "steps": [], "seconds": 0,
+                                   "at": now_iso()})
         return True
-    if not run_check(wt, profile):
+    LAST_STEPS.clear()
+    began = time.time()
+    ok = run_check(wt, profile)
+    report = list(LAST_STEPS)
+    if task.exists():
+        record_evidence(task, {"profile": profile, "commit": commit, "tree": tree, "clean": clean,
+                               "result": "pass" if ok else "fail", "steps": report,
+                               "seconds": round(time.time() - began), "at": now_iso()})
+    if not ok:
         return False
     if clean and task.exists():
         pkt = json.loads(task.read_text())

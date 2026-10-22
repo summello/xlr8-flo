@@ -109,3 +109,33 @@ and a reassign cannot interleave. A crash leaves the directory behind; remove it
 
 Not done here: the supervisor does not call `flo reassign` yet. Its source is not in this
 repository, so wiring it in is a separate decision (E23-S07).
+
+## Test evidence: what `ran_tests` now means
+
+`ran_tests: true` in a review used to be the reviewer's word. For every story started after
+E23-S08 (`task.json` has `evidence_required: true`) `flo gate` checks it against a record that
+`flo` itself wrote.
+
+- **The record.** Every `flo check` run (`--light` or full) appends to `task.json` `evidence`:
+  profile, commit, tree, whether the tree was clean, `pass` or `fail`, the steps that ran, seconds,
+  time. A red run and a dirty-tree run are recorded too; neither can vouch for anything. A cache hit
+  on a commit with no record yet (same tree, new commit) adds a `cached: true` record. The last 50
+  are kept. Only `flo` writes them.
+- **The claim.** A verdict with `ran_tests: true` must carry
+  `"evidence": {"commit": "<submitted sha>", "profile": "light"}`. `flo review` prints the sha and
+  says whether `flo` already holds a passing light check for it.
+- **The check.** The gate counts the review only if the commit equals `task.json` `submitted_sha`
+  **and** a record exists for that commit that is `pass`, clean and for that profile (a full run
+  also covers a light claim). Otherwise it fails, naming the reviewer and why, so the cause is not
+  hidden behind "0/1 reviews". It is the **submitted** commit, not `HEAD`: `finish.sh` merges the
+  milestone in before the gate, so `HEAD` never equals what the reviewer saw.
+- **Citing is allowed.** A reviewer on the submitted commit may cite the record the author's submit
+  step already made instead of re-running the check. That is the point: the 22 Oct Codex reviews ran
+  out of calls before testing. As a result the scorecard's `test_compliance` now means "a passing
+  check exists for the reviewed commit" and will read near 100%; it no longer says the reviewer ran
+  anything.
+- **Not changed.** The reviewer floor, the blocker check, and the Opus final review are as before; a
+  valid record never substitutes for the Opus verdict on a gated story. A story started before the
+  flag gates exactly as it did.
+- **Limit.** The records live in runner-local state next to the verdicts. They guard against a
+  wrong or stale claim, not against someone editing `task.json`.
