@@ -1615,7 +1615,7 @@ epics:
         dep:
           - E11-S06
           - E11-S12
-        st: todo
+        st: in_progress
       - id: E11-S17
         t: Questionnaire administration screen
         k: ui
