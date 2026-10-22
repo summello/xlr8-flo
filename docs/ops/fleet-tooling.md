@@ -199,3 +199,7 @@ Since E23-S13 a new scorecard record takes `rounds` from the round files
   1 round while their reviewers ran 2, 2, 2, 1, 7 and 6 times. `SCORECARD.md` says so in a Data
   quality block and shows *Rounds verified* per agent. The formulas are unchanged.
 - To compare authors fairly, read only records with `rounds_basis`.
+- **Progress toward Judgement day.** `SCORECARD.md` carries a line counting Sonnet's verified gated
+  records against `JUDGEMENT_FLOOR` (10) and says "It is due" when it is reached; then run the script in
+  `docs/ops/sonnet-round-churn.md`. "Gated" means one of `GATED_TAGS` in `agents/scripts/flo`, which mirror
+  `policy.opus_final_required_tags`; a test keeps the two lists and the doc script identical.

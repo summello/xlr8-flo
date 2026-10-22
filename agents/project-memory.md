@@ -257,7 +257,8 @@ gated records, i.e. `rounds_basis: "round_files"` with a money, auth, security, 
 At **10** of them, run the script in `docs/ops/sonnet-round-churn.md` ("Judgement day") and decide: keep Sonnet
 (spread, or concentrated but under about 2 rounds with no escapes), or test it properly (a deterministic split
 of gated authorship by story id with the same non-Opus reviewer in both arms, or `avoid_tags` on Sonnet).
-`SCORECARD.md` shows *Rounds verified* per agent as the progress meter. Do not judge from the 29 older records:
+`SCORECARD.md` shows the progress ("Judgement day: n of 10 verified gated records", and "It is due" at 10) and
+*Rounds verified* per agent. Do not judge from the 29 older records:
 their `rounds` have no reliable writer. Sonnet had 0 escapes on those 29, so the question is throughput, not
 defects. Owner: the planner at each milestone end (`agents/claude.md` §5).
 

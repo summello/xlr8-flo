@@ -227,3 +227,45 @@ def test_judgement_day_reports_the_gap_once_there_are_ten(tmp_path):
 def test_judgement_day_calls_an_even_spread_spread(tmp_path):
     records = [sonnet(["auth"], 1) for _ in range(10)] + [sonnet([], 1) for _ in range(5)]
     assert "SPREAD" in judge(tmp_path, records)
+
+
+# judgement-day progress line -----------------------------------------------------------------
+
+
+def test_progress_counts_only_verified_gated_sonnet_records():
+    records = (
+        [sonnet(["money"], 1) for _ in range(3)]  # counted
+        + [sonnet(["money"], 4, basis=None) for _ in range(5)]  # legacy: not counted
+        + [{**sonnet(["money"], 1), "author": "codex"} for _ in range(5)]  # another author
+        + [sonnet([], 1) for _ in range(5)]  # ungated
+    )
+    assert F.judgement_progress(records) == 3
+
+
+def test_the_scorecard_shows_progress_and_says_when_judgement_day_is_due(monkeypatch):
+    def verified_gated(n):
+        return [{**rec(f"S{i}", "sonnet", "round_files"), "tags": ["auth"]} for i in range(n)]
+
+    short = render(monkeypatch, verified_gated(3))
+    assert "3 of 10 verified gated records" in short and "It is due" not in short
+    due = render(monkeypatch, verified_gated(10))
+    assert "10 of 10 verified gated records" in due and "It is due" in due
+
+
+def test_tags_and_threshold_agree_across_the_scorecard_the_config_and_the_doc_script():
+    import ast
+    import re
+
+    config = (REPO / "agents" / "agents.yaml").read_text()
+    listed = re.search(r"^  opus_final_required_tags: \[(.*)\]", config, re.M)
+    assert listed, "opus_final_required_tags not found in agents.yaml"
+    assert tuple(t.strip() for t in listed.group(1).split(",")) == F.GATED_TAGS
+
+    script = judgement_script()
+    assert ast.literal_eval(re.search(r"GATED = (\{.*?\})", script).group(1)) == set(F.GATED_TAGS)
+    assert int(re.search(r"FLOOR = (\d+)", script).group(1)) == F.JUDGEMENT_FLOOR
+
+
+def test_the_committed_scorecard_carries_the_progress_line():
+    text = (REPO / "agents" / "SCORECARD.md").read_text()
+    assert "Judgement day (Sonnet on gated work): 0 of 10 verified gated records" in text

@@ -19,6 +19,8 @@ before that the number would be noise, so it reads `—`.
 | `codex` | 67 | 0/67 | 97% | 1.04 | 0.00 | **97.8** |
 | `sonnet` | 29 | 0/29 | 59% | 1.72 | 0.00 | **68.4** |
 
+**Judgement day (Sonnet on gated work): 0 of 10 verified gated records.** At 10, run the script in `docs/ops/sonnet-round-churn.md` and decide.
+
 ## As reviewer
 
 | Agent | Reviews | Ran tests | Findings/review | Blocker precision | Escapes missed | Score |

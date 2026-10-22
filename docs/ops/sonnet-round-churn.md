@@ -174,8 +174,10 @@ print(f"  rounds distribution: {sorted(s['rounds'] for s in son)}")
 **Keep an eye on this.** Judge when Sonnet has **10 verified gated records**: records with
 `rounds_basis: "round_files"` (written since E23-S13) whose tags include money, auth, security,
 migration or concurrency. Until then there is nothing trustworthy to judge. `SCORECARD.md` shows
-*Rounds verified* per agent; this script counts the gated ones and does the comparison. Run it from the
-repository root; stdlib only.
+the progress itself: a line reading "Judgement day (Sonnet on gated work): n of 10 verified gated
+records" (it says "It is due" at 10), next to *Rounds verified* per agent. When it is due, run this
+script, which does the comparison. Run it from the repository root; stdlib only. The tags and the
+threshold here must equal `GATED_TAGS` and `JUDGEMENT_FLOOR` in `agents/scripts/flo`; a test checks it.
 
 ```python
 import json

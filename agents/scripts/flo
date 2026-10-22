@@ -57,6 +57,11 @@ BOARD = ROOT / "board.html"  # overridden to the primary checkout by _board_once
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 TERMINAL = {"done"}
 ACTIVE = {"design", "in_progress", "review", "blocked"}
+# Judgement day for Sonnet on gated work (docs/ops/sonnet-round-churn.md): the tags that make a story
+# gated mirror policy.opus_final_required_tags in agents.yaml (a test keeps them equal), and the
+# scorecard shows progress toward JUDGEMENT_FLOOR verified gated Sonnet records.
+GATED_TAGS = ("money", "auth", "security", "migration", "concurrency")
+JUDGEMENT_FLOOR = 10
 
 
 def die(msg, code=1):
@@ -1498,6 +1503,13 @@ def compute_scores():
     return out, floor
 
 
+def judgement_progress(records):
+    """Verified gated Sonnet records: author sonnet, rounds from round files, any gated tag."""
+    return sum(1 for s in records
+               if s["author"] == "sonnet" and s.get("rounds_basis") == "round_files"
+               and set(s["tags"]) & set(GATED_TAGS))
+
+
 def render_scores():
     scores, floor = compute_scores()
     sc = load_scores()
@@ -1527,6 +1539,10 @@ def render_scores():
         L.append(f"| `{a}` | {m['authored']} | {m['verified']}/{m['authored']} | {m['clean_merge_rate']:.0%} | {m['mean_rounds']:.2f} "
                  f"| {m['escapes_per_story']:.2f} | {f'**{s}**' if s is not None else '—'} |")
 
+    have = judgement_progress(sc["stories"])
+    L += ["", f"**Judgement day (Sonnet on gated work): {have} of {JUDGEMENT_FLOOR} verified gated records.**"
+          + (" It is due: run the script in `docs/ops/sonnet-round-churn.md` and decide." if have >= JUDGEMENT_FLOOR
+             else " At " + str(JUDGEMENT_FLOOR) + ", run the script in `docs/ops/sonnet-round-churn.md` and decide.")]
     L += ["", "## As reviewer", "",
           "| Agent | Reviews | Ran tests | Findings/review | Blocker precision | Escapes missed | Score |",
           "|---|---:|---:|---:|---:|---:|---:|"]
