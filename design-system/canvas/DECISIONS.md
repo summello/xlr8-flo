@@ -449,6 +449,8 @@ The three parking stories (E11-S08 vendors, E12-S19 sourcing, E13-S22 purchase o
 
 237. **A requester completes their own draft vendor request** (operator, 22 Oct 2026; E11-S14's block). A caller holding `vendor.request` may write contacts, identifiers, documents and tax/bank details on a vendor they created (`vendor.created_by` = caller) while it is `draft`, through the existing routes. Sensitive values are write-only for them: saved, always returned masked, never revealed (reveal stays `vendor.sensitive.reveal`, decision 124). Once submitted it locks for them; `vendor.edit` holders keep their current rights. Someone else's draft or a foreign tenant's is 404. Story **E11-S14**.
 
+238. **The vendor detail lists the actions the caller may take** (planner, 22 Oct 2026; E11-S16's block; same pattern as 236, no new rule). `GET /vendors/{id}` returns `actions: list[str]`, each computed in the service by the same check its route makes: `edit` and `request_change` (`vendor.edit`), `inactivate` and `verify_documents` (`vendor.approve`); and `local_disable_units: list[uuid]`, the units where the caller holds `vendor.edit` (the disable and enable routes' check), empty when the vendor does not allow local disable. The UI shows a control only when its action is listed; the server still refuses a forced call. Story **E11-S16**.
+
 ## 7. Findings to feed back into MASTER.md (amended 9 Oct 2026, see 97)
 
 - **The MASTER amendment is deferred until after Budget Transfer (item 84), which is now built: the next session can draft it for the operator.** It would fold in the items below plus the ancestry state rows (6f item 86).
