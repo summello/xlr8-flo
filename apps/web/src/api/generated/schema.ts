@@ -2257,6 +2257,23 @@ export interface paths {
         patch: operations["patch_rfq_api_v1_sourcing_rfqs__id__patch"];
         trace?: never;
     };
+    "/api/v1/sourcing/rfqs/{id}/amend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Amend Rfq */
+        post: operations["amend_rfq_api_v1_sourcing_rfqs__id__amend_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sourcing/rfqs/{id}/attachments/{aid}/visibility": {
         parameters: {
             query?: never;
@@ -2268,6 +2285,23 @@ export interface paths {
         /** Put Visibility */
         put: operations["put_visibility_api_v1_sourcing_rfqs__id__attachments__aid__visibility_put"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sourcing/rfqs/{id}/extend-deadline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Extend Rfq Deadline */
+        post: operations["extend_rfq_deadline_api_v1_sourcing_rfqs__id__extend_deadline_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2309,6 +2343,23 @@ export interface paths {
         patch: operations["patch_invitee_api_v1_sourcing_rfqs__id__invitees__vendor_id__patch"];
         trace?: never;
     };
+    "/api/v1/sourcing/rfqs/{id}/invitees/{vendor_id}/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resend Rfq */
+        post: operations["resend_rfq_api_v1_sourcing_rfqs__id__invitees__vendor_id__resend_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sourcing/rfqs/{id}/lines": {
         parameters: {
             query?: never;
@@ -2324,6 +2375,23 @@ export interface paths {
         head?: never;
         /** Patch Rfq Lines */
         patch: operations["patch_rfq_lines_api_v1_sourcing_rfqs__id__lines_patch"];
+        trace?: never;
+    };
+    "/api/v1/sourcing/rfqs/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish Rfq */
+        post: operations["publish_rfq_api_v1_sourcing_rfqs__id__publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/sourcing/rfqs/{id}/requirements": {
@@ -2371,6 +2439,40 @@ export interface paths {
         put?: never;
         /** Waive Requirement */
         post: operations["waive_requirement_api_v1_sourcing_rfqs__id__requirements__rid__waive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sourcing/rfqs/{id}/start-evaluation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Rfq Evaluation */
+        post: operations["start_rfq_evaluation_api_v1_sourcing_rfqs__id__start_evaluation_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sourcing/rfqs/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Rfq Versions */
+        get: operations["list_rfq_versions_api_v1_sourcing_rfqs__id__versions_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3940,6 +4042,21 @@ export interface components {
              */
             state: "scheduled" | "active" | "ended" | "revoked";
         };
+        /** DeliveryRead */
+        DeliveryRead: {
+            /**
+             * Contact Id
+             * Format: uuid
+             */
+            contact_id: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "queued" | "sent" | "failed";
+            /** Version */
+            version: number;
+        };
         /**
          * DeniedExampleResponse
          * @description A missing permission paired with an actionable explanation.
@@ -4301,6 +4418,18 @@ export interface components {
             name: string;
             /** Version */
             version: number;
+        };
+        /** ExtendDeadline */
+        ExtendDeadline: {
+            /**
+             * Deadline At
+             * Format: date-time
+             */
+            deadline_at: string;
+            /** Deadline Tz */
+            deadline_tz?: string | null;
+            /** Reason */
+            reason?: string | null;
         };
         /** FiscalPeriod */
         FiscalPeriod: {
@@ -4816,6 +4945,11 @@ export interface components {
         InviteeRead: {
             /** Contact Ids */
             contact_ids: string[];
+            /**
+             * Deliveries
+             * @default []
+             */
+            deliveries?: components["schemas"]["DeliveryRead"][];
             /** Eligible */
             eligible: boolean | null;
             /**
@@ -4825,6 +4959,13 @@ export interface components {
             invited_at: string;
             /** Invited By Email */
             invited_by_email: string;
+            /** Latest Sent Version */
+            latest_sent_version?: number | null;
+            /**
+             * Not Told Of
+             * @default []
+             */
+            not_told_of?: number[];
             /** Override Reason */
             override_reason: string | null;
             /** Reasons */
@@ -6427,6 +6568,32 @@ export interface components {
              */
             status: "draft" | "pending" | "applied" | "rejected" | "returned" | "withdrawn";
         };
+        /**
+         * RfqAmend
+         * @description The draft's edits, applied as a new version; `lines` may change quantities only.
+         */
+        RfqAmend: {
+            /** Deadline At */
+            deadline_at?: string | null;
+            /** Deadline Tz */
+            deadline_tz?: string | null;
+            /** Delivery Location */
+            delivery_location?: string | null;
+            /** Delivery Terms */
+            delivery_terms?: string | null;
+            /** Line Specifications */
+            line_specifications?: {
+                [key: string]: string | null;
+            } | null;
+            /** Lines */
+            lines?: components["schemas"]["RfqLineIn"][] | null;
+            /** Reason */
+            reason: string;
+            /** Specifications */
+            specifications?: string | null;
+            /** Terms */
+            terms?: string | null;
+        };
         /** RfqAttachmentRead */
         RfqAttachmentRead: {
             /** Display Name */
@@ -6580,6 +6747,8 @@ export interface components {
             number: string;
             /** Owner Email */
             owner_email: string;
+            /** Published At */
+            published_at?: string | null;
             /**
              * Requirements
              * @default []
@@ -6607,6 +6776,28 @@ export interface components {
         };
         /** @enum {string} */
         RfqStatus: "draft" | "published" | "closed" | "under_evaluation" | "awarded" | "cancelled";
+        /** RfqVersionRead */
+        RfqVersionRead: {
+            /** Diff */
+            diff: {
+                [key: string]: unknown;
+            };
+            /**
+             * Published At
+             * Format: date-time
+             */
+            published_at: string;
+            /** Published By Email */
+            published_by_email: string;
+            /** Reason */
+            reason: string | null;
+            /** Snapshot */
+            snapshot: {
+                [key: string]: unknown;
+            };
+            /** Version */
+            version: number;
+        };
         /** RiskCreate */
         RiskCreate: {
             /** Closed Reason */
@@ -14448,6 +14639,52 @@ export interface operations {
             };
         };
     };
+    amend_rfq_api_v1_sourcing_rfqs__id__amend_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RfqAmend"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RfqRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     put_visibility_api_v1_sourcing_rfqs__id__attachments__aid__visibility_put: {
         parameters: {
             query?: never;
@@ -14464,6 +14701,52 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["VisibilityPut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RfqRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    extend_rfq_deadline_api_v1_sourcing_rfqs__id__extend_deadline_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExtendDeadline"];
             };
         };
         responses: {
@@ -14634,6 +14917,49 @@ export interface operations {
             };
         };
     };
+    resend_rfq_api_v1_sourcing_rfqs__id__invitees__vendor_id__resend_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                vendor_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RfqRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     patch_rfq_lines_api_v1_sourcing_rfqs__id__lines_patch: {
         parameters: {
             query?: never;
@@ -14651,6 +14977,48 @@ export interface operations {
                 "application/json": components["schemas"]["RfqLinesPatch"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RfqRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    publish_rfq_api_v1_sourcing_rfqs__id__publish_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -14799,6 +15167,90 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RfqRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    start_rfq_evaluation_api_v1_sourcing_rfqs__id__start_evaluation_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RfqRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    list_rfq_versions_api_v1_sourcing_rfqs__id__versions_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RfqVersionRead"][];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

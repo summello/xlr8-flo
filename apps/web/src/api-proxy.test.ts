@@ -227,6 +227,21 @@ it.each([
   if (path) expect(requests[2]?.url).toContain(path);
 });
 
+it.each([[12, 0], [12, 1], [12, 29], [12, 45], [23, 59]])(
+  "runs the job tick, which closes RFQs past their deadline, at UTC %i:%i",
+  async (hour, minute) => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    let work: Promise<unknown> | undefined;
+    apiProxy.scheduled({ scheduledTime: Date.UTC(2026, 9, 2, hour, minute) }, environment, {
+      waitUntil(promise) { work = promise; },
+    });
+    await work;
+    const urls = fetchMock.mock.calls.map(call => (call[0] as Request).url);
+    expect(urls.some(url => url.endsWith("/internal/jobs/tick"))).toBe(true);
+  },
+);
+
 it("a failed FX call leaves the independent tick and quota running", async () => {
   const fetchMock = vi.fn().mockImplementation((request: Request) =>
     Promise.resolve(new Response(null, {

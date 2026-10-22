@@ -40,6 +40,7 @@ from flo.modules.imports.jobs import handlers as import_handlers
 from flo.modules.org.fx import MAX_BYTES, FeedFailure, Fetcher, ingest
 from flo.modules.org.schemas import FxIngestReport
 from flo.modules.requisitions.service import expire_org
+from flo.modules.sourcing import lifecycle as rfq_lifecycle
 from flo.modules.vendors import expiry as vendor_expiry
 
 _logger = logging.getLogger(__name__)
@@ -316,11 +317,16 @@ def _run_jobs_tick(settings: Settings) -> TickReport:
     database_url = settings.database_url.get_secret_value()
     connection = psycopg.connect(database_url)
     try:
+        with psycopg.connect(database_url) as due:
+            rfq_lifecycle.enqueue_due(due)  # each tick: RFQs past their deadline close this minute
         jobs = JobRunner(
             cast(RunnerConnection, connection),
             {
                 "budget-reconcile": job_handler(lambda: psycopg.connect(database_url)),
                 "approval.reminders": reminders_job_handler(lambda: psycopg.connect(database_url)),
+                rfq_lifecycle.JOB_KIND: rfq_lifecycle.job_handler(
+                    lambda: psycopg.connect(database_url)
+                ),
                 vendor_expiry.JOB_KIND: vendor_expiry.job_handler(
                     lambda: psycopg.connect(database_url)
                 ),

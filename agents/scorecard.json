@@ -4551,6 +4551,59 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E12-S03",
+      "kind": "engine",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 3,
+          "blockers": 3,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "71c01ad7-24d0-4b3f-a1f2-0a78b6c0494e",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S03",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1658a-7926-7852-81ff-e2a7fccf1766",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "RFQs can now be published (no approval), amended or deadline-extended as immutable numbered versions with a was/now diff, and each version is queued through the outbox to every invitee contact, with resend for bounced contacts. A close job (queued each job tick per org with a due RFQ) closes RFQs past deadline, and publishing marks fully sourced requisitions sourced.",
+      "title": "RFQ lifecycle and post-publication versioning communicated to invitees",
+      "durations": {
+        "review_s": {
+          "codex": 17
+        },
+        "gate_s": 927
+      }
     }
   ]
 }

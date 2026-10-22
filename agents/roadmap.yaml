@@ -1685,7 +1685,7 @@ epics:
           - SRC-005
         dep:
           - E12-S02
-        st: review
+        st: done
       - id: E12-S04
         t: 'Bid capture: line prices, currency, tax, freight, lead time, validity,
           exceptions'
