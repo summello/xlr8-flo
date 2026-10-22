@@ -630,7 +630,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E22-S03** One audit helper instead of twelve, behaviour-preserving | E22 | chore | M | AUD-001 | — |
 | ✅ | **E22-S04** M2 milestone review follow-ups: Money zero prop, shared lookup helper, internal collaboration readers, approvals read via service, e2e focus helper | E22 | chore | M | A11Y-001, UX-007 | — |
 | ✅ | **E22-S05** Replace MinIO with SeaweedFS in the local stack; bucket via the S3 API | E22 | chore | S | OPS-007 | — |
-| ⬜ | **E22-S06** Baseline roles read the projects and master data they work against | E22 | security | S | USR-003, USR-005, USR-006, USR-008, ACC-004 | — |
+| 🔨 | **E22-S06** Baseline roles read the projects and master data they work against | E22 | security | S | USR-003, USR-005, USR-006, USR-008, ACC-004 | — |
 | ⬜ | **E22-S07** People have a display name, stored, copied at acceptance, returned beside every email | E22 | migration | M | USR-009, USR-010, SEC-011 | — |
 | ✅ | **E22-S08** Expired requisitions use the warning tone | E22 | ui | S | A11Y-004 | — |
 | ⬜ | **E22-S09** Show people by name, with the email as secondary text | E22 | ui | M | A11Y-004, UX-007 | E22-S07 |

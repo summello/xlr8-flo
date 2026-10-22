@@ -2301,7 +2301,7 @@ epics:
           - USR-008
           - ACC-004
         dep: []
-        st: todo
+        st: in_progress
       - id: E22-S07
         t: People have a display name, stored, copied at acceptance, returned beside every email
         k: migration
