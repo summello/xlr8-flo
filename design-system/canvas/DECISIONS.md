@@ -451,6 +451,10 @@ The three parking stories (E11-S08 vendors, E12-S19 sourcing, E13-S22 purchase o
 
 238. **The vendor detail lists the actions the caller may take** (planner, 22 Oct 2026; E11-S16's block; same pattern as 236, no new rule). `GET /vendors/{id}` returns `actions: list[str]`, each computed in the service by the same check its route makes: `edit` and `request_change` (`vendor.edit`), `inactivate` and `verify_documents` (`vendor.approve`); and `local_disable_units: list[uuid]`, the units where the caller holds `vendor.edit` (the disable and enable routes' check), empty when the vendor does not allow local disable. The UI shows a control only when its action is listed; the server still refuses a forced call. Story **E11-S16**.
 
+239. **A requester reads their own draft vendor request** (operator, 23 Oct 2026; E11-S14 review round 1). `GET /vendors/{id}`, `GET /vendors/{id}/contacts` and `GET /vendors/{id}/documents` admit a caller without `vendor.view` when they hold `vendor.request`, `vendor.created_by` is the caller and the vendor is `draft` (the read side of decision 237). Sensitive values stay masked. After submit, and for anyone else's draft or a foreign tenant's vendor, the answer is 404. `vendor.view` holders are unchanged. Story **E11-S14**.
+
+240. **The duplicate check says whether the caller may override** (operator, 23 Oct 2026; same pattern as 236 and 238, no new rule). `GET /vendors/duplicate-check` returns `can_override: bool`, the server's own `vendor.approve` check that the override path makes. The UI shows Override with a Reason only when it is true and never probes another route to find out; the server still refuses a forced override. Story **E11-S14**.
+
 ## 7. Findings to feed back into MASTER.md (amended 9 Oct 2026, see 97)
 
 - **The MASTER amendment is deferred until after Budget Transfer (item 84), which is now built: the next session can draft it for the operator.** It would fold in the items below plus the ancestry state rows (6f item 86).
