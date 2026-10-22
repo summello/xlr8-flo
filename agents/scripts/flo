@@ -1115,7 +1115,7 @@ def record_score(sid, pkt, story):
             try:
                 earlier.append(json.loads(f.read_text()))
             except json.JSONDecodeError:
-                pass
+                pass  # a half-written archive is skipped, not fatal
         every = findings + [x for e in earlier for x in e.get("findings", [])]
         per_reviewer[r["reviewer"]] = {
             "ran_tests": bool(r.get("ran_tests")),
@@ -1698,11 +1698,8 @@ def _board_once(fetch=True, use_gh=True):
     rm, fleet = _view_roadmap(doc), load_yaml(FLEET)
     sc = {s["story"]: s for s in load_scores()["stories"]}
     all_s = [s for _, s in stories(rm)]
-    done = [s for s in all_s if s["st"] == "done"]
-    active = [s for s in all_s if s["st"] in ACTIVE]
     ready = [(e, s) for e, s in stories(rm) if s["st"] == "todo" and deps_satisfied(rm, s)]
     pending, confirmed = split_acked(pending_on_human(rm, fleet, doc))
-    pct = len(done) / len(all_s) * 100 if all_s else 0
     cnt = doc["counts"]
 
     # Named first: adjacent string literals inside a list literal read as a missing comma.

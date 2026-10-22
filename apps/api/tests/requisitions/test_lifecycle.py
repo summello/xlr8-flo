@@ -616,7 +616,7 @@ def test_available_matches_post_every_status_and_actor(lifecycle_db):
                         )
                         succeeded = True
                     except ProblemError:
-                        pass
+                        pass  # refusal leaves succeeded False, compared with option.allowed below
                 assert succeeded == option.allowed, (status, actor, permissions, option)
 
 
