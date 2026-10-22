@@ -8,13 +8,11 @@ from uuid import UUID, uuid4
 import psycopg
 from psycopg.types.json import Jsonb
 
-from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
-from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.db.repo import ScopedRepo
 from flo.kernel.errors import ErrorCode, ProblemError, conflict
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
-from flo.modules.approvals.service import require_workflow, start, withdraw
+from flo.modules.approvals.service import require_workflow, start
 from flo.modules.budget import funding_policy
 from flo.modules.budget.schemas import (
     AdjustmentCreate,
@@ -75,52 +73,14 @@ def get_request(
         return BudgetChangeRequestRead.model_validate(dict(zip(FIELDS, row, strict=True)))
 
 
-def delete_request(
-    conn: psycopg.Connection[tuple[object, ...]], scope: Scope, id: UUID, actor_id: UUID
-) -> None:
-    """E22-S02: a request still awaiting its decision is the draft; only its requester deletes it.
+def delete_request(conn: psycopg.Connection[tuple[object, ...]], scope: Scope, id: UUID) -> None:
+    """E22-S02: a budget change request has no draft status, so it is never deletable.
 
-    The approval is withdrawn first (nothing posts), then the row is hidden and its key kept.
+    The route exists so the answer is a clear 409; it changes and audits nothing. Soft delete
+    needs a draft status first (operator decision).
     """
-    with tenant_transaction(cast(RlsSession, conn), scope):
-        repo = ChangeRepository(conn, scope)
-        row = repo.execute(
-            "SELECT status,requested_by FROM budget_change_request "
-            "WHERE org_id=%(org_id)s AND id=%(id)s AND status<>'deleted' FOR UPDATE",
-            {"id": id},
-        ).fetchone()
-        if row is None:
-            raise ProblemError(ErrorCode.NOT_FOUND)
-        if row[1] != actor_id:
-            raise ProblemError(
-                ErrorCode.FORBIDDEN, detail="Only the requester may delete this request."
-            )
-        if row[0] != "pending":
-            raise conflict("not_draft", "Only a request awaiting a decision can be deleted.")
-        withdraw(
-            conn,
-            scope,
-            document_type="budget_change",
-            document_id=id,
-            actor_id=actor_id,
-            reason="deleted",
-        )
-        repo.execute(
-            "UPDATE budget_change_request SET status='deleted' "
-            "WHERE org_id=%(org_id)s AND id=%(id)s",
-            {"id": id},
-        )
-        audit_event(
-            cast(AuditConnection, conn),
-            scope,
-            actor=AuditActor(ActorKind.USER, actor_id),
-            action="budget_change_request.delete",
-            target_type="budget_change_request",
-            target_id=id,
-            outcome=Outcome.SUCCESS,
-            before={"status": "pending"},
-            after={"status": "deleted"},
-        )
+    get_request(conn, scope, id)  # 404 for an unknown or foreign request
+    raise conflict("not_draft", "A budget change request cannot be deleted. Withdraw it instead.")
 
 
 PLANNED = "planned_parent_id"

@@ -626,8 +626,8 @@ def test_idempotency_key_reuse_across_kinds_is_refused(wiring):
     assert replay.id == first.id
 
 
-def test_requester_deletes_a_pending_request_and_nothing_posts(wiring):
-    """E22-S02 (DATA-002): the pending request is the draft; delete withdraws it and hides it."""
+def test_budget_change_request_is_never_deletable(wiring):
+    """E22-S02 (DATA-002): no draft status exists; DELETE is 409 not_draft and changes nothing."""
     db, project, _ = wiring
     publish(wiring, "budget_change")
     request = read(wiring, request_budget(wiring))
@@ -636,36 +636,28 @@ def test_requester_deletes_a_pending_request_and_nothing_posts(wiring):
 
     async def run():
         async with client(app) as browser:
-            await authenticate(wiring, browser, email="approver@example.test")
-            path = f"/api/v1/budget/change-requests/{request.id}"
-            other = await browser.delete(path, headers=headers(browser, uuid4().hex))
-            assert other.status_code == 403
-        async with client(app) as browser:
             await authenticate(wiring, browser)
             sent = headers(browser, "k-bcr-delete")
             unkeyed = {k: v for k, v in sent.items() if k != "Idempotency-Key"}
+            path = f"/api/v1/budget/change-requests/{request.id}"
             assert (await browser.delete(path, headers=unkeyed)).status_code == 400
-            assert (await browser.delete(path, headers=sent)).status_code == 204
-            assert (await browser.delete(path, headers=sent)).status_code == 204
-            assert (await browser.get(path)).status_code == 404
-            seen = await browser.get(path + "?include_deleted=true")
-            assert seen.status_code == 200 and seen.json()["status"] == "deleted"
-            done = f"/api/v1/budget/change-requests/{decided.id}"
-            blocked = await browser.delete(done, headers=headers(browser, uuid4().hex))
-            assert blocked.status_code == 409 and blocked.json()["checks"]["problem"] == "not_draft"
-            foreign = await browser.delete(
+            for id in (request.id, decided.id):
+                refused = await browser.delete(
+                    f"/api/v1/budget/change-requests/{id}", headers=headers(browser, uuid4().hex)
+                )
+                assert refused.status_code == 409, refused.text
+                assert refused.json()["checks"]["problem"] == "not_draft"
+            unknown = await browser.delete(
                 f"/api/v1/budget/change-requests/{uuid4()}", headers=headers(browser, uuid4().hex)
             )
-            assert foreign.status_code == 404
+            assert unknown.status_code == 404
 
     asyncio.run(run())
     scope = Scope(db[1])
-    assert instances_for(db[0], scope, "budget_change", request.id)[-1].status == "withdrawn"
+    assert get_request(db[0], scope, request.id).status == "pending"
+    assert instances_for(db[0], scope, "budget_change", request.id)[-1].status == "running"
     assert get_request(db[0], scope, decided.id).status == "approved"
-    with pytest.raises(ProblemError):
-        get_request(db[0], scope, request.id)
     actions = db[0].execute(
         "SELECT action FROM audit_log WHERE target_id=%s", (request.id,)
     ).fetchall()
-    assert ("budget_change_request.delete",) in actions
-    assert db[0].execute("SELECT count(*) FROM ledger_entry").fetchone() == (1,)
+    assert ("budget_change_request.delete",) not in actions

@@ -306,5 +306,5 @@ def delete_change_request(
         AuthorizationContext, Depends(require("ledger.read", change_request_target))
     ],
 ) -> Response:
-    delete_request(connection, current_scope(), id, context.user_id)
+    delete_request(connection, current_scope(), id)
     return Response(status_code=204)

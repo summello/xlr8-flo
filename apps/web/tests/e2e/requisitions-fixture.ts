@@ -19,7 +19,7 @@ export function requisition(patch: Partial<Req> = {}): Req {
     id: reqId, number: "REQ-00418", title: "Press brake replacement", status: "draft", standalone: false, project_id: projectId, project_number: "PRJ-0001", project_name: "Plant renewal",
     bu_id: unitId, bu_name: "Infrastructure", requester_id: "bbbbbbbb-0000-4000-8000-000000000001", requester_email: "dev@example.test", justification: "End of life", needed_by: "2030-01-31",
     department_code: "D", ledger_account_code: "L", delivery_address_id: addressId, estimate: "0.0000", currency: "USD", version: 1,
-    submitted_at: null, decided_at: null, created_at: "2026-10-01T00:00:00Z", updated_at: "2026-10-02T00:00:00Z", reservation: null, approval: null, amendment: null, ...patch,
+    submitted_at: null, decided_at: null, created_at: "2026-10-01T00:00:00Z", updated_at: "2026-10-02T00:00:00Z", reservation: null, approval: null, amendment: null, can_edit: true, ...patch,
   };
 }
 export function lineRow(n: number, patch: Partial<Line> = {}): Line {

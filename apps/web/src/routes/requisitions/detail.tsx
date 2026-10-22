@@ -67,7 +67,7 @@ export default function RequisitionDetail({ id, navigate, onLoaded }: { id: stri
       <div className="req-actions">
         {row.can_substitute_codes && row.codes && <SubstituteCodes target="requisition" id={id} codes={row.codes} onDone={main.reload} />}
         {row.status === "draft" && !returned && <a className="req-link-button" href={`/requisitions/${id}/edit`} onClick={e => { e.preventDefault(); navigate(`/requisitions/${id}/edit`); }}><PencilSimple aria-hidden="true" weight="regular" />Edit draft</a>}
-        {row.status === "draft" && !held && can("withdrawn")?.allowed && <DeleteDraftDialog kind={row.standalone ? "Project Request" : "Requisition"} reference={row.number} onDone={() => navigate("/requisitions")}
+        {row.status === "draft" && !held && row.can_edit && <DeleteDraftDialog kind={row.standalone ? "Project Request" : "Requisition"} reference={row.number} onDone={() => navigate("/requisitions")}
           remove={async key => { const { response, error } = await apiClient.DELETE("/api/v1/requisitions/{id}", { params: { path: { id } }, headers: mutationHeaders(key) }); return { ok: response.ok, error: error as Problem | undefined }; }} />}
         {withdrawReady && (row.status !== "draft" || held) && can("withdrawn")?.allowed && <WithdrawDialog row={row} mode="withdraw" approvers={approvers} onDone={next => changed(next, "Requisition withdrawn.")} onStale={main.reload} />}
         {row.status === "sourcing_in_progress" && (!row.amendment || row.amendment.status === "draft") && <a className="req-link-button" href={`/requisitions/${id}/amend`} onClick={e => { e.preventDefault(); navigate(`/requisitions/${id}/amend`); }}><NotePencil aria-hidden="true" weight="regular" />{row.amendment ? "Continue amendment" : "Amend"}</a>}

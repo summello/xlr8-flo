@@ -5842,6 +5842,11 @@ export interface components {
             /** Bu Name */
             bu_name: string;
             /**
+             * Can Edit
+             * @default false
+             */
+            can_edit?: boolean;
+            /**
              * Can Substitute Codes
              * @default false
              */

@@ -145,6 +145,8 @@ class RequisitionRead(BaseModel):
     codes_expired: bool = False
     # Single-record read only: the caller holds master_code.substitute and the status allows it.
     can_substitute_codes: bool = False
+    # Single-record read only: the caller holds requisition.edit (what DELETE of a draft checks).
+    can_edit: bool = False
 
 
 class AmountTotal(BaseModel):

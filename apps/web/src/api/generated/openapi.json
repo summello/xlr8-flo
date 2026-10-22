@@ -9115,6 +9115,11 @@
             "title": "Bu Name",
             "type": "string"
           },
+          "can_edit": {
+            "default": false,
+            "title": "Can Edit",
+            "type": "boolean"
+          },
           "can_substitute_codes": {
             "default": false,
             "title": "Can Substitute Codes",

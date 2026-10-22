@@ -230,6 +230,8 @@ def test_include_deleted_needs_record_read(header_db):
             # Lists never show deleted rows, whatever the flag.
             listing = await call(browser, "GET", "/requisitions?include_deleted=true")
             assert {r["id"] for r in listing.json()["rows"]} == {str(live.id)}
+            editor = await call(browser, "GET", f"/requisitions/{live.id}")
+            assert editor.json()["can_edit"] is True
             regrant(db, ["requisition.view", "project.read"])
             for path in paths:
                 hidden = await call(browser, "GET", path + "?include_deleted=true")
@@ -237,7 +239,8 @@ def test_include_deleted_needs_record_read(header_db):
             assert (
                 await call(browser, "GET", f"/requisitions/{live.id}?include_deleted=true")
             ).status_code == 404
-            assert (await call(browser, "GET", f"/requisitions/{live.id}")).status_code == 200
+            plain = await call(browser, "GET", f"/requisitions/{live.id}")
+            assert plain.status_code == 200 and plain.json()["can_edit"] is False
 
     asyncio.run(scenario())
 

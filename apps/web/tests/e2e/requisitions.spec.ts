@@ -747,3 +747,10 @@ for (const theme of ["light", "dark"] as const) {
     await expect(page.getByRole("alertdialog")).toBeVisible(); await scan();
   });
 }
+
+test("detail: Delete draft follows the edit permission the server checks, not the withdraw rule", async ({ page }) => {
+  await stubRequisitions(page, { row: requisition({ estimate: "20.0000", can_edit: false }), lines: [lineRow(1)] });
+  await page.goto(`/requisitions/${reqId}`);
+  await expect(page.getByText("Nothing is reserved yet.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Delete draft" })).toHaveCount(0);
+});

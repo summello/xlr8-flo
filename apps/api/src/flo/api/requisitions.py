@@ -207,6 +207,7 @@ def get_requisition(
     request: Request,
     include_deleted: bool = False,
 ) -> RequisitionRead:
+    visible = deleted_visible(request, include_deleted)
     row = RequisitionService(connection, current_scope(), context.user_id).detail(
         id,
         lambda project_id: permits(
@@ -215,7 +216,10 @@ def get_requisition(
             cast(TargetProtocol, AuthorizationTarget(ScopeType.PROJECT, project_id)),
         ),
         lambda: permits(request, "requisition.edit", requisition_target(id, connection)),
-        deleted_visible(request, include_deleted),
+        visible,
+    )
+    row.can_edit = permits(
+        request, "requisition.edit", requisition_target(id, connection, include_deleted=visible)
     )
     row.can_substitute_codes = (
         row.codes_expired
