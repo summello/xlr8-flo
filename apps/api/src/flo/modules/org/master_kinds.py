@@ -26,6 +26,14 @@ def code_text(value: object) -> bool:
     return isinstance(value, str) and 1 <= len(value) <= 100
 
 
+def text_list(value: object) -> bool:
+    return (
+        isinstance(value, list)
+        and 1 <= len(value) <= 100
+        and all(isinstance(v, str) and 1 <= len(v) <= 500 for v in value)
+    )
+
+
 def choices(*values: str) -> Callable[[object], bool]:
     return lambda value: isinstance(value, str) and value in values
 
@@ -44,6 +52,7 @@ RULES: dict[str, dict[str, Callable[[object], bool]]] = {
     "vendor_document_type": {"required": is_bool, "category": code_text},
     "vendor_score_category": {},
     "vendor_identifier_type": {"unique": is_bool},
+    "rfq_requirement_template": {"requirements": text_list},
 }
 RESERVED_CONTACT_TYPES = ("billing", "service_delivery")  # built in to vendors
 # Seeded per org by vendors.performance on first use; they cannot be deactivated (VEN-007).

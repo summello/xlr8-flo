@@ -36,6 +36,7 @@ CODES_ROUTES = (
     "test_codes_routes_conceal_foreign_tenants_and_need_the_permission"
 )
 SOURCING_ROUTES = "sourcing/test_rfq.py::test_rfq_routes_conceal_foreign_tenants"
+CONTENT_ROUTES = "sourcing/test_rfq_content.py::test_rfq_content_routes_conceal_foreign_tenants"
 QROUTES = "vendors/test_questionnaire.py::test_questionnaire_routes_conceal_foreign_tenants"
 OROUTES = (
     "vendors/test_questionnaire.py::"
@@ -75,6 +76,14 @@ COVERED = {
     ("POST", "/api/v1/sourcing/rfqs"): SOURCING_ROUTES,
     ("PATCH", "/api/v1/sourcing/rfqs/{id}/lines"): SOURCING_ROUTES,
     ("GET", "/api/v1/sourcing/rfqs/{id}"): SOURCING_ROUTES,
+    ("PATCH", "/api/v1/sourcing/rfqs/{id}"): CONTENT_ROUTES,
+    ("PUT", "/api/v1/sourcing/rfqs/{id}/requirements"): CONTENT_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/requirements/from-template"): CONTENT_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/requirements/{rid}/waive"): CONTENT_ROUTES,
+    ("PUT", "/api/v1/sourcing/rfqs/{id}/attachments/{aid}/visibility"): CONTENT_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/invitees"): CONTENT_ROUTES,
+    ("DELETE", "/api/v1/sourcing/rfqs/{id}/invitees/{vendor_id}"): CONTENT_ROUTES,
+    ("PATCH", "/api/v1/sourcing/rfqs/{id}/invitees/{vendor_id}"): CONTENT_ROUTES,
     (
         "GET",
         "/api/v1/vendors/{id}/eligibility",

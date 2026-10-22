@@ -36,6 +36,8 @@ class DocumentAccess:
     read_permission: str
     write_permission: str
     target: Callable[[psycopg.Connection[tuple[object, ...]], Scope, UUID], AuthorizationTarget]
+    # Raises when the document no longer accepts attachment changes (an RFQ past draft).
+    write_guard: Callable[[psycopg.Connection[tuple[object, ...]], Scope, UUID], None] | None = None
 
 
 _ACCESS: dict[str, DocumentAccess] = {}
@@ -86,6 +88,8 @@ class CollaborationService:
             request, access.write_permission if write else access.read_permission, target
         ):
             raise ProblemError(ErrorCode.FORBIDDEN)
+        if write and access.write_guard is not None:
+            access.write_guard(self.connection, self.scope, document_id)
 
     def linked_document(self, kind: str, id: UUID) -> tuple[str, UUID]:
         assert kind in {"note", "attachment"}

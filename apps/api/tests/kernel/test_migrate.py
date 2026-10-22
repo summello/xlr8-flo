@@ -167,6 +167,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261021_0065",
         "20261022_0066",
         "20261022_0067",
+        "20261022_0068",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -2011,6 +2012,81 @@ def test_rfq_roundtrip_preserves_rows_and_down_returns_held_quantity(empty_datab
         mig.upgrade(conn)
         with tenant_transaction(conn, scope):
             assert conn.execute("SELECT count(*) FROM rfq").fetchone() == (0,)
+
+
+def test_rfq_content_roundtrip_preserves_rfqs_and_constrains_invitees(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.org.schemas import OrgUnitCreate
+    from flo.modules.org.service import OrgService
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261022_0067"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261022_0068")
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("rfq-content-migration"),
+    ):
+        tenant = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(tenant.org_id)
+        bu = OrgService(conn, scope, actor).create_unit(
+            OrgUnitCreate(code="BU", name="BU", kind="bu")
+        )
+        rfq, vendor = uuid4(), uuid4()
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO rfq(id,org_id,number,title,unit_id,currency,owner_id)"
+                " VALUES(%s,%s,'RFQ-00001','T',%s,'USD',%s)",
+                (rfq, tenant.org_id, bu.id, actor),
+            )
+            conn.execute(
+                "INSERT INTO vendor(id,org_id,number,trading_name,legal_name,availability,"
+                "created_by) VALUES(%s,%s,'V-1','V','V','global',%s)",
+                (vendor, tenant.org_id, actor),
+            )
+        mig.upgrade(conn)
+        with tenant_transaction(conn, scope):
+            deadline, zone = conn.execute(
+                "SELECT deadline_at, deadline_tz FROM rfq WHERE id=%s", (rfq,)
+            ).fetchone()
+            assert deadline is not None and zone == "UTC"  # existing RFQs are backfilled
+            conn.execute(
+                "INSERT INTO rfq_invitee(org_id,rfq_id,vendor_id,contact_ids,vendor_snapshot,"
+                "invited_by) VALUES(%s,%s,%s,%s,'{}',%s)",
+                (tenant.org_id, rfq, vendor, [uuid4()], actor),
+            )
+        with pytest.raises(psycopg.errors.NotNullViolation), tenant_transaction(conn, scope):
+            conn.execute("UPDATE rfq SET deadline_at = NULL WHERE id=%s", (rfq,))
+        with pytest.raises(psycopg.errors.UniqueViolation), tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO rfq_invitee(org_id,rfq_id,vendor_id,contact_ids,vendor_snapshot,"
+                "invited_by) VALUES(%s,%s,%s,%s,'{}',%s)",
+                (tenant.org_id, rfq, vendor, [uuid4()], actor),
+            )
+        with pytest.raises(psycopg.errors.CheckViolation), tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO rfq_requirement(id,org_id,rfq_id,position,text,waived)"
+                " VALUES(%s,%s,%s,1,'x',true)",
+                (uuid4(), tenant.org_id, rfq),
+            )
+        for table in ("rfq_requirement", "rfq_attachment_visibility", "rfq_invitee"):
+            assert conn.execute(
+                "SELECT relrowsecurity AND relforcerowsecurity FROM pg_class WHERE relname=%s",
+                (table,),
+            ).fetchone() == (True,)
+        mig.downgrade(conn)
+        for table in ("rfq_requirement", "rfq_attachment_visibility", "rfq_invitee"):
+            assert conn.execute("SELECT to_regclass(%s)", (table,)).fetchone() == (None,)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT number FROM rfq WHERE id=%s", (rfq,)).fetchone() == (
+                "RFQ-00001",
+            )
+        mig.upgrade(conn)
 
 
 def test_vendor_documents_roundtrip_preserves_vendors_and_attachments(empty_database):

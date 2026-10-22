@@ -5,8 +5,9 @@ from __future__ import annotations
 import re
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Literal
+from typing import Annotated, Literal
 from uuid import UUID
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -79,8 +80,38 @@ class RfqLinesPatch(BaseModel):
         return _distinct(value)
 
 
+class RequirementRead(BaseModel):
+    id: UUID
+    position: int
+    text: str
+    waived: bool
+    waived_by_email: str | None
+    waived_reason: str | None
+
+
+class RfqAttachmentRead(BaseModel):
+    id: UUID
+    display_name: str
+    media_type: str
+    size_bytes: int
+    scan_status: str
+    vendor_visible: bool
+
+
+class InviteeRead(BaseModel):
+    vendor_id: UUID
+    contact_ids: list[UUID]
+    vendor_snapshot: dict[str, object]
+    override_reason: str | None
+    invited_by_email: str
+    invited_at: datetime
+    eligible: bool | None  # live, for the RFQ's unit; None if the vendor can no longer be read
+    reasons: list[str]
+
+
 class RfqLineRead(BaseModel):
     id: UUID
+    specification: str | None = None
     line_no: int
     requisition_id: UUID
     requisition_number: str
@@ -108,6 +139,15 @@ class RfqRead(BaseModel):
     created_at: datetime
     updated_at: datetime
     lines: list[RfqLineRead]
+    specifications: str | None = None
+    delivery_location: str | None = None
+    delivery_terms: str | None = None
+    terms: str | None = None
+    deadline_at: datetime
+    deadline_tz: str = "UTC"
+    requirements: list[RequirementRead] = []
+    attachments: list[RfqAttachmentRead] = []
+    invitees: list[InviteeRead] = []
 
 
 class SourceableLine(BaseModel):
@@ -134,3 +174,72 @@ class SourceableLine(BaseModel):
 class SourceablePage(BaseModel):
     rows: list[SourceableLine]
     next_cursor: str | None
+
+
+class RfqContentPatch(BaseModel):
+    """Only the fields sent change; null clears a text field. The deadline is required, not null."""
+
+    model_config = ConfigDict(extra="forbid")
+    specifications: str | None = Field(default=None, max_length=20000)
+    delivery_location: str | None = Field(default=None, max_length=500)
+    delivery_terms: str | None = Field(default=None, max_length=500)
+    terms: str | None = Field(default=None, max_length=20000)
+    deadline_at: datetime | None = None
+    deadline_tz: str | None = None
+    line_specifications: dict[UUID, str | None] | None = Field(default=None, max_length=500)
+
+    @field_validator("deadline_at")
+    @classmethod
+    def aware(cls, value: datetime | None) -> datetime | None:
+        if value is not None and value.tzinfo is None:
+            raise ValueError("Give the deadline with a UTC offset.")
+        return value
+
+    @field_validator("deadline_tz")
+    @classmethod
+    def iana(cls, value: str | None) -> str | None:
+        if value is not None:
+            try:
+                ZoneInfo(value)
+            except (ValueError, OSError, ZoneInfoNotFoundError):
+                raise ValueError("Use an IANA time zone such as Europe/London.") from None
+        return value
+
+    @field_validator("line_specifications")
+    @classmethod
+    def short(cls, value: dict[UUID, str | None] | None) -> dict[UUID, str | None] | None:
+        if value and any(v is not None and len(v) > 5000 for v in value.values()):
+            raise ValueError("Enter at most 5,000 characters per line.")
+        return value
+
+
+class RequirementsPut(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    requirements: list[Annotated[str, Field(min_length=1, max_length=500)]] = Field(max_length=100)
+
+
+class RequirementsFromTemplate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    template_id: UUID
+
+
+class RequirementWaive(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reason: str = Field(min_length=1, max_length=500)
+
+
+class VisibilityPut(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    vendor_visible: bool
+
+
+class InviteeCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    vendor_id: UUID
+    contact_ids: list[UUID] | None = Field(default=None, min_length=1, max_length=20)
+    override_reason: str | None = Field(default=None, min_length=1, max_length=500)
+
+
+class InviteePatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    contact_ids: list[UUID] = Field(min_length=1, max_length=20)

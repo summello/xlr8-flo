@@ -1674,7 +1674,7 @@ epics:
           - E12-S01
           - E11-S02
           - E11-S11
-        st: review
+        st: done
       - id: E12-S03
         t: RFQ lifecycle and post-publication versioning communicated to invitees
         k: engine

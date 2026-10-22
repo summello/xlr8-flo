@@ -4399,6 +4399,47 @@
       },
       "recap": "Adds the /vendors list (tabs with server counts, search, documents and availability filters, server paging) and the /vendors/:id profile with Documents table and a focus-trapped document sheet to verify or reject. API gets a documents filter, a per-row document summary and GET /vendors/counts.",
       "title": "Vendor list and profile screens, documents table and document sheet"
+    },
+    {
+      "story": "E12-S02",
+      "kind": "crud",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 6,
+          "blockers": 4,
+          "blockers_dismissed": 2
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "3f883d02-e853-4560-975a-4495dab6b4af",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S02",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a163a6-0dc9-7530-9c16-628564892af4",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds RFQ content, compliance requirements (template seed, waive), per-attachment vendor visibility and invitations with the five-vendor cap under the RFQ row lock, one eligibility rule, and a frozen vendor snapshot. Override needs a reason and rfq.approve on the unit, and is audited.",
+      "title": "RFQ content, invitations, deadline, terms, attachments, vendor eligibility check"
     }
   ]
 }
