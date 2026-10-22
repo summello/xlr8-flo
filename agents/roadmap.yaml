@@ -1435,7 +1435,7 @@ epics:
           - APR-020
         dep:
           - E11-S09
-        st: review
+        st: done
       - id: E11-S02
         t: 'Typed contacts: billing, service/delivery, additional types'
         k: crud
@@ -1501,7 +1501,7 @@ epics:
           - E10-S13
           - E11-S02
           - E11-S04
-        st: todo
+        st: in_progress
       - id: E11-S07
         t: Performance scoring across quality, price, delivery, service, with dispute
           history
@@ -2243,7 +2243,7 @@ epics:
           - PROJ-003
         dep:
           - E09-S17
-        st: review
+        st: done
       - id: E22-S02
         t: Soft delete for every draft document
         k: crud
@@ -2288,7 +2288,7 @@ epics:
         st: done
       - id: E22-S06
         t: Baseline roles read the projects and master data they work against
-        k: auth
+        k: security
         s: S
         tags:
           - auth
@@ -2323,7 +2323,7 @@ epics:
         reqs:
           - A11Y-004
         dep: []
-        st: todo
+        st: done
       - id: E22-S09
         t: Show people by name, with the email as secondary text
         k: ui
@@ -2349,7 +2349,16 @@ epics:
           - APR-019
           - A11Y-006
         dep: []
-        st: todo
+        st: done
+      - id: E22-S11
+        t: 'Faster checks: template test databases, sharded backend and E2E CI'
+        k: chore
+        s: M
+        tags: []
+        reqs:
+          - SEC-012
+        dep: []
+        st: in_progress
 
   # ─────────────────── M4 — Full Phase-1 scope ───────────────────
 

@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 import { inboxRow, stubApprovals } from "./approvals-fixture";
@@ -240,12 +241,14 @@ test("availability: the summary lists problems, values are kept, a good save lis
   await expect(page.getByRole("status").first()).toContainText("Approvals pass to delegate@example.test");
   expect(String(state.posts.at(-1)?.body.starts_at)).toMatch(/^2030-0[12]-\d\dT/);
   await expect(page.getByRole("row", { name: /delegate@example.test/ })).toContainText("Upcoming");
+  await expect(page.getByRole("row", { name: /delegate@example.test/ }).locator('.appr-pill[data-tone="info"] svg')).toBeVisible();
   await page.getByRole("button", { name: /^Revoke/ }).click();
   await expect(page.getByRole("alertdialog")).toBeVisible();
   await expect(page.getByRole("button", { name: "Keep Delegation" })).toBeFocused();
   await expect(page.getByRole("alertdialog")).toContainText("Tasks still undecided come back to you");
   await page.getByRole("button", { name: "Revoke Delegation" }).click();
   await expect(page.getByRole("row", { name: /delegate@example.test/ })).toContainText("Revoked");
+  await expect(page.getByRole("row", { name: /delegate@example.test/ }).locator('.appr-pill[data-tone="danger"]')).toBeVisible();
   await expect(page.getByRole("row", { name: /delegate@example.test/ })).toContainText("Kept in the record");
 });
 
@@ -255,7 +258,7 @@ test("the organization tab appears for administrators", async ({ page }) => {
   await expect(page.getByRole("tab", { name: "Organization" })).toBeVisible();
 });
 
-test("eligibility is requested for the whole selection and decisions on my behalf render every state", async ({ page }) => {
+test("eligibility is requested for what is covered and decisions on my behalf render every state", async ({ page }) => {
   const state = await stubApprovals(page);
   state.behalfFails = true;
   await page.goto("/approvals/availability");
@@ -269,10 +272,8 @@ test("eligibility is requested for the whole selection and decisions on my behal
   const table = page.getByRole("table", { name: "Decisions made on your behalf" });
   await expect(table).toContainText("delegate@example.test");
   await expect(table).toContainText("Finance");
-  await page.getByLabel("Only some types").check();
-  await page.getByLabel("Requisitions").check();
-  await page.getByLabel("Purchase orders").check();
-  await expect.poll(() => state.eligibleQueries.at(-1)?.getAll("document_types").sort()).toEqual(["po", "requisition"]);
+  await page.getByLabel("Purchase orders only").check();
+  await expect.poll(() => state.eligibleQueries.at(-1)?.getAll("document_types")).toEqual(["po"]);
   await expect(page.getByText("No one else may approve everything you cover")).toBeVisible();
 });
 
@@ -292,4 +293,133 @@ test("a failed revoke keeps the dialog open and says nothing changed", async ({ 
   await page.getByRole("button", { name: "Revoke Delegation" }).click();
   await expect(page.getByRole("alertdialog")).toHaveCount(0);
   await expect(page.getByRole("row", { name: /delegate@example.test/ })).toContainText("Revoked");
+});
+
+test("Pass Approvals To lists only the eligible people the server returned", async ({ page }) => {
+  await stubApprovals(page);
+  await page.goto("/approvals/availability");
+  await expect(page.getByLabel(/^Pass Approvals To/).locator("option")).toHaveText(["Choose a colleague", "delegate@example.test"]);
+});
+
+test("keyboard only: fill the form, revoke from the row, Escape returns focus to the row's button", async ({ page }) => {
+  await stubApprovals(page);
+  await page.goto("/approvals/availability");
+  // Native date segments differ per browser; the dates are set directly and every control after them is reached by keyboard.
+  await page.getByLabel(/^Starts/).fill("2030-02-01");
+  await page.getByLabel(/^Ends/).fill("2030-02-05");
+  await page.getByLabel(/^Ends/).focus();
+  while (!(await page.getByLabel(/^Pass Approvals To/).evaluate((el) => el === document.activeElement))) await page.keyboard.press("Tab");
+  await expect(page.getByLabel(/^Pass Approvals To/)).toBeFocused();
+  await page.keyboard.type("delegate");
+  await expect(page.getByLabel(/^Pass Approvals To/)).toHaveValue(/.+/);
+  await page.getByRole("button", { name: "Save Out-of-Office" }).focus();
+  await page.keyboard.press("Enter");
+  const revoke = page.getByRole("button", { name: /^Revoke/ });
+  await revoke.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("button", { name: "Keep Delegation" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
+  await expect(revoke).toBeFocused();
+});
+
+test("a forced organization view that the server refuses shows the error state, not data", async ({ page }) => {
+  await stubApprovals(page);
+  await page.goto("/approvals/availability?view=organization");
+  await expect(page.getByRole("tab", { name: "Organization" })).toHaveCount(0);
+  await expect(page.getByText("Could not load organization delegations")).toBeVisible();
+  await expect(page.getByRole("table")).toHaveCount(0);
+});
+
+for (const theme of ["light", "dark"] as const) {
+  test(`availability page and the open revoke dialog have no axe violations in ${theme}`, async ({ page }) => {
+    await page.addInitScript((t) => localStorage.setItem("xlr8flo.theme", t), theme);
+    await stubApprovals(page);
+    await page.goto("/approvals/availability");
+    await expect(page.getByRole("heading", { name: "Approval Availability" })).toBeVisible();
+    expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
+    await page.getByLabel(/^Starts/).fill("2030-02-01");
+    await page.getByLabel(/^Ends/).fill("2030-02-05");
+    await page.getByLabel(/^Pass Approvals To/).selectOption({ label: "delegate@example.test" });
+    await page.getByRole("button", { name: "Save Out-of-Office" }).click();
+    await page.getByRole("button", { name: /^Revoke/ }).click();
+    await expect(page.getByRole("alertdialog")).toBeVisible();
+    expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
+  });
+}
+
+// E11-S10: the shared decision panel at phone width. Self-contained so it merges beside other helper edits.
+const footer = (page: Page) => page.locator(".appr-sheet-body .appr-actions");
+type Btn = { name: string; x: number; y: number; w: number; h: number; clipped: boolean };
+const footerButtons = async (page: Page) => footer(page).locator("button").evaluateAll((els) => els.map((el) => {
+  const r = el.getBoundingClientRect();
+  return { name: (el.textContent ?? "").trim(), x: r.x, y: r.y, w: r.width, h: r.height, clipped: el.scrollWidth > el.clientWidth };
+}));
+
+test("at 375 the footer is three rows in reading order, 44px targets, no scroll, close is not covered", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await stubApprovals(page);
+  await open(page);
+  await openPanel(page, /REQ-00401/);
+  const names = ["Close", "Post Comment", "Return for Changes", "Reject", "Approve"];
+  const [close, post, ret, reject, approve] = (await footerButtons(page)) as [Btn, Btn, Btn, Btn, Btn];
+  expect([close, post, ret, reject, approve].map((b) => b.name)).toEqual(names);
+  expect(close.y).toBe(post.y);
+  expect(close.x).toBeLessThan(post.x);
+  expect(ret.y).toBe(reject.y);
+  expect(ret.x).toBeLessThan(reject.x);
+  expect(ret.y).toBeGreaterThan(close.y);
+  expect(approve.y).toBeGreaterThan(ret.y);
+  for (const b of [close, post, ret, reject, approve]) { expect(b.h).toBeGreaterThanOrEqual(44); expect(b.clipped).toBe(false); }
+  // The footer contains its buttons (a fixed height would let them overflow it).
+  expect(await footer(page).evaluate((el) => el.scrollHeight <= el.clientHeight)).toBe(true);
+  expect(approve.w).toBeGreaterThanOrEqual(Math.max(close.w, post.w, ret.w, reject.w));
+  expect(await page.locator(".appr-sheet").evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+  // The header close button is the element at its own centre.
+  const hit = await page.locator(".appr-close").evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest(".appr-close") === el;
+  });
+  expect(hit).toBe(true);
+  // Tab order equals the visual order.
+  await page.getByLabel("Comment or Reason").focus();
+  const seen: string[] = [];
+  for (let i = 0; i < 12 && seen.length < 5; i += 1) {
+    await page.keyboard.press("Tab");
+    const label = await page.evaluate(() => document.activeElement?.closest(".appr-actions") ? (document.activeElement.textContent ?? "").trim() : "");
+    if (label) seen.push(label);
+  }
+  expect(seen).toEqual(names);
+});
+
+test("at 768 the close button is not covered by the shell", async ({ page }) => {
+  await page.setViewportSize({ width: 768, height: 900 });
+  await stubApprovals(page);
+  await open(page);
+  await openPanel(page, /REQ-00401/);
+  const hit = await page.locator(".appr-close").evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest(".appr-close") === el;
+  });
+  expect(hit).toBe(true);
+});
+
+test("at 375 a task the caller cannot decide shows Close and Post Comment's place only, without a gap", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await stubApprovals(page);
+  await open(page, "completed");
+  await openPanel(page, /REQ-00404/);
+  const buttons = await footerButtons(page);
+  expect(buttons.map((b) => b.name)).toEqual(["Close"]);
+  expect(buttons[0]!.x).toBeLessThan(40);
+});
+
+test("at 1440 the footer is one right-aligned flex row", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await stubApprovals(page);
+  await open(page);
+  await openPanel(page, /REQ-00401/);
+  await expect(footer(page)).toHaveCSS("display", "flex");
+  const ys = (await footerButtons(page)).map((b) => Math.round(b.y));
+  expect(new Set(ys).size).toBe(1);
 });

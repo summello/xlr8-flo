@@ -8,9 +8,9 @@ Loaded into every agent session. Updated by `flo done` (status) and by Opus at e
 | | |
 |---|---|
 | Milestone | **M3 — First sellable release** |
-| Stories | 104 / 220 done |
+| Stories | 108 / 221 done |
 | Branch | milestone/M3-sellable |
-| In flight | E11-S10, E22-S01, E22-S02, E22-S04 |
+| In flight | E11-S06, E22-S02, E22-S04, E22-S11 |
 | Blocked | — |
 <!-- STATE:END -->
 
@@ -172,6 +172,19 @@ takes the reviews Codex cannot. One planner; the other account's Opus is reviewe
 Epic checkpoints replace train reviews; one PR per milestone stays. Revisit after the pilot with:
 finish wall time, red-after-merge rate, Codex findings and blocker precision against Opus on the
 first ten gated stories (Codex ≥ Opus → Opus moves to epic level only).
+
+**21 Oct 2026 — `max_stories_in_flight` 4 → 6.** Four lanes sat in review or CI for hours while
+both Claude accounts had 75–80% of their five-hour window left and the ready queue held five stories.
+Review and CI are the bottleneck, not authoring, so more lanes overlap them. New lanes take stories
+with no migration first (migration lanes renumber at merge, three times on 21 Oct). Revisit if a
+milestone merge conflict or a gate collision traces to lane count.
+
+**22 Oct 2026 — Codex story reviews: 55 calls for every story, tests within the first 10.**
+Three ungated Codex reviews (E11-S10, E22-S04 twice, E22-S10) hit the 35-call cap after a milestone
+merge while still reading, and left `approve, ran_tests: false`, which the gate rejects; each cost a
+second review and a manual finish. Ungated budget 25 -> 40 commands, hard cap 35 -> 55 (gated was
+already 55), and the packet says to run `flo check --light` and set `ran_tests` within 10 commands.
+Revisit if Codex's 5-hour window starts capping.
 
 **Merge authority:** the operator has delegated GitHub merges for M0 to Opus, with the
 instruction to space them out so the repository does not read as bot-driven. Outside M0 the

@@ -717,7 +717,7 @@ def cmd_review(argv):
               "every gate, contract or guard the diff adds, and at most 1 exploratory plant")
     print(f"""\
 Budget: this is {'a re-review: confirm each previous finding is fixed and review only the changes above' if since else 'a gated (money/auth/security/migration/concurrency) review' if deep else 'an ungated review'}.
-Aim for about {(20 if since else 45 if deep else 25) + (5 if ui else 0)} commands in total. When the steps below are done,
+Aim for about {(20 if since else 45 if deep else 40) + (5 if ui else 0)} commands in total. When the steps below are done,
 write the verdict and stop; do not widen the review.
 
 1. cd {wt}
@@ -726,7 +726,10 @@ write the verdict and stop; do not widen the review.
    Read the diff above once, then write reviews/{sid}.<your-agent-id>.json at once as a
    draft (verdict, ran_tests false, the defects you suspect) and keep it current as you go:
    the run is stopped at a time cap, and the draft is what survives.
-2. Tests, once each. The full suite runs on GitHub for {pkt['branch']}; do not run it here.
+2. Tests, once each, **within your first 10 commands**, and set `ran_tests` true in the draft as
+   soon as `flo check --light` has run: a verdict without it does not count, and three Codex runs
+   on 21-22 Oct spent their whole call cap reading before testing. The full suite runs on GitHub
+   for {pkt['branch']}; do not run it here.
      apps/api/.venv/bin/python agents/scripts/flo check --light   # lint, types, the story's tests
    Then only the test files a suspicion needs, on the worktree's own database:
      export TEST_DATABASE_URL="$(apps/api/.venv/bin/python agents/scripts/flo db reset)"
@@ -844,7 +847,8 @@ def cmd_gate(argv):
         fails.append(f"unassigned reviewer(s) {sorted(unexpected)} — record a substitution in task.json")
     if pkt["author"] in {r["reviewer"] for r in counted}:
         fails.append("the author reviewed their own story")
-    blockers = [f for r in revs for f in r.get("findings", []) if f.get("severity") == "blocker"]
+    import flo_facts as F
+    blockers = F.open_blockers(revs)
     if blockers:
         fails.append(f"{len(blockers)} open blocker finding(s)")
     unreadable = [r for r in counted if verdict_of(r) is None]

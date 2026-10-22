@@ -137,6 +137,16 @@ for (const theme of ["light", "dark"] as const) {
     });
   }
 
+  test(`approval decision panel at 375 passes axe in ${theme}`, async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.addInitScript(t => localStorage.setItem("xlr8flo.theme", t), theme);
+    await stubApprovals(page);
+    await page.goto("/approvals?tab=pending");
+    await page.locator(".appr-doc").first().click();
+    await expect(page.getByText("Why It Reached You")).toBeVisible();
+    expect(summarize((await new AxeBuilder({ page }).analyze()).violations)).toEqual([]);
+  });
+
   test(`approval availability with errors and the revoke dialog passes axe in ${theme}`, async ({ page }) => {
     await page.addInitScript(t => localStorage.setItem("xlr8flo.theme", t), theme);
     await stubApprovals(page, { delegateAdmin: true });

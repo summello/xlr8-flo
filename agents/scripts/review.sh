@@ -69,8 +69,9 @@ if [ "$A" = codex ]; then
   # the reviewer keeps a draft verdict current, so a stopped run still leaves one.
   CAP=$(python3 -c 'import json,sys; print(900 if json.load(open(sys.argv[1]))["opus_final"] else 600)' "$W/task.json")
   [ -n "$ARGS" ] && CAP=480
-  # calls: the packet's budget plus 10 (re-review 20, gated 45, ungated 25)
-  CALLS=$(python3 -c 'import json,sys; print(55 if json.load(open(sys.argv[1]))["opus_final"] else 35)' "$W/task.json")
+  # calls: the packet's budget plus 10-15 (re-review 20, gated 45, ungated 40; 22 Oct: 35 stopped
+  # three ungated Codex reviews before they reached the tests)
+  CALLS=55
   [ -n "$ARGS" ] && CALLS=30
   # At most FLO_CODEX_PARALLEL (default 2, operator 15 Oct) Codex reviews at once, and only on
   # independent stories — the planner's call. Unbounded parallel shared the five-hour window and

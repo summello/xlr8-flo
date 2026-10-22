@@ -3876,6 +3876,185 @@
       },
       "recap": "Vendor tax and banking values live in vendor_sensitive behind vendors/repo.py: list and detail show last-four masks computed in SQL, POST /vendors/{id}/sensitive/reveal is audited (field names only) and no-store, PUT /vendors/{id}/sensitive needs vendor.edit plus the new vendor.sensitive.reveal grant (vendor-manager, finance, org admin; migration 0060).",
       "title": "Field-level access control and masking for tax and banking data"
+    },
+    {
+      "story": "E22-S01",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "money",
+        "auth",
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "cc369c6f-9d48-4027-aaa1-94d78fb0869b",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S01",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a14577-bea0-7ef1-873e-e7f79b80758d",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "A project is now drafted with a requested budget, an optional main project and 1-10 sponsors (form, API and the Excel projects template), and cannot be submitted without a budget and sponsor. Final approval allocates the budget inside the decision transaction: directly for a standalone project, or as a locked two-leg transfer from the main project for a child, so a short main project fails the approval and writes nothing.",
+      "title": "Create Project with budget: form and Excel, sponsors, through the project approval workflow"
+    },
+    {
+      "story": "E22-S08",
+      "kind": "ui",
+      "size": "S",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "3bd90f61-6379-4eee-9fb7-305c0a69a657",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S08",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a15fa1-4ff9-7730-ac65-b193abb282b1",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Requisition expired now maps to the warning tone (Warning icon + Expired text); map test and a new icon assertion cover it.",
+      "title": "Expired requisitions use the warning tone"
+    },
+    {
+      "story": "E11-S10",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 1,
+          "blockers": 1,
+          "blockers_dismissed": 1
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "225c2611-95eb-4a11-9f79-171355f17ec6",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S10",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a15f00-dd30-7032-98f5-952f272a08ee",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Decision panel footer is a two-column grid below the sheet's content width of 560px (Approve spans row 3), DOM and tab order unchanged. The close button was already unobscured in the app; e2e and axe tests at 375/768 lock it in.",
+      "title": "Shared decision panel at phone width: footer reflow, close button never covered"
+    },
+    {
+      "story": "E22-S10",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 7,
+          "findings": 9,
+          "blockers": 7,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "0034377a-920b-473c-a89b-a2e859704270",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S10",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a15fea-552d-71b2-88fc-53be3dc37c12",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Approval Availability screen already existed; added the Account menu link, fixed focus return to the row's Revoke button after the dialog closes, and added eligibility, keyboard-only and forced-organization e2e tests.",
+      "title": "Approval Availability: set, list and revoke an out-of-office delegation"
     }
   ]
 }

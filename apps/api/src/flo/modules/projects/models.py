@@ -31,6 +31,7 @@ FIELDS = (
     "actual_end",
     "version",
     "created_at",
+    "requested_budget",
 )
 COLUMNS = ", ".join(FIELDS)
 

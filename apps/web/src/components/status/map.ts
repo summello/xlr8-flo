@@ -33,7 +33,7 @@ export const STATUS = {
     rejected: "danger",
     withdrawn: "neutral",
     cancelled: "danger",
-    expired: "danger",
+    expired: "warning",
   },
   purchase_order: {
     draft: "neutral",

@@ -89,9 +89,9 @@ export async function stubApprovals(page: Page, options: { delegateAdmin?: boole
     }
     if (path === "/api/v1/approvals/delegations/eligible-delegates") {
       state.eligibleQueries.push(url.searchParams);
-      // A colleague who may approve only some types is listed only when the request names exactly those.
+      // The colleague may approve everything except purchase orders: asking for them lists no one.
       const asked = url.searchParams.getAll("document_types");
-      return send({ rows: asked.length > 1 ? [] : [person] });
+      return send({ rows: asked.length > 0 ? [] : [person] });
     }
     if (path === "/api/v1/approvals/delegations/decided-on-my-behalf") {
       if (state.behalfFails) return problem("Offline.", 503);
