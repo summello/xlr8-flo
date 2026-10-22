@@ -132,11 +132,13 @@ def test_ci_red_counts_only_a_marker_naming_the_submitted_commit() -> None:
 
 def test_open_blockers_skip_only_what_arbitration_dismissed() -> None:
     reviews = [
-        {"findings": [
-            {"severity": "blocker", "problem": "real"},
-            {"severity": "blocker", "problem": "ruled out", "arbitration": "dismissed"},
-            {"severity": "major", "problem": "not a blocker"},
-        ]},
+        {
+            "findings": [
+                {"severity": "blocker", "problem": "real"},
+                {"severity": "blocker", "problem": "ruled out", "arbitration": "dismissed"},
+                {"severity": "major", "problem": "not a blocker"},
+            ]
+        },
         {"findings": [{"severity": "blocker", "problem": "upheld", "arbitration": "upheld"}]},
     ]
     assert [f["problem"] for f in F.open_blockers(reviews)] == ["real", "upheld"]

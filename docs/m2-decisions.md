@@ -72,7 +72,7 @@ recorded as a `notes.followup` in the story that meets it:
 
 - **E09-S06, who may assign a standalone request to an existing project** (REQ-004, "an authorized approver"): the packet reads it as the final approver holding `requisition.approve` on the **assigned project's** scope. Confirm or correct.
 - **MASTER §2.3's requisition status map lacks `rejected`, `withdrawn` and `expired`.** E09-S11 maps rejected and expired to the danger tone and withdrawn to neutral, pending a MASTER amendment.
-- **M1 gap: no baseline role holds `project.read` or `master.read`**, so a seeded Requestor cannot use `/projects` or `/master`. E09-S03 serves the requisition form's options through a requisition-scoped lookups endpoint instead of widening grants; whether the baseline roles should gain those reads is an operator decision. **Decided 21 Oct 2026 (canvas DECISIONS 217): every baseline role reads projects and master data in its scope; E22-S06.**
+- ~~M1 gap: no baseline role holds `project.read` or `master.read`~~ **Closed 21 Oct 2026 (canvas DECISIONS 217): every baseline role reads projects and master data in its scope; E22-S06, migration 0066.** (E09-S03 still serves the requisition form's options through its own lookups endpoint.)
 - **No UI story owns the resubmit diff and amendment screens** (canvas boards `RequisitionResubmit*`, `design-system/canvas/STORY-NOTES.md` §3 item 3). E09-S08 is engine-only; E09-S11 ships the returned banner, Edit and Resubmit, and the withdraw dialog. A new UI story is needed before M2's exit.
 - **Autosave:** E09-S11 keeps the explicit Save draft button as drawn, with UX-003 guarding navigation; there is no autosave.
 

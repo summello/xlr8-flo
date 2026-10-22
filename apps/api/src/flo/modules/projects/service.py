@@ -12,6 +12,7 @@ import psycopg
 
 from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
+from flo.kernel.authz import GrantedScopes
 from flo.kernel.config import Settings
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError, conflict
 from flo.kernel.money import currency_exponent, quantize
@@ -901,8 +902,11 @@ class ProjectService:
         page_size: int = 50,
         group_by: ProjectGroup | None = None,
         balances: bool = False,
+        granted: GrantedScopes | None = None,
     ) -> ProjectPage:
-        # Organization-scoped project.read covers this collection.
+        # `granted` narrows rows to the caller's units and projects; None means the whole
+        # organization. ponytail: a project grant lists that project only, not its sub-projects;
+        # list descendants too when a project-scoped reader needs the tree.
         if sort not in ("number", "name", "status", "created_at") or direction not in (
             "asc",
             "desc",
@@ -952,11 +956,16 @@ class ProjectService:
                 "group_key": group_key,
                 "cursor_id": cursor_id,
                 "limit": page_size + 1,
+                "org_wide": granted is None or granted.org_wide,
+                "bu_ids": list(granted.bu_ids) if granted else [],
+                "project_ids": list(granted.project_ids) if granted else [],
             }
             filters = """p.org_id = %(org_id)s
                 AND (p.number ILIKE %(q)s OR p.name ILIKE %(q)s)
                 AND (%(status)s::text IS NULL OR p.status = %(status)s)
-                AND (%(bu_id)s::uuid IS NULL OR p.bu_id = %(bu_id)s)"""
+                AND (%(bu_id)s::uuid IS NULL OR p.bu_id = %(bu_id)s)
+                AND (%(org_wide)s OR p.bu_id = ANY(%(bu_ids)s::uuid[])
+                     OR p.id = ANY(%(project_ids)s::uuid[]))"""
             count = self.repo.execute(
                 "SELECT count(*) FROM project p WHERE " + filters, params
             ).fetchone()

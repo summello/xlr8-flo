@@ -560,7 +560,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E10-S12** Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11) | E10 | ui | L | APR-011, APR-021, ACC-007 | ~~E10-S11~~, ~~E10-S05~~ |
 | ✅ | **E10-S13** Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes | E10 | engine | M | APR-003, PROJ-002, VEN-005, BUD-007 | ~~E10-S07~~ |
 
-#### M3 — First sellable release · 20/71 done
+#### M3 — First sellable release · 22/71 done
 
 > Vendors, RFQs, awards and purchase orders by email. Closes the money loop end to end.
 
@@ -630,13 +630,13 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E22-S03** One audit helper instead of twelve, behaviour-preserving | E22 | chore | M | AUD-001 | — |
 | ✅ | **E22-S04** M2 milestone review follow-ups: Money zero prop, shared lookup helper, internal collaboration readers, approvals read via service, e2e focus helper | E22 | chore | M | A11Y-001, UX-007 | — |
 | ✅ | **E22-S05** Replace MinIO with SeaweedFS in the local stack; bucket via the S3 API | E22 | chore | S | OPS-007 | — |
-| 👀 | **E22-S06** Baseline roles read the projects and master data they work against | E22 | security | S | USR-003, USR-005, USR-006, USR-008, ACC-004 | — |
+| ✅ | **E22-S06** Baseline roles read the projects and master data they work against | E22 | security | S | USR-003, USR-005, USR-006, USR-008, ACC-004 | — |
 | 🔨 | **E22-S07** People have a display name, stored, copied at acceptance, returned beside every email | E22 | migration | M | USR-009, USR-010, SEC-011 | — |
 | ✅ | **E22-S08** Expired requisitions use the warning tone | E22 | ui | S | A11Y-004 | — |
 | ⬜ | **E22-S09** Show people by name, with the email as secondary text | E22 | ui | M | A11Y-004, UX-007 | E22-S07 |
 | ✅ | **E22-S10** Approval Availability: set, list and revoke an out-of-office delegation | E22 | ui | M | APR-004, APR-014, APR-017, APR-019, A11Y-006 | — |
 | ✅ | **E22-S11** Faster checks: template test databases, sharded backend and E2E CI | E22 | chore | M | SEC-012 | — |
-| 🔨 | **E22-S12** Balanced E2E shards on a production build; backend static job; combined checks need detect | E22 | chore | M | SEC-012 | — |
+| ✅ | **E22-S12** Balanced E2E shards on a production build; backend static job; combined checks need detect | E22 | chore | M | SEC-012 | — |
 
 #### M4 — Full Phase-1 scope · 0/34 done
 
@@ -735,10 +735,10 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E23-S06** flo reassign: capacity-aware, liveness-checked, per-story locked author reassignment | E23 | concurrency | M | SUP-005 | E23-S04 |
 | ⬜ | **E23-S11** Track the fleet supervisor in the repo, with tests for its decision rules | E23 | chore | M | SUP-005 | — |
 | ⬜ | **E23-S12** Sonnet's effort comes from agents.yaml, which now says medium | E23 | chore | S | SUP-005 | — |
-| ⬜ | **E23-S13** Scorecard rounds come from the round files; void rounds are not charged; older records are marked | E23 | chore | S | SUP-005, OBS-002 | E22-S12 |
+| ⬜ | **E23-S13** Scorecard rounds come from the round files; void rounds are not charged; older records are marked | E23 | chore | S | SUP-005, OBS-002 | ~~E22-S12~~ |
 | ⛔ | **E23-S07** Start a story when its would-be author has room, not only when a Claude account does | E23 | chore | S | SUP-005 | E23-S11 |
 | ⬜ | **E23-S08** Structured, commit-bound test-evidence records that flo gate verifies | E23 | chore | M | SUP-005, SEC-012 | — |
-| ⬜ | **E23-S09** Build the SPA bundle once in CI and deploy the same artifact | E23 | chore | S | SEC-012 | E22-S12 |
+| ⬜ | **E23-S09** Build the SPA bundle once in CI and deploy the same artifact | E23 | chore | S | SEC-012 | ~~E22-S12~~ |
 | ⛔ | **E23-S10** Completion-triggered supervisor wakeup instead of a fixed 300 s poll | E23 | chore | S | SUP-005 | E23-S01, E23-S11 |
 
 <!-- ROADMAP:END -->

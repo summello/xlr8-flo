@@ -8,9 +8,9 @@ Loaded into every agent session. Updated by `flo done` (status) and by Opus at e
 | | |
 |---|---|
 | Milestone | **M3 — First sellable release** |
-| Stories | 110 / 235 done |
+| Stories | 112 / 235 done |
 | Branch | milestone/M3-sellable |
-| In flight | E11-S06, E22-S02, E22-S06, E22-S07, E22-S12 |
+| In flight | E11-S06, E22-S02, E22-S07 |
 | Blocked | E23-S07, E23-S10 |
 <!-- STATE:END -->
 
@@ -186,40 +186,6 @@ second review and a manual finish. Ungated budget 25 -> 40 commands, hard cap 35
 already 55), and the packet says to run `flo check --light` and set `ran_tests` within 10 commands.
 Revisit if Codex's 5-hour window starts capping.
 
-**22 Oct 2026 — `author_priority` is now `[opencode-nemotron, sonnet, codex]` (E23-S04).** Nemotron
-is free and has no worker cap; Sonnet draws a shared Claude window. Evidence and its limits, from
-`agents/scorecard.json` (106 records): Sonnet 29 stories, 1.72 mean rounds, 59% clean; gated 2.17 and
-33% (n=12), ungated 1.41 and 76% (n=17). That gap cannot yet be put on Sonnet: since 13 Oct 29 of 30
-records are Sonnet, reviewed by Codex plus Opus, while Codex's 1.04 comes from M0/M1 under Opus-alone
-review, and recorded findings do not explain the rounds (`docs/ops/sonnet-round-churn.md`). So the
-reorder does **not** narrow Sonnet and does not reach gated work (nemotron's `avoid_tags`). No Codex A/B
-for now: Codex cannot review its own stories, so the arms would have different non-Opus reviewers, there is
-no per-story routing, and few gated stories are ready. See Judgement day under Open questions.
-**Correction to the 10 and 11 Oct entries:** they say nemotron's merges were "all M or smaller". Four of
-its 10 records are size L (`E05-S03`, `E06-S02`, `E06-S03`, `E05-S10`), two are engine, two carry `auth`,
-all 10 are early-October M1 stories written before the 10 Oct `allowed_kinds`/`avoid_tags`/size cap, and
-all were reviewed by Opus alone. Only 5 of 10 (`E05-S01`, `E05-S02`, `E06-S01`, `E06-S05`, `E06-S06`)
-match today's lane. `E06-S07` (the one attempt under the cap) went to Codex and sits in Codex's
-record, so 10 clean of 11 attempts is the honest figure. **Revisit trigger:** if any of nemotron's first
-three stories after this change needs a second round or is re-authored by another agent, restore the
-old order.
-
-**22 Oct 2026 — Sonnet's effort now comes from `agents.yaml`, and it says `medium` (E23-S12).** The
-config said `reasoning: high` while `author.sh` passed `--effort medium`. The launcher was right:
-commit `5ba2460` (13 Oct) records the operator decision "claude-sonnet-5-5 at medium, not high", and
-the config line, written earlier that day, was never updated. Nothing that runs changed. `author.sh`
-now reads model and effort through `flo launch-model` and `task.json` records `sessions.sonnet.effort`,
-so a scorecard row says which effort produced it. Trying `high` is a separate, measured experiment,
-after Sonnet's gated records are judged (Judgement day, `docs/ops/sonnet-round-churn.md`).
-
-**22 Oct 2026 — the scorecard's `rounds` is not trustworthy before E23-S13; read only records with `rounds_basis`.**
-Evidence: the only code that ever wrote `task.json["rounds"]` is `flo escalate`; no skill, script or the
-supervisor does. Six records that carry observed review-run counts say `rounds: 1` while their reviewers ran
-2, 2, 2, 1, 7 and 6 times, and every Sonnet record above 1 predates that. So "Sonnet 1.72 rounds, 59% clean"
-(and codex 1.04, nemotron 1.00) cannot be read as author quality; it does not support narrowing Sonnet. E23-S13
-takes `rounds` from the round files, does not charge void rounds, exposes `review_runs`, and `SCORECARD.md`
-marks the older records. Nothing is rewritten. Judgement day on Sonnet's gated work reads new records only.
-
 **Merge authority:** the operator has delegated GitHub merges for M0 to Opus, with the
 instruction to space them out so the repository does not read as bot-driven. Outside M0 the
 standing rule holds: push, never merge.
@@ -252,15 +218,7 @@ E22-S06 (217); requisition tones are in MASTER §2.3 and E22-S08 (231); people b
 E22-S09 (232); a PO commits against the requisition's sub-project (209).
 The delegation screen is E22-S10 (233).
 
-**Open — Sonnet on gated work: judgement day (22 Oct 2026).** Keep an eye out for Sonnet's *verified*
-gated records, i.e. `rounds_basis: "round_files"` with a money, auth, security, migration or concurrency tag.
-At **10** of them, run the script in `docs/ops/sonnet-round-churn.md` ("Judgement day") and decide: keep Sonnet
-(spread, or concentrated but under about 2 rounds with no escapes), or test it properly (a deterministic split
-of gated authorship by story id with the same non-Opus reviewer in both arms, or `avoid_tags` on Sonnet).
-`SCORECARD.md` shows the progress ("Judgement day: n of 10 verified gated records", and "It is due" at 10) and
-*Rounds verified* per agent. Do not judge from the 29 older records:
-their `rounds` have no reliable writer. Sonnet had 0 escapes on those 29, so the question is throughput, not
-defects. Owner: the planner at each milestone end (`agents/claude.md` §5).
+_(none open)_
 
 ## Session handoff — 25 Aug 2026
 

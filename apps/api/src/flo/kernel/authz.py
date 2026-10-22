@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Iterator
 from contextlib import AbstractContextManager
+from dataclasses import dataclass
 from typing import Protocol, cast
 from uuid import UUID
 
@@ -38,6 +39,19 @@ class AuthorizationDecision(Protocol):
 type TargetResolver = Callable[..., AuthorizationTarget]
 
 
+@dataclass(frozen=True, slots=True)
+class GrantedScopes:
+    """Where a user holds one permission: organization-wide, or in these units and projects."""
+
+    user_id: IdentityId
+    org_wide: bool
+    bu_ids: frozenset[UUID]
+    project_ids: frozenset[UUID]
+
+    def __bool__(self) -> bool:
+        return self.org_wide or bool(self.bu_ids or self.project_ids)
+
+
 class PermissionResolver(Protocol):
     """Request-local, uncached effective-access resolver."""
 
@@ -47,6 +61,8 @@ class PermissionResolver(Protocol):
         permission: str,
         target: AuthorizationTarget,
     ) -> AuthorizationDecision: ...
+
+    def granted_scopes(self, user_id: IdentityId, permission: str) -> GrantedScopes: ...
 
 
 type PermissionResolverFactory = Callable[[Scope], AbstractContextManager[PermissionResolver]]
@@ -162,6 +178,29 @@ def require_resolved(
         return _decide(request, *resolved)
 
     setattr(enforce, _REQUIRE_MARKER, "resolved")
+    return enforce
+
+
+def require_granted(permission: str) -> Callable[..., GrantedScopes]:
+    """Allow a list route when the permission is held at any scope; return where.
+
+    The route narrows its rows to those scopes. A user holding it nowhere gets 403, as
+    ``require`` on the organization does.
+    """
+
+    def enforce(request: Request) -> GrantedScopes:
+        user_id = _identity_id(request)
+        try:
+            scope = current_scope()
+        except TenantScopeMissing as exc:
+            raise ProblemError(ErrorCode.UNAUTHORIZED) from exc
+        with _factory(request)(scope) as resolver:
+            granted = resolver.granted_scopes(user_id, permission)
+        if not granted:
+            raise ProblemError(ErrorCode.FORBIDDEN)
+        return granted
+
+    setattr(enforce, _REQUIRE_MARKER, permission)
     return enforce
 
 
