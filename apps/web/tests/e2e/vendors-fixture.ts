@@ -29,6 +29,18 @@ export async function stubVendors(page: Page) {
       { type_code: "INS", required: true, state: "expiring", days_left: 12, document_id: docId, attachment_id: attachmentId, attachment_version: 2, scan_status: "clean", issue_date: "2025-10-01", expiry_date: "2026-10-28", verification: "unverified", created_at: NOW },
       { type_code: "TAX", required: true, state: "missing" },
     ] as Record<string, unknown>[],
+    scores: [] as Record<string, any>[],
+    /** When set, the stub reports this overall figure whatever the rows say: the browser must show the server's number. */
+    overall: null as string | null,
+  };
+  let seq = 0;
+  const uid = () => `aaaaaaaa-0000-4000-8000-${String(++seq).padStart(12, "0")}`;
+  const current = () => state.scores.filter(s => !s.superseded_by);
+  const performance = () => {
+    const rows = current(), cats = [...new Set(rows.map(s => s.category_code as string))].sort();
+    const avg = (c: string) => { const r = rows.filter(s => s.category_code === c); return r.reduce((n, s) => n + s.score, 0) / r.length; };
+    const overall = cats.length ? (cats.reduce((n, c) => n + avg(c), 0) / cats.length).toFixed(1) : null;
+    return { categories: cats.map(c => ({ category_code: c, average: avg(c).toFixed(1), count: rows.filter(s => s.category_code === c).length })), overall: state.overall ?? overall, count: rows.length };
   };
   await page.route("**/api/v1/**", async route => {
     const req = route.request(), url = new URL(req.url()), path = url.pathname, method = req.method();
@@ -50,6 +62,33 @@ export async function stubVendors(page: Page) {
     if (path === `/api/v1/vendors/${vendorId}/eligibility`) return send(rows[0]!.eligibility);
     if (path === `/api/v1/vendors/${vendorId}/contacts`) return send([{ id: second, type: "billing", name: "Pat Payer", email: "pat@acme.test", phone: null, receives_documents: false, created_at: NOW, updated_at: NOW, version: 1 }]);
     if (path === `/api/v1/vendors/${vendorId}/documents`) return send(state.docs);
+    if (path === `/api/v1/vendors/${vendorId}/performance`) return send(performance());
+    if (path === `/api/v1/vendors/${vendorId}/scores` && method === "GET") return send({ rows: [...state.scores].reverse(), next_cursor: null });
+    if (path === `/api/v1/vendors/${vendorId}/scores` && method === "POST") {
+      const b = req.postDataJSON();
+      const row = { id: uid(), category_code: b.category, score: b.score, period: b.period, source_type: "po", source_ref: b.source_ref, rationale: b.rationale, scored_by_email: "dev@example.test", scored_at: NOW, supersedes: null, superseded_by: null, disputes: [] };
+      state.scores.push(row);
+      return send(row, 201);
+    }
+    const dispute = path.match(new RegExp(`^/api/v1/vendors/${vendorId}/scores/([^/]+)/disputes(?:/([^/]+)/resolve)?$`));
+    if (dispute && method === "POST") {
+      const score = state.scores.find(s => s.id === dispute[1]);
+      if (!score) return send({ detail: "Not found." }, 404);
+      const b = req.postDataJSON();
+      if (!dispute[2]) {
+        const d = { id: uid(), score_id: score.id, raised_by_email: "dev@example.test", raised_at: NOW, reason: b.reason, resolution: null, resolved_by_email: null, resolved_at: null, resolution_note: null };
+        score.disputes.push(d);
+        return send(d, 201);
+      }
+      const d = score.disputes.find((x: { id: string }) => x.id === dispute[2]);
+      Object.assign(d, { resolution: b.resolution, resolved_by_email: "boss@example.test", resolved_at: NOW, resolution_note: b.note });
+      if (b.resolution === "upheld") {
+        const adj = { ...score, id: uid(), score: b.adjusted_score, rationale: b.adjusted_rationale, supersedes: score.id, superseded_by: null, disputes: [] };
+        score.superseded_by = adj.id;
+        state.scores.push(adj);
+      }
+      return send(d);
+    }
     if (path === `/api/v1/vendors/${vendorId}/changes`) return send([]);
     if (path === `/api/v1/vendors/${vendorId}/onboarding`) return send({}, 403);
     if (path === `/api/v1/documents/vendor/${vendorId}/attachments`) return send([{ id: attachmentId, display_name: "insurance.pdf", document_id: vendorId, document_type: "vendor", media_type: "application/pdf", original_filename: "insurance.pdf", scan_status: "clean", sha256: "a", size_bytes: 2048, uploaded_at: NOW, uploaded_by: second, uploaded_by_email: "dev@example.test", version: 2, versions: 2, deleted_at: null }]);

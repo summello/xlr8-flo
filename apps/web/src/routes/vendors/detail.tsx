@@ -4,6 +4,8 @@ import StatusPill from "../../components/status/StatusPill";
 import Signal from "../../components/ui/Signal";
 import DocumentSheet from "../../components/vendors/DocumentSheet";
 import Eligibility from "../../components/vendors/Eligibility";
+import PerformanceCard from "../../components/vendors/performance/PerformanceCard";
+import ScorecardSheet from "../../components/vendors/performance/ScorecardSheet";
 import { AVAILABILITY, docWords, type DocState } from "../../components/vendors/api";
 import { failure, formatDate, formatDateTime, label } from "../../components/requisitions/api";
 import { useLoad, type Loaded } from "../../components/requisitions/useLoad";
@@ -47,9 +49,15 @@ export default function VendorDetail({ id, navigate }: { id: string; navigate: (
     if (!data) throw new Error(failure(error, "Loading history"));
     return data;
   }, [id]);
+  const performance = useLoad(async () => {
+    const { data, error } = await apiClient.GET("/api/v1/vendors/{id}/performance", { params: { path: { id } } });
+    if (!data) throw new Error(failure(error, "Loading performance"));
+    return data;
+  }, [id]);
   // The onboarding record is the requester's answers; a refusal just leaves the fold out.
   const onboarding = useLoad(async () => (await apiClient.GET("/api/v1/vendors/{id}/onboarding", { params: { path: { id } } })).data ?? null, [id]);
   const [open, setOpen] = useState<{ doc: DocState; opener: HTMLElement | null } | null>(null);
+  const [scorecard, setScorecard] = useState<{ opener: HTMLElement | null } | null>(null);
   useEffect(() => { if (vendor.data) document.title = vendor.data.trading_name; }, [vendor.data]);
 
   if (vendor.error) return <section className="req-page" aria-label="Vendor"><div role="alert"><p>{vendor.error}</p><button type="button" onClick={vendor.reload}>Try again</button></div><a href="/vendors" onClick={e => { e.preventDefault(); navigate("/vendors"); }}>Back to Vendors</a></section>;
@@ -93,6 +101,9 @@ export default function VendorDetail({ id, navigate }: { id: string; navigate: (
         </table>
         {(docs.data ?? []).length === 0 && <p>No documents are required or supplied yet.</p>}
       </Card>
+      <Card title="Performance" load={performance}>
+        {performance.data && <PerformanceCard performance={performance.data} onOpen={opener => setScorecard({ opener })} />}
+      </Card>
       <Card title="History" load={changes}>
         {(changes.data ?? []).length === 0 ? <p>No status changes yet.</p> : <ul className="vendor-list-plain">{(changes.data ?? []).map(c => <li key={c.id}><strong>{label(c.kind)}</strong> · {label(c.status)}<span className="req-sub">{c.requested_by_email}, {formatDateTime(c.requested_at)}{c.reason ? `: ${c.reason}` : ""}</span></li>)}</ul>}
       </Card>
@@ -100,6 +111,7 @@ export default function VendorDetail({ id, navigate }: { id: string; navigate: (
         <p>RFQs and purchase orders that use this vendor appear here. They keep the vendor as it was when they were made.</p>
       </Card>
     </div>
+    {scorecard && <ScorecardSheet vendorId={id} categories={(performance.data?.categories ?? []).map(c => c.category_code)} opener={scorecard.opener} onClose={() => setScorecard(null)} onChanged={performance.reload} />}
     {open && <DocumentSheet vendorId={id} doc={open.doc} opener={open.opener} onClose={() => setOpen(null)} onChanged={docs.reload} />}
   </section>;
 }

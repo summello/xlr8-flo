@@ -4440,6 +4440,49 @@
       },
       "recap": "Adds RFQ content, compliance requirements (template seed, waive), per-attachment vendor visibility and invitations with the five-vendor cap under the RFQ row lock, one eligibility rule, and a frozen vendor snapshot. Override needs a reason and rfq.approve on the unit, and is audited.",
       "title": "RFQ content, invitations, deadline, terms, attachments, vendor eligibility check"
+    },
+    {
+      "story": "E11-S18",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "6842c4b8-f265-48fe-b724-a1a6c8df27f3",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S18",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a163d8-253c-75d3-8f0c-97867ad210c8",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Vendor profile gains a Performance card (server overall, per-category averages, counts) and a wide Scorecard side sheet with Add Score, Dispute and Resolve forms, a struck original conveyed in text plus its linked adjustment. Web only; the card re-reads the server after every write.",
+      "title": "Vendor Performance card and scorecard sheet"
     }
   ]
 }
