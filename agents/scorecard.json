@@ -4224,6 +4224,47 @@
       },
       "recap": "Gave requestor/approver master.read and sourcing-specialist/purchasing-user/vendor-manager project.read+master.read in BASELINE_ROLE_PERMISSIONS, plus migration 0066 backfilling system roles only (tracked, reversible, one audit row per org).",
       "title": "Baseline roles read the projects and master data they work against"
+    },
+    {
+      "story": "E11-S06",
+      "kind": "engine",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 4,
+          "findings": 6,
+          "blockers": 6,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "58c375e4-c43d-4c85-9053-e3ba29e26991",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S06",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a162d0-0736-78b0-9800-2db3b30cf6d5",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Vendor create, availability, suspend and reactivate requests now go through the approval workflow as vendor_change documents, with a duplicate tax-id and unique-identifier check (override by vendor.approve) serialised by advisory locks. Migration 0064, routes, tests and generated client included.",
+      "title": "Duplicate identifier detection, approval on create/activate/suspend/reactivate"
     }
   ]
 }

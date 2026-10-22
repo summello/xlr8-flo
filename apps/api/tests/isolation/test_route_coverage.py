@@ -42,7 +42,15 @@ OROUTES = (
     "test_onboarding_routes_conceal_foreign_tenants_and_other_requesters"
 )
 PROUTES = "vendors/test_performance.py::test_score_routes_conceal_foreign_tenants"
+CROUTES = "vendors/test_changes.py::test_vendor_change_routes_conceal_foreign_tenants"
 COVERED = {
+    ("GET", "/api/v1/vendors/duplicate-check"): CROUTES,
+    ("POST", "/api/v1/vendors/{id}/submit"): CROUTES,
+    ("POST", "/api/v1/vendors/{id}/revise"): CROUTES,
+    ("POST", "/api/v1/vendors/{id}/changes"): CROUTES,
+    ("GET", "/api/v1/vendors/{id}/changes"): CROUTES,
+    ("POST", "/api/v1/vendors/{id}/changes/{cid}/withdraw"): CROUTES,
+    ("POST", "/api/v1/vendors/{id}/inactivate"): CROUTES,
     ("GET", "/api/v1/vendors/{id}/scores"): PROUTES,
     ("POST", "/api/v1/vendors/{id}/scores"): PROUTES,
     ("POST", "/api/v1/vendors/{id}/scores/{sid}/disputes"): PROUTES,

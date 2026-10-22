@@ -51,11 +51,14 @@ class VendorCreate(VendorNames):
     legal_name: str = Field(min_length=1, max_length=200)
     availability: Availability
     unit_ids: list[UUID] = Field(default_factory=list, max_length=500)
+    # configured identifiers (master kind vendor_identifier_type) by type code (VEN-010)
+    identifiers: dict[str, str] = Field(default_factory=dict, max_length=50)
 
 
 class VendorPatch(VendorNames):
     availability: Availability | None = None
     unit_ids: list[UUID] | None = Field(default=None, max_length=500)
+    identifiers: dict[str, str] | None = Field(default=None, max_length=50)
 
 
 class DisableCreate(BaseModel):
@@ -110,6 +113,7 @@ class VendorDisabled(VendorUnit):
 class VendorDetail(VendorRead):
     units: list[VendorUnit] = []
     disabled_in: list[VendorDisabled] = []
+    identifiers: dict[str, str] = {}  # type code -> normalised value
 
 
 class VendorPage(BaseModel):
@@ -474,3 +478,62 @@ class PerformanceRead(BaseModel):
     categories: list[CategoryAverage]
     overall: str | None
     count: int
+
+
+class SubmitCreate(BaseModel):
+    """`override_reason` accepts a duplicate identifier; only vendor.approve holders may use it."""
+
+    model_config = ConfigDict(extra="forbid")
+    override_reason: str | None = Field(default=None, min_length=1, max_length=500)
+
+
+class AvailabilityPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    availability: Availability
+    unit_ids: list[UUID] = Field(default_factory=list, max_length=500)
+
+
+class ChangeCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    kind: Literal["availability", "suspend", "reactivate"]
+    payload: AvailabilityPayload | None = None
+    reason: str = Field(min_length=1, max_length=500)
+
+    @field_validator("reason")
+    @classmethod
+    def _reason_trimmed(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Give a reason.")
+        return value
+
+
+class InactivateCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reason: str = Field(min_length=1, max_length=500)
+
+
+class ChangeRead(BaseModel):
+    id: UUID
+    vendor_id: UUID
+    kind: Literal["create", "availability", "suspend", "reactivate"]
+    payload: dict[str, JsonValue]
+    reason: str | None
+    status: Literal["pending", "approved", "rejected", "withdrawn"]
+    requested_by_email: str
+    requested_at: datetime
+    decided_at: datetime | None
+
+
+class DuplicateMatch(BaseModel):
+    """Name and number only when the caller may view that vendor; otherwise just the field."""
+
+    field: str
+    match: bool = True
+    vendor_id: UUID | None = None
+    vendor_number: str | None = None
+    trading_name: str | None = None
+
+
+class DuplicateResult(BaseModel):
+    matches: list[DuplicateMatch]

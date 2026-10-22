@@ -911,6 +911,28 @@
         ],
         "type": "string"
       },
+      "AvailabilityPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "availability": {
+            "$ref": "#/components/schemas/Availability"
+          },
+          "unit_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 500,
+            "title": "Unit Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "availability"
+        ],
+        "title": "AvailabilityPayload",
+        "type": "object"
+      },
       "BalanceQueryRead": {
         "properties": {
           "actual": {
@@ -1360,6 +1382,42 @@
         "title": "CategoryAverage",
         "type": "object"
       },
+      "ChangeCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "availability",
+              "suspend",
+              "reactivate"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "payload": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AvailabilityPayload"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "reason"
+        ],
+        "title": "ChangeCreate",
+        "type": "object"
+      },
       "ChangeDelta": {
         "properties": {
           "amount": {
@@ -1449,6 +1507,92 @@
           "currency"
         ],
         "title": "ChangeFunding",
+        "type": "object"
+      },
+      "ChangeRead": {
+        "properties": {
+          "decided_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "create",
+              "availability",
+              "suspend",
+              "reactivate"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Payload",
+            "type": "object"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "requested_at": {
+            "format": "date-time",
+            "title": "Requested At",
+            "type": "string"
+          },
+          "requested_by_email": {
+            "title": "Requested By Email",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "approved",
+              "rejected",
+              "withdrawn"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "vendor_id": {
+            "format": "uuid",
+            "title": "Vendor Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "vendor_id",
+          "kind",
+          "payload",
+          "reason",
+          "status",
+          "requested_by_email",
+          "requested_at",
+          "decided_at"
+        ],
+        "title": "ChangeRead",
         "type": "object"
       },
       "ChangeRow": {
@@ -3020,6 +3164,75 @@
         "title": "DriftRead",
         "type": "object"
       },
+      "DuplicateMatch": {
+        "description": "Name and number only when the caller may view that vendor; otherwise just the field.",
+        "properties": {
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "match": {
+            "default": true,
+            "title": "Match",
+            "type": "boolean"
+          },
+          "trading_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trading Name"
+          },
+          "vendor_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor Id"
+          },
+          "vendor_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor Number"
+          }
+        },
+        "required": [
+          "field"
+        ],
+        "title": "DuplicateMatch",
+        "type": "object"
+      },
+      "DuplicateResult": {
+        "properties": {
+          "matches": {
+            "items": {
+              "$ref": "#/components/schemas/DuplicateMatch"
+            },
+            "title": "Matches",
+            "type": "array"
+          }
+        },
+        "required": [
+          "matches"
+        ],
+        "title": "DuplicateResult",
+        "type": "object"
+      },
       "Edge": {
         "additionalProperties": false,
         "properties": {
@@ -4026,6 +4239,22 @@
           "issues"
         ],
         "title": "ImportRowRead",
+        "type": "object"
+      },
+      "InactivateCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "InactivateCreate",
         "type": "object"
       },
       "InboxCounts": {
@@ -11308,6 +11537,27 @@
         "title": "SubmissionProblem",
         "type": "object"
       },
+      "SubmitCreate": {
+        "additionalProperties": false,
+        "description": "`override_reason` accepts a duplicate identifier; only vendor.approve holders may use it.",
+        "properties": {
+          "override_reason": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override Reason"
+          }
+        },
+        "title": "SubmitCreate",
+        "type": "object"
+      },
       "SummaryCurrency": {
         "properties": {
           "actual": {
@@ -11892,6 +12142,14 @@
           "availability": {
             "$ref": "#/components/schemas/Availability"
           },
+          "identifiers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "maxProperties": 50,
+            "title": "Identifiers",
+            "type": "object"
+          },
           "legal_name": {
             "maxLength": 200,
             "minLength": 1,
@@ -11948,6 +12206,14 @@
             "format": "uuid",
             "title": "Id",
             "type": "string"
+          },
+          "identifiers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": {},
+            "title": "Identifiers",
+            "type": "object"
           },
           "legal_name": {
             "title": "Legal Name",
@@ -12077,6 +12343,21 @@
                 "type": "null"
               }
             ]
+          },
+          "identifiers": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "maxProperties": 50,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Identifiers"
           },
           "legal_name": {
             "anyOf": [
@@ -25834,6 +26115,102 @@
         ]
       }
     },
+    "/api/v1/vendors/duplicate-check": {
+      "get": {
+        "description": "`identifiers[type]=value` pairs ride the query string beside the tax id.",
+        "operationId": "duplicate_check_api_v1_vendors_duplicate_check_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tax_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tax Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tax_id_country",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 2,
+                  "minLength": 2,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tax Id Country"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Duplicate Check",
+        "tags": [
+          "vendors"
+        ]
+      }
+    },
     "/api/v1/vendors/onboarding-requests": {
       "post": {
         "operationId": "create_onboarding_request_api_v1_vendors_onboarding_requests_post",
@@ -26060,6 +26437,235 @@
           }
         },
         "summary": "Patch Vendor",
+        "tags": [
+          "vendors"
+        ]
+      }
+    },
+    "/api/v1/vendors/{id}/changes": {
+      "get": {
+        "operationId": "list_changes_api_v1_vendors__id__changes_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ChangeRead"
+                  },
+                  "title": "Response List Changes Api V1 Vendors  Id  Changes Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "List Changes",
+        "tags": [
+          "vendors"
+        ]
+      },
+      "post": {
+        "operationId": "request_change_api_v1_vendors__id__changes_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Request Change",
+        "tags": [
+          "vendors"
+        ]
+      }
+    },
+    "/api/v1/vendors/{id}/changes/{cid}/withdraw": {
+      "post": {
+        "operationId": "withdraw_change_api_v1_vendors__id__changes__cid__withdraw_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "cid",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Withdraw Change",
         "tags": [
           "vendors"
         ]
@@ -26797,6 +27403,78 @@
         ]
       }
     },
+    "/api/v1/vendors/{id}/inactivate": {
+      "post": {
+        "operationId": "inactivate_vendor_api_v1_vendors__id__inactivate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InactivateCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Inactivate Vendor",
+        "tags": [
+          "vendors"
+        ]
+      }
+    },
     "/api/v1/vendors/{id}/onboarding": {
       "get": {
         "operationId": "get_onboarding_api_v1_vendors__id__onboarding_get",
@@ -27059,6 +27737,68 @@
           }
         },
         "summary": "Performance",
+        "tags": [
+          "vendors"
+        ]
+      }
+    },
+    "/api/v1/vendors/{id}/revise": {
+      "post": {
+        "operationId": "revise_vendor_api_v1_vendors__id__revise_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Revise Vendor",
         "tags": [
           "vendors"
         ]
@@ -27646,6 +28386,86 @@
           }
         },
         "summary": "Reveal Sensitive",
+        "tags": [
+          "vendors"
+        ]
+      }
+    },
+    "/api/v1/vendors/{id}/submit": {
+      "post": {
+        "description": "A member; the service admits only the vendor's requester or a vendor.edit holder.",
+        "operationId": "submit_vendor_api_v1_vendors__id__submit_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Submit Vendor",
         "tags": [
           "vendors"
         ]

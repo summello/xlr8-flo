@@ -166,6 +166,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261021_0064",
         "20261021_0065",
         "20261022_0066",
+        "20261022_0067",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -2489,3 +2490,52 @@ def test_baseline_role_reads_grant_system_roles_only_and_roundtrip_keeps_other_g
         mig.downgrade(conn)
         assert grants() == before  # the custom role, approver and asset.view survive
         mig.upgrade(conn)
+
+
+def test_vendor_changes_roundtrip_keeps_vendors_and_plants_the_pending_index(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261022_0066"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261022_0067")
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("vendor-changes-migration"),
+    ):
+        tenant = create(conn)
+        actor = admin_id(conn)
+        vendor_id = uuid4()
+        mig.upgrade(conn)
+        change = (
+            "INSERT INTO vendor_change(org_id,vendor_id,kind,reason,requested_by) "
+            "VALUES(%s,%s,%s,%s,%s)"
+        )
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            conn.execute(
+                "INSERT INTO vendor(id,org_id,number,trading_name,legal_name,availability,"
+                "created_by) VALUES(%s,%s,'V-000001','T','L','global',%s)",
+                (vendor_id, tenant.org_id, actor),
+            )
+            conn.execute(change, (tenant.org_id, vendor_id, "suspend", "why", actor))
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            with pytest.raises(psycopg.errors.UniqueViolation):
+                conn.execute(change, (tenant.org_id, vendor_id, "reactivate", "why", actor))
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            with pytest.raises(psycopg.errors.CheckViolation):
+                conn.execute(
+                    "INSERT INTO vendor_change(org_id,vendor_id,kind,requested_by,status) "
+                    "VALUES(%s,%s,'suspend',%s,'withdrawn')",
+                    (tenant.org_id, vendor_id, actor),
+                )
+        mig.downgrade(conn)
+        assert conn.execute("SELECT to_regclass('vendor_change')").fetchone() == (None,)
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            assert conn.execute("SELECT count(*) FROM vendor").fetchone() == (1,)
+        mig.upgrade(conn)
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            assert conn.execute("SELECT count(*) FROM vendor_change").fetchone() == (0,)

@@ -1501,7 +1501,7 @@ epics:
           - E10-S13
           - E11-S02
           - E11-S04
-        st: review
+        st: done
       - id: E11-S07
         t: Performance scoring across quality, price, delivery, service, with dispute
           history
@@ -2313,7 +2313,7 @@ epics:
           - USR-010
           - SEC-011
         dep: []
-        st: in_progress
+        st: review
       - id: E22-S08
         t: Expired requisitions use the warning tone
         k: ui

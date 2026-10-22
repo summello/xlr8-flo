@@ -119,3 +119,53 @@ def put(
         {"id": vendor_id, "actor": actor, **{f: values.get(f) for f in COLUMNS}},
     )
     return changed, version + 1
+
+
+# -- duplicate detection (VEN-010): the comparison runs in SQL and returns vendor ids only ------
+
+# upper case with spaces, dots and hyphens stripped; vendor_sensitive_tax_normalised indexes it
+NORMALISED = "upper(regexp_replace({}, '[ .-]', '', 'g'))"
+# Every status but rejected holds its identifier (VEN-010). Two drafts would otherwise block each
+# other, so a draft peer holds it against a submit only when it was created first; a live check
+# (no vendor) sees every draft.
+HOLDS = (
+    "(v.status NOT IN ('draft', 'rejected') OR (v.status = 'draft' AND (%(self)s::uuid IS NULL "
+    "OR (v.created_at, v.id) < (SELECT o.created_at, o.id FROM vendor o "
+    "WHERE o.org_id = v.org_id AND o.id = %(self)s::uuid))))"
+)
+
+
+def tax_matches(
+    repo: VendorRepository,
+    vendor_id: UUID | None = None,
+    tax_id: str | None = None,
+    country: str | None = None,
+) -> list[UUID]:
+    """Other vendors holding the same tax id in the same country: this vendor's stored one, or
+    the typed `tax_id`/`country` of a live check."""
+    probe = (
+        "SELECT tax_id, tax_id_country FROM vendor_sensitive "
+        "WHERE org_id = %(org_id)s AND vendor_id = %(self)s"
+        if tax_id is None
+        else "SELECT %(tax)s::text AS tax_id, %(country)s::char(2) AS tax_id_country"
+    )
+    rows = repo.execute(
+        f"SELECT s.vendor_id FROM ({probe}) p JOIN vendor_sensitive s "
+        "ON s.org_id = %(org_id)s AND s.tax_id_country = p.tax_id_country "
+        f"AND {NORMALISED.format('s.tax_id')} = {NORMALISED.format('p.tax_id')} "
+        "JOIN vendor v ON v.org_id = s.org_id AND v.id = s.vendor_id "
+        f"WHERE {HOLDS} AND s.vendor_id IS DISTINCT FROM %(self)s::uuid ORDER BY s.vendor_id",
+        {"self": vendor_id, "tax": tax_id, "country": country},
+    ).fetchall()
+    return [UUID(str(r[0])) for r in rows]
+
+
+def lock_tax(repo: VendorRepository, vendor_id: UUID) -> None:
+    """Serialise submits that carry the same tax id: the later one waits, then sees the earlier."""
+    repo.execute(
+        "SELECT pg_advisory_xact_lock(hashtextextended(%(org_id)s::text || ':tax:' || "
+        f"tax_id_country || ':' || {NORMALISED.format('tax_id')}, 0)) FROM vendor_sensitive "
+        "WHERE org_id = %(org_id)s AND vendor_id = %(id)s "
+        "AND tax_id IS NOT NULL AND tax_id_country IS NOT NULL",
+        {"id": vendor_id},
+    )

@@ -43,6 +43,7 @@ RULES: dict[str, dict[str, Callable[[object], bool]]] = {
     "vendor_contact_type": {},
     "vendor_document_type": {"required": is_bool, "category": code_text},
     "vendor_score_category": {},
+    "vendor_identifier_type": {"unique": is_bool},
 }
 RESERVED_CONTACT_TYPES = ("billing", "service_delivery")  # built in to vendors
 # Seeded per org by vendors.performance on first use; they cannot be deactivated (VEN-007).

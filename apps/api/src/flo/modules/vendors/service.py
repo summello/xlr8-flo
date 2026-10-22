@@ -14,7 +14,9 @@ from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.org.service import MasterCodeUnusable, NumberingService, OrgService, today
+from flo.modules.vendors import duplicates
 from flo.modules.vendors import repo as sensitive
+from flo.modules.vendors.changes import ChangesMixin
 from flo.modules.vendors.documents import DocumentsMixin
 from flo.modules.vendors.models import (
     ANCESTORS_CTE,
@@ -94,7 +96,9 @@ def _decode(cursor: str) -> tuple[str, UUID]:
         raise invalid("cursor", "The page cursor is not valid.", "invalid_cursor") from None
 
 
-class VendorService(DocumentsMixin, QuestionnaireMixin, OnboardingMixin, PerformanceMixin):
+class VendorService(
+    ChangesMixin, DocumentsMixin, QuestionnaireMixin, OnboardingMixin, PerformanceMixin
+):
     def __init__(
         self,
         connection: psycopg.Connection[tuple[object, ...]],
@@ -142,6 +146,7 @@ class VendorService(DocumentsMixin, QuestionnaireMixin, OnboardingMixin, Perform
             ).fetchall()
             return VendorDetail(
                 **base,
+                identifiers=duplicates.stored(self.repo, id),
                 units=self._unit_codes(id),
                 disabled_in=[
                     VendorDisabled.model_validate(
@@ -326,8 +331,28 @@ class VendorService(DocumentsMixin, QuestionnaireMixin, OnboardingMixin, Perform
                 {"id": id, "unit_id": unit_id},
             )
 
+    def _identifiers(self, values: dict[str, str]) -> dict[str, str]:
+        """Type codes must be active vendor_identifier_type master codes; values 1..64 once
+        normalised. Returns {master code: value}."""
+        clean: dict[str, str] = {}
+        for code, value in values.items():
+            field = f"identifiers.{code}"
+            try:
+                ref = OrgService(self.connection, self.scope).assert_usable(
+                    duplicates.KIND, code, today()
+                )
+            except MasterCodeUnusable:
+                raise invalid(field, "Choose a defined identifier type.") from None
+            if not 1 <= len(duplicates.normalise(value)) <= 64:
+                raise invalid(field, "Enter 1 to 64 letters or digits.")
+            if ref.code in clean:
+                raise invalid(field, "Give each identifier type once.")
+            clean[ref.code] = value
+        return clean
+
     def create(self, body: VendorCreate) -> VendorDetail:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            identifiers = self._identifiers(body.identifiers)
             self._shape(body.availability, body.unit_ids)
             unit_ids = self._check_units(body.unit_ids)
             id = uuid4()
@@ -349,6 +374,7 @@ class VendorService(DocumentsMixin, QuestionnaireMixin, OnboardingMixin, Perform
                 },
             )
             self._set_units(id, unit_ids)
+            duplicates.store(self.repo, id, identifiers)
             self._audit(
                 "vendor.create",
                 id,
@@ -358,6 +384,7 @@ class VendorService(DocumentsMixin, QuestionnaireMixin, OnboardingMixin, Perform
                     "legal_name": body.legal_name,
                     "availability": body.availability,
                     "unit_ids": [str(u) for u in unit_ids],
+                    "identifier_types": sorted(identifiers),
                 },
             )
         return self.get(id)
@@ -384,6 +411,13 @@ class VendorService(DocumentsMixin, QuestionnaireMixin, OnboardingMixin, Perform
                     "availability_needs_approval",
                     "Availability changes on a submitted vendor go through approval.",
                 )
+            if body.identifiers is not None:
+                if row[0] != "draft":  # a changed identifier would skip the duplicate check
+                    raise conflict(
+                        "identifiers_locked",
+                        "Identifiers can change only while the vendor is a draft.",
+                    )
+                duplicates.store(self.repo, id, self._identifiers(body.identifiers))
             units = before_units
             if changes_availability:
                 if body.unit_ids is not None:
