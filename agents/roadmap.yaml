@@ -2359,6 +2359,15 @@ epics:
           - SEC-012
         dep: []
         st: done
+      - id: E22-S12
+        t: 'Balanced E2E shards on a production build; backend static job; combined checks need detect'
+        k: chore
+        s: M
+        tags: []
+        reqs:
+          - SEC-012
+        dep: []
+        st: todo
 
   # ─────────────────── M4 — Full Phase-1 scope ───────────────────
 
