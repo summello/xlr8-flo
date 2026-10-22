@@ -2210,6 +2210,10 @@ def cmd_ci_watch(argv):
                           f"{run['conclusion']}\n" + "\n".join(log.splitlines()[-200:]) + "\n")
         print(f"RED {key}: {branch} run {run['databaseId']} — {marker}")
 
+    latest = {m["branch"]: [r for r in gh_runs(m["branch"]) if r.get("status") == "completed"][:1]
+              for m in rm.get("milestones", [])}
+    green = {b: runs[0]["headSha"] for b, runs in latest.items()
+             if runs and runs[0].get("conclusion") == "success"}
     for _, s in stories(rm):
         task = worktree_path(s["id"]) / "task.json"
         if not task.exists():
@@ -2219,18 +2223,30 @@ def cmd_ci_watch(argv):
         run = next((r for r in gh_runs(pkt["branch"]) if sha and r.get("headSha") == sha), None)
         if not run or run.get("status") != "completed":
             continue
-        if run.get("conclusion") == "success":
+        # A merged story's red run is moot once the milestone is green on a commit holding its
+        # squash: E22-S12's branch failed on a test fixed on the milestone (22 Oct), and the
+        # marker resumed its author for a fix on every tick.
+        mb = pkt.get("milestone_branch")
+        superseded = s["st"] == "done" and mb in green and merged_in(s["id"], green[mb])
+        if run.get("conclusion") == "success" or superseded:
             (scratch / f"{s['id']}.ci-red").unlink(missing_ok=True)
             if s["st"] == "done":
                 cmd_reap([s["id"]])
         elif run.get("conclusion") != "cancelled":
             mark(s["id"], pkt["branch"], run)
     for m in rm.get("milestones", []):
-        runs = [r for r in gh_runs(m["branch"]) if r.get("status") == "completed"]
+        runs = latest[m["branch"]]
         if runs and runs[0].get("conclusion") == "success":
             (scratch / f"{m['id']}.ci-red").unlink(missing_ok=True)
         elif runs and runs[0].get("conclusion") != "cancelled":
             mark(m["id"], m["branch"], runs[0])
+
+
+def merged_in(sid, sha):
+    """Whether commit `sha` contains the story's squash commit (subject starts with its id)."""
+    r = subprocess.run(["git", "log", "-1", "--format=%H", f"--grep=^{sid}:", sha],
+                       cwd=ROOT, capture_output=True, text=True)
+    return r.returncode == 0 and bool(r.stdout.strip())
 
 
 def gh_runs(branch):
