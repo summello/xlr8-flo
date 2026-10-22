@@ -3265,6 +3265,17 @@ epics:
           - SUP-005
         dep: []
         st: todo
+      - id: E23-S13
+        t: Scorecard rounds come from the round files; void rounds are not charged; older records are marked
+        k: chore
+        s: S
+        tags: []
+        reqs:
+          - SUP-005
+          - OBS-002
+        dep:
+          - E22-S12
+        st: todo
       - id: E23-S07
         t: Start a story when its would-be author has room, not only when a Claude account does
         k: chore

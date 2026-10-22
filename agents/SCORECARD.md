@@ -5,13 +5,19 @@
 **106 merged stories.** Scores appear once an agent has 3+ samples in that role —
 before that the number would be noise, so it reads `—`.
 
+> **Data quality.** 106 of 106 records took `rounds` from a counter with no reliable
+> writer (before E23-S13, 22 Oct 2026): in this repository only `flo escalate` ever raised it, and
+> records that also carry review-run counts say 1 round while their reviewers ran up to 7 times.
+> *Clean merge*, *Mean rounds* and the author score include those records, so read them as
+> indicative until *Rounds verified* equals *Stories*. The records are not rewritten.
+
 ## As author
 
-| Agent | Stories | Clean merge | Mean rounds | Escapes/story | Score |
-|---|---:|---:|---:|---:|---:|
-| `opencode-nemotron` | 10 | 100% | 1.00 | 0.00 | **100.0** |
-| `codex` | 67 | 97% | 1.04 | 0.00 | **97.8** |
-| `sonnet` | 29 | 59% | 1.72 | 0.00 | **68.4** |
+| Agent | Stories | Rounds verified | Clean merge | Mean rounds | Escapes/story | Score |
+|---|---:|---:|---:|---:|---:|---:|
+| `opencode-nemotron` | 10 | 0/10 | 100% | 1.00 | 0.00 | **100.0** |
+| `codex` | 67 | 0/67 | 97% | 1.04 | 0.00 | **97.8** |
+| `sonnet` | 29 | 0/29 | 59% | 1.72 | 0.00 | **68.4** |
 
 ## As reviewer
 
@@ -28,7 +34,9 @@ before that the number would be noise, so it reads `—`.
 **Author score** = 50 × clean-merge rate + 30 × round efficiency + 20 × (1 − escape rate).
 A *clean merge* is one review round with no gate failure. *Round efficiency* is full at one
 round and zero at three. An *escape* is a blocker Opus found at final review — meaning two
-reviewers approved code that was wrong.
+reviewers approved code that was wrong. A *round* is one review that sent itemised findings back
+to the author, counted from the round files the supervisor caps on, plus one for the first
+submission; a round file with no itemised finding is a `void_round` and is not charged.
 
 **Reviewer score** = 25 × test compliance + 30 × blocker precision + 30 × catch rate
 + 15 × thoroughness. *Precision* is blockers upheld ÷ blockers raised, so crying wolf costs.

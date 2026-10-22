@@ -48,7 +48,10 @@ def verdict_state(review: dict | None, reviewed_sha: str | None, submitted_sha: 
     if v in APPROVE:
         return "approve"
     if v in CHANGES:
-        return "changes"
+        # Nothing itemised means nothing to send the author: a reviewer stopped at its cap with a
+        # draft (E22-S02 round 3). "malformed" asks the operator; "missing" would relaunch the reviewer
+        # every tick if it keeps writing an empty verdict, because reviews have no attempt counter.
+        return "changes" if review.get("findings") else "malformed"
     return "malformed"
 
 
@@ -70,6 +73,19 @@ def rounds_done(names: list[str], sid: str) -> int:
     """Highest round number among .scratch/<sid>.roundN.md files."""
     nums = [int(m.group(1)) for n in names if n.startswith(f"{sid}.") and (m := ROUND.search(n))]
     return max(nums, default=0)
+
+
+FINDING_LINE = re.compile(r"^\d+\. \(", re.MULTILINE)
+
+
+def is_void_round(text: str) -> bool:
+    """A round file with no numbered finding: round_file() writes exactly that for an empty list."""
+    return not FINDING_LINE.search(text)
+
+
+def void_rounds(texts: list[str]) -> int:
+    """Round files that sent the author nothing to fix. Not charged as rounds."""
+    return sum(1 for t in texts if is_void_round(t))
 
 
 SEVERITY = {"blocker": 0, "major": 1, "minor": 2}

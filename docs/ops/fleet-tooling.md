@@ -174,3 +174,28 @@ E23-S11 added exactly two things to the original (sha256 `f22da510...`), both ou
   names the first such story and is de-duplicated like any other operator need.
 
 Everything else is the file as uploaded on 22 Oct 2026.
+
+## What `rounds` means in the scorecard
+
+Since E23-S13 a new scorecard record takes `rounds` from the round files
+(`.scratch/<STORY>.roundN.md`), the same count the supervisor caps at three
+(`flo_facts.rounds_done`). One file is written per review that sent findings back to the author.
+
+| Field | Meaning |
+|---|---|
+| `rounds` | rounds that sent itemised findings back, plus 1 for the first submission |
+| `void_rounds` | round files with no itemised finding; **not charged** to the author |
+| `escalations` | `flo escalate` runs; this is all that `task.json["rounds"]` counts now |
+| `review_runs` | `{reviewer: n}`: how often each reviewer ran, reviewer failures included |
+| `rounds_basis` | `"round_files"` on every record written since E23-S13 |
+
+- **Void rounds never start.** A `changes_requested` verdict with no findings (a reviewer that hit its
+  cap with a draft, as on E22-S02 round 3) is read as `malformed` by `flo facts`, so the supervisor
+  asks the operator to rerun the reviewer instead of resuming the author with nothing to fix. It is
+  `malformed` and not `missing` on purpose: the supervisor has no attempt counter for reviews, so
+  `missing` would relaunch a reviewer that keeps writing empty verdicts on every tick.
+- **Older records are marked, not rewritten.** Records without `rounds_basis` took `rounds` from a
+  counter whose only writer was `flo escalate`: six records carrying observed review-run counts say
+  1 round while their reviewers ran 2, 2, 2, 1, 7 and 6 times. `SCORECARD.md` says so in a Data
+  quality block and shows *Rounds verified* per agent. The formulas are unchanged.
+- To compare authors fairly, read only records with `rounds_basis`.

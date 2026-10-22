@@ -49,7 +49,18 @@ def test_author_result(log: str | None, result: str) -> None:
         (None, None, "s1", "missing"),
         ({"verdict": "approve"}, "s1", "s1", "approve"),
         ({"verdict": "approved"}, "s1", "s1", "approve"),
-        ({"verdict": "changes_requested"}, "s1", "s1", "changes"),
+        (
+            {"verdict": "changes_requested", "findings": [{"severity": "major"}]},
+            "s1",
+            "s1",
+            "changes",
+        ),
+        # nothing itemised sends the author nothing to fix: a reviewer that stopped at its cap with
+        # a draft (E22-S02 round 3). It asks the operator and never starts a round.
+        ({"verdict": "changes_requested", "findings": []}, "s1", "s1", "malformed"),
+        ({"verdict": "changes_requested"}, "s1", "s1", "malformed"),
+        # staleness is judged first: an empty verdict on an earlier commit is still stale
+        ({"verdict": "changes_requested", "findings": []}, "s0", "s1", "stale"),
         # a verdict on an earlier commit is stale even when it approved
         ({"verdict": "approve"}, "s0", "s1", "stale"),
         ({"verdict": "approve"}, None, "s1", "stale"),

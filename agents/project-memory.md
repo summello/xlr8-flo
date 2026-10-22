@@ -8,7 +8,7 @@ Loaded into every agent session. Updated by `flo done` (status) and by Opus at e
 | | |
 |---|---|
 | Milestone | **M3 — First sellable release** |
-| Stories | 110 / 234 done |
+| Stories | 110 / 235 done |
 | Branch | milestone/M3-sellable |
 | In flight | E11-S06, E22-S02, E22-S06, E22-S07, E22-S12 |
 | Blocked | E23-S07, E23-S10 |
@@ -210,6 +210,14 @@ the config line, written earlier that day, was never updated. Nothing that runs 
 now reads model and effort through `flo launch-model` and `task.json` records `sessions.sonnet.effort`,
 so a scorecard row says which effort produced it. Trying `high` is a separate, measured experiment,
 after the Codex A/B on gated authorship (`docs/ops/sonnet-round-churn.md`).
+
+**22 Oct 2026 — the scorecard's `rounds` is not trustworthy before E23-S13; read only records with `rounds_basis`.**
+Evidence: the only code that ever wrote `task.json["rounds"]` is `flo escalate`; no skill, script or the
+supervisor does. Six records that carry observed review-run counts say `rounds: 1` while their reviewers ran
+2, 2, 2, 1, 7 and 6 times, and every Sonnet record above 1 predates that. So "Sonnet 1.72 rounds, 59% clean"
+(and codex 1.04, nemotron 1.00) cannot be read as author quality; it does not support narrowing Sonnet. E23-S13
+takes `rounds` from the round files, does not charge void rounds, exposes `review_runs`, and `SCORECARD.md`
+marks the older records. Nothing is rewritten. The Codex A/B on gated authorship reads new records only.
 
 **Merge authority:** the operator has delegated GitHub merges for M0 to Opus, with the
 instruction to space them out so the repository does not read as bot-driven. Outside M0 the

@@ -1181,9 +1181,9 @@ def cmd_escalate(argv):
         die("usage: flo escalate <STORY_ID>")
     sid = argv[0]
     pkt = packet_of(sid)
-    pkt["rounds"] = pkt.get("rounds", 0) + 1
+    pkt["rounds"] = pkt.get("rounds", 0) + 1  # escalations only; the scorecard's rounds come from round files
     (worktree_path(sid) / "task.json").write_text(json.dumps(pkt, indent=2) + "\n")
-    print(f"escalating {sid} to Opus (round {pkt['rounds']})")
+    print(f"escalating {sid} to Opus (escalation {pkt['rounds']})")
     cmd_final([sid])
     print("\nOpus: rule on each disputed finding — upheld or dismissed, with reason.")
     print("If the author is wrong three times on the same point, write the fix yourself.")
@@ -1420,11 +1420,23 @@ def record_score(sid, pkt, story):
     durations = durations_from(pkt, verdict_mtimes, review_starts,
                                warn=lambda m: print(f"warning: {sid}: {m}", file=sys.stderr))
 
+    # rounds come from the round files, the number the supervisor caps on (flo_facts.rounds_done);
+    # a round that sent no itemised finding is void and not charged. task.json "rounds" counts
+    # `flo escalate` runs only, and is kept as escalations.
+    import flo_facts as F
+    scratch = ROOT / ".scratch"
+    names = [p.name for p in scratch.iterdir()] if scratch.exists() else []
+    texts = [(scratch / n).read_text(errors="replace") for n in names
+             if n.startswith(f"{sid}.") and F.ROUND.search(n)]
+    done, void = F.rounds_done(names, sid), F.void_rounds(texts)
+
     sc = load_scores()
     record = {
         "story": sid, "kind": story["k"], "size": story["s"], "tags": story.get("tags", []),
         "author": pkt["author"], "reviewers": sorted(per_reviewer),
-        "rounds": pkt.get("rounds", 0) + 1,
+        "rounds": max(1, done - void + 1), "void_rounds": void,
+        "escalations": pkt.get("rounds", 0), "rounds_basis": "round_files",
+        "review_runs": {who: v["reviews"] for who, v in per_reviewer.items()},
         "gate_failures": pkt.get("gate_failures", 0),
         "opus_final": bool(pkt["opus_final"]),
         "escapes": len(escapes),
@@ -1456,6 +1468,7 @@ def compute_scores():
             clean = sum(1 for s in authored if s["rounds"] == 1 and s["gate_failures"] == 0)
             rounds = sum(s["rounds"] for s in authored) / len(authored)
             esc = sum(s["escapes"] for s in authored) / len(authored)
+            m["verified"] = sum(1 for s in authored if s.get("rounds_basis") == "round_files")
             m["clean_merge_rate"] = clean / len(authored)
             m["mean_rounds"] = rounds
             m["escapes_per_story"] = esc
@@ -1497,14 +1510,21 @@ def render_scores():
         L += ["_No stories merged yet._", ""]
         return "\n".join(L)
 
+    legacy = sum(1 for s in sc["stories"] if s.get("rounds_basis") != "round_files")
+    if legacy:
+        L += [f"> **Data quality.** {legacy} of {n} records took `rounds` from a counter with no reliable",
+              "> writer (before E23-S13, 22 Oct 2026): in this repository only `flo escalate` ever raised it, and",
+              "> records that also carry review-run counts say 1 round while their reviewers ran up to 7 times.",
+              "> *Clean merge*, *Mean rounds* and the author score include those records, so read them as",
+              "> indicative until *Rounds verified* equals *Stories*. The records are not rewritten.", ""]
     L += ["## As author", "",
-          "| Agent | Stories | Clean merge | Mean rounds | Escapes/story | Score |",
-          "|---|---:|---:|---:|---:|---:|"]
+          "| Agent | Stories | Rounds verified | Clean merge | Mean rounds | Escapes/story | Score |",
+          "|---|---:|---:|---:|---:|---:|---:|"]
     for a, m in sorted(scores.items(), key=lambda kv: -(kv[1].get("author_score") or -1)):
         if not m["authored"]:
             continue
         s = m.get("author_score")
-        L.append(f"| `{a}` | {m['authored']} | {m['clean_merge_rate']:.0%} | {m['mean_rounds']:.2f} "
+        L.append(f"| `{a}` | {m['authored']} | {m['verified']}/{m['authored']} | {m['clean_merge_rate']:.0%} | {m['mean_rounds']:.2f} "
                  f"| {m['escapes_per_story']:.2f} | {f'**{s}**' if s is not None else '—'} |")
 
     L += ["", "## As reviewer", "",
@@ -1523,7 +1543,9 @@ def render_scores():
           "**Author score** = 50 × clean-merge rate + 30 × round efficiency + 20 × (1 − escape rate).",
           "A *clean merge* is one review round with no gate failure. *Round efficiency* is full at one",
           "round and zero at three. An *escape* is a blocker Opus found at final review — meaning two",
-          "reviewers approved code that was wrong.", "",
+          "reviewers approved code that was wrong. A *round* is one review that sent itemised findings back",
+          "to the author, counted from the round files the supervisor caps on, plus one for the first",
+          "submission; a round file with no itemised finding is a `void_round` and is not charged.", "",
           "**Reviewer score** = 25 × test compliance + 30 × blocker precision + 30 × catch rate",
           "+ 15 × thoroughness. *Precision* is blockers upheld ÷ blockers raised, so crying wolf costs.",
           "*Catch rate* penalises escapes on stories this agent approved. *Thoroughness* saturates at two",
