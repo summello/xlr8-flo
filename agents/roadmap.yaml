@@ -1585,7 +1585,7 @@ epics:
         dep:
           - E11-S06
           - E11-S12
-        st: in_progress
+        st: review
       - id: E11-S15
         t: 'Onboarding decision panel: vendor evidence block'
         k: ui
@@ -1685,7 +1685,7 @@ epics:
           - SRC-005
         dep:
           - E12-S02
-        st: in_progress
+        st: review
       - id: E12-S04
         t: 'Bid capture: line prices, currency, tax, freight, lead time, validity,
           exceptions'
@@ -3306,7 +3306,7 @@ epics:
           - SEC-012
         dep:
           - E22-S12
-        st: todo
+        st: done
       - id: E23-S10
         t: Completion-triggered supervisor wakeup instead of a fixed 300 s poll
         k: chore

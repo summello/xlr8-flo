@@ -442,12 +442,53 @@ jobs:
           sarif_file: trivy-results.sarif
           category: trivy-dependency-scan
 
+  frontend-build:
+    # Built once here, deployed from the artifact: deploy runs the bundle guards but no npm ci / vite build.
+    runs-on: ubuntu-latest
+    needs: [detect]
+    if: |
+      needs.detect.outputs.web == 'true'
+      && (
+        (github.ref == 'refs/heads/main' && github.event_name == 'push')
+        || (
+          github.event_name == 'workflow_dispatch'
+          && (
+            github.ref == 'refs/heads/main'
+            || startsWith(github.ref, 'refs/heads/milestone/')
+          )
+        )
+      )
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: VITE_API_BASE_URL is the relative /api path
+        run: |
+          test "$(sed -n 's/^VITE_API_BASE_URL=//p' apps/web/.env.production)" = "/api" \
+            || { echo "::error::VITE_API_BASE_URL must be the relative path /api"; exit 1; }
+      - run: npm --prefix apps/web ci
+      - run: npm --prefix apps/web run build
+      - name: Manifest of the built bundle
+        working-directory: apps/web
+        run: find dist -type f -print0 | sort -z | xargs -0 sha256sum > dist.sha256
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: web-dist
+          path: |
+            apps/web/dist
+            apps/web/dist.sha256
+          if-no-files-found: error
+          retention-days: 1
+
   deploy:
     # Main pushes deploy automatically. Manual milestone dispatches support release rehearsal.
     # `always() && !failure() && !cancelled()` so a legitimately skipped
     # backend/frontend job does not also skip the deploy.
     runs-on: ubuntu-latest
-    needs: [detect, backend, frontend, security]
+    needs: [detect, backend, frontend, frontend-build, security]
     if: |
       always() && !failure() && !cancelled()
       && needs.detect.outputs.api == 'true'
@@ -593,6 +634,13 @@ jobs:
           --image "us-central1-docker.pkg.dev/${GCP_PROJECT}/flo/flo-api"
           --current-image "${{ steps.push.outputs.digest }}"
 
+      - name: Download the SPA bundle built by frontend-build
+        if: needs.detect.outputs.web == 'true'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
+        with:
+          name: web-dist
+          path: apps/web
+
       - name: Deploy single-origin Worker route and SPA
         if: needs.detect.outputs.web == 'true'
         run: |
@@ -603,10 +651,8 @@ jobs:
             https://*.run.app) ;;
             *) echo "::error::CLOUD_RUN_ORIGIN must be an HTTPS run.app origin"; exit 1 ;;
           esac
-          test "$(sed -n 's/^VITE_API_BASE_URL=//p' apps/web/.env.production)" = "/api" \
-            || { echo "::error::VITE_API_BASE_URL must be the relative path /api"; exit 1; }
-          npm --prefix apps/web ci
-          npm --prefix apps/web run build
+          (cd apps/web && sha256sum --check --quiet dist.sha256) \
+            || { echo "::error::downloaded SPA bundle does not match its build manifest"; exit 1; }
           # A key is `sk-` at a word start followed by 20+ key characters; the bare
           # substring also matches `risk-indicators`.
           if grep -RIlE -- '(^|[^A-Za-z0-9])sk-[A-Za-z0-9_-]{20,}|-----BEGIN' apps/web/dist; then

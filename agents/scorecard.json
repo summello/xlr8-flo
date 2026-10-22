@@ -4483,6 +4483,74 @@
       },
       "recap": "Vendor profile gains a Performance card (server overall, per-category averages, counts) and a wide Scorecard side sheet with Add Score, Dispute and Resolve forms, a struck original conveyed in text plus its linked adjustment. Web only; the card re-reads the server after every write.",
       "title": "Vendor Performance card and scorecard sheet"
+    },
+    {
+      "story": "E23-S09",
+      "kind": "chore",
+      "size": "S",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [
+        {
+          "from": "opencode-nemotron",
+          "to": "sonnet",
+          "reason": "operator, 23 Oct 2026: E23 complex stories to Sonnet worker B (CI deploy path)"
+        }
+      ],
+      "sessions": {
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-m3run-E23-S09 and model~nvidia/nemotron-3-ultra-550b-a55b:free"
+        },
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "440c5110-25f3-4e74-9f5f-862e9ef42508",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E23-S09",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1656b-4eab-7be1-8911-96ff91d61957",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "CI now builds the SPA once in a new frontend-build job (main push / main|milestone dispatch only) and deploy downloads that artifact, verifies a sha256 manifest and runs the unchanged bundle guards on it. No npm ci or vite build remains in deploy.",
+      "title": "Build the SPA bundle once in CI and deploy the same artifact",
+      "durations": {
+        "wall_s": 5360,
+        "author_s": 3648,
+        "review_s": {
+          "codex": 28
+        },
+        "gate_s": 0
+      }
     }
   ]
 }
