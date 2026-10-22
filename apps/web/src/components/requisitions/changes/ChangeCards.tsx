@@ -1,6 +1,6 @@
 import { ArrowDown, ArrowUp, ArrowsLeftRight, Equals, MinusCircle, PencilSimple, PlusCircle, WarningCircle } from "@phosphor-icons/react";
 import { useEffect, useRef } from "react";
-import Money from "../ReqMoney";
+import Money from "../../ui/Money";
 import { formatDate, formatDateTime, label } from "../api";
 import { qty } from "../model";
 import { CHANGE_LABEL, actorOf, consequence, deltaText, outcomeLabel, type ChangeRow, type ChangeSet, type Outcome, type Revision } from "./model";
@@ -13,7 +13,7 @@ const OUTCOME_ICON: Record<string, typeof Equals> = { unchanged: Equals, release
 function Value({ row, value, currency }: { row: ChangeRow; value: string | null; currency: string }) {
   if (value === null) return <span aria-label="No value">—</span>;
   switch (row.value_type) {
-    case "money": return <Money value={value} currency={currency} />;
+    case "money": return <Money zero="value" value={value} currency={currency} />;
     case "quantity": return <span className="numeric">{qty(value)}</span>;
     case "date": return <>{formatDate(value)}</>;
     default: return <>{value}</>;
@@ -57,9 +57,9 @@ export function FundingEffect({ set, retry }: { set: ChangeSet; retry: () => voi
   return <section className="req-card" id="funding-check" tabIndex={-1} aria-labelledby="funding-effect-title">
     <header className="req-card-head"><h2 id="funding-effect-title">Funding Check</h2></header>
     <dl className="req-funds">
-      <div><dt>Reserved Now</dt><dd><Money value={f.reserved_now} currency={f.currency} /></dd></div>
-      <div><dt>Reserved After</dt><dd><Money value={f.reserved_after} currency={f.currency} /></dd></div>
-      <div><dt>Project Available After</dt><dd>{f.project_available_after === null ? <span>Not available</span> : <Money value={f.project_available_after} currency={f.currency} />}</dd></div>
+      <div><dt>Reserved Now</dt><dd><Money zero="value" value={f.reserved_now} currency={f.currency} /></dd></div>
+      <div><dt>Reserved After</dt><dd><Money zero="value" value={f.reserved_after} currency={f.currency} /></dd></div>
+      <div><dt>Project Available After</dt><dd>{f.project_available_after === null ? <span>Not available</span> : <Money zero="value" value={f.project_available_after} currency={f.currency} />}</dd></div>
     </dl>
     <p className="req-pill" data-tone={f.outcome === "reserved_more" ? "warning" : f.outcome === "unchanged" ? "neutral" : "info"}><Icon aria-hidden="true" weight="regular" />{outcomeLabel(f.outcome)}</p>
     {f.note && <p>{f.note}</p>}

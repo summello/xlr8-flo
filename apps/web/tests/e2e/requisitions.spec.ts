@@ -1,8 +1,9 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { generatedProjectId } from "./requisitions-fixture";
 import { instanceId, lineRow, requisition, reservation, reqId, stubRequisitions } from "./requisitions-fixture";
 import { projectId } from "./projects-fixture";
+import { keyboardFocus } from "./helpers";
 
 async function fillHeader(page: Page, over: Record<string, string> = {}) {
   const values: Record<string, string> = { title: "Press brake", project_id: projectId, department_code: "D", ledger_account_code: "L", needed_by: "2030-01-31", delivery_address_id: "aaaaaaaa-1111-4111-8111-111111111111", ...over };
@@ -20,16 +21,6 @@ async function addItem(page: Page, n: number, quantity: string, price: string, d
   await page.getByLabel(`Quantity, line ${n}`).fill(quantity);
   await page.getByLabel(`Unit, line ${n}`).selectOption("ea");
   await page.getByLabel(`Unit price, line ${n}`).fill(price);
-}
-async function keyboardFocus(page: Page, locator: Locator) {
-  for (let i = 0; i < 200; i++) {
-    await page.keyboard.press("Tab");
-    if (await locator.evaluate(node => node === document.activeElement)) {
-      await expect.poll(() => locator.evaluate(node => getComputedStyle(node).outlineStyle)).not.toBe("none");
-      return;
-    }
-  }
-  throw new Error("Control is unreachable by keyboard");
 }
 const heading = (page: Page, text: string | RegExp) => page.getByRole("heading", { name: text });
 

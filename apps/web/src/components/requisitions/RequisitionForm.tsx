@@ -3,14 +3,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { apiClient } from "../../api/client";
 import { registerGuard } from "../../lib/navigation-guard";
 import StatusPill from "../status/StatusPill";
-import Money from "./ReqMoney";
+import Money from "../ui/Money";
 import Attachments from "./Attachments";
 import Catalogue from "./Catalogue";
 import FundingCheck from "./FundingCheck";
 import LinesCard from "./LinesCard";
 import ReqField from "./ReqField";
 import SubmitSummary from "./SubmitSummary";
-import { failure, formatTime, mutationHeaders, type CatalogueItem, type LookupOption, type Problem, type Requisition, type RequisitionStatus, type RequisitionLine, type SubmissionCheck } from "./api";
+import { failure, formatTime, lookup, mutationHeaders, type CatalogueItem, type LookupOption, type Problem, type Requisition, type RequisitionStatus, type RequisitionLine, type SubmissionCheck } from "./api";
 import { EMPTY_HEADER, clientProblems, estimateOf, initialHeader, initialLines, lineBody, localToday, newLine, problemFromError, type DraftLine, type Header, type SummaryProblem } from "./model";
 import { useLoad } from "./useLoad";
 
@@ -18,11 +18,6 @@ export type Initial = { row: Requisition; lines: RequisitionLine[] };
 type Summary = { title: string; lead: string; problems: SummaryProblem[]; detail?: string };
 
 
-async function lookup(kind: string, buId?: string): Promise<LookupOption[]> {
-  const { data, error } = await apiClient.GET("/api/v1/requisitions/lookups/{kind}", { params: { path: { kind }, query: { limit: 50, ...(buId ? { bu_id: buId } : {}) } } });
-  if (!data) throw new Error(failure(error, "Loading the list of choices"));
-  return data.rows;
-}
 const optionLabel = (o: LookupOption) => { const notes = [o.note, o.codes_expired ? "expired code" : null].filter(Boolean); return notes.length ? `${o.label} (${notes.join(", ")})` : o.label; };
 
 export default function RequisitionForm({ navigate, initial }: { navigate: (href: string) => void; initial?: Initial }) {
@@ -168,7 +163,7 @@ export default function RequisitionForm({ navigate, initial }: { navigate: (href
       <div className="req-card">
         <StatusPill docType="requisition" status={done.status as RequisitionStatus} />
         <h2 id="req-done-title" tabIndex={-1} ref={el => el?.focus()}>{done.number} Submitted for Approval</h2>
-        <p role="status">{done.reservation ? <>Reserved <Money value={done.reservation.remaining} currency={done.reservation.currency} /> against {done.project_name ?? "the project"}. </> : null}
+        <p role="status">{done.reservation ? <>Reserved <Money zero="value" value={done.reservation.remaining} currency={done.reservation.currency} /> against {done.project_name ?? "the project"}. </> : null}
           {first ? `Routed to ${first.approver_emails.join(", ") || first.label}, step 1 of ${route.data?.route.length}. ` : ""}You can withdraw it while it is pending, and the reservation is released once.</p>
         <div className="req-actions">
           <a className="form-submit" href={`/requisitions/${done.id}`} onClick={e => { e.preventDefault(); navigate(`/requisitions/${done.id}`); }}>View requisition</a>

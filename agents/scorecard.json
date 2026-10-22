@@ -4088,6 +4088,49 @@
       },
       "recap": "Reused migrated database templates and sharded backend/E2E CI while preserving required check names and the 80% coverage floor. Local plants caught all three violations, traceability and timing evidence are recorded, and flo check --light is green.",
       "title": "Faster checks: template test databases, sharded backend and E2E CI"
+    },
+    {
+      "story": "E22-S04",
+      "kind": "chore",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 6,
+          "findings": 5,
+          "blockers": 5,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "49450286-333a-4877-a5a0-6b6d877e607c",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S04",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a16163-b40b-7252-a77d-510de76f23e7",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Merged the two Money components into ui/Money with a zero prop, shared the requisition lookup helper and e2e keyboardFocus, renamed the collaboration readers *_unchecked, and read approval instances via approvals.service. Also: RLS on the 0053 tracking table (0060), If-Match/ETag on vendor and contact PATCH (0061), audit plus requester notice on zero-step auto-approval, and requisition list filtering by granted scopes.",
+      "title": "M2 milestone review follow-ups: Money zero prop, shared lookup helper, internal collaboration readers, approvals read via service, e2e focus helper"
     }
   ]
 }

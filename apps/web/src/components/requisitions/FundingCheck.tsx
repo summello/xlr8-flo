@@ -1,5 +1,5 @@
 import { CheckCircle, Warning } from "@phosphor-icons/react";
-import Money from "./ReqMoney";
+import Money from "../ui/Money";
 import { formatMoney } from "../../lib/money";
 import { scaled } from "../../lib/decimal";
 import { fundingFor } from "./model";
@@ -23,9 +23,9 @@ export default function FundingCheck({ check, estimate, currency, standalone, sa
     const pct = avail <= 0n ? (used > 0n ? 100 : 0) : Number((used < 0n ? 0n : used) * 100n / avail);
     body = <>
       <dl className="req-funds">
-        <div><dt>Available Now</dt><dd><Money value={check.funding.available} currency={currency} /></dd></div>
-        <div><dt>This Requisition</dt><dd><Money value={f.thisRequisition} currency={currency} /></dd></div>
-        <div><dt>Available After</dt><dd><Money value={f.availableAfter} currency={currency} /></dd></div>
+        <div><dt>Available Now</dt><dd><Money zero="value" value={check.funding.available} currency={currency} /></dd></div>
+        <div><dt>This Requisition</dt><dd><Money zero="value" value={f.thisRequisition} currency={currency} /></dd></div>
+        <div><dt>Available After</dt><dd><Money zero="value" value={f.availableAfter} currency={currency} /></dd></div>
       </dl>
       <div role="img" className="req-meter" aria-label={`This requisition ${formatMoney(f.thisRequisition, currency)} ${currency} against ${formatMoney(check.funding.available, currency)} ${currency} available`}><span style={{ inlineSize: `${Math.min(pct, 100)}%` }} data-over={f.shortfall || undefined} /></div>
       <p className="req-pill" data-tone={f.shortfall ? "danger" : "success"}>{f.shortfall ? <Warning aria-hidden="true" weight="regular" /> : <CheckCircle aria-hidden="true" weight="regular" />}{f.shortfall ? "Exceeds the available funds" : "Within the available funds"}</p>

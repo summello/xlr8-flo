@@ -108,10 +108,9 @@ def build_app(
     connection = session_store._connection
     connection.execute("DROP TABLE IF EXISTS login_attempt")
     migrations = discover_migrations(Path(__file__).resolve().parents[4] / "migrations")
-    next(
-        revision for revision in migrations
-        if revision.revision == "20261009_0029"
-    ).upgrade(connection)
+    next(revision for revision in migrations if revision.revision == "20261009_0029").upgrade(
+        connection
+    )
     app.dependency_overrides[get_login_throttle] = lambda: LoginThrottle(connection, Settings())
 
     app.dependency_overrides[get_mfa_service] = lambda: cast(MfaService, NoMfaService())
@@ -423,17 +422,24 @@ def test_csrf_bootstrap_ignores_foreign_org(session_database: SessionDatabase) -
             assert login.status_code == 204
             assert csrf != client.cookies[SESSION_COOKIE_NAME]
             assert client.cookies[CSRF_COOKIE_NAME] != client.cookies[SESSION_COOKIE_NAME]
+
     run(requests())
 
 
-@pytest.mark.parametrize("path,method,status", [
-    ("/api/v1/auth/sessions", "GET", 401),
-    ("/unsafe/post", "POST", 403),
-    ("/missing", "GET", 404),
-    ("/explode", "GET", 500),
-])
+@pytest.mark.parametrize(
+    "path,method,status",
+    [
+        ("/api/v1/auth/sessions", "GET", 401),
+        ("/unsafe/post", "POST", 403),
+        ("/missing", "GET", 404),
+        ("/explode", "GET", 500),
+    ],
+)
 def test_first_error_response_arms_csrf(
-    session_database: SessionDatabase, path: str, method: str, status: int,
+    session_database: SessionDatabase,
+    path: str,
+    method: str,
+    status: int,
 ) -> None:
     app = build_app(
         store(session_database, MutableClock(START)),
@@ -446,11 +452,13 @@ def test_first_error_response_arms_csrf(
             assert response.status_code == status
             assert client.cookies[CSRF_COOKIE_NAME]
             assert SESSION_COOKIE_NAME not in client.cookies
+
     run(request())
 
 
 def test_planted_missing_csrf_arming_breaks_cold_login(
-    session_database: SessionDatabase, monkeypatch: pytest.MonkeyPatch,
+    session_database: SessionDatabase,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from flo.kernel.session import csrf
 
@@ -481,17 +489,20 @@ def test_first_response_preserves_route_rotated_csrf_cookie(
             response = await client.get("/rotate-csrf")
             assert response.status_code == 204
             cookies = [
-                value for value in response.headers.get_list("set-cookie")
+                value
+                for value in response.headers.get_list("set-cookie")
                 if value.startswith(f"{CSRF_COOKIE_NAME}=")
             ]
             assert len(cookies) == 1
             assert cookies[0].startswith(f"{CSRF_COOKIE_NAME}=route-rotated-fixture;")
             assert client.cookies[CSRF_COOKIE_NAME] == "route-rotated-fixture"
+
     run(request())
 
 
 def test_planted_dropped_csrf_preserve_branch_fails(
-    session_database: SessionDatabase, monkeypatch: pytest.MonkeyPatch,
+    session_database: SessionDatabase,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from flo.kernel.session import csrf
 

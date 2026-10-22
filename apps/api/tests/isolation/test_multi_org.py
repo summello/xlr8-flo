@@ -289,7 +289,8 @@ def test_migration_backfill_downgrade_preservation_and_guard(multi):
 
     conn, a, b, _, identity = multi
     migration = next(
-        item for item in discover_migrations(ROOT / "migrations")
+        item
+        for item in discover_migrations(ROOT / "migrations")
         if item.revision == "20261009_0030"
     )
     snapshot = conn.execute(

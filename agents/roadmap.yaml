@@ -1501,7 +1501,7 @@ epics:
           - E10-S13
           - E11-S02
           - E11-S04
-        st: in_progress
+        st: review
       - id: E11-S07
         t: Performance scoring across quality, price, delivery, service, with dispute
           history
@@ -2276,7 +2276,7 @@ epics:
           - A11Y-001
           - UX-007
         dep: []
-        st: review
+        st: done
       - id: E22-S05
         t: Replace MinIO with SeaweedFS in the local stack; bucket via the S3 API
         k: chore
@@ -2301,7 +2301,7 @@ epics:
           - USR-008
           - ACC-004
         dep: []
-        st: todo
+        st: in_progress
       - id: E22-S07
         t: People have a display name, stored, copied at acceptance, returned beside every email
         k: migration
@@ -2313,7 +2313,7 @@ epics:
           - USR-010
           - SEC-011
         dep: []
-        st: todo
+        st: in_progress
       - id: E22-S08
         t: Expired requisitions use the warning tone
         k: ui

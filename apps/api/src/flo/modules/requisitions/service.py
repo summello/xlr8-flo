@@ -46,6 +46,7 @@ from flo.modules.requisitions.links import assert_current_upstream as assert_cur
 from flo.modules.requisitions.links import links as links
 from flo.modules.requisitions.links import register_link_provider as register_link_provider
 from flo.modules.requisitions.models import READ_FIELDS, READ_SQL, RequisitionRepository
+from flo.modules.requisitions.revisions import latest_instance
 from flo.modules.requisitions.schemas import (
     AmountTotal,
     Direction,
@@ -254,16 +255,9 @@ class RequisitionService:
                     if can_view_budget(held.project_id)
                     else None,
                 )
-            instance = self.repo.execute(
-                "SELECT id,status FROM approval_instance WHERE org_id=%(org_id)s AND "
-                "document_type IN ('requisition','project_request') AND document_id=%(id)s"
-                " ORDER BY started_at DESC,id DESC LIMIT 1",
-                {"id": id},
-            ).fetchone()
+            instance = latest_instance(self.connection, self.scope, id)
             if instance:
-                result.approval = ApprovalRead(
-                    instance_id=cast(UUID, instance[0]), status=str(instance[1])
-                )
+                result.approval = ApprovalRead(instance_id=instance[0], status=instance[1])
             amendment = open_amendment(self.repo, id)
             if amendment and row["status"] == "sourcing_in_progress":
                 result.amendment = AmendmentRef(
@@ -560,7 +554,9 @@ class RequisitionService:
         direction: Direction = "asc",
         cursor: str | None = None,
         page_size: int = 50,
+        visible: tuple[list[UUID], list[UUID]] | None = None,
     ) -> RequisitionPage:
+        """`visible` is (business units, projects) the caller may view; None means everything."""
         if not 1 <= page_size <= 50:
             raise invalid("page_size", "Choose a page size from 1 to 50.")
         # Only these constant strings ever reach the SQL text; the request values pick one.
@@ -586,6 +582,11 @@ class RequisitionService:
           AND (%(standalone)s::boolean IS NULL OR r.standalone=%(standalone)s)
           AND (%(requester_id)s::uuid IS NULL OR r.requester_id=%(requester_id)s)
           AND (r.number ILIKE %(prefix)s OR r.title ILIKE %(substring)s)"""
+        if visible is not None:
+            params.update(visible_units=visible[0], visible_projects=visible[1])
+            filters += """
+          AND ((r.standalone AND r.bu_id = ANY(%(visible_units)s::uuid[]))
+            OR (NOT r.standalone AND r.project_id = ANY(%(visible_projects)s::uuid[])))"""
         boundary = ""
         if cursor is not None:
             try:

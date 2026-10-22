@@ -239,14 +239,18 @@ def test_write_needs_if_match_and_a_current_version_and_reads_carry_the_etag(hea
             stale = await call(browser, "PUT", path, {"tax_id": "OVERWRITE-1"}, 0)  # blind write
             detail = await call(browser, "GET", f"/{vendor.id}")
             shown = await call(browser, "POST", path + "/reveal", reveal(["tax_id"]))
-            ok = await call(browser, "PUT", path, {"tax_id": "NEW-4455"}, detail.headers["etag"])
+            ok = await call(
+                browser, "PUT", path, {"tax_id": "NEW-4455"}, detail.json()["sensitive"]["version"]
+            )
             return missing, junk, first, stale, detail, shown, ok
 
     missing, junk, first, stale, detail, shown, ok = asyncio.run(scenario())
     assert (missing.status_code, junk.status_code) == (400, 400)
     assert first.status_code == 200
     assert stale.status_code == 409 and stale.json()["checks"]["problem"] == "stale_version"
-    assert detail.headers["etag"] == '"1"' and detail.json()["sensitive"]["version"] == 1
+    # the detail's ETag is the vendor's version (PATCH); the sensitive record's is in the body
+    assert detail.headers["etag"] == f'"{detail.json()["version"]}"'
+    assert detail.json()["sensitive"]["version"] == 1
     assert shown.headers["etag"] == '"1"' and shown.json()["tax_id"] == TAX  # the blind write lost
     assert ok.status_code == 200 and ok.json()["version"] == 2
 

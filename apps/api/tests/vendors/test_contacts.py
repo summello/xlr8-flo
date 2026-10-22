@@ -18,15 +18,21 @@ from tests.kernel.test_migrate import empty_database as empty_database  # noqa: 
 from tests.org.test_bootstrap import bootstrap_db as bootstrap_db  # noqa: F401
 from tests.requisitions.test_header import header_db as header_db  # noqa: F401
 from tests.requisitions.test_header import org_svc
-from tests.vendors.test_vendors import body, regrant
+from tests.vendors.test_vendors import body, current_version, regrant
 
 
-async def send(browser, method, suffix="", data=None):
+async def send(browser, method, suffix="", data=None, match="auto"):
+    """`match`: "auto" sends the live version on a PATCH, None omits If-Match, else the value."""
+    extra = {}
+    if method == "PATCH" and match is not None:
+        extra["If-Match"] = str(
+            await current_version(browser, suffix) if match == "auto" else match
+        )
     return await browser.request(
         method,
         "/api/v1/vendors" + suffix,
         json=data,
-        headers=headers(browser, uuid4().hex),
+        headers=headers(browser, uuid4().hex) | extra,
     )
 
 
@@ -137,14 +143,14 @@ def test_document_recipients_and_contacts_complete(header_db):
     )
     assert svc.contacts_complete(made.id) == []
     assert [r.email for r in svc.document_recipients(made.id)] == ["s@example.test"]
-    svc.update_contact(made.id, billing.id, ContactPatch(receives_documents=True))
+    svc.update_contact(made.id, billing.id, ContactPatch(receives_documents=True), "1")
     assert [r.email for r in svc.document_recipients(made.id)] == [
         "s@example.test",
         "b@example.test",
     ]
     sd = [c for c in svc.list_contacts(made.id) if c.type == "service_delivery"][0]
-    svc.update_contact(made.id, sd.id, ContactPatch(receives_documents=False))
-    svc.update_contact(made.id, billing.id, ContactPatch(receives_documents=False))
+    svc.update_contact(made.id, sd.id, ContactPatch(receives_documents=False), "1")
+    svc.update_contact(made.id, billing.id, ContactPatch(receives_documents=False), "2")
     assert svc.document_recipients(made.id) == []
 
 
@@ -219,5 +225,28 @@ def test_sourcing_specialist_reads_but_cannot_write_contacts(header_db):
                 await send(browser, "PATCH", f"{path}/{made['id']}", {"name": "X"})
             ).status_code == 403
             assert (await send(browser, "DELETE", f"{path}/{made['id']}")).status_code == 403
+
+    asyncio.run(scenario())
+
+
+def test_patch_contact_needs_if_match_and_a_stale_replay_conflicts(header_db):
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            vid = await vendor(browser)
+            path = f"/{vid}/contacts"
+            made = (await send(browser, "POST", path, contact())).json()
+            one = f"{path}/{made['id']}"
+            assert made["version"] == 1
+            missing = await send(browser, "PATCH", one, {"name": "A"}, match=None)
+            assert missing.status_code == 400
+            assert missing.json()["checks"]["problem"] == "if_match_required"
+            first = await send(browser, "PATCH", one, {"name": "A"}, match=1)
+            assert first.status_code == 200 and first.json()["version"] == 2
+            assert first.headers["ETag"] == '"2"'
+            replay = await send(browser, "PATCH", one, {"name": "B"}, match=1)
+            assert replay.status_code == 409
+            assert replay.json()["checks"]["problem"] == "stale_version"
+            assert (await send(browser, "GET", path)).json()[0]["name"] == "A"
 
     asyncio.run(scenario())

@@ -1,4 +1,5 @@
 import type { components } from "../../api/generated/schema";
+import { apiClient } from "../../api/client";
 import { writeHeaders } from "../../features/auth/api";
 
 export type Requisition = components["schemas"]["RequisitionRead"];
@@ -48,4 +49,11 @@ export function failure(error: { detail?: string | null; correlation_id?: string
   return error?.detail
     ? `${error.detail} Your entries and loaded data are kept. Correct the issue or try again.${ref}`
     : `${action} failed. Your entries and loaded data are kept. Check your connection and try again.${ref}`;
+}
+
+/** Options for a requisition lookup list (units, departments, ledger accounts, ...). */
+export async function lookup(kind: string, buId?: string): Promise<LookupOption[]> {
+  const { data, error } = await apiClient.GET("/api/v1/requisitions/lookups/{kind}", { params: { path: { kind }, query: { limit: 50, ...(buId ? { bu_id: buId } : {}) } } });
+  if (!data) throw new Error(failure(error, "Loading the list of choices"));
+  return data.rows;
 }

@@ -120,8 +120,7 @@ def test_api_emits_no_cors_headers_or_middleware() -> None:
     responses = asyncio.run(request_every_response_shape())
 
     assert all(
-        "cors" not in middleware.cls.__module__.casefold()
-        for middleware in app.user_middleware
+        "cors" not in middleware.cls.__module__.casefold() for middleware in app.user_middleware
     )
     for response in responses:
         assert "access-control-allow-origin" not in response.headers

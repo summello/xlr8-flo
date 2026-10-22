@@ -78,9 +78,7 @@ def assert_release_workflow_policy(source: str) -> None:
     assert "ignore-unfixed: true" in image_scan
     assert "format: sarif" in image_scan
     assert "continue-on-error" not in image_scan
-    assert source.index("- name: Scan built API image") < source.index(
-        'docker push "$IMAGE_TAG"'
-    )
+    assert source.index("- name: Scan built API image") < source.index('docker push "$IMAGE_TAG"')
     assert source.index("- name: Generate deployed-image SBOM") < source.index(
         'docker push "$IMAGE_TAG"'
     )
@@ -104,7 +102,7 @@ SPA_SECRET_MARKER = r"(^|[^A-Za-z0-9])sk-[A-Za-z0-9_-]{20,}|-----BEGIN"
 @pytest.mark.parametrize(
     ("bundle", "flagged"),
     [
-        ('fetch(`/api/v1/projects/${id}/risk-indicators`)', False),
+        ("fetch(`/api/v1/projects/${id}/risk-indicators`)", False),
         ("task-list-item-with-a-very-long-class-name-here", False),
         ('const key="sk-proj-abcdefghijklmnopqrstuvwx"', True),
         ("sk-abcdefghijklmnopqrstuvwxyz0123", True),
@@ -226,9 +224,7 @@ def copy_import_linter_project(tmp_path: Path) -> Path:
         project / "flo" / "kernel" / "identity",
     ):
         make_package(package)
-    (project / "flo" / "modules" / "b" / "values.py").write_text(
-        "VALUE = 1\n", encoding="utf-8"
-    )
+    (project / "flo" / "modules" / "b" / "values.py").write_text("VALUE = 1\n", encoding="utf-8")
     (project / "flo" / "modules" / "b" / "__init__.py").write_text(
         "from .values import VALUE\n", encoding="utf-8"
     )
@@ -462,13 +458,13 @@ def test_postgres_pooling_guard_rejects_missing_roots_and_session_set_then_passe
     source.mkdir()
     migrations.mkdir()
     (source / "safe.py").write_text(
-        'LOCAL = "SET LOCAL app.org_id = \'safe\'"\n'
+        "LOCAL = \"SET LOCAL app.org_id = 'safe'\"\n"
         'UPDATE = """UPDATE job\nSET state = \'done\'"""\n',
         encoding="utf-8",
     )
     violation = migrations / "planted.py"
     violation.write_text(
-        'STATEMENT = "SET app.org_id = \'leaks-across-clients\'"\n',
+        "STATEMENT = \"SET app.org_id = 'leaks-across-clients'\"\n",
         encoding="utf-8",
     )
 
@@ -796,9 +792,7 @@ def test_single_origin_release_policy_rejects_d17_violations_and_then_passes(
     violation: str,
 ) -> None:
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
-    production_environment = (ROOT / "apps" / "web" / ".env.production").read_text(
-        encoding="utf-8"
-    )
+    production_environment = (ROOT / "apps" / "web" / ".env.production").read_text(encoding="utf-8")
     worker_configuration = (ROOT / "infra" / "cloudflare" / "wrangler.toml").read_text(
         encoding="utf-8"
     )
@@ -1139,8 +1133,17 @@ def test_assignment_routes_authors_by_priority_and_free_slots(
             "codex": {
                 "metered": "rate",
                 "roles": ["author", "review"],
-                "allowed_kinds": ["ledger", "concurrency", "migration", "security", "engine",
-                                  "api", "chore", "ui", "crud"],
+                "allowed_kinds": [
+                    "ledger",
+                    "concurrency",
+                    "migration",
+                    "security",
+                    "engine",
+                    "api",
+                    "chore",
+                    "ui",
+                    "crud",
+                ],
                 "prefer_tags": ["money", "concurrency", "migration", "security"],
             },
             "opencode-nemotron": {
@@ -1149,8 +1152,12 @@ def test_assignment_routes_authors_by_priority_and_free_slots(
                 "allowed_kinds": ["crud", "ui", "api", "chore", "docs", "test"],
                 "avoid_tags": gated,
             },
-            "qwen": {"metered": "spend", "roles": ["author", "review"], "allowed_kinds": [],
-                     "monthly_budget_usd": 20},
+            "qwen": {
+                "metered": "spend",
+                "roles": ["author", "review"],
+                "allowed_kinds": [],
+                "monthly_budget_usd": 20,
+            },
         },
     }
     monkeypatch.setattr(flo, "load_yaml", lambda path: fleet)
@@ -1168,10 +1175,14 @@ def test_worker_load_counts_only_stories_whose_author_is_working(
     rows = {"E99-S01": "in_progress", "E99-S02": "review", "E99-S03": "done", "E99-S04": "design"}
     for sid in rows:
         (tmp_path / sid).mkdir()
-        (tmp_path / sid / "task.json").write_text(json.dumps(
-            {"author": "sonnet", "sessions": {"sonnet": {"account": "B"}}}))
-    monkeypatch.setattr(flo, "roadmap", lambda: {"epics": [
-        {"stories": [{"id": sid, "st": st} for sid, st in rows.items()]}]})
+        (tmp_path / sid / "task.json").write_text(
+            json.dumps({"author": "sonnet", "sessions": {"sonnet": {"account": "B"}}})
+        )
+    monkeypatch.setattr(
+        flo,
+        "roadmap",
+        lambda: {"epics": [{"stories": [{"id": sid, "st": st} for sid, st in rows.items()]}]},
+    )
     monkeypatch.setattr(flo, "worktree_path", lambda sid: tmp_path / sid)
     assert flo.worker_load("sonnet") == {"B": 2}  # in_progress and design; review holds no session
 
@@ -1200,7 +1211,11 @@ def test_account_picker_balances_load_and_resumes_a_recorded_session(
 
     flo.cmd_account(["E99-S01"])  # a second launch of the same story resumes, never forks
     assert capsys.readouterr().out.split() == [
-        "resume", str(Path("~/b").expanduser()), session, "B"]
+        "resume",
+        str(Path("~/b").expanduser()),
+        session,
+        "B",
+    ]
 
     task.write_text(json.dumps({"author": "sonnet"}))
     load.update({"B": 2})
@@ -1234,9 +1249,12 @@ def test_run_check_leaves_a_configured_database_alone(
 
 def story_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """A git repo with a milestone branch and a story branch checked out, like a worktree."""
-    for key, value in {"GIT_AUTHOR_NAME": "gate", "GIT_COMMITTER_NAME": "gate",
-                       "GIT_AUTHOR_EMAIL": "gate@example.invalid",
-                       "GIT_COMMITTER_EMAIL": "gate@example.invalid"}.items():
+    for key, value in {
+        "GIT_AUTHOR_NAME": "gate",
+        "GIT_COMMITTER_NAME": "gate",
+        "GIT_AUTHOR_EMAIL": "gate@example.invalid",
+        "GIT_COMMITTER_EMAIL": "gate@example.invalid",
+    }.items():
         monkeypatch.setenv(key, value)
     repo = tmp_path / "wt"
     repo.mkdir()
@@ -1250,8 +1268,9 @@ def story_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     sh("add", ".")
     sh("commit", "--quiet", "-m", "base")
     sh("checkout", "--quiet", "-b", "story/E99-S01")
-    (repo / "task.json").write_text(json.dumps(
-        {"milestone_branch": "milestone/M9", "branch": "story/E99-S01"}))
+    (repo / "task.json").write_text(
+        json.dumps({"milestone_branch": "milestone/M9", "branch": "story/E99-S01"})
+    )
     return repo
 
 
@@ -1259,10 +1278,12 @@ def commit(repo: Path, path: str, text: str = "x\n") -> str:
     (repo / path).parent.mkdir(parents=True, exist_ok=True)
     (repo / path).write_text(text)
     subprocess.run(["git", "add", path], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "--quiet", "-m", path], cwd=repo, check=True,
-                   capture_output=True)
-    return subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo, check=True,
-                          capture_output=True, text=True).stdout.strip()
+    subprocess.run(
+        ["git", "commit", "--quiet", "-m", path], cwd=repo, check=True, capture_output=True
+    )
+    return subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=repo, check=True, capture_output=True, text=True
+    ).stdout.strip()
 
 
 def test_gate_reuses_a_green_tree_and_reruns_when_it_changes(
@@ -1317,8 +1338,12 @@ def test_gated_story_needs_green_ci_on_the_commit_it_submitted(
     subprocess.run(["git", "checkout", "--quiet", "milestone/M9"], cwd=repo, check=True)
     commit(repo, "apps/api/src/other_story.py")
     subprocess.run(["git", "checkout", "--quiet", "story/E99-S01"], cwd=repo, check=True)
-    subprocess.run(["git", "merge", "--quiet", "--no-edit", "milestone/M9"], cwd=repo, check=True,
-                   capture_output=True)
+    subprocess.run(
+        ["git", "merge", "--quiet", "--no-edit", "milestone/M9"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
     assert flo.story_ci_failure(pkt, repo) is None
 
     commit(repo, "apps/api/src/after_review.py")
@@ -1341,20 +1366,30 @@ def test_light_profile_skips_full_suites_and_runs_the_story_tests(
     commit(repo, "apps/api/src/flo/modules/budget/service.py")  # tests/budget edited: no dir
 
     assert flo.story_checks(repo) == [
-        ("story pytest", ["pytest", "-q", "apps/api/tests/authz/test_baseline_grants.py",
-                          "apps/api/tests/budget/test_story.py",
-                          "apps/api/tests/gates/test_gates_bite.py",
-                          "apps/api/tests/isolation/test_ci_guards.py",
-                          "apps/api/tests/kernel/test_migrate.py",
-                          "apps/api/tests/org"]),
-        ("story e2e", ["npm", "--prefix", "apps/web", "run", "test:e2e", "--",
-                       "tests/e2e/story.spec.ts"]),
+        (
+            "story pytest",
+            [
+                "pytest",
+                "-q",
+                "apps/api/tests/authz/test_baseline_grants.py",
+                "apps/api/tests/budget/test_story.py",
+                "apps/api/tests/gates/test_gates_bite.py",
+                "apps/api/tests/isolation/test_ci_guards.py",
+                "apps/api/tests/kernel/test_migrate.py",
+                "apps/api/tests/org",
+            ],
+        ),
+        (
+            "story e2e",
+            ["npm", "--prefix", "apps/web", "run", "test:e2e", "--", "tests/e2e/story.spec.ts"],
+        ),
     ]
 
     ran: list[str] = []
     monkeypatch.setenv("DATABASE_URL", "postgresql://ci/flo_test")
-    monkeypatch.setattr(flo, "CHECKS", [("ruff", ["ruff"]), ("pytest", ["pytest"]),
-                                        ("e2e+axe", ["e2e"])])
+    monkeypatch.setattr(
+        flo, "CHECKS", [("ruff", ["ruff"]), ("pytest", ["pytest"]), ("e2e+axe", ["e2e"])]
+    )
 
     real_run = subprocess.run
 
@@ -1377,17 +1412,26 @@ def test_ci_watch_marks_red_once_and_reaps_green_merged_stories(
     """The monitor is what turns 'merge without waiting for CI' into a safe rule: a red run must
     reach the planner, and a worktree must never be dropped before its CI is green."""
     flo = load_flo()
-    stories = [{"id": "E99-S01", "st": "done"}, {"id": "E99-S02", "st": "review"},
-               {"id": "E99-S03", "st": "done"}]
+    stories = [
+        {"id": "E99-S01", "st": "done"},
+        {"id": "E99-S02", "st": "review"},
+        {"id": "E99-S03", "st": "done"},
+    ]
     monkeypatch.setattr(flo, "ROOT", tmp_path)
-    monkeypatch.setattr(flo, "roadmap", lambda: {
-        "milestones": [{"id": "M9", "branch": "milestone/M9"}],
-        "epics": [{"id": "E99", "milestone": "M9", "stories": stories}]})
+    monkeypatch.setattr(
+        flo,
+        "roadmap",
+        lambda: {
+            "milestones": [{"id": "M9", "branch": "milestone/M9"}],
+            "epics": [{"id": "E99", "milestone": "M9", "stories": stories}],
+        },
+    )
     monkeypatch.setattr(flo, "worktree_path", lambda sid: tmp_path / sid)
     for s in stories:
         (tmp_path / s["id"]).mkdir()
-        (tmp_path / s["id"] / "task.json").write_text(json.dumps(
-            {"branch": f"story/{s['id']}", "submitted_sha": f"sha-{s['id']}"}))
+        (tmp_path / s["id"] / "task.json").write_text(
+            json.dumps({"branch": f"story/{s['id']}", "submitted_sha": f"sha-{s['id']}"})
+        )
 
     def run(sha: str, conclusion: str, status: str = "completed") -> dict[str, object]:
         return {"headSha": sha, "status": status, "conclusion": conclusion, "databaseId": 1}
