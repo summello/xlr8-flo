@@ -1600,7 +1600,7 @@ epics:
           - E11-S06
           - E11-S10
           - E11-S11
-        st: todo
+        st: in_progress
       - id: E11-S16
         t: Vendor status, availability and local-disable dialogs
         k: ui
