@@ -127,3 +127,22 @@ def test_facts_offers_only_stories_with_a_valid_record(runner, capsys):
 
 def test_scratch_is_ignored_by_git():
     assert ".scratch/" in (REPO / ".gitignore").read_text().splitlines()
+
+
+def _on(monkeypatch, head):
+    monkeypatch.setattr(
+        F, "git", lambda *a, **k: head if a[:2] == ("rev-parse", "--abbrev-ref") else ""
+    )
+
+
+def test_a_main_milestone_story_starts_from_the_checked_out_milestone(monkeypatch):
+    """MT's branch is main, which takes no story merges; its stories ride the active milestone."""
+    _on(monkeypatch, "milestone/M3-sellable")
+    assert F.start_base({"id": "MT", "branch": "main"}, SID) == "milestone/M3-sellable"
+    assert F.start_base({"id": "M9", "branch": "milestone/M9"}, SID) == "milestone/M9"
+
+
+def test_a_main_milestone_story_refuses_to_start_off_a_milestone_branch(monkeypatch):
+    _on(monkeypatch, "main")
+    with pytest.raises(SystemExit):
+        F.start_base({"id": "MT", "branch": "main"}, SID)

@@ -169,6 +169,18 @@ def milestone_of(rm, epic):
     die(f"unknown milestone {epic['milestone']}")
 
 
+def start_base(ms, sid):
+    """The branch a story starts from and merges into. `main` takes no story merges (milestone PRs
+    only), so a milestone whose branch is main (MT, delivery tooling) rides the milestone branch the
+    runner has checked out; the local main ref is never refreshed and once cut E23-S09 from M0."""
+    if ms["branch"] != "main":
+        return ms["branch"]
+    head = git("rev-parse", "--abbrev-ref", "HEAD")
+    if not head.startswith("milestone/"):
+        die(f"{sid}: {ms['id']} stories ride a milestone branch; check out milestone/* first (on {head})")
+    return head
+
+
 # ── planning ─────────────────────────────────────────────────────────────────
 
 def deps_satisfied(rm, st):
@@ -566,22 +578,22 @@ def cmd_start(argv):
         die(f"{sid}: {why} — pre-flight the packet against the code, then run: "
             f"flo preflight {sid} --reviewer NAME --verdict pass")
 
-    ms = milestone_of(rm, epic)
-    branches = git("branch", "--list", ms["branch"])
+    base = start_base(milestone_of(rm, epic), sid)
+    branches = git("branch", "--list", base)
     if not branches:
-        git("branch", ms["branch"])
+        git("branch", base)
     branch = f"story/{sid}-{slug(st['t'])}"
     wt = worktree_path(sid)
     if wt.exists():
         die(f"worktree already exists: {wt}")
-    git("worktree", "add", "-b", branch, str(wt), ms["branch"])
+    git("worktree", "add", "-b", branch, str(wt), base)
 
     assignment = cmd_assign([sid])
     packet = {
         "story": sid, "title": st["t"], "epic": epic["id"], "milestone": epic["milestone"],
         "kind": st["k"], "size": st["s"], "tags": st.get("tags", []),
         "requirements": st["reqs"], "depends_on": st.get("dep", []),
-        "branch": branch, "milestone_branch": ms["branch"], "worktree": str(wt),
+        "branch": branch, "milestone_branch": base, "worktree": str(wt),
         "started_at": now_iso(), "preflight": preflight, "evidence_required": True,
         "design": f"design/{sid}.md", **assignment,
         "rounds": 0, "substitutions": [], "notes": {"blocked": None, "followup": [], "recap": None},
