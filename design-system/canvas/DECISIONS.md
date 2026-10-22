@@ -443,6 +443,8 @@ The three parking stories (E11-S08 vendors, E12-S19 sourcing, E13-S22 purchase o
 
 234. **A reader scoped to a business unit sees its own scope plus organisation-wide master data** (operator, 22 Oct 2026; E22-S06's block). `GET /projects` and `GET /master/{kind}` accept `project.read` / `master.read` held at any scope and narrow rows to the caller's scopes: projects in the caller's BU/OU (and any project the caller holds a project-scoped grant on); master rows of the caller's BU/OU **plus** organisation-level rows (`unit_id` NULL), which apply to every unit. A foreign-tenant or out-of-scope id stays 404. Story **E22-S06**.
 
+235. **Approval evidence is read with the instance, under the document's read permission; sensitive vendor fields stay masked** (operator, 22 Oct 2026; E11-S15's block). `GET /api/v1/approvals/instances/{id}` returns the adapter snapshot's `material.evidence` as an `evidence` field, guarded by the check it already makes (`adapter.read_permission` on the document, `vendor.view` for vendor changes). Any sensitive vendor field in the evidence payload is masked exactly as `GET /vendors/{id}` masks it; revealing stays the separate audited `POST /vendors/{id}/sensitive/reveal`. No extra endpoint. Story **E11-S15**.
+
 ## 7. Findings to feed back into MASTER.md (amended 9 Oct 2026, see 97)
 
 - **The MASTER amendment is deferred until after Budget Transfer (item 84), which is now built: the next session can draft it for the operator.** It would fold in the items below plus the ancestry state rows (6f item 86).
