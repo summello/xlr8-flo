@@ -141,3 +141,34 @@ E23-S08 (`task.json` has `evidence_required: true`) `flo gate` checks it against
   flag gates exactly as it did.
 - **Limit.** The records live in runner-local state next to the verdicts. They guard against a
   wrong or stale claim, not against someone editing `task.json`.
+
+## The fleet supervisor: `agents/fleet/fleet.py`
+
+The supervisor runs one tick every `[project].interval` seconds under launchd. A tick reads
+`flo facts`, decides the next step for every in-flight story, launches each step detached and exits.
+It never chooses a model, never merges to a protected branch and never answers a blocked question.
+Since E23-S11 its source is in this repository, with tests for its decision rules
+(`apps/api/tests/gates/test_fleet_supervisor.py`).
+
+**Deploy by copy.** The repository holds the source of truth; `~/.claude/fleet/fleet.py` is the
+deployed copy. launchd runs the script from wherever it lives, so installing it from the runner
+checkout would let a merged story change the supervisor between two ticks.
+
+```bash
+cp agents/fleet/fleet.py ~/.claude/fleet/fleet.py        # after a reviewed merge
+cmp agents/fleet/fleet.py ~/.claude/fleet/fleet.py       # no output means no drift
+python3 ~/.claude/fleet/fleet.py status --config <runner>/agents/fleet.toml
+```
+
+The supervisor needs no restart; the next tick runs the new file. Pause it first
+(`fleet.py pause --config ...`) if a step is mid-launch.
+
+E23-S11 added exactly two things to the original (sha256 `f22da510...`), both output only:
+
+- **A note when a ready story does not start** because no Claude account has start headroom
+  (`start blocked: no Claude account has room (next: <id>)`). It appears in `status.json` and
+  `tick.log`. Nothing is launched for it.
+- **A notification when nothing can start because no ready story has a pre-flight record.** It
+  names the first such story and is de-duplicated like any other operator need.
+
+Everything else is the file as uploaded on 22 Oct 2026.

@@ -1,6 +1,9 @@
-# The fleet supervisor's view of this repository. The supervisor itself is user-scoped and
-# project-agnostic (~/.claude/fleet/fleet.py, README.md there); everything specific to XLR8 FLO is
-# here or in the commands below. Steps run from the runner checkout, one at a time per story.
+# The fleet supervisor's view of this repository. The supervisor's reviewed, tested source is
+# agents/fleet/fleet.py (E23-S11); ~/.claude/fleet/fleet.py is the DEPLOYED COPY. After a merge,
+# copy it over (cp agents/fleet/fleet.py ~/.claude/fleet/fleet.py) and install from that copy,
+# never from the runner checkout: launchd runs the script from where it lives, and a merged story
+# would change the supervisor between two ticks. Everything specific to XLR8 FLO is here or in the
+# commands below. Steps run from the runner checkout, one at a time per story.
 #
 #   python3 ~/.claude/fleet/fleet.py install --config ~/Workbench/xlr8flo-m3run/agents/fleet.toml
 #   python3 ~/.claude/fleet/fleet.py resume  --config ~/Workbench/xlr8flo-m3run/agents/fleet.toml
