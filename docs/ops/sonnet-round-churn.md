@@ -63,8 +63,8 @@ Gated means any of money, auth, security, migration, concurrency. A dash means f
 | # | Confound | Status | Evidence |
 |---|---|---|---|
 | 1 | **No like-for-like comparison with Codex.** Codex's 1.04 comes from M0 and M1, when review was Opus alone (25 Aug and 10 Oct arrangements) and many stories were foundations under a sole-author contract. Since 13 Oct every Sonnet story is reviewed by Codex, and gated ones by a fresh Opus too. In the window, 29 of 30 records are Sonnet and 1 is Codex (table 1b). | **Open** | Author and review regime move together. Nothing here separates them. |
-| 2 | **Rounds are not explained by what the reviews recorded.** Table 5: Sonnet stories with `rounds = 1` hold 15 findings and 13 blockers; stories with `rounds >= 2` hold none. A blocker in a one-round story contradicts the round definition, so the `review` object is probably the last verdict only. | **Open** | The scorecard cannot say why a story took a second round. The archived per-round verdicts the scorer reads (`.scratch/reviews/*.r*.json`) are runner-local, not in the repository. |
-| 3 | **Not every round is the author's.** `project-memory.md` (22 Oct) records three Codex reviews that hit the command cap and left `approve, ran_tests: false`; each cost another review. If those count as rounds, reviewer failures are scored against the author. | **Open** | Cannot be separated from committed data. |
+| 2 | **The scorecard's `rounds` is not written where the rounds happen.** In this repository the only code that raises `task.json`'s `rounds` is `flo escalate`, and the scorecard records that value plus 1 (`record_score`). The supervisor (`agents/fleet/fleet.py`, read 22 Oct 2026) never writes `task.json`; it reads a *different* count from `flo facts`, the number of round files `.scratch/<STORY>.roundN.md`. Yet seven Sonnet stories show 3 or 4 rounds. Whatever wrote those values is outside this repo and the supervisor (a planner or worker session, or a hand edit). Table 5 fits: stories with `rounds >= 2` hold no recorded findings, and one-round stories hold 13 blockers. | **Open**, and stronger than first written | Run `grep -rn rounds ~/.claude/skills/xlr8flo-*` to find the writer. Then define one metric in this repo (round files, as the supervisor does). |
+| 3 | **Not every round is the author's.** `project-memory.md` (22 Oct) records three Codex reviews that hit the command cap and left `approve, ran_tests: false`; each cost another review. Whether those were counted as rounds depends on the unknown writer in row 2. | **Open** | Cannot be separated from committed data. |
 | 4 | **Small cells.** Most kind and tag cells have n < 8. | **Partly** | The gated vs ungated split (n = 12 and 17) is the only one with enough records to read. |
 
 ## Recommendation
@@ -80,8 +80,7 @@ budget is 18 stories (`weekly_story_budget` in `agents.yaml`), on evidence that 
 quality from review strictness. Six stories is a third of one week's Codex budget, enough to
 see whether Codex-authored gated stories also take about two rounds under this review regime.
 
-What would settle it cheaply: a `round_causes` field written by `flo round`
-(`review` | `ci` | `reviewer_failure`), so a round can be attributed. Not part of this story.
+What would settle it cheaply: first find who writes `rounds` (row 2), then derive the scorecard's rounds from the round files the supervisor already counts, and add a `round_causes` field (`review` | `ci` | `reviewer_failure`) so a round can be attributed. Not part of this story.
 
 ## What this means for E23-S04
 

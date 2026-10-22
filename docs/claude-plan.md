@@ -720,7 +720,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E30-S02** Release and re-reserve when an amendment or substitution changes a code or ledger account | E30 | ledger | M | REQ-012 | ~~E09-S18~~ |
 | ⬜ | **E30-S03** Bin: view and restore soft-deleted drafts | E30 | ui | M | DATA-002 | E22-S02 |
 
-#### MT — Delivery tooling · 1/11 done
+#### MT — Delivery tooling · 1/13 done
 
 > Operator-facing delivery tooling that ships standalone, by pull request to main, outside any product milestone.
 
@@ -733,10 +733,12 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E23-S04** Reorder author_priority by measured record, reconcile nemotron history, pin it with tests | E23 | chore | S | SUP-005 | E23-S02 |
 | ⬜ | **E23-S05** flo start refuses a story with no packet pre-flight record | E23 | chore | S | SUP-005 | — |
 | ⬜ | **E23-S06** flo reassign: capacity-aware, liveness-checked, per-story locked author reassignment | E23 | concurrency | M | SUP-005 | E23-S04 |
-| ⛔ | **E23-S07** Headroom-ranked Claude account pick for a new story start | E23 | chore | S | SUP-005 | — |
+| ⬜ | **E23-S11** Track the fleet supervisor in the repo, with tests for its decision rules | E23 | chore | M | SUP-005 | — |
+| ⬜ | **E23-S12** Sonnet's effort comes from agents.yaml, which now says medium | E23 | chore | S | SUP-005 | — |
+| ⛔ | **E23-S07** Start a story when its would-be author has room, not only when a Claude account does | E23 | chore | S | SUP-005 | E23-S11 |
 | ⬜ | **E23-S08** Structured, commit-bound test-evidence records that flo gate verifies | E23 | chore | M | SUP-005, SEC-012 | — |
 | ⬜ | **E23-S09** Build the SPA bundle once in CI and deploy the same artifact | E23 | chore | S | SEC-012 | E22-S12 |
-| ⛔ | **E23-S10** Completion-triggered supervisor wakeup instead of a fixed 300 s poll | E23 | chore | S | SUP-005 | E23-S01 |
+| ⛔ | **E23-S10** Completion-triggered supervisor wakeup instead of a fixed 300 s poll | E23 | chore | S | SUP-005 | E23-S01, E23-S11 |
 
 <!-- ROADMAP:END -->
 

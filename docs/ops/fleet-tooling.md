@@ -62,7 +62,9 @@ flo preflight E23-S05 --reviewer qwen --verdict pass [--findings N]
 - `flo start` copies the record into `task.json` as `preflight`.
 - `flo facts` leaves a story without a valid record out of `next` and lists it in
   `needs_preflight`, so a supervisor that starts from `next` never attempts a refused start.
-  Whether the supervisor reads `next` that way cannot be checked from this repository.
+  The supervisor starts from `next` (`plan()` begins `facts["next"][0]`). It ignores
+  `needs_preflight`, so when every ready story lacks a record the fleet idles silently until the
+  supervisor notification added in E23-S11 is deployed.
 - It proves a pass was filed for this packet text. It does not prove the pre-flight was good.
 
 ## Author order: `policy.author_priority`
