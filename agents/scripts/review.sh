@@ -36,6 +36,8 @@ git -C "$W" rev-parse HEAD > "$SHA.new"  # becomes the baseline only if the run 
 # what this run reviews, for the supervisor's freshness check (flo facts): a verdict counts only
 # for the commit it was launched on
 cp "$SHA.new" "$D/$S.$A.launched"
+# launch time of this round, epoch seconds: flo done derives review_s from it and the verdict mtime
+date +%s > "$D/$S.$A.started"
 # Keep every round's verdict: the scorecard counts findings across rounds (flo done), and the
 # file in reviews/ is overwritten by this run. An identical copy (a relaunch) is not a new round.
 if [ -f "$W/reviews/$S.$A.json" ]; then

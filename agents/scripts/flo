@@ -16,6 +16,7 @@ Stdlib only, except PyYAML for the two config files.
   flo design  <MILESTONE>   print the Opus batch-design brief for a milestone
   flo status                roadmap state and in-flight stories
   flo score   [--check]     agent performance scorecard (author + reviewer)
+  flo score   --durations   median stage durations by kind, author and reviewer (stdout only)
   flo session <AGENT> [ID]  record an agent's session id for the current story
   flo budget                per-agent spend and remaining capacity
   flo roadmap [--check]     regenerate docs/claude-plan.md §5 (or verify it)
@@ -31,10 +32,12 @@ import json
 import os
 import re
 import shutil
+import statistics
 import subprocess
 import sys
 import time
 import uuid
+from datetime import datetime
 from pathlib import Path
 
 # FLO_ROOT points this code at another checkout (a dry run of new flo code against the runner's state).
@@ -100,6 +103,50 @@ def git(*args, cwd=None, check=True):
 
 def slug(text):
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:48]
+
+
+def now_iso():
+    return time.strftime("%Y-%m-%dT%H:%M:%S%z")
+
+
+def _epoch(iso):
+    """Seconds since the epoch for an ISO-8601 string with offset; None when absent or malformed."""
+    try:
+        return datetime.strptime(iso, "%Y-%m-%dT%H:%M:%S%z").timestamp()
+    except (TypeError, ValueError):
+        return None
+
+
+def durations_from(pkt, verdict_mtimes, review_starts, warn=None):
+    """Stage durations for one story, in whole seconds. A key whose inputs are missing, or whose
+    interval is negative (clock skew), is omitted: a 0 would pull every median down."""
+    out = {}
+
+    def span(key, begin, end):
+        if begin is None or end is None:
+            return None
+        if end < begin:
+            if warn:
+                warn(f"{key}: end is before start, not recorded")
+            return None
+        return round(end - begin)
+
+    start, sub, done = (_epoch(pkt.get(k)) for k in ("started_at", "submitted_at", "done_at"))
+    for key, begin, end in (("wall_s", start, done), ("author_s", start, sub)):
+        value = span(key, begin, end)
+        if value is not None:
+            out[key] = value
+    review = {}
+    for who, ended in verdict_mtimes.items():
+        value = span(f"review_s[{who}]", review_starts.get(who), ended)
+        if value is not None:
+            review[who] = value
+    if review:
+        out["review_s"] = review
+    gate = pkt.get("gate_seconds")
+    if isinstance(gate, (int, float)) and gate >= 0:
+        out["gate_s"] = round(gate)
+    return out
 
 
 def worktree_path(sid):
@@ -348,6 +395,7 @@ def cmd_start(argv):
         "kind": st["k"], "size": st["s"], "tags": st.get("tags", []),
         "requirements": st["reqs"], "depends_on": st.get("dep", []),
         "branch": branch, "milestone_branch": ms["branch"], "worktree": str(wt),
+        "started_at": now_iso(),
         "design": f"design/{sid}.md", **assignment,
         "rounds": 0, "substitutions": [], "notes": {"blocked": None, "followup": [], "recap": None},
         "traceability": {},
@@ -385,6 +433,10 @@ def cmd_submit(argv):
     # Hosted CI runs the full suite on this exact commit while the reviewers work, so the
     # gate can ask GitHub instead of re-running 25 minutes of pytest on a loaded workstation.
     pkt["submitted_sha"] = git("rev-parse", "HEAD", cwd=wt)
+    if pkt.get("submitted_at"):
+        pkt.setdefault("resubmitted_at", []).append(now_iso())  # author_s stays the first submit
+    else:
+        pkt["submitted_at"] = now_iso()
     git("push", "-u", "origin", pkt["branch"], cwd=wt)
     (wt / "task.json").write_text(json.dumps(pkt, indent=2) + "\n")
     set_status(sid, "review")
@@ -822,6 +874,7 @@ def cmd_gate(argv):
     if not argv:
         die("usage: flo gate <STORY_ID>")
     sid = argv[0]
+    began = time.time()
     pkt, wt = packet_of(sid), worktree_path(sid)
     fails = []
 
@@ -879,6 +932,10 @@ def cmd_gate(argv):
         for f in fails:
             print(f"  ✗ {f}")
         sys.exit(1)
+    # re-read: checked() rewrites task.json while the gate runs, so the copy loaded above is stale
+    fresh = packet_of(sid)
+    fresh["gate_seconds"] = round(time.time() - began)
+    (wt / "task.json").write_text(json.dumps(fresh, indent=2) + "\n")
     print(f"GATE PASSED — {sid}")
 
 
@@ -923,6 +980,7 @@ def cmd_done(argv):
     git("merge", "--squash", pkt["branch"])
     revs = ", ".join(sorted(r["reviewer"] for r in reviews_for(sid) if r.get("ran_tests")))
     set_status(sid, "done")
+    pkt["done_at"] = now_iso()
     record_score(sid, pkt, st)
     # record_score appends this story last, so this is this story's provenance. Reading it
     # before the append took the *previous* story's sessions, and crashed on the first story.
@@ -1127,8 +1185,22 @@ def record_score(sid, pkt, story):
                                       if f.get("severity") == "blocker" and f.get("arbitration") == "dismissed"),
         }
 
+    verdict_mtimes, review_starts = {}, {}
+    for r in revs:
+        who = r["reviewer"]
+        verdict = worktree_path(sid) / "reviews" / f"{sid}.{who}.json"
+        marker = ROOT / ".scratch" / f"{sid}.{who}.started"
+        if verdict.exists() and marker.exists():
+            try:
+                review_starts[who] = float(marker.read_text().strip())
+                verdict_mtimes[who] = verdict.stat().st_mtime
+            except ValueError:
+                pass  # a half-written marker is skipped, not fatal
+    durations = durations_from(pkt, verdict_mtimes, review_starts,
+                               warn=lambda m: print(f"warning: {sid}: {m}", file=sys.stderr))
+
     sc = load_scores()
-    sc["stories"] = [s for s in sc["stories"] if s["story"] != sid] + [{
+    record = {
         "story": sid, "kind": story["k"], "size": story["s"], "tags": story.get("tags", []),
         "author": pkt["author"], "reviewers": sorted(per_reviewer),
         "rounds": pkt.get("rounds", 0) + 1,
@@ -1140,7 +1212,10 @@ def record_score(sid, pkt, story):
         "sessions": sessions,
         "recap": (pkt.get("notes") or {}).get("recap", ""),
         "title": story["t"],
-    }]
+    }
+    if durations:
+        record["durations"] = durations
+    sc["stories"] = [s for s in sc["stories"] if s["story"] != sid] + [record]
     SCORECARD.write_text(json.dumps(sc, indent=2) + "\n")
 
 
@@ -1237,7 +1312,43 @@ def render_scores():
     return "\n".join(L)
 
 
+def render_durations(sc):
+    """Median stage durations by kind, author and reviewer, in minutes. stdout only: the committed
+    SCORECARD.md and the immutable records are untouched. A cell under min_sample prints a dash."""
+    recs, floor = sc["stories"], sc.get("min_sample", 3)
+    have = [s for s in recs if s.get("durations")]
+
+    def cell(values, fn=statistics.median):
+        return f"{fn(values) / 60:.1f}" if len(values) >= floor else "—"
+
+    def pick(group, key):
+        return [s["durations"][key] for s in group if key in s["durations"]]
+
+    lines = []
+    for title, key in (("kind", "kind"), ("author", "author")):
+        lines += [f"By {title}", f"{title:<20} {'n':>3} {'wall':>7} {'author':>7} {'gate':>7} {'max wall':>9}"]
+        for name in sorted({s[key] for s in have}):
+            grp = [s for s in have if s[key] == name]
+            lines.append(f"{name:<20} {len(grp):>3} {cell(pick(grp, 'wall_s')):>7} "
+                         f"{cell(pick(grp, 'author_s')):>7} {cell(pick(grp, 'gate_s')):>7} "
+                         f"{cell(pick(grp, 'wall_s'), max):>9}")
+        lines.append("")
+    per = {}
+    for s in have:
+        for who, secs in s["durations"].get("review_s", {}).items():
+            per.setdefault(who, []).append(secs)
+    lines += ["By reviewer (last round, launch to verdict)", f"{'reviewer':<20} {'n':>3} {'median':>7}"]
+    for who in sorted(per):
+        lines.append(f"{who:<20} {len(per[who]):>3} {cell(per[who]):>7}")
+    lines += ["", "minutes; a dash means fewer than %d records" % floor,
+              f"{len(have)} of {len(recs)} records carry durations"]
+    return "\n".join(lines)
+
+
 def cmd_score(argv):
+    if "--durations" in argv:
+        print(render_durations(load_scores()))
+        return
     body = render_scores()
     if "--check" in argv:
         if SCORE_MD.exists() and SCORE_MD.read_text() == body + "\n":
