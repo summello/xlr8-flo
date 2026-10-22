@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -164,9 +165,10 @@ def test_no_notice_when_every_record_is_verified(monkeypatch):
     assert "| `sonnet` | 3 | 3/3 |" in out
 
 
-def test_the_committed_scorecard_still_has_no_verified_records_and_says_so():
+def test_the_committed_scorecard_says_its_legacy_records_are_unverified():
+    # Legacy records are never rewritten, so the notice stays; `flo score --check` pins the numbers.
     text = (REPO / "agents" / "SCORECARD.md").read_text()
-    assert "Data quality" in text and "0/29" in text
+    assert "Data quality" in text and "| Rounds verified |" in text
 
 
 # judgement day -------------------------------------------------------------------------------
@@ -268,4 +270,4 @@ def test_tags_and_threshold_agree_across_the_scorecard_the_config_and_the_doc_sc
 
 def test_the_committed_scorecard_carries_the_progress_line():
     text = (REPO / "agents" / "SCORECARD.md").read_text()
-    assert "Judgement day (Sonnet on gated work): 0 of 10 verified gated records" in text
+    assert re.search(r"Judgement day \(Sonnet on gated work\): \d+ of 10 verified gated", text)
