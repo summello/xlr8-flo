@@ -186,6 +186,23 @@ second review and a manual finish. Ungated budget 25 -> 40 commands, hard cap 35
 already 55), and the packet says to run `flo check --light` and set `ran_tests` within 10 commands.
 Revisit if Codex's 5-hour window starts capping.
 
+**22 Oct 2026 — `author_priority` is now `[opencode-nemotron, sonnet, codex]` (E23-S04).** Nemotron
+is free and has no worker cap; Sonnet draws a shared Claude window. Evidence and its limits, from
+`agents/scorecard.json` (106 records): Sonnet 29 stories, 1.72 mean rounds, 59% clean; gated 2.17 and
+33% (n=12), ungated 1.41 and 76% (n=17). That gap cannot yet be put on Sonnet: since 13 Oct 29 of 30
+records are Sonnet, reviewed by Codex plus Opus, while Codex's 1.04 comes from M0/M1 under Opus-alone
+review, and recorded findings do not explain the rounds (`docs/ops/sonnet-round-churn.md`). So the
+reorder does **not** narrow Sonnet and does not reach gated work (nemotron's `avoid_tags`). Next 6
+gated stories go to Codex as an A/B against Sonnet's 2.17; revisit Sonnet's `avoid_tags` then.
+**Correction to the 10 and 11 Oct entries:** they say nemotron's merges were "all M or smaller". Four of
+its 10 records are size L (`E05-S03`, `E06-S02`, `E06-S03`, `E05-S10`), two are engine, two carry `auth`,
+all 10 are early-October M1 stories written before the 10 Oct `allowed_kinds`/`avoid_tags`/size cap, and
+all were reviewed by Opus alone. Only 5 of 10 (`E05-S01`, `E05-S02`, `E06-S01`, `E06-S05`, `E06-S06`)
+match today's lane. `E06-S07` (the one attempt under the cap) went to Codex and sits in Codex's
+record, so 10 clean of 11 attempts is the honest figure. **Revisit trigger:** if any of nemotron's first
+three stories after this change needs a second round or is re-authored by another agent, restore the
+old order.
+
 **Merge authority:** the operator has delegated GitHub merges for M0 to Opus, with the
 instruction to space them out so the repository does not read as bot-driven. Outside M0 the
 standing rule holds: push, never merge.

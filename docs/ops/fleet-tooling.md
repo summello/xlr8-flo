@@ -64,3 +64,18 @@ flo preflight E23-S05 --reviewer qwen --verdict pass [--findings N]
   `needs_preflight`, so a supervisor that starts from `next` never attempts a refused start.
   Whether the supervisor reads `next` that way cannot be checked from this repository.
 - It proves a pass was filed for this packet text. It does not prove the pre-flight was good.
+
+## Author order: `policy.author_priority`
+
+`flo assign` first drops every agent that may not take the story (role, `allowed_kinds`,
+`avoid_tags`, `max_author_size`, account capacity, budget), then takes the first of
+`author_priority` that is left. Since E23-S04 the order is `opencode-nemotron`, `sonnet`, `codex`.
+
+- Nemotron cannot take a story tagged money, auth, security, migration or concurrency, a story of
+  kind engine, ledger, security, migration or concurrency, or a story of size L. So the order does
+  not reach gated work, and a gated story keeps its fresh Opus review whoever authors it.
+- The case for the order is cost and capacity, not a demonstrated quality gain; see
+  `docs/ops/sonnet-round-churn.md` and the 22 Oct entry in `agents/project-memory.md`.
+- `apps/api/tests/gates/test_flo_assign.py` pins the order, the nemotron limits and the
+  reviewer-is-not-author rule. Changing the order means changing that test on purpose.
+- Only the planner edits `agents/agents.yaml` (`agents/claude.md` §5).
