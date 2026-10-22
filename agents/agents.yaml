@@ -21,7 +21,11 @@ policy:
   ungated_reviewers: [codex, qwen, deepseek]
   # First author in this order that may take the story wins; sonnet drops out when every
   # account is at max_workers_per_account, which is how the overflow lanes get work.
-  author_priority: [sonnet, opencode-nemotron, codex]
+  # 22 Oct 2026 (E23-S04): nemotron first. It is free and has no worker cap, so ungated crud, ui,
+  # api, chore, docs and test stories of size S or M go to it before they draw a Claude window.
+  # It cannot take gated work (avoid_tags), so this does not reach the stories where Sonnet
+  # churns (docs/ops/sonnet-round-churn.md). Case is cost and capacity, not a quality edge.
+  author_priority: [opencode-nemotron, sonnet, codex]
 
 # Per-milestone overrides. A milestone may concentrate authorship on one agent when
 # the cost of getting it wrong is a rewrite rather than a patch. Reviewers are NOT
@@ -100,7 +104,7 @@ agents:
 
   sonnet:
     model: sonnet                # claude CLI alias, resolves to the current Sonnet
-    reasoning: high              # passed as --effort
+    reasoning: medium            # operator decision 13 Oct 2026 (5ba2460); passed as --effort
     cli: "claude -p --model sonnet"
     plan: claude-pro (two accounts)
     metered: rate
