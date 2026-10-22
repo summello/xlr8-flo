@@ -356,6 +356,7 @@ def tick(cfg: dict, dry: bool = False) -> dict:
             try:
                 lock.rmdir()
             except OSError:
+                # A later tick may have reclaimed this lock as stale; it is already gone.
                 pass
             with open(d / "tick.log", "a") as fh:
                 fh.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} paused={status['paused']} "
