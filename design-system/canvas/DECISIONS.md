@@ -455,6 +455,8 @@ The three parking stories (E11-S08 vendors, E12-S19 sourcing, E13-S22 purchase o
 
 240. **The duplicate check says whether the caller may override** (operator, 23 Oct 2026; same pattern as 236 and 238, no new rule). `GET /vendors/duplicate-check` returns `can_override: bool`, the server's own `vendor.approve` check that the override path makes. The UI shows Override with a Reason only when it is true and never probes another route to find out; the server still refuses a forced override. Story **E11-S14**.
 
+241. **A vendor requester lists the units a vendor can be restricted to** (operator, 23 Oct 2026; E11-S14 planner pre-flight). `GET /org/units` admits a caller who holds `org.unit.read` (unchanged) **or** `vendor.request`. A caller with `vendor.request` and without `org.unit.read` gets only active units of their own organization (the `active` filter is forced to true), in the same `OrgUnitRead` shape; `GET /org/units/{id}` and every write are unchanged. A member holding neither permission gets 403. The rule lives in the org service, not the router. Unit names are reference data, not sensitive. Story **E11-S14** (the Where It Applies unit picker).
+
 ## 7. Findings to feed back into MASTER.md (amended 9 Oct 2026, see 97)
 
 - **The MASTER amendment is deferred until after Budget Transfer (item 84), which is now built: the next session can draft it for the operator.** It would fold in the items below plus the ancestry state rows (6f item 86).
