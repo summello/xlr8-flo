@@ -2313,7 +2313,7 @@ epics:
           - USR-010
           - SEC-011
         dep: []
-        st: todo
+        st: in_progress
       - id: E22-S08
         t: Expired requisitions use the warning tone
         k: ui
