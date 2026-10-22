@@ -141,22 +141,25 @@ def test_required_checks_reject_failed_or_missing_shards(tmp_path):
 
 @pytest.mark.parametrize("name", ["backend", "frontend"])
 def test_combined_checks_require_successful_detect_even_when_area_is_untouched(name, tmp_path):
-    import yaml
-
-    job = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())["jobs"][name]
-    assert "detect" in job["needs"]
-    assert job["if"] == "always()"
-    step = next(step for step in job["steps"] if "DETECT_RESULT" in step.get("env", {}))
-    assert "if" not in step  # Must run even with missing/false area outputs.
-    assert step["env"]["DETECT_RESULT"] == "${{ needs.detect.result }}"
+    # Text slicing like the tests above: pyyaml is not an apps/api dependency.
+    source = (ROOT / ".github/workflows/ci.yml").read_text()
+    job = source.split(f"\n  {name}:\n", 1)[1].split("\n\n  ", 1)[0]
+    needs = job.split("needs: [", 1)[1].split("]", 1)[0]
+    assert "detect" in [n.strip() for n in needs.split(",")]
+    assert "\n    if: always()\n" in job
+    steps = job.split("\n      - ")[1:]
+    step = next(s for s in steps if "DETECT_RESULT:" in s)
+    assert "\n        if:" not in step  # Must run even with missing/false area outputs.
+    assert "DETECT_RESULT: ${{ needs.detect.result }}" in step
+    command = step.split("\n        run: ", 1)[1].split("\n", 1)[0]
     for result in ("success", "failure", "cancelled", "skipped", ""):
         run = subprocess.run(
-            ["sh", "-c", step["run"]], cwd=tmp_path, env={"DETECT_RESULT": result}
+            ["sh", "-c", command], cwd=tmp_path, env={"DETECT_RESULT": result}
         )
         assert (run.returncode == 0) == (result == "success")
     area = "api" if name == "backend" else "web"
-    checks = next(step for step in job["steps"] if "STATIC_RESULT" in step.get("env", {}))
-    assert checks["if"] == f"needs.detect.outputs.{area} == 'true'"
+    checks = next(s for s in steps if "STATIC_RESULT:" in s)
+    assert f"\n        if: needs.detect.outputs.{area} == 'true'\n" in checks
 
 
 def test_combined_coverage_rejects_below_eighty_percent(tmp_path):
