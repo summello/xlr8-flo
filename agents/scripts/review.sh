@@ -9,9 +9,7 @@ set -e
 S="$1"; A="${2:-codex}"; R="$(cd "$(dirname "$0")/../.." && pwd)"; W="$R-$S"; D="$R/.scratch"
 case "$A" in
   codex|opus) ;;
-  qwen) M=openrouter/qwen/qwen3.8-27b ;;
-  kimi) M=openrouter/moonshotai/kimi-k2.6 ;;
-  deepseek) M=openrouter/deepseek/deepseek-v4-pro-0813 ;;
+  qwen|kimi|deepseek) ;;   # their models come from agents.yaml via flo launch-model, below
   *) echo "review.sh: unknown reviewer $A" >&2; exit 1 ;;
 esac
 P="$D/$S.$A.review.prompt"; X="$D/xdg-$A"; mkdir -p "$X"
@@ -36,6 +34,8 @@ git -C "$W" rev-parse HEAD > "$SHA.new"  # becomes the baseline only if the run 
 # what this run reviews, for the supervisor's freshness check (flo facts): a verdict counts only
 # for the commit it was launched on
 cp "$SHA.new" "$D/$S.$A.launched"
+# launch time of this round, epoch seconds: flo done derives review_s from it and the verdict mtime
+date +%s > "$D/$S.$A.started"
 # Keep every round's verdict: the scorecard counts findings across rounds (flo done), and the
 # file in reviews/ is overwritten by this run. An identical copy (a relaunch) is not a new round.
 if [ -f "$W/reviews/$S.$A.json" ]; then
@@ -88,6 +88,9 @@ if [ "$A" = codex ]; then
   echo "review launched: $S by codex ($1, $2)${ARGS:+, re-review}"
   exit 0
 fi
+# the model comes from agents.yaml and is recorded in task.json by the same call (E23-S03)
+PY="$W/apps/api/.venv/bin/python"; [ -n "$RELEASE" ] && PY="$R/apps/api/.venv/bin/python"
+M="openrouter/$("$PY" "$R/agents/scripts/flo" launch-model "$S" --reviewer "$A")"
 # OpenRouter is metered: refuse to start below a floor rather than die halfway without a verdict.
 LEFT="$(K="$(security find-generic-password -a "$USER" -s OPENROUTER_API_KEY -w)"; curl -s --max-time 20 \
   -H "Authorization: Bearer $K" https://openrouter.ai/api/v1/credits \
