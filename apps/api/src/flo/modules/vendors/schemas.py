@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator
 
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError
 
+type Day = date
 type VendorStatus = Literal[
     "draft", "pending_approval", "active", "suspended", "inactive", "rejected"
 ]
@@ -85,6 +86,19 @@ class SensitiveMasked(BaseModel):
     version: int = 0  # the ETag of the sensitive record; 0 until one is written
 
 
+class Reason(BaseModel):
+    code: str
+    text: str
+    document_type: str | None = None
+    date: Day | None = None
+
+
+class Eligibility(BaseModel):
+    eligible: bool
+    reasons: list[Reason] = []
+    warnings: list[Reason] = []
+
+
 class VendorRead(BaseModel):
     id: UUID
     number: str
@@ -97,6 +111,7 @@ class VendorRead(BaseModel):
     updated_at: datetime
     version: int
     sensitive: SensitiveMasked = SensitiveMasked()
+    eligibility: Eligibility | None = None  # set on a list read that names a unit
 
 
 class VendorUnit(BaseModel):

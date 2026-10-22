@@ -11,10 +11,6 @@
 .vq td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .vq-pill { display: inline-flex; align-items: center; gap: var(--space-1); padding-inline: var(--space-2); border-radius: var(--radius-pill); color: var(--status-neutral); background: var(--status-neutral-tint); }
 .vq-pill[data-status=published] { color: var(--status-info); background: var(--status-info-tint); }
-.sig { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
-.sig.is-ok svg { color: var(--status-success); }
-.sig.is-warn svg { color: var(--status-warning); }
-.sig-why { color: var(--fg-secondary); }
 .vq-list { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--space-3); }
 .vq-list > li { border: 1px solid var(--border); border-radius: var(--radius-card); padding: var(--space-3); }
 .vq-grid { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-2) var(--space-3); align-items: center; }

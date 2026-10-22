@@ -18,6 +18,7 @@ from flo.modules.vendors import duplicates
 from flo.modules.vendors import repo as sensitive
 from flo.modules.vendors.changes import ChangesMixin
 from flo.modules.vendors.documents import DocumentsMixin
+from flo.modules.vendors.eligibility import EligibilityMixin
 from flo.modules.vendors.models import (
     ANCESTORS_CTE,
     AVAILABLE_SQL,
@@ -97,7 +98,12 @@ def _decode(cursor: str) -> tuple[str, UUID]:
 
 
 class VendorService(
-    ChangesMixin, DocumentsMixin, QuestionnaireMixin, OnboardingMixin, PerformanceMixin
+    ChangesMixin,
+    DocumentsMixin,
+    EligibilityMixin,
+    QuestionnaireMixin,
+    OnboardingMixin,
+    PerformanceMixin,
 ):
     def __init__(
         self,
@@ -207,6 +213,9 @@ class VendorService(
         page = [
             v.model_copy(update={"sensitive": masks.get(v.id, SensitiveMasked())}) for v in page
         ]
+        if available_in is not None and page:
+            rules = self.eligibility([v.id for v in page], available_in, today())
+            page = [v.model_copy(update={"eligibility": rules.get(v.id)}) for v in page]
         more = len(rows) > limit
         return VendorPage(
             rows=page, next_cursor=_cursor(page[-1].trading_name, page[-1].id) if more else None

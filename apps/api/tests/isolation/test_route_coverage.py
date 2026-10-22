@@ -72,6 +72,10 @@ COVERED = {
     ("GET", "/api/v1/sourcing/rfqs/{id}"): SOURCING_ROUTES,
     (
         "GET",
+        "/api/v1/vendors/{id}/eligibility",
+    ): "vendors/test_eligibility.py::test_vendor_eligibility_route_conceals_foreign_tenants",
+    (
+        "GET",
         "/api/v1/vendors/{id}/documents",
     ): "vendors/test_documents.py::test_vendor_document_routes_conceal_foreign_tenants",
     (

@@ -2486,6 +2486,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/vendors/{id}/eligibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Vendor Eligibility */
+        get: operations["vendor_eligibility_api_v1_vendors__id__eligibility_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/vendors/{id}/inactivate": {
         parameters: {
             query?: never;
@@ -3663,6 +3680,8 @@ export interface components {
              */
             identity_id: string;
         };
+        /** Format: date */
+        Day: string;
         /** DecisionRead */
         DecisionRead: {
             /** Actor Email */
@@ -4040,6 +4059,21 @@ export interface components {
         EffectiveSetting: {
             source: components["schemas"]["SettingSource"];
             value: components["schemas"]["JsonValue"];
+        };
+        /** Eligibility */
+        Eligibility: {
+            /** Eligible */
+            eligible: boolean;
+            /**
+             * Reasons
+             * @default []
+             */
+            reasons?: components["schemas"]["Reason"][];
+            /**
+             * Warnings
+             * @default []
+             */
+            warnings?: components["schemas"]["Reason"][];
         };
         /** ExcludedApprover */
         ExcludedApprover: {
@@ -5912,6 +5946,16 @@ export interface components {
             /** Quorum */
             quorum: number;
         };
+        /** Reason */
+        Reason: {
+            /** Code */
+            code: string;
+            date?: components["schemas"]["Day"] | null;
+            /** Document Type */
+            document_type?: string | null;
+            /** Text */
+            text: string;
+        };
         /** ReassignWrite */
         ReassignWrite: {
             /** Reason */
@@ -7005,6 +7049,7 @@ export interface components {
              * @default []
              */
             disabled_in?: components["schemas"]["VendorDisabled"][];
+            eligibility?: components["schemas"]["Eligibility"] | null;
             /**
              * Id
              * Format: uuid
@@ -7093,6 +7138,7 @@ export interface components {
             created_at: string;
             /** Created By Email */
             created_by_email: string;
+            eligibility?: components["schemas"]["Eligibility"] | null;
             /**
              * Id
              * Format: uuid
@@ -14861,6 +14907,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DocState"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    vendor_eligibility_api_v1_vendors__id__eligibility_get: {
+        parameters: {
+            query: {
+                unit_id: string;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Eligibility"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

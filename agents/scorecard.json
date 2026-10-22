@@ -4265,6 +4265,49 @@
       },
       "recap": "Vendor create, availability, suspend and reactivate requests now go through the approval workflow as vendor_change documents, with a duplicate tax-id and unique-identifier check (override by vendor.approve) serialised by advisory locks. Migration 0064, routes, tests and generated client included.",
       "title": "Duplicate identifier detection, approval on create/activate/suspend/reactivate"
+    },
+    {
+      "story": "E11-S11",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 4,
+          "blockers": 4,
+          "blockers_dismissed": 2
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "1cc256f5-340d-47ee-a4b4-ef743e5d0b62",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S11",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a16300-efc8-7d30-91e6-a52af8f1b56c",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Added vendors.service.eligibility (batched, 5 queries, status never changed) with GET /vendors/{id}/eligibility and an eligibility field on list rows that name available_in. Added the shared Signal primitive and the Eligibility component that renders the server's answer.",
+      "title": "Vendor eligibility: one server rule, one web component"
     }
   ]
 }

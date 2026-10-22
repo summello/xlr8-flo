@@ -14,6 +14,7 @@ from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
 from flo.kernel.authz import require, require_member
 from flo.kernel.config import Settings
+from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.org.service import OrgService, today
@@ -33,6 +34,7 @@ from flo.modules.vendors.schemas import (
     DocumentReject,
     DocumentReplace,
     DuplicateResult,
+    Eligibility,
     InactivateCreate,
     OnboardingRead,
     PerformanceRead,
@@ -110,6 +112,18 @@ def list_vendors(
     return VendorService(connection, current_scope(), context.user_id).search(
         q=q, statuses=status, available_in=available_in, cursor=cursor, limit=limit
     )
+
+
+@router.get("/{id}/eligibility", response_model=Eligibility)
+def vendor_eligibility(
+    id: UUID, unit_id: UUID, context: ViewContext, connection: Connection
+) -> Eligibility:
+    rules = VendorService(connection, current_scope(), context.user_id).eligibility(
+        [id], unit_id, today()
+    )
+    if id not in rules:
+        raise ProblemError(ErrorCode.NOT_FOUND)
+    return rules[id]
 
 
 @router.get("/duplicate-check", response_model=DuplicateResult)
