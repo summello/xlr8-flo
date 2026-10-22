@@ -65,6 +65,7 @@ from flo.modules.org.settings import SETTING_DEFAULTS, SETTING_VALIDATORS
 # The module boundary (AGENTS.md 3.3): other modules import these from here, never from
 # fiscal, numbering, models or repo directly.
 __all__ = [
+    "CORE_SCORE_CATEGORIES",
     "Conversion",
     "FxRateMissing",
     "assert_single_currency",
