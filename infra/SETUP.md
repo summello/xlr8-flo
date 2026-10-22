@@ -585,6 +585,9 @@ untouched area still skips its checks.
 Branch protection continues to require `detect`, `governance`, `security`, `backend` and `frontend`.
 Local Playwright still uses the dev server and reuses an existing server. CI retains one retry;
 remove it only after three consecutive green milestone runs report zero flaky tests.
+Local runs use two workers: four workers on the shared fleet host caused browser and axe
+timeouts. Tests remain fully parallel; override with `--workers` on an idle host. CI keeps
+Playwright's default worker count.
 CI's server startup timeout is 300 s (local dev remains at 60 s): build plus preview took
 268.17 s locally under host load around 69. This is a loaded-host observation; record the
 hosted startup and shard durations on submission. Source-mutation E2E plants target dev TSX
