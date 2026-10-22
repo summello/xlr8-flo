@@ -69,10 +69,16 @@ for (const width of [375, 768, 1024, 1440]) test(`chooser layout ${width}`, asyn
 });
 
 test('plant: replacing switch hard load preserves stale tenant memory', async ({ page }) => {
-  await page.route('**/src/features/auth/AccountMenu.tsx', async route => {
+  await page.route(process.env.CI ? '**/assets/*.js' : '**/src/features/auth/AccountMenu.tsx', async route => {
     const response = await route.fetch(); const source = await response.text();
-    expect(source).toContain('window.location.assign("/")');
-    await route.fulfill({ response, body: source.replace('window.location.assign("/")', 'navigate("/")') });
+    if (process.env.CI) {
+      const hardLoad = 'window.location.assign(`/`)';
+      expect(source).toContain(hardLoad);
+      await route.fulfill({ response, body: source.replace(hardLoad, 'window.dispatchEvent(new PopStateEvent("popstate", { state: history.state }))') });
+    } else {
+      expect(source).toContain('window.location.assign("/")');
+      await route.fulfill({ response, body: source.replace('window.location.assign("/")', 'navigate("/")') });
+    }
   });
   await stub(page); await page.goto('/sign-in/organization');
   await page.getByRole('button', { name: /EMEA/ }).click();

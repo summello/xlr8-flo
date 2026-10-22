@@ -585,6 +585,14 @@ untouched area still skips its checks.
 Branch protection continues to require `detect`, `governance`, `security`, `backend` and `frontend`.
 Local Playwright still uses the dev server and reuses an existing server. CI retains one retry;
 remove it only after three consecutive green milestone runs report zero flaky tests.
+CI's server startup timeout is 300 s (local dev remains at 60 s): build plus preview took
+268.17 s locally under host load around 69. This is a loaded-host observation; record the
+hosted startup and shard durations on submission. Source-mutation E2E plants target dev TSX
+locally and the production JS bundle on CI; each asserts that its mutation target exists,
+then retains the same guard-failure assertion. Parallel runs also exposed two skeleton tests
+whose fixed delays expired during geometry inspection; their responses now wait for the test
+to release them. Colour comparisons resolve the token in the browser so production CSS
+minification cannot turn equivalent spellings into a false failure.
 
 
 Local evidence, 22 Oct 2026 (same worktree and Postgres 17): full API `pytest -q` wall time was

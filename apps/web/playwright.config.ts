@@ -31,6 +31,8 @@ export default defineConfig({
     command: process.env.CI
       ? `npm run build && npm run preview -- --host 127.0.0.1 --port ${port} --strictPort`
       : `npm run dev -- --host 127.0.0.1 --port ${port}`,
+    // Build + preview took 268 s on the loaded local host; keep the local dev default.
+    timeout: process.env.CI ? 300_000 : 60_000,
     reuseExistingServer: !process.env.CI,
     url,
   },
