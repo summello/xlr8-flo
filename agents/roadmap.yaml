@@ -1501,7 +1501,7 @@ epics:
           - E10-S13
           - E11-S02
           - E11-S04
-        st: review
+        st: done
       - id: E11-S07
         t: Performance scoring across quality, price, delivery, service, with dispute
           history
@@ -1538,7 +1538,7 @@ epics:
           - E11-S03
           - E11-S06
           - E11-S09
-        st: todo
+        st: done
       - id: E11-S12
         t: Vendor list and profile screens, documents table and document sheet
         k: ui
@@ -1556,7 +1556,7 @@ epics:
           - E11-S02
           - E11-S03
           - E11-S11
-        st: todo
+        st: done
       - id: E11-S13
         t: 'Tax and Banking card: masked by default, audited reveal'
         k: ui
@@ -1571,7 +1571,7 @@ epics:
         dep:
           - E11-S04
           - E11-S12
-        st: todo
+        st: review
       - id: E11-S14
         t: 'Request a vendor: form, live duplicate check, drafts, submit'
         k: ui
@@ -1585,7 +1585,7 @@ epics:
         dep:
           - E11-S06
           - E11-S12
-        st: todo
+        st: in_progress
       - id: E11-S15
         t: 'Onboarding decision panel: vendor evidence block'
         k: ui
@@ -1600,7 +1600,7 @@ epics:
           - E11-S06
           - E11-S10
           - E11-S11
-        st: todo
+        st: done
       - id: E11-S16
         t: Vendor status, availability and local-disable dialogs
         k: ui
@@ -1615,7 +1615,7 @@ epics:
         dep:
           - E11-S06
           - E11-S12
-        st: todo
+        st: review
       - id: E11-S17
         t: Questionnaire administration screen
         k: ui
@@ -1641,7 +1641,7 @@ epics:
         dep:
           - E11-S07
           - E11-S12
-        st: todo
+        st: done
 
   - id: E12
     name: Sourcing
@@ -1674,7 +1674,7 @@ epics:
           - E12-S01
           - E11-S02
           - E11-S11
-        st: todo
+        st: done
       - id: E12-S03
         t: RFQ lifecycle and post-publication versioning communicated to invitees
         k: engine
@@ -1685,7 +1685,7 @@ epics:
           - SRC-005
         dep:
           - E12-S02
-        st: todo
+        st: in_progress
       - id: E12-S04
         t: 'Bid capture: line prices, currency, tax, freight, lead time, validity,
           exceptions'
@@ -2313,7 +2313,7 @@ epics:
           - USR-010
           - SEC-011
         dep: []
-        st: in_progress
+        st: review
       - id: E22-S08
         t: Expired requisitions use the warning tone
         k: ui

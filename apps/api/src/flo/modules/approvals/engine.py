@@ -871,6 +871,9 @@ def get_instance(
                 ],
                 "route": route,
                 "tasks": read_tasks,
+                "evidence": json.loads(snapshot.material["evidence"])
+                if "evidence" in snapshot.material
+                else None,
             }
         )
 

@@ -495,6 +495,8 @@ class InstanceRead(Contract):
     tasks: list[TaskRead]
     started_at: datetime
     finished_at: datetime | None
+    # what the document's adapter shows an approver beside the request; None when it supplies none
+    evidence: dict[str, JsonValue] | None = None
 
 
 class CodeSubstitutions(Contract):
