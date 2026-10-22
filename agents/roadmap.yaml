@@ -1556,7 +1556,7 @@ epics:
           - E11-S02
           - E11-S03
           - E11-S11
-        st: todo
+        st: in_progress
       - id: E11-S13
         t: 'Tax and Banking card: masked by default, audited reveal'
         k: ui
