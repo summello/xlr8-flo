@@ -4131,6 +4131,49 @@
       },
       "recap": "Merged the two Money components into ui/Money with a zero prop, shared the requisition lookup helper and e2e keyboardFocus, renamed the collaboration readers *_unchecked, and read approval instances via approvals.service. Also: RLS on the 0053 tracking table (0060), If-Match/ETag on vendor and contact PATCH (0061), audit plus requester notice on zero-step auto-approval, and requisition list filtering by granted scopes.",
       "title": "M2 milestone review follow-ups: Money zero prop, shared lookup helper, internal collaboration readers, approvals read via service, e2e focus helper"
+    },
+    {
+      "story": "E22-S12",
+      "kind": "chore",
+      "size": "M",
+      "tags": [],
+      "author": "codex",
+      "reviewers": [
+        "qwen"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "qwen": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 1,
+          "blockers": 1,
+          "blockers_dismissed": 1
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": null,
+          "source": "unavailable: no detector for sonnet"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a161dc-6414-7763-a545-5dcdac1b14b8",
+          "source": "codex rollout matched on cwd"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "unavailable: OpenRouter has no session concept - pass the generation id to `flo session qwen <id>`"
+        }
+      },
+      "recap": "CI serves a production build, splits E2E by test with two workers, separates backend static checks, and requires successful detection in both combined jobs. The full production suite passed 441 tests; final production-mode light check passed all static checks, 12 shard tests and 178 changed browser tests.",
+      "title": "Balanced E2E shards on a production build; backend static job; combined checks need detect"
     }
   ]
 }

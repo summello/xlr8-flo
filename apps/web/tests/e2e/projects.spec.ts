@@ -338,8 +338,10 @@ test("record required and integer guards preserve input without writing invalid 
 
 test("initial overview skeleton reserves fact row dimensions without layout shift", async ({ page }) => {
   await stubProjects(page);
+  let release = () => {};
+  const ready = new Promise<void>(resolve => { release = resolve; });
   await page.route(`**/api/v1/projects/${projectId}`, async route => {
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await ready;
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(project) });
   });
   await page.addInitScript(() => {
@@ -352,6 +354,7 @@ test("initial overview skeleton reserves fact row dimensions without layout shif
   const skeleton = page.locator(".project-loading .project-facts > div");
   await expect(skeleton).toHaveCount(14);
   const height = await skeleton.first().evaluate(n => n.getBoundingClientRect().height);
+  release();
   await expect(page.getByRole("heading", { name: "Plant renewal", exact: true })).toBeVisible();
   expect(await page.locator('[role="tabpanel"] .project-facts > div').first().evaluate(n => n.getBoundingClientRect().height)).toBe(height);
   expect(await page.evaluate(() => (window as unknown as { projectShifts: number[] }).projectShifts.reduce((sum, value) => sum + value, 0))).toBeLessThan(0.1);

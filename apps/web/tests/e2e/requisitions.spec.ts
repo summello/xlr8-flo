@@ -427,11 +427,17 @@ test("keyboard only: create, add a line, remove it, submit, open the detail and 
 
 /* ---- Detail ---- */
 test("detail: initial load shows every card as a skeleton at its final place, then the cards replace them", async ({ page }) => {
-  const state = await stubRequisitions(page, { row: requisition({ estimate: "20.0000" }), lines: [lineRow(1)] });
-  state.getDelay = 800;
+  await stubRequisitions(page, { row: requisition({ estimate: "20.0000" }), lines: [lineRow(1)] });
+  let release = () => {};
+  const ready = new Promise<void>(resolve => { release = resolve; });
+  await page.route(`**/api/v1/requisitions/${reqId}`, async route => {
+    await ready;
+    await route.fallback();
+  });
   await page.goto(`/requisitions/${reqId}`);
   await expect(page.locator(".req-card-skeleton")).toHaveCount(6);
   for (const box of await page.locator(".req-card-skeleton").all()) expect((await box.boundingBox())!.height).toBeGreaterThan(100);
+  release();
   await expect(page.locator("#request-title")).toBeVisible();
   await expect(page.locator(".req-card-skeleton")).toHaveCount(0);
 });

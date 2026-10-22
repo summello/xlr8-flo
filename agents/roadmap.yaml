@@ -2367,7 +2367,7 @@ epics:
         reqs:
           - SEC-012
         dep: []
-        st: in_progress
+        st: done
 
   # ─────────────────── M4 — Full Phase-1 scope ───────────────────
 
