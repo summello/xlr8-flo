@@ -137,7 +137,10 @@ def test_a_merged_story_gets_one_fix_after_its_last_submit_then_the_operator():
     """A merged story is never resubmitted, so its red stays red after the fix ran; E22-S12's
     author was relaunched every tick on 22 Oct."""
     red = story(merged=True, ci_red=True)
-    after = {("S1", "submit"): {"started": 100, "exit": 0}, ("S1", "fix"): {"started": 200, "exit": 0}}
+    after = {
+        ("S1", "submit"): {"started": 100, "exit": 0},
+        ("S1", "fix"): {"started": 200, "exit": 0},
+    }
     (act,) = S.decide(red, ctx(results=after))
     assert act["need"].startswith("a CI fix already ran on this merged story")
     before = {**after, ("S1", "fix"): {"started": 50, "exit": 0}}
