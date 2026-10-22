@@ -167,3 +167,63 @@ def test_no_notice_when_every_record_is_verified(monkeypatch):
 def test_the_committed_scorecard_still_has_no_verified_records_and_says_so():
     text = (REPO / "agents" / "SCORECARD.md").read_text()
     assert "Data quality" in text and "0/29" in text
+
+
+# judgement day -------------------------------------------------------------------------------
+
+
+def judgement_script():
+    import re
+
+    doc = (REPO / "docs" / "ops" / "sonnet-round-churn.md").read_text()
+    section = doc.split("## Judgement day", 1)[1]
+    match = re.search(r"```python\n(.*?)\n```", section, re.S)
+    assert match, "the Judgement day script is missing from the doc"
+    return match.group(1)
+
+
+def judge(tmp_path, records):
+    import subprocess
+
+    (tmp_path / "agents").mkdir()
+    (tmp_path / "agents" / "scorecard.json").write_text(json.dumps({"stories": records}))
+    run = subprocess.run(
+        [sys.executable, "-c", judgement_script()], cwd=tmp_path, capture_output=True, text=True
+    )
+    assert run.returncode == 0, run.stderr
+    return run.stdout
+
+
+def sonnet(tags, rounds, basis="round_files"):
+    out = {
+        "story": "X", "author": "sonnet", "tags": tags, "rounds": rounds, "gate_failures": 0,
+        "escapes": 0, "void_rounds": 0, "review_runs": {"codex": rounds},
+    }  # fmt: skip
+    if basis:
+        out["rounds_basis"] = basis
+    return out
+
+
+def test_judgement_day_waits_below_ten_verified_gated_records(tmp_path):
+    records = [sonnet(["money"], 3) for _ in range(9)] + [sonnet([], 1) for _ in range(20)]
+    out = judge(tmp_path, records)
+    assert "gated 9" in out and out.strip().endswith("not yet")
+
+
+def test_legacy_and_other_authors_do_not_count_toward_judgement_day(tmp_path):
+    legacy = [sonnet(["money"], 4, basis=None) for _ in range(30)]
+    codex = [{**sonnet(["money"], 4), "author": "codex"} for _ in range(30)]
+    out = judge(tmp_path, legacy + codex)
+    assert "verified Sonnet records: 0" in out and out.strip().endswith("not yet")
+
+
+def test_judgement_day_reports_the_gap_once_there_are_ten(tmp_path):
+    records = [sonnet(["money"], 3) for _ in range(10)] + [sonnet([], 1) for _ in range(5)]
+    out = judge(tmp_path, records)
+    assert "gated 10" in out
+    assert "gated mean - ungated mean = 2.00: CONCENTRATED" in out
+
+
+def test_judgement_day_calls_an_even_spread_spread(tmp_path):
+    records = [sonnet(["auth"], 1) for _ in range(10)] + [sonnet([], 1) for _ in range(5)]
+    assert "SPREAD" in judge(tmp_path, records)

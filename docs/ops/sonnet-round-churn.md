@@ -6,8 +6,8 @@ Data: `agents/scorecard.json` as of commit `39644ac` (22 Oct 2026), 106 merged s
 ## Answer
 
 **Sonnet's extra rounds are concentrated in gated work, but this data cannot say the cause is
-Sonnet.** Four confounds are open, so the right recommendation is a bounded A/B test, not a
-change to Sonnet's allowed work.
+Sonnet.** Four confounds are open, so the right recommendation is to wait for verified records
+(see Judgement day below), not to change Sonnet's allowed work.
 
 ## The numbers
 
@@ -63,7 +63,7 @@ Gated means any of money, auth, security, migration, concurrency. A dash means f
 | # | Confound | Status | Evidence |
 |---|---|---|---|
 | 1 | **No like-for-like comparison with Codex.** Codex's 1.04 comes from M0 and M1, when review was Opus alone (25 Aug and 10 Oct arrangements) and many stories were foundations under a sole-author contract. Since 13 Oct every Sonnet story is reviewed by Codex, and gated ones by a fresh Opus too. In the window, 29 of 30 records are Sonnet and 1 is Codex (table 1b). | **Open** | Author and review regime move together. Nothing here separates them. |
-| 2 | **The scorecard's `rounds` is not written where the rounds happen.** In this repository the only code that has ever raised `task.json`'s `rounds` is `flo escalate`, and the scorecard records that value plus 1. The supervisor never writes `task.json`, and no skill or script does either (checked 22 Oct 2026 across the history of `agents/scripts` and `.claude/skills/xlr8flo-*`). Yet seven Sonnet stories show 3 or 4 rounds. The six records after 21 Oct that also carry observed review-run counts all say `rounds: 1` while their reviewers ran 2, 2, 2, 1, 7 and 6 times, and every Sonnet record above 1 predates that change. The value is most likely set by hand in planner sessions (an inference). Table 5 fits: stories with `rounds >= 2` hold no recorded findings, and one-round stories hold 13 blockers. | **Open for the numbers above; fixed going forward by E23-S13** | New records take `rounds` from the round files the supervisor counts and carry `rounds_basis: "round_files"`. The A/B must read those records only. |
+| 2 | **The scorecard's `rounds` is not written where the rounds happen.** In this repository the only code that has ever raised `task.json`'s `rounds` is `flo escalate`, and the scorecard records that value plus 1. The supervisor never writes `task.json`, and no skill or script does either (checked 22 Oct 2026 across the history of `agents/scripts` and `.claude/skills/xlr8flo-*`). Yet seven Sonnet stories show 3 or 4 rounds. The six records after 21 Oct that also carry observed review-run counts all say `rounds: 1` while their reviewers ran 2, 2, 2, 1, 7 and 6 times, and every Sonnet record above 1 predates that change. The value is most likely set by hand in planner sessions (an inference). Table 5 fits: stories with `rounds >= 2` hold no recorded findings, and one-round stories hold 13 blockers. | **Open for the numbers above; fixed going forward by E23-S13** | New records take `rounds` from the round files the supervisor counts and carry `rounds_basis: "round_files"`. Judgement day reads those records only. |
 | 3 | **Not every round is the author's.** `project-memory.md` (22 Oct) records three Codex reviews that hit the command cap and left `approve, ran_tests: false`; each cost another review. Whether those were counted as rounds depends on the unknown writer in row 2. | **Open** | Cannot be separated from committed data. |
 | 4 | **Small cells.** Most kind and tag cells have n < 8. | **Partly** | The gated vs ungated split (n = 12 and 17) is the only one with enough records to read. |
 
@@ -71,14 +71,29 @@ Gated means any of money, auth, security, migration, concurrency. A dash means f
 
 Rule result *concentrated*, confounds 1 to 3 *open*, so the row that applies is:
 
-> **Do not narrow Sonnet yet.** Run a bounded A/B: the next 6 gated stories go to Codex as author;
-> compare their rounds with Sonnet's 2.17 under the same Codex-plus-Opus review. E23-S04 ships the
-> reorder for ungated work only.
+> **Do not narrow Sonnet yet, and do not run a Codex A/B yet.** Wait until Sonnet has 10 verified gated
+> records and judge then (Judgement day, below). E23-S04 ships the reorder for ungated work only.
 
 Why not narrow now: it would move gated work (12 of Sonnet's 29 stories) to Codex, whose weekly
 budget is 18 stories (`weekly_story_budget` in `agents.yaml`), on evidence that cannot tell author
-quality from review strictness. Six stories is a third of one week's Codex budget, enough to
-see whether Codex-authored gated stories also take about two rounds under this review regime.
+quality from review strictness.
+
+**Why not a Codex A/B now** (an earlier version of this note proposed one, and got a point wrong):
+
+1. **The arms would not share a reviewer.** An earlier version said the arms would be compared
+   "under the same Codex-plus-Opus review". That is false. Codex cannot review its own stories, so a
+   Codex-authored gated story is reviewed by qwen plus Opus, while a Sonnet-authored one gets Codex
+   plus Opus (`apps/api/tests/gates/test_flo_assign.py` pins this). The arms would differ in the very
+   reviewer-strictness confound the test was meant to remove. A fair test must also fix the non-Opus
+   reviewer for both arms, or compare only Opus-attributable findings.
+2. **There is no per-story routing.** `avoid_tags` on Sonnet would move all gated work at once (a
+   before-and-after comparison, confounded by story difficulty); `flo reassign` is racy because
+   `begin.sh` launches the author immediately. A concurrent split needs a new story (a deterministic
+   split by story id).
+3. **The pool is small.** On 22 Oct, 43 gated stories were todo, but none was ready in M3 and 3 were in
+   flight. Six per arm would take weeks and detect only a difference of a round or more.
+4. **Sonnet has 0 escapes** (blockers Opus found at final review) across 29 stories. The case against
+   it on gated work is throughput (rounds), not defects, and even that rests on unverified numbers.
 
 What settles it: E23-S13 derives `rounds` from the round files the supervisor already counts, does not charge a round that sent no itemised finding (`void_rounds`), and exposes `review_runs`, so reviewer failures can be told from author rework. `SCORECARD.md` marks every older record as untrustworthy and rewrites none. Until a gated Sonnet or Codex story has a record with `rounds_basis`, there is nothing to compare.
 
@@ -153,3 +168,58 @@ for label, grp in (("rounds = 1", [s for s in son if s["rounds"] == 1]),
           f"dismissed={sum(r['blockers_dismissed'] for r in reviews)}")
 print(f"  rounds distribution: {sorted(s['rounds'] for s in son)}")
 ```
+
+## Judgement day: Sonnet on gated work
+
+**Keep an eye on this.** Judge when Sonnet has **10 verified gated records**: records with
+`rounds_basis: "round_files"` (written since E23-S13) whose tags include money, auth, security,
+migration or concurrency. Until then there is nothing trustworthy to judge. `SCORECARD.md` shows
+*Rounds verified* per agent; this script counts the gated ones and does the comparison. Run it from the
+repository root; stdlib only.
+
+```python
+import json
+import statistics
+
+GATED = {"money", "auth", "security", "migration", "concurrency"}
+FLOOR = 10
+records = json.load(open("agents/scorecard.json"))["stories"]
+verified = [s for s in records if s["author"] == "sonnet" and s.get("rounds_basis") == "round_files"]
+gated = [s for s in verified if set(s["tags"]) & GATED]
+ungated = [s for s in verified if not set(s["tags"]) & GATED]
+print(f"verified Sonnet records: {len(verified)} (gated {len(gated)}, ungated {len(ungated)}); "
+      f"judge at {FLOOR} gated")
+if len(gated) < FLOOR:
+    print("not yet")
+    raise SystemExit
+
+
+def line(name, group):
+    if not group:
+        return f"  {name:<8} n=0"
+    clean = sum(1 for s in group if s["rounds"] == 1 and s["gate_failures"] == 0)
+    return (f"  {name:<8} n={len(group):<3} mean rounds={statistics.mean(s['rounds'] for s in group):.2f}"
+            f"  clean={100 * clean / len(group):.0f}%  void rounds={sum(s['void_rounds'] for s in group)}"
+            f"  escapes={sum(s['escapes'] for s in group)}"
+            f"  review runs/story={statistics.mean(sum(s['review_runs'].values()) for s in group):.1f}")
+
+
+print(line("gated", gated))
+print(line("ungated", ungated))
+if ungated:
+    gap = statistics.mean(s["rounds"] for s in gated) - statistics.mean(s["rounds"] for s in ungated)
+    print(f"gated mean - ungated mean = {gap:.2f}: {'CONCENTRATED' if gap >= 0.5 else 'SPREAD'}")
+```
+
+How to read it (the decision belongs to the planner and the operator):
+
+| Result | Then |
+|---|---|
+| Spread, no escapes | Keep Sonnet on gated work and close the question. |
+| Concentrated, but gated mean rounds under about 2 and no escapes | Keep Sonnet; rounds are a measured cost, not a defect. |
+| Concentrated with gated mean rounds around 2 or more, or any escape | Test it properly: a deterministic split of gated authorship by story id (a new story) with the same non-Opus reviewer in both arms; or add `avoid_tags` for the gated tags to Sonnet in `agents.yaml`. |
+
+`review runs/story` and `void rounds` tell reviewer failures apart from author rework: many review
+runs with few rounds means the reviewers, not Sonnet, caused the extra work. The ungated Sonnet
+records give the within-author baseline, so a comparison with Codex is only needed if the table above
+points to the third row.
