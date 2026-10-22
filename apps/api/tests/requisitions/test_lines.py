@@ -430,7 +430,8 @@ def test_currency_project_moves(lines_db):
             assert rejected.status_code == 422, rejected.text
             assert rejected.json()["checks"]["problem"] == "currency_change_blocked"
             assert rejected.json()["errors"][0]["field"] == "project_id"
-            assert (await send(browser, "GET", f"/{row.id}")).json() == moved.json()
+            # can_edit is set by the single-record GET only (E22-S02)
+            assert (await send(browser, "GET", f"/{row.id}")).json() == moved.json() | {"can_edit": True}
             assert (await send(browser, "GET", f"/{row.id}/lines")).json() == before
             await write(browser, row, None, 3, "DELETE", before["rows"][0]["id"])
             moved = await send(
