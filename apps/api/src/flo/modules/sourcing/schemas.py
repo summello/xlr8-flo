@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Annotated, Literal
+from typing import Annotated, Literal, cast
 from uuid import UUID
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -98,6 +98,12 @@ class RfqAttachmentRead(BaseModel):
     vendor_visible: bool
 
 
+class DeliveryRead(BaseModel):
+    contact_id: UUID
+    version: int
+    state: Literal["queued", "sent", "failed"]  # follows the outbox row
+
+
 class InviteeRead(BaseModel):
     vendor_id: UUID
     contact_ids: list[UUID]
@@ -107,6 +113,9 @@ class InviteeRead(BaseModel):
     invited_at: datetime
     eligible: bool | None  # live, for the RFQ's unit; None if the vendor can no longer be read
     reasons: list[str]
+    deliveries: list[DeliveryRead] = []
+    latest_sent_version: int | None = None
+    not_told_of: list[int] = []  # versions with no email sent to any contact of this vendor
 
 
 class RfqLineRead(BaseModel):
@@ -148,6 +157,7 @@ class RfqRead(BaseModel):
     requirements: list[RequirementRead] = []
     attachments: list[RfqAttachmentRead] = []
     invitees: list[InviteeRead] = []
+    published_at: datetime | None = None
 
 
 class SourceableLine(BaseModel):
@@ -176,6 +186,21 @@ class SourceablePage(BaseModel):
     next_cursor: str | None
 
 
+def _aware(value: datetime | None) -> datetime | None:
+    if value is not None and value.tzinfo is None:
+        raise ValueError("Give the deadline with a UTC offset.")
+    return value
+
+
+def _iana(value: str | None) -> str | None:
+    if value is not None:
+        try:
+            ZoneInfo(value)
+        except (ValueError, OSError, ZoneInfoNotFoundError):
+            raise ValueError("Use an IANA time zone such as Europe/London.") from None
+    return value
+
+
 class RfqContentPatch(BaseModel):
     """Only the fields sent change; null clears a text field. The deadline is required, not null."""
 
@@ -191,19 +216,12 @@ class RfqContentPatch(BaseModel):
     @field_validator("deadline_at")
     @classmethod
     def aware(cls, value: datetime | None) -> datetime | None:
-        if value is not None and value.tzinfo is None:
-            raise ValueError("Give the deadline with a UTC offset.")
-        return value
+        return _aware(value)
 
     @field_validator("deadline_tz")
     @classmethod
     def iana(cls, value: str | None) -> str | None:
-        if value is not None:
-            try:
-                ZoneInfo(value)
-            except (ValueError, OSError, ZoneInfoNotFoundError):
-                raise ValueError("Use an IANA time zone such as Europe/London.") from None
-        return value
+        return _iana(value)
 
     @field_validator("line_specifications")
     @classmethod
@@ -243,3 +261,36 @@ class InviteeCreate(BaseModel):
 class InviteePatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
     contact_ids: list[UUID] = Field(min_length=1, max_length=20)
+
+
+class RfqAmend(RfqContentPatch):
+    """The draft's edits, applied as a new version; `lines` may change quantities only."""
+
+    reason: str = Field(min_length=1, max_length=500)
+    lines: list[RfqLineIn] | None = Field(default=None, min_length=1, max_length=500)
+
+
+class ExtendDeadline(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    deadline_at: datetime
+    deadline_tz: str | None = None
+    reason: str | None = Field(default=None, min_length=1, max_length=500)
+
+    @field_validator("deadline_at")
+    @classmethod
+    def aware(cls, value: datetime) -> datetime:
+        return cast(datetime, _aware(value))
+
+    @field_validator("deadline_tz")
+    @classmethod
+    def iana(cls, value: str | None) -> str | None:
+        return _iana(value)
+
+
+class RfqVersionRead(BaseModel):
+    version: int
+    reason: str | None
+    diff: dict[str, object]
+    snapshot: dict[str, object]
+    published_by_email: str
+    published_at: datetime

@@ -13,7 +13,7 @@ from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError, conflict
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
-from flo.modules.requisitions.lifecycle import read_row
+from flo.modules.requisitions.lifecycle import read_row, write_status
 from flo.modules.requisitions.links import assert_current_upstream
 from flo.modules.requisitions.models import RequisitionRepository
 from flo.modules.requisitions.schemas import LineSourcing, SourcingBasis
@@ -176,3 +176,34 @@ def source_lines(
                 before=before,
                 after=after,
             )
+
+
+def mark_sourced(conn: Conn, scope: Scope, requisition_id: UUID, actor_id: UUID) -> bool:
+    """`sourcing_in_progress` -> `sourced` once nothing is left to source (decision 206).
+
+    Every non-cancelled line is fully sourced and no RFQ holding its lines is still a draft.
+    Returns whether the requisition moved; a no-op for any other state. Call in a transaction.
+    """
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        repo = RequisitionRepository(conn, scope)
+        row = read_row(repo, requisition_id, lock=True)
+        if row["status"] != "sourcing_in_progress":
+            return False
+        params = {"id": requisition_id}
+        open_lines = repo.execute(
+            "SELECT 1 FROM requisition_line WHERE org_id = %(org_id)s AND requisition_id = %(id)s "
+            "AND sourced_qty <> quantity - cancelled_qty LIMIT 1",
+            params,
+        ).fetchone()
+        # ponytail: reads the rfq tables directly; route through a sourcing probe if a second
+        # document type ever holds requisition lines.
+        on_draft = repo.execute(
+            "SELECT 1 FROM rfq_line l JOIN rfq r ON r.org_id = l.org_id AND r.id = l.rfq_id "
+            "WHERE l.org_id = %(org_id)s AND l.requisition_id = %(id)s AND r.status = 'draft' "
+            "LIMIT 1",
+            params,
+        ).fetchone()
+        if open_lines or on_draft:
+            return False
+        write_status(conn, scope, row, "sourced", actor_id, None, None)
+        return True

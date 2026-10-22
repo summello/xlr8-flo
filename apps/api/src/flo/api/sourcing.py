@@ -14,16 +14,20 @@ from flo.kernel.config import Settings
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.org.service import OrgService
+from flo.modules.sourcing.lifecycle import RfqLifecycle
 from flo.modules.sourcing.schemas import (
+    ExtendDeadline,
     InviteeCreate,
     InviteePatch,
     RequirementsFromTemplate,
     RequirementsPut,
     RequirementWaive,
+    RfqAmend,
     RfqContentPatch,
     RfqCreate,
     RfqLinesPatch,
     RfqRead,
+    RfqVersionRead,
     SourceablePage,
     VisibilityPut,
 )
@@ -224,3 +228,55 @@ def patch_invitee(
 ) -> RfqRead:
     service = RfqService(connection, current_scope(), context.user_id)
     return _done(service.update_invitee(id, vendor_id, body, revision), response)
+
+
+@router.post("/rfqs/{id}/publish", response_model=RfqRead)
+def publish_rfq(
+    id: UUID, context: EditContext, connection: Connection, response: Response
+) -> RfqRead:
+    return _done(RfqLifecycle(connection, current_scope(), context.user_id).publish(id), response)
+
+
+@router.post("/rfqs/{id}/amend", response_model=RfqRead)
+def amend_rfq(
+    id: UUID, body: RfqAmend, context: EditContext, connection: Connection, response: Response
+) -> RfqRead:
+    return _done(
+        RfqLifecycle(connection, current_scope(), context.user_id).amend(id, body), response
+    )
+
+
+@router.post("/rfqs/{id}/extend-deadline", response_model=RfqRead)
+def extend_rfq_deadline(
+    id: UUID,
+    body: ExtendDeadline,
+    context: EditContext,
+    connection: Connection,
+    response: Response,
+) -> RfqRead:
+    return _done(
+        RfqLifecycle(connection, current_scope(), context.user_id).extend(id, body), response
+    )
+
+
+@router.post("/rfqs/{id}/start-evaluation", response_model=RfqRead)
+def start_rfq_evaluation(
+    id: UUID, context: EditContext, connection: Connection, response: Response
+) -> RfqRead:
+    service = RfqLifecycle(connection, current_scope(), context.user_id)
+    return _done(service.start_evaluation(id), response)
+
+
+@router.post("/rfqs/{id}/invitees/{vendor_id}/resend", response_model=RfqRead)
+def resend_rfq(
+    id: UUID, vendor_id: UUID, context: EditContext, connection: Connection, response: Response
+) -> RfqRead:
+    service = RfqLifecycle(connection, current_scope(), context.user_id)
+    return _done(service.resend(id, vendor_id), response)
+
+
+@router.get("/rfqs/{id}/versions", response_model=list[RfqVersionRead])
+def list_rfq_versions(
+    id: UUID, context: ViewContext, connection: Connection
+) -> list[RfqVersionRead]:
+    return RfqLifecycle(connection, current_scope(), context.user_id).versions(id)
