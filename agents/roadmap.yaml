@@ -3185,6 +3185,109 @@ epics:
         dep: []
         st: done
 
+  - id: E23
+    name: Fleet throughput
+    milestone: MT
+    stories:
+      - id: E23-S01
+        t: Stage durations in the scorecard record, with a flo score --durations report
+        k: chore
+        s: S
+        tags: []
+        reqs:
+          - SUP-005
+          - OBS-002
+        dep: []
+        st: todo
+      - id: E23-S02
+        t: Sonnet round-churn analysis by kind and tag, with a routing recommendation
+        k: chore
+        s: S
+        tags: []
+        reqs:
+          - SUP-005
+        dep: []
+        st: todo
+      - id: E23-S03
+        t: The nemotron launcher reads its model from agents.yaml and records what it launched
+        k: chore
+        s: S
+        tags: []
+        reqs:
+          - SUP-005
+        dep: []
+        st: todo
+      - id: E23-S04
+        t: Reorder author_priority by measured record, reconcile nemotron history, pin it with tests
+        k: chore
+        s: S
+        tags: []
+        reqs:
+          - SUP-005
+        dep:
+          - E23-S02
+        st: todo
+      - id: E23-S05
+        t: flo start refuses a story with no packet pre-flight record
+        k: chore
+        s: S
+        tags: []
+        reqs:
+          - SUP-005
+        dep: []
+        st: todo
+      - id: E23-S06
+        t: 'flo reassign: capacity-aware, liveness-checked, per-story locked author reassignment'
+        k: concurrency
+        s: M
+        tags:
+          - concurrency
+        reqs:
+          - SUP-005
+        dep:
+          - E23-S04
+        st: todo
+      - id: E23-S07
+        t: Headroom-ranked Claude account pick for a new story start
+        k: chore
+        s: S
+        tags: []
+        reqs:
+          - SUP-005
+        dep: []
+        st: blocked
+      - id: E23-S08
+        t: Structured, commit-bound test-evidence records that flo gate verifies
+        k: chore
+        s: M
+        tags:
+          - security
+        reqs:
+          - SUP-005
+          - SEC-012
+        dep: []
+        st: todo
+      - id: E23-S09
+        t: Build the SPA bundle once in CI and deploy the same artifact
+        k: chore
+        s: S
+        tags: []
+        reqs:
+          - SEC-012
+        dep:
+          - E22-S12
+        st: todo
+      - id: E23-S10
+        t: Completion-triggered supervisor wakeup instead of a fixed 300 s poll
+        k: chore
+        s: S
+        tags: []
+        reqs:
+          - SUP-005
+        dep:
+          - E23-S01
+        st: blocked
+
   - id: E30
     name: Future roadmap
     milestone: M7
