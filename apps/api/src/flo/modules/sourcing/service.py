@@ -224,7 +224,8 @@ class RfqService:
         told: dict[UUID, list[DeliveryRead]] = {}
         for r in self.repo.execute(
             "SELECT t.vendor_id, t.contact_id, t.version, "
-            "CASE o.state WHEN 'pending' THEN 'queued' WHEN 'sent' THEN 'sent' ELSE 'failed' END "
+            "CASE o.state WHEN 'pending' THEN 'queued' WHEN 'sent' THEN 'sent' "
+            "WHEN 'dead' THEN 'bounced' ELSE 'failed' END "
             "FROM rfq_invitee_version t "
             "JOIN outbox o ON o.id = t.outbox_id "
             "WHERE t.org_id = %(org_id)s AND t.rfq_id = %(id)s ORDER BY t.created_at, t.contact_id",

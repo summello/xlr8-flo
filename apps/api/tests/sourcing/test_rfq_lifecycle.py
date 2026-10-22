@@ -15,7 +15,13 @@ from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import tenant_transaction
 from flo.modules.sourcing import lifecycle
 from flo.modules.sourcing.lifecycle import TRANSITIONS, RfqLifecycle
-from flo.modules.sourcing.schemas import ExtendDeadline, InviteePatch, RfqAmend, RfqContentPatch
+from flo.modules.sourcing.schemas import (
+    ExtendDeadline,
+    InviteePatch,
+    RfqAmend,
+    RfqContentPatch,
+    RfqLineIn,
+)
 from flo.modules.vendors.schemas import ContactCreate
 from tests.isolation.test_real_sessions import client, headers, login
 from tests.requisitions.test_header import bootstrap_db as bootstrap_db  # noqa: F401
@@ -316,7 +322,7 @@ def test_a_bounced_contact_is_changed_and_the_same_version_is_sent_again(lifecyc
     [first] = emails(db, rfq, 1)
     sql(db, "UPDATE outbox SET state='dead' WHERE idempotency_key=%s RETURNING 1", (first[0],))
     told = life(db).get(rfq.id).invitees[0]
-    assert told.not_told_of == [1] and told.deliveries[0].state == "failed"
+    assert told.not_told_of == [1] and told.deliveries[0].state == "bounced"
     fresh = vendors(db).create_contact(
         vendor_id,
         ContactCreate(
@@ -443,3 +449,42 @@ def test_lifecycle_routes_conceal_foreign_tenants(lifecycle_db):
     assert other  # a foreign tenant's vendor id is just an unknown id here
     asyncio.run(scenario())
     assert sql(db, "SELECT status FROM rfq WHERE id=%s", (mine.id,))[0][0] == "published"
+
+
+def test_extend_refuses_the_same_instant_even_in_another_zone(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, _, _ = publish(db)
+    with correlation_context("extend"):
+        error = refused(
+            lambda: life(db).extend(
+                rfq.id, ExtendDeadline(deadline_at=rfq.deadline_at, deadline_tz="Asia/Kolkata")
+            ),
+            ErrorCode.VALIDATION_FAILED,
+        )
+    assert error.checks["problem"] == "deadline_earlier" and life(db).get(rfq.id).version == 1
+
+
+def test_a_failed_email_still_retrying_is_not_resent(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, _, _ = publish(db)
+    vendor_id = rfq.invitees[0].vendor_id
+    sql(
+        db,
+        "UPDATE outbox SET state='failed' WHERE idempotency_key LIKE %s RETURNING 1",
+        (f"rfq:{rfq.id}:%",),
+    )
+    with correlation_context("resend"):
+        error = refused(lambda: life(db).resend(rfq.id, vendor_id))
+    assert error.checks["problem"] == "nothing_to_resend"
+
+
+def test_a_fully_sourced_requisition_refuses_a_downward_amendment(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, row, line = publish(db, qty="10")  # all ten units: the requisition becomes sourced
+    assert sql(db, "SELECT status FROM requisition WHERE id=%s", (row.id,))[0][0] == "sourced"
+    lowered = RfqLineIn(requisition_line_id=line, requisition_version=row.version, quantity="6")
+    with correlation_context("amend"):
+        error = refused(lambda: life(db).amend(rfq.id, RfqAmend(reason="Fewer", lines=[lowered])))
+    assert error.checks["problem"] == "requisition_sourced"
+    assert sql(db, "SELECT sourced_qty FROM requisition_line WHERE id=%s", (line,))[0][0] == 10
+    assert life(db).get(rfq.id).version == 1

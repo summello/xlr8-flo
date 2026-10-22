@@ -3,6 +3,7 @@
 
 from collections.abc import Callable
 from datetime import datetime
+from decimal import Decimal
 from typing import cast
 from uuid import UUID
 
@@ -257,7 +258,7 @@ class RfqLifecycle(RfqService):
                     "SELECT t.contact_id FROM rfq_invitee_version t "
                     "JOIN outbox o ON o.id = t.outbox_id WHERE t.org_id = %(org_id)s "
                     "AND t.rfq_id = %(id)s AND t.version = %(version)s "
-                    "AND o.state IN ('pending', 'sent')",
+                    "AND o.state IN ('pending', 'sent', 'failed')",
                     {"id": id, "version": version},
                 ).fetchall()
             }
@@ -292,7 +293,11 @@ class RfqLifecycle(RfqService):
             head = self._lock(id, action)
             if head[3]:  # the close job has not run yet, but vendors can no longer respond
                 raise conflict("deadline_passed", "The deadline has passed. The RFQ is closing.")
-            if body.deadline_at is not None and body.deadline_at < cast(datetime, head[1]):
+            current = cast(datetime, head[1])
+            # an extension is later-only by instant, whatever the zone says
+            if body.deadline_at is not None and (
+                body.deadline_at <= current if action == "extend" else body.deadline_at < current
+            ):
                 raise invalid(
                     "deadline_at",
                     "Choose a deadline later than the current one.",
@@ -339,6 +344,24 @@ class RfqLifecycle(RfqService):
                 "lines",
                 "An amendment changes quantities only, not which lines are on the RFQ.",
                 "lines_fixed",
+            )
+        # A sourced requisition has no open quantity (decision 206); handing quantity back would
+        # leave it sourced with units nobody can source. Refuse until reopening is decided.
+        lowered = [
+            line.requisition_line_id
+            for line in body.lines
+            if self.repo.execute(
+                "SELECT 1 FROM rfq_line l JOIN requisition r ON r.org_id = l.org_id "
+                "AND r.id = l.requisition_id WHERE l.org_id = %(org_id)s AND l.rfq_id = %(id)s "
+                "AND l.requisition_line_id = %(line)s AND l.quantity > %(quantity)s "
+                "AND r.status = 'sourced'",
+                {"id": id, "line": line.requisition_line_id, "quantity": Decimal(line.quantity)},
+            ).fetchone()
+        ]
+        if lowered:
+            raise conflict(
+                "requisition_sourced",
+                "This requisition is fully sourced, so its quantity cannot be reduced here.",
             )
         self._apply_lines(
             id, cast(UUID, unit[0]), cast(str, unit[1]), RfqLinesPatch(lines=body.lines)

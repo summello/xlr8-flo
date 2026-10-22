@@ -101,7 +101,7 @@ class RfqAttachmentRead(BaseModel):
 class DeliveryRead(BaseModel):
     contact_id: UUID
     version: int
-    state: Literal["queued", "sent", "failed"]  # follows the outbox row
+    state: Literal["queued", "sent", "failed", "bounced"]  # follows the outbox row; dead = bounced
 
 
 class InviteeRead(BaseModel):
