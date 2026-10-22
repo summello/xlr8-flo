@@ -28,6 +28,8 @@ import ResubmitRequisition from "./requisitions/resubmit";
 import AmendRequisition from "./requisitions/amend";
 import AmendReview from "./requisitions/amend-review";
 import RequisitionDetail from "./requisitions/detail";
+import VendorList from "./vendors/list";
+import VendorDetail from "./vendors/detail";
 import { confirmLeave, consumeRestoring, installHistoryIndex, settlePop } from "../lib/navigation-guard";
 import type { Project } from "../components/projects/api";
 import type { RoutePath } from "./route-paths";
@@ -54,6 +56,7 @@ const REQUISITION_EDIT_PATH = /^\/requisitions\/([0-9a-f-]{36})\/edit$/;
 const REQUISITION_RESUBMIT_PATH = /^\/requisitions\/([0-9a-f-]{36})\/resubmit$/;
 const REQUISITION_AMEND_PATH = /^\/requisitions\/([0-9a-f-]{36})\/amend$/;
 const REQUISITION_AMEND_REVIEW_PATH = /^\/requisitions\/([0-9a-f-]{36})\/amend\/review$/;
+const VENDOR_PATH = /^\/vendors\/([0-9a-f-]{36})$/;
 const ADMIN_USER_PATH = /^\/admin\/users\/([^/]+)$/;
 
 const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
@@ -138,7 +141,7 @@ const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
   },
   "/vendors": {
     activeHref: "/vendors",
-    description: "Vendor screens arrive with the commitment milestone.",
+    description: "Find vendors, check who may be used here, and keep their documents current.",
     hierarchy: [ORGANIZATION, ["/vendors", "Vendors"]],
     phase: "commit",
     title: "Vendors",
@@ -215,6 +218,10 @@ function routeFor(path: string): ShellRoute {
   if (REQUISITION_PATH.test(path) || REQUISITION_EDIT_PATH.test(path)) return {
     activeHref: "/requisitions", path, phase: "demand", title: REQUISITION_EDIT_PATH.test(path) ? "Edit Requisition" : "Requisition", description: "Requisition details and actions.",
     breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/requisitions", label: "Requisitions" }, { href: path, label: REQUISITION_EDIT_PATH.test(path) ? "Edit" : "Requisition" }],
+  };
+  if (VENDOR_PATH.test(path)) return {
+    activeHref: "/vendors", path, phase: "commit", title: "Vendor", description: "Vendor profile, documents and history.",
+    breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/vendors", label: "Vendors" }, { href: path, label: "Vendor" }],
   };
   const adminUser = path.match(ADMIN_USER_PATH)?.[1];
   if (adminUser !== undefined) {
@@ -346,10 +353,13 @@ export default function RootRoute() {
   const amendReviewId = shellRoute.path.match(REQUISITION_AMEND_REVIEW_PATH)?.[1];
   const titledRoute = requisitionHeading?.path === shellRoute.path ? { ...displayedRoute, title: requisitionHeading.title, breadcrumbs: displayedRoute.breadcrumbs.map((item, i, all) => i === all.length - 1 ? { ...item, label: requisitionHeading.title } : item) } : displayedRoute;
   const adminUserId = shellRoute.path.match(ADMIN_USER_PATH)?.[1];
+  const vendorId = shellRoute.path.match(VENDOR_PATH)?.[1];
 
   return (
     <AppShell navigate={navigate} route={{ ...titledRoute, breadcrumbs: titledRoute.breadcrumbs.map(item => ({ ...item, label: item.href === "/organization" && tenantName ? tenantName : item.label })) }}>
       {shellRoute.path === "/projects" ? <ProjectList navigate={navigate} /> : undefined}
+      {shellRoute.path === "/vendors" ? <VendorList key={window.location.search} navigate={navigate} /> : undefined}
+      {vendorId ? <VendorDetail key={vendorId} id={vendorId} navigate={navigate} /> : undefined}
       {shellRoute.path === "/requisitions" ? <RequisitionList key={window.location.search} navigate={navigate} /> : undefined}
       {shellRoute.path === "/requisitions/new" ? <NewRequisition navigate={navigate} /> : undefined}
       {requisitionId ? <RequisitionDetail key={requisitionId} id={requisitionId} navigate={navigate} onLoaded={onRequisitionLoaded} /> : undefined}

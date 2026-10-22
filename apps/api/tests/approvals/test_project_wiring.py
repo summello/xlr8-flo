@@ -392,6 +392,7 @@ def test_submit_interleaves_decide_and_old_withdraw_without_deadlock(wiring):
                     )
                 except ProblemError as exc:
                     return exc.checks["problem"]
+                return None
 
     with ThreadPoolExecutor(3) as pool:
         futures = [pool.submit(run, action) for action in ["submit", "decide", "withdraw"]]

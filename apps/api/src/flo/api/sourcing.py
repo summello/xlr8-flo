@@ -3,22 +3,29 @@
 from typing import Annotated, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, Query, Response
+from fastapi import APIRouter, Depends, Header, Query, Request, Response
 
 from flo.api.admin_users import organization_target
 from flo.api.auth import get_auth_settings
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
-from flo.kernel.authz import require
+from flo.kernel.authz import permits, require
 from flo.kernel.config import Settings
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.org.service import OrgService
 from flo.modules.sourcing.schemas import (
+    InviteeCreate,
+    InviteePatch,
+    RequirementsFromTemplate,
+    RequirementsPut,
+    RequirementWaive,
+    RfqContentPatch,
     RfqCreate,
     RfqLinesPatch,
     RfqRead,
     SourceablePage,
+    VisibilityPut,
 )
 from flo.modules.sourcing.service import RfqService
 
@@ -50,6 +57,7 @@ def rfq_target(id: UUID, connection: Connection) -> TargetProtocol:
 ListContext = Annotated[AuthorizationContext, Depends(require("rfq.create", list_target))]
 CreateContext = Annotated[AuthorizationContext, Depends(require("rfq.create", create_target))]
 EditContext = Annotated[AuthorizationContext, Depends(require("rfq.edit", rfq_target))]
+ApproveContext = Annotated[AuthorizationContext, Depends(require("rfq.approve", rfq_target))]
 ViewContext = Annotated[AuthorizationContext, Depends(require("rfq.view", rfq_target))]
 
 
@@ -101,3 +109,118 @@ def get_rfq(id: UUID, context: ViewContext, connection: Connection, response: Re
     rfq = RfqService(connection, current_scope(), context.user_id).get(id)
     response.headers["ETag"] = f'"{rfq.edit_revision}"'
     return rfq
+
+
+Revision = Annotated[str | None, Header(alias="If-Match")]
+
+
+def _done(rfq: RfqRead, response: Response) -> RfqRead:
+    response.headers["ETag"] = f'"{rfq.edit_revision}"'
+    return rfq
+
+
+@router.patch("/rfqs/{id}", response_model=RfqRead)
+def patch_rfq(
+    id: UUID,
+    body: RfqContentPatch,
+    context: EditContext,
+    connection: Connection,
+    response: Response,
+    revision: Revision = None,
+) -> RfqRead:
+    service = RfqService(connection, current_scope(), context.user_id)
+    return _done(service.update_content(id, body, revision), response)
+
+
+@router.put("/rfqs/{id}/requirements", response_model=RfqRead)
+def put_requirements(
+    id: UUID,
+    body: RequirementsPut,
+    context: EditContext,
+    connection: Connection,
+    response: Response,
+    revision: Revision = None,
+) -> RfqRead:
+    service = RfqService(connection, current_scope(), context.user_id)
+    return _done(service.put_requirements(id, body, revision), response)
+
+
+@router.post("/rfqs/{id}/requirements/from-template", response_model=RfqRead)
+def requirements_from_template(
+    id: UUID,
+    body: RequirementsFromTemplate,
+    context: EditContext,
+    connection: Connection,
+    response: Response,
+) -> RfqRead:
+    service = RfqService(connection, current_scope(), context.user_id)
+    return _done(service.requirements_from_template(id, body), response)
+
+
+@router.post("/rfqs/{id}/requirements/{rid}/waive", response_model=RfqRead)
+def waive_requirement(
+    id: UUID,
+    rid: UUID,
+    body: RequirementWaive,
+    context: ApproveContext,
+    connection: Connection,
+    response: Response,
+) -> RfqRead:
+    service = RfqService(connection, current_scope(), context.user_id)
+    return _done(service.waive_requirement(id, rid, body), response)
+
+
+@router.put("/rfqs/{id}/attachments/{aid}/visibility", response_model=RfqRead)
+def put_visibility(
+    id: UUID,
+    aid: UUID,
+    body: VisibilityPut,
+    context: EditContext,
+    connection: Connection,
+    response: Response,
+    revision: Revision = None,
+) -> RfqRead:
+    service = RfqService(connection, current_scope(), context.user_id)
+    return _done(service.set_visibility(id, aid, body, revision), response)
+
+
+@router.post("/rfqs/{id}/invitees", status_code=201, response_model=RfqRead)
+def add_invitee(
+    id: UUID,
+    body: InviteeCreate,
+    context: EditContext,
+    connection: Connection,
+    request: Request,
+    response: Response,
+) -> RfqRead:
+    service = RfqService(connection, current_scope(), context.user_id)
+    # An override is an approver's act (decision 146); the body alone never grants it.
+    can_override = permits(request, "rfq.approve", rfq_target(id, connection))
+    return _done(service.add_invitee(id, body, can_override), response)
+
+
+@router.delete("/rfqs/{id}/invitees/{vendor_id}", response_model=RfqRead)
+def remove_invitee(
+    id: UUID,
+    vendor_id: UUID,
+    context: EditContext,
+    connection: Connection,
+    response: Response,
+    revision: Revision = None,
+) -> RfqRead:
+    service = RfqService(connection, current_scope(), context.user_id)
+    return _done(service.remove_invitee(id, vendor_id, revision), response)
+
+
+@router.patch("/rfqs/{id}/invitees/{vendor_id}", response_model=RfqRead)
+def patch_invitee(
+    id: UUID,
+    vendor_id: UUID,
+    body: InviteePatch,
+    context: EditContext,
+    connection: Connection,
+    response: Response,
+    revision: Revision = None,
+) -> RfqRead:
+    service = RfqService(connection, current_scope(), context.user_id)
+    return _done(service.update_invitee(id, vendor_id, body, revision), response)

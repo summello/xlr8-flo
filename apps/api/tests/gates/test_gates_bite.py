@@ -1416,6 +1416,7 @@ def test_ci_watch_marks_red_once_and_reaps_green_merged_stories(
         {"id": "E99-S01", "st": "done"},
         {"id": "E99-S02", "st": "review"},
         {"id": "E99-S03", "st": "done"},
+        {"id": "E99-S04", "st": "done"},  # merged; its branch run red, fixed on the milestone
     ]
     monkeypatch.setattr(flo, "ROOT", tmp_path)
     monkeypatch.setattr(
@@ -1430,7 +1431,13 @@ def test_ci_watch_marks_red_once_and_reaps_green_merged_stories(
     for s in stories:
         (tmp_path / s["id"]).mkdir()
         (tmp_path / s["id"] / "task.json").write_text(
-            json.dumps({"branch": f"story/{s['id']}", "submitted_sha": f"sha-{s['id']}"})
+            json.dumps(
+                {
+                    "branch": f"story/{s['id']}",
+                    "submitted_sha": f"sha-{s['id']}",
+                    "milestone_branch": "milestone/M9",
+                }
+            )
         )
 
     def run(sha: str, conclusion: str, status: str = "completed") -> dict[str, object]:
@@ -1440,6 +1447,7 @@ def test_ci_watch_marks_red_once_and_reaps_green_merged_stories(
         "story/E99-S01": [run("sha-E99-S01", "success")],
         "story/E99-S02": [run("sha-E99-S02", "failure")],
         "story/E99-S03": [run("sha-E99-S03", "", "in_progress")],
+        "story/E99-S04": [run("sha-E99-S04", "failure")],
         "milestone/M9": [run("m-head", "failure"), run("m-old", "success")],
     }
     monkeypatch.setattr(flo, "gh_runs", lambda branch: runs[branch])
@@ -1457,6 +1465,8 @@ def test_ci_watch_marks_red_once_and_reaps_green_merged_stories(
         shutil.rmtree(tmp_path / argv[0])  # as flo reap removes the worktree
 
     monkeypatch.setattr(flo, "cmd_reap", reap)
+    holds: set[tuple[str, str]] = set()  # (story, milestone sha) pairs whose squash is in the sha
+    monkeypatch.setattr(flo, "merged_in", lambda sid, sha: (sid, sha) in holds)
 
     flo.cmd_ci_watch([])
     red = tmp_path / ".scratch" / "E99-S02.ci-red"
@@ -1465,13 +1475,21 @@ def test_ci_watch_marks_red_once_and_reaps_green_merged_stories(
     assert reaped == ["E99-S01"]  # S03 is merged but its CI has not finished: keep the worktree
 
     flo.cmd_ci_watch([])
-    assert len(views) == 2  # the same red run is not fetched and reported again
+    assert len(views) == 3  # the same red runs are not fetched and reported again
 
     runs["story/E99-S02"] = [run("sha-E99-S02", "success")]
     runs["milestone/M9"] = [run("m-fix", "success")]
     flo.cmd_ci_watch([])
     assert not red.exists() and not (tmp_path / ".scratch" / "M9.ci-red").exists()
     assert reaped == ["E99-S01"]  # S02 is green but not merged: nothing to reap
+    s04 = tmp_path / ".scratch" / "E99-S04.ci-red"
+    assert s04.exists()  # the green milestone head does not hold S04's squash yet
+
+    holds.add(("E99-S04", "m-fix"))
+    flo.cmd_ci_watch([])
+    # S04's own run stays red, but a green milestone holding its squash supersedes it (E22-S12,
+    # 22 Oct: the marker resumed its author for a fix on every tick).
+    assert not s04.exists() and reaped == ["E99-S01", "E99-S04"]
 
 
 @pytest.mark.parametrize(

@@ -1,23 +1,28 @@
 """Parse and authorize vendor operations (VEN-001, VEN-008, VEN-009)."""
 
+import re
 from datetime import date
 from typing import Annotated, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, Query, Response
+from fastapi import APIRouter, Depends, Header, Query, Request, Response
 from fastapi.responses import JSONResponse
 
 from flo.api.admin_users import organization_target
 from flo.api.auth import get_auth_settings
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
-from flo.kernel.authz import require
+from flo.kernel.authz import require, require_member
 from flo.kernel.config import Settings
+from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.org.service import OrgService, today
 from flo.modules.vendors.schemas import (
     AnswersPut,
+    AttentionState,
+    ChangeCreate,
+    ChangeRead,
     ContactCreate,
     ContactPatch,
     ContactRead,
@@ -29,6 +34,9 @@ from flo.modules.vendors.schemas import (
     DocumentCreate,
     DocumentReject,
     DocumentReplace,
+    DuplicateResult,
+    Eligibility,
+    InactivateCreate,
     OnboardingRead,
     PerformanceRead,
     ScoreCreate,
@@ -38,6 +46,8 @@ from flo.modules.vendors.schemas import (
     SensitiveReveal,
     SensitiveValues,
     SensitiveWritten,
+    SubmitCreate,
+    VendorCounts,
     VendorCreate,
     VendorDetail,
     VendorPage,
@@ -98,11 +108,53 @@ def list_vendors(
     q: str = "",
     status: Annotated[list[VendorStatus] | None, Query()] = None,
     available_in: UUID | None = None,
+    documents: Annotated[list[AttentionState] | None, Query()] = None,
     cursor: str | None = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
 ) -> VendorPage:
     return VendorService(connection, current_scope(), context.user_id).search(
-        q=q, statuses=status, available_in=available_in, cursor=cursor, limit=limit
+        q=q,
+        statuses=status,
+        available_in=available_in,
+        documents=documents,
+        cursor=cursor,
+        limit=limit,
+    )
+
+
+@router.get("/counts", response_model=VendorCounts)
+def vendor_counts(context: ViewContext, connection: Connection) -> VendorCounts:
+    return VendorService(connection, current_scope(), context.user_id).counts()
+
+
+@router.get("/{id}/eligibility", response_model=Eligibility)
+def vendor_eligibility(
+    id: UUID, unit_id: UUID, context: ViewContext, connection: Connection
+) -> Eligibility:
+    rules = VendorService(connection, current_scope(), context.user_id).eligibility(
+        [id], unit_id, today()
+    )
+    if id not in rules:
+        raise ProblemError(ErrorCode.NOT_FOUND)
+    return rules[id]
+
+
+@router.get("/duplicate-check", response_model=DuplicateResult)
+def duplicate_check(
+    request: Request,
+    context: RequestContext,
+    connection: Connection,
+    tax_id: Annotated[str | None, Query(min_length=1, max_length=64)] = None,
+    tax_id_country: Annotated[str | None, Query(min_length=2, max_length=2)] = None,
+) -> DuplicateResult:
+    """`identifiers[type]=value` pairs ride the query string beside the tax id."""
+    identifiers = {
+        match[1]: value
+        for key, value in request.query_params.items()
+        if (match := re.fullmatch(r"identifiers\[(.{1,64})\]", key)) and value
+    }
+    return VendorService(connection, current_scope(), context.user_id).duplicate_check(
+        tax_id, tax_id_country, identifiers
     )
 
 
@@ -339,3 +391,47 @@ def performance(
     end: Annotated[date | None, Query(alias="to")] = None,
 ) -> PerformanceRead:
     return VendorService(connection, current_scope(), context.user_id).performance(id, start, end)
+
+
+@router.post("/{id}/submit", response_model=ChangeRead)
+def submit_vendor(
+    id: UUID,
+    body: SubmitCreate,
+    user: Annotated[UUID, Depends(require_member())],
+    connection: Connection,
+) -> ChangeRead:
+    """A member; the service admits only the vendor's requester or a vendor.edit holder."""
+    return VendorService(connection, current_scope(), user).submit(id, body)
+
+
+@router.post("/{id}/revise", status_code=204)
+def revise_vendor(id: UUID, context: EditContext, connection: Connection) -> Response:
+    VendorService(connection, current_scope(), context.user_id).revise(id)
+    return Response(status_code=204)
+
+
+@router.post("/{id}/changes", status_code=201, response_model=ChangeRead)
+def request_change(
+    id: UUID, body: ChangeCreate, context: EditContext, connection: Connection
+) -> ChangeRead:
+    return VendorService(connection, current_scope(), context.user_id).request_change(id, body)
+
+
+@router.get("/{id}/changes", response_model=list[ChangeRead])
+def list_changes(id: UUID, context: ViewContext, connection: Connection) -> list[ChangeRead]:
+    return VendorService(connection, current_scope(), context.user_id).list_changes(id)
+
+
+@router.post("/{id}/changes/{cid}/withdraw", response_model=ChangeRead)
+def withdraw_change(
+    id: UUID, cid: UUID, context: RequestContext, connection: Connection
+) -> ChangeRead:
+    return VendorService(connection, current_scope(), context.user_id).withdraw_change(id, cid)
+
+
+@router.post("/{id}/inactivate", status_code=204)
+def inactivate_vendor(
+    id: UUID, body: InactivateCreate, context: ApproveContext, connection: Connection
+) -> Response:
+    VendorService(connection, current_scope(), context.user_id).inactivate(id, body)
+    return Response(status_code=204)

@@ -92,3 +92,8 @@
   .appr-sheet-body .appr-actions > button { justify-content: center; min-width: 0; white-space: normal; text-align: center; }
   .appr-sheet-body .appr-actions > .appr-primary { grid-column: 1 / -1; }
 }
+.appr-evidence { margin-block: var(--space-4); display: grid; gap: var(--space-3); }
+.appr-evidence h3 { margin: 0; }
+.appr-evidence-table { width: 100%; border-collapse: collapse; margin-top: var(--space-2); }
+.appr-evidence-table th, .appr-evidence-table td { text-align: start; padding: var(--space-1) var(--space-2); border-bottom: 1px solid var(--border); font-variant-numeric: tabular-nums; }
+.appr-evidence-docs { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-1); }

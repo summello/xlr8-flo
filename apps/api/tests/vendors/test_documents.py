@@ -187,7 +187,7 @@ def test_document_routes_end_to_end_with_separation_of_duty_and_roles(header_db)
     db = header_db
     types(db, TAX=True)
     org_svc(db).set_setting("approval.separation_of_duty", SettingPut(value=True))
-    app.dependency_overrides[get_collaboration_storage] = lambda: MemoryStorage()
+    app.dependency_overrides[get_collaboration_storage] = MemoryStorage
 
     async def scenario():
         async with client(app) as browser:

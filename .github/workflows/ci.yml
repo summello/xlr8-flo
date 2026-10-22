@@ -160,6 +160,68 @@ jobs:
           name: gitleaks-binary
           path: /usr/local/bin/gitleaks
 
+  backend-static:
+    runs-on: ubuntu-latest
+    needs: [detect, governance]
+    if: needs.detect.outputs.api == 'true'
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: flo_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flo_test
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flo_test
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Install API dependencies
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install -e 'apps/api[dev]'
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
+      - run: ruff check apps/api
+      - run: mypy --strict apps/api/src/flo
+
+      - name: Module boundaries (AGENTS.md 3.3)
+        run: lint-imports
+
+      - name: No float in money modules (AGENTS.md 3.1)
+        run: python apps/api/scripts/check_money_floats.py
+
+      - name: Cross-tenant isolation suite (TEN-010)
+        run: |
+          set -euo pipefail
+          if [ ! -d apps/api/tests/isolation ]; then
+            echo "::notice::isolation suite not built yet - it lands with the first tenant-scoped endpoint"
+            exit 0
+          fi
+          pytest -q apps/api/tests/isolation
+
+      - name: Tenancy OpenAPI and migration guards
+        run: python apps/api/scripts/check_tenancy.py
+
+      - name: Every API route declares authorization
+        run: python apps/api/scripts/check_route_authz.py
+
+      - name: Python dependency SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610  # v0.24.0
+        with:
+          path: .venv
+          format: cyclonedx-json
+          artifact-name: sbom-python.cyclonedx.json
+          output-file: sbom-python.cyclonedx.json
+          upload-artifact-retention: 14
+          upload-release-assets: false
+
   backend-shard:
     strategy:
       fail-fast: false
@@ -200,19 +262,6 @@ jobs:
       - run: |
           chmod +x .tools/gitleaks
           echo "$PWD/.tools" >> "$GITHUB_PATH"
-      - if: matrix.shard == 1
-        run: ruff check apps/api
-      - if: matrix.shard == 1
-        run: mypy --strict apps/api/src/flo
-
-      - name: Module boundaries (AGENTS.md 3.3)
-        if: matrix.shard == 1
-        run: lint-imports
-
-      - name: No float in money modules (AGENTS.md 3.1)
-        if: matrix.shard == 1
-        run: python apps/api/scripts/check_money_floats.py
-
       # File shards use migrated template clones; the combined backend job owns the 80% floor.
       - run: pytest -q $(python apps/api/scripts/test_shard.py ${{ matrix.shard }} 4) --cov=flo --cov-report= --durations=40
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -222,45 +271,21 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
 
-      - name: Cross-tenant isolation suite (TEN-010)
-        if: matrix.shard == 1
-        run: |
-          set -euo pipefail
-          if [ ! -d apps/api/tests/isolation ]; then
-            echo "::notice::isolation suite not built yet - it lands with the first tenant-scoped endpoint"
-            exit 0
-          fi
-          pytest -q apps/api/tests/isolation
-
-      - name: Tenancy OpenAPI and migration guards
-        if: matrix.shard == 1
-        run: python apps/api/scripts/check_tenancy.py
-
-      - name: Every API route declares authorization
-        if: matrix.shard == 1
-        run: python apps/api/scripts/check_route_authz.py
-
-      - name: Python dependency SBOM
-        if: matrix.shard == 1
-        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610  # v0.24.0
-        with:
-          path: .venv
-          format: cyclonedx-json
-          artifact-name: sbom-python.cyclonedx.json
-          output-file: sbom-python.cyclonedx.json
-          upload-artifact-retention: 14
-          upload-release-assets: false
-
   backend:
     runs-on: ubuntu-latest
-    needs: [detect, backend-shard]
+    needs: [detect, backend-static, backend-shard]
     if: always()
     steps:
-      - name: Every backend shard succeeded
+      - name: Detection succeeded
+        env:
+          DETECT_RESULT: ${{ needs.detect.result }}
+        run: test "$DETECT_RESULT" = success
+      - name: Every backend shard and static checks succeeded
         if: needs.detect.outputs.api == 'true'
         env:
           RESULT: ${{ needs.backend-shard.result }}
-        run: test "$RESULT" = success
+          STATIC_RESULT: ${{ needs.backend-static.result }}
+        run: test "$RESULT" = success && test "$STATIC_RESULT" = success
       - uses: actions/checkout@v5
         if: needs.backend-shard.result == 'success'
       - uses: actions/setup-python@v6
@@ -362,6 +387,10 @@ jobs:
     needs: [detect, frontend-static, frontend-e2e]
     if: always()
     steps:
+      - name: Detection succeeded
+        env:
+          DETECT_RESULT: ${{ needs.detect.result }}
+        run: test "$DETECT_RESULT" = success
       - name: Static checks and every E2E shard succeeded
         if: needs.detect.outputs.web == 'true'
         env:

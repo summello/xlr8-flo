@@ -263,7 +263,11 @@ def test_bu_grant_covers_project_and_conceals_other_bu(project_db):
         ).status_code
         == 404
     )
-    assert request(db, "GET", viewer=viewer).status_code == 403
+    # E22-S06: the list is open to a BU-scoped reader, narrowed to its own BU.
+    listed = request(db, "GET", viewer=viewer)
+    assert listed.status_code == 200
+    assert {row["id"] for row in listed.json()["rows"]} == {created.json()["id"]}
+    assert listed.json()["total"] == 1
 
 
 def test_twenty_concurrent_creates_and_failed_create_leaves_gap(project_db):

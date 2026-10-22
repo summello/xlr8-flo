@@ -327,7 +327,7 @@ def test_soft_delete_migration_down_keeps_rows_then_up_again(header_db):
             "'k-bcr','deleted')",
             (bcr, db[1], proj.id, db[3]),
         )
-    migration = load_migration(ROOT / "migrations" / "20261022_0066_soft_delete.py", "soft_delete")
+    migration = load_migration(ROOT / "migrations" / "20261022_0069_soft_delete.py", "soft_delete")
     migration.downgrade(db[0])
     assert status_of(db, "budget_change_request", bcr) == "withdrawn"
     assert status_of(db, "requisition", req.id) == "withdrawn"

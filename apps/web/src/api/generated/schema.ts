@@ -2256,7 +2256,60 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
+        /** Patch Rfq */
+        patch: operations["patch_rfq_api_v1_sourcing_rfqs__id__patch"];
+        trace?: never;
+    };
+    "/api/v1/sourcing/rfqs/{id}/attachments/{aid}/visibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Visibility */
+        put: operations["put_visibility_api_v1_sourcing_rfqs__id__attachments__aid__visibility_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sourcing/rfqs/{id}/invitees": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Invitee */
+        post: operations["add_invitee_api_v1_sourcing_rfqs__id__invitees_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sourcing/rfqs/{id}/invitees/{vendor_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Invitee */
+        delete: operations["remove_invitee_api_v1_sourcing_rfqs__id__invitees__vendor_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Invitee */
+        patch: operations["patch_invitee_api_v1_sourcing_rfqs__id__invitees__vendor_id__patch"];
         trace?: never;
     };
     "/api/v1/sourcing/rfqs/{id}/lines": {
@@ -2276,6 +2329,57 @@ export interface paths {
         patch: operations["patch_rfq_lines_api_v1_sourcing_rfqs__id__lines_patch"];
         trace?: never;
     };
+    "/api/v1/sourcing/rfqs/{id}/requirements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Requirements */
+        put: operations["put_requirements_api_v1_sourcing_rfqs__id__requirements_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sourcing/rfqs/{id}/requirements/from-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Requirements From Template */
+        post: operations["requirements_from_template_api_v1_sourcing_rfqs__id__requirements_from_template_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sourcing/rfqs/{id}/requirements/{rid}/waive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Waive Requirement */
+        post: operations["waive_requirement_api_v1_sourcing_rfqs__id__requirements__rid__waive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/vendors": {
         parameters: {
             query?: never;
@@ -2288,6 +2392,43 @@ export interface paths {
         put?: never;
         /** Create Vendor */
         post: operations["create_vendor_api_v1_vendors_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendors/counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Vendor Counts */
+        get: operations["vendor_counts_api_v1_vendors_counts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendors/duplicate-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Duplicate Check
+         * @description `identifiers[type]=value` pairs ride the query string beside the tax id.
+         */
+        get: operations["duplicate_check_api_v1_vendors_duplicate_check_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2327,6 +2468,41 @@ export interface paths {
         head?: never;
         /** Patch Vendor */
         patch: operations["patch_vendor_api_v1_vendors__id__patch"];
+        trace?: never;
+    };
+    "/api/v1/vendors/{id}/changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Changes */
+        get: operations["list_changes_api_v1_vendors__id__changes_get"];
+        put?: never;
+        /** Request Change */
+        post: operations["request_change_api_v1_vendors__id__changes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendors/{id}/changes/{cid}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Withdraw Change */
+        post: operations["withdraw_change_api_v1_vendors__id__changes__cid__withdraw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/vendors/{id}/contacts": {
@@ -2434,6 +2610,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/vendors/{id}/eligibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Vendor Eligibility */
+        get: operations["vendor_eligibility_api_v1_vendors__id__eligibility_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendors/{id}/inactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Inactivate Vendor */
+        post: operations["inactivate_vendor_api_v1_vendors__id__inactivate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/vendors/{id}/onboarding": {
         parameters: {
             query?: never;
@@ -2479,6 +2689,23 @@ export interface paths {
         get: operations["performance_api_v1_vendors__id__performance_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendors/{id}/revise": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revise Vendor */
+        post: operations["revise_vendor_api_v1_vendors__id__revise_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2568,6 +2795,26 @@ export interface paths {
         put?: never;
         /** Reveal Sensitive */
         post: operations["reveal_sensitive_api_v1_vendors__id__sensitive_reveal_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendors/{id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Vendor
+         * @description A member; the service admits only the vendor's requester or a vendor.edit holder.
+         */
+        post: operations["submit_vendor_api_v1_vendors__id__submit_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3102,7 +3349,15 @@ export interface components {
             versions: number;
         };
         /** @enum {string} */
+        AttentionState: "expiring" | "expired" | "missing" | "rejected";
+        /** @enum {string} */
         Availability: "global" | "restricted";
+        /** AvailabilityPayload */
+        AvailabilityPayload: {
+            availability: components["schemas"]["Availability"];
+            /** Unit Ids */
+            unit_ids?: string[];
+        };
         /** BalanceQueryRead */
         BalanceQueryRead: {
             /** Actual */
@@ -3277,6 +3532,17 @@ export interface components {
             /** Count */
             count: number;
         };
+        /** ChangeCreate */
+        ChangeCreate: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "availability" | "suspend" | "reactivate";
+            payload?: components["schemas"]["AvailabilityPayload"] | null;
+            /** Reason */
+            reason: string;
+        };
         /** ChangeDelta */
         ChangeDelta: {
             /** Amount */
@@ -3306,6 +3572,44 @@ export interface components {
             reserved_after: string;
             /** Reserved Now */
             reserved_now: string;
+        };
+        /** ChangeRead */
+        ChangeRead: {
+            /** Decided At */
+            decided_at: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "create" | "availability" | "suspend" | "reactivate";
+            /** Payload */
+            payload: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Reason */
+            reason: string | null;
+            /**
+             * Requested At
+             * Format: date-time
+             */
+            requested_at: string;
+            /** Requested By Email */
+            requested_by_email: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "approved" | "rejected" | "withdrawn";
+            /**
+             * Vendor Id
+             * Format: uuid
+             */
+            vendor_id: string;
         };
         /** ChangeRow */
         ChangeRow: {
@@ -3503,6 +3807,8 @@ export interface components {
              */
             identity_id: string;
         };
+        /** Format: date */
+        Day: string;
         /** DecisionRead */
         DecisionRead: {
             /** Actor Email */
@@ -3740,6 +4046,17 @@ export interface components {
         };
         /** @enum {string} */
         DocStateName: "missing" | "rejected" | "expired" | "expiring" | "unverified" | "ok";
+        /**
+         * DocSummary
+         * @description How many of a vendor's documents stand in one attention state (VEN-011, OBS-004).
+         */
+        DocSummary: {
+            /** Count */
+            count: number;
+            /** Days Left */
+            days_left?: number | null;
+            state: components["schemas"]["AttentionState"];
+        };
         /** DocumentCreate */
         DocumentCreate: {
             /**
@@ -3810,6 +4127,30 @@ export interface components {
              */
             run_id: string;
         };
+        /**
+         * DuplicateMatch
+         * @description Name and number only when the caller may view that vendor; otherwise just the field.
+         */
+        DuplicateMatch: {
+            /** Field */
+            field: string;
+            /**
+             * Match
+             * @default true
+             */
+            match?: boolean;
+            /** Trading Name */
+            trading_name?: string | null;
+            /** Vendor Id */
+            vendor_id?: string | null;
+            /** Vendor Number */
+            vendor_number?: string | null;
+        };
+        /** DuplicateResult */
+        DuplicateResult: {
+            /** Matches */
+            matches: components["schemas"]["DuplicateMatch"][];
+        };
         /** Edge */
         Edge: {
             /**
@@ -3856,6 +4197,21 @@ export interface components {
         EffectiveSetting: {
             source: components["schemas"]["SettingSource"];
             value: components["schemas"]["JsonValue"];
+        };
+        /** Eligibility */
+        Eligibility: {
+            /** Eligible */
+            eligible: boolean;
+            /**
+             * Reasons
+             * @default []
+             */
+            reasons?: components["schemas"]["Reason"][];
+            /**
+             * Warnings
+             * @default []
+             */
+            warnings?: components["schemas"]["Reason"][];
         };
         /** ExcludedApprover */
         ExcludedApprover: {
@@ -4175,6 +4531,11 @@ export interface components {
             /** Row No */
             row_no: number;
         };
+        /** InactivateCreate */
+        InactivateCreate: {
+            /** Reason */
+            reason: string;
+        };
         /** InboxCounts */
         InboxCounts: {
             /** Completed */
@@ -4273,6 +4634,10 @@ export interface components {
             document_type: string;
             /** Document Version */
             document_version: number;
+            /** Evidence */
+            evidence?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
             /** Finished At */
             finished_at: string | null;
             /**
@@ -4433,6 +4798,50 @@ export interface components {
             state?: "valid";
             /** Tenant Label */
             tenant_label: string | null;
+        };
+        /** InviteeCreate */
+        InviteeCreate: {
+            /** Contact Ids */
+            contact_ids?: string[] | null;
+            /** Override Reason */
+            override_reason?: string | null;
+            /**
+             * Vendor Id
+             * Format: uuid
+             */
+            vendor_id: string;
+        };
+        /** InviteePatch */
+        InviteePatch: {
+            /** Contact Ids */
+            contact_ids: string[];
+        };
+        /** InviteeRead */
+        InviteeRead: {
+            /** Contact Ids */
+            contact_ids: string[];
+            /** Eligible */
+            eligible: boolean | null;
+            /**
+             * Invited At
+             * Format: date-time
+             */
+            invited_at: string;
+            /** Invited By Email */
+            invited_by_email: string;
+            /** Override Reason */
+            override_reason: string | null;
+            /** Reasons */
+            reasons: string[];
+            /**
+             * Vendor Id
+             * Format: uuid
+             */
+            vendor_id: string;
+            /** Vendor Snapshot */
+            vendor_snapshot: {
+                [key: string]: unknown;
+            };
         };
         /** Issue */
         Issue: {
@@ -5724,6 +6133,16 @@ export interface components {
             /** Quorum */
             quorum: number;
         };
+        /** Reason */
+        Reason: {
+            /** Code */
+            code: string;
+            date?: components["schemas"]["Day"] | null;
+            /** Document Type */
+            document_type?: string | null;
+            /** Text */
+            text: string;
+        };
         /** ReassignWrite */
         ReassignWrite: {
             /** Reason */
@@ -5778,6 +6197,42 @@ export interface components {
             unit_price?: string | null;
             /** Uom Code */
             uom_code?: string | null;
+        };
+        /** RequirementRead */
+        RequirementRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Position */
+            position: number;
+            /** Text */
+            text: string;
+            /** Waived */
+            waived: boolean;
+            /** Waived By Email */
+            waived_by_email: string | null;
+            /** Waived Reason */
+            waived_reason: string | null;
+        };
+        /** RequirementWaive */
+        RequirementWaive: {
+            /** Reason */
+            reason: string;
+        };
+        /** RequirementsFromTemplate */
+        RequirementsFromTemplate: {
+            /**
+             * Template Id
+             * Format: uuid
+             */
+            template_id: string;
+        };
+        /** RequirementsPut */
+        RequirementsPut: {
+            /** Requirements */
+            requirements: string[];
         };
         /** RequisitionCreate */
         RequisitionCreate: {
@@ -5983,6 +6438,46 @@ export interface components {
              */
             status: "draft" | "pending" | "applied" | "rejected" | "returned" | "withdrawn";
         };
+        /** RfqAttachmentRead */
+        RfqAttachmentRead: {
+            /** Display Name */
+            display_name: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Media Type */
+            media_type: string;
+            /** Scan Status */
+            scan_status: string;
+            /** Size Bytes */
+            size_bytes: number;
+            /** Vendor Visible */
+            vendor_visible: boolean;
+        };
+        /**
+         * RfqContentPatch
+         * @description Only the fields sent change; null clears a text field. The deadline is required, not null.
+         */
+        RfqContentPatch: {
+            /** Deadline At */
+            deadline_at?: string | null;
+            /** Deadline Tz */
+            deadline_tz?: string | null;
+            /** Delivery Location */
+            delivery_location?: string | null;
+            /** Delivery Terms */
+            delivery_terms?: string | null;
+            /** Line Specifications */
+            line_specifications?: {
+                [key: string]: string | null;
+            } | null;
+            /** Specifications */
+            specifications?: string | null;
+            /** Terms */
+            terms?: string | null;
+        };
         /** RfqCreate */
         RfqCreate: {
             /** Lines */
@@ -6037,6 +6532,8 @@ export interface components {
             requisition_number: string;
             /** Requisition Version */
             requisition_version: number;
+            /** Specification */
+            specification?: string | null;
             /** Uom Code */
             uom_code: string;
         };
@@ -6051,12 +6548,31 @@ export interface components {
         /** RfqRead */
         RfqRead: {
             /**
+             * Attachments
+             * @default []
+             */
+            attachments?: components["schemas"]["RfqAttachmentRead"][];
+            /**
              * Created At
              * Format: date-time
              */
             created_at: string;
             /** Currency */
             currency: string;
+            /**
+             * Deadline At
+             * Format: date-time
+             */
+            deadline_at: string;
+            /**
+             * Deadline Tz
+             * @default UTC
+             */
+            deadline_tz?: string;
+            /** Delivery Location */
+            delivery_location?: string | null;
+            /** Delivery Terms */
+            delivery_terms?: string | null;
             /** Edit Revision */
             edit_revision: number;
             /**
@@ -6064,13 +6580,27 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /**
+             * Invitees
+             * @default []
+             */
+            invitees?: components["schemas"]["InviteeRead"][];
             /** Lines */
             lines: components["schemas"]["RfqLineRead"][];
             /** Number */
             number: string;
             /** Owner Email */
             owner_email: string;
+            /**
+             * Requirements
+             * @default []
+             */
+            requirements?: components["schemas"]["RequirementRead"][];
+            /** Specifications */
+            specifications?: string | null;
             status: components["schemas"]["RfqStatus"];
+            /** Terms */
+            terms?: string | null;
             /** Title */
             title: string;
             /**
@@ -6583,6 +7113,14 @@ export interface components {
             /** Message */
             message: string;
         };
+        /**
+         * SubmitCreate
+         * @description `override_reason` accepts a duplicate identifier; only vendor.approve holders may use it.
+         */
+        SubmitCreate: {
+            /** Override Reason */
+            override_reason?: string | null;
+        };
         /** SummaryCurrency */
         SummaryCurrency: {
             /** Actual */
@@ -6786,9 +7324,29 @@ export interface components {
             /** Warnings */
             warnings?: components["schemas"]["Issue"][];
         };
+        /**
+         * VendorCounts
+         * @description One server count per list tab (PERF-005: never worked out from a fetched page).
+         */
+        VendorCounts: {
+            /** Active */
+            active: number;
+            /** All */
+            all: number;
+            /** Attention */
+            attention: number;
+            /** Inactive */
+            inactive: number;
+            /** Pending */
+            pending: number;
+        };
         /** VendorCreate */
         VendorCreate: {
             availability: components["schemas"]["Availability"];
+            /** Identifiers */
+            identifiers?: {
+                [key: string]: string;
+            };
             /** Legal Name */
             legal_name: string;
             /** Trading Name */
@@ -6811,11 +7369,21 @@ export interface components {
              * @default []
              */
             disabled_in?: components["schemas"]["VendorDisabled"][];
+            /** Documents */
+            documents?: components["schemas"]["DocSummary"][] | null;
+            eligibility?: components["schemas"]["Eligibility"] | null;
             /**
              * Id
              * Format: uuid
              */
             id: string;
+            /**
+             * Identifiers
+             * @default {}
+             */
+            identifiers?: {
+                [key: string]: string;
+            };
             /** Legal Name */
             legal_name: string;
             /** Number */
@@ -6871,6 +7439,10 @@ export interface components {
         /** VendorPatch */
         VendorPatch: {
             availability?: components["schemas"]["Availability"] | null;
+            /** Identifiers */
+            identifiers?: {
+                [key: string]: string;
+            } | null;
             /** Legal Name */
             legal_name?: string | null;
             /** Trading Name */
@@ -6888,6 +7460,9 @@ export interface components {
             created_at: string;
             /** Created By Email */
             created_by_email: string;
+            /** Documents */
+            documents?: components["schemas"]["DocSummary"][] | null;
+            eligibility?: components["schemas"]["Eligibility"] | null;
             /**
              * Id
              * Format: uuid
@@ -6976,6 +7551,11 @@ export interface components {
             threshold: number;
             /** Weight Total */
             weight_total: number;
+        };
+        /** VisibilityPut */
+        VisibilityPut: {
+            /** Vendor Visible */
+            vendor_visible: boolean;
         };
         /** WithdrawWrite */
         WithdrawWrite: {
@@ -14032,6 +14612,239 @@ export interface operations {
             };
         };
     };
+    patch_rfq_api_v1_sourcing_rfqs__id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RfqContentPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RfqRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    put_visibility_api_v1_sourcing_rfqs__id__attachments__aid__visibility_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                aid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisibilityPut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RfqRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    add_invitee_api_v1_sourcing_rfqs__id__invitees_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteeCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RfqRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    remove_invitee_api_v1_sourcing_rfqs__id__invitees__vendor_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                vendor_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RfqRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    patch_invitee_api_v1_sourcing_rfqs__id__invitees__vendor_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                vendor_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteePatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RfqRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     patch_rfq_lines_api_v1_sourcing_rfqs__id__lines_patch: {
         parameters: {
             query?: never;
@@ -14079,12 +14892,153 @@ export interface operations {
             };
         };
     };
+    put_requirements_api_v1_sourcing_rfqs__id__requirements_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequirementsPut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RfqRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    requirements_from_template_api_v1_sourcing_rfqs__id__requirements_from_template_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequirementsFromTemplate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RfqRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    waive_requirement_api_v1_sourcing_rfqs__id__requirements__rid__waive_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                rid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequirementWaive"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RfqRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     list_vendors_api_v1_vendors_get: {
         parameters: {
             query?: {
                 q?: string;
                 status?: components["schemas"]["VendorStatus"][] | null;
                 available_in?: string | null;
+                documents?: components["schemas"]["AttentionState"][] | null;
                 cursor?: string | null;
                 limit?: number;
             };
@@ -14147,6 +15101,89 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VendorDetail"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    vendor_counts_api_v1_vendors_counts_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorCounts"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    duplicate_check_api_v1_vendors_duplicate_check_get: {
+        parameters: {
+            query?: {
+                tax_id?: string | null;
+                tax_id_country?: string | null;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DuplicateResult"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */
@@ -14280,6 +15317,137 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VendorDetail"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    list_changes_api_v1_vendors__id__changes_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangeRead"][];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    request_change_api_v1_vendors__id__changes_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangeRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    withdraw_change_api_v1_vendors__id__changes__cid__withdraw_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                cid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangeRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */
@@ -14704,6 +15872,94 @@ export interface operations {
             };
         };
     };
+    vendor_eligibility_api_v1_vendors__id__eligibility_get: {
+        parameters: {
+            query: {
+                unit_id: string;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Eligibility"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    inactivate_vendor_api_v1_vendors__id__inactivate_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InactivateCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     get_onboarding_api_v1_vendors__id__onboarding_get: {
         parameters: {
             query?: never;
@@ -14817,6 +16073,46 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["PerformanceRead"];
                 };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    revise_vendor_api_v1_vendors__id__revise_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Client error expressed as RFC 9457 problem details. */
             "4XX": {
@@ -15098,6 +16394,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SensitiveValues"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    submit_vendor_api_v1_vendors__id__submit_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangeRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

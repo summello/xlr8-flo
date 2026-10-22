@@ -4131,6 +4131,358 @@
       },
       "recap": "Merged the two Money components into ui/Money with a zero prop, shared the requisition lookup helper and e2e keyboardFocus, renamed the collaboration readers *_unchecked, and read approval instances via approvals.service. Also: RLS on the 0053 tracking table (0060), If-Match/ETag on vendor and contact PATCH (0061), audit plus requester notice on zero-step auto-approval, and requisition list filtering by granted scopes.",
       "title": "M2 milestone review follow-ups: Money zero prop, shared lookup helper, internal collaboration readers, approvals read via service, e2e focus helper"
+    },
+    {
+      "story": "E22-S12",
+      "kind": "chore",
+      "size": "M",
+      "tags": [],
+      "author": "codex",
+      "reviewers": [
+        "qwen"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "qwen": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 1,
+          "blockers": 1,
+          "blockers_dismissed": 1
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": null,
+          "source": "unavailable: no detector for sonnet"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a161dc-6414-7763-a545-5dcdac1b14b8",
+          "source": "codex rollout matched on cwd"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "unavailable: OpenRouter has no session concept - pass the generation id to `flo session qwen <id>`"
+        }
+      },
+      "recap": "CI serves a production build, splits E2E by test with two workers, separates backend static checks, and requires successful detection in both combined jobs. The full production suite passed 441 tests; final production-mode light check passed all static checks, 12 shard tests and 178 changed browser tests.",
+      "title": "Balanced E2E shards on a production build; backend static job; combined checks need detect"
+    },
+    {
+      "story": "E22-S06",
+      "kind": "security",
+      "size": "S",
+      "tags": [
+        "auth",
+        "security",
+        "migration"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 3,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "4f123d89-24b4-48fe-af76-a7a3410a0071",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S06",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1626d-38d1-7372-809b-69d3b0ef7034",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Gave requestor/approver master.read and sourcing-specialist/purchasing-user/vendor-manager project.read+master.read in BASELINE_ROLE_PERMISSIONS, plus migration 0066 backfilling system roles only (tracked, reversible, one audit row per org).",
+      "title": "Baseline roles read the projects and master data they work against"
+    },
+    {
+      "story": "E11-S06",
+      "kind": "engine",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 4,
+          "findings": 6,
+          "blockers": 6,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "58c375e4-c43d-4c85-9053-e3ba29e26991",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S06",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a162d0-0736-78b0-9800-2db3b30cf6d5",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Vendor create, availability, suspend and reactivate requests now go through the approval workflow as vendor_change documents, with a duplicate tax-id and unique-identifier check (override by vendor.approve) serialised by advisory locks. Migration 0064, routes, tests and generated client included.",
+      "title": "Duplicate identifier detection, approval on create/activate/suspend/reactivate"
+    },
+    {
+      "story": "E11-S11",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 4,
+          "blockers": 4,
+          "blockers_dismissed": 2
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "1cc256f5-340d-47ee-a4b4-ef743e5d0b62",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S11",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a16300-efc8-7d30-91e6-a52af8f1b56c",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Added vendors.service.eligibility (batched, 5 queries, status never changed) with GET /vendors/{id}/eligibility and an eligibility field on list rows that name available_in. Added the shared Signal primitive and the Eligibility component that renders the server's answer.",
+      "title": "Vendor eligibility: one server rule, one web component"
+    },
+    {
+      "story": "E11-S15",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "73407004-b79f-41c3-984d-3666186effb5",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S15",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1633d-cdc0-78e2-9fbd-be2d0dfa4d69",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "InstanceRead now carries the adapter snapshot's evidence (built in the approvals engine, existing read guard unchanged); the vendors module masks sensitive payload fields and adds duplicate matches and availability units. The decision panel renders a VendorEvidence block for vendor tasks from instance.evidence.",
+      "title": "Onboarding decision panel: vendor evidence block"
+    },
+    {
+      "story": "E11-S12",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "10963418-4272-48ef-96d5-818c8b7ae21a",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S12",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a163a6-075a-7e31-9879-6801dc948c8a",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds the /vendors list (tabs with server counts, search, documents and availability filters, server paging) and the /vendors/:id profile with Documents table and a focus-trapped document sheet to verify or reject. API gets a documents filter, a per-row document summary and GET /vendors/counts.",
+      "title": "Vendor list and profile screens, documents table and document sheet"
+    },
+    {
+      "story": "E12-S02",
+      "kind": "crud",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 6,
+          "blockers": 4,
+          "blockers_dismissed": 2
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "3f883d02-e853-4560-975a-4495dab6b4af",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S02",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a163a6-0dc9-7530-9c16-628564892af4",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds RFQ content, compliance requirements (template seed, waive), per-attachment vendor visibility and invitations with the five-vendor cap under the RFQ row lock, one eligibility rule, and a frozen vendor snapshot. Override needs a reason and rfq.approve on the unit, and is audited.",
+      "title": "RFQ content, invitations, deadline, terms, attachments, vendor eligibility check"
+    },
+    {
+      "story": "E11-S18",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "6842c4b8-f265-48fe-b724-a1a6c8df27f3",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S18",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a163d8-253c-75d3-8f0c-97867ad210c8",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Vendor profile gains a Performance card (server overall, per-category averages, counts) and a wide Scorecard side sheet with Add Score, Dispute and Resolve forms, a struck original conveyed in text plus its linked adjustment. Web only; the card re-reads the server after every write.",
+      "title": "Vendor Performance card and scorecard sheet"
     }
   ]
 }

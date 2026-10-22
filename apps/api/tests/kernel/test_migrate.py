@@ -166,6 +166,9 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261021_0064",
         "20261021_0065",
         "20261022_0066",
+        "20261022_0067",
+        "20261022_0068",
+        "20261022_0069",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -2012,6 +2015,81 @@ def test_rfq_roundtrip_preserves_rows_and_down_returns_held_quantity(empty_datab
             assert conn.execute("SELECT count(*) FROM rfq").fetchone() == (0,)
 
 
+def test_rfq_content_roundtrip_preserves_rfqs_and_constrains_invitees(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.org.schemas import OrgUnitCreate
+    from flo.modules.org.service import OrgService
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261022_0067"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261022_0068")
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("rfq-content-migration"),
+    ):
+        tenant = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(tenant.org_id)
+        bu = OrgService(conn, scope, actor).create_unit(
+            OrgUnitCreate(code="BU", name="BU", kind="bu")
+        )
+        rfq, vendor = uuid4(), uuid4()
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO rfq(id,org_id,number,title,unit_id,currency,owner_id)"
+                " VALUES(%s,%s,'RFQ-00001','T',%s,'USD',%s)",
+                (rfq, tenant.org_id, bu.id, actor),
+            )
+            conn.execute(
+                "INSERT INTO vendor(id,org_id,number,trading_name,legal_name,availability,"
+                "created_by) VALUES(%s,%s,'V-1','V','V','global',%s)",
+                (vendor, tenant.org_id, actor),
+            )
+        mig.upgrade(conn)
+        with tenant_transaction(conn, scope):
+            deadline, zone = conn.execute(
+                "SELECT deadline_at, deadline_tz FROM rfq WHERE id=%s", (rfq,)
+            ).fetchone()
+            assert deadline is not None and zone == "UTC"  # existing RFQs are backfilled
+            conn.execute(
+                "INSERT INTO rfq_invitee(org_id,rfq_id,vendor_id,contact_ids,vendor_snapshot,"
+                "invited_by) VALUES(%s,%s,%s,%s,'{}',%s)",
+                (tenant.org_id, rfq, vendor, [uuid4()], actor),
+            )
+        with pytest.raises(psycopg.errors.NotNullViolation), tenant_transaction(conn, scope):
+            conn.execute("UPDATE rfq SET deadline_at = NULL WHERE id=%s", (rfq,))
+        with pytest.raises(psycopg.errors.UniqueViolation), tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO rfq_invitee(org_id,rfq_id,vendor_id,contact_ids,vendor_snapshot,"
+                "invited_by) VALUES(%s,%s,%s,%s,'{}',%s)",
+                (tenant.org_id, rfq, vendor, [uuid4()], actor),
+            )
+        with pytest.raises(psycopg.errors.CheckViolation), tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO rfq_requirement(id,org_id,rfq_id,position,text,waived)"
+                " VALUES(%s,%s,%s,1,'x',true)",
+                (uuid4(), tenant.org_id, rfq),
+            )
+        for table in ("rfq_requirement", "rfq_attachment_visibility", "rfq_invitee"):
+            assert conn.execute(
+                "SELECT relrowsecurity AND relforcerowsecurity FROM pg_class WHERE relname=%s",
+                (table,),
+            ).fetchone() == (True,)
+        mig.downgrade(conn)
+        for table in ("rfq_requirement", "rfq_attachment_visibility", "rfq_invitee"):
+            assert conn.execute("SELECT to_regclass(%s)", (table,)).fetchone() == (None,)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT number FROM rfq WHERE id=%s", (rfq,)).fetchone() == (
+                "RFQ-00001",
+            )
+        mig.upgrade(conn)
+
+
 def test_vendor_documents_roundtrip_preserves_vendors_and_attachments(empty_database):
     from flo.kernel.logging import correlation_context
     from flo.kernel.tenancy.context import Scope
@@ -2420,3 +2498,121 @@ def test_vendor_row_version_roundtrip_preserves_rows(empty_database):
             "AND table_name IN ('vendor','vendor_contact')"
         ).fetchone()
         assert cols == (0,)
+
+
+def test_baseline_role_reads_grant_system_roles_only_and_roundtrip_keeps_other_grants(
+    empty_database,
+):
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from tests.org.test_bootstrap import create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261021_0065"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261022_0066")
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        tenant = create(conn)
+        scope = Scope(tenant.org_id)
+        with tenant_transaction(conn, scope):
+            # seeding already applies the new grants; strip them to look like a tenant that
+            # predates this story, keeping approver's master.read as one already held
+            conn.execute(
+                "DELETE FROM role_permission USING role r WHERE r.id=role_id "
+                "AND r.is_system AND permission_code IN ('project.read','master.read') "
+                "AND r.code IN ('requestor','approver','sourcing-specialist','purchasing-user',"
+                "'vendor-manager')"
+            )
+            # an administrator's custom role that reuses a baseline code is never touched
+            conn.execute("UPDATE role SET is_system=false WHERE code='sourcing-specialist'")
+            # an unrelated grant, and one a system role already held before the migration
+            conn.execute(
+                "INSERT INTO role_permission(org_id,role_id,permission_code) "
+                "SELECT org_id,id,'master.read' FROM role "
+                "WHERE code='approver' ON CONFLICT DO NOTHING"
+            )
+            conn.execute(
+                "INSERT INTO role_permission(org_id,role_id,permission_code) "
+                "SELECT org_id,id,'asset.view' FROM role WHERE code='requestor'"
+            )
+
+        def grants():
+            with tenant_transaction(conn, scope):
+                return conn.execute(
+                    "SELECT r.code,p.permission_code FROM role_permission p "
+                    "JOIN role r ON r.id=p.role_id "
+                    "WHERE p.permission_code IN ('project.read','master.read','asset.view') "
+                    "AND r.code IN ('requestor','approver','sourcing-specialist',"
+                    "'purchasing-user','vendor-manager','project-manager') "
+                    "ORDER BY 1,2"
+                ).fetchall()
+
+        before = grants()
+        mig.upgrade(conn)
+        after = set(grants()) - set(before)
+        assert after == {
+            ("requestor", "master.read"),
+            ("purchasing-user", "project.read"),
+            ("purchasing-user", "master.read"),
+            ("vendor-manager", "project.read"),
+            ("vendor-manager", "master.read"),
+        }
+        assert not [g for g in grants() if g[0] == "sourcing-specialist" and g not in before]
+        with tenant_transaction(conn, scope):
+            assert conn.execute(
+                "SELECT count(*) FROM audit_log WHERE action='role.permission.grant' "
+                "AND correlation_id='migration-20261022_0066'"
+            ).fetchone() == (1,)
+        mig.downgrade(conn)
+        assert grants() == before  # the custom role, approver and asset.view survive
+        mig.upgrade(conn)
+
+
+def test_vendor_changes_roundtrip_keeps_vendors_and_plants_the_pending_index(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261022_0066"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261022_0067")
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("vendor-changes-migration"),
+    ):
+        tenant = create(conn)
+        actor = admin_id(conn)
+        vendor_id = uuid4()
+        mig.upgrade(conn)
+        change = (
+            "INSERT INTO vendor_change(org_id,vendor_id,kind,reason,requested_by) "
+            "VALUES(%s,%s,%s,%s,%s)"
+        )
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            conn.execute(
+                "INSERT INTO vendor(id,org_id,number,trading_name,legal_name,availability,"
+                "created_by) VALUES(%s,%s,'V-000001','T','L','global',%s)",
+                (vendor_id, tenant.org_id, actor),
+            )
+            conn.execute(change, (tenant.org_id, vendor_id, "suspend", "why", actor))
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            with pytest.raises(psycopg.errors.UniqueViolation):
+                conn.execute(change, (tenant.org_id, vendor_id, "reactivate", "why", actor))
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            with pytest.raises(psycopg.errors.CheckViolation):
+                conn.execute(
+                    "INSERT INTO vendor_change(org_id,vendor_id,kind,requested_by,status) "
+                    "VALUES(%s,%s,'suspend',%s,'withdrawn')",
+                    (tenant.org_id, vendor_id, actor),
+                )
+        mig.downgrade(conn)
+        assert conn.execute("SELECT to_regclass('vendor_change')").fetchone() == (None,)
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            assert conn.execute("SELECT count(*) FROM vendor").fetchone() == (1,)
+        mig.upgrade(conn)
+        with tenant_transaction(conn, Scope(tenant.org_id)):
+            assert conn.execute("SELECT count(*) FROM vendor_change").fetchone() == (0,)

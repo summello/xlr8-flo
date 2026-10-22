@@ -657,7 +657,9 @@ def test_instance_route_foreign_tenant_and_roles(setup):
                 "tasks",
                 "started_at",
                 "finished_at",
+                "evidence",
             }
+            assert body["evidence"] is None  # an adapter that supplies none (E11-S15)
             assert body["separation_of_duty_applied"] is True
             assert (await browser.get(f"/api/v1/approvals/instances/{uuid4()}")).status_code == 404
             # Real baseline roles: read granted to approver, requestor, auditor and administrator.

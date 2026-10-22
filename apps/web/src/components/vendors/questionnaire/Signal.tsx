@@ -1,14 +1,14 @@
-import { CheckCircle, Warning } from "@phosphor-icons/react";
+import Signal from "../../ui/Signal";
 
-/** MASTER 7.14: icon in the tone, words in the foreground. `total` is the server's figure, never summed here. */
-export default function Signal({ total }: { total: number }) {
+/** MASTER 7.14. `total` is the server's figure, never summed here. */
+export default function WeightSignal({ total }: { total: number }) {
   const ok = total === 100;
-  const Icon = ok ? CheckCircle : Warning;
   return (
-    <p className={`sig ${ok ? "is-ok" : "is-warn"}`} role="status">
-      <Icon aria-hidden="true" weight="regular" />
-      <span>Weights total {total} of 100</span>
-      {ok ? null : <span className="sig-why">Publishing needs exactly 100.</span>}
-    </p>
+    <Signal
+      role="status"
+      tone={ok ? "success" : "warning"}
+      label={`Weights total ${total} of 100`}
+      why={ok ? null : <span className="sig-why">Publishing needs exactly 100.</span>}
+    />
   );
 }

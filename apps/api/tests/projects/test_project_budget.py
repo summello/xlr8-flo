@@ -331,7 +331,9 @@ def test_a_creator_without_ledger_read_gets_no_balance_figures(project_db):
     refused = request(db, "POST", json=child.model_dump(mode="json"), viewer=creator)
     assert refused.status_code == 409, refused.text
     assert refused.json()["checks"] == {"problem": "insufficient_budget"}
-    assert "0.0000" not in refused.text and "100" not in refused.text
+    # the random correlation id is hex and can contain "100"; judge the rest of the body
+    shown = str({k: v for k, v in refused.json().items() if k != "correlation_id"})
+    assert "0.0000" not in shown and "100" not in shown
 
 
 def test_submit_refusal_for_a_short_main_project_carries_no_figures(wiring):

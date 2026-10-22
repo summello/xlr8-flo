@@ -215,7 +215,10 @@ describe("StatusPill", () => {
       cwd: sourceRoot,
     }).filter(
       (path) =>
-        path !== "components/status/StatusPill.tsx" && !path.includes("/__tests__/"),
+        // Signal is the one other reader of the tone icons (MASTER 7.14, E11-S11).
+        path !== "components/status/StatusPill.tsx" &&
+        path !== "components/ui/Signal.tsx" &&
+        !path.includes("/__tests__/"),
     );
 
     expect(componentFiles).toContain("components/shell/AppShell.tsx");

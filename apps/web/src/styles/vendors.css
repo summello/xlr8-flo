@@ -1,0 +1,37 @@
+/* Vendor list and profile (E11-S12). Tokens only; layout follows design-system/pages/vendors.md. */
+.vendor-table { width: 100%; border-collapse: collapse; color: var(--fg); }
+.vendor-table th { text-align: start; color: var(--fg-secondary); font-size: var(--text-caption); font-weight: var(--weight-heading); padding: var(--space-2) var(--space-3); border-block-end: 1px solid var(--border); }
+.vendor-table td { padding: var(--space-3); border-block-end: 1px solid var(--border); vertical-align: top; }
+.vendor-table a { color: var(--fg); text-decoration: underline; }
+.vendor-table td > .sig + .sig { margin-block-start: var(--space-1); }
+.vendor-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-4); }
+.vendor-name { overflow-wrap: anywhere; font-size: var(--text-title); line-height: var(--leading-title); }
+.vendor-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-1) var(--space-4); }
+.vendor-facts dt { color: var(--fg-secondary); }
+.vendor-facts dd { margin: 0; overflow-wrap: anywhere; }
+.vendor-list-plain { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
+.vendor-sheet { display: grid; gap: var(--space-4); align-content: start; }
+.vendor-profile .req-grid-detail { grid-template-columns: minmax(0, 1fr); }
+@container (min-width: 760px) { .vendor-profile .req-grid-detail { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container (min-width: 1100px) { .vendor-profile .req-grid-detail { grid-template-columns: repeat(3, minmax(0, 1fr)); } .vendor-profile .req-grid-detail > * { grid-column: auto; } .vendor-profile .req-grid-detail > .req-wide { grid-column: 1 / -1; } }
+/* Below 900px of card width the table stacks: each cell carries its column name (pages/vendors.md 3.1). */
+@container (max-width: 899px) {
+  .vendor-table thead { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; }
+  .vendor-table tr, .vendor-table td { display: block; }
+  .vendor-table tr { padding-block: var(--space-2); border-block-end: 1px solid var(--border); }
+  .vendor-table td { border: 0; padding: var(--space-1) var(--space-3); }
+  .vendor-table td[data-label]::before { content: attr(data-label); display: block; color: var(--fg-secondary); font-size: var(--text-caption); }
+}
+/* Performance card and scorecard sheet (E11-S18). */
+.perf-sheet { width: min(calc(var(--sheet-w) * 2), 100%); }
+.perf-num { text-align: end; font-variant-numeric: tabular-nums; }
+.perf-overall strong { font-size: var(--text-title); line-height: var(--leading-title); font-variant-numeric: tabular-nums; }
+.perf-struck { color: var(--fg-muted); text-decoration: line-through; }
+.perf-dispute { margin: var(--space-2) 0 0; padding-inline-start: var(--space-3); border-inline-start: 2px solid var(--border-strong); }
+.perf-form { display: grid; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-card); }
+.perf-form h3 { margin: 0; font-size: var(--text-heading); line-height: var(--leading-heading); }
+.perf-field { display: grid; gap: var(--space-1); border: 0; padding: 0; margin: 0; }
+.perf-field label { color: var(--fg-secondary); }
+.perf-field select, .perf-field input[type=month] { max-width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-control); border-radius: var(--radius-input); color: var(--fg); background: var(--surface); min-height: var(--touch-target); font: inherit; }
+.perf-field [aria-invalid="true"] { border-color: var(--status-danger); }
+.perf-form .field-error { color: var(--status-danger); margin: 0; }
