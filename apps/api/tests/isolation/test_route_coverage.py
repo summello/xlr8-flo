@@ -37,6 +37,7 @@ CODES_ROUTES = (
 )
 SOURCING_ROUTES = "sourcing/test_rfq.py::test_rfq_routes_conceal_foreign_tenants"
 CONTENT_ROUTES = "sourcing/test_rfq_content.py::test_rfq_content_routes_conceal_foreign_tenants"
+LIFECYCLE_ROUTES = "sourcing/test_rfq_lifecycle.py::test_lifecycle_routes_conceal_foreign_tenants"
 QROUTES = "vendors/test_questionnaire.py::test_questionnaire_routes_conceal_foreign_tenants"
 OROUTES = (
     "vendors/test_questionnaire.py::"
@@ -84,6 +85,12 @@ COVERED = {
     ("POST", "/api/v1/sourcing/rfqs/{id}/invitees"): CONTENT_ROUTES,
     ("DELETE", "/api/v1/sourcing/rfqs/{id}/invitees/{vendor_id}"): CONTENT_ROUTES,
     ("PATCH", "/api/v1/sourcing/rfqs/{id}/invitees/{vendor_id}"): CONTENT_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/publish"): LIFECYCLE_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/amend"): LIFECYCLE_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/extend-deadline"): LIFECYCLE_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/start-evaluation"): LIFECYCLE_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/invitees/{vendor_id}/resend"): LIFECYCLE_ROUTES,
+    ("GET", "/api/v1/sourcing/rfqs/{id}/versions"): LIFECYCLE_ROUTES,
     (
         "GET",
         "/api/v1/vendors/{id}/eligibility",

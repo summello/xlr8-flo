@@ -210,7 +210,8 @@ def write_status(
     repo.execute(
         "UPDATE requisition SET status=%(to)s,version=version+1,updated_at=now(), "
         "submitted_at=CASE WHEN %(to)s='approval_pending' THEN now() ELSE submitted_at END, "
-        "decided_at=CASE WHEN %(to)s='approval_pending' THEN decided_at ELSE now() END "
+        "decided_at=CASE WHEN %(to)s IN ('approval_pending','sourced') THEN decided_at "
+        "ELSE now() END "
         "WHERE org_id=%(org_id)s AND id=%(id)s",
         {"id": row["id"], "to": to},
     )

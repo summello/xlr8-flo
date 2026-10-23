@@ -4483,6 +4483,298 @@
       },
       "recap": "Vendor profile gains a Performance card (server overall, per-category averages, counts) and a wide Scorecard side sheet with Add Score, Dispute and Resolve forms, a struck original conveyed in text plus its linked adjustment. Web only; the card re-reads the server after every write.",
       "title": "Vendor Performance card and scorecard sheet"
+    },
+    {
+      "story": "E23-S09",
+      "kind": "chore",
+      "size": "S",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [
+        {
+          "from": "opencode-nemotron",
+          "to": "sonnet",
+          "reason": "operator, 23 Oct 2026: E23 complex stories to Sonnet worker B (CI deploy path)"
+        }
+      ],
+      "sessions": {
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-m3run-E23-S09 and model~nvidia/nemotron-3-ultra-550b-a55b:free"
+        },
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "440c5110-25f3-4e74-9f5f-862e9ef42508",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E23-S09",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1656b-4eab-7be1-8911-96ff91d61957",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "CI now builds the SPA once in a new frontend-build job (main push / main|milestone dispatch only) and deploy downloads that artifact, verifies a sha256 manifest and runs the unchanged bundle guards on it. No npm ci or vite build remains in deploy.",
+      "title": "Build the SPA bundle once in CI and deploy the same artifact",
+      "durations": {
+        "wall_s": 5360,
+        "author_s": 3648,
+        "review_s": {
+          "codex": 28
+        },
+        "gate_s": 0
+      }
+    },
+    {
+      "story": "E12-S03",
+      "kind": "engine",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 3,
+          "blockers": 3,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "71c01ad7-24d0-4b3f-a1f2-0a78b6c0494e",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S03",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1658a-7926-7852-81ff-e2a7fccf1766",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "RFQs can now be published (no approval), amended or deadline-extended as immutable numbered versions with a was/now diff, and each version is queued through the outbox to every invitee contact, with resend for bounced contacts. A close job (queued each job tick per org with a due RFQ) closes RFQs past deadline, and publishing marks fully sourced requisitions sourced.",
+      "title": "RFQ lifecycle and post-publication versioning communicated to invitees",
+      "durations": {
+        "review_s": {
+          "codex": 17
+        },
+        "gate_s": 927
+      }
+    },
+    {
+      "story": "E23-S14",
+      "kind": "chore",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 1,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "f4f5014c-b44d-4520-9cff-8225d8b09263",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E23-S14",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a16687-0e04-75d3-be1a-1da78226ba6b",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Fleet review runs are now recorded per reviewer and only one reviewer runs per story at a time; review.sh holds a pid-checked per-story lock (exit 75) and restores moved-aside verdicts after a killed run. Housekeeping ruff findings in fleet.py are fixed.",
+      "title": "One run record per reviewer, one reviewer at a time per story",
+      "durations": {
+        "wall_s": 2964,
+        "author_s": 2795,
+        "review_s": {
+          "codex": 11
+        },
+        "gate_s": 0
+      }
+    },
+    {
+      "story": "E23-S15",
+      "kind": "chore",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 1,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "5dddf42f-71c1-4798-b1aa-3766c8208d58",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E23-S15",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a16695-cfb3-7d31-a466-c43fe11c8312",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Added flock-based `flo with-lock` (exit 75 on timeout, freed on SIGKILL); finish.sh, submit.sh (per-story lock plus shared finish lock) and author.sh (launch lock plus live-pid refusal) use it, and flo reassign shares the launch lock. Executable tests replace the text-only author.sh guard.",
+      "title": "Process-owned locks for finish, submit and launch; one live author and one submit per story",
+      "durations": {
+        "wall_s": 3874,
+        "author_s": 3187,
+        "review_s": {
+          "codex": 88
+        },
+        "gate_s": 0
+      }
+    },
+    {
+      "story": "E23-S18",
+      "kind": "chore",
+      "size": "S",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 1,
+          "blockers": 1,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "66d76ce2-ccaf-429f-aa2d-3d8d24c0ba45",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E23-S18",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1669f-9a8d-7423-8b4e-bdc35b49a5ed",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "flo check --light now retries a story e2e run once (--last-failed --workers=1) when every failure is a Playwright timeout, prints 'flaky under load: <specs>' and records the flake in task.json evidence. Assertion, axe, unparseable or mixed failures stay red with no retry.",
+      "title": "Light-check e2e retries failed specs once and reports load flakes apart from failures",
+      "durations": {
+        "wall_s": 9157,
+        "author_s": 3555,
+        "review_s": {
+          "codex": 24
+        },
+        "gate_s": 0
+      }
     }
   ]
 }

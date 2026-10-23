@@ -33,17 +33,19 @@ Your packet is in your worktree at `design/<STORY_ID>.md` — packets are tracke
 |---|---|---|---|
 | **Opus** (`claude-opus-5`, Claude Pro, account A) | The planner (one session, skill `xlr8flo-planner`): design packets, assignment, dispatch, arbitration patches, fixes for red milestone CI | **Gated stories**, in a fresh session (skill `xlr8flo-reviewer`); every epic checkpoint; whole-milestone diff before PR | Routine authoring — it is the scarcest capacity in the fleet |
 | **Sonnet** (Claude Pro, accounts A and B) | Every story by default, one session per story (skill `xlr8flo-worker`), resumed for review rounds and red story CI | — | Submitting, merging or pushing — the planner does |
-| **Codex** (ChatGPT Plus) | Fallback author when no Sonnet slot is free and the story is gated or larger than nemotron takes | **Every story** (`gpt-5.6-sol`, medium effort, pinned on the command line) | Reviewing a story it authored |
-| **OpenCode-nemotron** (OpenRouter, free) | Ungated crud, ui, api, docs, chore, test — the second parallel lane | — (0.0 findings per review) | A story tagged money, auth, security, migration or concurrency (`avoid_tags`) |
+| **Codex** (ChatGPT Plus) | M0 sole-author override; E23-S14..S18 takeover only after the assigned Sonnet exhausts capacity | **Every story** (`gpt-5.6-sol`, medium effort, pinned on the command line) | Other non-overridden story authoring |
+| **OpenCode-nemotron** (OpenRouter, free) | — | — (0.0 findings per review) | Story authoring (operator, 23 Oct 2026) |
 | **OpenCode-ox** (OpenRouter) | Fallback only; its endpoint has been withdrawn before | — | — |
-| **Qwen** (OpenRouter, <$20/mo) | Small stories (`size: S`) | **Ungated stories**; release review of the milestone diff | Exceeding the monthly cap in `agents/agents.yaml` |
+| **Qwen** (OpenRouter, <$20/mo) | — | **Ungated stories**; release review of the milestone diff | Exceeding the monthly cap in `agents/agents.yaml` |
 | **DeepSeek** (OpenRouter) | — | Release review — the milestone diff, not single stories | Authoring |
 
 **Sonnet authors, Codex reviews (13 Oct 2026, operator-approved).** `flo assign` computes it:
 
-- The author is the first of `policy.author_priority` (sonnet, opencode-nemotron, codex) that may
-  take the story. Sonnet runs on two Claude accounts, at most `max_workers_per_account` stories
-  each; when both are full the story overflows to the next author.
+- Sonnet authors every non-overridden story. It runs on two Claude accounts, at most
+  `max_workers_per_account` live workers each; when both are full the story waits. There is no
+  automatic overflow author. M0's explicit `sole_author: codex` milestone override remains
+  authoritative. For E23-S14..S18 only, the Codex planner may take over after the assigned
+  Sonnet actually exhausts capacity; record the substitution before authoring.
 - Every story is reviewed by the first of `policy.ungated_reviewers` (codex, qwen, deepseek) that
   is not its author.
 - A story tagged `money`, `auth`, `security`, `migration` or `concurrency`

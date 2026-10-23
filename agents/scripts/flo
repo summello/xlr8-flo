@@ -8,6 +8,7 @@ Stdlib only, except PyYAML for the two config files.
   flo preflight <STORY_ID> --reviewer NAME --verdict pass|fail   file the packet pre-flight flo start requires
   flo start   <STORY_ID>    branch + worktree + task packet (refuses without a passing pre-flight record)
   flo reassign <STORY_ID> [--reason T]   new author for a story whose worker is gone (live pid, dirty tree, own commits: refused)
+  flo with-lock <name> [--wait S] -- CMD   run CMD holding .scratch/<name>.lock (flock; exit 75 on timeout)
   flo assign  <STORY_ID>    compute author and two reviewers from agents.yaml
   flo submit  <STORY_ID>    mark ready for review, print reviewer commands
   flo review  <STORY_ID>    print the reviewer packet (diff + design + requirements)
@@ -30,11 +31,13 @@ Stdlib only, except PyYAML for the two config files.
   flo down                  stop the local stack
 """
 import ast
+import fcntl
 import hashlib
 import json
 import os
 import re
 import shutil
+import signal
 import statistics
 import subprocess
 import sys
@@ -352,20 +355,67 @@ def cmd_assign(argv):
 
 
 @contextmanager
-def story_lock(sid):
-    """One launch or reassign per story at a time: an atomic mkdir, the convention finish.sh uses
-    and author.sh takes too. ponytail: a crash leaves the directory behind; remove
-    .scratch/<story>.lock by hand (macOS has no flock(1), so no kernel-released lock)."""
-    lock = ROOT / ".scratch" / f"{sid}.lock"
-    lock.parent.mkdir(exist_ok=True)
-    try:
-        lock.mkdir()
-    except FileExistsError:
-        die(f"{sid}: {lock} is held by a launch or another reassign; if none is running, remove it")
-    try:
+def file_lock(name, wait=0.0):
+    """Hold flock on .scratch/<name>.lock until the block ends or the process dies (SIGKILL included).
+    The kernel owns the lock; the file stays and its pid text is a diagnostic only, never authority
+    to unlock. Past `wait` seconds: exit 75, naming the lock and the recorded holder."""
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", name):
+        die(f"bad lock name {name!r}")
+    path = ROOT / ".scratch" / f"{name}.lock"
+    path.parent.mkdir(exist_ok=True)
+    with open(path, "a+") as f:
+        deadline = time.monotonic() + wait
+        while True:
+            try:
+                fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except OSError:
+                if time.monotonic() >= deadline:
+                    f.seek(0)
+                    holder = f.read().strip()
+                    die(f"{path} is held" + (f" by pid {holder}" if holder else ""), 75)
+                time.sleep(0.1)  # ponytail: polls; a queue if many waiters ever matter
+        f.seek(0)
+        f.truncate()
+        f.write(f"{os.getpid()}\n")
+        f.flush()
         yield
-    finally:
-        lock.rmdir()
+
+
+def cmd_with_lock(argv):
+    """flo with-lock <name> [--wait SECONDS] -- <command...>: run the command holding .scratch/<name>.lock."""
+    usage = "usage: flo with-lock <name> [--wait SECONDS] -- <command...>"
+    if "--" not in argv:
+        die(usage)
+    i = argv.index("--")
+    head, cmd = argv[:i], argv[i + 1:]
+    wait = 0.0
+    if "--wait" in head:
+        j = head.index("--wait")
+        try:
+            wait = float(head[j + 1])
+        except (IndexError, ValueError):
+            die(usage)
+        del head[j:j + 2]
+    if len(head) != 1 or not cmd or not 0 <= wait < float("inf"):  # NaN fails both comparisons
+        die(usage)
+    # ponytail: the child does not inherit the lock fd, so a SIGKILLed wrapper frees the lock while
+    # its child runs on; and a backgrounded grandchild (author.sh's nohup) never holds it.
+    with file_lock(head[0], wait):
+        try:
+            rc = subprocess.run(cmd).returncode
+        except OSError as e:
+            die(f"{cmd[0]}: {e}")
+    if rc < 0:  # killed by a signal: die the same way so the caller sees it
+        if -rc not in (signal.SIGKILL, signal.SIGSTOP):  # uncatchable: signal.signal raises
+            signal.signal(-rc, signal.SIG_DFL)
+        os.kill(os.getpid(), -rc)
+    sys.exit(rc)
+
+
+def story_lock(sid):
+    """One launch or reassign per story at a time: the lock author.sh takes as `launch.<story>`."""
+    return file_lock(f"launch.{sid}")
 
 
 def cmd_reassign(argv):
@@ -2393,6 +2443,29 @@ def story_checks(cwd):
 # run_check keeps its two-argument signature: tests/gates/test_gates_bite.py stubs it that way.
 LAST_STEPS = []
 
+_PW_FAILURE = re.compile(r"^\s+\d+\) .*?(\S+\.(?:spec|e2e)\.ts):\d+:\d+", re.M)
+# Framework-generated only: the test timeout is printed as the block's bare first line, an action
+# timeout as a TimeoutError. A test that throws new Error("Test timeout ...") prints "Error: ..."
+# and is an explicit failure.
+_PW_TIMEOUT = re.compile(r"Test timeout of \d+ms exceeded[^\n]*\.|TimeoutError: \w+\.\w+: Timeout \d+ms exceeded\.")
+_PW_DETERMINISTIC = re.compile(r"expect\(|axe|violation|AssertionError", re.I)
+
+
+def timeout_only_failures(output):
+    """The failed spec paths when every failed Playwright test timed out, else None. An
+    assertion, axe violation, compile error or any failure this cannot classify is not a flake."""
+    heads = list(_PW_FAILURE.finditer(output))
+    m = re.search(r"^\s+(\d+) failed$", output, re.M)
+    if not heads or not m or int(m.group(1)) != len(heads) or re.search(r"axe", output, re.I):
+        return None
+    ends = [h.start() for h in heads[1:]] + [len(output)]
+    for head, end in zip(heads, ends):
+        body = output[head.start():end]
+        first = next((l.strip() for l in body[head.end() - head.start():].splitlines()[1:] if l.strip()), "")
+        if not _PW_TIMEOUT.fullmatch(first) or _PW_DETERMINISTIC.search(body):
+            return None
+    return sorted({h.group(1) for h in heads})
+
 
 def run_check(cwd=None, profile="full"):
     cwd = cwd or ROOT
@@ -2423,8 +2496,25 @@ def run_check(cwd=None, profile="full"):
             if exemption is not None:
                 print(f"  ?  {name:<12} missing-tool opt-out: {exemption}")
                 continue
+        step = {"name": name, "ok": not r.returncode}
+        specs = timeout_only_failures(r.stdout + r.stderr) if name == "story e2e" and r.returncode else None
+        if specs:
+            # One targeted retry, one worker, failed specs only: load makes Playwright time out,
+            # a defect fails again. Hosted CI and the full e2e+axe step never retry.
+            retry = subprocess.run([*cmd, "--last-failed", "--workers=1"], cwd=cwd,
+                                   capture_output=True, text=True, env=command_environment)
+            if not retry.returncode:
+                print(f"  ✓  {name}")
+                print(f"flaky under load: {' '.join(specs)}")
+                LAST_STEPS.append({**step, "ok": True, "flaky": True, "specs": specs, "attempts": 2})
+                continue
+            print(f"  ✗  {name}")
+            LAST_STEPS.append({**step, "attempts": 2, "specs": specs})
+            print("first run:\n" + (r.stdout + r.stderr).strip()[-2000:])
+            print("retry (--last-failed --workers=1):\n" + (retry.stdout + retry.stderr).strip()[-2000:])
+            return False
         print(f"  {'✓' if not r.returncode else '✗'}  {name}")
-        LAST_STEPS.append({"name": name, "ok": not r.returncode})
+        LAST_STEPS.append(step)
         if r.returncode:
             print((r.stdout + r.stderr).strip()[-2000:])
             return False
@@ -2813,7 +2903,7 @@ COMMANDS = {
     "review": cmd_review, "gate": cmd_gate, "final": cmd_final, "escalate": cmd_escalate,
     "done": cmd_done, "design": cmd_design, "status": cmd_status, "budget": cmd_budget,
     "roadmap": cmd_roadmap, "score": cmd_score, "session": cmd_session, "board": cmd_board,
-    "reap": cmd_reap, "account": cmd_account, "launch-model": cmd_launch_model, "preflight": cmd_preflight, "reassign": cmd_reassign, "codex-usage": cmd_codex_usage, "codex-guard": cmd_codex_guard, "release-packet": cmd_release_packet, "log-guard": cmd_log_guard, "ci-watch": cmd_ci_watch, "facts": cmd_facts, "round": cmd_round, "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "db": cmd_db, "up": cmd_up, "down": cmd_down,
+    "reap": cmd_reap, "account": cmd_account, "launch-model": cmd_launch_model, "preflight": cmd_preflight, "reassign": cmd_reassign, "with-lock": cmd_with_lock, "codex-usage": cmd_codex_usage, "codex-guard": cmd_codex_guard, "release-packet": cmd_release_packet, "log-guard": cmd_log_guard, "ci-watch": cmd_ci_watch, "facts": cmd_facts, "round": cmd_round, "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "db": cmd_db, "up": cmd_up, "down": cmd_down,
 }
 
 if __name__ == "__main__":

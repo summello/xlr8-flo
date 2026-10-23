@@ -35,6 +35,7 @@ from flo.modules.requisitions.service import (
 )
 from flo.modules.sourcing.models import RfqRepository
 from flo.modules.sourcing.schemas import (
+    DeliveryRead,
     InviteeCreate,
     InviteePatch,
     InviteeRead,
@@ -113,8 +114,8 @@ class RfqService:
             head = self.repo.execute(
                 "SELECT r.id, r.number, r.title, r.status, r.unit_id, r.currency, i.email, "
                 "r.version, r.edit_revision, r.created_at, r.updated_at, r.specifications, "
-                "r.delivery_location, r.delivery_terms, r.terms, r.deadline_at, r.deadline_tz "
-                "FROM rfq r JOIN identity i ON i.id = r.owner_id "
+                "r.delivery_location, r.delivery_terms, r.terms, r.deadline_at, r.deadline_tz, "
+                "r.published_at FROM rfq r JOIN identity i ON i.id = r.owner_id "
                 "WHERE r.org_id = %(org_id)s AND r.id = %(id)s",
                 {"id": id},
             ).fetchone()
@@ -127,7 +128,7 @@ class RfqService:
                 "WHERE org_id = %(org_id)s AND rfq_id = %(id)s ORDER BY line_no",
                 {"id": id},
             ).fetchall()
-            extra = self._extra(id)
+            extra = self._extra(id, cast(int, head[7]))
         live = {
             b.line_id: b
             for b in sourcing_basis(self.connection, self.scope, [cast(UUID, r[3]) for r in rows])
@@ -160,12 +161,13 @@ class RfqService:
                 "created_at": head[9],
                 "updated_at": head[10],
                 "lines": lines,
+                "published_at": head[17],
                 **dict(zip(CONTENT.split(", "), head[11:17], strict=True)),
                 **extra,
             }
         )
 
-    def _extra(self, id: UUID) -> dict[str, list[object]]:
+    def _extra(self, id: UUID, version: int) -> dict[str, list[object]]:
         """Requirements, attachments with visibility, invitees with live eligibility."""
         requirements = [
             RequirementRead(
@@ -219,6 +221,23 @@ class RfqService:
             if invited
             else {}
         )
+        told: dict[UUID, list[DeliveryRead]] = {}
+        for r in self.repo.execute(
+            "SELECT t.vendor_id, t.contact_id, t.version, "
+            "CASE o.state WHEN 'pending' THEN 'queued' WHEN 'sent' THEN 'sent' "
+            "WHEN 'dead' THEN 'bounced' ELSE 'failed' END "
+            "FROM rfq_invitee_version t "
+            "JOIN outbox o ON o.id = t.outbox_id "
+            "WHERE t.org_id = %(org_id)s AND t.rfq_id = %(id)s ORDER BY t.created_at, t.contact_id",
+            {"id": id},
+        ).fetchall():
+            told.setdefault(cast(UUID, r[0]), []).append(
+                DeliveryRead.model_validate({"contact_id": r[1], "version": r[2], "state": r[3]})
+            )
+
+        def sent(vendor: UUID) -> set[int]:
+            return {d.version for d in told.get(vendor, []) if d.state == "sent"}
+
         invitees = [
             InviteeRead(
                 vendor_id=cast(UUID, r[0]),
@@ -229,6 +248,9 @@ class RfqService:
                 invited_at=cast(datetime, r[5]),
                 eligible=live[cast(UUID, r[0])].eligible if r[0] in live else None,
                 reasons=[x.text for x in live[cast(UUID, r[0])].reasons] if r[0] in live else [],
+                deliveries=told.get(cast(UUID, r[0]), []),
+                latest_sent_version=max(sent(cast(UUID, r[0])), default=None),
+                not_told_of=[v for v in range(1, version + 1) if v not in sent(cast(UUID, r[0]))],
             )
             for r in invited
         ]
@@ -458,6 +480,71 @@ class RfqService:
         if expected != current:
             raise conflict("stale_version", "The RFQ changed. Reload it and retry your update.")
 
+    def _apply_lines(
+        self, id: UUID, unit_id: UUID, currency: str, body: RfqLinesPatch
+    ) -> tuple[dict[UUID, tuple[object, ...]], dict[UUID, RfqLineIn]]:
+        """Move the RFQ onto `body`'s lines through the open-quantity guard. Call in a tx."""
+        current = {
+            cast(UUID, r[0]): r
+            for r in self.repo.execute(
+                "SELECT requisition_line_id, id, requisition_id, requisition_version, "
+                "quantity, line_no FROM rfq_line WHERE org_id = %(org_id)s AND rfq_id = %(id)s",
+                {"id": id},
+            ).fetchall()
+        }
+        basis = self._basis(body.lines)
+        self._same_unit_and_currency(body.lines, basis, unit_id, currency)
+        wanted = {line.requisition_line_id: line for line in body.lines}
+        changes: list[LineSourcing] = []
+        for line_id, row in current.items():
+            if line_id not in wanted:
+                changes.append(
+                    LineSourcing(
+                        cast(UUID, row[2]), line_id, cast(int, row[3]), -cast(Decimal, row[4])
+                    )
+                )
+        for line in body.lines:
+            old = current.get(line.requisition_line_id)
+            delta = Decimal(line.quantity) - (cast(Decimal, old[4]) if old else Decimal(0))
+            if delta != 0:
+                changes.append(
+                    LineSourcing(
+                        basis[line.requisition_line_id].requisition_id,
+                        line.requisition_line_id,
+                        line.requisition_version,
+                        delta,
+                    )
+                )
+        source_lines(self.connection, self.scope, changes, self.actor_id)
+        next_no = max((cast(int, r[5]) for r in current.values()), default=0) + 1
+        for line_id, row in current.items():
+            if line_id not in wanted:
+                self.repo.execute(
+                    "DELETE FROM rfq_line WHERE org_id = %(org_id)s AND id = %(id)s",
+                    {"id": row[1]},
+                )
+        for line in body.lines:
+            old = current.get(line.requisition_line_id)
+            if old is None:
+                self._insert_line(id, next_no, line, basis[line.requisition_line_id])
+                next_no += 1
+            elif Decimal(line.quantity) != cast(Decimal, old[4]):
+                # Only an increase was checked against the requisition's version.
+                grew = Decimal(line.quantity) > cast(Decimal, old[4])
+                self.repo.execute(
+                    "UPDATE rfq_line SET quantity = %(quantity)s, "
+                    "requisition_version = CASE WHEN %(grew)s THEN %(version)s "
+                    "ELSE requisition_version END "
+                    "WHERE org_id = %(org_id)s AND id = %(id)s",
+                    {
+                        "id": old[1],
+                        "quantity": Decimal(line.quantity),
+                        "version": line.requisition_version,
+                        "grew": grew,
+                    },
+                )
+        return current, wanted
+
     def update_lines(self, id: UUID, body: RfqLinesPatch, if_match: str | None) -> RfqRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             head = self.repo.execute(
@@ -472,65 +559,7 @@ class RfqService:
                 raise conflict(
                     "not_draft", "Only a draft RFQ can change its lines. Reload it and retry."
                 )
-            current = {
-                cast(UUID, r[0]): r
-                for r in self.repo.execute(
-                    "SELECT requisition_line_id, id, requisition_id, requisition_version, "
-                    "quantity, line_no FROM rfq_line WHERE org_id = %(org_id)s AND rfq_id = %(id)s",
-                    {"id": id},
-                ).fetchall()
-            }
-            basis = self._basis(body.lines)
-            self._same_unit_and_currency(body.lines, basis, cast(UUID, head[1]), cast(str, head[2]))
-            wanted = {line.requisition_line_id: line for line in body.lines}
-            changes: list[LineSourcing] = []
-            for line_id, row in current.items():
-                if line_id not in wanted:
-                    changes.append(
-                        LineSourcing(
-                            cast(UUID, row[2]), line_id, cast(int, row[3]), -cast(Decimal, row[4])
-                        )
-                    )
-            for line in body.lines:
-                old = current.get(line.requisition_line_id)
-                delta = Decimal(line.quantity) - (cast(Decimal, old[4]) if old else Decimal(0))
-                if delta != 0:
-                    changes.append(
-                        LineSourcing(
-                            basis[line.requisition_line_id].requisition_id,
-                            line.requisition_line_id,
-                            line.requisition_version,
-                            delta,
-                        )
-                    )
-            source_lines(self.connection, self.scope, changes, self.actor_id)
-            next_no = max((cast(int, r[5]) for r in current.values()), default=0) + 1
-            for line_id, row in current.items():
-                if line_id not in wanted:
-                    self.repo.execute(
-                        "DELETE FROM rfq_line WHERE org_id = %(org_id)s AND id = %(id)s",
-                        {"id": row[1]},
-                    )
-            for line in body.lines:
-                old = current.get(line.requisition_line_id)
-                if old is None:
-                    self._insert_line(id, next_no, line, basis[line.requisition_line_id])
-                    next_no += 1
-                elif Decimal(line.quantity) != cast(Decimal, old[4]):
-                    # Only an increase was checked against the requisition's version.
-                    grew = Decimal(line.quantity) > cast(Decimal, old[4])
-                    self.repo.execute(
-                        "UPDATE rfq_line SET quantity = %(quantity)s, "
-                        "requisition_version = CASE WHEN %(grew)s THEN %(version)s "
-                        "ELSE requisition_version END "
-                        "WHERE org_id = %(org_id)s AND id = %(id)s",
-                        {
-                            "id": old[1],
-                            "quantity": Decimal(line.quantity),
-                            "version": line.requisition_version,
-                            "grew": grew,
-                        },
-                    )
+            current, wanted = self._apply_lines(id, cast(UUID, head[1]), cast(str, head[2]), body)
             self.repo.execute(
                 "UPDATE rfq SET updated_at = now(), edit_revision = edit_revision + 1 "
                 "WHERE org_id = %(org_id)s AND id = %(id)s",
@@ -546,7 +575,14 @@ class RfqService:
 
     # -- content, requirements, attachments, invitees (E12-S02) ----------------------------
 
-    def _draft(self, id: UUID, if_match: str | None = None, *, versioned: bool = True) -> UUID:
+    def _draft(
+        self,
+        id: UUID,
+        if_match: str | None = None,
+        *,
+        versioned: bool = True,
+        states: tuple[str, ...] = ("draft",),
+    ) -> UUID:
         """Lock the RFQ row; 404 if foreign, 409 `not_draft`; returns its unit. Call in a tx."""
         head = self.repo.execute(
             "SELECT status, unit_id, edit_revision FROM rfq "
@@ -557,7 +593,7 @@ class RfqService:
             raise ProblemError(ErrorCode.NOT_FOUND)
         if versioned:
             self._check_edit_revision(cast(int, head[2]), if_match)
-        if head[0] != "draft":
+        if head[0] not in states:
             raise conflict("not_draft", "Only a draft RFQ can change. Reload it and retry.")
         return cast(UUID, head[1])
 
@@ -568,7 +604,10 @@ class RfqService:
             {"id": id},
         )
 
-    def update_content(self, id: UUID, body: RfqContentPatch, if_match: str | None) -> RfqRead:
+    def _apply_content(
+        self, id: UUID, body: RfqContentPatch
+    ) -> tuple[dict[str, object], dict[str, object]]:
+        """Write the fields sent and line specifications; returns (before, sent). Call in a tx."""
         sent = body.model_dump(exclude_unset=True, exclude={"line_specifications"})
         # the deadline and its zone cannot be cleared; null means "unchanged"
         sent = {
@@ -576,33 +615,39 @@ class RfqService:
             for k, v in sent.items()
             if v is not None or k not in ("deadline_at", "deadline_tz")
         }
+        sent.pop("reason", None)  # an amendment's reason and lines are not RFQ columns
+        sent.pop("lines", None)
+        before = dict(
+            zip(
+                CONTENT.split(", "),
+                self.repo.execute(
+                    f"SELECT {CONTENT} FROM rfq WHERE org_id = %(org_id)s AND id = %(id)s",
+                    {"id": id},
+                ).fetchone()
+                or (),
+                strict=True,
+            )
+        )
+        if sent:
+            self.repo.execute(
+                "UPDATE rfq SET " + ", ".join(f"{k} = %({k})s" for k in sent) + " "
+                "WHERE org_id = %(org_id)s AND id = %(id)s",
+                {"id": id, **sent},
+            )
+        for line_id, text in (body.line_specifications or {}).items():
+            done = self.repo.execute(
+                "UPDATE rfq_line SET specification = %(text)s "
+                "WHERE org_id = %(org_id)s AND rfq_id = %(id)s AND id = %(line)s",
+                {"id": id, "line": line_id, "text": text},
+            )
+            if done.rowcount == 0:
+                raise ProblemError(ErrorCode.NOT_FOUND)
+        return before, sent
+
+    def update_content(self, id: UUID, body: RfqContentPatch, if_match: str | None) -> RfqRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             self._draft(id, if_match)
-            before = dict(
-                zip(
-                    CONTENT.split(", "),
-                    self.repo.execute(
-                        f"SELECT {CONTENT} FROM rfq WHERE org_id = %(org_id)s AND id = %(id)s",
-                        {"id": id},
-                    ).fetchone()
-                    or (),
-                    strict=True,
-                )
-            )
-            if sent:
-                self.repo.execute(
-                    "UPDATE rfq SET " + ", ".join(f"{k} = %({k})s" for k in sent) + " "
-                    "WHERE org_id = %(org_id)s AND id = %(id)s",
-                    {"id": id, **sent},
-                )
-            for line_id, text in (body.line_specifications or {}).items():
-                done = self.repo.execute(
-                    "UPDATE rfq_line SET specification = %(text)s "
-                    "WHERE org_id = %(org_id)s AND rfq_id = %(id)s AND id = %(line)s",
-                    {"id": id, "line": line_id, "text": text},
-                )
-                if done.rowcount == 0:
-                    raise ProblemError(ErrorCode.NOT_FOUND)
+            before, sent = self._apply_content(id, body)
             self._bump(id)
             self._audit(
                 "rfq.update",
@@ -847,7 +892,7 @@ class RfqService:
     ) -> RfqRead:
         vendors = VendorService(self.connection, self.scope, self.actor_id)
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
-            self._draft(id, if_match)
+            self._draft(id, if_match, states=("draft", "published"))
             old = self.repo.execute(
                 "SELECT contact_ids FROM rfq_invitee WHERE org_id = %(org_id)s "
                 "AND rfq_id = %(id)s AND vendor_id = %(vendor)s",

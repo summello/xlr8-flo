@@ -335,6 +335,12 @@ If this is the first service creation, copy its HTTPS `run.app` origin into the 
 variable `CLOUD_RUN_ORIGIN`, then re-run the failed deploy job. Do not put that hostname in a
 `VITE_` variable or browser bundle.
 
+The SPA is built once by the `frontend-build` job (main pushes and `main`/`milestone/*` dispatches only,
+when `apps/web` changed) and uploaded as the `web-dist` artifact with a `dist.sha256` manifest. The deploy
+job downloads it from the same run, verifies the manifest, runs the bundle guards (secret marker, GCP
+project id, Cloud Run host, absolute API URL) against those bytes, and uploads that bundle. It runs no
+`npm ci` or `vite build`; a failed `frontend-build` stops the deploy.
+
 The fixed release order is:
 
 1. Scan the built image and generate its SBOM.

@@ -111,12 +111,34 @@ On success `task.json` gets the new `author`, `reviewers` and `opus_final` (alwa
 the story's tags, never from the author), and a `substitutions` entry. The old author's session
 record stays. A gated story keeps its fresh Opus review whoever authors it.
 
-The lock is `.scratch/<STORY>.lock`, an atomic `mkdir` as in `finish.sh`. `author.sh` takes the
-same lock around reading the author and writing the pid file (30 s, then it gives up), so a launch
-and a reassign cannot interleave. A crash leaves the directory behind; remove it by hand.
+The lock is `.scratch/launch.<STORY>.lock`, a kernel `flock` (see Locks below). `author.sh` holds it
+around reading the author and writing the pid file (30 s, then exit 75), so a launch and a reassign
+cannot interleave; `flo reassign` does not wait and exits 75 while a launch holds it.
 
 Not done here: the supervisor does not call `flo reassign` yet. Its source is not in this
 repository, so wiring it in is a separate decision (E23-S07).
+
+## Locks: `flo with-lock`
+
+`flo with-lock <name> [--wait SECONDS] -- <command...>` runs a command holding `flock` on
+`.scratch/<name>.lock` (stdlib `fcntl`, no `flock(1)`, which macOS lacks). The kernel releases the lock
+when the holder exits or is SIGKILLed, so a crash strands nothing. The file holds the holder's pid as
+a diagnostic only; nobody unlocks on its text or age, and **lock files are never deleted** (deleting
+one lets two processes lock different files of the same name).
+
+| Lock | Taken by | Wait |
+|---|---|---|
+| `finish` | `finish.sh` (whole body); the final `flo submit` phase of `submit.sh` (both write the parent roadmap) | 1800 s |
+| `submit.<STORY>` | `submit.sh` (merge, light check, submit) | 0: a second submit of the story exits 75 untouched |
+| `launch.<STORY>` | `author.sh`, `flo reassign` | 30 s / 0 |
+
+`--wait` is bounded; **exit 75** means the lock was not acquired in time (the message names the lock
+and the recorded holder pid) and is safe to retry. Any other status is the command's own, and a
+signal death is repeated by the wrapper. The child does not inherit the lock, so a SIGKILLed wrapper
+frees it while its child runs on.
+
+`author.sh` also refuses (exit 75, `author of <STORY> already running (pid N)`) when
+`.scratch/<STORY>.author.pid` names a live process. A missing, malformed or dead pid does not block.
 
 ## Test evidence: what `ran_tests` now means
 
@@ -207,3 +229,39 @@ Since E23-S13 a new scorecard record takes `rounds` from the round files
   records against `JUDGEMENT_FLOOR` (10) and says "It is due" when it is reached; then run the script in
   `docs/ops/sonnet-round-churn.md`. "Gated" means one of `GATED_TAGS` in `agents/scripts/flo`, which mirror
   `policy.opus_final_required_tags`; a test keeps the two lists and the doc script identical.
+
+## Light-check e2e: one retry for load timeouts
+
+`flo check --light` runs the Playwright specs a story adds or edits as one `story e2e` step.
+Under host load those specs time out without any defect, so the step retries **once**:
+
+- A retry happens only when every failed test is a Playwright timeout (`Test timeout of ...
+  exceeded`, or a `TimeoutError` action timeout such as `page.goto`; a test that throws its own `Error` with timeout text is an explicit failure). An `expect()` mismatch, an
+  axe violation (any `axe` text in the output), a compile or setup error, a failure flo cannot
+  parse, or a mix of timeouts and anything else is red at once, with no retry.
+- The retry is the same command plus `--last-failed --workers=1`: failed specs only, one worker.
+  If it fails for any reason the step is red and prints the first-run and retry output. There
+  is no third attempt.
+- A pass on retry prints `flaky under load: <specs>` (visible in the `flo submit` log) and is
+  recorded in the evidence record in `task.json`: `evidence[].steps[]` holds
+  `{"name": "story e2e", "ok": true, "flaky": true, "specs": [...], "attempts": 2}`. A first-pass
+  success has no `flaky` key.
+- Not affected: the full `e2e+axe` step and hosted CI never retry. Hosted CI stays the
+  independent full-suite judge.
+
+## Review runs and the review lock (E23-S14)
+
+- **Run names.** The supervisor's run records live in `~/.claude/fleet/state/<project>/runs/`. A
+  review run is `STORY.review.REVIEWER` (`E11-S16.review.codex.json/.out/.exit`); every other step
+  stays `STORY.STEP`. The record carries a `reviewer` field. An old `STORY.review.json` record (no
+  field) is still read for its result but never counts as a busy run.
+- **Sequential reviews.** A story has at most one review running. When both Codex and Opus are
+  missing, a tick starts Codex; Opus starts on a later tick once Codex has exited. Reviewers
+  still never read each other's verdicts.
+- **The lock.** `review.sh` holds `.scratch/<STORY>.review.lock/pid` (the background job's pid) for
+  the whole review. A second `review.sh` for that story exits **75** with
+  `review of <S> already running (pid N)`. A lock whose pid is dead is reclaimed by the next
+  `review.sh`, which also puts back any verdicts left in `.scratch/<S>.aside.<reviewer>` by a run that
+  was killed. Release reviews (a milestone id) take no lock.
+- **Clearing a stuck lock.** Only if no `review.sh` job for the story is running (and the
+  lock has no `pid` file because the launcher itself was killed at start): `rm -rf .scratch/<S>.review.lock`.

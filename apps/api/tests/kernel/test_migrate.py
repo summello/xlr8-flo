@@ -2616,3 +2616,55 @@ def test_vendor_changes_roundtrip_keeps_vendors_and_plants_the_pending_index(emp
         mig.upgrade(conn)
         with tenant_transaction(conn, Scope(tenant.org_id)):
             assert conn.execute("SELECT count(*) FROM vendor_change").fetchone() == (0,)
+
+
+def test_rfq_lifecycle_roundtrip_keeps_rfqs_and_versions_are_immutable(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.org.schemas import OrgUnitCreate
+    from flo.modules.org.service import OrgService
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261022_0068"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261022_0069")
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("rfq-lifecycle-migration"),
+    ):
+        tenant = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(tenant.org_id)
+        bu = OrgService(conn, scope, actor).create_unit(
+            OrgUnitCreate(code="BU", name="BU", kind="bu")
+        )
+        rfq = uuid4()
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO rfq(id,org_id,number,title,unit_id,currency,owner_id)"
+                " VALUES(%s,%s,'RFQ-00001','T',%s,'USD',%s)",
+                (rfq, tenant.org_id, bu.id, actor),
+            )
+        mig.upgrade(conn)
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO rfq_version(org_id,rfq_id,version,snapshot,diff,published_by)"
+                " VALUES(%s,%s,1,'{}','{}',%s)",
+                (tenant.org_id, rfq, actor),
+            )
+        for statement in ("UPDATE rfq_version SET reason='x'", "DELETE FROM rfq_version"):
+            with (
+                pytest.raises(psycopg.errors.ObjectNotInPrerequisiteState),
+                tenant_transaction(conn, scope),
+            ):
+                conn.execute(statement)
+        mig.downgrade(conn)
+        assert conn.execute("SELECT to_regclass('rfq_version')").fetchone() == (None,)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT count(*) FROM rfq").fetchone() == (1,)
+        mig.upgrade(conn)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT count(*) FROM rfq_version").fetchone() == (0,)

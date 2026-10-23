@@ -1563,3 +1563,111 @@ def test_commit_shape_gate_accepts_story_and_maintenance_commits_and_rejects_the
     assert _commit_shape_exit_code(accepted) == 0
     for rejected in ("update stuff", "feat(web): add a thing", "Fixed the bug", "wip"):
         assert _commit_shape_exit_code([*accepted, rejected]) == 1, rejected
+
+
+def _pw_failures(*bodies: str) -> str:
+    """Playwright list-reporter failure output: one numbered block per failed test."""
+    blocks = [
+        f"  {i}) [main] › tests/e2e/s{i}.spec.ts:12:5 › case {i} ──────\n\n    {body}\n"
+        for i, body in enumerate(bodies, 1)
+    ]
+    return "\n".join(blocks) + f"\n  {len(bodies)} failed\n"
+
+
+_TIMEOUT = "Test timeout of 60000ms exceeded."
+_ACTION = "TimeoutError: page.goto: Timeout 30000ms exceeded."
+_ASSERT = "Error: expect(locator).toHaveText(expected) failed\n    Timeout: 5000ms"
+
+
+def _light_e2e_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, outputs: list[tuple[int, str]]
+) -> tuple[ModuleType, bool, list[list[str]], str]:
+    """run_check light with only `story e2e`; each Playwright call returns the next output."""
+    flo = load_flo()
+    repo = story_repo(tmp_path, monkeypatch)
+    commit(repo, "apps/web/tests/e2e/story.spec.ts")
+    monkeypatch.setattr(flo, "CHECKS", [])
+    flo.LAST_STEPS.clear()
+    calls: list[list[str]] = []
+    real_run = subprocess.run
+
+    def fake(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        if cmd[0] == "git":
+            return real_run(cmd, **kwargs)
+        calls.append(cmd)
+        code, out = outputs[min(len(calls), len(outputs)) - 1]
+        return subprocess.CompletedProcess(cmd, code, out, "")
+
+    monkeypatch.setattr(flo.subprocess, "run", fake)
+    return flo, flo.run_check(repo, "light"), calls, ""
+
+
+def test_story_e2e_timeout_retries_failed_specs_once_and_records_the_flake(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    flo, ok, calls, _ = _light_e2e_run(
+        tmp_path, monkeypatch, [(1, _pw_failures(_TIMEOUT, _ACTION)), (0, "2 passed")]
+    )
+    assert ok is True
+    assert len(calls) == 2 and calls[1][-2:] == ["--last-failed", "--workers=1"]
+    assert calls[1][:-2] == calls[0]
+    assert "flaky under load: tests/e2e/s1.spec.ts tests/e2e/s2.spec.ts" in capsys.readouterr().out
+    assert flo.LAST_STEPS == [
+        {
+            "name": "story e2e",
+            "ok": True,
+            "flaky": True,
+            "specs": ["tests/e2e/s1.spec.ts", "tests/e2e/s2.spec.ts"],
+            "attempts": 2,
+        }
+    ]
+
+
+def test_story_e2e_second_timeout_stays_red_with_no_third_command(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _, ok, calls, _ = _light_e2e_run(
+        tmp_path, monkeypatch, [(1, _pw_failures(_TIMEOUT)), (1, _pw_failures(_TIMEOUT))]
+    )
+    assert ok is False
+    assert len(calls) == 2
+    out = capsys.readouterr().out
+    assert "first run:" in out and "retry (--last-failed --workers=1):" in out
+
+
+@pytest.mark.parametrize(
+    "output",
+    [
+        _pw_failures(_ASSERT),
+        _pw_failures("Error: " + _TIMEOUT + "\n      at story.spec.ts:9:11"),  # thrown by the test
+        _pw_failures("Error: page.goto: Timeout 30000ms exceeded."),  # not a TimeoutError
+        _pw_failures(_TIMEOUT, _ASSERT),
+        _pw_failures(_TIMEOUT + "\n    axe violations: 1"),
+        _pw_failures(_TIMEOUT) + "\n  expected no axe violations\n",
+        "Error: Cannot find module './x'\n",  # compile/setup error: nothing parseable
+        _pw_failures(_TIMEOUT).replace("1 failed", "2 failed"),  # a failure we could not parse
+    ],
+)
+def test_story_e2e_non_timeout_failure_never_retries(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, output: str
+) -> None:
+    _, ok, calls, _ = _light_e2e_run(tmp_path, monkeypatch, [(1, output), (0, "ok")])
+    assert ok is False
+    assert len(calls) == 1
+
+
+def test_full_profile_e2e_axe_is_single_attempt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    flo = load_flo()
+    repo = story_repo(tmp_path, monkeypatch)
+    monkeypatch.setattr(flo, "CHECKS", [("e2e+axe", ["e2e"])])
+    calls: list[list[str]] = []
+
+    def fake(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        calls.append(cmd)
+        return subprocess.CompletedProcess(cmd, 1, _pw_failures(_TIMEOUT), "")
+
+    monkeypatch.setattr(flo.subprocess, "run", fake)
+    assert flo.run_check(repo, "full") is False
+    assert calls == [["e2e"]]
