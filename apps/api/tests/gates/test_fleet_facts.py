@@ -30,7 +30,10 @@ spec.loader.exec_module(F)
         ("done\nexit 0\n", "ok"),
         ("boom\nexit 1\n", "failed"),
         ("You've hit your session limit · resets 7:30pm\nexit 1\n", "limit"),
-        ("getaddrinfo ENOTFOUND api.anthropic.com\nexit 1\n", "limit"),
+        ("getaddrinfo ENOTFOUND api.anthropic.com\nexit 1\n", "network"),
+        ("read ECONNRESET\nexit 1\n", "network"),
+        # a network error far up the log is history, like any other
+        ("ECONNRESET\n" + "x" * 700 + "\nexit 1\n", "failed"),
         # this product has rate-limiting stories: an author reporting on one is not limited
         ("Added the edge rate limit for login; usage limit docs updated.\nexit 0\n", "ok"),
         ("FAILED: the rate limit header is missing; usage limit not enforced\nexit 1\n", "failed"),

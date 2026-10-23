@@ -4775,6 +4775,58 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E23-S17",
+      "kind": "chore",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {},
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "codex",
+          "to": "opus",
+          "role": "reviewer",
+          "reason": "operator 23 Oct 2026: Codex 5-hour window exhausted; fresh Opus session reviews E23-S16/S17 instead"
+        }
+      ],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "54a6762d-98c7-480f-9801-204a05bf7b96",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E23-S17",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "2dcc39d7-6abb-4e28-8f4a-634af9e0d8cd",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "The supervisor now writes each run record atomically before launching, checks pid plus process start time for liveness, retries network failures at 1, 5 and 15 minutes then asks the operator, and runs `flo reconcile` on failed submit/finish records so an effect that already happened is recorded, not repeated.",
+      "title": "Recoverable execution records: write before launch, process identity, transient-error retries",
+      "durations": {
+        "wall_s": 23009,
+        "author_s": 22662,
+        "review_s": {
+          "opus": 105
+        },
+        "gate_s": 0
+      }
     }
   ]
 }

@@ -42,6 +42,7 @@ import tomllib
 
 HOME = Path.home()
 STATE = HOME / ".claude" / "fleet" / "state"
+BACKOFF = (60, 300, 900)                # seconds before network retry 1, 2, 3 (E23-S17)
 HEAVY = {"submit", "finish", "begin"}   # steps that run the light check or installs: bounded together
 
 
@@ -141,6 +142,15 @@ def decide(s: dict, ctx: dict) -> list[dict]:
     ar = s["author_result"]
     if ar in ("limit", "none"):     # stopped on a usage window, or never ran: resume when there is room
         return step("resume", account=s.get("account")) if author_can(s, cap) else []
+    if ar == "network":             # a lost connection, not a window: bounded backoff, then the operator
+        last = ctx["results"].get((sid, "resume", "")) or {}
+        tries = last.get("attempt", 0) if last.get("kind") == "network" and last.get("head") == s["head"] else 0
+        if tries >= len(BACKOFF):
+            return need(f"the network failed {tries} retries in a row: check the connection, then resume")
+        due = (s.get("author_ended") or 0) + BACKOFF[tries]
+        if ctx.get("now", time.time()) < due or not author_can(s, cap):
+            return []
+        return step("resume", account=s.get("account"), kind="network", attempt=tries + 1, retry_at=due)
     if ar == "failed":
         return need("the author's last run failed: read its log, then resume or reassign")
     # red on the submitted commit, and the author has not committed since: fix. Commits since
@@ -258,12 +268,33 @@ def fill(cmd: str, cfg: dict, **kw) -> str:
     return cmd.format(**{k: shlex.quote(str(v)) if k in kw else v for k, v in vals.items()})
 
 
-def alive(pid: int) -> bool:
-    try:
-        os.kill(pid, 0)
-        return True
-    except OSError:
-        return False
+def put(path: Path, doc: dict) -> None:
+    """Write JSON so a reader sees the old file or the new one, never half of one."""
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(doc))
+    os.replace(tmp, path)
+
+
+def lstart(pid: int) -> str | None:
+    """The process start time as `ps` prints it, whitespace-normalised; None when no such process."""
+    r = subprocess.run(["ps", "-o", "lstart=", "-p", str(pid)], capture_output=True, text=True, check=False)
+    return " ".join(r.stdout.split()) or None if r.returncode == 0 else None
+
+
+def alive(pid: int | None, start: str | None) -> bool:
+    """Live means this pid exists AND started when the record says: macOS reuses pids."""
+    return bool(pid and start) and lstart(pid) == start
+
+
+def find_running(ex: Path) -> tuple[int, str] | None:
+    """A run whose record never got its pid: find its shell by the exit file it will write."""
+    r = subprocess.run(["ps", "-axo", "pid=,lstart=,command="], capture_output=True, text=True, check=False)
+    tail = f"echo $? > {shlex.quote(str(ex))}"
+    for line in r.stdout.splitlines():
+        if line.rstrip().endswith(tail):
+            f = line.split()
+            return int(f[0]), " ".join(f[1:6])
+    return None
 
 
 def records(d: Path) -> tuple[dict, dict]:
@@ -276,17 +307,22 @@ def records(d: Path) -> tuple[dict, dict]:
         r.setdefault("reviewer", "")
         ex = f.with_suffix(".exit")
         r["exit"] = int(ex.read_text().strip() or -1) if ex.exists() else None
-        if r["exit"] is None and alive(r["pid"]):
+        if r["exit"] is None and not r.get("pid") and (found := find_running(ex)):
+            # launched, then the supervisor died before it wrote the pid: adopt the process
+            r.update(pid=found[0], start=found[1], state="running")
+            put(f, {k: v for k, v in r.items() if k != "exit"})
+        if r["exit"] is None and alive(r.get("pid"), r.get("start")):
             if not legacy:
                 busy.setdefault(r["story"], set()).add((r["step"], r["reviewer"]))
         elif r["exit"] is None:
-            r["exit"] = -1          # died without recording an exit: a crash or a reboot
+            r["exit"] = -1          # died without recording an exit: a crash, a reboot, a reused pid, no identity
         results[(r["story"], r["step"], r["reviewer"])] = r
     return busy, results
 
 
 def launch(cfg: dict, d: Path, act: dict, head: str | None) -> None:
-    """Start one step detached; its exit code lands beside its record."""
+    """Start one step detached; its exit code lands beside its record. The record is written first,
+    so no process exists that the next tick cannot see."""
     reviewer = (act.get("reviewer") or "") if act["step"] == "review" else ""
     name = f"{act['story']}.{act['step']}" + (f".{reviewer}" if reviewer else "")
     cmd = fill(cfg["steps"][act["step"]], cfg, story=act["story"], account=act.get("account") or "",
@@ -295,11 +331,17 @@ def launch(cfg: dict, d: Path, act: dict, head: str | None) -> None:
     ex.unlink(missing_ok=True)
     with open(out, "a") as fh:
         fh.write(f"\n=== {time.strftime('%Y-%m-%d %H:%M:%S')} {cmd}\n")
+    doc = {"story": act["story"], "step": act["step"], "reviewer": reviewer, "state": "launching",
+           "pid": None, "start": None, "started": time.time(), "head": head, "cmd": cmd,
+           "attempt": act.get("attempt", 1), "kind": act.get("kind"), "retry_at": act.get("retry_at")}
+    put(rec, doc)
     p = subprocess.Popen(["sh", "-c", f"{cmd} >> {shlex.quote(str(out))} 2>&1; echo $? > {shlex.quote(str(ex))}"],
                          cwd=cfg["project"]["runner"], start_new_session=True,
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    rec.write_text(json.dumps({"story": act["story"], "step": act["step"], "reviewer": reviewer,
-                               "pid": p.pid, "started": time.time(), "head": head, "cmd": cmd}))
+    try:
+        put(rec, {**doc, "state": "running", "pid": p.pid, "start": lstart(p.pid)})
+    except OSError:
+        pass                        # the launching record stands; the next tick adopts the process
 
 
 def notify(title: str, text: str) -> None:
@@ -345,6 +387,14 @@ def tick(cfg: dict, dry: bool = False) -> dict:
             return status
         if not dry and "ci_watch" in cfg["steps"]:
             sh(fill(cfg["steps"]["ci_watch"], cfg), runner, timeout=600)
+        busy, results = records(d)
+        for (sid, step, _), rr in results.items():
+            cmd = cfg.get("reconcile", {}).get(step)
+            if cmd and not dry and rr["exit"] not in (0, None) and sh(fill(cmd, cfg, story=sid), runner).returncode == 0:
+                # the effect already happened (a wrapper died before recording it): record the success
+                (d / "runs" / f"{sid}.{step}.exit").write_text("0\n")
+                rr["exit"] = 0
+                status["notes"].append(f"{sid}: {step} had already happened; not repeated")
         r = sh(fill(cfg["project"]["facts"], cfg), runner, timeout=600)
         if r.returncode:
             status["notes"].append(f"facts failed: {r.stderr.strip()[-400:]}")
@@ -361,10 +411,10 @@ def tick(cfg: dict, dry: bool = False) -> dict:
         cap = capacity(snap, lim)
         if not cap["known"]:
             status["notes"].append("limits unknown: work allowed, the agents' own limit errors still stop it")
-        busy, results = records(d)
-        ctx = {"cap": cap, "busy": busy, "results": results, "line_stopped": bool(facts.get("line_stopped")), "line_jobs": facts.get("line_stopped_jobs") or {},
+        ctx = {"cap": cap, "busy": busy, "results": results, "line_stopped": bool(facts.get("line_stopped")),
+               "line_jobs": facts.get("line_stopped_jobs") or {},
                "max_rounds": facts.get("max_rounds", 3), "accounts": cfg.get("vars", {}).get("accounts", ["A", "B"]),
-               "allow_start": lim.get("allow_start", True)}
+               "allow_start": lim.get("allow_start", True), "now": time.time()}
         acts = plan(facts, ctx)
         running_heavy = sum(1 for steps in busy.values() for s, _ in steps if s in HEAVY)
         acts = heavy_slots(acts, running_heavy, cfg["project"].get("max_parallel_checks", 2))

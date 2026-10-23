@@ -293,3 +293,27 @@ red, a red story that fails any of the same jobs gets no `fix`; the supervisor r
 `milestone red: fix it once on the milestone`, per milestone sha and job set, however many stories it hits.
 A story failing other jobs, or any story once the milestone is green, is fixed as before. Matching job
 names suppresses duplicate work; it never marks a story CI green.
+
+## Recoverable run records (E23-S17)
+
+- **Write first.** `launch()` writes `runs/<name>.json` (temp file, then `os.replace`) *before* it starts
+  the process; readers never see partial JSON. States: `launching` (story, step, reviewer, cmd, head,
+  attempt, started; pid and start null) then `running` (pid and `start`, the `ps -o lstart=` time with
+  whitespace normalised). If the second write fails the `launching` record stands.
+- **A `launching` record with no exit.** The next tick looks for a live shell by the `echo $? > <exit file>`
+  it was started with and adopts it (pid and start are written then); with none it is a dead attempt
+  (`exit -1`), never a silent relaunch.
+- **Identity, not pid.** A run is busy only when its pid exists **and** its `lstart` equals the record's.
+  A reused pid, a failed `ps`, or an old record with no `start` is dead; nothing is signalled or waited on.
+- **Network is not a limit.** `flo_facts.author_result` returns `network` for `ENOTFOUND`/`ECONNRESET` in the
+  log's last 600 characters; `limit` stays for session/usage windows and keeps waiting for capacity.
+  A `network` author is resumed after 1, 5, then 15 minutes counted from the log's last write
+  (`author_ended` in `flo facts`); after three retries on the same head the operator is asked. The resume
+  record holds `kind`, `attempt` and `retry_at`, so the schedule survives restarts. A new head restarts it.
+- **Reconcile before repeating.** `[reconcile]` in `fleet.toml` names a command per step. A tick runs it for
+  every failed or dead `submit`/`finish` record before deciding; exit 0 records success (`.exit` = 0) and
+  nothing is repeated. `flo reconcile submit <S>`: `git ls-remote origin` equals the worktree HEAD (it
+  then sets `submitted_sha`). `flo reconcile finish <S>`: the runner checkout (the milestone) already holds
+  the story's squash commit (`merged_in`). Anything unproven exits 1 and stays a failure for the operator.
+- **Resume** never launches while the author is live (`running: ["author"]`, the E23-S15 pid guard).
+- Copy `agents/fleet/fleet.py` to `~/.claude/fleet/fleet.py` after the merge, as for every supervisor change.
