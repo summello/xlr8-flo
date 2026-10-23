@@ -219,7 +219,10 @@ def test_simultaneous_launches_start_one_author(root, tmp_path):
     (bin_ / "codex").write_text("#!/bin/sh\necho x >> '%s'\nsleep 5\n" % (tmp_path / "launches"))
     (bin_ / "codex").chmod(0o755)
     env = {"PATH": f"{bin_}:{os.environ['PATH']}"}
+    gate = hold(root, "launch.E00-S01")  # both launchers queue behind it, past any unlocked check
     ps = [sh(root, "author.sh", "E00-S01", env=env) for _ in range(2)]
+    time.sleep(1.5)
+    gate.kill()
     codes = sorted(p.wait(timeout=60) for p in ps)
     time.sleep(1)
     try:
