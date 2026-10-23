@@ -111,12 +111,34 @@ On success `task.json` gets the new `author`, `reviewers` and `opus_final` (alwa
 the story's tags, never from the author), and a `substitutions` entry. The old author's session
 record stays. A gated story keeps its fresh Opus review whoever authors it.
 
-The lock is `.scratch/<STORY>.lock`, an atomic `mkdir` as in `finish.sh`. `author.sh` takes the
-same lock around reading the author and writing the pid file (30 s, then it gives up), so a launch
-and a reassign cannot interleave. A crash leaves the directory behind; remove it by hand.
+The lock is `.scratch/launch.<STORY>.lock`, a kernel `flock` (see Locks below). `author.sh` holds it
+around reading the author and writing the pid file (30 s, then exit 75), so a launch and a reassign
+cannot interleave; `flo reassign` does not wait and exits 75 while a launch holds it.
 
 Not done here: the supervisor does not call `flo reassign` yet. Its source is not in this
 repository, so wiring it in is a separate decision (E23-S07).
+
+## Locks: `flo with-lock`
+
+`flo with-lock <name> [--wait SECONDS] -- <command...>` runs a command holding `flock` on
+`.scratch/<name>.lock` (stdlib `fcntl`, no `flock(1)`, which macOS lacks). The kernel releases the lock
+when the holder exits or is SIGKILLed, so a crash strands nothing. The file holds the holder's pid as
+a diagnostic only; nobody unlocks on its text or age, and **lock files are never deleted** (deleting
+one lets two processes lock different files of the same name).
+
+| Lock | Taken by | Wait |
+|---|---|---|
+| `finish` | `finish.sh` (whole body); the final `flo submit` phase of `submit.sh` (both write the parent roadmap) | 1800 s |
+| `submit.<STORY>` | `submit.sh` (merge, light check, submit) | 0: a second submit of the story exits 75 untouched |
+| `launch.<STORY>` | `author.sh`, `flo reassign` | 30 s / 0 |
+
+`--wait` is bounded; **exit 75** means the lock was not acquired in time (the message names the lock
+and the recorded holder pid) and is safe to retry. Any other status is the command's own, and a
+signal death is repeated by the wrapper. The child does not inherit the lock, so a SIGKILLed wrapper
+frees it while its child runs on.
+
+`author.sh` also refuses (exit 75, `author of <STORY> already running (pid N)`) when
+`.scratch/<STORY>.author.pid` names a live process. A missing, malformed or dead pid does not block.
 
 ## Test evidence: what `ran_tests` now means
 

@@ -4661,6 +4661,63 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E23-S15",
+      "kind": "chore",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 1,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "5dddf42f-71c1-4798-b1aa-3766c8208d58",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E23-S15",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a16695-cfb3-7d31-a466-c43fe11c8312",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Added flock-based `flo with-lock` (exit 75 on timeout, freed on SIGKILL); finish.sh, submit.sh (per-story lock plus shared finish lock) and author.sh (launch lock plus live-pid refusal) use it, and flo reassign shares the launch lock. Executable tests replace the text-only author.sh guard.",
+      "title": "Process-owned locks for finish, submit and launch; one live author and one submit per story",
+      "durations": {
+        "wall_s": 3874,
+        "author_s": 3187,
+        "review_s": {
+          "codex": 88
+        },
+        "gate_s": 0
+      }
     }
   ]
 }
