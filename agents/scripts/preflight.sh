@@ -42,7 +42,7 @@ cd "$W"
 if [ "$A" = codex ]; then
   # effort pinned on the command line, as in review.sh: an inherited config.toml once ran `low`
   codex exec -m "$M" -c model_reasoning_effort=medium -c project_doc_max_bytes=0 -s read-only \
-    --skip-git-repo-check "$(cat "$P")" > "$L" 2>&1 || true
+    --skip-git-repo-check "$(cat "$P")" < /dev/null > "$L" 2>&1 || true
 else
   XDG_DATA_HOME="$D/xdg-preflight" OPENROUTER_API_KEY="$(security find-generic-password -a "$USER" -s OPENROUTER_API_KEY -w)" \
     opencode run --auto -m "openrouter/$M" "$(cat "$P")" > "$L" 2>&1 & OP=$!
