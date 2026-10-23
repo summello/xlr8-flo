@@ -3357,7 +3357,7 @@ epics:
         dep:
           - E23-S14
           - E23-S15
-        st: todo
+        st: in_progress
       - id: E23-S18
         t: Light-check e2e retries failed specs once and reports load flakes apart from failures
         k: chore
@@ -3366,7 +3366,7 @@ epics:
         reqs:
           - SUP-005
         dep: []
-        st: review
+        st: done
   - id: E30
     name: Future roadmap
     milestone: M7
