@@ -2,8 +2,8 @@
 
 from typing import Protocol
 
-revision = "20261022_0069"
-down_revision = "20261022_0068"
+revision = "20261022_0070"
+down_revision = "20261022_0069"
 
 
 class MigrationConnection(Protocol):
