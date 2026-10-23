@@ -12,6 +12,7 @@ case "$A" in
   qwen|kimi|deepseek) ;;   # their models come from agents.yaml via flo launch-model, below
   *) echo "review.sh: unknown reviewer $A" >&2; exit 1 ;;
 esac
+AS="$D/$S.aside.$A"   # per run: two reviewers never share one aside directory (E23-S14)
 P="$D/$S.$A.review.prompt"; X="$D/xdg-$A"; mkdir -p "$X"
 RELEASE=""
 case "$S" in M[0-9]*)
@@ -22,6 +23,30 @@ case "$S" in M[0-9]*)
   if [ -d "$W" ]; then git -C "$W" checkout -q --detach "origin/$BR"; else git -C "$R" worktree add -q --detach "$W" "origin/$BR"; fi
   mkdir -p "$W/reviews" ;;
 esac
+# One review of a story at a time (E23-S14): reviewers plant and revert violations in the one
+# worktree, and a second would move the first's verdicts aside. The lock's pid is the background
+# job started below; a dead holder is reclaimed, a live one is never (exit 75).
+# ponytail: no pid file means the launcher is mid-start and counts as held; a crash in that
+# window needs `rm -rf .scratch/<S>.review.lock` by hand (macOS has no flock(1)).
+mkdir -p "$D"
+LOCK="$D/$S.review.lock"; LAUNCHED=""
+if [ -z "$RELEASE" ]; then
+  if ! mkdir "$LOCK" 2>/dev/null; then
+    HP="$(cat "$LOCK/pid" 2>/dev/null || true)"
+    if [ -z "$HP" ] || kill -0 "$HP" 2>/dev/null; then
+      echo "review of $S already running (pid ${HP:-starting})" >&2; exit 75
+    fi
+    rm -rf "$LOCK"; mkdir "$LOCK"
+  fi
+  echo $$ > "$LOCK/pid"
+  trap '[ -n "$LAUNCHED" ] || rm -rf "$LOCK"' EXIT
+  # the holder is gone, so any aside directory is a killed run's: put its verdicts back
+  for AD in "$D/$S.aside" "$D/$S.aside".*; do
+    [ -d "$AD" ] || continue
+    mv -n "$AD"/*.json "$W/reviews/" 2>/dev/null || true; rm -rf "$AD"
+  done
+fi
+held() { echo $! > "$D/$S.$A.pid"; [ -z "$RELEASE" ] && echo $! > "$LOCK/pid"; LAUNCHED=1; }
 # A second review by the same reviewer gets its own previous findings and the changes since the
 # commit it reviewed, not the whole story again (13 Oct: a full re-review re-planted everything).
 SHA="$D/$S.$A.sha"; PRIOR="$D/$S.$A.prior.json"; ARGS=""
@@ -53,10 +78,10 @@ if [ "$A" = opus ]; then
   # A fresh session on the given account (never the planner's), with the reviewer skill.
   if [ "${3:-B}" = A ]; then ENV="env -u CLAUDE_CONFIG_DIR"; else ENV="env CLAUDE_CONFIG_DIR=$HOME/.claude-summello"; fi
   printf 'ROLE xlr8flo-reviewer %s account %s. Use the xlr8flo-reviewer skill.\n\n' "$S" "${3:-B}" | cat - "$P" > "$P.role"
-  nohup sh -c "mkdir -p '$D/$S.aside' && mv reviews/*.json '$D/$S.aside/' 2>/dev/null; \
+  nohup sh -c "mkdir -p '$AS' && mv reviews/*.json '$AS/' 2>/dev/null; \
     $ENV claude -p --model opus -n 'xlr8flo-reviewer $S' --permission-mode auto \"\$(cat '$P.role')\" > '$D/$S.$A.log' 2>&1; echo \"exit \$?\" >> '$D/$S.$A.log'; \
-    mv -n '$D/$S.aside/'*.json reviews/ 2>/dev/null; rmdir '$D/$S.aside'" > /dev/null 2>&1 &
-  echo $! > "$D/$S.$A.pid"
+    mv -n '$AS/'*.json reviews/ 2>/dev/null; rmdir '$AS'; rm -rf '$LOCK'" > /dev/null 2>&1 &
+  held
   echo "review launched: $S by opus (account ${3:-B})"
   exit 0
 fi
@@ -77,14 +102,14 @@ if [ "$A" = codex ]; then
   # independent stories — the planner's call. Unbounded parallel shared the five-hour window and
   # both died at the cap on 13 Oct.
   nohup sh -c "while [ \$(pgrep -f '^codex exec' | wc -l) -ge ${FLO_CODEX_PARALLEL:-2} ]; do sleep 30; done; \
-    mkdir -p '$D/$S.aside' && mv reviews/*.json '$D/$S.aside/' 2>/dev/null; \
+    mkdir -p '$AS' && mv reviews/*.json '$AS/' 2>/dev/null; \
     codex exec -m $1 -c model_reasoning_effort=$2 -c project_doc_max_bytes=0 -s workspace-write --skip-git-repo-check \"\$(cat '$P')\" > '$D/$S.$A.log' 2>&1 & CP=\$!; \
     ( sleep $CAP; kill \$CP 2>/dev/null && echo 'stopped at the time cap' >> '$D/$S.$A.log' ) & KP=\$!; \
     '$W/apps/api/.venv/bin/python' '$R/agents/scripts/flo' codex-guard '$W' $CALLS \$CP $CAP >> '$D/$S.$A.log' 2>&1 & \
     wait \$CP; RC=\$?; echo \"exit \$RC\" >> '$D/$S.$A.log'; kill \$KP 2>/dev/null; { [ \$RC = 0 ] || grep -q '\"ran_tests\": *true' 'reviews/$S.$A.json' 2>/dev/null; } && mv '$SHA.new' '$SHA'; \
-    mv -n '$D/$S.aside/'*.json reviews/ 2>/dev/null; rmdir '$D/$S.aside'; \
+    mv -n '$AS/'*.json reviews/ 2>/dev/null; rmdir '$AS'; rm -rf '$LOCK'; \
     '$W/apps/api/.venv/bin/python' '$R/agents/scripts/flo' codex-usage '$S' '$T0' > /dev/null" > /dev/null 2>&1 &
-  echo $! > "$D/$S.$A.pid"
+  held
   echo "review launched: $S by codex ($1, $2)${ARGS:+, re-review}"
   exit 0
 fi
@@ -100,12 +125,12 @@ python3 -c 'import sys; sys.exit(0 if float(sys.argv[1]) >= 3 else 1)' "${LEFT:-
 # Caps: release 50 calls / 25 min; release area pass 60 / 20 min; story 35 / 10 min; re-review 30 / 8 min.
 if [ -n "$RELEASE" ] && [ "$S" != "$MS" ]; then CALLS=60; CAP=1200; elif [ -n "$RELEASE" ]; then CALLS=50; CAP=1500; elif [ -n "$ARGS" ]; then CALLS=30; CAP=480; else CALLS=35; CAP=600; fi
 # another reviewer's verdict is not evidence: move existing verdicts out of reach for the run
-nohup sh -c "mkdir -p '$D/$S.aside' && mv reviews/*.json '$D/$S.aside/' 2>/dev/null; \
+nohup sh -c "mkdir -p '$AS' && mv reviews/*.json '$AS/' 2>/dev/null; \
   XDG_DATA_HOME='$X' OPENROUTER_API_KEY=\"\$(security find-generic-password -a \"\$USER\" -s OPENROUTER_API_KEY -w)\" \
   opencode run --auto -m $M \"\$(cat '$P')\" > '$D/$S.$A.log' 2>&1 & OP=\$!; \
   '$R/apps/api/.venv/bin/python' '$R/agents/scripts/flo' log-guard '$D/$S.$A.log' $CALLS \$OP $CAP & \
   wait \$OP; echo \"exit \$?\" >> '$D/$S.$A.log'; \
-  mv -n '$D/$S.aside/'*.json reviews/ 2>/dev/null; rmdir '$D/$S.aside'" > /dev/null 2>&1 &
-echo $! > "$D/$S.$A.pid"
+  mv -n '$AS/'*.json reviews/ 2>/dev/null; rmdir '$AS'; rm -rf '$LOCK'" > /dev/null 2>&1 &
+held
 echo "OpenRouter balance \$$LEFT; caps $CALLS calls, $CAP s"
 echo "review launched: $S by $A"
