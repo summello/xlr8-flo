@@ -20,8 +20,8 @@ max_parallel_checks = 2                      # submits, finishes and starts runn
 
 [vars]
 flo = "env XDG_CACHE_HOME=$HOME/.cache UV_CACHE_DIR=$HOME/.cache/uv uv run -q --no-project --with pyyaml python agents/scripts/flo"
-accounts = []                                # Claude accounts an Opus reviewer may run on. [] = Opus asleep (operator, 23 Oct 2026,
-                                             # until the E23-S14..S18 flo fixes are on the milestone PR with green CI); restore ["A", "B"]
+accounts = ["A", "B"]                         # Claude accounts an Opus reviewer may run on. [] = Opus asleep (restored 23 Oct 2026:
+                                             # E23-S14..S18 merged, milestone CI green at 3aedc6f)
 
 [steps]
 ci_watch = "{flo} ci-watch"
