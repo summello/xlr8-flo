@@ -2685,7 +2685,7 @@ def cmd_facts(argv):
                 review = {"verdict": "malformed"}
             # .launched is written at each launch; older runs left .sha (codex) or .sha.new (opus)
             seen = next((t.strip() for t in (_read(sc / f"{sid}.{r}.{x}") for x in ("launched", "sha", "sha.new")) if t), None)
-            if review and seen and sub and seen != sub and F.verdict_state(review, seen, seen) in ("approve", "changes"):
+            if review and seen and sub and seen != sub and F.carries(review, seen):
                 seen = _carry(sc, wt, pkt, sid, r, seen, sub) or seen
             verdicts[r] = _verdict(sc, sid, r, review, seen, sub)
         approved = bool(verdicts) and all(v == "approve" for v in verdicts.values())

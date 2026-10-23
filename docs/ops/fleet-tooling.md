@@ -271,8 +271,10 @@ Under host load those specs time out without any defect, so the step retries **o
 Three rules keep a milestone repair from restarting every review.
 
 **Carry-forward.** When a reviewer's verdict is stale, `flo facts` lists the story's own commits since
-the reviewed sha (`git log --no-merges <reviewed>..<submitted> --not origin/<milestone>`). A milestone
-merge adds none. If that delta is empty, or every path is under `apps/web/src/api/generated/`, the verdict
+the reviewed sha (`git log --cc --name-only <reviewed>..<submitted> --not origin/<milestone>`). A clean milestone
+merge adds none; a merge commit that was edited while resolving a conflict lists what it changed. Only an
+`approve` verdict is carried; a `changes_requested` one goes stale as before, so a round that only
+regenerates the client is re-reviewed, not repeated. If that delta is empty, or every path is under `apps/web/src/api/generated/`, the verdict
 counts as fresh. Evidence: `.scratch/<S>.<reviewer>.carried.json` (`carried_from`, `carried_to`, `paths`,
 `at`) and a `carried_reviews` entry in `task.json`. The verdict file, its run record, `review_runs` and its
 duration are untouched; a carry is not a review, and `.scratch/<S>.<reviewer>.sha` still names the last sha

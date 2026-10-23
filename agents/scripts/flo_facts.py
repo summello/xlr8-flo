@@ -72,6 +72,12 @@ def carryable(paths: list[str]) -> bool:
     return all(p.startswith(GENERATED) for p in paths)
 
 
+def carries(review: dict, reviewed_sha: str) -> bool:
+    """Only an approval is carried over a non-story delta. A carried `changes` verdict would read as
+    fresh and start another round for findings the author just fixed (a regenerated client loop)."""
+    return verdict_state(review, reviewed_sha, reviewed_sha) == "approve"
+
+
 def red_jobs(marker: str | None) -> list[str]:
     """Failing job names in a .ci-red marker: the tab-separated prefix `gh run view --log-failed`
     puts on each line (job, step, text). The first line is the header, and step text is ignored."""

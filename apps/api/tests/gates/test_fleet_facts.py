@@ -178,3 +178,11 @@ def test_red_jobs_read_the_job_prefix_not_the_step_text() -> None:
     )
     assert F.red_jobs(marker) == ["backend", "frontend-static"]
     assert F.red_jobs(None) == [] and F.red_jobs("header only") == []
+
+
+def test_only_an_approval_is_carried_over_a_non_story_delta() -> None:
+    assert F.carries({"verdict": "approve"}, "s1")
+    # carried as fresh, a changes verdict would start a round for findings already fixed
+    assert not F.carries({"verdict": "changes_requested", "findings": [{"severity": "major"}]}, "s1")
+    assert not F.carries({"verdict": "changes_requested", "findings": []}, "s1")
+    assert not F.carries({"verdict": "lgtm!"}, "s1")
