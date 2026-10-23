@@ -132,7 +132,7 @@ def test_the_committed_config_has_the_reordered_priority():
     match = re.search(r"^  author_priority: \[(.*)\]", text, re.M)
     assert match, "author_priority line not found"
     assert [n.strip() for n in match.group(1).split(",")] == [
-        "opencode-nemotron",
         "sonnet",
         "codex",
+        "opencode-nemotron",
     ]
