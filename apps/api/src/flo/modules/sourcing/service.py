@@ -1099,8 +1099,37 @@ def rfq_attachments_open(connection: Conn, scope: Scope, id: UUID) -> None:
         raise conflict("not_draft", "Only a draft RFQ can change. Reload it and retry.")
 
 
+def bid_access(connection: Conn, scope: Scope, id: UUID) -> TargetProtocol:
+    """A bid is scoped to its RFQ's unit; a foreign or unknown id is a 404."""
+    row = connection.execute(
+        "SELECT r.id, r.unit_id FROM bid b JOIN rfq r ON r.org_id = b.org_id AND r.id = b.rfq_id "
+        "WHERE b.org_id = %(org_id)s AND b.id = %(id)s",
+        {"org_id": scope.org_id, "id": id},
+    ).fetchone()
+    if row is None:
+        raise ProblemError(ErrorCode.NOT_FOUND)
+    return cast(
+        TargetProtocol,
+        AuthorizationTarget(ScopeType.BU, cast(UUID, row[1]), "rfq", cast(UUID, row[0])),
+    )
+
+
+def bid_attachments_open(connection: Conn, scope: Scope, id: UUID) -> None:
+    """Evidence changes only while the bid is a draft; reading stays open."""
+    row = connection.execute(
+        "SELECT status FROM bid WHERE org_id = %(org_id)s AND id = %(id)s",
+        {"org_id": scope.org_id, "id": id},
+    ).fetchone()
+    if row is not None and row[0] != "draft":
+        raise conflict("not_draft", "A submitted bid cannot change. Key a replacement.")
+
+
 def register_access() -> None:
     """Attachments on an RFQ use the collaboration routes: read rfq.view, write rfq.edit."""
     register_document_access(
         DocumentAccess("rfq", "rfq.view", "rfq.edit", rfq_access, rfq_attachments_open)
+    )
+    # Evidence content holds the vendor's figures, so reading it needs rfq.approve (narrower).
+    register_document_access(
+        DocumentAccess("bid", "rfq.approve", "rfq.edit", bid_access, bid_attachments_open)
     )

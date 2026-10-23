@@ -1697,7 +1697,7 @@ epics:
           - SRC-006
         dep:
           - E12-S03
-        st: review
+        st: done
       - id: E12-S05
         t: Bid confidentiality and late-bid block with audited override
         k: security

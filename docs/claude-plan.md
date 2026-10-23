@@ -561,7 +561,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E10-S12** Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11) | E10 | ui | L | APR-011, APR-021, ACC-007 | ~~E10-S11~~, ~~E10-S05~~ |
 | ✅ | **E10-S13** Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes | E10 | engine | M | APR-003, PROJ-002, VEN-005, BUD-007 | ~~E10-S07~~ |
 
-#### M3 — First sellable release · 33/71 done
+#### M3 — First sellable release · 34/71 done
 
 > Vendors, RFQs, awards and purchase orders by email. Closes the money loop end to end.
 
@@ -588,9 +588,9 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E12-S01** RFQ from approved requisition lines, open-quantity guard | E12 | engine | L | SRC-001, SRC-003, SRC-018 | ~~E09-S06~~, ~~E11-S01~~ |
 | ✅ | **E12-S02** RFQ content, invitations, deadline, terms, attachments, vendor eligibility check | E12 | crud | M | SRC-002, VEN-012 | ~~E12-S01~~, ~~E11-S02~~, ~~E11-S11~~ |
 | ✅ | **E12-S03** RFQ lifecycle and post-publication versioning communicated to invitees | E12 | engine | M | SRC-004, SRC-005 | ~~E12-S02~~ |
-| 👀 | **E12-S04** Bid capture: line prices, currency, tax, freight, lead time, validity, exceptions | E12 | crud | M | SRC-006 | ~~E12-S03~~ |
-| ⬜ | **E12-S05** Bid confidentiality and late-bid block with audited override | E12 | security | M | SRC-007, SRC-008 | E12-S04 |
-| ⬜ | **E12-S06** Comparison engine: normalized total and unit cost, tax, freight, lead time, vendor score | E12 | engine | L | SRC-009, SRC-010 | E12-S04, ~~E05-S05~~, E12-S05 |
+| ✅ | **E12-S04** Bid capture: line prices, currency, tax, freight, lead time, validity, exceptions | E12 | crud | M | SRC-006 | ~~E12-S03~~ |
+| ⬜ | **E12-S05** Bid confidentiality and late-bid block with audited override | E12 | security | M | SRC-007, SRC-008 | ~~E12-S04~~ |
+| ⬜ | **E12-S06** Comparison engine: normalized total and unit cost, tax, freight, lead time, vendor score | E12 | engine | L | SRC-009, SRC-010 | ~~E12-S04~~, ~~E05-S05~~, E12-S05 |
 | ⬜ | **E12-S07** Evaluation scoring with comments and conflict-of-interest declarations | E12 | crud | M | SRC-011 | E12-S06 |
 | ⬜ | **E12-S08** Award: split by line/quantity, scope and reserved-funds guard, non-lowest justification | E12 | ledger | L | SRC-012, SRC-013, SRC-014, SRC-016, REQ-014 | E12-S07, ~~E07-S04~~ |
 | ⬜ | **E12-S09** Cancel or supersede RFQ/award, preserve history, reconcile budget effect | E12 | ledger | M | SRC-017, SRC-015, WF-005 | E12-S08 |
@@ -598,7 +598,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E12-S11** RFQ list and RFQ detail screens | E12 | ui | L | SRC-004, SRC-015, SRC-007 | ~~E12-S03~~, ~~E11-S09~~ |
 | ⬜ | **E12-S12** New RFQ from approved lines: line picker with the open-quantity guard | E12 | ui | M | SRC-001, SRC-003, REQ-014, REQ-015 | ~~E12-S01~~, ~~E12-S11~~ |
 | ⬜ | **E12-S13** RFQ editor, invitations with the eligibility picker, publish and amend | E12 | ui | L | SRC-002, SRC-004, SRC-005, VEN-012 | ~~E12-S02~~, ~~E12-S03~~, E12-S07, ~~E12-S11~~, ~~E11-S11~~ |
-| ⬜ | **E12-S14** Record a bid: bid sheet, two times, vendor currency, late-bid override | E12 | ui | M | SRC-006, SRC-008, SRC-010 | E12-S04, E12-S05, ~~E12-S11~~ |
+| ⬜ | **E12-S14** Record a bid: bid sheet, two times, vendor currency, late-bid override | E12 | ui | M | SRC-006, SRC-008, SRC-010 | ~~E12-S04~~, E12-S05, ~~E12-S11~~ |
 | ⬜ | **E12-S15** Evaluation screen: declare first, then score | E12 | ui | M | SRC-011 | E12-S07, ~~E12-S11~~ |
 | ⬜ | **E12-S16** Award draft screen: lines, justification, scope and funds check | E12 | ui | L | SRC-012, SRC-013, SRC-014, SRC-016 | E12-S08, E12-S10 |
 | ⬜ | **E12-S17** Award decision panel: Award Evidence block | E12 | ui | M | SRC-013, APR-003, APR-020 | E12-S08, ~~E11-S10~~ |

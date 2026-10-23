@@ -170,6 +170,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261022_0068",
         "20261022_0069",
         "20261022_0070",
+        "20261022_0071",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -2669,6 +2670,48 @@ def test_rfq_lifecycle_roundtrip_keeps_rfqs_and_versions_are_immutable(empty_dat
         mig.upgrade(conn)
         with tenant_transaction(conn, scope):
             assert conn.execute("SELECT count(*) FROM rfq_version").fetchone() == (0,)
+
+
+def test_bids_roundtrip_drops_bids_and_guards_submitted_ones(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.org.schemas import OrgUnitCreate
+    from flo.modules.org.service import OrgService
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261022_0070"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261022_0071")
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("bids-migration"),
+    ):
+        tenant = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(tenant.org_id)
+        bu = OrgService(conn, scope, actor).create_unit(
+            OrgUnitCreate(code="BU", name="BU", kind="bu")
+        )
+        rfq = uuid4()
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO rfq(id,org_id,number,title,unit_id,currency,owner_id)"
+                " VALUES(%s,%s,'RFQ-00001','T',%s,'USD',%s)",
+                (rfq, tenant.org_id, bu.id, actor),
+            )
+        mig.upgrade(conn)
+        assert conn.execute("SELECT to_regclass('bid_line')").fetchone() != (None,)
+        mig.downgrade(conn)
+        for name in ("bid", "bid_line", "bid_requirement"):
+            assert conn.execute("SELECT to_regclass(%s)", (name,)).fetchone() == (None,)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT count(*) FROM rfq").fetchone() == (1,)
+        mig.upgrade(
+            conn
+        )  # reversible; the guards themselves are planted in tests/sourcing/test_bids
 
 
 def test_finance_vendor_view_grant_roundtrip_leaves_other_grants_alone(empty_database):
