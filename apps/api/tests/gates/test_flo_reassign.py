@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.gates.flo_loader import SCRIPTS, load_flo
+from tests.gates.flo_loader import load_flo
 from tests.gates.test_flo_assign import fleet
 
 F = load_flo()
@@ -176,18 +176,16 @@ def test_a_reassign_that_waited_for_the_lock_refuses_to_move_it_again(world, cap
 
 def test_a_held_lock_refuses_and_the_lock_is_released_afterwards(world):
     root, wt = world()
-    lock = root / ".scratch" / f"{SID}.lock"
-    lock.mkdir()
-    with pytest.raises(SystemExit):
-        F.cmd_reassign([SID])
-    assert lock.exists()  # someone else's lock is left alone
-    lock.rmdir()
+    with F.file_lock(f"launch.{SID}"):  # what author.sh holds while it launches
+        with pytest.raises(SystemExit) as held:
+            F.cmd_reassign([SID])
+        assert held.value.code == 75
     F.cmd_reassign([SID])
-    assert not lock.exists()
     (root / ".scratch" / f"{SID}.author.pid").write_text(f"{os.getpid()}\n")
     with pytest.raises(SystemExit):
         F.cmd_reassign([SID])  # fails inside the lock
-    assert not lock.exists()
+    with F.file_lock(f"launch.{SID}"):  # and it was released
+        pass
 
 
 DRIVER = """
@@ -236,14 +234,3 @@ def test_two_simultaneous_reassigns_exactly_one_succeeds(tmp_path):
     pkt = packet(wt)
     assert pkt["author"] == "sonnet"
     assert len(pkt["substitutions"]) == 1  # moved once, not twice
-    assert not (root / ".scratch" / f"{SID}.lock").exists()
-
-
-def test_author_launcher_takes_the_same_lock_with_a_bounded_wait():
-    text = (SCRIPTS / "author.sh").read_text()
-    assert 'LOCK="$D/$S.lock"' in text
-    assert 'until mkdir "$LOCK"' in text
-    assert '[ "$N" -gt 30 ]' in text  # a stuck lock cannot hang a launch
-    assert text.index('until mkdir "$LOCK"') < text.index(
-        'A="$(python3'
-    )  # before task.json is read
