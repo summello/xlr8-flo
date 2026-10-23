@@ -448,6 +448,12 @@ COVERED = {
         "/api/v1/auth/me",
     ): "projects/test_list_ui.py::test_auth_me_unauthenticated_and_session_identity_isolation",
     (
+        "PATCH",
+        "/api/v1/auth/me",
+    ): (
+        "identity/test_display_name.py::test_patch_me_for_another_org_member_only_touches_own_identity"
+    ),
+    (
         "GET",
         "/api/v1/projects/{id}/risks",
     ): "projects/test_risks.py::test_risk_foreign_tenant_routes",

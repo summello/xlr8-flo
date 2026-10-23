@@ -53,13 +53,13 @@ def register_document_access(access: DocumentAccess) -> None:
 
 
 NOTE_FIELDS = tuple(NoteRead.model_fields)
-NOTE_SQL = """SELECT n.id,n.author_id,i.email,n.body,n.visibility,n.locked,n.created_at,
- n.edited_at,n.version FROM note n JOIN identity i ON i.id=n.author_id"""
+NOTE_SQL = """SELECT n.id,n.author_id,i.email,i.display_name,n.body,n.visibility,n.locked,
+ n.created_at,n.edited_at,n.version FROM note n JOIN identity i ON i.id=n.author_id"""
 ATT_FIELDS = tuple(AttachmentRead.model_fields)
 ATT_SQL = """SELECT a.id,a.document_type,a.document_id,v.version,
  (SELECT count(*) FROM attachment_version c WHERE c.org_id=a.org_id AND c.attachment_id=a.id),
  v.original_filename,v.display_name,v.media_type,v.size_bytes,v.sha256,v.scan_status,
- v.uploaded_by,i.email,v.uploaded_at,a.deleted_at FROM attachment a
+ v.uploaded_by,i.email,i.display_name,v.uploaded_at,a.deleted_at FROM attachment a
  JOIN attachment_version v ON v.org_id=a.org_id AND v.attachment_id=a.id
  JOIN identity i ON i.id=v.uploaded_by"""
 

@@ -365,18 +365,25 @@ class ProjectService:
         return rows
 
     def lookup_people(self, q: str, limit: int) -> list[ProjectLookupOption]:
-        """Active members of the organization, matched by email, for naming sponsors."""
+        """Active members of the organization, matched by email or name, for naming sponsors."""
         if not 1 <= limit <= 50:
             raise invalid("limit", "Choose a limit from 1 to 50.")
         escaped = q.strip().casefold().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             found = self.repo.execute(
-                "SELECT i.id,i.email FROM identity i WHERE i.status='active' AND EXISTS ("
+                "SELECT i.id,i.email,i.display_name FROM identity i "
+                "WHERE i.status='active' AND EXISTS ("
                 "SELECT 1 FROM user_role r WHERE r.org_id=%(org_id)s AND r.user_id=i.id) "
-                "AND lower(i.email) LIKE %(like)s ORDER BY lower(i.email) LIMIT %(limit)s",
+                "AND (lower(i.email) LIKE %(like)s OR lower(i.display_name) LIKE %(like)s) "
+                "ORDER BY lower(i.email) LIMIT %(limit)s",
                 {"like": "%" + escaped + "%", "limit": limit},
             ).fetchall()
-        return [ProjectLookupOption(value=str(r[0]), label=str(r[1])) for r in found]
+        return [
+            ProjectLookupOption(
+                value=str(r[0]), label=str(r[2] or r[1]), note=str(r[1]) if r[2] else None
+            )
+            for r in found
+        ]
 
     def check_main_funds(self, parent_id: UUID, amount: Decimal) -> None:
         """Advisory, unlocked: refuse a child whose main project cannot cover it now.

@@ -170,3 +170,16 @@ def test_lookups_never_return_another_tenants_rows(lines_db):
         r.value for r in own.options("project", "", None, 50).rows
     }
     assert "ZZFOREIGN" not in {r.value for r in own.options("ledger_account", "", None, 50).rows}
+
+
+def test_user_lookup_matches_display_name_and_shows_it_beside_the_email(lines_db):
+    db = lines_db
+    conn, org, _, admin = db
+    conn.execute("UPDATE identity SET display_name='Alice Ng' WHERE id=%s", (admin,))
+    by_name = lookups(db).options("user", "alic", None, 10).rows
+    assert [(r.label, r.note) for r in by_name] == [("Alice Ng", "admin@example.test")]
+    by_email = lookups(db).options("user", "admin@", None, 10).rows
+    assert [r.value for r in by_email] == [str(admin)]
+    conn.execute("UPDATE identity SET display_name=NULL WHERE id=%s", (admin,))
+    plain = lookups(db).options("user", "admin@", None, 10).rows
+    assert [(r.label, r.note) for r in plain] == [("admin@example.test", None)]

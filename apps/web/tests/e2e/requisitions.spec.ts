@@ -466,8 +466,8 @@ for (const status of STATUSES) {
 test("detail: lifecycle words, remaining from the server, split award, linked records, history order", async ({ page }) => {
   const state = await stubRequisitions(page, { row: requisition({ status: "awarded", estimate: "20.0000", reservation: reservation("20.0000") }), lines: [lineRow(1, { requested_qty: "10.0000", awarded_qty: "6.0000", ordered_qty: "4.0000", cancelled_qty: "1.0000", remaining_qty: "5.0000" })] });
   state.events = [
-    { at: "2026-10-02T10:00:00Z", from_status: "draft", to_status: "approval_pending", actor_email: "dev@example.test", system: false, reason: null, funding_round: 1, ledger_entry_id: 1, decision_id: null },
-    { at: "2026-10-03T10:00:00Z", from_status: "approval_pending", to_status: "sourcing_in_progress", actor_email: null, system: true, reason: null, funding_round: 1, ledger_entry_id: null, decision_id: null },
+    { at: "2026-10-02T10:00:00Z", from_status: "draft", to_status: "approval_pending", actor_email: "dev@example.test", actor_name: null, system: false, reason: null, funding_round: 1, ledger_entry_id: 1, decision_id: null },
+    { at: "2026-10-03T10:00:00Z", from_status: "approval_pending", to_status: "sourcing_in_progress", actor_email: null, actor_name: null, system: true, reason: null, funding_round: 1, ledger_entry_id: null, decision_id: null },
   ];
   state.links = [{ key: "ledger:1", kind: "ledger_entry", id: "1", label: "Reservation 1", state: "Reserved", state_tone: "info", href: "/ledger/1", at: "2026-10-02T10:00:00Z" }];
   await page.goto(`/requisitions/${reqId}`);
@@ -516,7 +516,7 @@ test("detail: a draft with no reservation says nothing is reserved and discards 
 
 test("returned banner shows the approver's words and Edit and Resubmit opens the edit route", async ({ page }) => {
   const state = await stubRequisitions(page, { row: requisition({ estimate: "20.0000", reservation: reservation("20.0000"), approval: { instance_id: instanceId, status: "returned" } }), lines: [lineRow(1)] });
-  state.decisions = [{ id: "dddddddd-0000-4000-8000-000000000001", instance_id: instanceId, task_id: null, node_id: "n1", step_label: "Manager review", actor_email: "amara@example.test", on_behalf_of_email: null, authority: "member", outcome: "return", reject_mode: null, comment: "Please cut the second line", document_version: 2, members_at_decision: [], decided_at: "2026-10-04T09:00:00Z" }];
+  state.decisions = [{ id: "dddddddd-0000-4000-8000-000000000001", instance_id: instanceId, task_id: null, node_id: "n1", step_label: "Manager review", actor_email: "amara@example.test", actor_name: null, on_behalf_of_email: null, on_behalf_of_name: null, authority: "member", outcome: "return", reject_mode: null, comment: "Please cut the second line", document_version: 2, members_at_decision: [], decided_at: "2026-10-04T09:00:00Z" }];
   await page.goto(`/requisitions/${reqId}`);
   const banner = page.getByRole("region", { name: "Returned for Changes" });
   await expect(banner).toContainText("amara@example.test");

@@ -43,6 +43,7 @@ from flo.modules.identity.resolver import (
 from flo.modules.identity.resolver import (
     AuthorizationResolver as AuthorizationResolver,
 )
+from flo.modules.identity.schemas import Profile
 
 type DatabaseRow = Sequence[object] | Mapping[str, object]
 
@@ -888,3 +889,80 @@ def emails_by_id(
             "SELECT id,email FROM identity WHERE id=ANY(%(ids)s)", {"ids": list(ids)}
         ).fetchall()
     }
+
+
+def names_by_id(
+    connection: IdentityAuthorizationConnection, ids: Sequence[UUID]
+) -> dict[UUID, str | None]:
+    """The display name beside emails_by_id; None when the person has not set one."""
+    return {
+        cast(UUID, _value(row, 0, "id")): cast(str | None, _value(row, 1, "display_name"))
+        for row in connection.execute(
+            "SELECT id,display_name FROM identity WHERE id=ANY(%(ids)s)", {"ids": list(ids)}
+        ).fetchall()
+    }
+
+
+def read_profile(connection: IdentityAuthorizationConnection, identity_id: UUID) -> Profile:
+    row = connection.execute(
+        "SELECT email,display_name,row_version FROM identity WHERE id=%(id)s", {"id": identity_id}
+    ).fetchone()
+    if row is None:
+        raise ProblemError(ErrorCode.NOT_FOUND)
+    return Profile(
+        email=cast(str, _value(row, 0, "email")),
+        display_name=cast(str | None, _value(row, 1, "display_name")),
+        version=cast(int, _value(row, 2, "row_version")),
+    )
+
+
+def set_display_name(
+    connection: IdentityAuthorizationConnection,
+    scope: Scope,
+    identity_id: UUID,
+    display_name: str | None,
+    if_match: str | None,
+) -> Profile:
+    """Set the caller's own name (convention O). The identity is global, so the audit row is
+    written in the session's current organization."""
+    if if_match is None:
+        raise ProblemError(
+            ErrorCode.BAD_REQUEST,
+            detail="Supply If-Match with the profile version.",
+            checks={"problem": "if_match_required"},
+        )
+    try:
+        expected = int(if_match.strip('"'))
+    except ValueError as exc:
+        raise ProblemError(
+            ErrorCode.BAD_REQUEST, detail="If-Match must contain an integer version."
+        ) from exc
+    with tenant_transaction(connection, scope):
+        before = read_profile(connection, identity_id)
+        row = connection.execute(
+            "UPDATE identity SET display_name=%(name)s,row_version=row_version+1,"
+            "updated_at=now() WHERE id=%(id)s AND row_version=%(version)s "
+            "RETURNING email,display_name,row_version",
+            {"name": display_name, "id": identity_id, "version": expected},
+        ).fetchone()
+        if row is None:
+            raise ProblemError(
+                ErrorCode.CONFLICT,
+                detail="The profile changed. Reload it and retry your update.",
+                checks={"problem": "stale_version"},
+            )
+        after = read_profile(connection, identity_id)
+        audit_event(
+            connection,
+            scope,
+            actor=AuditActor(ActorKind.USER, IdentityId(identity_id)),
+            action="identity.display_name.set",
+            target_type="identity",
+            target_id=identity_id,
+            outcome=Outcome.SUCCESS,
+            before=before,
+            after=after,
+            before_fields=("display_name",),
+            after_fields=("display_name",),
+        )
+        return after

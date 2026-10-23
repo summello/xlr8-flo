@@ -267,7 +267,7 @@ test("eligibility is requested for what is covered and decisions on my behalf re
   state.behalfFails = false;
   await page.getByRole("button", { name: "Try again" }).first().click();
   await expect(page.getByText("No one has decided anything on your behalf.")).toBeVisible();
-  state.behalf = [{ id: "cccccccc-0000-4000-8000-000000000001", instance_id: "cccccccc-0000-4000-8000-000000000002", task_id: null, node_id: "one", step_label: "Finance", actor_email: "delegate@example.test", on_behalf_of_email: "me@example.test", authority: "delegate", outcome: "approve", reject_mode: null, comment: "Fine by me", document_version: 1, members_at_decision: [], decided_at: "2026-10-12T10:00:00Z" }];
+  state.behalf = [{ id: "cccccccc-0000-4000-8000-000000000001", instance_id: "cccccccc-0000-4000-8000-000000000002", task_id: null, node_id: "one", step_label: "Finance", actor_email: "delegate@example.test", actor_name: null, on_behalf_of_email: "me@example.test", on_behalf_of_name: null, authority: "delegate", outcome: "approve", reject_mode: null, comment: "Fine by me", document_version: 1, members_at_decision: [], decided_at: "2026-10-12T10:00:00Z" }];
   await page.reload();
   const table = page.getByRole("table", { name: "Decisions made on your behalf" });
   await expect(table).toContainText("delegate@example.test");

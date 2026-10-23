@@ -117,6 +117,17 @@
             "title": "Id",
             "type": "string"
           },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
           "status": {
             "title": "Status",
             "type": "string"
@@ -125,6 +136,7 @@
         "required": [
           "id",
           "email",
+          "name",
           "status"
         ],
         "title": "AccessUserResponse",
@@ -875,6 +887,17 @@
             "title": "Uploaded By Email",
             "type": "string"
           },
+          "uploaded_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uploaded By Name"
+          },
           "version": {
             "title": "Version",
             "type": "integer"
@@ -898,6 +921,7 @@
           "scan_status",
           "uploaded_by",
           "uploaded_by_email",
+          "uploaded_by_name",
           "uploaded_at",
           "deleted_at"
         ],
@@ -2156,6 +2180,17 @@
             "title": "Requested By Me",
             "type": "boolean"
           },
+          "requested_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requested By Name"
+          },
           "status": {
             "enum": [
               "pending",
@@ -2180,6 +2215,7 @@
           "reason",
           "status",
           "requested_by_email",
+          "requested_by_name",
           "requested_at",
           "decided_at"
         ],
@@ -2769,6 +2805,21 @@
       },
       "CurrentIdentityResponse": {
         "properties": {
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
           "identity_id": {
             "format": "uuid",
             "title": "Identity Id",
@@ -2776,7 +2827,9 @@
           }
         },
         "required": [
-          "identity_id"
+          "identity_id",
+          "email",
+          "display_name"
         ],
         "title": "CurrentIdentityResponse",
         "type": "object"
@@ -2791,6 +2844,17 @@
           "actor_email": {
             "title": "Actor Email",
             "type": "string"
+          },
+          "actor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Name"
           },
           "authority": {
             "enum": [
@@ -2861,6 +2925,17 @@
             ],
             "title": "On Behalf Of Email"
           },
+          "on_behalf_of_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Behalf Of Name"
+          },
           "outcome": {
             "enum": [
               "approve",
@@ -2918,7 +2993,9 @@
           "node_id",
           "step_label",
           "actor_email",
+          "actor_name",
           "on_behalf_of_email",
+          "on_behalf_of_name",
           "authority",
           "outcome",
           "reject_mode",
@@ -3123,9 +3200,31 @@
             "title": "Delegate Email",
             "type": "string"
           },
+          "delegate_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delegate Name"
+          },
           "delegator_email": {
             "title": "Delegator Email",
             "type": "string"
+          },
+          "delegator_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delegator Name"
           },
           "document_types": {
             "anyOf": [
@@ -3186,7 +3285,9 @@
         "required": [
           "id",
           "delegator_email",
+          "delegator_name",
           "delegate_email",
+          "delegate_name",
           "starts_at",
           "ends_at",
           "document_types",
@@ -3295,6 +3396,17 @@
             "title": "Raised By Email",
             "type": "string"
           },
+          "raised_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raised By Name"
+          },
           "reason": {
             "title": "Reason",
             "type": "string"
@@ -3348,6 +3460,17 @@
             ],
             "title": "Resolved By Email"
           },
+          "resolved_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved By Name"
+          },
           "score_id": {
             "format": "uuid",
             "title": "Score Id",
@@ -3358,10 +3481,12 @@
           "id",
           "score_id",
           "raised_by_email",
+          "raised_by_name",
           "raised_at",
           "reason",
           "resolution",
           "resolved_by_email",
+          "resolved_by_name",
           "resolved_at",
           "resolution_note"
         ],
@@ -4050,6 +4175,17 @@
             "title": "Email",
             "type": "string"
           },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
           "reason": {
             "title": "Reason",
             "type": "string"
@@ -4057,6 +4193,7 @@
         },
         "required": [
           "email",
+          "name",
           "reason"
         ],
         "title": "ExcludedApprover",
@@ -4108,6 +4245,17 @@
             "title": "Actor",
             "type": "string"
           },
+          "actor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Name"
+          },
           "decided_at": {
             "format": "date-time",
             "title": "Decided At",
@@ -4124,6 +4272,17 @@
             ],
             "title": "On Behalf Of"
           },
+          "on_behalf_of_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Behalf Of Name"
+          },
           "outcome": {
             "title": "Outcome",
             "type": "string"
@@ -4131,7 +4290,9 @@
         },
         "required": [
           "actor",
+          "actor_name",
           "on_behalf_of",
+          "on_behalf_of_name",
           "outcome",
           "decided_at"
         ],
@@ -4176,6 +4337,17 @@
             "title": "Email",
             "type": "string"
           },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
           "reason": {
             "title": "Reason",
             "type": "string"
@@ -4189,6 +4361,7 @@
         "required": [
           "user_id",
           "email",
+          "name",
           "reason",
           "detail"
         ],
@@ -4240,6 +4413,17 @@
             "title": "Email",
             "type": "string"
           },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
           "user_id": {
             "anyOf": [
               {
@@ -4256,6 +4440,7 @@
         "required": [
           "user_id",
           "email",
+          "name",
           "basis"
         ],
         "title": "ExplanationMember",
@@ -5167,9 +5352,31 @@
             ],
             "title": "On Behalf Of Email"
           },
+          "on_behalf_of_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Behalf Of Name"
+          },
           "requester_email": {
             "title": "Requester Email",
             "type": "string"
+          },
+          "requester_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requester Name"
           },
           "requester_note": {
             "anyOf": [
@@ -5208,6 +5415,7 @@
           "title",
           "requester_note",
           "requester_email",
+          "requester_name",
           "document_version",
           "amount",
           "step",
@@ -5215,6 +5423,7 @@
           "decided_at",
           "status_word",
           "on_behalf_of_email",
+          "on_behalf_of_name",
           "href"
         ],
         "title": "InboxRow",
@@ -5301,6 +5510,17 @@
             "title": "Requester Email",
             "type": "string"
           },
+          "requester_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requester Name"
+          },
           "route": {
             "items": {
               "$ref": "#/components/schemas/RouteStep"
@@ -5356,6 +5576,7 @@
           "document_version",
           "status",
           "requester_email",
+          "requester_name",
           "current_node_id",
           "route",
           "tasks",
@@ -5816,6 +6037,17 @@
             "title": "Invited By Email",
             "type": "string"
           },
+          "invited_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invited By Name"
+          },
           "latest_sent_version": {
             "anyOf": [
               {
@@ -5870,6 +6102,7 @@
           "vendor_snapshot",
           "override_reason",
           "invited_by_email",
+          "invited_by_name",
           "invited_at",
           "eligible",
           "reasons"
@@ -7358,6 +7591,17 @@
             "title": "Author Id",
             "type": "string"
           },
+          "author_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Author Name"
+          },
           "body": {
             "title": "Body",
             "type": "string"
@@ -7405,6 +7649,7 @@
           "id",
           "author_id",
           "author_email",
+          "author_name",
           "body",
           "visibility",
           "locked",
@@ -8555,6 +8800,17 @@
             "title": "Email",
             "type": "string"
           },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
           "user_id": {
             "format": "uuid",
             "title": "User Id",
@@ -8563,7 +8819,8 @@
         },
         "required": [
           "user_id",
-          "email"
+          "email",
+          "name"
         ],
         "title": "PickerRow",
         "type": "object"
@@ -8741,6 +8998,28 @@
           "message"
         ],
         "title": "ProblemFieldError",
+        "type": "object"
+      },
+      "ProfileUpdate": {
+        "additionalProperties": false,
+        "description": "PATCH /me: the caller's own display name, trimmed; null clears it.",
+        "properties": {
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          }
+        },
+        "required": [
+          "display_name"
+        ],
+        "title": "ProfileUpdate",
         "type": "object"
       },
       "ProjectCreate": {
@@ -10015,6 +10294,17 @@
             ],
             "title": "Waived By Email"
           },
+          "waived_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Waived By Name"
+          },
           "waived_reason": {
             "anyOf": [
               {
@@ -10033,6 +10323,7 @@
           "text",
           "waived",
           "waived_by_email",
+          "waived_by_name",
           "waived_reason"
         ],
         "title": "RequirementRead",
@@ -10536,6 +10827,17 @@
             "title": "Requester Id",
             "type": "string"
           },
+          "requester_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requester Name"
+          },
           "reservation": {
             "anyOf": [
               {
@@ -10600,6 +10902,7 @@
           "bu_name",
           "requester_id",
           "requester_email",
+          "requester_name",
           "justification",
           "needed_by",
           "department_code",
@@ -11167,6 +11470,17 @@
             ],
             "title": "Actor Email"
           },
+          "actor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Name"
+          },
           "at": {
             "format": "date-time",
             "title": "At",
@@ -11188,6 +11502,7 @@
           "action",
           "at",
           "actor_email",
+          "actor_name",
           "reason"
         ],
         "title": "RfqEvent",
@@ -11361,6 +11676,17 @@
             "title": "Owner Email",
             "type": "string"
           },
+          "owner_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Name"
+          },
           "requisition_numbers": {
             "items": {
               "type": "string"
@@ -11388,6 +11714,7 @@
           "status",
           "unit_id",
           "owner_email",
+          "owner_name",
           "deadline_at",
           "deadline_tz",
           "invitee_count",
@@ -11521,6 +11848,17 @@
             "title": "Owner Email",
             "type": "string"
           },
+          "owner_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Name"
+          },
           "published_at": {
             "anyOf": [
               {
@@ -11593,6 +11931,7 @@
           "unit_id",
           "currency",
           "owner_email",
+          "owner_name",
           "version",
           "edit_revision",
           "created_at",
@@ -11630,6 +11969,17 @@
             "title": "Published By Email",
             "type": "string"
           },
+          "published_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published By Name"
+          },
           "reason": {
             "anyOf": [
               {
@@ -11657,6 +12007,7 @@
           "diff",
           "snapshot",
           "published_by_email",
+          "published_by_name",
           "published_at"
         ],
         "title": "RfqVersionRead",
@@ -12228,6 +12579,20 @@
             "title": "Approver Emails",
             "type": "array"
           },
+          "approver_names": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Approver Names",
+            "type": "array"
+          },
           "due_at": {
             "anyOf": [
               {
@@ -12301,6 +12666,7 @@
           "quorum",
           "rule",
           "approver_emails",
+          "approver_names",
           "excluded",
           "state",
           "due_at"
@@ -12448,6 +12814,17 @@
             "title": "Scored By Email",
             "type": "string"
           },
+          "scored_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scored By Name"
+          },
           "source_ref": {
             "title": "Source Ref",
             "type": "string"
@@ -12494,6 +12871,7 @@
           "source_ref",
           "rationale",
           "scored_by_email",
+          "scored_by_name",
           "scored_at",
           "supersedes",
           "superseded_by",
@@ -13069,6 +13447,17 @@
             ],
             "title": "Actor Email"
           },
+          "actor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Name"
+          },
           "at": {
             "format": "date-time",
             "title": "At",
@@ -13128,6 +13517,7 @@
           "from_status",
           "to_status",
           "actor_email",
+          "actor_name",
           "system",
           "reason",
           "funding_round",
@@ -13279,6 +13669,20 @@
             "title": "Approver Emails",
             "type": "array"
           },
+          "approver_names": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Approver Names",
+            "type": "array"
+          },
           "completed_at": {
             "anyOf": [
               {
@@ -13366,6 +13770,7 @@
           "status",
           "outcome",
           "approver_emails",
+          "approver_names",
           "due_at",
           "completed_at"
         ],
@@ -13909,6 +14314,17 @@
             "title": "Created By Email",
             "type": "string"
           },
+          "created_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Name"
+          },
           "disabled_in": {
             "default": [],
             "items": {
@@ -14018,6 +14434,7 @@
           "status",
           "availability",
           "created_by_email",
+          "created_by_name",
           "created_at",
           "updated_at",
           "version"
@@ -14035,6 +14452,17 @@
           "by_email": {
             "title": "By Email",
             "type": "string"
+          },
+          "by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "By Name"
           },
           "reason": {
             "title": "Reason",
@@ -14054,6 +14482,7 @@
           "unit_id",
           "unit_code",
           "by_email",
+          "by_name",
           "at",
           "reason"
         ],
@@ -14175,6 +14604,17 @@
             "title": "Created By Email",
             "type": "string"
           },
+          "created_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Name"
+          },
           "documents": {
             "anyOf": [
               {
@@ -14243,6 +14683,7 @@
           "status",
           "availability",
           "created_by_email",
+          "created_by_name",
           "created_at",
           "updated_at",
           "version"
@@ -17558,7 +17999,7 @@
     },
     "/api/v1/auth/me": {
       "get": {
-        "description": "Return only the current session's identity; normal MFA and org gates apply.",
+        "description": "Return only the caller's own identity; normal MFA and org gates apply.",
         "operationId": "me_api_v1_auth_me_get",
         "parameters": [
           {
@@ -17611,6 +18052,90 @@
           }
         },
         "summary": "Me",
+        "tags": [
+          "authentication"
+        ]
+      },
+      "patch": {
+        "description": "Set or clear the caller's own display name; audited in the session's organization.",
+        "operationId": "update_me_api_v1_auth_me_patch",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentIdentityResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Update Me",
         "tags": [
           "authentication"
         ]

@@ -652,6 +652,7 @@ def test_instance_route_foreign_tenant_and_roles(setup):
                 "document_version",
                 "status",
                 "requester_email",
+                "requester_name",
                 "current_node_id",
                 "route",
                 "tasks",

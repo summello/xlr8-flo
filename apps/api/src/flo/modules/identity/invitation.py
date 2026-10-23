@@ -152,7 +152,15 @@ class InvitationRepository(ScopedRepo[InvitationRecord]):
                 {"id": invitation_id, "identity": identity, "now": now, "full_name": full_name}
             ),
         )
-        return self.get(invitation_id)
+        accepted = self.get(invitation_id)
+        # identity is global: copy the name the invitation now stores, and keep the name a
+        # person already has (second-org case)
+        self.connection.execute(
+            "UPDATE identity SET display_name = NULLIF(btrim(%s::text), '') "
+            "WHERE id = %s AND display_name IS NULL",
+            (accepted.full_name, identity),
+        )
+        return accepted
 
     def role_scope(
         self, code: str, kind: ScopeType, scope_id: UUID | None

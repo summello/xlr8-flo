@@ -198,7 +198,7 @@ class VendorService(
             base = self._row(id).model_dump()
             base["sensitive"] = self._masked([id]).get(id, SensitiveMasked())
             disabled = self.repo.execute(
-                "SELECT d.unit_id, u.code, i.email, d.disabled_at, d.reason "
+                "SELECT d.unit_id, u.code, i.email, i.display_name, d.disabled_at, d.reason "
                 "FROM vendor_local_disable d JOIN org_unit u "
                 "ON u.org_id = d.org_id AND u.id = d.unit_id "
                 "JOIN identity i ON i.id = d.disabled_by "
@@ -214,7 +214,7 @@ class VendorService(
                     VendorDisabled.model_validate(
                         dict(
                             zip(
-                                ("unit_id", "unit_code", "by_email", "at", "reason"),
+                                ("unit_id", "unit_code", "by_email", "by_name", "at", "reason"),
                                 r,
                                 strict=True,
                             )

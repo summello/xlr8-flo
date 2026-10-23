@@ -26,6 +26,7 @@ from flo.modules.identity.service import (
     AuthorizationResolver,
     IdentityAuthorizationConnection,
     emails_by_id,
+    names_by_id,
 )
 from flo.modules.org.service import OrgService, today
 from flo.modules.projects.service import (
@@ -585,16 +586,16 @@ def events(
             + "requisition_id=%(id)s ORDER BY id DESC",
             {"id": id},
         ).fetchall()
-        emails = emails_by_id(
-            cast(IdentityAuthorizationConnection, conn),
-            [cast(UUID, r[3]) for r in rows if r[3] is not None and r[3] != UUID(int=0)],
-        )
+        actors = [cast(UUID, r[3]) for r in rows if r[3] is not None and r[3] != UUID(int=0)]
+        emails = emails_by_id(cast(IdentityAuthorizationConnection, conn), actors)
+        names = names_by_id(cast(IdentityAuthorizationConnection, conn), actors)
         return [
             StatusEventRead.model_validate(
                 dict(zip(fields, r, strict=True))
                 | {
                     "system": r[3] is None or r[3] == UUID(int=0),
                     "actor_email": emails.get(cast(UUID, r[3])),
+                    "actor_name": names.get(cast(UUID, r[3])),
                 }
             )
             for r in rows

@@ -41,6 +41,7 @@ from flo.modules.identity.service import (
     AuthorizationTarget,
     IdentityAuthorizationConnection,
     emails_by_id,
+    names_by_id,
 )
 
 Connection = psycopg.Connection[tuple[object, ...]]
@@ -165,6 +166,7 @@ def _read(
 ) -> list[DelegationRead]:
     ids = [v for row in rows for v in (row[1], row[2], row[9]) if isinstance(v, UUID)]
     emails = emails_by_id(cast(IdentityAuthorizationConnection, conn), ids)
+    names = names_by_id(cast(IdentityAuthorizationConnection, conn), ids)
     out = []
     for row in rows:
         data = dict(zip(DELEGATION_FIELDS, row, strict=True))
@@ -181,7 +183,9 @@ def _read(
             DelegationRead(
                 id=cast(UUID, data["id"]),
                 delegator_email=emails.get(cast(UUID, data["delegator_id"]), "(removed user)"),
+                delegator_name=names.get(cast(UUID, data["delegator_id"])),
                 delegate_email=emails.get(cast(UUID, data["delegate_id"]), "(removed user)"),
+                delegate_name=names.get(cast(UUID, data["delegate_id"])),
                 starts_at=cast(datetime, data["starts_at"]),
                 ends_at=cast(datetime, data["ends_at"]),
                 document_types=cast(list[str] | None, data["document_types"]),
@@ -237,14 +241,20 @@ def eligible_delegates(
         rows = (
             WorkflowRepository(conn, scope)
             .execute(
-                "SELECT i.id,i.email FROM identity i WHERE i.status='active' AND i.id=ANY(%(ids)s) "
+                "SELECT i.id,i.email,i.display_name FROM identity i WHERE i.status='active' "
+                "AND i.id=ANY(%(ids)s) "
                 "AND EXISTS (SELECT 1 FROM user_role u WHERE u.org_id=%(org_id)s "
                 "AND u.user_id=i.id) ORDER BY i.email,i.id LIMIT 50",
                 {"ids": sorted(ids)},
             )
             .fetchall()
         )
-        return PickerPage(rows=[PickerRow(user_id=cast(UUID, r[0]), email=str(r[1])) for r in rows])
+        return PickerPage(
+            rows=[
+                PickerRow(user_id=cast(UUID, r[0]), email=str(r[1]), name=cast(str | None, r[2]))
+                for r in rows
+            ]
+        )
 
 
 def _audit(

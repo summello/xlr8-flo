@@ -125,6 +125,7 @@ class RequisitionRead(BaseModel):
     bu_name: str
     requester_id: UUID
     requester_email: str
+    requester_name: str | None
     justification: str | None
     needed_by: date | None
     department_code: str | None
@@ -352,6 +353,7 @@ class StatusEventRead(BaseModel):
     from_status: RequisitionStatus
     to_status: RequisitionStatus
     actor_email: str | None
+    actor_name: str | None
     system: bool
     reason: str | None
     funding_round: int

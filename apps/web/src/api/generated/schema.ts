@@ -533,7 +533,7 @@ export interface paths {
         };
         /**
          * Me
-         * @description Return only the current session's identity; normal MFA and org gates apply.
+         * @description Return only the caller's own identity; normal MFA and org gates apply.
          */
         get: operations["me_api_v1_auth_me_get"];
         put?: never;
@@ -541,7 +541,11 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update Me
+         * @description Set or clear the caller's own display name; audited in the session's organization.
+         */
+        patch: operations["update_me_api_v1_auth_me_patch"];
         trace?: never;
     };
     "/api/v1/auth/mfa": {
@@ -3264,6 +3268,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Name */
+            name: string | null;
             /** Status */
             status: string;
         };
@@ -3532,6 +3538,8 @@ export interface components {
             uploaded_by: string;
             /** Uploaded By Email */
             uploaded_by_email: string;
+            /** Uploaded By Name */
+            uploaded_by_name: string | null;
             /** Version */
             version: number;
             /** Versions */
@@ -3982,6 +3990,8 @@ export interface components {
              * @default false
              */
             requested_by_me?: boolean;
+            /** Requested By Name */
+            requested_by_name: string | null;
             /**
              * Status
              * @enum {string}
@@ -4183,6 +4193,10 @@ export interface components {
         };
         /** CurrentIdentityResponse */
         CurrentIdentityResponse: {
+            /** Display Name */
+            display_name: string | null;
+            /** Email */
+            email: string;
             /**
              * Identity Id
              * Format: uuid
@@ -4195,6 +4209,8 @@ export interface components {
         DecisionRead: {
             /** Actor Email */
             actor_email: string;
+            /** Actor Name */
+            actor_name: string | null;
             /**
              * Authority
              * @enum {string}
@@ -4225,6 +4241,8 @@ export interface components {
             node_id: string | null;
             /** On Behalf Of Email */
             on_behalf_of_email: string | null;
+            /** On Behalf Of Name */
+            on_behalf_of_name: string | null;
             /**
              * Outcome
              * @enum {string}
@@ -4297,8 +4315,12 @@ export interface components {
             created_at: string;
             /** Delegate Email */
             delegate_email: string;
+            /** Delegate Name */
+            delegate_name: string | null;
             /** Delegator Email */
             delegator_email: string;
+            /** Delegator Name */
+            delegator_name: string | null;
             /** Document Types */
             document_types: string[] | null;
             /**
@@ -4375,6 +4397,8 @@ export interface components {
             raised_at: string;
             /** Raised By Email */
             raised_by_email: string;
+            /** Raised By Name */
+            raised_by_name: string | null;
             /** Reason */
             reason: string;
             /** Resolution */
@@ -4385,6 +4409,8 @@ export interface components {
             resolved_at: string | null;
             /** Resolved By Email */
             resolved_by_email: string | null;
+            /** Resolved By Name */
+            resolved_by_name: string | null;
             /**
              * Score Id
              * Format: uuid
@@ -4619,6 +4645,8 @@ export interface components {
         ExcludedApprover: {
             /** Email */
             email: string;
+            /** Name */
+            name: string | null;
             /** Reason */
             reason: string;
         };
@@ -4639,6 +4667,8 @@ export interface components {
         ExplanationDecision: {
             /** Actor */
             actor: string;
+            /** Actor Name */
+            actor_name: string | null;
             /**
              * Decided At
              * Format: date-time
@@ -4646,6 +4676,8 @@ export interface components {
             decided_at: string;
             /** On Behalf Of */
             on_behalf_of: string | null;
+            /** On Behalf Of Name */
+            on_behalf_of_name: string | null;
             /** Outcome */
             outcome: string;
         };
@@ -4664,6 +4696,8 @@ export interface components {
             detail: string;
             /** Email */
             email: string;
+            /** Name */
+            name: string | null;
             /** Reason */
             reason: string;
             /**
@@ -4691,6 +4725,8 @@ export interface components {
             basis: string;
             /** Email */
             email: string;
+            /** Name */
+            name: string | null;
             /** User Id */
             user_id: string | null;
         };
@@ -5013,8 +5049,12 @@ export interface components {
             number: string;
             /** On Behalf Of Email */
             on_behalf_of_email: string | null;
+            /** On Behalf Of Name */
+            on_behalf_of_name: string | null;
             /** Requester Email */
             requester_email: string;
+            /** Requester Name */
+            requester_name: string | null;
             /** Requester Note */
             requester_note: string | null;
             /** Status Word */
@@ -5061,6 +5101,8 @@ export interface components {
             id: string;
             /** Requester Email */
             requester_email: string;
+            /** Requester Name */
+            requester_name: string | null;
             /** Route */
             route: components["schemas"]["RouteStep"][];
             /**
@@ -5248,6 +5290,8 @@ export interface components {
             invited_at: string;
             /** Invited By Email */
             invited_by_email: string;
+            /** Invited By Name */
+            invited_by_name: string | null;
             /** Latest Sent Version */
             latest_sent_version?: number | null;
             /**
@@ -5775,6 +5819,8 @@ export interface components {
              * Format: uuid
              */
             author_id: string;
+            /** Author Name */
+            author_name: string | null;
             /** Body */
             body: string;
             /**
@@ -6198,6 +6244,8 @@ export interface components {
         PickerRow: {
             /** Email */
             email: string;
+            /** Name */
+            name: string | null;
             /**
              * User Id
              * Format: uuid
@@ -6270,6 +6318,14 @@ export interface components {
             field: string;
             /** Message */
             message: string;
+        };
+        /**
+         * ProfileUpdate
+         * @description PATCH /me: the caller's own display name, trimmed; null clears it.
+         */
+        ProfileUpdate: {
+            /** Display Name */
+            display_name: string | null;
         };
         /** ProjectCreate */
         ProjectCreate: {
@@ -6638,6 +6694,8 @@ export interface components {
             waived: boolean;
             /** Waived By Email */
             waived_by_email: string | null;
+            /** Waived By Name */
+            waived_by_name: string | null;
             /** Waived Reason */
             waived_reason: string | null;
         };
@@ -6773,6 +6831,8 @@ export interface components {
              * Format: uuid
              */
             requester_id: string;
+            /** Requester Name */
+            requester_name: string | null;
             reservation?: components["schemas"]["ReservationRead"] | null;
             /** Sponsor Ids */
             sponsor_ids?: string[];
@@ -6949,6 +7009,8 @@ export interface components {
             action: string;
             /** Actor Email */
             actor_email: string | null;
+            /** Actor Name */
+            actor_name: string | null;
             /**
              * At
              * Format: date-time
@@ -7037,6 +7099,8 @@ export interface components {
             number: string;
             /** Owner Email */
             owner_email: string;
+            /** Owner Name */
+            owner_name: string | null;
             /** Requisition Numbers */
             requisition_numbers: string[];
             status: components["schemas"]["RfqStatus"];
@@ -7112,6 +7176,8 @@ export interface components {
             number: string;
             /** Owner Email */
             owner_email: string;
+            /** Owner Name */
+            owner_name: string | null;
             /** Published At */
             published_at?: string | null;
             /**
@@ -7154,6 +7220,8 @@ export interface components {
             published_at: string;
             /** Published By Email */
             published_by_email: string;
+            /** Published By Name */
+            published_by_name: string | null;
             /** Reason */
             reason: string | null;
             /** Snapshot */
@@ -7339,6 +7407,8 @@ export interface components {
         RouteStep: {
             /** Approver Emails */
             approver_emails: string[];
+            /** Approver Names */
+            approver_names: (string | null)[];
             /** Due At */
             due_at: string | null;
             /** Excluded */
@@ -7427,6 +7497,8 @@ export interface components {
             scored_at: string;
             /** Scored By Email */
             scored_by_email: string;
+            /** Scored By Name */
+            scored_by_name: string | null;
             /** Source Ref */
             source_ref: string;
             /**
@@ -7640,6 +7712,8 @@ export interface components {
         StatusEventRead: {
             /** Actor Email */
             actor_email: string | null;
+            /** Actor Name */
+            actor_name: string | null;
             /**
              * At
              * Format: date-time
@@ -7706,6 +7780,8 @@ export interface components {
         TaskRead: {
             /** Approver Emails */
             approver_emails: string[];
+            /** Approver Names */
+            approver_names: (string | null)[];
             /** Completed At */
             completed_at: string | null;
             /** Due At */
@@ -7935,6 +8011,8 @@ export interface components {
             created_at: string;
             /** Created By Email */
             created_by_email: string;
+            /** Created By Name */
+            created_by_name: string | null;
             /**
              * Disabled In
              * @default []
@@ -8003,6 +8081,8 @@ export interface components {
             at: string;
             /** By Email */
             by_email: string;
+            /** By Name */
+            by_name: string | null;
             /** Reason */
             reason: string;
             /** Unit Code */
@@ -8044,6 +8124,8 @@ export interface components {
             created_at: string;
             /** Created By Email */
             created_by_email: string;
+            /** Created By Name */
+            created_by_name: string | null;
             /** Documents */
             documents?: components["schemas"]["DocSummary"][] | null;
             eligibility?: components["schemas"]["Eligibility"] | null;
@@ -9764,6 +9846,51 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CurrentIdentityResponse"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    update_me_api_v1_auth_me_patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileUpdate"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

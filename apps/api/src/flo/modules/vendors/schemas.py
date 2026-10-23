@@ -118,6 +118,7 @@ class VendorRead(BaseModel):
     status: VendorStatus
     availability: Availability
     created_by_email: str
+    created_by_name: str | None
     created_at: datetime
     updated_at: datetime
     version: int
@@ -133,6 +134,7 @@ class VendorUnit(BaseModel):
 
 class VendorDisabled(VendorUnit):
     by_email: str
+    by_name: str | None
     at: datetime
     reason: str
 
@@ -487,10 +489,12 @@ class DisputeRead(BaseModel):
     id: UUID
     score_id: UUID
     raised_by_email: str
+    raised_by_name: str | None
     raised_at: datetime
     reason: str
     resolution: Literal["upheld", "dismissed"] | None
     resolved_by_email: str | None
+    resolved_by_name: str | None
     resolved_at: datetime | None
     resolution_note: str | None
 
@@ -504,6 +508,7 @@ class ScoreRead(BaseModel):
     source_ref: str
     rationale: str
     scored_by_email: str
+    scored_by_name: str | None
     scored_at: datetime
     supersedes: UUID | None
     superseded_by: UUID | None
@@ -570,6 +575,7 @@ class ChangeRead(BaseModel):
     reason: str | None
     status: Literal["pending", "approved", "rejected", "withdrawn"]
     requested_by_email: str
+    requested_by_name: str | None
     requested_by_me: bool = False  # set on the history read, for "requested by you"
     requested_at: datetime
     decided_at: datetime | None

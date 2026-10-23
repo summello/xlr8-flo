@@ -167,7 +167,7 @@ class RfqService:
                 "AND n.rfq_id = r.id), COALESCE((SELECT array_agg(DISTINCT q.number ORDER BY "
                 "q.number) FROM rfq_line l JOIN requisition q ON q.org_id = l.org_id "
                 "AND q.id = l.requisition_id WHERE l.org_id = r.org_id AND l.rfq_id = r.id), "
-                "'{}') FROM rfq r JOIN identity i ON i.id = r.owner_id WHERE "
+                "'{}'), i.display_name FROM rfq r JOIN identity i ON i.id = r.owner_id WHERE "
                 + scope
                 + " AND (%(statuses)s::text[] IS NULL OR r.status = ANY(%(statuses)s))"
                 + boundary
@@ -186,6 +186,7 @@ class RfqService:
             "deadline_tz",
             "invitee_count",
             "requisition_numbers",
+            "owner_name",
         )
         last_row = page[-1] if len(rows) > page_size else None
         return RfqPage(
@@ -207,7 +208,8 @@ class RfqService:
     def history(self, id: UUID) -> list[RfqEvent]:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             rows = self.repo.execute(
-                "SELECT a.action, a.occurred_at, i.email, a.after->>'reason' FROM audit_log a "
+                "SELECT a.action, a.occurred_at, i.email, a.after->>'reason', i.display_name "
+                "FROM audit_log a "
                 "LEFT JOIN identity i ON i.id = a.actor_id WHERE a.org_id = %(org_id)s "
                 "AND a.target_type = 'rfq' AND a.target_id = %(id)s AND a.action LIKE 'rfq.%%' "
                 "ORDER BY a.occurred_at DESC, a.id DESC",
@@ -218,6 +220,7 @@ class RfqService:
                 action=cast(str, r[0]),
                 at=cast(datetime, r[1]),
                 actor_email=cast(str | None, r[2]),
+                actor_name=cast(str | None, r[4]),
                 reason=cast(str | None, r[3]),
             )
             for r in rows
@@ -227,9 +230,10 @@ class RfqService:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             head = self.repo.execute(
                 "SELECT r.id, r.number, r.title, r.status, r.unit_id, r.currency, i.email, "
-                "r.version, r.edit_revision, r.created_at, r.updated_at, r.specifications, "
-                "r.delivery_location, r.delivery_terms, r.terms, r.deadline_at, r.deadline_tz, "
-                "r.published_at FROM rfq r JOIN identity i ON i.id = r.owner_id "
+                "i.display_name, r.version, r.edit_revision, r.created_at, r.updated_at, "
+                "r.specifications, r.delivery_location, r.delivery_terms, r.terms, "
+                "r.deadline_at, r.deadline_tz, r.published_at "
+                "FROM rfq r JOIN identity i ON i.id = r.owner_id "
                 "WHERE r.org_id = %(org_id)s AND r.id = %(id)s",
                 {"id": id},
             ).fetchone()
@@ -242,7 +246,7 @@ class RfqService:
                 "WHERE org_id = %(org_id)s AND rfq_id = %(id)s ORDER BY line_no",
                 {"id": id},
             ).fetchall()
-            extra = self._extra(id, cast(int, head[7]))
+            extra = self._extra(id, cast(int, head[8]))
         live = {
             b.line_id: b
             for b in sourcing_basis(self.connection, self.scope, [cast(UUID, r[3]) for r in rows])
@@ -266,17 +270,26 @@ class RfqService:
             )
             for r in rows
         ]
-        keys = ("id", "number", "title", "status", "unit_id", "currency", "owner_email")
+        keys = (
+            "id",
+            "number",
+            "title",
+            "status",
+            "unit_id",
+            "currency",
+            "owner_email",
+            "owner_name",
+        )
         return RfqRead.model_validate(
             {
-                **dict(zip(keys, head[:7], strict=True)),
-                "version": head[7],
-                "edit_revision": head[8],
-                "created_at": head[9],
-                "updated_at": head[10],
+                **dict(zip(keys, head[:8], strict=True)),
+                "version": head[8],
+                "edit_revision": head[9],
+                "created_at": head[10],
+                "updated_at": head[11],
                 "lines": lines,
-                "published_at": head[17],
-                **dict(zip(CONTENT.split(", "), head[11:17], strict=True)),
+                "published_at": head[18],
+                **dict(zip(CONTENT.split(", "), head[12:18], strict=True)),
                 **extra,
             }
         )
@@ -290,10 +303,12 @@ class RfqService:
                 text=cast(str, r[2]),
                 waived=cast(bool, r[3]),
                 waived_by_email=cast(str | None, r[4]),
+                waived_by_name=cast(str | None, r[6]),
                 waived_reason=cast(str | None, r[5]),
             )
             for r in self.repo.execute(
-                "SELECT q.id, q.position, q.text, q.waived, i.email, q.waived_reason "
+                "SELECT q.id, q.position, q.text, q.waived, i.email, q.waived_reason, "
+                "i.display_name "
                 "FROM rfq_requirement q LEFT JOIN identity i ON i.id = q.waived_by "
                 "WHERE q.org_id = %(org_id)s AND q.rfq_id = %(id)s ORDER BY q.position",
                 {"id": id},
@@ -323,7 +338,8 @@ class RfqService:
         ]
         invited = self.repo.execute(
             "SELECT n.vendor_id, n.contact_ids, n.vendor_snapshot, n.override_reason, i.email, "
-            "n.invited_at, r.unit_id FROM rfq_invitee n JOIN rfq r ON r.id = n.rfq_id "
+            "n.invited_at, r.unit_id, i.display_name FROM rfq_invitee n "
+            "JOIN rfq r ON r.id = n.rfq_id "
             "JOIN identity i ON i.id = n.invited_by "
             "WHERE n.org_id = %(org_id)s AND n.rfq_id = %(id)s ORDER BY n.invited_at, n.vendor_id",
             {"id": id},
@@ -359,6 +375,7 @@ class RfqService:
                 vendor_snapshot=cast(dict[str, object], r[2]),
                 override_reason=cast(str | None, r[3]),
                 invited_by_email=cast(str, r[4]),
+                invited_by_name=cast(str | None, r[7]),
                 invited_at=cast(datetime, r[5]),
                 eligible=live[cast(UUID, r[0])].eligible if r[0] in live else None,
                 reasons=[x.text for x in live[cast(UUID, r[0])].reasons] if r[0] in live else [],
