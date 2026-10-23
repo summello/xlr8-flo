@@ -1583,7 +1583,7 @@ def test_carry_forward_refuses_an_application_edit_made_inside_a_milestone_merge
     sub = _git(repo, "rev-parse", "HEAD")
     sc = tmp_path / "scratch"
     sc.mkdir()
-    assert flo._carry(sc, repo, {"milestone_branch": "ms"}, reviewed, sub) is None
+    assert flo._carry(sc, repo, {"milestone_branch": "ms"}, "S1", "codex", reviewed, sub) is None
     assert not (sc / "S1.codex.carried.json").exists()
 
 
