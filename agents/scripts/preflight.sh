@@ -1,9 +1,11 @@
 #!/bin/sh
-# Packet pre-flight (E23-S05): qwen checks design/<S>.md against the code before an author starts,
-# then files the record `flo start` requires. Usage: agents/scripts/preflight.sh <STORY_ID> [reviewer]
+# Packet pre-flight (E23-S05): Codex (or an OpenRouter reviewer such as qwen) checks design/<S>.md
+# against the code before an author starts, then files the record `flo start` requires.
+# Usage: agents/scripts/preflight.sh <STORY_ID> [codex|qwen|...]   (default codex, operator 23 Oct 2026:
+# qwen hit its 40-call cap without a verdict three times that day)
 # Runs in a detached checkout of the milestone under .scratch, so a stray write cannot reach the runner.
 set -eu
-S="$1"; A="${2:-qwen}"
+S="$1"; A="${2:-codex}"
 R="$(cd "$(dirname "$0")/../.." && pwd)"; D="$R/.scratch"
 # same invocation as agents/fleet.toml: the venv has no PyYAML after a uv sync
 export XDG_CACHE_HOME="$HOME/.cache" UV_CACHE_DIR="$HOME/.cache/uv"
@@ -13,7 +15,7 @@ MS="$(git -C "$R" rev-parse --abbrev-ref HEAD)"
 W="$D/preflight-wt"
 [ -d "$W" ] || git -C "$R" worktree add --detach "$W" "$MS" > /dev/null
 git -C "$W" checkout -q --detach "$MS" && git -C "$W" reset -q --hard && git -C "$W" clean -qfd
-M="openrouter/$($FLO launch-model "$S" --reviewer "$A")"
+M="$($FLO launch-model "$S" --reviewer "$A")"
 P="$D/$S.preflight.prompt"; L="$D/$S.preflight.log"
 cat > "$P" <<EOF
 ROLE packet-preflight $S
@@ -37,10 +39,16 @@ End with exactly one line: \`PREFLIGHT: pass <N>\` or \`PREFLIGHT: fail <N>\`, N
 Pass when nothing found would make an author block or build the wrong thing; minor naming slips are pass.
 EOF
 cd "$W"
-XDG_DATA_HOME="$D/xdg-preflight" OPENROUTER_API_KEY="$(security find-generic-password -a "$USER" -s OPENROUTER_API_KEY -w)" \
-  opencode run --auto -m "$M" "$(cat "$P")" > "$L" 2>&1 & OP=$!
-$FLO log-guard "$L" 40 $OP 900 &
-wait $OP || true
+if [ "$A" = codex ]; then
+  # effort pinned on the command line, as in review.sh: an inherited config.toml once ran `low`
+  codex exec -m "$M" -c model_reasoning_effort=medium -c project_doc_max_bytes=0 -s read-only \
+    --skip-git-repo-check "$(cat "$P")" > "$L" 2>&1 || true
+else
+  XDG_DATA_HOME="$D/xdg-preflight" OPENROUTER_API_KEY="$(security find-generic-password -a "$USER" -s OPENROUTER_API_KEY -w)" \
+    opencode run --auto -m "openrouter/$M" "$(cat "$P")" > "$L" 2>&1 & OP=$!
+  $FLO log-guard "$L" 40 $OP 900 &
+  wait $OP || true
+fi
 git -C "$W" reset -q --hard
 V="$(grep -Eo 'PREFLIGHT: (pass|fail) [0-9]+' "$L" | tail -1)"
 [ -n "$V" ] || { echo "preflight.sh: no verdict line in $L" >&2; exit 1; }

@@ -68,7 +68,7 @@ flo preflight E23-S05 --reviewer qwen --verdict pass [--findings N]
   `needs_preflight`, so when every ready story lacks a record the fleet idles silently until the
   supervisor notification added in E23-S11 is deployed.
 - It proves a pass was filed for this packet text. It does not prove the pre-flight was good.
-- `agents/scripts/preflight.sh <STORY> [reviewer]` runs the pre-flight with qwen (the ten checks of
+- `agents/scripts/preflight.sh <STORY> [reviewer]` runs the pre-flight with Codex by default (read-only; `qwen` or another OpenRouter reviewer as the second argument; the ten checks of
   `docs/handoff-2026-10-09.md`) in a detached checkout under `.scratch/preflight-wt`, then files the
   record from the `PREFLIGHT: pass|fail N` line it ends with. Run it when the supervisor raises
   "nothing can start: ... no pre-flight record".
