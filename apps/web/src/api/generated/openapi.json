@@ -3296,6 +3296,11 @@
       },
       "DuplicateResult": {
         "properties": {
+          "can_override": {
+            "default": false,
+            "title": "Can Override",
+            "type": "boolean"
+          },
           "matches": {
             "items": {
               "$ref": "#/components/schemas/DuplicateMatch"
@@ -30959,6 +30964,7 @@
     },
     "/api/v1/vendors/{id}/sensitive": {
       "put": {
+        "description": "A member; the service admits a vendor.edit holder (with reveal) or the owner of a draft.",
         "operationId": "put_sensitive_api_v1_vendors__id__sensitive_put",
         "parameters": [
           {

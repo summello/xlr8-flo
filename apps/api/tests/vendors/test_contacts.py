@@ -15,6 +15,7 @@ from flo.modules.vendors.schemas import VendorCreate
 from flo.modules.vendors.service import VendorService
 from tests.isolation.test_real_sessions import client, headers, login
 from tests.kernel.test_migrate import empty_database as empty_database  # noqa: F401
+from tests.org.test_bootstrap import admin_id
 from tests.org.test_bootstrap import bootstrap_db as bootstrap_db  # noqa: F401
 from tests.requisitions.test_header import header_db as header_db  # noqa: F401
 from tests.requisitions.test_header import org_svc
@@ -182,7 +183,7 @@ def test_contact_audit_records_email_but_not_phone(header_db):
 
 def test_vendor_contact_routes_conceal_foreign_tenants(header_db):
     db = header_db
-    foreign = VendorService(db[0], Scope(db[2]), db[3])
+    foreign = VendorService(db[0], Scope(db[2]), admin_id(db[0], "second@example.test"))
     other = foreign.create(VendorCreate(trading_name="F", legal_name="F", availability="global"))
     from flo.modules.vendors.schemas import ContactCreate
 

@@ -38,6 +38,11 @@ class DocumentAccess:
     target: Callable[[psycopg.Connection[tuple[object, ...]], Scope, UUID], AuthorizationTarget]
     # Raises when the document no longer accepts attachment changes (an RFQ past draft).
     write_guard: Callable[[psycopg.Connection[tuple[object, ...]], Scope, UUID], None] | None = None
+    # Replaces the write_permission check when the document decides who may write per record
+    # (a vendor requester on their own draft); it raises to refuse.
+    write_authorize: (
+        Callable[[psycopg.Connection[tuple[object, ...]], Scope, UUID, UUID | None], None] | None
+    ) = None
 
 
 _ACCESS: dict[str, DocumentAccess] = {}
@@ -84,7 +89,9 @@ class CollaborationService:
     ) -> None:
         target = self.document_target(document_type, document_id)
         access = _ACCESS[document_type]
-        if not permits(
+        if write and access.write_authorize is not None:
+            access.write_authorize(self.connection, self.scope, document_id, self.actor_id)
+        elif not permits(
             request, access.write_permission if write else access.read_permission, target
         ):
             raise ProblemError(ErrorCode.FORBIDDEN)

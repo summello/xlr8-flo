@@ -2,10 +2,10 @@
 
 # Agent scorecard
 
-**124 merged stories.** Scores appear once an agent has 3+ samples in that role —
+**125 merged stories.** Scores appear once an agent has 3+ samples in that role —
 before that the number would be noise, so it reads `—`.
 
-> **Data quality.** 114 of 124 records took `rounds` from a counter with no reliable
+> **Data quality.** 114 of 125 records took `rounds` from a counter with no reliable
 > writer (before E23-S13, 22 Oct 2026): in this repository only `flo escalate` ever raised it, and
 > records that also carry review-run counts say 1 round while their reviewers ran up to 7 times.
 > *Clean merge*, *Mean rounds* and the author score include those records, so read them as
@@ -17,7 +17,7 @@ before that the number would be noise, so it reads `—`.
 |---|---:|---:|---:|---:|---:|---:|
 | `opencode-nemotron` | 10 | 0/10 | 100% | 1.00 | 0.00 | **100.0** |
 | `codex` | 68 | 0/68 | 97% | 1.04 | 0.00 | **97.9** |
-| `sonnet` | 46 | 10/46 | 59% | 1.76 | 0.00 | **67.9** |
+| `sonnet` | 47 | 11/47 | 57% | 1.81 | 0.00 | **66.6** |
 
 **Judgement day (Sonnet on gated work): 1 of 10 verified gated records.** At 10, run the script in `docs/ops/sonnet-round-churn.md` and decide.
 

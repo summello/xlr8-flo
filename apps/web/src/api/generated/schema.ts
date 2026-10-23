@@ -2892,7 +2892,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Put Sensitive */
+        /**
+         * Put Sensitive
+         * @description A member; the service admits a vendor.edit holder (with reveal) or the owner of a draft.
+         */
         put: operations["put_sensitive_api_v1_vendors__id__sensitive_put"];
         post?: never;
         delete?: never;
@@ -4284,6 +4287,11 @@ export interface components {
         };
         /** DuplicateResult */
         DuplicateResult: {
+            /**
+             * Can Override
+             * @default false
+             */
+            can_override?: boolean;
             /** Matches */
             matches: components["schemas"]["DuplicateMatch"][];
         };

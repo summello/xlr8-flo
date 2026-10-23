@@ -5065,6 +5065,58 @@
         },
         "gate_s": 3
       }
+    },
+    {
+      "story": "E11-S14",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [],
+      "rounds": 4,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {},
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "codex",
+          "to": "opus",
+          "role": "reviewer",
+          "reason": "operator 24 Oct 2026: Codex usage exhausted; Opus (A/B) reviews in its place"
+        }
+      ],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "a9045bac-8528-4bdd-833c-317ebb91f5e0",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S14",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Server: can_write_draft guards every write (including vendor attachment uploads); can_read_request lets the requester read their own vendor, contacts and documents in any status (masked); duplicate-check returns can_override; a vendor.request holder lists active units. Web: /vendors/new and /vendors/:id/edit request form using them, with API tests, TEN-010 cases, Playwright, axe and keyboard specs, and every named plant seen to fail.",
+      "title": "Request a vendor: form, live duplicate check, drafts, submit",
+      "durations": {
+        "review_s": {
+          "opus": 643
+        },
+        "gate_s": 2
+      }
     }
   ]
 }
