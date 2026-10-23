@@ -46,11 +46,16 @@ from flo.modules.sourcing.schemas import (
     RequirementWaive,
     RfqAttachmentRead,
     RfqContentPatch,
+    RfqCounts,
     RfqCreate,
+    RfqEvent,
     RfqLineIn,
     RfqLineRead,
     RfqLinesPatch,
+    RfqListRow,
+    RfqPage,
     RfqRead,
+    RfqTab,
     SourceableLine,
     SourceablePage,
     VisibilityPut,
@@ -61,6 +66,12 @@ from flo.modules.vendors.service import VendorService
 type Conn = psycopg.Connection[tuple[object, ...]]
 
 MAX_INVITEES = 5  # decision 106
+TAB_STATUSES: dict[str, list[str]] = {
+    "drafts": ["draft"],
+    "open": ["published"],
+    "evaluating": ["closed", "under_evaluation"],
+    "awarded": ["awarded"],
+}
 CONTENT = "specifications, delivery_location, delivery_terms, terms, deadline_at, deadline_tz"
 
 
@@ -108,6 +119,109 @@ class RfqService:
         if not found:
             raise ProblemError(ErrorCode.NOT_FOUND)
         return found[0].bu_id
+
+    def list_rfqs(
+        self,
+        *,
+        visible: list[UUID] | None,
+        tab: RfqTab = "all",
+        q: str = "",
+        cursor: str | None = None,
+        page_size: int = 50,
+    ) -> RfqPage:
+        """RFQs by deadline; `visible` is the units the caller holds `rfq.view` in, None = all."""
+        if not 1 <= page_size <= 50:
+            raise invalid("page_size", "Choose a page size from 1 to 50.")
+        escaped = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        params: dict[str, object] = {
+            "prefix": escaped + "%",
+            "units": visible,
+            "statuses": TAB_STATUSES.get(tab),
+        }
+        scope = """r.org_id = %(org_id)s
+          AND (%(units)s::uuid[] IS NULL OR r.unit_id = ANY(%(units)s))
+          AND (r.number ILIKE %(prefix)s OR r.title ILIKE %(prefix)s)"""
+        boundary = ""
+        if cursor is not None:
+            try:
+                at, last = json.loads(base64.urlsafe_b64decode(cursor.encode()))
+                params.update(key=datetime.fromisoformat(at), cursor_id=UUID(last))
+            except (ValueError, TypeError, UnicodeError):
+                raise invalid(
+                    "cursor", "Invalid cursor. Restart paging.", "invalid_cursor"
+                ) from None
+            boundary = " AND (r.deadline_at, r.id) > (%(key)s, %(cursor_id)s)"
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            by_status = dict(
+                cast(
+                    list[tuple[str, int]],
+                    self.repo.execute(
+                        f"SELECT r.status, count(*) FROM rfq r WHERE {scope} GROUP BY r.status",
+                        params,
+                    ).fetchall(),
+                )
+            )
+            rows = self.repo.execute(
+                "SELECT r.id, r.number, r.title, r.status, r.unit_id, i.email, r.deadline_at, "
+                "r.deadline_tz, (SELECT count(*) FROM rfq_invitee n WHERE n.org_id = r.org_id "
+                "AND n.rfq_id = r.id), COALESCE((SELECT array_agg(DISTINCT q.number ORDER BY "
+                "q.number) FROM rfq_line l JOIN requisition q ON q.org_id = l.org_id "
+                "AND q.id = l.requisition_id WHERE l.org_id = r.org_id AND l.rfq_id = r.id), "
+                "'{}') FROM rfq r JOIN identity i ON i.id = r.owner_id WHERE "
+                + scope
+                + " AND (%(statuses)s::text[] IS NULL OR r.status = ANY(%(statuses)s))"
+                + boundary
+                + " ORDER BY r.deadline_at, r.id LIMIT %(limit)s",
+                params | {"limit": page_size + 1},
+            ).fetchall()
+        page = rows[:page_size]
+        keys = (
+            "id",
+            "number",
+            "title",
+            "status",
+            "unit_id",
+            "owner_email",
+            "deadline_at",
+            "deadline_tz",
+            "invitee_count",
+            "requisition_numbers",
+        )
+        last_row = page[-1] if len(rows) > page_size else None
+        return RfqPage(
+            rows=[RfqListRow.model_validate(dict(zip(keys, r, strict=True))) for r in page],
+            next_cursor=None
+            if last_row is None
+            else base64.urlsafe_b64encode(
+                json.dumps([cast(datetime, last_row[6]).isoformat(), str(last_row[0])]).encode()
+            ).decode(),
+            counts=RfqCounts(
+                **{
+                    name: sum(by_status.get(s, 0) for s in statuses)
+                    for name, statuses in TAB_STATUSES.items()
+                },
+                all=sum(by_status.values()),
+            ),
+        )
+
+    def history(self, id: UUID) -> list[RfqEvent]:
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            rows = self.repo.execute(
+                "SELECT a.action, a.occurred_at, i.email, a.after->>'reason' FROM audit_log a "
+                "LEFT JOIN identity i ON i.id = a.actor_id WHERE a.org_id = %(org_id)s "
+                "AND a.target_type = 'rfq' AND a.target_id = %(id)s AND a.action LIKE 'rfq.%%' "
+                "ORDER BY a.occurred_at DESC, a.id DESC",
+                {"id": id},
+            ).fetchall()
+        return [
+            RfqEvent(
+                action=cast(str, r[0]),
+                at=cast(datetime, r[1]),
+                actor_email=cast(str | None, r[2]),
+                reason=cast(str | None, r[3]),
+            )
+            for r in rows
+        ]
 
     def get(self, id: UUID) -> RfqRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
@@ -922,7 +1036,7 @@ class RfqService:
 _TONES: dict[str, Tone] = {
     "draft": "neutral",
     "published": "info",
-    "closed": "neutral",
+    "closed": "info",  # MASTER §2.3
     "under_evaluation": "info",
     "awarded": "success",
     "cancelled": "danger",
