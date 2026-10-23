@@ -1593,15 +1593,15 @@ def test_reconcile_proves_a_submit_or_finish_already_happened_and_exits_1_when_u
         return int(e.value.code or 0)
 
     _git(wt, "checkout", "-b", "story/S1")
-    assert run("submit") == 1                                  # nothing pushed: unproven
+    assert run("submit") == 1  # nothing pushed: unproven
     _git(wt, "push", "origin", "story/S1")
-    assert run("submit") == 0                                  # origin equals HEAD
+    assert run("submit") == 0  # origin equals HEAD
     recorded = json.loads((wt / "task.json").read_text())["submitted_sha"]
     assert recorded == _git(wt, "rev-parse", "HEAD")
     (wt / "a").write_text("2")
     _git(wt, "commit", "-am", "newer")
-    assert run("submit") == 1                                  # HEAD moved past origin
-    assert run("finish") == 1                                  # milestone lacks the squash commit
+    assert run("submit") == 1  # HEAD moved past origin
+    assert run("finish") == 1  # milestone lacks the squash commit
     _git(root, "commit", "--allow-empty", "-m", "E99-S01: not it")
     assert run("finish") == 1
     _git(root, "commit", "--allow-empty", "-m", "S1: squash")

@@ -420,7 +420,9 @@ def test_an_old_review_record_without_a_reviewer_never_blocks_a_new_run(tmp_path
     monkeypatch.setattr(S, "alive", lambda pid, start: True)
     (tmp_path / "runs").mkdir()
     (tmp_path / "runs" / "S1.review.json").write_text(
-        json.dumps({"story": "S1", "step": "review", "pid": 1, "start": "x", "started": 1, "head": "h"})
+        json.dumps(
+            {"story": "S1", "step": "review", "pid": 1, "start": "x", "started": 1, "head": "h"}
+        )
     )
     busy, results = S.records(tmp_path)
     assert busy == {}
@@ -482,12 +484,14 @@ def test_a_crash_between_popen_and_the_second_write_adopts_the_live_process(tmp_
         raise OSError("disk")
 
     monkeypatch.setattr(S, "lstart", die)
-    S.launch(cfg_for(tmp_path), tmp_path, {"story": "S1", "step": "submit"}, "h1")   # second write fails
+    S.launch(
+        cfg_for(tmp_path), tmp_path, {"story": "S1", "step": "submit"}, "h1"
+    )  # second write fails
     assert json.loads((tmp_path / "runs" / "S1.submit.json").read_text())["state"] == "launching"
     monkeypatch.setattr(S, "find_running", lambda ex: (77, START))
     monkeypatch.setattr(S, "lstart", lambda pid: START)
     busy, _ = S.records(tmp_path)
-    assert busy == {"S1": {("submit", "")}}      # busy, so the story is not launched twice
+    assert busy == {"S1": {("submit", "")}}  # busy, so the story is not launched twice
 
 
 def write_run(tmp_path, **over):
@@ -502,10 +506,10 @@ def test_a_live_pid_is_busy_only_when_its_start_time_matches(tmp_path, monkeypat
     write_run(tmp_path)
     monkeypatch.setattr(S, "lstart", lambda pid: START)
     assert S.records(tmp_path)[0] == {"S1": {("submit", "")}}
-    monkeypatch.setattr(S, "lstart", lambda pid: "Fri Oct 24 09:00:00 2026")    # the pid was reused
+    monkeypatch.setattr(S, "lstart", lambda pid: "Fri Oct 24 09:00:00 2026")  # the pid was reused
     busy, results = S.records(tmp_path)
     assert busy == {} and results[("S1", "submit", "")]["exit"] == -1
-    monkeypatch.setattr(S, "lstart", lambda pid: None)                           # ps failed: dead
+    monkeypatch.setattr(S, "lstart", lambda pid: None)  # ps failed: dead
     assert S.records(tmp_path)[0] == {}
 
 
@@ -531,10 +535,14 @@ def net(**over):
 
 def test_network_retries_wait_1_5_and_15_minutes_then_ask_the_operator():
     def at(now, tries):
-        res = {("S1", "resume", ""): {"kind": "network", "attempt": tries, "head": "h1", "exit": 1}} if tries else {}
+        res = (
+            {("S1", "resume", ""): {"kind": "network", "attempt": tries, "head": "h1", "exit": 1}}
+            if tries
+            else {}
+        )
         return S.decide(net(), ctx(now=now, results=res))
 
-    assert at(1059, 0) == []                                                  # no early launch
+    assert at(1059, 0) == []  # no early launch
     (a,) = at(1060, 0)
     assert (a["step"], a["kind"], a["attempt"], a["retry_at"]) == ("resume", "network", 1, 1060)
     assert at(1299, 1) == [] and at(1300, 1)[0]["attempt"] == 2
@@ -564,12 +572,27 @@ def test_resume_launches_nothing_while_the_author_is_live():
 def reconciling(runner_tuple, rc, step="submit"):
     cfg, write, launched, _, state = runner_tuple
     cfg["steps"][step] = "echo"
-    cfg["reconcile"] = {step: "exit %d" % rc}
+    cfg["reconcile"] = {step: f"exit {rc}"}
     (state / "runs").mkdir(parents=True, exist_ok=True)
-    (state / "runs" / f"S1.{step}.json").write_text(json.dumps(
-        {"story": "S1", "step": step, "pid": None, "started": 1, "head": "h1", "state": "launching"}))
-    write(facts(stories=[story(head="h1", submitted_sha="h0")] if step == "submit"
-                else [story(verdicts={"codex": "approve"})]))
+    (state / "runs" / f"S1.{step}.json").write_text(
+        json.dumps(
+            {
+                "story": "S1",
+                "step": step,
+                "pid": None,
+                "started": 1,
+                "head": "h1",
+                "state": "launching",
+            }
+        )
+    )
+    write(
+        facts(
+            stories=[story(head="h1", submitted_sha="h0")]
+            if step == "submit"
+            else [story(verdicts={"codex": "approve"})]
+        )
+    )
     return cfg, launched, state
 
 
@@ -580,7 +603,9 @@ def test_a_step_whose_effect_already_happened_is_recorded_not_repeated(runner, s
     status = S.tick(cfg)
     assert (state / "runs" / f"S1.{step}.exit").read_text().strip() == "0"
     assert any("not repeated" in n for n in status["notes"])
-    assert not [a for a in launched if a.get("step") == step and a.get("story") == "S1" and "need" in a]
+    assert not [
+        a for a in launched if a.get("step") == step and a.get("story") == "S1" and "need" in a
+    ]
 
 
 def test_an_unproven_effect_stays_a_failure_for_the_operator(runner, monkeypatch):
