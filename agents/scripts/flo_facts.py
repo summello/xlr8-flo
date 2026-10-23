@@ -11,13 +11,14 @@ from __future__ import annotations
 import re
 
 # An author run that stopped on the account's usage window, or lost the network, is resumed later;
-# it did not fail. Matched on the log's last lines only: this product has rate-limiting stories,
-# and an author's report about them must not read as the author being limited.
+# it did not fail. The two recover differently (a window waits for its reset, a lost connection
+# retries on a short backoff), so they are told apart. Matched on the log's last lines only: this
+# product has rate-limiting stories, and an author's report about them must not read as limited.
 LIMIT = re.compile(
-    r"hit your (?:session |usage |weekly )?limit|usage limit reached|session limit"
-    r"|ENOTFOUND|ECONNRESET",
+    r"hit your (?:session |usage |weekly )?limit|usage limit reached|session limit",
     re.IGNORECASE,
 )
+NETWORK = re.compile(r"ENOTFOUND|ECONNRESET", re.IGNORECASE)
 EXIT = re.compile(r"^exit (\d+)\s*$", re.MULTILINE)
 ROUND = re.compile(r"\.round(\d+)\.md$")
 
@@ -27,7 +28,7 @@ CHANGES = {"changes_requested", "changes-requested", "request_changes", "changes
 
 
 def author_result(log: str | None) -> str:
-    """none (never ran) | running (no exit line yet) | ok | limit | failed."""
+    """none (never ran) | running (no exit line yet) | ok | limit | network | failed."""
     if log is None:
         return "none"
     codes = EXIT.findall(log)
@@ -35,7 +36,8 @@ def author_result(log: str | None) -> str:
         return "running"
     if codes[-1] == "0":
         return "ok"
-    return "limit" if LIMIT.search(log[-600:]) else "failed"
+    tail = log[-600:]
+    return "limit" if LIMIT.search(tail) else "network" if NETWORK.search(tail) else "failed"
 
 
 def verdict_state(review: dict | None, reviewed_sha: str | None, submitted_sha: str | None) -> str:
