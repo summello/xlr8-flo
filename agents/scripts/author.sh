@@ -8,16 +8,15 @@ S="$1"; EXTRA="${2:-}"; R="$(cd "$(dirname "$0")/../.." && pwd)"; W="$R-$S"; D="
 # the launch cds into the worktree, so a relative findings path would be lost
 [ -n "$EXTRA" ] && EXTRA="$(cd "$(dirname "$EXTRA")" && pwd)/$(basename "$EXTRA")"
 mkdir -p "$D"
-# one launch or reassign per story at a time (E23-S06): flo reassign takes the same lock, so it
-# cannot move the story between this read of task.json and the pid file below. Bounded wait.
-# ponytail: a crash leaves the directory; remove it by hand (macOS has no flock(1)).
-LOCK="$D/$S.lock"; N=0
-until mkdir "$LOCK" 2>/dev/null; do
-  N=$((N + 1))
-  [ "$N" -gt 30 ] && { echo "author.sh: $LOCK is held; if no launch or reassign runs, remove it" >&2; exit 1; }
-  sleep 1
-done
-trap 'rmdir "$LOCK"' EXIT
+# one launch or reassign per story at a time (E23-S06, E23-S15): flo reassign takes the same flock
+# (launch.STORY), so it cannot move the story between this read of task.json and the pid file below.
+# The kernel frees it if this process is killed. Bounded wait, then exit 75.
+if [ -z "${FLO_LAUNCH_LOCKED:-}" ]; then
+  exec python3 "$R/agents/scripts/flo" with-lock "launch.$S" --wait 30 -- env FLO_LAUNCH_LOCKED=1 sh "$R/agents/scripts/author.sh" "$@"
+fi
+# one live author per story: a live pid means a running session, and a second would write the same branch
+PID=; [ -f "$D/$S.author.pid" ] && { read -r PID _ < "$D/$S.author.pid" || true; }
+case "$PID" in ''|*[!0-9]*|0) ;; *) kill -0 "$PID" 2>/dev/null && { echo "author of $S already running (pid $PID)" >&2; exit 75; } ;; esac
 A="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["author"])' "$W/task.json")"
 P="$D/$S.prompt"
 cat > "$P" <<EOP
