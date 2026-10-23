@@ -390,3 +390,74 @@ def test_patch_vendor_needs_if_match_and_a_stale_replay_conflicts(header_db):
             assert (await send(browser, "GET", path)).json()["legal_name"] == "C"
 
     asyncio.run(scenario())
+
+
+def test_vendor_detail_names_the_actions_the_caller_may_take(header_db):
+    db = header_db
+    bu = unit(db, "BU")
+    other = unit(db, "OTHER")
+    allow_local_disable(db)
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            made = (await send(browser, "POST", data=body())).json()
+            restricted = (
+                await send(browser, "POST", data=body("R", "R", "restricted", [bu.id]))
+            ).json()
+
+            async def read(vendor):
+                got = await send(browser, "GET", f"/{vendor['id']}")
+                assert got.status_code == 200, got.text
+                return got.json()
+
+            both = await read(made)
+            assert both["actions"] == ["edit", "request_change", "inactivate", "verify_documents"]
+            assert sorted(both["local_disable_units"]) == sorted([str(bu.id), str(other.id)])
+            # The setting is read on the server: a unit that forbids local disable is absent.
+            org_svc(db).set_setting(
+                "vendor.allow_local_disable", SettingPut(value=False, unit_id=other.id)
+            )
+            assert (await read(made))["local_disable_units"] == [str(bu.id)]
+            # A vendor manager holds no org.unit.read and still gets the list.
+            regrant(db, ["vendor.view", "vendor.edit"])
+            manager = await read(made)
+            assert manager["actions"] == ["edit", "request_change"]
+            assert manager["local_disable_units"] == [str(bu.id)]
+            regrant(db, ["vendor.view", "vendor.approve"])
+            approver = await read(made)
+            assert approver["actions"] == ["inactivate", "verify_documents"]
+            assert approver["local_disable_units"] == []
+            regrant(db, ["vendor.view"])
+            requestor = await read(made)
+            assert requestor["actions"] == [] and requestor["local_disable_units"] == []
+            # vendor.edit at one unit only: that unit is listed, the other is not.
+            org_svc(db).set_setting(
+                "vendor.allow_local_disable", SettingPut(value=True, unit_id=other.id)
+            )
+            regrant(db, ["vendor.edit"], AuthorizationTarget(*scope_bu(bu.id)), keep=True)
+            scoped = await read(made)
+            assert scoped["actions"] == [] and scoped["local_disable_units"] == [str(bu.id)]
+            # A vendor that is not global allows no local disable anywhere.
+            assert (await read(restricted))["local_disable_units"] == []
+
+    asyncio.run(scenario())
+
+
+def test_change_history_marks_the_callers_own_requests(header_db):
+    db = header_db
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            made = (await send(browser, "POST", data=body())).json()
+            with tenant_transaction(db[0], Scope(db[1])):
+                db[0].execute(
+                    "INSERT INTO vendor_change (id, org_id, vendor_id, kind, payload, reason, "
+                    "requested_by) VALUES (%s, %s, %s, 'suspend', '{}', 'Audit', %s)",
+                    (uuid4(), db[1], made["id"], db[3]),
+                )
+            rows = (await send(browser, "GET", f"/{made['id']}/changes")).json()
+            assert rows and all(r["requested_by_me"] is True for r in rows)
+
+    asyncio.run(scenario())

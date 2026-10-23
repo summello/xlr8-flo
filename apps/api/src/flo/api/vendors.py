@@ -12,7 +12,7 @@ from flo.api.admin_users import organization_target
 from flo.api.auth import get_auth_settings
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
-from flo.kernel.authz import require, require_member
+from flo.kernel.authz import permits, require, require_member
 from flo.kernel.config import Settings
 from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.tenancy.context import current_scope
@@ -64,6 +64,20 @@ def unit_target(id: UUID, unit_id: UUID, connection: Connection) -> TargetProtoc
     VendorService(connection, current_scope()).get(id)
     unit = OrgService(connection, current_scope()).get_unit(unit_id)
     return cast(TargetProtocol, AuthorizationTarget(ScopeType.BU, unit.id, "org_unit", unit.id))
+
+
+def with_actions(request: Request, connection: Connection, detail: VendorDetail) -> VendorDetail:
+    """Add the caller's permitted actions, judged by the same targets the routes use."""
+
+    def can(permission: str, unit_id: UUID | None) -> bool:
+        target = (
+            organization_target()
+            if unit_id is None
+            else AuthorizationTarget(ScopeType.BU, unit_id, "org_unit", unit_id)
+        )
+        return permits(request, permission, cast(TargetProtocol, target))
+
+    return VendorService(connection, current_scope()).with_actions(detail, can)
 
 
 ViewContext = Annotated[AuthorizationContext, Depends(require("vendor.view", organization_target))]
@@ -170,9 +184,10 @@ def create_vendor(
 
 @router.get("/{id}", response_model=VendorDetail)
 def get_vendor(
-    id: UUID, context: ViewContext, connection: Connection, response: Response
+    id: UUID, context: ViewContext, connection: Connection, response: Response, request: Request
 ) -> VendorDetail:
     detail = VendorService(connection, current_scope(), context.user_id).get(id)
+    detail = with_actions(request, connection, detail)
     response.headers["ETag"] = f'"{detail.version}"'  # the vendor's version; PATCH's If-Match
     return detail
 
@@ -184,27 +199,36 @@ def patch_vendor(
     context: EditContext,
     connection: Connection,
     response: Response,
+    request: Request,
     version: Annotated[str | None, Header(alias="If-Match")] = None,
 ) -> VendorDetail:
     vendor = VendorService(connection, current_scope(), context.user_id).update(id, body, version)
+    vendor = with_actions(request, connection, vendor)
     response.headers["ETag"] = f'"{vendor.version}"'
     return vendor
 
 
 @router.post("/{id}/units/{unit_id}/disable", response_model=VendorDetail)
 def disable_vendor(
-    id: UUID, unit_id: UUID, body: DisableCreate, context: UnitEditContext, connection: Connection
+    id: UUID,
+    unit_id: UUID,
+    body: DisableCreate,
+    context: UnitEditContext,
+    connection: Connection,
+    request: Request,
 ) -> VendorDetail:
-    return VendorService(connection, current_scope(), context.user_id).disable_locally(
+    detail = VendorService(connection, current_scope(), context.user_id).disable_locally(
         id, unit_id, body
     )
+    return with_actions(request, connection, detail)
 
 
 @router.post("/{id}/units/{unit_id}/enable", response_model=VendorDetail)
 def enable_vendor(
-    id: UUID, unit_id: UUID, context: UnitEditContext, connection: Connection
+    id: UUID, unit_id: UUID, context: UnitEditContext, connection: Connection, request: Request
 ) -> VendorDetail:
-    return VendorService(connection, current_scope(), context.user_id).enable_locally(id, unit_id)
+    detail = VendorService(connection, current_scope(), context.user_id).enable_locally(id, unit_id)
+    return with_actions(request, connection, detail)
 
 
 @router.get("/{id}/contacts", response_model=list[ContactRead])

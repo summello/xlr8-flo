@@ -1,8 +1,11 @@
+import { XCircle } from "@phosphor-icons/react";
 import { useEffect, useState, type ReactNode } from "react";
 import { apiClient } from "../../api/client";
 import StatusPill from "../../components/status/StatusPill";
 import Signal from "../../components/ui/Signal";
 import DocumentSheet from "../../components/vendors/DocumentSheet";
+import VendorDialog, { type DialogKind } from "../../components/vendors/dialogs/VendorDialog";
+import "../../components/vendors/questionnaire/questionnaire.css";
 import TaxBankingCard from "../../components/vendors/TaxBankingCard";
 import Eligibility from "../../components/vendors/Eligibility";
 import PerformanceCard from "../../components/vendors/performance/PerformanceCard";
@@ -57,6 +60,7 @@ export default function VendorDetail({ id, navigate }: { id: string; navigate: (
   }, [id]);
   // The onboarding record is the requester's answers; a refusal just leaves the fold out.
   const onboarding = useLoad(async () => (await apiClient.GET("/api/v1/vendors/{id}/onboarding", { params: { path: { id } } })).data ?? null, [id]);
+  const [dialog, setDialog] = useState<DialogKind | null>(null);
   const [open, setOpen] = useState<{ doc: DocState; opener: HTMLElement | null } | null>(null);
   const [scorecard, setScorecard] = useState<{ opener: HTMLElement | null } | null>(null);
   useEffect(() => { if (vendor.data) document.title = vendor.data.trading_name; }, [vendor.data]);
@@ -64,13 +68,29 @@ export default function VendorDetail({ id, navigate }: { id: string; navigate: (
   if (vendor.error) return <section className="req-page" aria-label="Vendor"><div role="alert"><p>{vendor.error}</p><button type="button" onClick={vendor.reload}>Try again</button></div><a href="/vendors" onClick={e => { e.preventDefault(); navigate("/vendors"); }}>Back to Vendors</a></section>;
   if (!vendor.data) return <section className="req-page" aria-label="Vendor"><div className="req-card req-card-skeleton" aria-busy="true"><p className="req-skeleton" role="status" aria-label="Loading vendor" /></div></section>;
   const v = vendor.data;
+  // A pending `create` is the vendor's own approval; the pending_approval notice covers it.
+  const PENDING_NOUN: Record<string, string | undefined> = { suspend: "Suspension", reactivate: "Reactivation", availability: "Availability change" };
+  const pending = (changes.data ?? []).find(c => c.status === "pending" && PENDING_NOUN[c.kind]);
+  const disabledHere = (v.disabled_in ?? []).some(d => d.unit_id === unit.data?.id);
+  // Each control renders only when the server lists it (DECISIONS 238); the server has already applied vendor.allow_local_disable to local_disable_units.
+  const may = (a: string) => (v.actions ?? []).includes(a);
+  const unitOk = !!unit.data && (v.local_disable_units ?? []).includes(unit.data.id);
+  const actions: { kind: DialogKind; text: string; destructive?: boolean }[] = [
+    ...(may("request_change") && v.status === "active" ? [{ kind: "suspend" as const, text: "Suspend", destructive: true }] : []),
+    ...(may("request_change") && v.status === "suspended" ? [{ kind: "reactivate" as const, text: "Reactivate" }] : []),
+    ...(may("request_change") && (v.status === "active" || v.status === "suspended") ? [{ kind: "availability" as const, text: "Change Availability" }] : []),
+    ...(unitOk && v.availability === "global" && v.status === "active" && !disabledHere ? [{ kind: "disable" as const, text: "Disable Here" }] : []),
+    ...(unitOk && v.availability === "global" && disabledHere ? [{ kind: "enable" as const, text: "Enable Here" }] : []),
+  ];
   const answered = Object.keys(onboarding.data?.answers ?? {});
   return <section className="req-page vendor-profile" aria-label="Vendor profile">
     <header className="vendor-head">
       <div><h2 className="vendor-name">{v.trading_name}</h2><p className="req-sub">{v.number} · {v.legal_name}</p></div>
       <StatusPill docType="vendor" status={v.status} />
       {eligibility.data && <Eligibility eligibility={eligibility.data} variant="header" unitName={unit.data?.name} />}
+      {actions.length > 0 && <div className="vendor-head-actions">{actions.map(a => <button key={a.kind} type="button" className={a.destructive ? "vendor-destructive" : undefined} onClick={() => setDialog(a.kind)}>{a.destructive && <XCircle aria-hidden="true" />}{a.text}</button>)}</div>}
     </header>
+    {pending && <p className="req-notice" role="status">{PENDING_NOUN[pending.kind]} requested by {pending.requested_by_me ? "you" : pending.requested_by_email}, awaiting approval.</p>}
     {v.status === "pending_approval" && <p className="req-notice" role="status">This vendor is waiting for approval. You can read it here; nothing can be changed until it is decided.</p>}
     <div className="req-grid-detail">
       <Card title="Profile" load={vendor}>
@@ -115,6 +135,7 @@ export default function VendorDetail({ id, navigate }: { id: string; navigate: (
         <p>RFQs and purchase orders that use this vendor appear here. They keep the vendor as it was when they were made.</p>
       </Card>
     </div>
+    {dialog && <VendorDialog kind={dialog} vendorId={id} unit={unit.data} onClose={() => setDialog(null)} onDone={() => { setDialog(null); vendor.reload(); changes.reload(); eligibility.reload(); }} />}
     {scorecard && <ScorecardSheet vendorId={id} categories={(performance.data?.categories ?? []).map(c => c.category_code)} opener={scorecard.opener} onClose={() => setScorecard(null)} onChanged={performance.reload} />}
     {open && <DocumentSheet vendorId={id} doc={open.doc} opener={open.opener} onClose={() => setOpen(null)} onChanged={docs.reload} />}
   </section>;

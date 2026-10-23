@@ -22,6 +22,20 @@
   .vendor-table td { border: 0; padding: var(--space-1) var(--space-3); }
   .vendor-table td[data-label]::before { content: attr(data-label); display: block; color: var(--fg-secondary); font-size: var(--text-caption); }
 }
+/* Vendor status dialogs (E11-S16). Danger fill on the Suspend confirm button only (MASTER 7.13). */
+.vendor-dialog form { display: grid; gap: var(--space-3); }
+.vendor-dialog textarea { font: inherit; padding: var(--space-2) var(--space-3); color: var(--fg); background: var(--surface); border: 1px solid var(--border-control); border-radius: var(--radius-control); }
+.vendor-dialog-units { display: grid; gap: var(--space-2); border: 0; padding: 0; margin: 0; }
+.vendor-dialog-error { color: var(--status-danger); }
+.vendor-dialog .vq-actions button { display: inline-flex; align-items: center; gap: var(--space-1); }
+.vendor-dialog .vendor-danger-confirm { background: var(--status-danger); color: var(--surface); border-color: var(--status-danger); }
+.vendor-dialog .vendor-danger-confirm:hover:not(:disabled) { background: color-mix(in srgb, var(--status-danger), black 8%); }
+.vendor-dialog .vendor-primary-confirm { background: var(--fg); color: var(--surface); border-color: var(--fg); }
+.vendor-head-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-inline-start: auto; }
+.vendor-head-actions button { display: inline-flex; align-items: center; gap: var(--space-1); font: inherit; padding: var(--space-2) var(--space-3); color: var(--fg); background: var(--surface); border: 1px solid var(--border-control); border-radius: var(--radius-control); min-height: var(--row-h); cursor: pointer; }
+.vendor-head-actions button.vendor-destructive { color: var(--status-danger); }
+.vendor-head-actions :focus-visible { outline: 2px solid var(--ring); outline-offset: var(--space-1); }
+@media (max-width: 1023px) { .vendor-head-actions button { min-height: var(--touch-target); } }
 /* Tax and Banking (E11-S13, MASTER 7.15). */
 .mask { font-family: var(--font-mono); letter-spacing: 0.04em; }
 .tax-card { display: grid; gap: var(--space-3); }
