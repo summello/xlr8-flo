@@ -207,3 +207,22 @@ Since E23-S13 a new scorecard record takes `rounds` from the round files
   records against `JUDGEMENT_FLOOR` (10) and says "It is due" when it is reached; then run the script in
   `docs/ops/sonnet-round-churn.md`. "Gated" means one of `GATED_TAGS` in `agents/scripts/flo`, which mirror
   `policy.opus_final_required_tags`; a test keeps the two lists and the doc script identical.
+
+## Light-check e2e: one retry for load timeouts
+
+`flo check --light` runs the Playwright specs a story adds or edits as one `story e2e` step.
+Under host load those specs time out without any defect, so the step retries **once**:
+
+- A retry happens only when every failed test is a Playwright timeout (`Test timeout of ...
+  exceeded`, or an action timeout such as `page.goto: Timeout ...`). An `expect()` mismatch, an
+  axe violation (any `axe` text in the output), a compile or setup error, a failure flo cannot
+  parse, or a mix of timeouts and anything else is red at once, with no retry.
+- The retry is the same command plus `--last-failed --workers=1`: failed specs only, one worker.
+  If it fails for any reason the step is red and prints the first-run and retry output. There
+  is no third attempt.
+- A pass on retry prints `flaky under load: <specs>` (visible in the `flo submit` log) and is
+  recorded in the evidence record in `task.json`: `evidence[].steps[]` holds
+  `{"name": "story e2e", "ok": true, "flaky": true, "specs": [...], "attempts": 2}`. A first-pass
+  success has no `flaky` key.
+- Not affected: the full `e2e+axe` step and hosted CI never retry. Hosted CI stays the
+  independent full-suite judge.

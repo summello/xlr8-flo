@@ -2393,6 +2393,25 @@ def story_checks(cwd):
 # run_check keeps its two-argument signature: tests/gates/test_gates_bite.py stubs it that way.
 LAST_STEPS = []
 
+_PW_FAILURE = re.compile(r"^\s+\d+\) .*?(\S+\.(?:spec|e2e)\.ts):\d+:\d+", re.M)
+_PW_TIMEOUT = re.compile(r"Test timeout of \d+ms exceeded|\b\w+\.\w+: Timeout \d+ms exceeded")
+_PW_DETERMINISTIC = re.compile(r"expect\(|axe|violation|AssertionError", re.I)
+
+
+def timeout_only_failures(output):
+    """The failed spec paths when every failed Playwright test timed out, else None. An
+    assertion, axe violation, compile error or any failure this cannot classify is not a flake."""
+    heads = list(_PW_FAILURE.finditer(output))
+    m = re.search(r"^\s+(\d+) failed$", output, re.M)
+    if not heads or not m or int(m.group(1)) != len(heads) or re.search(r"axe", output, re.I):
+        return None
+    ends = [h.start() for h in heads[1:]] + [len(output)]
+    for head, end in zip(heads, ends):
+        body = output[head.start():end]
+        if not _PW_TIMEOUT.search(body) or _PW_DETERMINISTIC.search(body):
+            return None
+    return sorted({h.group(1) for h in heads})
+
 
 def run_check(cwd=None, profile="full"):
     cwd = cwd or ROOT
@@ -2423,8 +2442,25 @@ def run_check(cwd=None, profile="full"):
             if exemption is not None:
                 print(f"  ?  {name:<12} missing-tool opt-out: {exemption}")
                 continue
+        step = {"name": name, "ok": not r.returncode}
+        specs = timeout_only_failures(r.stdout + r.stderr) if name == "story e2e" and r.returncode else None
+        if specs:
+            # One targeted retry, one worker, failed specs only: load makes Playwright time out,
+            # a defect fails again. Hosted CI and the full e2e+axe step never retry.
+            retry = subprocess.run([*cmd, "--last-failed", "--workers=1"], cwd=cwd,
+                                   capture_output=True, text=True, env=command_environment)
+            if not retry.returncode:
+                print(f"  ✓  {name}")
+                print(f"flaky under load: {' '.join(specs)}")
+                LAST_STEPS.append({**step, "ok": True, "flaky": True, "specs": specs, "attempts": 2})
+                continue
+            print(f"  ✗  {name}")
+            LAST_STEPS.append({**step, "attempts": 2, "specs": specs})
+            print("first run:\n" + (r.stdout + r.stderr).strip()[-2000:])
+            print("retry (--last-failed --workers=1):\n" + (retry.stdout + retry.stderr).strip()[-2000:])
+            return False
         print(f"  {'✓' if not r.returncode else '✗'}  {name}")
-        LAST_STEPS.append({"name": name, "ok": not r.returncode})
+        LAST_STEPS.append(step)
         if r.returncode:
             print((r.stdout + r.stderr).strip()[-2000:])
             return False
