@@ -3346,7 +3346,7 @@ epics:
           - SUP-005
         dep:
           - E23-S14
-        st: review
+        st: done
       - id: E23-S17
         t: 'Recoverable execution records: write before launch, process identity, transient-error retries'
         k: chore

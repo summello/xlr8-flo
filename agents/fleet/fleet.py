@@ -101,6 +101,20 @@ def opus_account(cap: dict, accounts: list[str]) -> str | None:
     return max(ok, key=lambda a: cap["left"].get(a, (100, 100))[0])
 
 
+def shared_red(s: dict, ctx: dict) -> list[dict]:
+    """E23-S16: a red story whose failing jobs the stopped milestone also fails is fixed once, on the
+    milestone. One need per milestone incident (plan() drops the repeats); a story with other
+    failing jobs is unchanged. Matching job names suppresses duplicate work; it does not call the story green."""
+    mid = s.get("milestone")    # only the story's own milestone can share its failure
+    red = (ctx.get("line_jobs") or {}).get(mid) or {}
+    if set(s.get("ci_jobs") or []) & set(red.get("jobs") or []):
+        # keyed by the milestone run, not by this story's overlap, so stories hit by different jobs
+        # of one red run still raise a single need
+        return [{"need": "milestone red: fix it once on the milestone", "story": s["id"],
+                 "incident": f"{mid}@{red.get('sha', '')}"}]
+    return []
+
+
 def decide(s: dict, ctx: dict) -> list[dict]:
     """The next action for one story: [] waits, {"need": why} asks the operator, else a step.
 
@@ -120,6 +134,8 @@ def decide(s: dict, ctx: dict) -> list[dict]:
             # loops (E22-S12, 22 Oct, every tick)
             return need("a CI fix already ran on this merged story: move its commits onto the milestone, "
                         "or clear .scratch/<S>.ci-red if the milestone fixed it")
+        if sr := shared_red(s, ctx):
+            return sr
         return step("fix", account=s.get("account")) if author_can(s, cap) else []
     if s["blocked"]:
         return need("blocked: answer the question in its task packet (notes.blocked)")
@@ -140,6 +156,8 @@ def decide(s: dict, ctx: dict) -> list[dict]:
     # red on the submitted commit, and the author has not committed since: fix. Commits since
     # (a round, or a fix) are submitted first, so CI judges the head rather than an old commit.
     if s["ci_red"] and s["head"] == s["submitted_sha"]:
+        if sr := shared_red(s, ctx):
+            return sr
         last = ctx["results"].get((sid, "fix", ""))
         if last and last.get("head") == s["head"] and last.get("exit") is not None:
             # the author ran on this red and committed nothing: resending loops (21 Oct, every tick)
@@ -182,9 +200,12 @@ def decide(s: dict, ctx: dict) -> list[dict]:
 
 def plan(facts: dict, ctx: dict) -> list[dict]:
     """Every action this tick: per-story steps, then at most one new story if there is room."""
-    acts = []
+    acts, incidents = [], set()
     for s in facts["stories"]:
         got = decide(s, ctx)
+        # one need per shared milestone incident, however many stories it reddens (E23-S16)
+        got = [a for a in got if not a.get("incident") or a["incident"] not in incidents]
+        incidents |= {a["incident"] for a in got if a.get("incident")}
         # one reviewer at a time per story: both plant and revert violations in one worktree
         # (E23-S14). Codex first; the next reviewer starts on a later tick, once this one exits.
         revs = [a for a in got if a.get("step") == "review"]
@@ -391,6 +412,7 @@ def tick(cfg: dict, dry: bool = False) -> dict:
         if not cap["known"]:
             status["notes"].append("limits unknown: work allowed, the agents' own limit errors still stop it")
         ctx = {"cap": cap, "busy": busy, "results": results, "line_stopped": bool(facts.get("line_stopped")),
+               "line_jobs": facts.get("line_stopped_jobs") or {},
                "max_rounds": facts.get("max_rounds", 3), "accounts": cfg.get("vars", {}).get("accounts", ["A", "B"]),
                "allow_start": lim.get("allow_start", True), "now": time.time()}
         acts = plan(facts, ctx)
@@ -413,7 +435,7 @@ def tick(cfg: dict, dry: bool = False) -> dict:
             seen_f = d / "notified.json"
             seen = set(json.loads(seen_f.read_text())) if seen_f.exists() else set()
             for n in status["needs"]:
-                key = f"{n['story']}:{n['need']}"
+                key = n.get("incident") or f"{n['story']}:{n['need']}"
                 if key not in seen:
                     notify(f"{cfg['project']['name']}: {n['story']} needs you", n["need"])
                     seen.add(key)
