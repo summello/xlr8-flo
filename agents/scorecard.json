@@ -4604,6 +4604,63 @@
         },
         "gate_s": 927
       }
+    },
+    {
+      "story": "E23-S14",
+      "kind": "chore",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 1,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "f4f5014c-b44d-4520-9cff-8225d8b09263",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E23-S14",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a16687-0e04-75d3-be1a-1da78226ba6b",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Fleet review runs are now recorded per reviewer and only one reviewer runs per story at a time; review.sh holds a pid-checked per-story lock (exit 75) and restores moved-aside verdicts after a killed run. Housekeeping ruff findings in fleet.py are fixed.",
+      "title": "One run record per reviewer, one reviewer at a time per story",
+      "durations": {
+        "wall_s": 2964,
+        "author_s": 2795,
+        "review_s": {
+          "codex": 11
+        },
+        "gate_s": 0
+      }
     }
   ]
 }

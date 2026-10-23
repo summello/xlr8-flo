@@ -3327,7 +3327,7 @@ epics:
         reqs:
           - SUP-005
         dep: []
-        st: todo
+        st: done
       - id: E23-S15
         t: Process-owned locks for finish, submit and launch; one live author and one submit per story
         k: chore
@@ -3336,7 +3336,7 @@ epics:
         reqs:
           - SUP-005
         dep: []
-        st: todo
+        st: in_progress
       - id: E23-S16
         t: 'Re-review economy: CI-only commits keep verdicts, void verdicts retry once, milestone red is fixed once'
         k: chore
@@ -3366,7 +3366,7 @@ epics:
         reqs:
           - SUP-005
         dep: []
-        st: todo
+        st: in_progress
   - id: E30
     name: Future roadmap
     milestone: M7
