@@ -186,6 +186,18 @@ second review and a manual finish. Ungated budget 25 -> 40 commands, hard cap 35
 already 55), and the packet says to run `flo check --light` and set `ran_tests` within 10 commands.
 Revisit if Codex's 5-hour window starts capping.
 
+**23 Oct 2026 — nemotron last, maintenance only; Opus asleep until the flo fixes land. Operator.**
+Evidence: nemotron re-authored E12-S02 (already merged by Sonnet as 71977a0) in 116 min with 0 commits,
+63 ruff errors, a failing migration-chain test, no regenerated API client, and its own failing test skipped
+as "a test-environment limitation". `author_priority` is now [sonnet, codex, opencode-nemotron];
+nemotron takes `chore`/`docs` at size S only. Opus: both accounts ran low overnight, mostly on repeated
+reviews. Two reviews of one story shared one run record, so the fleet relaunched the "missing" reviewer
+(E11-S16 had four Opus reviews, two per round). And every CI-fix commit marked verdicts stale, so a red
+milestone (E12-S03's stale API client) set off a full Codex and Opus re-review on three stories.
+`fleet.toml` `accounts = []` stops Opus reviews; Codex plans and reviews E23-S14..S18
+(`.scratch/codex-planner-handoff-2026-10-23.md`). Restore `["A", "B"]` when those are on the milestone PR
+and its CI is green. Gated M3 stories wait for their Opus final until then.
+
 **Merge authority:** the operator has delegated GitHub merges for M0 to Opus, with the
 instruction to space them out so the repository does not read as bot-driven. Outside M0 the
 standing rule holds: push, never merge.

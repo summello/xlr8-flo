@@ -25,7 +25,7 @@ policy:
   # api, chore, docs and test stories of size S or M go to it before they draw a Claude window.
   # It cannot take gated work (avoid_tags), so this does not reach the stories where Sonnet
   # churns (docs/ops/sonnet-round-churn.md). Case is cost and capacity, not a quality edge.
-  author_priority: [opencode-nemotron, sonnet, codex]
+  author_priority: [sonnet, codex, opencode-nemotron]   # 23 Oct 2026, operator: nemotron last, maintenance only
 
 # Per-milestone overrides. A milestone may concentrate authorship on one agent when
 # the cost of getting it wrong is a rewrite rather than a patch. Reviewers are NOT
@@ -150,9 +150,9 @@ agents:
     plan: openrouter-credits
     metered: none                # :free variant — no credit drawdown
     roles: [author]              # 11 Oct 2026: 0.0 findings in 5 reviews; it authors, others review
-    allowed_kinds: [crud, ui, api, chore, docs, test]   # 10 Oct 2026: engine, migration → codex
+    allowed_kinds: [chore, docs]   # 23 Oct 2026, operator: straightforward maintenance only (E12-S02 experiment)
     avoid_tags: [money, auth, security, migration, concurrency]   # gated stories → codex
-    max_author_size: M           # 10 Oct 2026: E06-S07 (ui, L) ended exit 0 with nothing committed,
+    max_author_size: S           # 23 Oct 2026: S only. 10 Oct 2026: E06-S07 (ui, L) ended exit 0 with nothing committed,
                                  # no tests and an out-of-scope identity edit; L stories → codex
     fallback: [opencode-ox, qwen, codex]
     notes: >
