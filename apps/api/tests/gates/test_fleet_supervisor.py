@@ -125,7 +125,7 @@ def test_opus_review_runs_on_the_account_with_the_most_five_hour_headroom():
 
 def test_a_running_or_busy_story_waits():
     assert S.decide(story(running=["author"]), ctx()) == []
-    assert S.decide(story(), ctx(busy={"S1": {"submit"}})) == []
+    assert S.decide(story(), ctx(busy={"S1": {("submit", "")}})) == []
 
 
 def test_a_merged_story_with_red_ci_is_fixed_and_a_green_one_is_left():
@@ -138,14 +138,14 @@ def test_a_merged_story_gets_one_fix_after_its_last_submit_then_the_operator():
     author was relaunched every tick on 22 Oct."""
     red = story(merged=True, ci_red=True)
     after = {
-        ("S1", "submit"): {"started": 100, "exit": 0},
-        ("S1", "fix"): {"started": 200, "exit": 0},
+        ("S1", "submit", ""): {"started": 100, "exit": 0},
+        ("S1", "fix", ""): {"started": 200, "exit": 0},
     }
     (act,) = S.decide(red, ctx(results=after))
     assert act["need"].startswith("a CI fix already ran on this merged story")
-    before = {**after, ("S1", "fix"): {"started": 50, "exit": 0}}
+    before = {**after, ("S1", "fix", ""): {"started": 50, "exit": 0}}
     assert steps(S.decide(red, ctx(results=before))) == [("fix", None, "A")]
-    killed = {("S1", "fix"): {"started": 9, "exit": 143}}  # no recorded submit: any finished fix
+    killed = {("S1", "fix", ""): {"started": 9, "exit": 143}}  # no submit: any finished fix
     assert "need" in S.decide(red, ctx(results=killed))[0]
 
 
@@ -171,7 +171,7 @@ def test_red_ci_on_the_submitted_head_runs_a_fix():
 
 
 def test_a_fix_that_committed_nothing_asks_instead_of_looping():
-    results = {("S1", "fix"): {"head": "h1", "exit": 0}}
+    results = {("S1", "fix", ""): {"head": "h1", "exit": 0}}
     (act,) = S.decide(story(ci_red=True), ctx(results=results))
     assert "committed nothing" in act["need"]
 
@@ -182,7 +182,7 @@ def test_an_unsubmitted_head_is_submitted_even_when_ci_was_red_on_the_old_commit
 
 
 def test_a_submit_that_failed_on_this_commit_asks_the_operator():
-    results = {("S1", "submit"): {"head": "h2", "exit": 1}}
+    results = {("S1", "submit", ""): {"head": "h2", "exit": 1}}
     (act,) = S.decide(story(head="h2"), ctx(results=results))
     assert "submit failed" in act["need"]
 
@@ -227,7 +227,7 @@ def test_a_gated_story_finishes_only_on_green_story_ci():
 
 def test_an_ungated_approved_story_finishes_and_a_failed_finish_asks():
     assert steps(S.decide(story(), ctx())) == [("finish", None, None)]
-    results = {("S1", "finish"): {"head": "h1", "exit": 1}}
+    results = {("S1", "finish", ""): {"head": "h1", "exit": 1}}
     (act,) = S.decide(story(), ctx(results=results))
     assert "finish failed" in act["need"]
 
@@ -373,3 +373,54 @@ def test_the_pre_flight_need_notifies_once(runner):
     assert first["needs"][0]["story"] == "N1"
     assert len(notified) == 1 and launched == []
     assert (state / "notified.json").exists()
+
+
+# one run record per reviewer, one reviewer at a time (E23-S14) ---------------------------------
+
+
+def gated_facts():
+    return facts(stories=[story(gated=True, verdicts={"codex": "missing", "opus": "missing"})])
+
+
+def test_a_gated_story_with_both_verdicts_missing_gets_one_review_per_tick_codex_first():
+    (act,) = [a for a in S.plan(gated_facts(), ctx()) if a.get("step") == "review"]
+    assert act["reviewer"] == "codex"
+
+
+def test_the_next_reviewer_starts_after_the_first_exits_and_not_while_it_runs():
+    f = gated_facts()
+    f["stories"][0]["verdicts"] = {"codex": "approve", "opus": "missing"}
+    (act,) = [a for a in S.plan(f, ctx()) if a.get("step") == "review"]
+    assert act["reviewer"] == "opus"
+    third = S.plan(f, ctx(busy={"S1": {("review", "opus")}}))
+    assert [a for a in third if a.get("story") == "S1"] == []
+
+
+def test_each_reviewer_gets_its_own_run_record_and_both_are_tracked_in_busy(tmp_path, monkeypatch):
+    class Proc:
+        pid = 4242
+
+    monkeypatch.setattr(S.subprocess, "Popen", lambda *a, **k: Proc())
+    monkeypatch.setattr(S, "alive", lambda pid: True)
+    cfg = {"project": {"runner": str(tmp_path)}, "steps": {"review": "echo {reviewer}"}}
+    (tmp_path / "runs").mkdir()
+    for who in ("codex", "opus"):
+        S.launch(cfg, tmp_path, {"story": "S1", "step": "review", "reviewer": who}, "h1")
+    assert sorted(p.name for p in (tmp_path / "runs").glob("*.json")) == [
+        "S1.review.codex.json",
+        "S1.review.opus.json",
+    ]
+    busy, results = S.records(tmp_path)
+    assert busy == {"S1": {("review", "codex"), ("review", "opus")}}
+    assert results[("S1", "review", "codex")]["reviewer"] == "codex"
+
+
+def test_an_old_review_record_without_a_reviewer_never_blocks_a_new_run(tmp_path, monkeypatch):
+    monkeypatch.setattr(S, "alive", lambda pid: True)
+    (tmp_path / "runs").mkdir()
+    (tmp_path / "runs" / "S1.review.json").write_text(
+        json.dumps({"story": "S1", "step": "review", "pid": 1, "started": 1, "head": "h"})
+    )
+    busy, results = S.records(tmp_path)
+    assert busy == {}
+    assert ("S1", "review", "") in results

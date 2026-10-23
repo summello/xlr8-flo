@@ -36,8 +36,9 @@ import shlex
 import subprocess
 import sys
 import time
-import tomllib
 from pathlib import Path
+
+import tomllib
 
 HOME = Path.home()
 STATE = HOME / ".claude" / "fleet" / "state"
@@ -112,7 +113,7 @@ def decide(s: dict, ctx: dict) -> list[dict]:
     if s["merged"]:
         if not s["ci_red"]:
             return []
-        fix, sub = ctx["results"].get((sid, "fix")), ctx["results"].get((sid, "submit")) or {}
+        fix, sub = ctx["results"].get((sid, "fix", "")), ctx["results"].get((sid, "submit", "")) or {}
         if fix and fix.get("exit") is not None and fix.get("started", 0) > sub.get("started", 0):
             # a merged story is never resubmitted, so its red stays red after the fix: resending
             # loops (E22-S12, 22 Oct, every tick)
@@ -129,13 +130,13 @@ def decide(s: dict, ctx: dict) -> list[dict]:
     # red on the submitted commit, and the author has not committed since: fix. Commits since
     # (a round, or a fix) are submitted first, so CI judges the head rather than an old commit.
     if s["ci_red"] and s["head"] == s["submitted_sha"]:
-        last = ctx["results"].get((sid, "fix"))
+        last = ctx["results"].get((sid, "fix", ""))
         if last and last.get("head") == s["head"] and last.get("exit") is not None:
             # the author ran on this red and committed nothing: resending loops (21 Oct, every tick)
             return need("a CI fix ran and committed nothing: read its log; the cause may be outside the story")
         return step("fix", account=s.get("account")) if author_can(s, cap) else []
     if s["head"] != s["submitted_sha"]:
-        last = ctx["results"].get((sid, "submit"))
+        last = ctx["results"].get((sid, "submit", ""))
         if last and last.get("head") == s["head"] and last.get("exit") not in (0, None):
             return need("submit failed on this commit: read its submit log")
         return step("submit")
@@ -163,7 +164,7 @@ def decide(s: dict, ctx: dict) -> list[dict]:
         return []                   # a red milestone stops every merge
     if s["gated"] and s.get("ci") != "green":
         return []                   # gated stories merge only on green story CI; ci-watch marks red
-    last = ctx["results"].get((sid, "finish"))
+    last = ctx["results"].get((sid, "finish", ""))
     if last and last.get("head") == s["head"] and last.get("exit") not in (0, None):
         return need("finish failed on this commit: read its finish log")
     return step("finish")
@@ -171,7 +172,16 @@ def decide(s: dict, ctx: dict) -> list[dict]:
 
 def plan(facts: dict, ctx: dict) -> list[dict]:
     """Every action this tick: per-story steps, then at most one new story if there is room."""
-    acts = [a for s in facts["stories"] for a in decide(s, ctx)]
+    acts = []
+    for s in facts["stories"]:
+        got = decide(s, ctx)
+        # one reviewer at a time per story: both plant and revert violations in one worktree
+        # (E23-S14). Codex first; the next reviewer starts on a later tick, once this one exits.
+        revs = [a for a in got if a.get("step") == "review"]
+        if len(revs) > 1:
+            keep = min(revs, key=lambda a: a.get("reviewer") != "codex")
+            got = [a for a in got if a.get("step") != "review"] + [keep]
+        acts += got
     if not ctx.get("allow_start", True):        # the operator's switch: finish what is in flight, start nothing
         return acts
     if ctx["line_stopped"] or facts["in_flight"] >= facts["max_in_flight"]:
@@ -219,7 +229,7 @@ def state_dir(cfg: dict) -> Path:
 
 
 def sh(cmd: str, cwd: str, timeout: int = 300) -> subprocess.CompletedProcess:
-    return subprocess.run(["sh", "-c", cmd], cwd=cwd, capture_output=True, text=True, timeout=timeout)
+    return subprocess.run(["sh", "-c", cmd], cwd=cwd, capture_output=True, text=True, timeout=timeout, check=False)
 
 
 def fill(cmd: str, cfg: dict, **kw) -> str:
@@ -236,25 +246,30 @@ def alive(pid: int) -> bool:
 
 
 def records(d: Path) -> tuple[dict, dict]:
-    """Engine-launched steps: busy[story] = {running steps}, results[(story, step)] = last record."""
+    """Engine-launched steps: busy[story] = {(step, reviewer) still running},
+    results[(story, step, reviewer)] = last record. Reviewer is "" for every step but review."""
     busy, results = {}, {}
     for f in (d / "runs").glob("*.json"):
         r = json.loads(f.read_text())
+        legacy = r["step"] == "review" and "reviewer" not in r   # STORY.review.json, pre E23-S14
+        r.setdefault("reviewer", "")
         ex = f.with_suffix(".exit")
         r["exit"] = int(ex.read_text().strip() or -1) if ex.exists() else None
         if r["exit"] is None and alive(r["pid"]):
-            busy.setdefault(r["story"], set()).add(r["step"])
+            if not legacy:
+                busy.setdefault(r["story"], set()).add((r["step"], r["reviewer"]))
         elif r["exit"] is None:
             r["exit"] = -1          # died without recording an exit: a crash or a reboot
-        results[(r["story"], r["step"])] = r
+        results[(r["story"], r["step"], r["reviewer"])] = r
     return busy, results
 
 
 def launch(cfg: dict, d: Path, act: dict, head: str | None) -> None:
     """Start one step detached; its exit code lands beside its record."""
-    name = f"{act['story']}.{act['step']}"
+    reviewer = (act.get("reviewer") or "") if act["step"] == "review" else ""
+    name = f"{act['story']}.{act['step']}" + (f".{reviewer}" if reviewer else "")
     cmd = fill(cfg["steps"][act["step"]], cfg, story=act["story"], account=act.get("account") or "",
-               reviewer=act.get("reviewer") or "")
+               reviewer=reviewer)
     rec, out, ex = d / "runs" / f"{name}.json", d / "runs" / f"{name}.out", d / "runs" / f"{name}.exit"
     ex.unlink(missing_ok=True)
     with open(out, "a") as fh:
@@ -262,13 +277,13 @@ def launch(cfg: dict, d: Path, act: dict, head: str | None) -> None:
     p = subprocess.Popen(["sh", "-c", f"{cmd} >> {shlex.quote(str(out))} 2>&1; echo $? > {shlex.quote(str(ex))}"],
                          cwd=cfg["project"]["runner"], start_new_session=True,
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    rec.write_text(json.dumps({"story": act["story"], "step": act["step"], "pid": p.pid,
-                               "started": time.time(), "head": head, "cmd": cmd}))
+    rec.write_text(json.dumps({"story": act["story"], "step": act["step"], "reviewer": reviewer,
+                               "pid": p.pid, "started": time.time(), "head": head, "cmd": cmd}))
 
 
 def notify(title: str, text: str) -> None:
     subprocess.run(["osascript", "-e", f"display notification {json.dumps(text)} with title {json.dumps(title)}"],
-                   capture_output=True, timeout=10)
+                   capture_output=True, timeout=10, check=False)
 
 
 def backup(cfg: dict, d: Path) -> str | None:
@@ -282,7 +297,7 @@ def backup(cfg: dict, d: Path) -> str | None:
         src = Path(cfg["project"]["runner"]) / rel
         if src.exists():
             subprocess.run(["rsync", "-a", "--exclude", "*.lock", "--exclude", "*.pid", f"{src}/", f"{dest / rel.strip('/')}/"],
-                           capture_output=True, timeout=600)
+                           capture_output=True, timeout=600, check=False)
     stamp.touch()
     return str(dest)
 
@@ -330,7 +345,7 @@ def tick(cfg: dict, dry: bool = False) -> dict:
                "max_rounds": facts.get("max_rounds", 3), "accounts": cfg.get("vars", {}).get("accounts", ["A", "B"]),
                "allow_start": lim.get("allow_start", True)}
         acts = plan(facts, ctx)
-        running_heavy = sum(1 for steps in busy.values() for s in steps if s in HEAVY)
+        running_heavy = sum(1 for steps in busy.values() for s, _ in steps if s in HEAVY)
         acts = heavy_slots(acts, running_heavy, cfg["project"].get("max_parallel_checks", 2))
         heads = {s["id"]: s.get("head") for s in facts["stories"]}
         for a in acts:
@@ -402,7 +417,7 @@ def install(cfg: dict, active: bool) -> None:
         path=f"{HOME}/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
         interval=cfg["project"].get("interval", 300), log=d / "launchd.log"))
     uid = os.getuid()
-    subprocess.run(["launchctl", "bootout", f"gui/{uid}", str(plist)], capture_output=True)
+    subprocess.run(["launchctl", "bootout", f"gui/{uid}", str(plist)], capture_output=True, check=False)
     subprocess.run(["launchctl", "bootstrap", f"gui/{uid}", str(plist)], check=True)
     print(f"installed {plist} ({'active' if active else 'PAUSED'}; every {cfg['project'].get('interval', 300)} s)")
 
@@ -447,7 +462,7 @@ def main(argv: list[str]) -> int:
         install(cfg, active="--active" in opts)
     elif cmd == "uninstall":
         plist = HOME / "Library" / "LaunchAgents" / f"{label(cfg)}.plist"
-        subprocess.run(["launchctl", "bootout", f"gui/{os.getuid()}", str(plist)], capture_output=True)
+        subprocess.run(["launchctl", "bootout", f"gui/{os.getuid()}", str(plist)], capture_output=True, check=False)
         plist.unlink(missing_ok=True)
         print(f"removed {plist}")
     else:

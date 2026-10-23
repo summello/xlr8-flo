@@ -207,3 +207,20 @@ Since E23-S13 a new scorecard record takes `rounds` from the round files
   records against `JUDGEMENT_FLOOR` (10) and says "It is due" when it is reached; then run the script in
   `docs/ops/sonnet-round-churn.md`. "Gated" means one of `GATED_TAGS` in `agents/scripts/flo`, which mirror
   `policy.opus_final_required_tags`; a test keeps the two lists and the doc script identical.
+
+## Review runs and the review lock (E23-S14)
+
+- **Run names.** The supervisor's run records live in `~/.claude/fleet/state/<project>/runs/`. A
+  review run is `STORY.review.REVIEWER` (`E11-S16.review.codex.json/.out/.exit`); every other step
+  stays `STORY.STEP`. The record carries a `reviewer` field. An old `STORY.review.json` record (no
+  field) is still read for its result but never counts as a busy run.
+- **Sequential reviews.** A story has at most one review running. When both Codex and Opus are
+  missing, a tick starts Codex; Opus starts on a later tick once Codex has exited. Reviewers
+  still never read each other's verdicts.
+- **The lock.** `review.sh` holds `.scratch/<STORY>.review.lock/pid` (the background job's pid) for
+  the whole review. A second `review.sh` for that story exits **75** with
+  `review of <S> already running (pid N)`. A lock whose pid is dead is reclaimed by the next
+  `review.sh`, which also puts back any verdicts left in `.scratch/<S>.aside.<reviewer>` by a run that
+  was killed. Release reviews (a milestone id) take no lock.
+- **Clearing a stuck lock.** Only if no `review.sh` job for the story is running (and the
+  lock has no `pid` file because the launcher itself was killed at start): `rm -rf .scratch/<S>.review.lock`.
