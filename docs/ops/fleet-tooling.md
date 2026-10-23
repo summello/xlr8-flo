@@ -214,7 +214,7 @@ Since E23-S13 a new scorecard record takes `rounds` from the round files
 Under host load those specs time out without any defect, so the step retries **once**:
 
 - A retry happens only when every failed test is a Playwright timeout (`Test timeout of ...
-  exceeded`, or an action timeout such as `page.goto: Timeout ...`). An `expect()` mismatch, an
+  exceeded`, or a `TimeoutError` action timeout such as `page.goto`; a test that throws its own `Error` with timeout text is an explicit failure). An `expect()` mismatch, an
   axe violation (any `axe` text in the output), a compile or setup error, a failure flo cannot
   parse, or a mix of timeouts and anything else is red at once, with no retry.
 - The retry is the same command plus `--last-failed --workers=1`: failed specs only, one worker.

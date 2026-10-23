@@ -2394,7 +2394,10 @@ def story_checks(cwd):
 LAST_STEPS = []
 
 _PW_FAILURE = re.compile(r"^\s+\d+\) .*?(\S+\.(?:spec|e2e)\.ts):\d+:\d+", re.M)
-_PW_TIMEOUT = re.compile(r"Test timeout of \d+ms exceeded|\b\w+\.\w+: Timeout \d+ms exceeded")
+# Framework-generated only: the test timeout is printed as the block's bare first line, an action
+# timeout as a TimeoutError. A test that throws new Error("Test timeout ...") prints "Error: ..."
+# and is an explicit failure.
+_PW_TIMEOUT = re.compile(r"Test timeout of \d+ms exceeded[^\n]*\.|TimeoutError: \w+\.\w+: Timeout \d+ms exceeded\.")
 _PW_DETERMINISTIC = re.compile(r"expect\(|axe|violation|AssertionError", re.I)
 
 
@@ -2408,7 +2411,8 @@ def timeout_only_failures(output):
     ends = [h.start() for h in heads[1:]] + [len(output)]
     for head, end in zip(heads, ends):
         body = output[head.start():end]
-        if not _PW_TIMEOUT.search(body) or _PW_DETERMINISTIC.search(body):
+        first = next((l.strip() for l in body[head.end() - head.start():].splitlines()[1:] if l.strip()), "")
+        if not _PW_TIMEOUT.fullmatch(first) or _PW_DETERMINISTIC.search(body):
             return None
     return sorted({h.group(1) for h in heads})
 

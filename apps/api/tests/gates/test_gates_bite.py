@@ -1575,7 +1575,7 @@ def _pw_failures(*bodies: str) -> str:
 
 
 _TIMEOUT = "Test timeout of 60000ms exceeded."
-_ACTION = "Error: page.goto: Timeout 30000ms exceeded."
+_ACTION = "TimeoutError: page.goto: Timeout 30000ms exceeded."
 _ASSERT = "Error: expect(locator).toHaveText(expected) failed\n    Timeout: 5000ms"
 
 
@@ -1639,6 +1639,8 @@ def test_story_e2e_second_timeout_stays_red_with_no_third_command(
     "output",
     [
         _pw_failures(_ASSERT),
+        _pw_failures("Error: " + _TIMEOUT + "\n      at story.spec.ts:9:11"),  # thrown by the test
+        _pw_failures("Error: page.goto: Timeout 30000ms exceeded."),  # not a TimeoutError
         _pw_failures(_TIMEOUT, _ASSERT),
         _pw_failures(_TIMEOUT + "\n    axe violations: 1"),
         _pw_failures(_TIMEOUT) + "\n  expected no axe violations\n",
