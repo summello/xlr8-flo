@@ -198,6 +198,15 @@ milestone (E12-S03's stale API client) set off a full Codex and Opus re-review o
 (`.scratch/codex-planner-handoff-2026-10-23.md`). Restore `["A", "B"]` when those are on the milestone PR
 and its CI is green. Gated M3 stories wait for their Opus final until then.
 
+**23 Oct 2026 — Sonnet-only story authorship; E23-S14..S18 first. Operator.** The E12-S02
+comparison and the live routing evidence closed the overflow experiment: no new story goes to
+nemotron or Codex. Sonnet on account A or B authors every non-overridden story; when both accounts
+have no worker slot, the story waits. Codex remains the story reviewer, and M0's explicit
+`sole_author: codex` override remains intact. Finish the five P0 flo fixes before resuming the M3
+product queue. Codex is the only reviewer for E23-S14..S18. If an assigned Sonnet exhausts its
+capacity on one of those five stories, the Codex planner takes over that story and records the
+substitution; this is not a general Codex author lane.
+
 **Merge authority:** the operator has delegated GitHub merges for M0 to Opus, with the
 instruction to space them out so the repository does not read as bot-driven. Outside M0 the
 standing rule holds: push, never merge.

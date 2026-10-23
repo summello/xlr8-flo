@@ -127,12 +127,19 @@ def test_no_independent_reviewer_stops_the_assignment(assign):
         assign("engine", "M", config=fleet(reviewers=["codex"]), sonnet_free=False)
 
 
-def test_the_committed_config_has_the_reordered_priority():
+def test_the_committed_config_has_sonnet_only_authoring():
     text = (REPO / "agents" / "agents.yaml").read_text()
-    match = re.search(r"^  author_priority: \[(.*)\]", text, re.M)
-    assert match, "author_priority line not found"
-    assert [n.strip() for n in match.group(1).split(",")] == [
-        "sonnet",
-        "codex",
-        "opencode-nemotron",
-    ]
+    assert re.search(r"^  author_priority: \[sonnet\]$", text, re.M)
+
+    def roles(name: str) -> list[str]:
+        block = re.search(
+            rf"^  {re.escape(name)}:\n(?P<body>.*?)(?=^  \S+:\n|\Z)", text, re.M | re.S
+        )
+        assert block, f"agent block not found: {name}"
+        line = re.search(r"^    roles: \[(.*)\]", block.group("body"), re.M)
+        assert line, f"roles line not found: {name}"
+        return [role.strip() for role in line.group(1).split(",") if role.strip()]
+
+    assert "author" in roles("sonnet")
+    for name in ("codex", "opencode-nemotron", "qwen", "kimi"):
+        assert "author" not in roles(name)
