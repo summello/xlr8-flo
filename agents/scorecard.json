@@ -4943,6 +4943,65 @@
         },
         "gate_s": 836
       }
+    },
+    {
+      "story": "E12-S11",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 3,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 3
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 3,
+          "findings": 3,
+          "blockers": 3,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "2fab3564-1608-47b1-bc04-e3e5a8346b57",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S11",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a16879-48f1-7cf3-8027-9f2d0ec26fa9",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds GET /sourcing/rfqs (scoped by rfq.view, tabs, counts, cursor), GET /rfqs/{id}/history, can_edit/can_approve on RfqRead and the closed=info tone fix, plus the RFQ list and detail screens with the Extend Deadline and Change Contact dialogs.",
+      "title": "RFQ list and RFQ detail screens",
+      "durations": {
+        "wall_s": 7375,
+        "author_s": 807,
+        "review_s": {
+          "codex": 21
+        },
+        "gate_s": 0
+      }
     }
   ]
 }

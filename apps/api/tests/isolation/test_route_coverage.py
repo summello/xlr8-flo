@@ -37,6 +37,7 @@ CODES_ROUTES = (
 )
 SOURCING_ROUTES = "sourcing/test_rfq.py::test_rfq_routes_conceal_foreign_tenants"
 CONTENT_ROUTES = "sourcing/test_rfq_content.py::test_rfq_content_routes_conceal_foreign_tenants"
+SCREENS_ROUTES = "sourcing/test_rfq_screens.py::test_screens_routes_conceal_foreign_tenants"
 LIFECYCLE_ROUTES = "sourcing/test_rfq_lifecycle.py::test_lifecycle_routes_conceal_foreign_tenants"
 QROUTES = "vendors/test_questionnaire.py::test_questionnaire_routes_conceal_foreign_tenants"
 OROUTES = (
@@ -91,6 +92,8 @@ COVERED = {
     ("POST", "/api/v1/sourcing/rfqs/{id}/start-evaluation"): LIFECYCLE_ROUTES,
     ("POST", "/api/v1/sourcing/rfqs/{id}/invitees/{vendor_id}/resend"): LIFECYCLE_ROUTES,
     ("GET", "/api/v1/sourcing/rfqs/{id}/versions"): LIFECYCLE_ROUTES,
+    ("GET", "/api/v1/sourcing/rfqs"): SCREENS_ROUTES,
+    ("GET", "/api/v1/sourcing/rfqs/{id}/history"): SCREENS_ROUTES,
     (
         "GET",
         "/api/v1/vendors/{id}/eligibility",

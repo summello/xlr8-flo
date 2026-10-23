@@ -9,10 +9,12 @@ from flo.api.admin_users import organization_target
 from flo.api.auth import get_auth_settings
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
-from flo.kernel.authz import permits, require
+from flo.kernel.authz import permits, require, require_member
 from flo.kernel.config import Settings
+from flo.kernel.identity import IdentityId
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
+from flo.modules.identity.service import IdentityAuthorizationConnection, granted_scopes
 from flo.modules.org.service import OrgService
 from flo.modules.sourcing.lifecycle import RfqLifecycle
 from flo.modules.sourcing.schemas import (
@@ -25,8 +27,11 @@ from flo.modules.sourcing.schemas import (
     RfqAmend,
     RfqContentPatch,
     RfqCreate,
+    RfqEvent,
     RfqLinesPatch,
+    RfqPage,
     RfqRead,
+    RfqTab,
     RfqVersionRead,
     SourceablePage,
     VisibilityPut,
@@ -108,9 +113,35 @@ def patch_rfq_lines(
     return rfq
 
 
+@router.get("/rfqs", response_model=RfqPage)
+def list_rfqs(
+    user_id: Annotated[IdentityId, Depends(require_member())],
+    connection: Connection,
+    tab: RfqTab = "all",
+    q: str = "",
+    cursor: str | None = None,
+    page_size: Annotated[int, Query(ge=1, le=50)] = 50,
+) -> RfqPage:
+    org_wide, units, _ = granted_scopes(
+        cast(IdentityAuthorizationConnection, connection), current_scope(), user_id, "rfq.view"
+    )
+    return RfqService(connection, current_scope(), user_id).list_rfqs(
+        visible=None if org_wide else units, tab=tab, q=q, cursor=cursor, page_size=page_size
+    )
+
+
 @router.get("/rfqs/{id}", response_model=RfqRead)
-def get_rfq(id: UUID, context: ViewContext, connection: Connection, response: Response) -> RfqRead:
+def get_rfq(
+    id: UUID,
+    context: ViewContext,
+    connection: Connection,
+    request: Request,
+    response: Response,
+) -> RfqRead:
     rfq = RfqService(connection, current_scope(), context.user_id).get(id)
+    target = rfq_target(id, connection)
+    rfq.can_edit = permits(request, "rfq.edit", target)
+    rfq.can_approve = permits(request, "rfq.approve", target)
     response.headers["ETag"] = f'"{rfq.edit_revision}"'
     return rfq
 
@@ -280,3 +311,8 @@ def list_rfq_versions(
     id: UUID, context: ViewContext, connection: Connection
 ) -> list[RfqVersionRead]:
     return RfqLifecycle(connection, current_scope(), context.user_id).versions(id)
+
+
+@router.get("/rfqs/{id}/history", response_model=list[RfqEvent])
+def rfq_history(id: UUID, context: ViewContext, connection: Connection) -> list[RfqEvent]:
+    return RfqService(connection, current_scope(), context.user_id).history(id)

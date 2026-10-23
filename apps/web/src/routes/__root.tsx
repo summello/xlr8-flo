@@ -30,6 +30,8 @@ import AmendReview from "./requisitions/amend-review";
 import RequisitionDetail from "./requisitions/detail";
 import VendorList from "./vendors/list";
 import VendorDetail from "./vendors/detail";
+import RfqList from "./sourcing/rfqs/list";
+import RfqDetail from "./sourcing/rfqs/detail";
 import { confirmLeave, consumeRestoring, installHistoryIndex, settlePop } from "../lib/navigation-guard";
 import type { Project } from "../components/projects/api";
 import type { RoutePath } from "./route-paths";
@@ -57,6 +59,7 @@ const REQUISITION_RESUBMIT_PATH = /^\/requisitions\/([0-9a-f-]{36})\/resubmit$/;
 const REQUISITION_AMEND_PATH = /^\/requisitions\/([0-9a-f-]{36})\/amend$/;
 const REQUISITION_AMEND_REVIEW_PATH = /^\/requisitions\/([0-9a-f-]{36})\/amend\/review$/;
 const VENDOR_PATH = /^\/vendors\/([0-9a-f-]{36})$/;
+const RFQ_PATH = /^\/sourcing\/rfqs\/([0-9a-f-]{36})$/;
 const ADMIN_USER_PATH = /^\/admin\/users\/([^/]+)$/;
 
 const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
@@ -148,10 +151,17 @@ const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
   },
   "/sourcing": {
     activeHref: "/sourcing",
-    description: "Sourcing screens arrive with the commitment milestone.",
+    description: "What is open, what is due, and what needs you.",
     hierarchy: [ORGANIZATION, BUSINESS_UNIT, PROJECT, ["/sourcing", "Sourcing"]],
     phase: "commit",
     title: "Sourcing",
+  },
+  "/sourcing/rfqs": {
+    activeHref: "/sourcing",
+    description: "What is open, what is due, and what needs you.",
+    hierarchy: [ORGANIZATION, ["/sourcing/rfqs", "RFQs"]],
+    phase: "commit",
+    title: "RFQs",
   },
   "/purchase-orders": {
     activeHref: "/purchase-orders",
@@ -222,6 +232,10 @@ function routeFor(path: string): ShellRoute {
   if (VENDOR_PATH.test(path)) return {
     activeHref: "/vendors", path, phase: "commit", title: "Vendor", description: "Vendor profile, documents and history.",
     breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/vendors", label: "Vendors" }, { href: path, label: "Vendor" }],
+  };
+  if (RFQ_PATH.test(path)) return {
+    activeHref: "/sourcing", path, phase: "commit", title: "RFQ", description: "Where this RFQ is, and who has what.",
+    breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/sourcing/rfqs", label: "RFQs" }, { href: path, label: "RFQ" }],
   };
   const adminUser = path.match(ADMIN_USER_PATH)?.[1];
   if (adminUser !== undefined) {
@@ -354,11 +368,14 @@ export default function RootRoute() {
   const titledRoute = requisitionHeading?.path === shellRoute.path ? { ...displayedRoute, title: requisitionHeading.title, breadcrumbs: displayedRoute.breadcrumbs.map((item, i, all) => i === all.length - 1 ? { ...item, label: requisitionHeading.title } : item) } : displayedRoute;
   const adminUserId = shellRoute.path.match(ADMIN_USER_PATH)?.[1];
   const vendorId = shellRoute.path.match(VENDOR_PATH)?.[1];
+  const rfqId = shellRoute.path.match(RFQ_PATH)?.[1];
 
   return (
     <AppShell navigate={navigate} route={{ ...titledRoute, breadcrumbs: titledRoute.breadcrumbs.map(item => ({ ...item, label: item.href === "/organization" && tenantName ? tenantName : item.label })) }}>
       {shellRoute.path === "/projects" ? <ProjectList navigate={navigate} /> : undefined}
       {shellRoute.path === "/vendors" ? <VendorList key={window.location.search} navigate={navigate} /> : undefined}
+      {shellRoute.path === "/sourcing" || shellRoute.path === "/sourcing/rfqs" ? <RfqList key={window.location.search} navigate={navigate} /> : undefined}
+      {rfqId ? <RfqDetail key={rfqId} id={rfqId} navigate={navigate} /> : undefined}
       {vendorId ? <VendorDetail key={vendorId} id={vendorId} navigate={navigate} /> : undefined}
       {shellRoute.path === "/requisitions" ? <RequisitionList key={window.location.search} navigate={navigate} /> : undefined}
       {shellRoute.path === "/requisitions/new" ? <NewRequisition navigate={navigate} /> : undefined}

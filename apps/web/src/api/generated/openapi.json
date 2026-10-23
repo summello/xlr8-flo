@@ -10504,6 +10504,39 @@
         "title": "RfqContentPatch",
         "type": "object"
       },
+      "RfqCounts": {
+        "properties": {
+          "all": {
+            "title": "All",
+            "type": "integer"
+          },
+          "awarded": {
+            "title": "Awarded",
+            "type": "integer"
+          },
+          "drafts": {
+            "title": "Drafts",
+            "type": "integer"
+          },
+          "evaluating": {
+            "title": "Evaluating",
+            "type": "integer"
+          },
+          "open": {
+            "title": "Open",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "drafts",
+          "open",
+          "evaluating",
+          "awarded",
+          "all"
+        ],
+        "title": "RfqCounts",
+        "type": "object"
+      },
       "RfqCreate": {
         "additionalProperties": false,
         "properties": {
@@ -10528,6 +10561,49 @@
           "lines"
         ],
         "title": "RfqCreate",
+        "type": "object"
+      },
+      "RfqEvent": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "actor_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Email"
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "action",
+          "at",
+          "actor_email",
+          "reason"
+        ],
+        "title": "RfqEvent",
         "type": "object"
       },
       "RfqLineIn": {
@@ -10670,6 +10746,101 @@
         "title": "RfqLinesPatch",
         "type": "object"
       },
+      "RfqListRow": {
+        "properties": {
+          "deadline_at": {
+            "format": "date-time",
+            "title": "Deadline At",
+            "type": "string"
+          },
+          "deadline_tz": {
+            "title": "Deadline Tz",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "invitee_count": {
+            "title": "Invitee Count",
+            "type": "integer"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "owner_email": {
+            "title": "Owner Email",
+            "type": "string"
+          },
+          "requisition_numbers": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Requisition Numbers",
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RfqStatus"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "unit_id": {
+            "format": "uuid",
+            "title": "Unit Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "title",
+          "status",
+          "unit_id",
+          "owner_email",
+          "deadline_at",
+          "deadline_tz",
+          "invitee_count",
+          "requisition_numbers"
+        ],
+        "title": "RfqListRow",
+        "type": "object"
+      },
+      "RfqPage": {
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/RfqCounts"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/RfqListRow"
+            },
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rows",
+          "next_cursor",
+          "counts"
+        ],
+        "title": "RfqPage",
+        "type": "object"
+      },
       "RfqRead": {
         "properties": {
           "attachments": {
@@ -10679,6 +10850,16 @@
             },
             "title": "Attachments",
             "type": "array"
+          },
+          "can_approve": {
+            "default": false,
+            "title": "Can Approve",
+            "type": "boolean"
+          },
+          "can_edit": {
+            "default": false,
+            "title": "Can Edit",
+            "type": "boolean"
           },
           "created_at": {
             "format": "date-time",
@@ -26692,6 +26873,118 @@
       }
     },
     "/api/v1/sourcing/rfqs": {
+      "get": {
+        "operationId": "list_rfqs_api_v1_sourcing_rfqs_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tab",
+            "required": false,
+            "schema": {
+              "default": "all",
+              "enum": [
+                "drafts",
+                "open",
+                "evaluating",
+                "awarded",
+                "all"
+              ],
+              "title": "Tab",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RfqPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "List Rfqs",
+        "tags": [
+          "sourcing"
+        ]
+      },
       "post": {
         "operationId": "create_rfq_api_v1_sourcing_rfqs_post",
         "parameters": [
@@ -27180,6 +27473,79 @@
           }
         },
         "summary": "Extend Rfq Deadline",
+        "tags": [
+          "sourcing"
+        ]
+      }
+    },
+    "/api/v1/sourcing/rfqs/{id}/history": {
+      "get": {
+        "operationId": "rfq_history_api_v1_sourcing_rfqs__id__history_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RfqEvent"
+                  },
+                  "title": "Response Rfq History Api V1 Sourcing Rfqs  Id  History Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Rfq History",
         "tags": [
           "sourcing"
         ]

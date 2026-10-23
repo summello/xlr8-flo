@@ -158,6 +158,45 @@ class RfqRead(BaseModel):
     attachments: list[RfqAttachmentRead] = []
     invitees: list[InviteeRead] = []
     published_at: datetime | None = None
+    can_edit: bool = False
+    can_approve: bool = False
+
+
+type RfqTab = Literal["drafts", "open", "evaluating", "awarded", "all"]
+
+
+class RfqListRow(BaseModel):
+    id: UUID
+    number: str
+    title: str
+    status: RfqStatus
+    unit_id: UUID
+    owner_email: str
+    deadline_at: datetime
+    deadline_tz: str
+    invitee_count: int
+    requisition_numbers: list[str]
+
+
+class RfqCounts(BaseModel):
+    drafts: int
+    open: int
+    evaluating: int
+    awarded: int
+    all: int
+
+
+class RfqPage(BaseModel):
+    rows: list[RfqListRow]
+    next_cursor: str | None
+    counts: RfqCounts
+
+
+class RfqEvent(BaseModel):
+    action: str
+    at: datetime
+    actor_email: str | None
+    reason: str | None
 
 
 class SourceableLine(BaseModel):
