@@ -104,11 +104,13 @@ def shared_red(s: dict, ctx: dict) -> list[dict]:
     """E23-S16: a red story whose failing jobs the stopped milestone also fails is fixed once, on the
     milestone. One need per milestone incident (plan() drops the repeats); a story with other
     failing jobs is unchanged. Matching job names suppresses duplicate work; it does not call the story green."""
-    for mid, red in (ctx.get("line_jobs") or {}).items():
-        common = sorted(set(s.get("ci_jobs") or []) & set(red.get("jobs") or []))
-        if common:
-            return [{"need": "milestone red: fix it once on the milestone", "story": s["id"],
-                     "incident": f"{mid}@{red.get('sha', '')}:{','.join(common)}"}]
+    mid = s.get("milestone")    # only the story's own milestone can share its failure
+    red = (ctx.get("line_jobs") or {}).get(mid) or {}
+    if set(s.get("ci_jobs") or []) & set(red.get("jobs") or []):
+        # keyed by the milestone run, not by this story's overlap, so stories hit by different jobs
+        # of one red run still raise a single need
+        return [{"need": "milestone red: fix it once on the milestone", "story": s["id"],
+                 "incident": f"{mid}@{red.get('sha', '')}"}]
     return []
 
 

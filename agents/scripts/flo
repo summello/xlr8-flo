@@ -2595,6 +2595,7 @@ def cmd_facts(argv):
             "id": sid, "title": s["t"], "st": s["st"], "merged": s["st"] == "done",
             "author": author, "account": ((pkt.get("sessions") or {}).get(author) or {}).get("account"),
             "gated": bool(pkt.get("opus_final")),
+            "milestone": next((m["id"] for m in rm["milestones"] if m["branch"] == pkt.get("milestone_branch")), None),
             "blocked": s["st"] == "blocked" or bool((pkt.get("notes") or {}).get("blocked")),
             "rounds": F.rounds_done(names, sid), "running": running,
             "author_result": F.author_result(_read(sc / f"{sid}.log")),
