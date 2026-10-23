@@ -24,7 +24,7 @@ Stdlib only, except PyYAML for the two config files.
   flo budget                per-agent spend and remaining capacity
   flo roadmap [--check]     regenerate docs/claude-plan.md §5 (or verify it)
   flo board   [--watch [S]] refresh .flo/status.json and board.html from git refs, worktrees, GitHub\n  flo ack     [KEY|all]     confirm a 'waiting on you' item (list keys with no argument)\n  flo unack   <KEY|all>     reopen a confirmed item
-  flo check [--light]       everything CI runs, locally (stops at the first red); --light is\n                            the story gate: no full pytest/e2e, only the tests the story touched\n  flo reap    <STORY_ID>    drop a merged story's worktree once its CI is green\n  flo account <STORY_ID>    account + session id for a multi-account author (sonnet)\n  flo ci-watch              one pass: mark red story/milestone CI, reap green merged stories\n  flo facts                 delivery state as JSON for the fleet supervisor (~/.claude/fleet)\n  flo round   <STORY_ID>    write the next review-round file from the verdicts; print its path
+  flo check [--light]       everything CI runs, locally (stops at the first red); --light is\n                            the story gate: no full pytest/e2e, only the tests the story touched\n  flo reap    <STORY_ID>    drop a merged story's worktree once its CI is green\n  flo account <STORY_ID>    account + session id for a multi-account author (sonnet)\n  flo ci-watch              one pass: mark red story/milestone CI, reap green merged stories\n  flo facts                 delivery state as JSON for the fleet supervisor (~/.claude/fleet)\n  flo reconcile submit|finish <STORY_ID>   exit 0 if that step's effect already happened\n  flo round   <STORY_ID>    write the next review-round file from the verdicts; print its path
   flo launch-model <STORY_ID> [--reviewer NAME] [--effort]   the model (or effort) agents.yaml names for a launch; recorded in task.json
   flo db      [url|reset]   this worktree's test database (reset drops and recreates it)
   flo up [--reset]          start local Postgres + SeaweedFS + Mailpit; optionally reset data
@@ -2620,6 +2620,7 @@ def cmd_facts(argv):
             "blocked": s["st"] == "blocked" or bool((pkt.get("notes") or {}).get("blocked")),
             "rounds": F.rounds_done(names, sid), "running": running,
             "author_result": F.author_result(_read(sc / f"{sid}.log")),
+            "author_ended": (sc / f"{sid}.log").stat().st_mtime if (sc / f"{sid}.log").exists() else None,
             "head": git("rev-parse", "HEAD", cwd=wt, check=False), "submitted_sha": sub,
             "verdicts": verdicts, "ci_red": red,
             # asked of GitHub only where it decides something: a gated story waiting to finish
@@ -2639,6 +2640,27 @@ def cmd_facts(argv):
         "free_accounts": free_accounts("sonnet", sonnet) if sonnet.get("accounts") else [],
         "stories": out,
     }, indent=1))
+
+
+def cmd_reconcile(argv):
+    """flo reconcile submit|finish <S>: exit 0 only when the step's external effect is proven done, so
+    the supervisor records success instead of repeating it (E23-S17). Read-only until proven; anything
+    uncertain exits 1."""
+    if len(argv) != 2 or argv[0] not in ("submit", "finish"):
+        die("usage: flo reconcile submit|finish <STORY_ID>")
+    step, sid = argv
+    pkt, wt = packet_of(sid), worktree_path(sid)
+    if step == "finish":
+        sys.exit(0 if merged_in(sid, "HEAD") else 1)      # the runner checkout is the milestone
+    head = git("rev-parse", "HEAD", cwd=wt, check=False)
+    r = subprocess.run(["git", "ls-remote", "origin", f"refs/heads/{pkt['branch']}"],
+                       cwd=wt, capture_output=True, text=True)
+    if not head or r.returncode or r.stdout.split()[:1] != [head]:
+        sys.exit(1)
+    if pkt.get("submitted_sha") != head:
+        pkt["submitted_sha"] = head
+        (wt / "task.json").write_text(json.dumps(pkt, indent=2) + "\n")
+    sys.exit(0)
 
 
 def cmd_round(argv):
@@ -2862,7 +2884,7 @@ COMMANDS = {
     "review": cmd_review, "gate": cmd_gate, "final": cmd_final, "escalate": cmd_escalate,
     "done": cmd_done, "design": cmd_design, "status": cmd_status, "budget": cmd_budget,
     "roadmap": cmd_roadmap, "score": cmd_score, "session": cmd_session, "board": cmd_board,
-    "reap": cmd_reap, "account": cmd_account, "launch-model": cmd_launch_model, "preflight": cmd_preflight, "reassign": cmd_reassign, "with-lock": cmd_with_lock, "codex-usage": cmd_codex_usage, "codex-guard": cmd_codex_guard, "release-packet": cmd_release_packet, "log-guard": cmd_log_guard, "ci-watch": cmd_ci_watch, "facts": cmd_facts, "round": cmd_round, "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "db": cmd_db, "up": cmd_up, "down": cmd_down,
+    "reap": cmd_reap, "account": cmd_account, "launch-model": cmd_launch_model, "preflight": cmd_preflight, "reassign": cmd_reassign, "with-lock": cmd_with_lock, "codex-usage": cmd_codex_usage, "codex-guard": cmd_codex_guard, "release-packet": cmd_release_packet, "log-guard": cmd_log_guard, "ci-watch": cmd_ci_watch, "facts": cmd_facts, "reconcile": cmd_reconcile, "round": cmd_round, "ack": cmd_ack, "unack": cmd_unack, "check": cmd_check, "db": cmd_db, "up": cmd_up, "down": cmd_down,
 }
 
 if __name__ == "__main__":

@@ -33,6 +33,11 @@ round = 'f=$({flo} round {story}) && agents/scripts/author.sh {story} "$f"'
 fix = "agents/scripts/fix.sh {story}"
 finish = "agents/scripts/finish.sh {story}"
 
+[reconcile]
+# Run on a failed or crashed step before anything repeats it: exit 0 means its effect already happened.
+submit = "{flo} reconcile submit {story}"
+finish = "{flo} reconcile finish {story}"
+
 [limits]
 # Mission Control's collector prints both Claude accounts, Codex and OpenRouter (5-hour and week).
 command = "python3 -I $HOME/.claude/mods/mission-control/hooks/collect.py {runner} 12 60"

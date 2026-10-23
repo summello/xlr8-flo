@@ -1563,3 +1563,45 @@ def test_commit_shape_gate_accepts_story_and_maintenance_commits_and_rejects_the
     assert _commit_shape_exit_code(accepted) == 0
     for rejected in ("update stuff", "feat(web): add a thing", "Fixed the bug", "wip"):
         assert _commit_shape_exit_code([*accepted, rejected]) == 1, rejected
+
+
+def _git(cwd: Path, *args: str) -> str:
+    env = {**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t", "GIT_COMMITTER_NAME": "t",
+           "GIT_COMMITTER_EMAIL": "t@t"}
+    r = subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, check=True, env=env)
+    return r.stdout.strip()
+
+
+def test_reconcile_proves_a_submit_or_finish_already_happened_and_exits_1_when_unproven(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    flo = load_flo()
+    remote, root, wt = tmp_path / "remote.git", tmp_path / "root", tmp_path / "root-S1"
+    _git(tmp_path, "init", "--bare", str(remote))
+    _git(tmp_path, "clone", str(remote), str(wt))
+    (wt / "a").write_text("1")
+    _git(wt, "add", "a")
+    _git(wt, "commit", "-m", "work")
+    _git(tmp_path, "init", str(root))
+    _git(root, "commit", "--allow-empty", "-m", "E01-S02: other")
+    (wt / "task.json").write_text(json.dumps({"branch": "story/S1", "submitted_sha": None}))
+    monkeypatch.setattr(flo, "ROOT", root)
+
+    def run(step: str) -> int:
+        with pytest.raises(SystemExit) as e:
+            flo.cmd_reconcile([step, "S1"])
+        return int(e.value.code or 0)
+
+    _git(wt, "checkout", "-b", "story/S1")
+    assert run("submit") == 1                                  # nothing pushed: unproven
+    _git(wt, "push", "origin", "story/S1")
+    assert run("submit") == 0                                  # origin equals HEAD
+    assert json.loads((wt / "task.json").read_text())["submitted_sha"] == _git(wt, "rev-parse", "HEAD")
+    (wt / "a").write_text("2")
+    _git(wt, "commit", "-am", "newer")
+    assert run("submit") == 1                                  # HEAD moved past origin
+    assert run("finish") == 1                                  # milestone lacks the squash commit
+    _git(root, "commit", "--allow-empty", "-m", "E99-S01: not it")
+    assert run("finish") == 1
+    _git(root, "commit", "--allow-empty", "-m", "S1: squash")
+    assert run("finish") == 0
