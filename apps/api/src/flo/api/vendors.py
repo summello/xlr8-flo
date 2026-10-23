@@ -184,10 +184,15 @@ def create_vendor(
 
 @router.get("/{id}", response_model=VendorDetail)
 def get_vendor(
-    id: UUID, context: ViewContext, connection: Connection, response: Response, request: Request
+    id: UUID,
+    user: Annotated[UUID, Depends(require_member())],
+    connection: Connection,
+    response: Response,
+    request: Request,
 ) -> VendorDetail:
-    detail = VendorService(connection, current_scope(), context.user_id).get(id)
-    detail = with_actions(request, connection, detail)
+    service = VendorService(connection, current_scope(), user)
+    service.can_read_request(id)  # vendor.view, or the requester on their own request
+    detail = with_actions(request, connection, service.get(id))
     response.headers["ETag"] = f'"{detail.version}"'  # the vendor's version; PATCH's If-Match
     return detail
 
@@ -196,13 +201,13 @@ def get_vendor(
 def patch_vendor(
     id: UUID,
     body: VendorPatch,
-    context: EditContext,
+    user: Annotated[UUID, Depends(require_member())],
     connection: Connection,
     response: Response,
     request: Request,
     version: Annotated[str | None, Header(alias="If-Match")] = None,
 ) -> VendorDetail:
-    vendor = VendorService(connection, current_scope(), context.user_id).update(id, body, version)
+    vendor = VendorService(connection, current_scope(), user).update(id, body, version)
     vendor = with_actions(request, connection, vendor)
     response.headers["ETag"] = f'"{vendor.version}"'
     return vendor
@@ -232,15 +237,22 @@ def enable_vendor(
 
 
 @router.get("/{id}/contacts", response_model=list[ContactRead])
-def list_contacts(id: UUID, context: ViewContext, connection: Connection) -> list[ContactRead]:
-    return VendorService(connection, current_scope(), context.user_id).list_contacts(id)
+def list_contacts(
+    id: UUID, user: Annotated[UUID, Depends(require_member())], connection: Connection
+) -> list[ContactRead]:
+    service = VendorService(connection, current_scope(), user)
+    service.can_read_request(id)
+    return service.list_contacts(id)
 
 
 @router.post("/{id}/contacts", status_code=201, response_model=ContactRead)
 def create_contact(
-    id: UUID, body: ContactCreate, context: EditContext, connection: Connection
+    id: UUID,
+    body: ContactCreate,
+    user: Annotated[UUID, Depends(require_member())],
+    connection: Connection,
 ) -> ContactRead:
-    return VendorService(connection, current_scope(), context.user_id).create_contact(id, body)
+    return VendorService(connection, current_scope(), user).create_contact(id, body)
 
 
 @router.patch("/{id}/contacts/{contact_id}", response_model=ContactRead)
@@ -248,12 +260,12 @@ def patch_contact(
     id: UUID,
     contact_id: UUID,
     body: ContactPatch,
-    context: EditContext,
+    user: Annotated[UUID, Depends(require_member())],
     connection: Connection,
     response: Response,
     version: Annotated[str | None, Header(alias="If-Match")] = None,
 ) -> ContactRead:
-    contact = VendorService(connection, current_scope(), context.user_id).update_contact(
+    contact = VendorService(connection, current_scope(), user).update_contact(
         id, contact_id, body, version
     )
     response.headers["ETag"] = f'"{contact.version}"'
@@ -262,31 +274,43 @@ def patch_contact(
 
 @router.delete("/{id}/contacts/{contact_id}", status_code=204)
 def delete_contact(
-    id: UUID, contact_id: UUID, context: EditContext, connection: Connection
+    id: UUID,
+    contact_id: UUID,
+    user: Annotated[UUID, Depends(require_member())],
+    connection: Connection,
 ) -> Response:
-    VendorService(connection, current_scope(), context.user_id).delete_contact(id, contact_id)
+    VendorService(connection, current_scope(), user).delete_contact(id, contact_id)
     return Response(status_code=204)
 
 
 @router.get("/{id}/documents", response_model=list[DocState])
-def list_documents(id: UUID, context: ViewContext, connection: Connection) -> list[DocState]:
-    return VendorService(connection, current_scope(), context.user_id).document_state(id, today())
+def list_documents(
+    id: UUID, user: Annotated[UUID, Depends(require_member())], connection: Connection
+) -> list[DocState]:
+    service = VendorService(connection, current_scope(), user)
+    service.can_read_request(id)
+    return service.document_state(id, today())
 
 
 @router.post("/{id}/documents", status_code=201, response_model=DocState)
 def add_document(
-    id: UUID, body: DocumentCreate, context: EditContext, connection: Connection
+    id: UUID,
+    body: DocumentCreate,
+    user: Annotated[UUID, Depends(require_member())],
+    connection: Connection,
 ) -> DocState:
-    return VendorService(connection, current_scope(), context.user_id).add_document(id, body)
+    return VendorService(connection, current_scope(), user).add_document(id, body)
 
 
 @router.post("/{id}/documents/{did}/replace", response_model=DocState)
 def replace_document(
-    id: UUID, did: UUID, body: DocumentReplace, context: EditContext, connection: Connection
+    id: UUID,
+    did: UUID,
+    body: DocumentReplace,
+    user: Annotated[UUID, Depends(require_member())],
+    connection: Connection,
 ) -> DocState:
-    return VendorService(connection, current_scope(), context.user_id).replace_document(
-        id, did, body
-    )
+    return VendorService(connection, current_scope(), user).replace_document(id, did, body)
 
 
 @router.post("/{id}/documents/{did}/verify", response_model=DocState)
@@ -319,15 +343,13 @@ def reveal_sensitive(
 def put_sensitive(
     id: UUID,
     body: SensitivePut,
-    edit: EditContext,
-    context: RevealContext,
+    user: Annotated[UUID, Depends(require_member())],
     connection: Connection,
     response: Response,
     version: Annotated[str | None, Header(alias="If-Match")] = None,
 ) -> SensitiveWritten:
-    written = VendorService(connection, current_scope(), context.user_id).put_sensitive(
-        id, body, version
-    )
+    """A member; the service admits a vendor.edit holder (with reveal) or the owner of a draft."""
+    written = VendorService(connection, current_scope(), user).put_sensitive(id, body, version)
     response.headers["ETag"] = f'"{written.version}"'
     return written
 

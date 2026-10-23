@@ -39,6 +39,7 @@ SOURCING_ROUTES = "sourcing/test_rfq.py::test_rfq_routes_conceal_foreign_tenants
 CONTENT_ROUTES = "sourcing/test_rfq_content.py::test_rfq_content_routes_conceal_foreign_tenants"
 SCREENS_ROUTES = "sourcing/test_rfq_screens.py::test_screens_routes_conceal_foreign_tenants"
 LIFECYCLE_ROUTES = "sourcing/test_rfq_lifecycle.py::test_lifecycle_routes_conceal_foreign_tenants"
+BID_ROUTES = "sourcing/test_bids.py::test_bid_routes_conceal_foreign_tenants"
 QROUTES = "vendors/test_questionnaire.py::test_questionnaire_routes_conceal_foreign_tenants"
 OROUTES = (
     "vendors/test_questionnaire.py::"
@@ -92,6 +93,12 @@ COVERED = {
     ("POST", "/api/v1/sourcing/rfqs/{id}/start-evaluation"): LIFECYCLE_ROUTES,
     ("POST", "/api/v1/sourcing/rfqs/{id}/invitees/{vendor_id}/resend"): LIFECYCLE_ROUTES,
     ("GET", "/api/v1/sourcing/rfqs/{id}/versions"): LIFECYCLE_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/bids"): BID_ROUTES,
+    ("GET", "/api/v1/sourcing/rfqs/{id}/bids"): BID_ROUTES,
+    ("GET", "/api/v1/sourcing/rfqs/{id}/bids/{bid_id}"): BID_ROUTES,
+    ("PATCH", "/api/v1/sourcing/rfqs/{id}/bids/{bid_id}"): BID_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/bids/{bid_id}/submit"): BID_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/bids/{bid_id}/replace"): BID_ROUTES,
     ("GET", "/api/v1/sourcing/rfqs"): SCREENS_ROUTES,
     ("GET", "/api/v1/sourcing/rfqs/{id}/history"): SCREENS_ROUTES,
     (

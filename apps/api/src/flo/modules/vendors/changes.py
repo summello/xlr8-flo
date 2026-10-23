@@ -117,6 +117,43 @@ class ChangesMixin:
             raise ProblemError(ErrorCode.NOT_FOUND)
         return str(row[0]), str(row[1]), cast(UUID, row[2])
 
+    def can_write_draft(self, id: UUID) -> str:
+        """Gate for every contact, identifier, document and sensitive write. A `vendor.edit`
+        holder passes ("edit"); a member holding neither permission is 403; the requester passes
+        ("owner") only on their own draft. The row is locked first so a concurrent submit cannot
+        slip between check and write. Someone else's draft is 404, never 403; the owner after
+        submit is 409 `not_draft`."""
+        status, _, creator = self._lock(id)
+        if self._holds("vendor.edit"):
+            return "edit"
+        if not self._holds("vendor.request"):
+            raise ProblemError(ErrorCode.FORBIDDEN)
+        if creator != self.actor_id:
+            raise ProblemError(ErrorCode.NOT_FOUND)
+        if status != "draft":
+            raise conflict(
+                "not_draft", "This vendor was submitted and can no longer be edited here."
+            )
+        return "owner"
+
+    def can_read_request(self, id: UUID) -> None:
+        """Gate for the owner reads (DECISIONS 239): a `vendor.view` holder passes; otherwise the
+        requester reads their own vendor in any status. No lock, no status check. Unknown or
+        foreign is 404, a member with neither permission 403, someone else's request 404."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            row = self.repo.execute(
+                "SELECT created_by FROM vendor WHERE org_id = %(org_id)s AND id = %(id)s",
+                {"id": id},
+            ).fetchone()
+            if row is None:
+                raise ProblemError(ErrorCode.NOT_FOUND)
+            if self._holds("vendor.view"):
+                return
+            if not self._holds("vendor.request"):
+                raise ProblemError(ErrorCode.FORBIDDEN)
+            if row[0] != self.actor_id:
+                raise ProblemError(ErrorCode.NOT_FOUND)
+
     def _set_status(self, id: UUID, before: str, after: str, change: UUID | None) -> None:
         self.repo.execute(
             "UPDATE vendor SET status = %(status)s, updated_at = now() "
@@ -544,4 +581,4 @@ class ChangesMixin:
                         trading_name=str(row[1]),
                     )
                 )
-            return DuplicateResult(matches=matches)
+            return DuplicateResult(matches=matches, can_override=self._holds("vendor.approve"))

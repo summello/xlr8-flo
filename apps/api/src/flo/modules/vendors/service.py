@@ -405,14 +405,9 @@ class VendorService(
                 ErrorCode.BAD_REQUEST, detail="If-Match must contain an integer version."
             ) from exc
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
-            if (
-                self.repo.execute(
-                    "SELECT 1 FROM vendor WHERE org_id = %(org_id)s AND id = %(id)s FOR UPDATE",
-                    {"id": id},
-                ).fetchone()
-                is None
-            ):
-                raise ProblemError(ErrorCode.NOT_FOUND)
+            # The owner of a draft writes without reveal; anyone else needs it (decision 124).
+            if self.can_write_draft(id) == "edit" and not self._holds("vendor.sensitive.reveal"):
+                raise ProblemError(ErrorCode.FORBIDDEN)
             written = sensitive.put(self.repo, id, body.model_dump(), self.actor_id, expected)
             if written is None:
                 raise conflict(
@@ -554,12 +549,11 @@ class VendorService(
     def update(self, id: UUID, body: VendorPatch, if_match: str | None) -> VendorDetail:
         expected = expected_version(if_match, "vendor")
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self.can_write_draft(id)  # locks the row
             row = self.repo.execute(
-                "SELECT status FROM vendor WHERE org_id = %(org_id)s AND id = %(id)s FOR UPDATE",
-                {"id": id},
+                "SELECT status FROM vendor WHERE org_id = %(org_id)s AND id = %(id)s", {"id": id}
             ).fetchone()
-            if row is None:
-                raise ProblemError(ErrorCode.NOT_FOUND)
+            assert row is not None
             before = self._row(id)
             if before.version != expected:
                 raise stale("vendor")
@@ -720,6 +714,7 @@ class VendorService(
 
     def create_contact(self, vendor_id: UUID, body: ContactCreate) -> ContactRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self.can_write_draft(vendor_id)
             self._row(vendor_id)
             type = self._contact_type(body.type)
             id = uuid4()
@@ -757,6 +752,7 @@ class VendorService(
     ) -> ContactRead:
         expected = expected_version(if_match, "contact")
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self.can_write_draft(vendor_id)
             self._row(vendor_id)
             before = self._contact(vendor_id, contact_id, lock=True)
             if before.version != expected:
@@ -784,6 +780,7 @@ class VendorService(
 
     def delete_contact(self, vendor_id: UUID, contact_id: UUID) -> None:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self.can_write_draft(vendor_id)
             self._row(vendor_id)
             before = self._contact(vendor_id, contact_id, lock=True)
             if before.type in REQUIRED_CONTACT_TYPES:

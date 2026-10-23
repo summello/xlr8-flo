@@ -20,6 +20,7 @@ from tests.collaboration.test_attachments import upload
 from tests.imports.test_upload import MemoryStorage
 from tests.isolation.test_real_sessions import client, headers, login
 from tests.kernel.test_migrate import empty_database as empty_database  # noqa: F401
+from tests.org.test_bootstrap import admin_id
 from tests.org.test_bootstrap import bootstrap_db as bootstrap_db  # noqa: F401
 from tests.requisitions.test_header import header_db as header_db
 from tests.requisitions.test_header import org_svc
@@ -309,9 +310,9 @@ def test_vendor_document_routes_conceal_foreign_tenants(header_db):
     types(db, db[2], TAX=True)
     foreign = new_vendor(db, db[2])
     attachment, _ = attach(db, foreign.id, org=db[2])
-    theirs = VendorService(db[0], Scope(db[2]), db[3]).add_document(
-        foreign.id, DocumentCreate(type_code="TAX", attachment_id=attachment)
-    )
+    theirs = VendorService(
+        db[0], Scope(db[2]), admin_id(db[0], "second@example.test")
+    ).add_document(foreign.id, DocumentCreate(type_code="TAX", attachment_id=attachment))
 
     async def scenario():
         async with client(app) as browser:

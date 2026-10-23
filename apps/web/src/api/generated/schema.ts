@@ -2295,6 +2295,76 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sourcing/rfqs/{id}/bids": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Bids */
+        get: operations["list_bids_api_v1_sourcing_rfqs__id__bids_get"];
+        put?: never;
+        /** Create Bid */
+        post: operations["create_bid_api_v1_sourcing_rfqs__id__bids_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sourcing/rfqs/{id}/bids/{bid_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Bid */
+        get: operations["get_bid_api_v1_sourcing_rfqs__id__bids__bid_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Bid */
+        patch: operations["patch_bid_api_v1_sourcing_rfqs__id__bids__bid_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/sourcing/rfqs/{id}/bids/{bid_id}/replace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Replace Bid */
+        post: operations["replace_bid_api_v1_sourcing_rfqs__id__bids__bid_id__replace_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sourcing/rfqs/{id}/bids/{bid_id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit Bid */
+        post: operations["submit_bid_api_v1_sourcing_rfqs__id__bids__bid_id__submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sourcing/rfqs/{id}/extend-deadline": {
         parameters: {
             query?: never;
@@ -2895,7 +2965,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Put Sensitive */
+        /**
+         * Put Sensitive
+         * @description A member; the service admits a vendor.edit holder (with reveal) or the owner of a draft.
+         */
         put: operations["put_sensitive_api_v1_vendors__id__sensitive_put"];
         post?: never;
         delete?: never;
@@ -3522,6 +3595,194 @@ export interface components {
             /** Currency */
             currency: string;
         };
+        /** BidCreate */
+        BidCreate: {
+            /** Currency */
+            currency: string;
+            /** Rfq Version */
+            rfq_version: number;
+            /**
+             * Sent At
+             * Format: date-time
+             */
+            sent_at: string;
+            /**
+             * Vendor Id
+             * Format: uuid
+             */
+            vendor_id: string;
+        };
+        /** BidLineIn */
+        BidLineIn: {
+            /** Quoted */
+            quoted: boolean;
+            /**
+             * Rfq Line Id
+             * Format: uuid
+             */
+            rfq_line_id: string;
+            /**
+             * Tax
+             * @default 0
+             */
+            tax?: string;
+            /** Unit Price */
+            unit_price?: string | null;
+        };
+        /** BidLineRead */
+        BidLineRead: {
+            /** Line Total */
+            line_total: string | null;
+            /** Quantity */
+            quantity: string;
+            /** Quoted */
+            quoted: boolean;
+            /**
+             * Rfq Line Id
+             * Format: uuid
+             */
+            rfq_line_id: string;
+            /** Tax */
+            tax: string;
+            /** Unit Price */
+            unit_price: string | null;
+        };
+        /**
+         * BidPatch
+         * @description Every field optional; `vendor_id` and `replaces_bid_id` are fixed at create.
+         */
+        BidPatch: {
+            /** Currency */
+            currency?: string | null;
+            /** Delivery Terms */
+            delivery_terms?: string | null;
+            /** Evidence Attachment Id */
+            evidence_attachment_id?: string | null;
+            /** Exceptions */
+            exceptions?: string | null;
+            /** Freight */
+            freight?: string | null;
+            /** Lead Time Days */
+            lead_time_days?: number | null;
+            /** Lines */
+            lines?: components["schemas"]["BidLineIn"][] | null;
+            /** Requirements */
+            requirements?: components["schemas"]["BidRequirementIn"][] | null;
+            /** Rfq Version */
+            rfq_version?: number | null;
+            /** Sent At */
+            sent_at?: string | null;
+            /** Valid Until */
+            valid_until?: string | null;
+            /** Warranty */
+            warranty?: string | null;
+        };
+        /** BidRead */
+        BidRead: {
+            /** Currency */
+            currency: string;
+            /** Current */
+            current: boolean;
+            /** Delivery Terms */
+            delivery_terms: string | null;
+            /** Evidence Attachment Id */
+            evidence_attachment_id: string | null;
+            /** Exceptions */
+            exceptions: string | null;
+            /** Freight */
+            freight: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Keyed At
+             * Format: date-time
+             */
+            keyed_at: string;
+            /**
+             * Keyed By
+             * Format: uuid
+             */
+            keyed_by: string;
+            /** Lead Time Days */
+            lead_time_days: number | null;
+            /** Lines */
+            lines: components["schemas"]["BidLineRead"][];
+            /** Replaced By Bid Id */
+            replaced_by_bid_id: string | null;
+            /** Replaces Bid Id */
+            replaces_bid_id: string | null;
+            /** Requirements */
+            requirements: components["schemas"]["BidRequirementRead"][];
+            /**
+             * Rfq Id
+             * Format: uuid
+             */
+            rfq_id: string;
+            /** Rfq Version */
+            rfq_version: number;
+            /** Row Version */
+            row_version: number;
+            /**
+             * Sent At
+             * Format: date-time
+             */
+            sent_at: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "submitted";
+            /** Submitted At */
+            submitted_at: string | null;
+            /** Valid Until */
+            valid_until: string | null;
+            /**
+             * Vendor Id
+             * Format: uuid
+             */
+            vendor_id: string;
+            /** Warranty */
+            warranty: string | null;
+        };
+        /** BidReplace */
+        BidReplace: {
+            /** Reason */
+            reason: string;
+            /**
+             * Sent At
+             * Format: date-time
+             */
+            sent_at: string;
+        };
+        /** BidRequirementIn */
+        BidRequirementIn: {
+            /** Met */
+            met: boolean;
+            /** Note */
+            note?: string | null;
+            /**
+             * Requirement Id
+             * Format: uuid
+             */
+            requirement_id: string;
+        };
+        /** BidRequirementRead */
+        BidRequirementRead: {
+            /** Met */
+            met: boolean;
+            /** Note */
+            note: string | null;
+            /**
+             * Requirement Id
+             * Format: uuid
+             */
+            requirement_id: string;
+        };
+        /** BidSubmit */
+        BidSubmit: Record<string, never>;
         /** BudgetChangeRequestRead */
         BudgetChangeRequestRead: {
             /** Amount */
@@ -4288,6 +4549,11 @@ export interface components {
         };
         /** DuplicateResult */
         DuplicateResult: {
+            /**
+             * Can Override
+             * @default false
+             */
+            can_override?: boolean;
             /** Matches */
             matches: components["schemas"]["DuplicateMatch"][];
         };
@@ -15110,6 +15376,280 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RfqRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    list_bids_api_v1_sourcing_rfqs__id__bids_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BidRead"][];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    create_bid_api_v1_sourcing_rfqs__id__bids_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BidCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BidRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    get_bid_api_v1_sourcing_rfqs__id__bids__bid_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                bid_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BidRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    patch_bid_api_v1_sourcing_rfqs__id__bids__bid_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                bid_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BidPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BidRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    replace_bid_api_v1_sourcing_rfqs__id__bids__bid_id__replace_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                bid_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BidReplace"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BidRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    submit_bid_api_v1_sourcing_rfqs__id__bids__bid_id__submit_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                bid_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["BidSubmit"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BidRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

@@ -35,8 +35,8 @@ from tests.approvals.test_workflow_definitions import definition, draft
 from tests.approvals.test_workflow_definitions import svc as workflows
 from tests.isolation.test_real_sessions import client, headers, login
 from tests.kernel.test_migrate import empty_database as empty_database  # noqa: F401
+from tests.org.test_bootstrap import admin_id, settings
 from tests.org.test_bootstrap import bootstrap_db as bootstrap_db  # noqa: F401
-from tests.org.test_bootstrap import settings
 from tests.requisitions.test_header import header_db as header_db  # noqa: F401
 from tests.requisitions.test_header import org_svc, unit
 from tests.vendors.test_questionnaire import new_identity, published, question
@@ -464,7 +464,7 @@ def test_a_foreign_tenants_vendor_never_matches(vdb):
 
 
 def ready_foreign(db):
-    s = service(db, org=db[2])
+    s = service(db, admin_id(db[0], "second@example.test"), org=db[2])
     vendor = s.create(VendorCreate(trading_name="F", legal_name="F", availability="global"))
     s.put_sensitive(vendor.id, SensitivePut(**TAX), '"0"')
     sql(db, "UPDATE vendor SET status='active' WHERE id=%s", (vendor.id,), org=db[2])
@@ -593,7 +593,7 @@ def test_vendor_change_routes_conceal_foreign_tenants(vdb):
                 assert response.status_code == 404, (method, suffix, response.text)
             # the live check never sees the other tenant's vendor
             seen = await send(browser, "GET", "/duplicate-check?tax_id=123456789&tax_id_country=US")
-            assert seen.status_code == 200 and seen.json() == {"matches": []}
+            assert seen.status_code == 200 and seen.json()["matches"] == []
 
     asyncio.run(scenario())
 
@@ -602,7 +602,9 @@ def test_vendor_change_routes_end_to_end_and_per_role(vdb):
     db, _ = vdb
     vendor = ready(db, "Mine", {"tax_id": "99887766", "tax_id_country": "US"})
     twin = ready(db, "Twin")
-    other = ready(db, "Other", actor=make_actor(db, ["vendor.view"]))  # not the caller's draft
+    other = ready(
+        db, "Other", actor=make_actor(db, ["vendor.view", "vendor.request"])
+    )  # not the caller's draft
     service(db).put_sensitive(twin.id, SensitivePut(tax_id="9988-7766", tax_id_country="US"), '"0"')
 
     async def scenario():

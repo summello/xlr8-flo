@@ -587,3 +587,4 @@ class DuplicateMatch(BaseModel):
 
 class DuplicateResult(BaseModel):
     matches: list[DuplicateMatch]
+    can_override: bool = False  # the caller holds vendor.approve, the override path's own check

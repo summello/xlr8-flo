@@ -1585,7 +1585,7 @@ epics:
         dep:
           - E11-S06
           - E11-S12
-        st: review
+        st: done
       - id: E11-S15
         t: 'Onboarding decision panel: vendor evidence block'
         k: ui
@@ -1697,7 +1697,7 @@ epics:
           - SRC-006
         dep:
           - E12-S03
-        st: in_progress
+        st: done
       - id: E12-S05
         t: Bid confidentiality and late-bid block with audited override
         k: security

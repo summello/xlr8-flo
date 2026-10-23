@@ -9,7 +9,15 @@ from typing import Annotated, Literal, cast
 from uuid import UUID
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import (
+    AfterValidator,
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError
 
@@ -333,3 +341,136 @@ class RfqVersionRead(BaseModel):
     snapshot: dict[str, object]
     published_by_email: str
     published_at: datetime
+
+
+# -- bids (SRC-006, SRC-010) ----------------------------------------------------------------
+
+
+def _amount(value: str) -> str:
+    if not re.fullmatch(r"[0-9]{1,14}(?:\.[0-9]{1,4})?", value):
+        raise ValueError("Enter an amount as a decimal string with at most 4 decimals.")
+    return value
+
+
+Amount = Annotated[str, AfterValidator(_amount)]
+
+
+class BidCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    vendor_id: UUID
+    rfq_version: int = Field(ge=1)
+    currency: str = Field(pattern=r"^[A-Z]{3}$")
+    sent_at: AwareDatetime
+
+
+class BidLineIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    rfq_line_id: UUID
+    quoted: bool
+    unit_price: Amount | None = None
+    tax: Amount = "0"
+
+
+class BidRequirementIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    requirement_id: UUID
+    met: bool
+    note: str | None = Field(default=None, max_length=1000)
+
+
+_NULLABLE = {
+    "evidence_attachment_id",
+    "lead_time_days",
+    "valid_until",
+    "delivery_terms",
+    "warranty",
+    "exceptions",
+}
+
+
+class BidPatch(BaseModel):
+    """Every field optional; `vendor_id` and `replaces_bid_id` are fixed at create."""
+
+    model_config = ConfigDict(extra="forbid")
+    sent_at: AwareDatetime | None = None
+    currency: str | None = Field(default=None, pattern=r"^[A-Z]{3}$")
+    rfq_version: int | None = Field(default=None, ge=1)
+    evidence_attachment_id: UUID | None = None
+    freight: Amount | None = None
+    lead_time_days: int | None = Field(default=None, ge=0)
+    valid_until: date | None = None
+    delivery_terms: str | None = Field(default=None, max_length=500)
+    warranty: str | None = Field(default=None, max_length=2000)
+    exceptions: str | None = Field(default=None, max_length=5000)
+    lines: list[BidLineIn] | None = Field(default=None, max_length=500)
+    requirements: list[BidRequirementIn] | None = Field(default=None, max_length=500)
+
+    @model_validator(mode="after")
+    def no_null_where_required(self) -> BidPatch:
+        for name in self.model_fields_set - _NULLABLE:
+            if getattr(self, name) is None:
+                raise ValueError(f"{name} cannot be cleared.")
+        for items, key in ((self.lines, "rfq_line_id"), (self.requirements, "requirement_id")):
+            ids = [getattr(i, key) for i in items or []]
+            if len(set(ids)) != len(ids):
+                raise ValueError("Each line and each requirement may appear once.")
+        return self
+
+
+class BidSubmit(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class BidReplace(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reason: str = Field(min_length=1, max_length=500)
+    sent_at: AwareDatetime
+
+    @field_validator("reason")
+    @classmethod
+    def trimmed(cls, value: str) -> str:
+        value = value.strip()
+        if not 1 <= len(value) <= 500:
+            raise ValueError("Enter 1 to 500 characters.")
+        return value
+
+
+class BidLineRead(BaseModel):
+    rfq_line_id: UUID
+    quantity: str
+    quoted: bool
+    unit_price: str | None
+    tax: str
+    line_total: str | None
+
+
+class BidRequirementRead(BaseModel):
+    requirement_id: UUID
+    met: bool
+    note: str | None
+
+
+class BidRead(BaseModel):
+    id: UUID
+    rfq_id: UUID
+    vendor_id: UUID
+    rfq_version: int
+    currency: str
+    sent_at: datetime
+    evidence_attachment_id: UUID | None
+    keyed_by: UUID
+    keyed_at: datetime
+    freight: str
+    lead_time_days: int | None
+    valid_until: date | None
+    delivery_terms: str | None
+    warranty: str | None
+    exceptions: str | None
+    status: Literal["draft", "submitted"]
+    submitted_at: datetime | None
+    replaces_bid_id: UUID | None
+    row_version: int
+    lines: list[BidLineRead]
+    requirements: list[BidRequirementRead]
+    replaced_by_bid_id: UUID | None
+    current: bool

@@ -12,10 +12,15 @@ from pydantic import JsonValue
 from flo.kernel import setting_guards
 from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
+from flo.kernel.authz import AuthorizationTarget as TargetProtocol
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError
+from flo.kernel.identity import IdentityId
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.identity.service import (
+    AuthorizationConnection,
+    AuthorizationResolver,
+    AuthorizationTarget,
     IdentityAuthorizationConnection,
     register_business_unit_scope,
 )
@@ -265,6 +270,18 @@ class OrgService:
             self._audit("org_unit.create", unit_id, None, row)
             return OrgUnitRead.model_validate(row)
 
+    def _holds(self, permission: str) -> bool:
+        assert self.actor_id is not None
+        return (
+            AuthorizationResolver(cast(AuthorizationConnection, self.connection), self.scope)
+            .check(
+                IdentityId(self.actor_id),
+                permission,
+                cast(TargetProtocol, AuthorizationTarget.organization(self.scope.org_id)),
+            )
+            .allowed
+        )
+
     def list_units(
         self,
         *,
@@ -274,6 +291,12 @@ class OrgService:
         page_size: int,
     ) -> OrgUnitPage:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            # Internal callers (the requisition lookups) pass no actor and were authorized upstream.
+            if self.actor_id is not None and not self._holds("org.unit.read"):
+                # DECISIONS 241: a requester picks units for a vendor and sees only active ones.
+                if not self._holds("vendor.request"):
+                    raise ProblemError(ErrorCode.FORBIDDEN)
+                active = True
             rows = self.repo.execute(
                 """
                 SELECT id FROM org_unit WHERE org_id = %(org_id)s

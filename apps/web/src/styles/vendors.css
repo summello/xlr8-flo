@@ -55,3 +55,10 @@
 .perf-field select, .perf-field input[type=month] { max-width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-control); border-radius: var(--radius-input); color: var(--fg); background: var(--surface); min-height: var(--touch-target); font: inherit; }
 .perf-field [aria-invalid="true"] { border-color: var(--status-danger); }
 .perf-form .field-error { color: var(--status-danger); margin: 0; }
+/* Request a vendor (E11-S14). Tokens only; the form shares the requisition grid, fields and action bar. */
+.vendor-request .vr-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+.vendor-request .vr-contact { display: grid; gap: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-card); padding: var(--space-3) var(--space-4); margin: 0; min-width: 0; }
+.vendor-request .vr-contact legend { padding-inline: var(--space-2); font-weight: var(--weight-heading); }
+.vendor-request .vr-check { display: inline-flex; align-items: center; gap: var(--space-2); min-block-size: var(--touch-target); }
+.vendor-request .vr-dup { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); grid-column: 1 / -1; }
+.vendor-request .vr-id { display: grid; gap: var(--space-2); }

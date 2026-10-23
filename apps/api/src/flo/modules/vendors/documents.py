@@ -53,9 +53,26 @@ def vendor_access(
     return cast(TargetProtocol, AuthorizationTarget.organization(scope.org_id))
 
 
+def draft_write(
+    connection: psycopg.Connection[tuple[object, ...]], scope: Scope, id: UUID, actor: UUID | None
+) -> None:
+    """An upload is a vendor write: the same rule as every other (a vendor.edit holder, or the
+    requester on their own draft), so a requester can attach what the form asks for."""
+    # ponytail: this check's row lock ends with its own transaction, before the upload writes, so a
+    # submit landing between the two leaves an unlinked file on a pending vendor (the link itself,
+    # add_document, is checked in-transaction). Move the check into the write_guard hook to close
+    # it.
+    from flo.modules.vendors.service import VendorService
+
+    with tenant_transaction(cast(RlsSession, connection), scope):
+        VendorService(connection, scope, actor).can_write_draft(id)
+
+
 def register_access() -> None:
-    """Attachments on a vendor use E09-S10's routes; read is vendor.view, write vendor.edit."""
-    register_document_access(DocumentAccess("vendor", "vendor.view", "vendor.edit", vendor_access))
+    """Attachments on a vendor use E09-S10's routes; read is vendor.view, write is `draft_write`."""
+    register_document_access(
+        DocumentAccess("vendor", "vendor.view", "vendor.edit", vendor_access, None, draft_write)
+    )
 
 
 def state_of(verification: str | None, expiry: date | None, on: date) -> tuple[str, int | None]:
@@ -81,6 +98,8 @@ class DocumentsMixin:
     if TYPE_CHECKING:
 
         def _row(self, id: UUID) -> VendorRead: ...
+
+        def can_write_draft(self, id: UUID) -> str: ...
 
         def _audit(
             self,
@@ -183,6 +202,7 @@ class DocumentsMixin:
 
     def add_document(self, vendor_id: UUID, body: DocumentCreate) -> DocState:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self.can_write_draft(vendor_id)
             self._row(vendor_id)
             try:
                 code = (
@@ -248,6 +268,7 @@ class DocumentsMixin:
 
     def replace_document(self, vendor_id: UUID, id: UUID, body: DocumentReplace) -> DocState:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self.can_write_draft(vendor_id)
             self._row(vendor_id)
             before = self._document(vendor_id, id, lock=True)
             self._dates(body.issue_date, body.expiry_date)

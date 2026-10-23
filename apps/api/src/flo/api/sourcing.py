@@ -11,13 +11,20 @@ from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
 from flo.kernel.authz import permits, require, require_member
 from flo.kernel.config import Settings
+from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.identity import IdentityId
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.identity.service import IdentityAuthorizationConnection, granted_scopes
 from flo.modules.org.service import OrgService
+from flo.modules.sourcing.bids import BidService
 from flo.modules.sourcing.lifecycle import RfqLifecycle
 from flo.modules.sourcing.schemas import (
+    BidCreate,
+    BidPatch,
+    BidRead,
+    BidReplace,
+    BidSubmit,
     ExtendDeadline,
     InviteeCreate,
     InviteePatch,
@@ -316,3 +323,87 @@ def list_rfq_versions(
 @router.get("/rfqs/{id}/history", response_model=list[RfqEvent])
 def rfq_history(id: UUID, context: ViewContext, connection: Connection) -> list[RfqEvent]:
     return RfqService(connection, current_scope(), context.user_id).history(id)
+
+
+def _bid_done(bid: BidRead, response: Response) -> BidRead:
+    response.headers["ETag"] = f'"{bid.row_version}"'
+    return bid
+
+
+@router.post("/rfqs/{id}/bids", status_code=201, response_model=BidRead)
+def create_bid(
+    id: UUID, body: BidCreate, context: EditContext, connection: Connection, response: Response
+) -> BidRead:
+    return _bid_done(
+        BidService(connection, current_scope(), context.user_id).capture(id, body), response
+    )
+
+
+@router.get("/rfqs/{id}/bids", response_model=list[BidRead])
+def list_bids(
+    id: UUID,
+    user_id: Annotated[IdentityId, Depends(require_member())],
+    connection: Connection,
+    request: Request,
+) -> list[BidRead]:
+    target = rfq_target(id, connection)  # a foreign RFQ is 404 before any permission is weighed
+    approve = permits(request, "rfq.approve", target)
+    if not approve and not permits(request, "rfq.edit", target):
+        raise ProblemError(ErrorCode.FORBIDDEN)
+    return BidService(connection, current_scope(), user_id).list_bids(id, all_bids=approve)
+
+
+@router.get("/rfqs/{id}/bids/{bid_id}", response_model=BidRead)
+def get_bid(
+    id: UUID,
+    bid_id: UUID,
+    user_id: Annotated[IdentityId, Depends(require_member())],
+    connection: Connection,
+    request: Request,
+    response: Response,
+) -> BidRead:
+    target = rfq_target(id, connection)
+    approve = permits(request, "rfq.approve", target)
+    bid = BidService(connection, current_scope(), user_id).read(id, bid_id, all_bids=approve)
+    return _bid_done(bid, response)
+
+
+@router.patch("/rfqs/{id}/bids/{bid_id}", response_model=BidRead)
+def patch_bid(
+    id: UUID,
+    bid_id: UUID,
+    body: BidPatch,
+    context: EditContext,
+    connection: Connection,
+    response: Response,
+    revision: Revision = None,
+) -> BidRead:
+    service = BidService(connection, current_scope(), context.user_id)
+    return _bid_done(service.patch(id, bid_id, body, revision), response)
+
+
+@router.post("/rfqs/{id}/bids/{bid_id}/submit", response_model=BidRead)
+def submit_bid(
+    id: UUID,
+    bid_id: UUID,
+    context: EditContext,
+    connection: Connection,
+    response: Response,
+    body: BidSubmit | None = None,
+    revision: Revision = None,
+) -> BidRead:
+    service = BidService(connection, current_scope(), context.user_id)
+    return _bid_done(service.submit(id, bid_id, body or BidSubmit(), revision), response)
+
+
+@router.post("/rfqs/{id}/bids/{bid_id}/replace", status_code=201, response_model=BidRead)
+def replace_bid(
+    id: UUID,
+    bid_id: UUID,
+    body: BidReplace,
+    context: EditContext,
+    connection: Connection,
+    response: Response,
+) -> BidRead:
+    service = BidService(connection, current_scope(), context.user_id)
+    return _bid_done(service.replace(id, bid_id, body), response)
