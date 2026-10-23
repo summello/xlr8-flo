@@ -1573,9 +1573,6 @@ def test_carry_forward_refuses_an_application_edit_made_inside_a_milestone_merge
     _git(repo, "commit", "-qm", "milestone work")
     _git(repo, "update-ref", "refs/remotes/origin/ms", "HEAD")
     _git(repo, "checkout", "-q", "story")
-    (repo / "b.txt").write_text("b")
-    _git(repo, "add", "-A")
-    _git(repo, "commit", "-qm", "story side")  # diverge so the merge is real
     _git(repo, "merge", "--no-commit", "--no-ff", "ms")
     (repo / "a.py").write_text("edited while resolving the merge")
     _git(repo, "add", "-A")
