@@ -38,21 +38,47 @@ def author_result(log: str | None) -> str:
     return "limit" if LIMIT.search(log[-600:]) else "failed"
 
 
-def verdict_state(review: dict | None, reviewed_sha: str | None, submitted_sha: str | None) -> str:
-    """approve | changes | stale (reviewed an earlier commit) | missing | malformed."""
+def verdict_state(review: dict | None, reviewed_sha: str | None, submitted_sha: str | None,
+                  attempts: int = 0, capped: bool = False) -> str:
+    """approve | changes | stale (reviewed an earlier commit) | missing | malformed.
+
+    A void result (changes requested with nothing itemised, or no verdict after the reviewer was
+    stopped at its time cap; E22-S02 round 3) is "missing" on the first attempt, so the reviewer is
+    retried once; the second is "malformed" and asks the operator. `attempts` counts launches of
+    this reviewer on the submitted sha (review.sh appends one line per launch), so a new sha
+    starts again."""
     if review is None:
-        return "missing"
+        return "malformed" if capped and attempts >= 2 else "missing"
     if not submitted_sha or reviewed_sha != submitted_sha:
         return "stale"
     v = str(review.get("verdict") or "").strip().lower()
     if v in APPROVE:
         return "approve"
     if v in CHANGES:
-        # Nothing itemised means nothing to send the author: a reviewer stopped at its cap with a
-        # draft (E22-S02 round 3). "malformed" asks the operator; "missing" would relaunch the reviewer
-        # every tick if it keeps writing an empty verdict, because reviews have no attempt counter.
-        return "changes" if review.get("findings") else "malformed"
+        if review.get("findings"):
+            return "changes"
+        return "malformed" if attempts >= 2 else "missing"
     return "malformed"
+
+
+GENERATED = "apps/web/src/api/generated/"
+
+
+def carryable(paths: list[str]) -> bool:
+    """A verdict survives a delta that is empty or only the regenerated API client (E23-S16).
+    Any other path (app, test, migration, workflow, tooling) makes it stale."""
+    return all(p.startswith(GENERATED) for p in paths)
+
+
+def red_jobs(marker: str | None) -> list[str]:
+    """Failing job names in a .ci-red marker: the tab-separated prefix `gh run view --log-failed`
+    puts on each line (job, step, text). The first line is the header, and step text is ignored."""
+    if not marker:
+        return []
+    rows = marker.split("\n")[1:]
+    jobs = {r.split("\t", 1)[0].strip().lower() for r in rows if "\t" in r}
+    jobs |= {j.strip().lower() for r in rows if r.startswith("jobs: ") for j in r[6:].split(",")}
+    return sorted(j for j in jobs if j)
 
 
 def ci_red(marker: str | None, submitted_sha: str | None) -> bool:

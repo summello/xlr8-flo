@@ -56,9 +56,10 @@ def test_author_result(log: str | None, result: str) -> None:
             "changes",
         ),
         # nothing itemised sends the author nothing to fix: a reviewer that stopped at its cap with
-        # a draft (E22-S02 round 3). It asks the operator and never starts a round.
-        ({"verdict": "changes_requested", "findings": []}, "s1", "s1", "malformed"),
-        ({"verdict": "changes_requested"}, "s1", "s1", "malformed"),
+        # a draft (E22-S02 round 3). The first is retried (missing); a second asks the operator
+        # (see test_a_void_verdict_is_retried_once_per_commit_then_asks_the_operator).
+        ({"verdict": "changes_requested", "findings": []}, "s1", "s1", "missing"),
+        ({"verdict": "changes_requested"}, "s1", "s1", "missing"),
         # staleness is judged first: an empty verdict on an earlier commit is still stale
         ({"verdict": "changes_requested", "findings": []}, "s0", "s1", "stale"),
         # a verdict on an earlier commit is stale even when it approved
@@ -142,3 +143,35 @@ def test_open_blockers_skip_only_what_arbitration_dismissed() -> None:
         {"findings": [{"severity": "blocker", "problem": "upheld", "arbitration": "upheld"}]},
     ]
     assert [f["problem"] for f in F.open_blockers(reviews)] == ["real", "upheld"]
+
+
+def test_a_void_verdict_is_retried_once_per_commit_then_asks_the_operator() -> None:
+    void = {"verdict": "changes_requested", "findings": []}
+    assert F.verdict_state(void, "s1", "s1", attempts=1) == "missing"
+    assert F.verdict_state(void, "s1", "s1", attempts=2) == "malformed"
+    # a reviewer stopped at its cap with no file at all counts the same way
+    assert F.verdict_state(None, None, "s1", attempts=1, capped=True) == "missing"
+    assert F.verdict_state(None, None, "s1", attempts=2, capped=True) == "malformed"
+    # never launched or still running: missing however often it was tried
+    assert F.verdict_state(None, None, "s1", attempts=5) == "missing"
+    # a usable verdict is untouched by the counter
+    assert F.verdict_state({"verdict": "approve"}, "s1", "s1", attempts=3) == "approve"
+
+
+def test_a_delta_carries_only_when_empty_or_all_generated_client() -> None:
+    assert F.carryable([])
+    assert F.carryable(["apps/web/src/api/generated/types.ts", "apps/web/src/api/generated/a/b.ts"])
+    assert not F.carryable(["apps/web/src/api/generated/types.ts", "apps/api/src/flo/x.py"])
+    assert not F.carryable(["apps/web/src/api/generatedx.ts"])
+
+
+def test_red_jobs_read_the_job_prefix_not_the_step_text() -> None:
+    marker = (
+        "story/E1 sha run 1 failure\n"
+        "jobs: backend\n"
+        "frontend-static\tRun tests\tbackend failed here\n"
+        "Backend\tpytest\tFAILED\n"
+        "an untabbed line mentioning e2e\n"
+    )
+    assert F.red_jobs(marker) == ["backend", "frontend-static"]
+    assert F.red_jobs(None) == [] and F.red_jobs("header only") == []

@@ -50,7 +50,8 @@ held() { echo $! > "$D/$S.$A.pid"; [ -z "$RELEASE" ] && echo $! > "$LOCK/pid"; L
 # A second review by the same reviewer gets its own previous findings and the changes since the
 # commit it reviewed, not the whole story again (13 Oct: a full re-review re-planted everything).
 SHA="$D/$S.$A.sha"; PRIOR="$D/$S.$A.prior.json"; ARGS=""
-if [ -f "$SHA" ] && [ -f "$W/reviews/$S.$A.json" ]; then
+# A void verdict (nothing itemised, E23-S16) is retried in full: there is nothing to re-review.
+if [ -f "$SHA" ] && [ -f "$W/reviews/$S.$A.json" ] && python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); sys.exit(0 if d.get("findings") or str(d.get("verdict","")).lower().startswith("approve") else 1)' "$W/reviews/$S.$A.json" 2>/dev/null; then
   cp "$W/reviews/$S.$A.json" "$PRIOR"; ARGS="--since $(cat "$SHA") --prior $PRIOR"
 fi
 if [ -n "$RELEASE" ]; then "$R/apps/api/.venv/bin/python" "$R/agents/scripts/flo" release-packet "$S" > "$P"
@@ -59,6 +60,8 @@ git -C "$W" rev-parse HEAD > "$SHA.new"  # becomes the baseline only if the run 
 # what this run reviews, for the supervisor's freshness check (flo facts): a verdict counts only
 # for the commit it was launched on
 cp "$SHA.new" "$D/$S.$A.launched"
+# one line per launch on this commit: flo facts retries a void verdict once, then asks (E23-S16)
+cat "$SHA.new" >> "$D/$S.$A.attempts"
 # launch time of this round, epoch seconds: flo done derives review_s from it and the verdict mtime
 date +%s > "$D/$S.$A.started"
 # Keep every round's verdict: the scorecard counts findings across rounds (flo done), and the

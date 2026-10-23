@@ -1455,7 +1455,7 @@ def test_ci_watch_marks_red_once_and_reaps_green_merged_stories(
 
     def gh_view(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
         views.append(cmd[3])
-        return subprocess.CompletedProcess(cmd, 0, "FAILED test_story\n", "")
+        return subprocess.CompletedProcess(cmd, 0, "backend\tpytest\tFAILED test_story\n", "")
 
     monkeypatch.setattr(flo.subprocess, "run", gh_view)
     reaped: list[str] = []
@@ -1471,6 +1471,7 @@ def test_ci_watch_marks_red_once_and_reaps_green_merged_stories(
     flo.cmd_ci_watch([])
     red = tmp_path / ".scratch" / "E99-S02.ci-red"
     assert "FAILED test_story" in red.read_text()
+    assert "\njobs: backend\n" in red.read_text()  # E23-S16: the job name survives the log tail
     assert (tmp_path / ".scratch" / "M9.ci-red").exists()
     assert reaped == ["E99-S01"]  # S03 is merged but its CI has not finished: keep the worktree
 
@@ -1490,6 +1491,68 @@ def test_ci_watch_marks_red_once_and_reaps_green_merged_stories(
     # S04's own run stays red, but a green milestone holding its squash supersedes it (E22-S12,
     # 22 Oct: the marker resumed its author for a fix on every tick).
     assert not s04.exists() and reaped == ["E99-S01", "E99-S04"]
+
+
+def _git(repo: Path, *args: str) -> str:
+    return subprocess.run(
+        ["git", "-c", "user.name=t", "-c", "user.email=t@t", *args],
+        cwd=repo, check=True, capture_output=True, text=True,
+    ).stdout.strip()
+
+
+def _carry_repo(tmp_path: Path, story_file: str) -> tuple[Any, Path, dict[str, Any], str, str]:
+    """reviewed commit, then a milestone merge, then one story commit touching `story_file`."""
+    flo = load_flo()
+    repo = tmp_path / "wt"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "story")
+    (repo / "a.txt").write_text("a")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "base")
+    reviewed = _git(repo, "rev-parse", "HEAD")
+    _git(repo, "checkout", "-qb", "ms")
+    (repo / "m.txt").write_text("m")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "milestone work")
+    _git(repo, "update-ref", "refs/remotes/origin/ms", "HEAD")
+    _git(repo, "checkout", "-q", "story")
+    _git(repo, "merge", "-q", "--no-ff", "-m", "merge milestone", "ms")
+    target = repo / story_file
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("x")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "story change")
+    sub = _git(repo, "rev-parse", "HEAD")
+    (repo / "task.json").write_text("{}")
+    sc = tmp_path / "scratch"
+    sc.mkdir()
+    return flo, sc, {"milestone_branch": "ms"}, reviewed, sub
+
+
+def test_carry_forward_moves_the_baseline_only_for_a_generated_client_delta(tmp_path: Path) -> None:
+    flo, sc, pkt, reviewed, sub = _carry_repo(tmp_path, "apps/web/src/api/generated/types.ts")
+    wt = tmp_path / "wt"
+    assert flo._carry(sc, wt, pkt, "S1", "codex", reviewed, sub) == sub
+    side = json.loads((sc / "S1.codex.carried.json").read_text())
+    assert side["carried_from"] == reviewed and side["carried_to"] == sub
+    assert side["paths"] == ["apps/web/src/api/generated/types.ts"]  # the milestone merge adds none
+    assert json.loads((wt / "task.json").read_text())["carried_reviews"][0]["carried_from"] == reviewed
+    assert (sc / "S1.codex.launched").read_text().strip() == sub
+
+
+def test_carry_forward_refuses_a_delta_with_one_non_generated_path(tmp_path: Path) -> None:
+    flo, sc, pkt, reviewed, sub = _carry_repo(tmp_path, "apps/api/src/flo/service.py")
+    assert flo._carry(sc, tmp_path / "wt", pkt, "S1", "codex", reviewed, sub) is None
+    assert not (sc / "S1.codex.carried.json").exists()
+    assert not (sc / "S1.codex.launched").exists()
+
+
+def test_carry_forward_carries_a_milestone_only_merge(tmp_path: Path) -> None:
+    flo, sc, pkt, reviewed, sub = _carry_repo(tmp_path, "apps/web/src/api/generated/x.ts")
+    wt = tmp_path / "wt"
+    merge = _git(wt, "rev-parse", "HEAD~1")  # the commit before the story change: a bare merge
+    assert flo._carry(sc, wt, pkt, "S1", "codex", reviewed, merge) == merge
+    assert json.loads((sc / "S1.codex.carried.json").read_text())["paths"] == []
 
 
 @pytest.mark.parametrize(

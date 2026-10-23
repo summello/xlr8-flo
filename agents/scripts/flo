@@ -2530,6 +2530,28 @@ def _reviewers(pkt):
     return rev + (["opus"] if pkt.get("opus_final") and "opus" not in rev else [])
 
 
+def _carry(sc, wt, pkt, sid, reviewer, reviewed, sub):
+    """E23-S16: move a usable verdict's baseline from `reviewed` to `sub` when the story's own commits
+    between them touch nothing but the generated API client (a milestone merge adds none). Returns
+    `sub` once carried, else None. The verdict file, its run record and review_runs are untouched:
+    a carry is evidence, not a review."""
+    r = subprocess.run(["git", "log", "--no-merges", "--name-only", "--format=", f"{reviewed}..{sub}",
+                        "--not", f"origin/{pkt['milestone_branch']}"], cwd=wt, capture_output=True, text=True)
+    if r.returncode:
+        return None
+    import flo_facts as F
+    paths = sorted({p for p in r.stdout.split("\n") if p})
+    if not F.carryable(paths):
+        return None
+    at = datetime.now().astimezone().isoformat(timespec="seconds")
+    entry = {"reviewer": reviewer, "carried_from": reviewed, "carried_to": sub, "paths": paths, "at": at}
+    (sc / f"{sid}.{reviewer}.carried.json").write_text(json.dumps(entry, indent=2) + "\n")
+    pkt.setdefault("carried_reviews", []).append(entry)
+    (wt / "task.json").write_text(json.dumps(pkt, indent=2) + "\n")
+    (sc / f"{sid}.{reviewer}.launched").write_text(sub + "\n")
+    return sub
+
+
 def cmd_facts(argv):
     """flo facts: the delivery state as JSON, for the fleet supervisor (~/.claude/fleet/fleet.py).
 
@@ -2562,7 +2584,12 @@ def cmd_facts(argv):
                 review = {"verdict": "malformed"}
             # .launched is written at each launch; older runs left .sha (codex) or .sha.new (opus)
             seen = next((t.strip() for t in (_read(sc / f"{sid}.{r}.{x}") for x in ("launched", "sha", "sha.new")) if t), None)
-            verdicts[r] = F.verdict_state(review, seen, sub)
+            if review and seen and sub and seen != sub and F.verdict_state(review, seen, seen) in ("approve", "changes"):
+                seen = _carry(sc, wt, pkt, sid, r, seen, sub) or seen
+            tries = (_read(sc / f"{sid}.{r}.attempts") or "").split()
+            verdicts[r] = F.verdict_state(
+                review, seen, sub, attempts=tries.count(seen) if seen else 0,
+                capped="stopped at the time cap" in (_read(sc / f"{sid}.{r}.log") or ""))
         approved = bool(verdicts) and all(v == "approve" for v in verdicts.values())
         out.append({
             "id": sid, "title": s["t"], "st": s["st"], "merged": s["st"] == "done",
@@ -2573,6 +2600,7 @@ def cmd_facts(argv):
             "author_result": F.author_result(_read(sc / f"{sid}.log")),
             "head": git("rev-parse", "HEAD", cwd=wt, check=False), "submitted_sha": sub,
             "verdicts": verdicts, "ci_red": red,
+            "ci_jobs": F.red_jobs(_read(sc / f"{sid}.ci-red")) if red else [],
             # asked of GitHub only where it decides something: a gated story waiting to finish
             "ci": _ci_on(pkt["branch"], sub) if approved and pkt.get("opus_final") else None,
         })
@@ -2585,6 +2613,9 @@ def cmd_facts(argv):
         "max_rounds": pol.get("max_review_rounds", 3),
         "in_flight": sum(1 for _, s in stories(rm) if s["st"] in ACTIVE),
         "line_stopped": [m["id"] for m in rm["milestones"] if (sc / f"{m['id']}.ci-red").exists()],
+        "line_stopped_jobs": {m["id"]: {"sha": (_read(sc / f"{m['id']}.ci-red") or "").split("\n", 1)[0],
+                                        "jobs": F.red_jobs(_read(sc / f"{m['id']}.ci-red"))}
+                              for m in rm["milestones"] if (sc / f"{m['id']}.ci-red").exists()},
         "next": [i for i in ready if preflight_state(i)[0]][:5],
         "needs_preflight": [i for i in ready if not preflight_state(i)[0]],
         "free_accounts": free_accounts("sonnet", sonnet) if sonnet.get("accounts") else [],
@@ -2628,8 +2659,10 @@ def cmd_ci_watch(argv):
             return
         log = subprocess.run(["gh", "run", "view", str(run["databaseId"]), "--log-failed"],
                              cwd=ROOT, capture_output=True, text=True).stdout
+        # the tail below can cut a job's lines: its name is kept whole on a line of its own
+        jobs = sorted({ln.split("\t", 1)[0].strip().lower() for ln in log.splitlines() if "\t" in ln})
         marker.write_text(f"{branch} {run['headSha']} run {run['databaseId']} "
-                          f"{run['conclusion']}\n" + "\n".join(log.splitlines()[-200:]) + "\n")
+                          f"{run['conclusion']}\njobs: {','.join(jobs)}\n" + "\n".join(log.splitlines()[-200:]) + "\n")
         print(f"RED {key}: {branch} run {run['databaseId']} — {marker}")
 
     latest = {m["branch"]: [r for r in gh_runs(m["branch"]) if r.get("status") == "completed"][:1]

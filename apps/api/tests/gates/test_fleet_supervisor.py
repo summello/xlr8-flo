@@ -232,6 +232,31 @@ def test_an_ungated_approved_story_finishes_and_a_failed_finish_asks():
     assert "finish failed" in act["need"]
 
 
+def red_line(*jobs, sha="m1"):
+    return {"line_stopped": True, "line_jobs": {"M3": {"sha": sha, "jobs": list(jobs)}}}
+
+
+def test_a_story_red_on_the_milestones_jobs_is_fixed_once_on_the_milestone():
+    s = story(ci_red=True, ci_jobs=["frontend-static"])
+    (act,) = S.decide(s, ctx(**red_line("frontend-static", "backend")))
+    assert act["need"] == "milestone red: fix it once on the milestone"
+    merged = story(merged=True, ci_red=True, ci_jobs=["frontend-static"])
+    assert "milestone red" in S.decide(merged, ctx(**red_line("frontend-static")))[0]["need"]
+
+
+def test_disjoint_jobs_or_a_green_milestone_keep_the_story_fix():
+    s = story(ci_red=True, ci_jobs=["backend"])
+    assert steps(S.decide(s, ctx(**red_line("frontend-static")))) == [("fix", None, "A")]
+    assert steps(S.decide(s, ctx())) == [("fix", None, "A")]
+
+
+def test_several_stories_on_one_milestone_incident_raise_one_need():
+    a = story(id="S1", ci_red=True, ci_jobs=["frontend-static"])
+    b = story(id="S2", ci_red=True, ci_jobs=["frontend-static"])
+    acts = S.plan(facts(stories=[a, b]), ctx(**red_line("frontend-static")))
+    assert [x["story"] for x in acts if "need" in x] == ["S1"]
+
+
 # plan ----------------------------------------------------------------------------------------
 
 
