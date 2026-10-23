@@ -4718,6 +4718,63 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E23-S18",
+      "kind": "chore",
+      "size": "S",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 1,
+          "blockers": 1,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "66d76ce2-ccaf-429f-aa2d-3d8d24c0ba45",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E23-S18",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1669f-9a8d-7423-8b4e-bdc35b49a5ed",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "flo check --light now retries a story e2e run once (--last-failed --workers=1) when every failure is a Playwright timeout, prints 'flaky under load: <specs>' and records the flake in task.json evidence. Assertion, axe, unparseable or mixed failures stay red with no retry.",
+      "title": "Light-check e2e retries failed specs once and reports load flakes apart from failures",
+      "durations": {
+        "wall_s": 9157,
+        "author_s": 3555,
+        "review_s": {
+          "codex": 24
+        },
+        "gate_s": 0
+      }
     }
   ]
 }

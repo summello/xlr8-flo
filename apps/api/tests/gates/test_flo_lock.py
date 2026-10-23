@@ -104,6 +104,9 @@ def test_child_status_and_arguments_are_preserved(root):
     c = flo(root, "with-lock", "x", "--", "sh", "-c", "kill -TERM $$")
     c.communicate(timeout=20)
     assert c.returncode == -signal.SIGTERM
+    c = flo(root, "with-lock", "x", "--", "sh", "-c", "kill -KILL $$")
+    _, err = c.communicate(timeout=20)
+    assert c.returncode == -signal.SIGKILL and "Traceback" not in err
 
 
 def test_bad_lock_name_is_refused(root):

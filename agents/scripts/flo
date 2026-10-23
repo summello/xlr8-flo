@@ -407,7 +407,8 @@ def cmd_with_lock(argv):
         except OSError as e:
             die(f"{cmd[0]}: {e}")
     if rc < 0:  # killed by a signal: die the same way so the caller sees it
-        signal.signal(-rc, signal.SIG_DFL)
+        if -rc not in (signal.SIGKILL, signal.SIGSTOP):  # uncatchable: signal.signal raises
+            signal.signal(-rc, signal.SIG_DFL)
         os.kill(os.getpid(), -rc)
     sys.exit(rc)
 
@@ -2442,6 +2443,29 @@ def story_checks(cwd):
 # run_check keeps its two-argument signature: tests/gates/test_gates_bite.py stubs it that way.
 LAST_STEPS = []
 
+_PW_FAILURE = re.compile(r"^\s+\d+\) .*?(\S+\.(?:spec|e2e)\.ts):\d+:\d+", re.M)
+# Framework-generated only: the test timeout is printed as the block's bare first line, an action
+# timeout as a TimeoutError. A test that throws new Error("Test timeout ...") prints "Error: ..."
+# and is an explicit failure.
+_PW_TIMEOUT = re.compile(r"Test timeout of \d+ms exceeded[^\n]*\.|TimeoutError: \w+\.\w+: Timeout \d+ms exceeded\.")
+_PW_DETERMINISTIC = re.compile(r"expect\(|axe|violation|AssertionError", re.I)
+
+
+def timeout_only_failures(output):
+    """The failed spec paths when every failed Playwright test timed out, else None. An
+    assertion, axe violation, compile error or any failure this cannot classify is not a flake."""
+    heads = list(_PW_FAILURE.finditer(output))
+    m = re.search(r"^\s+(\d+) failed$", output, re.M)
+    if not heads or not m or int(m.group(1)) != len(heads) or re.search(r"axe", output, re.I):
+        return None
+    ends = [h.start() for h in heads[1:]] + [len(output)]
+    for head, end in zip(heads, ends):
+        body = output[head.start():end]
+        first = next((l.strip() for l in body[head.end() - head.start():].splitlines()[1:] if l.strip()), "")
+        if not _PW_TIMEOUT.fullmatch(first) or _PW_DETERMINISTIC.search(body):
+            return None
+    return sorted({h.group(1) for h in heads})
+
 
 def run_check(cwd=None, profile="full"):
     cwd = cwd or ROOT
@@ -2472,8 +2496,25 @@ def run_check(cwd=None, profile="full"):
             if exemption is not None:
                 print(f"  ?  {name:<12} missing-tool opt-out: {exemption}")
                 continue
+        step = {"name": name, "ok": not r.returncode}
+        specs = timeout_only_failures(r.stdout + r.stderr) if name == "story e2e" and r.returncode else None
+        if specs:
+            # One targeted retry, one worker, failed specs only: load makes Playwright time out,
+            # a defect fails again. Hosted CI and the full e2e+axe step never retry.
+            retry = subprocess.run([*cmd, "--last-failed", "--workers=1"], cwd=cwd,
+                                   capture_output=True, text=True, env=command_environment)
+            if not retry.returncode:
+                print(f"  ✓  {name}")
+                print(f"flaky under load: {' '.join(specs)}")
+                LAST_STEPS.append({**step, "ok": True, "flaky": True, "specs": specs, "attempts": 2})
+                continue
+            print(f"  ✗  {name}")
+            LAST_STEPS.append({**step, "attempts": 2, "specs": specs})
+            print("first run:\n" + (r.stdout + r.stderr).strip()[-2000:])
+            print("retry (--last-failed --workers=1):\n" + (retry.stdout + retry.stderr).strip()[-2000:])
+            return False
         print(f"  {'✓' if not r.returncode else '✗'}  {name}")
-        LAST_STEPS.append({"name": name, "ok": not r.returncode})
+        LAST_STEPS.append(step)
         if r.returncode:
             print((r.stdout + r.stderr).strip()[-2000:])
             return False
