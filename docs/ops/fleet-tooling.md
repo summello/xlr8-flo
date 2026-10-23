@@ -224,3 +224,31 @@ Since E23-S13 a new scorecard record takes `rounds` from the round files
   was killed. Release reviews (a milestone id) take no lock.
 - **Clearing a stuck lock.** Only if no `review.sh` job for the story is running (and the
   lock has no `pid` file because the launcher itself was killed at start): `rm -rf .scratch/<S>.review.lock`.
+
+## Re-review economy: `flo facts` (E23-S16)
+
+Three rules keep a milestone repair from restarting every review.
+
+**Carry-forward.** When a reviewer's verdict is stale, `flo facts` lists the story's own commits since
+the reviewed sha (`git log --no-merges <reviewed>..<submitted> --not origin/<milestone>`). A milestone
+merge adds none. If that delta is empty, or every path is under `apps/web/src/api/generated/`, the verdict
+counts as fresh. Evidence: `.scratch/<S>.<reviewer>.carried.json` (`carried_from`, `carried_to`, `paths`,
+`at`) and a `carried_reviews` entry in `task.json`. The verdict file, its run record, `review_runs` and its
+duration are untouched; a carry is not a review, and `.scratch/<S>.<reviewer>.sha` still names the last sha
+actually reviewed. Any other path leaves the verdict stale, and the next review is a re-review of only the
+story's changes since that sha, with that reviewer's previous verdict.
+
+**Void verdicts retry once.** A verdict that requests changes with no findings, or a run that ended
+`stopped at the time cap` with no verdict, is void. `review.sh` appends one line per launch to
+`.scratch/<S>.<reviewer>.attempts`. The first void result reads as `missing` and the reviewer is launched
+again (in full, not as a re-review, since there is nothing usable to re-review). A second void result for the
+same reviewer on the same submitted sha reads as `malformed`, which becomes the operator need. A new submitted
+sha counts from one again.
+
+**Shared red is fixed once.** `flo ci-watch` writes a `jobs:` line (failing job names, taken from the
+tab-separated job prefix of `gh run view --log-failed`) under the first line of each `.ci-red` marker.
+`flo facts` reports it as `ci_jobs` per story and `line_stopped_jobs` per red milestone. While a milestone is
+red, a red story that fails any of the same jobs gets no `fix`; the supervisor raises one need,
+`milestone red: fix it once on the milestone`, per milestone sha and job set, however many stories it hits.
+A story failing other jobs, or any story once the milestone is green, is fixed as before. Matching job
+names suppresses duplicate work; it never marks a story CI green.

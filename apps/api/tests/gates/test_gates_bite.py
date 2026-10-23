@@ -1536,7 +1536,8 @@ def test_carry_forward_moves_the_baseline_only_for_a_generated_client_delta(tmp_
     side = json.loads((sc / "S1.codex.carried.json").read_text())
     assert side["carried_from"] == reviewed and side["carried_to"] == sub
     assert side["paths"] == ["apps/web/src/api/generated/types.ts"]  # the milestone merge adds none
-    assert json.loads((wt / "task.json").read_text())["carried_reviews"][0]["carried_from"] == reviewed
+    carried = json.loads((wt / "task.json").read_text())["carried_reviews"]
+    assert carried[0]["carried_from"] == reviewed
     assert (sc / "S1.codex.launched").read_text().strip() == sub
 
 
