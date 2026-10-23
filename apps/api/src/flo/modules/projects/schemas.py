@@ -140,6 +140,8 @@ class ProjectRead(BaseModel):
     codes: CodesRead | None = None
     codes_expired: bool = False
     can_substitute_codes: bool = False
+    # Single-record read only: the caller holds project.update (what DELETE of a draft checks).
+    can_edit: bool = False
 
     @field_validator("requested_budget", mode="before")
     @classmethod

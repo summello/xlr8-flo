@@ -60,7 +60,7 @@ export default function ProjectDetail({ id, navigate, onLoaded }: { id: string; 
       <header className="project-record-heading"><p className="numeric">{project.number}</p><StatusPill docType="project" status={project.status as ProjectStatus} />
         {project.codes_expired && <ExpiredCodeBadge />}
         {project.can_substitute_codes && project.codes && <SubstituteCodes target="project" id={id} codes={project.codes} onDone={() => { setLoading(true); void load(); }} />}
-        {project.status === "draft" && <DeleteDraftDialog kind="Project" reference={project.number} onDone={() => navigate("/projects")}
+        {project.status === "draft" && project.can_edit && <DeleteDraftDialog kind="Project" reference={project.number} onDone={() => navigate("/projects")}
           remove={async key => { const { response, error } = await apiClient.DELETE("/api/v1/projects/{id}", { params: { path: { id } }, headers: mutationHeaders(key) }); return { ok: response.ok, error: error as Problem | undefined }; }} />}</header>
       <div role="tablist" aria-label="Project sections" className="project-tabs">{tabs.map((name, index) => <button key={name} type="button" id={`tab-${name}`} role="tab" aria-controls={`panel-${name}`} aria-selected={tab === name} tabIndex={tab === name ? 0 : -1} onClick={() => activate(name)} onKeyDown={e => {
         const next = e.key === "ArrowRight" ? tabs[(index + 1) % tabs.length] : e.key === "ArrowLeft" ? tabs[(index + tabs.length - 1) % tabs.length] : e.key === "Home" ? tabs[0] : e.key === "End" ? tabs[tabs.length - 1] : undefined;

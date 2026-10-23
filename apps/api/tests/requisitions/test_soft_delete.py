@@ -232,6 +232,8 @@ def test_include_deleted_needs_record_read(header_db):
             assert {r["id"] for r in listing.json()["rows"]} == {str(live.id)}
             editor = await call(browser, "GET", f"/requisitions/{live.id}")
             assert editor.json()["can_edit"] is True
+            live_project = await call(browser, "GET", f"/projects/{live.project_id}")
+            assert live_project.json()["can_edit"] is True
             regrant(db, ["requisition.view", "project.read"])
             for path in paths:
                 hidden = await call(browser, "GET", path + "?include_deleted=true")
@@ -241,6 +243,8 @@ def test_include_deleted_needs_record_read(header_db):
             ).status_code == 404
             plain = await call(browser, "GET", f"/requisitions/{live.id}")
             assert plain.status_code == 200 and plain.json()["can_edit"] is False
+            no_edit = await call(browser, "GET", f"/projects/{live.project_id}")
+            assert no_edit.status_code == 200 and no_edit.json()["can_edit"] is False
 
     asyncio.run(scenario())
 
@@ -327,7 +331,7 @@ def test_soft_delete_migration_down_keeps_rows_then_up_again(header_db):
             "'k-bcr','deleted')",
             (bcr, db[1], proj.id, db[3]),
         )
-    migration = load_migration(ROOT / "migrations" / "20261022_0070_soft_delete.py", "soft_delete")
+    migration = load_migration(ROOT / "migrations" / "20261022_0071_soft_delete.py", "soft_delete")
     migration.downgrade(db[0])
     assert status_of(db, "budget_change_request", bcr) == "withdrawn"
     assert status_of(db, "requisition", req.id) == "withdrawn"

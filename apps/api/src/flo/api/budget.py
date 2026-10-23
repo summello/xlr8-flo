@@ -303,7 +303,7 @@ def delete_change_request(
     id: UUID,
     connection: Connection,
     context: Annotated[
-        AuthorizationContext, Depends(require("ledger.read", change_request_target))
+        AuthorizationContext, Depends(require("budget.adjust", change_request_target))
     ],
 ) -> Response:
     delete_request(connection, current_scope(), id)

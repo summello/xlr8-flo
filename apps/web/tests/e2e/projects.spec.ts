@@ -417,3 +417,11 @@ test("detail: a project that is not a draft offers no Delete draft", async ({ pa
   await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Delete draft" })).toHaveCount(0);
 });
+
+test("detail: a draft project the caller cannot edit offers no Delete draft", async ({ page }) => {
+  const state = await stubProjects(page);
+  state.row = { ...state.row, can_edit: false };
+  await page.goto(`/projects/${projectId}`);
+  await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Delete draft" })).toHaveCount(0);
+});

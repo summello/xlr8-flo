@@ -198,6 +198,9 @@ def get_project(
     if allowed:
         allowed = codes.can_substitute_project(connection, current_scope(), id)
     project.can_substitute_codes = bool(allowed)
+    project.can_edit = permits(
+        request, "project.update", project_target(id, connection, include_deleted=visible)
+    )
     return project
 
 

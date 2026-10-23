@@ -8,7 +8,7 @@ export const project: components["schemas"]["ProjectRead"] = {
   id: projectId, generated_by_requisition_id: null, external_ref: null, number: "PRJ-0001", name: "Plant renewal", status: "draft", bu_id: unitId, bu_name: "Infrastructure",
   parent_id: null, owner_id: firstActor, sponsor_id: null, description: "Renew the plant", department_code: "D", ledger_account_code: "L", currency: "USD",
   planned_start: "2026-10-01", planned_end: "2026-12-31", health: "unknown", percent_complete: 0, actual_start: null, actual_end: null, schedule_variance_days: null,
-  version: 1, created_at: "2026-10-01T00:00:00Z", allocated: "1234.5000", available: "-0.0050",
+  version: 1, created_at: "2026-10-01T00:00:00Z", allocated: "1234.5000", available: "-0.0050", can_edit: true,
 };
 export type Fixture = Awaited<ReturnType<typeof stubProjects>>;
 export async function stubProjects(page: Page, settings: { total?: number; rows?: components["schemas"]["ProjectRead"][]; transitions?: components["schemas"]["TransitionAvailable"][] } = {}) {

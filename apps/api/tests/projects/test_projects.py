@@ -65,8 +65,10 @@ def test_create_details_scope_audit_and_status(project_db):
         "codes",
         "codes_expired",
         "can_substitute_codes",
+        "can_edit",
     }
-    assert request(db, "GET", "/" + row["id"]).json() == row
+    # can_edit is set by the single-record GET only (E22-S02)
+    assert request(db, "GET", "/" + row["id"]).json() == row | {"can_edit": True}
     from uuid import UUID
 
     assert get_status(db.connection, Scope(db.org_a), UUID(row["id"])) == "draft"
