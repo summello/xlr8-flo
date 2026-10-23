@@ -150,6 +150,9 @@ class VendorDetail(VendorRead):
     units: list[VendorUnit] = []
     disabled_in: list[VendorDisabled] = []
     identifiers: dict[str, str] = {}  # type code -> normalised value
+    # What the caller may do, from the routes' own checks (E11-S16, DECISIONS 238).
+    actions: list[str] = []
+    local_disable_units: list[UUID] = []
 
 
 class VendorCounts(BaseModel):
@@ -567,6 +570,7 @@ class ChangeRead(BaseModel):
     reason: str | None
     status: Literal["pending", "approved", "rejected", "withdrawn"]
     requested_by_email: str
+    requested_by_me: bool = False  # set on the history read, for "requested by you"
     requested_at: datetime
     decided_at: datetime | None
 

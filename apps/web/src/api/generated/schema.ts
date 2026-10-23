@@ -3717,6 +3717,11 @@ export interface components {
             /** Requested By Email */
             requested_by_email: string;
             /**
+             * Requested By Me
+             * @default false
+             */
+            requested_by_me?: boolean;
+            /**
              * Status
              * @enum {string}
              */
@@ -7651,6 +7656,11 @@ export interface components {
         };
         /** VendorDetail */
         VendorDetail: {
+            /**
+             * Actions
+             * @default []
+             */
+            actions?: string[];
             availability: components["schemas"]["Availability"];
             /**
              * Created At
@@ -7681,6 +7691,11 @@ export interface components {
             };
             /** Legal Name */
             legal_name: string;
+            /**
+             * Local Disable Units
+             * @default []
+             */
+            local_disable_units?: string[];
             /** Number */
             number: string;
             /**

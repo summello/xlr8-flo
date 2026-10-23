@@ -185,11 +185,13 @@ class ChangesMixin:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             self._lock_free(vendor_id)
             rows = self.repo.execute(
-                f"SELECT {CHANGE_COLUMNS} {CHANGE_FROM} WHERE c.org_id = %(org_id)s "
+                f"SELECT {CHANGE_COLUMNS}, coalesce(c.requested_by = %(actor)s, false) "
+                f"{CHANGE_FROM} WHERE c.org_id = %(org_id)s "
                 "AND c.vendor_id = %(id)s ORDER BY c.requested_at DESC, c.id DESC",
-                {"id": vendor_id},
+                {"id": vendor_id, "actor": self.actor_id},
             ).fetchall()
-        return [ChangeRead.model_validate(dict(zip(CHANGE_FIELDS, r, strict=True))) for r in rows]
+        fields = (*CHANGE_FIELDS, "requested_by_me")
+        return [ChangeRead.model_validate(dict(zip(fields, r, strict=True))) for r in rows]
 
     def _lock_free(self, id: UUID) -> None:
         if not self.repo.execute(

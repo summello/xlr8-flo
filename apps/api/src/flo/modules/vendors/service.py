@@ -2,6 +2,7 @@
 
 import base64
 import json
+from collections.abc import Callable
 from typing import cast
 from uuid import UUID, uuid4
 
@@ -66,6 +67,13 @@ from flo.modules.vendors.schemas import (
 )
 
 SETTING = "vendor.allow_local_disable"
+# The header actions and the permission the matching route requires.
+ACTION_PERMISSIONS = (
+    ("edit", "vendor.edit"),
+    ("request_change", "vendor.edit"),
+    ("inactivate", "vendor.approve"),
+    ("verify_documents", "vendor.approve"),
+)
 CONTACT_COLUMNS = (
     "id, type, name, email, phone, receives_documents, created_at, updated_at, version"
 )
@@ -215,6 +223,31 @@ class VendorService(
                     for r in disabled
                 ],
             )
+
+    def with_actions(
+        self, detail: VendorDetail, can: Callable[[str, UUID | None], bool]
+    ) -> VendorDetail:
+        """Name what the caller may do, using the checks the matching routes make.
+
+        `can(permission, unit_id)` is the route layer's check; None means the organization.
+        """
+        detail.actions = [name for name, permission in ACTION_PERMISSIONS if can(permission, None)]
+        if detail.availability == "global":
+            org, cursor = OrgService(self.connection, self.scope), None
+            # ponytail: walks every active unit per vendor read, so cost grows with org unit count;
+            # read the setting for all units in one query, or only for the caller's current unit.
+            while True:
+                page = org.list_units(kind=None, active=True, cursor=cursor, page_size=100)
+                # the setting is read here, as disable_locally does: no org.unit.read needed
+                detail.local_disable_units += [
+                    u.id
+                    for u in page.rows
+                    if can("vendor.edit", u.id)
+                    and org.effective_setting(u.id, SETTING).value is True
+                ]
+                if (cursor := page.next_cursor) is None:
+                    break
+        return detail
 
     def _attention(self, ids: list[UUID]) -> dict[UUID, list[DocSummary]]:
         """Per vendor, the documents that need a look, soonest-to-lapse first (document_state)."""

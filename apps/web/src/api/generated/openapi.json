@@ -1574,6 +1574,11 @@
             "title": "Requested By Email",
             "type": "string"
           },
+          "requested_by_me": {
+            "default": false,
+            "title": "Requested By Me",
+            "type": "boolean"
+          },
           "status": {
             "enum": [
               "pending",
@@ -13302,6 +13307,14 @@
       },
       "VendorDetail": {
         "properties": {
+          "actions": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
           "availability": {
             "$ref": "#/components/schemas/Availability"
           },
@@ -13362,6 +13375,15 @@
           "legal_name": {
             "title": "Legal Name",
             "type": "string"
+          },
+          "local_disable_units": {
+            "default": [],
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Local Disable Units",
+            "type": "array"
           },
           "number": {
             "title": "Number",

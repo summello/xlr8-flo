@@ -5002,6 +5002,69 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E11-S16",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 4,
+      "void_rounds": 1,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 5
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 5,
+          "findings": 2,
+          "blockers": 2,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "8c3bf80b-5c5d-434e-8b1b-a7709bfec30f",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S16",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a16916-0f89-7800-8125-e00e6d6911e9",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Five vendor dialogs on the profile; VendorDetail.actions and local_disable_units (incl. the unit setting) are computed server-side, so controls render only for those allowed. Change history marks the caller's own requests ('requested by you').",
+      "title": "Vendor status, availability and local-disable dialogs",
+      "durations": {
+        "review_s": {
+          "codex": 23,
+          "opus": 430
+        },
+        "gate_s": 3
+      }
     }
   ]
 }
