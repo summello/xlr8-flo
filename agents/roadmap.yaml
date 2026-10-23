@@ -3336,7 +3336,7 @@ epics:
         reqs:
           - SUP-005
         dep: []
-        st: in_progress
+        st: done
       - id: E23-S16
         t: 'Re-review economy: CI-only commits keep verdicts, void verdicts retry once, milestone red is fixed once'
         k: chore
@@ -3346,7 +3346,7 @@ epics:
           - SUP-005
         dep:
           - E23-S14
-        st: todo
+        st: review
       - id: E23-S17
         t: 'Recoverable execution records: write before launch, process identity, transient-error retries'
         k: chore
@@ -3366,7 +3366,7 @@ epics:
         reqs:
           - SUP-005
         dep: []
-        st: in_progress
+        st: review
   - id: E30
     name: Future roadmap
     milestone: M7
