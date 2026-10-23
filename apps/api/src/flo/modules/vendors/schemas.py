@@ -137,7 +137,16 @@ class VendorDisabled(VendorUnit):
     reason: str
 
 
+class SensitiveAccess(BaseModel):
+    """Whether the caller may reveal tax and banking values, and who to ask when not (VEN-014)."""
+
+    can_reveal: bool = False
+    can_edit: bool = False  # vendor.edit and vendor.sensitive.reveal, as PUT /sensitive requires
+    ask: str = "an administrator"
+
+
 class VendorDetail(VendorRead):
+    sensitive_access: SensitiveAccess = SensitiveAccess()
     units: list[VendorUnit] = []
     disabled_in: list[VendorDisabled] = []
     identifiers: dict[str, str] = {}  # type code -> normalised value

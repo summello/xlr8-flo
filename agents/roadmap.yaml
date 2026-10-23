@@ -1571,7 +1571,7 @@ epics:
         dep:
           - E11-S04
           - E11-S12
-        st: review
+        st: done
       - id: E11-S14
         t: 'Request a vendor: form, live duplicate check, drafts, submit'
         k: ui
@@ -1795,7 +1795,7 @@ epics:
         dep:
           - E12-S03
           - E11-S09
-        st: todo
+        st: review
       - id: E12-S12
         t: 'New RFQ from approved lines: line picker with the open-quantity guard'
         k: ui
@@ -3346,7 +3346,7 @@ epics:
           - SUP-005
         dep:
           - E23-S14
-        st: review
+        st: done
       - id: E23-S17
         t: 'Recoverable execution records: write before launch, process identity, transient-error retries'
         k: chore

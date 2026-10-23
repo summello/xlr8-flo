@@ -376,3 +376,63 @@ def test_only_the_reveal_route_skips_idempotency():
     assert IDEMPOTENCY_BYPASS_PATTERN.match("/api/v1/vendors/abc/sensitive/reveal")
     assert not IDEMPOTENCY_BYPASS_PATTERN.match("/api/v1/vendors//sensitive/reveal")
     assert not IDEMPOTENCY_BYPASS_PATTERN.match("/api/v1/vendors/a/b/sensitive/reveal")
+
+
+@pytest.mark.parametrize(
+    ("role", "can_reveal", "can_edit"),
+    [
+        ("vendor-manager", True, True),
+        ("budget-finance-user", True, False),
+        ("sourcing-specialist", False, False),
+        ("auditor", False, False),
+    ],
+)
+def test_detail_says_who_can_reveal_and_who_to_ask(header_db, role, can_reveal, can_edit):
+    db = header_db
+    vendor = new_vendor(db)
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            regrant(db, [str(p) for p in BASELINE_ROLE_PERMISSIONS[role_code(role)]])
+            return await call(browser, "GET", f"/{vendor.id}")
+
+    response = asyncio.run(scenario())
+    assert response.status_code == 200
+    access = response.json()["sensitive_access"]
+    assert access["can_reveal"] is can_reveal and access["can_edit"] is can_edit
+    assert "Vendor Manager" in access["ask"] and "Finance" in access["ask"]
+
+
+def test_reveal_without_a_reason_is_422(header_db):
+    db = header_db
+    vendor = new_vendor(db)
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            return await call(
+                browser, "POST", f"/{vendor.id}/sensitive/reveal", {"fields": ["tax_id"]}
+            )
+
+    assert asyncio.run(scenario()).status_code == 422
+
+
+def test_figures_in_the_note_are_a_422_with_the_message_on_the_note_field(header_db):
+    db = header_db
+    vendor = new_vendor(db)
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            return await call(
+                browser,
+                "POST",
+                f"/{vendor.id}/sensitive/reveal",
+                reveal(["tax_id"], note="acct 000123454821"),
+            )
+
+    response = asyncio.run(scenario())
+    assert response.status_code == 422
+    (entry,) = response.json()["errors"]
+    assert entry["field"] == "note" and "Leave account and tax numbers out" in entry["message"]

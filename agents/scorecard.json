@@ -4827,6 +4827,122 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E23-S16",
+      "kind": "chore",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [],
+      "rounds": 5,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {},
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "codex",
+          "to": "opus",
+          "role": "reviewer",
+          "reason": "operator 23 Oct 2026: Codex 5-hour window exhausted; fresh Opus session reviews E23-S16/S17 instead"
+        }
+      ],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "1df13330-20d3-44f6-8ed7-f060215eda11",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E23-S16",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "2dcc39d7-6abb-4e28-8f4a-634af9e0d8cd",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "flo facts now carries a reviewer's verdict across milestone merges and generated-client-only commits (with sidecar and task.json evidence), retries a void verdict once per reviewer+sha, and exposes failing job names so the supervisor raises one 'milestone red' need instead of fixing each story. Docs in fleet-tooling.md.",
+      "title": "Re-review economy: CI-only commits keep verdicts, void verdicts retry once, milestone red is fixed once",
+      "durations": {
+        "wall_s": 24808,
+        "author_s": 384,
+        "review_s": {
+          "opus": 128
+        },
+        "gate_s": 0
+      }
+    },
+    {
+      "story": "E11-S13",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui",
+        "security"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 3,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "3cd4e116-d028-481d-bf21-132278ecd013",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S13",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a167f1-c6a1-7b03-9f7b-04bbeab547e0",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Vendor detail now carries sensitive_access {can_reveal, ask} from the reveal permission check, and the profile has a Tax and Banking card: masked by default, reveal behind a required reason, values dropped from state after 60 s or when focus or pointer leaves, Restricted text for non-revealers.",
+      "title": "Tax and Banking card: masked by default, audited reveal",
+      "durations": {
+        "review_s": {
+          "codex": 14,
+          "opus": 2270
+        },
+        "gate_s": 836
+      }
     }
   ]
 }

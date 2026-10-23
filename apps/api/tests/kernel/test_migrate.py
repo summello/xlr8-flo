@@ -2669,3 +2669,40 @@ def test_rfq_lifecycle_roundtrip_keeps_rfqs_and_versions_are_immutable(empty_dat
         mig.upgrade(conn)
         with tenant_transaction(conn, scope):
             assert conn.execute("SELECT count(*) FROM rfq_version").fetchone() == (0,)
+
+
+def test_finance_vendor_view_grant_roundtrip_leaves_other_grants_alone(empty_database):
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from tests.org.test_bootstrap import create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261022_0069"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261022_0070")
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        tenant = create(conn)
+        scope = Scope(tenant.org_id)
+
+        def held(role):
+            with tenant_transaction(conn, scope):
+                return conn.execute(
+                    "SELECT p.permission_code FROM role_permission p "
+                    "JOIN role r ON r.id=p.role_id WHERE r.code=%s "
+                    "AND p.permission_code IN ('vendor.view','vendor.sensitive.reveal') ORDER BY 1",
+                    (role,),
+                ).fetchall()
+
+        with tenant_transaction(conn, scope):  # look like a tenant that predates the grant
+            conn.execute(
+                "DELETE FROM role_permission USING role r WHERE r.id=role_id "
+                "AND r.code='budget-finance-user' AND permission_code='vendor.view'"
+            )
+        before = held("budget-finance-user")
+        assert ("vendor.view",) not in before
+        mig.upgrade(conn)
+        assert held("budget-finance-user") == [("vendor.sensitive.reveal",), ("vendor.view",)]
+        mig.downgrade(conn)
+        assert held("budget-finance-user") == before  # the reveal grant survives
+        mig.upgrade(conn)

@@ -11758,6 +11758,28 @@
         "title": "ScoreRead",
         "type": "object"
       },
+      "SensitiveAccess": {
+        "description": "Whether the caller may reveal tax and banking values, and who to ask when not (VEN-014).",
+        "properties": {
+          "ask": {
+            "default": "an administrator",
+            "title": "Ask",
+            "type": "string"
+          },
+          "can_edit": {
+            "default": false,
+            "title": "Can Edit",
+            "type": "boolean"
+          },
+          "can_reveal": {
+            "default": false,
+            "title": "Can Reveal",
+            "type": "boolean"
+          }
+        },
+        "title": "SensitiveAccess",
+        "type": "object"
+      },
       "SensitiveMasked": {
         "description": "Tax and banking data as the list and detail show it: last four characters only.",
         "properties": {
@@ -13192,6 +13214,14 @@
             "$ref": "#/components/schemas/SensitiveMasked",
             "default": {
               "version": 0
+            }
+          },
+          "sensitive_access": {
+            "$ref": "#/components/schemas/SensitiveAccess",
+            "default": {
+              "ask": "an administrator",
+              "can_edit": false,
+              "can_reveal": false
             }
           },
           "status": {
