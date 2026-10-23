@@ -2620,12 +2620,23 @@ def _reviewers(pkt):
     return rev + (["opus"] if pkt.get("opus_final") and "opus" not in rev else [])
 
 
+def _verdict(sc, sid, reviewer, review, seen, sub):
+    """The reviewer's verdict state on `sub`, counting its launches on `seen` (review.sh appends the
+    sha to .scratch/<S>.<R>.attempts at each launch) so a void result is retried once (E23-S16)."""
+    import flo_facts as F
+    tries = (_read(sc / f"{sid}.{reviewer}.attempts") or "").split()
+    return F.verdict_state(
+        review, seen, sub, attempts=tries.count(seen) if seen else 0,
+        capped="stopped at the time cap" in (_read(sc / f"{sid}.{reviewer}.log") or ""))
+
+
 def _carry(sc, wt, pkt, sid, reviewer, reviewed, sub):
     """E23-S16: move a usable verdict's baseline from `reviewed` to `sub` when the story's own commits
     between them touch nothing but the generated API client (a milestone merge adds none). Returns
     `sub` once carried, else None. The verdict file, its run record and review_runs are untouched:
     a carry is evidence, not a review."""
-    r = subprocess.run(["git", "log", "--no-merges", "--name-only", "--format=", f"{reviewed}..{sub}",
+    # --cc (no --no-merges): a clean milestone merge lists nothing, a resolved one lists what it changed
+    r = subprocess.run(["git", "log", "--cc", "--name-only", "--format=", f"{reviewed}..{sub}",
                         "--not", f"origin/{pkt['milestone_branch']}"], cwd=wt, capture_output=True, text=True)
     if r.returncode:
         return None
@@ -2676,10 +2687,7 @@ def cmd_facts(argv):
             seen = next((t.strip() for t in (_read(sc / f"{sid}.{r}.{x}") for x in ("launched", "sha", "sha.new")) if t), None)
             if review and seen and sub and seen != sub and F.verdict_state(review, seen, seen) in ("approve", "changes"):
                 seen = _carry(sc, wt, pkt, sid, r, seen, sub) or seen
-            tries = (_read(sc / f"{sid}.{r}.attempts") or "").split()
-            verdicts[r] = F.verdict_state(
-                review, seen, sub, attempts=tries.count(seen) if seen else 0,
-                capped="stopped at the time cap" in (_read(sc / f"{sid}.{r}.log") or ""))
+            verdicts[r] = _verdict(sc, sid, r, review, seen, sub)
         approved = bool(verdicts) and all(v == "approve" for v in verdicts.values())
         out.append({
             "id": sid, "title": s["t"], "st": s["st"], "merged": s["st"] == "done",

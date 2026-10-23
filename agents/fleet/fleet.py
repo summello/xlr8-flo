@@ -133,8 +133,8 @@ def decide(s: dict, ctx: dict) -> list[dict]:
             # loops (E22-S12, 22 Oct, every tick)
             return need("a CI fix already ran on this merged story: move its commits onto the milestone, "
                         "or clear .scratch/<S>.ci-red if the milestone fixed it")
-        if shared_red(s, ctx):
-            return shared_red(s, ctx)
+        if sr := shared_red(s, ctx):
+            return sr
         return step("fix", account=s.get("account")) if author_can(s, cap) else []
     if s["blocked"]:
         return need("blocked: answer the question in its task packet (notes.blocked)")
@@ -146,8 +146,8 @@ def decide(s: dict, ctx: dict) -> list[dict]:
     # red on the submitted commit, and the author has not committed since: fix. Commits since
     # (a round, or a fix) are submitted first, so CI judges the head rather than an old commit.
     if s["ci_red"] and s["head"] == s["submitted_sha"]:
-        if shared_red(s, ctx):
-            return shared_red(s, ctx)
+        if sr := shared_red(s, ctx):
+            return sr
         last = ctx["results"].get((sid, "fix", ""))
         if last and last.get("head") == s["head"] and last.get("exit") is not None:
             # the author ran on this red and committed nothing: resending loops (21 Oct, every tick)

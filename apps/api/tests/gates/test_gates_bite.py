@@ -1556,6 +1556,61 @@ def test_carry_forward_carries_a_milestone_only_merge(tmp_path: Path) -> None:
     assert json.loads((sc / "S1.codex.carried.json").read_text())["paths"] == []
 
 
+def test_carry_forward_refuses_an_application_edit_made_inside_a_milestone_merge(
+    tmp_path: Path,
+) -> None:
+    flo = load_flo()
+    repo = tmp_path / "wt"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "story")
+    (repo / "a.py").write_text("a")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "base")
+    reviewed = _git(repo, "rev-parse", "HEAD")
+    _git(repo, "checkout", "-qb", "ms")
+    (repo / "m.txt").write_text("m")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "milestone work")
+    _git(repo, "update-ref", "refs/remotes/origin/ms", "HEAD")
+    _git(repo, "checkout", "-q", "story")
+    (repo / "b.txt").write_text("b")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "story side")  # diverge so the merge is real
+    _git(repo, "merge", "--no-commit", "--no-ff", "ms")
+    (repo / "a.py").write_text("edited while resolving the merge")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "merge milestone")
+    sub = _git(repo, "rev-parse", "HEAD")
+    sc = tmp_path / "scratch"
+    sc.mkdir()
+    assert flo._carry(sc, repo, {"milestone_branch": "ms"}, reviewed, sub) is None
+    assert not (sc / "S1.codex.carried.json").exists()
+
+
+def test_facts_counts_launches_on_the_submitted_sha_so_a_void_verdict_retries_once(
+    tmp_path: Path,
+) -> None:
+    flo = load_flo()
+    void = {"verdict": "changes_requested", "findings": []}
+
+    def state(sha: str = "s1") -> str:
+        return str(flo._verdict(tmp_path, "S1", "codex", void, sha, sha))
+
+    att = tmp_path / "S1.codex.attempts"
+    att.write_text("s1\n")
+    assert state() == "missing"  # first void: relaunch
+    att.write_text("s1\ns1\n")
+    assert state() == "malformed"  # second void on the same sha: ask the operator
+    assert state("s2") == "missing"  # a new sha counts from one again
+    (tmp_path / "S1.codex.log").write_text("stopped at the time cap\n")
+    assert str(flo._verdict(tmp_path, "S1", "codex", None, "s1", "s1")) == "malformed"
+
+
+def test_review_sh_records_one_attempt_line_per_launch() -> None:
+    script = (Path(__file__).resolve().parents[4] / "agents/scripts/review.sh").read_text()
+    assert 'cat "$SHA.new" >> "$D/$S.$A.attempts"' in script
+
+
 @pytest.mark.parametrize(
     "literal",
     ["rgb(255 255 255)", "rgba(0, 0, 0, 0.5)", "hsl(210 40% 96%)", "#fff", "#1A1F2A"],
