@@ -4053,7 +4053,7 @@ export interface components {
              * State
              * @enum {string}
              */
-            state: "queued" | "sent" | "failed";
+            state: "queued" | "sent" | "failed" | "bounced";
             /** Version */
             version: number;
         };

@@ -2627,7 +2627,8 @@
             "enum": [
               "queued",
               "sent",
-              "failed"
+              "failed",
+              "bounced"
             ],
             "title": "State",
             "type": "string"
