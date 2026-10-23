@@ -407,7 +407,8 @@ def cmd_with_lock(argv):
         except OSError as e:
             die(f"{cmd[0]}: {e}")
     if rc < 0:  # killed by a signal: die the same way so the caller sees it
-        signal.signal(-rc, signal.SIG_DFL)
+        if -rc not in (signal.SIGKILL, signal.SIGSTOP):  # uncatchable: signal.signal raises
+            signal.signal(-rc, signal.SIG_DFL)
         os.kill(os.getpid(), -rc)
     sys.exit(rc)
 
