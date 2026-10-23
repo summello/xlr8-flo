@@ -7075,6 +7075,27 @@ export interface components {
             supersedes: string | null;
         };
         /**
+         * SensitiveAccess
+         * @description Whether the caller may reveal tax and banking values, and who to ask when not (VEN-014).
+         */
+        SensitiveAccess: {
+            /**
+             * Ask
+             * @default an administrator
+             */
+            ask?: string;
+            /**
+             * Can Edit
+             * @default false
+             */
+            can_edit?: boolean;
+            /**
+             * Can Reveal
+             * @default false
+             */
+            can_reveal?: boolean;
+        };
+        /**
          * SensitiveMasked
          * @description Tax and banking data as the list and detail show it: last four characters only.
          */
@@ -7574,6 +7595,14 @@ export interface components {
              *     }
              */
             sensitive?: components["schemas"]["SensitiveMasked"];
+            /**
+             * @default {
+             *       "ask": "an administrator",
+             *       "can_edit": false,
+             *       "can_reveal": false
+             *     }
+             */
+            sensitive_access?: components["schemas"]["SensitiveAccess"];
             status: components["schemas"]["VendorStatus"];
             /** Trading Name */
             trading_name: string;

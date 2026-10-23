@@ -20,11 +20,17 @@ export const rows = [
   vendor("66666666-6666-4666-8666-666666666666", 3, "Cobalt Freight", [{ state: "missing", count: 1 }]),
 ];
 
+export const TAX = "12-3456789", ACCOUNT = "000123454821";
+const clear = { tax_id: TAX, tax_id_country: "US", bank_name: "Acme Operating", bank_account: ACCOUNT, bank_routing: "SORT-20-00-00", version: 1 };
+const masked = { tax_id: "•••• 6789", tax_id_country: "US", bank_name: "•••• ting", bank_account: "•••• 4821", bank_routing: "•••• 0-00", version: 1 };
+
 /** An in-memory stand-in for the vendor API. Every list request is recorded so a test can assert server paging. */
-export async function stubVendors(page: Page) {
+export async function stubVendors(page: Page, { canReveal = true, canEdit = canReveal }: { canReveal?: boolean; canEdit?: boolean } = {}) {
   const state = {
     requests: [] as URL[],
     verified: false,
+    reveals: [] as unknown[],
+    puts: [] as { body: Record<string, unknown>; ifMatch: string | undefined }[],
     docs: [
       { type_code: "INS", required: true, state: "expiring", days_left: 12, document_id: docId, attachment_id: attachmentId, attachment_version: 2, scan_status: "clean", issue_date: "2025-10-01", expiry_date: "2026-10-28", verification: "unverified", created_at: NOW },
       { type_code: "TAX", required: true, state: "missing" },
@@ -58,7 +64,19 @@ export async function stubVendors(page: Page) {
       const next = start + limit < all.length ? String(start + limit) : null;
       return send({ rows: all.slice(start, start + limit), next_cursor: next });
     }
-    if (path === `/api/v1/vendors/${vendorId}`) return send({ ...rows[0], units: [], disabled_in: [], identifiers: {} });
+    if (path === `/api/v1/vendors/${vendorId}`) return send({ ...rows[0], sensitive: masked, sensitive_access: { can_reveal: canReveal, can_edit: canEdit, ask: "Vendor Manager or Budget/Finance User" }, units: [], disabled_in: [], identifiers: {} });
+    if (path === `/api/v1/vendors/${vendorId}/sensitive` && method === "PUT") {
+      const body = req.postDataJSON() as Record<string, unknown>;
+      state.puts.push({ body, ifMatch: req.headers()["if-match"] });
+      return send({ changed: Object.keys(body), version: 2 });
+    }
+    if (path === `/api/v1/vendors/${vendorId}/sensitive/reveal` && method === "POST") {
+      const body = req.postDataJSON() as { reason_code?: string; note?: string | null };
+      state.reveals.push(body);
+      if (!canReveal) return send({ detail: "Forbidden." }, 403);
+      if (body.note && /\d{4,}/.test(body.note.replace(/[\s-]/g, ""))) return send({ detail: "The request contains invalid values. Your submitted values were preserved.", errors: [{ field: "note", message: "Value error, Leave account and tax numbers out of the note." }] }, 422);
+      return send(clear);
+    }
     if (path === `/api/v1/vendors/${vendorId}/eligibility`) return send(rows[0]!.eligibility);
     if (path === `/api/v1/vendors/${vendorId}/contacts`) return send([{ id: second, type: "billing", name: "Pat Payer", email: "pat@acme.test", phone: null, receives_documents: false, created_at: NOW, updated_at: NOW, version: 1 }]);
     if (path === `/api/v1/vendors/${vendorId}/documents`) return send(state.docs);

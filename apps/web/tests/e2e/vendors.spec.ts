@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
-import { stubVendors, vendorId } from "./vendors-fixture";
+import { expect, test, type Page } from "@playwright/test";
+import { ACCOUNT, TAX, stubVendors, vendorId } from "./vendors-fixture";
 
 test("search, switch tabs, open a vendor, open a document and verify it", async ({ page }) => {
   const state = await stubVendors(page);
@@ -95,3 +95,131 @@ for (const theme of ["light", "dark"] as const) {
     });
   }
 }
+
+test.describe("Tax and Banking card", () => {
+  const html = (page: Page) => page.evaluate(() => document.documentElement.outerHTML);
+  const reveal = async (page: Page, reason = "Verify a payment") => {
+    await page.getByRole("button", { name: "Reveal Values" }).click();
+    if (reason) await page.getByLabel("Reason").selectOption({ label: reason });
+    await page.locator(".tax-reveal").getByRole("button", { name: "Reveal Values" }).click();
+  };
+
+  test("full values are absent before reveal, present after, absent again after the 60 s re-mask", async ({ page }) => {
+    await page.clock.install();
+    const bodies: string[] = [];
+    page.on("response", async r => { if (r.url().includes("/api/v1/vendors/") && !r.url().endsWith("/reveal")) bodies.push(await r.text().catch(() => "")); });
+    await stubVendors(page);
+    await page.goto(`/vendors/${vendorId}`);
+    await expect(page.getByText("•••• 4821")).toBeVisible();
+    for (const secret of [TAX, ACCOUNT]) {
+      expect(await html(page)).not.toContain(secret);
+      expect(bodies.join("")).not.toContain(secret);
+      expect(await page.title()).not.toContain(secret);
+    }
+    await reveal(page);
+    await expect(page.getByText(ACCOUNT)).toBeVisible();
+    await expect(page.getByText(/Revealed by you, .+\. Logged\./)).toBeVisible();
+    expect(await html(page)).toContain(TAX);
+    expect(await page.title()).not.toContain(TAX);
+    await page.clock.fastForward(61_000);
+    await expect(page.getByText("•••• 4821")).toBeVisible();
+    for (const secret of [TAX, ACCOUNT]) expect(await html(page)).not.toContain(secret);
+  });
+
+  test("re-masks when focus leaves the card", async ({ page }) => {
+    await stubVendors(page);
+    await page.goto(`/vendors/${vendorId}`);
+    await reveal(page);
+    await expect(page.getByText(ACCOUNT)).toBeVisible();
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Tab");
+    await expect(page.getByText(ACCOUNT)).toHaveCount(0);
+    expect(await html(page)).not.toContain(ACCOUNT);
+  });
+
+  test("keyboard: Enter opens the reveal form, a missing reason is blocked in the form and nothing is sent", async ({ page }) => {
+    const state = await stubVendors(page);
+    await page.goto(`/vendors/${vendorId}`);
+    await page.getByRole("button", { name: "Reveal Values" }).focus();
+    await page.keyboard.press("Enter");
+    await page.locator(".tax-reveal").getByRole("button", { name: "Reveal Values" }).click();
+    await expect(page.getByRole("alert")).toContainText("Choose a reason");
+    expect(state.reveals).toHaveLength(0);
+  });
+
+  test("the 422 for figures in the note puts the server message, clean, at the note field", async ({ page }) => {
+    await stubVendors(page);
+    await page.goto(`/vendors/${vendorId}`);
+    await page.getByRole("button", { name: "Reveal Values" }).click();
+    await page.getByLabel("Reason").selectOption({ label: "Other" });
+    await page.getByLabel("Note (optional)").fill("acct 000123454821");
+    await page.locator(".tax-reveal").getByRole("button", { name: "Reveal Values" }).click();
+    await expect(page.locator("#reveal-note-error")).toHaveText("Leave account and tax numbers out of the note.");
+    await expect(page.getByLabel("Note (optional)")).toHaveValue("acct 000123454821");
+  });
+
+  test("a caller who cannot reveal sees the masked values, Restricted and who to ask, and no button", async ({ page }) => {
+    await stubVendors(page, { canReveal: false });
+    await page.goto(`/vendors/${vendorId}`);
+    await expect(page.getByText("•••• 4821")).toBeVisible();
+    await expect(page.getByText("Restricted")).toBeVisible();
+    await expect(page.getByText("Ask Vendor Manager or Budget/Finance User to reveal these values.")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Reveal Values" })).toHaveCount(0);
+  });
+
+  test("re-masks when the pointer leaves the card", async ({ page }) => {
+    await stubVendors(page);
+    await page.goto(`/vendors/${vendorId}`);
+    await reveal(page);
+    await expect(page.getByText(ACCOUNT)).toBeVisible();
+    // The pointer was over the form button that is now gone; put it on the card, then take it away.
+    await page.locator(".tax-card").hover();
+    await page.mouse.move(2, 2);
+    await expect(page.getByText(ACCOUNT)).toHaveCount(0);
+    expect(await html(page)).not.toContain(ACCOUNT);
+  });
+
+  test("Edit needs a reveal first, pre-fills from the revealed values and saves the whole record with If-Match", async ({ page }) => {
+    const state = await stubVendors(page);
+    await page.goto(`/vendors/${vendorId}`);
+    await expect(page.getByRole("button", { name: "Edit", exact: true })).toHaveCount(0);
+    expect(await html(page)).not.toContain(TAX);
+    await reveal(page);
+    await page.getByRole("button", { name: "Edit", exact: true }).click();
+    await expect(page.getByLabel("Account number")).toHaveValue(ACCOUNT);
+    await page.getByLabel("Routing code").fill("SORT-11-22-33");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByLabel("Routing code")).toHaveCount(0);
+    expect(state.puts).toHaveLength(1);
+    expect(state.puts[0]!.ifMatch).toBe("1");
+    expect(state.puts[0]!.body).toMatchObject({ tax_id: TAX, bank_routing: "SORT-11-22-33" });
+    await expect(page.getByText(ACCOUNT)).toHaveCount(0);
+  });
+
+  test("a caller without the edit permission gets no Edit button after revealing", async ({ page }) => {
+    await stubVendors(page, { canReveal: true, canEdit: false });
+    await page.goto(`/vendors/${vendorId}`);
+    await reveal(page);
+    await expect(page.getByText(ACCOUNT)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Edit", exact: true })).toHaveCount(0);
+  });
+
+  // One state per test: each loads the page once, so a loaded runner stays inside the timeout.
+  for (const theme of ["light", "dark"] as const) {
+    for (const state of ["masked", "form", "revealed", "editing", "restricted"] as const) {
+      test(`axe passes in ${theme} on the ${state} state`, async ({ page }) => {
+        await page.addInitScript(t => localStorage.setItem("xlr8flo.theme", t), theme);
+        await stubVendors(page, { canReveal: state !== "restricted" });
+        await page.goto(`/vendors/${vendorId}`);
+        await expect(page.getByText(state === "restricted" ? "Restricted" : "•••• 4821")).toBeVisible();
+        if (state === "form") await page.getByRole("button", { name: "Reveal Values" }).click();
+        if (state === "revealed" || state === "editing") {
+          await reveal(page, "Audit support");
+          await expect(page.getByText(ACCOUNT)).toBeVisible();
+        }
+        if (state === "editing") await page.getByRole("button", { name: "Edit", exact: true }).click();
+        expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+      });
+    }
+  }
+});

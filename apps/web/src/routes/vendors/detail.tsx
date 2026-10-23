@@ -3,6 +3,7 @@ import { apiClient } from "../../api/client";
 import StatusPill from "../../components/status/StatusPill";
 import Signal from "../../components/ui/Signal";
 import DocumentSheet from "../../components/vendors/DocumentSheet";
+import TaxBankingCard from "../../components/vendors/TaxBankingCard";
 import Eligibility from "../../components/vendors/Eligibility";
 import PerformanceCard from "../../components/vendors/performance/PerformanceCard";
 import ScorecardSheet from "../../components/vendors/performance/ScorecardSheet";
@@ -86,6 +87,9 @@ export default function VendorDetail({ id, navigate }: { id: string; navigate: (
       </Card>
       <Card title="Contacts" load={contacts}>
         {(contacts.data ?? []).length === 0 ? <p>No contacts yet.</p> : <ul className="vendor-list-plain">{(contacts.data ?? []).map(c => <li key={c.id}><strong>{label(c.type)}</strong> <span>{c.name}</span><span className="req-sub">{c.email}{c.phone ? ` · ${c.phone}` : ""}</span></li>)}</ul>}
+      </Card>
+      <Card title="Tax and Banking" load={vendor}>
+        <TaxBankingCard key={id} vendorId={id} masked={v.sensitive ?? {}} access={v.sensitive_access ?? { can_reveal: false, ask: "an administrator" }} onSaved={vendor.reload} />
       </Card>
       <Card title="Documents" load={docs} wide>
         <table className="vendor-table">

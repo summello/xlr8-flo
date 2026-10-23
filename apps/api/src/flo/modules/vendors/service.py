@@ -9,10 +9,17 @@ import psycopg
 
 from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
 from flo.kernel.audit.writer import AuditConnection
+from flo.kernel.authz import AuthorizationTarget as TargetProtocol
 from flo.kernel.config import Settings
 from flo.kernel.errors import ErrorCode, ProblemError
+from flo.kernel.identity import IdentityId
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
+from flo.modules.identity.service import (
+    AuthorizationConnection,
+    AuthorizationResolver,
+    AuthorizationTarget,
+)
 from flo.modules.org.service import MasterCodeUnusable, NumberingService, OrgService, today
 from flo.modules.vendors import duplicates
 from flo.modules.vendors import repo as sensitive
@@ -39,6 +46,7 @@ from flo.modules.vendors.schemas import (
     DisableCreate,
     DocSummary,
     Recipient,
+    SensitiveAccess,
     SensitiveMasked,
     SensitivePut,
     SensitiveReveal,
@@ -135,6 +143,39 @@ class VendorService(
             raise ProblemError(ErrorCode.NOT_FOUND)
         return self._read(row)
 
+    def _sensitive_access(self) -> SensitiveAccess:
+        """The same check the reveal route makes, plus the roles that hold it, for the card."""
+
+        def holds(permission: str) -> bool:
+            return self.actor_id is not None and (
+                AuthorizationResolver(cast(AuthorizationConnection, self.connection), self.scope)
+                .check(
+                    IdentityId(self.actor_id),
+                    permission,
+                    cast(TargetProtocol, AuthorizationTarget.organization(self.scope.org_id)),
+                )
+                .allowed
+            )
+
+        can = holds("vendor.sensitive.reveal")
+        names = [
+            str(r[0])
+            for r in self.repo.execute(
+                "SELECT r.name FROM role r JOIN role_permission rp "
+                "ON rp.org_id = r.org_id AND rp.role_id = r.id "
+                "WHERE r.org_id = %(org_id)s AND rp.permission_code = 'vendor.sensitive.reveal' "
+                "ORDER BY r.name",
+                {},
+            ).fetchall()
+        ]
+        ask = " or ".join(names) if len(names) < 3 else ", ".join(names[:-1]) + " or " + names[-1]
+        # the PUT route needs both permissions, so the Edit button follows the same rule
+        return SensitiveAccess(
+            can_reveal=can,
+            can_edit=can and holds("vendor.edit"),
+            ask=ask or "an administrator",
+        )
+
     def _unit_codes(self, id: UUID) -> list[VendorUnit]:
         rows = self.repo.execute(
             "SELECT u.id, u.code FROM vendor_unit vu JOIN org_unit u "
@@ -158,6 +199,7 @@ class VendorService(
             ).fetchall()
             return VendorDetail(
                 **base,
+                sensitive_access=self._sensitive_access(),
                 identifiers=duplicates.stored(self.repo, id),
                 units=self._unit_codes(id),
                 disabled_in=[

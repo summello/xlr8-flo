@@ -360,6 +360,7 @@ BASELINE_ROLE_PERMISSIONS: dict[RoleCode, frozenset[PermissionCode]] = {
             "ledger.read",
             "record.read",
             "report.view",
+            "vendor.view",
             "vendor.sensitive.reveal",
         )
     ),
