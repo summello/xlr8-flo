@@ -397,7 +397,7 @@ def cmd_with_lock(argv):
         except (IndexError, ValueError):
             die(usage)
         del head[j:j + 2]
-    if len(head) != 1 or not cmd or wait < 0:
+    if len(head) != 1 or not cmd or not 0 <= wait < float("inf"):  # NaN fails both comparisons
         die(usage)
     # ponytail: the child does not inherit the lock fd, so a SIGKILLed wrapper frees the lock while
     # its child runs on; and a backgrounded grandchild (author.sh's nohup) never holds it.

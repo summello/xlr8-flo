@@ -112,6 +112,17 @@ def test_bad_lock_name_is_refused(root):
     assert c.returncode != 0 and not (root / "x.lock").exists()
 
 
+@pytest.mark.parametrize("wait", ["nan", "inf", "-inf", "-1", "x"])
+def test_non_finite_or_negative_wait_is_a_usage_error(root, wait):
+    holder = hold(root)
+    try:
+        c = flo(root, "with-lock", "test", "--wait", wait, "--", "true")
+        _, err = c.communicate(timeout=10)  # a wait that is accepted would block here
+        assert c.returncode == 1 and "usage" in err
+    finally:
+        holder.kill()
+
+
 def story(root, sid, author="codex"):
     wt = root.parent / f"{root.name}-{sid}"
     wt.mkdir()
