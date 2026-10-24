@@ -1725,7 +1725,7 @@ epics:
           - E12-S04
           - E05-S05
           - E12-S05
-        st: in_progress
+        st: review
       - id: E12-S07
         t: Evaluation scoring with comments and conflict-of-interest declarations
         k: crud
@@ -1825,7 +1825,6 @@ epics:
         dep:
           - E12-S02
           - E12-S03
-          - E12-S07
           - E12-S11
           - E11-S11
         st: todo
@@ -1908,6 +1907,19 @@ epics:
           - SRC-017
         dep: []
         st: done
+      - id: E12-S20
+        t: 'RFQ editor: Evaluation Criteria and Evaluators cards (split from E12-S13)'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - SRC-002
+          - SRC-011
+        dep:
+          - E12-S07
+          - E12-S13
+        st: todo
 
   - id: E13
     name: Purchase orders
