@@ -1832,9 +1832,10 @@ epics:
       - id: E12-S14
         t: 'Record a bid: bid sheet, two times, vendor currency, late-bid override'
         k: ui
-        s: M
+        s: L
         tags:
           - ui
+          - auth
         reqs:
           - SRC-006
           - SRC-008
