@@ -3,6 +3,8 @@
 # against the code before an author starts, then files the record `flo start` requires.
 # Usage: agents/scripts/preflight.sh <STORY_ID> [codex|qwen|...]   (default codex, operator 23 Oct 2026:
 # qwen hit its 40-call cap without a verdict three times that day)
+# FLO_PREFLIGHT_DRAFT=1: an early pass on a story not ready yet; logs to <S>.preflight-draft.log and
+# files no record, so `flo start` still needs a real pre-flight once its deps merge.
 # Runs in a detached checkout of the milestone under .scratch, so a stray write cannot reach the runner.
 set -eu
 S="$1"; A="${2:-codex}"
@@ -16,7 +18,8 @@ W="$D/preflight-wt"
 [ -d "$W" ] || git -C "$R" worktree add --detach "$W" "$MS" > /dev/null
 git -C "$W" checkout -q --detach "$MS" && git -C "$W" reset -q --hard && git -C "$W" clean -qfd
 M="$($FLO launch-model "$S" --reviewer "$A")"
-P="$D/$S.preflight.prompt"; L="$D/$S.preflight.log"
+K=preflight; [ "${FLO_PREFLIGHT_DRAFT:-}" = 1 ] && K=preflight-draft
+P="$D/$S.$K.prompt"; L="$D/$S.$K.log"
 cat > "$P" <<EOF
 ROLE packet-preflight $S
 
@@ -53,5 +56,6 @@ git -C "$W" reset -q --hard
 V="$(grep -Eo 'PREFLIGHT: (pass|fail) [0-9]+' "$L" | tail -1)"
 [ -n "$V" ] || { echo "preflight.sh: no verdict line in $L" >&2; exit 1; }
 set -- $V
+[ "$K" = preflight-draft ] && { echo "preflight-draft $S: $2 ($3 findings), log $L (not recorded)"; exit 0; }
 cd "$R" && $FLO preflight "$S" --reviewer "$A" --verdict "$2" --findings "$3"
 echo "preflight $S: $2 ($3 findings), log $L"
