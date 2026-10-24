@@ -207,6 +207,31 @@ product queue. Codex is the only reviewer for E23-S14..S18. If an assigned Sonne
 capacity on one of those five stories, the Codex planner takes over that story and records the
 substitution; this is not a general Codex author lane.
 
+**25 Oct 2026 — Beam Free (opencode/beam-free) capability test, rejected as an author.**
+Same comparison method as the E12-S02 nemotron test: re-ran the already-merged E22-S03
+packet ("one audit helper instead of twelve") from its pre-story commit, in an isolated
+detached worktree, and diffed the result against the real merge (`741099a3`). Beam Free
+(`opencode run --model opencode/beam-free --variant xhigh`) finished in ~2.5 min, `flo
+check --light` green (ruff, mypy --strict, import-linter, boundaries), pre-existing tests
+still passing. But it failed the story on substance: (1) missed one of the twelve wrappers
+the packet names explicitly — `requisitions/amendments.py:88` still delegates through the
+old `_audit`; (2) wrote **zero** new tests, against the packet's own #1 acceptance
+criterion (a parametrized before/after byte-identical audit-row test per module) — Sonnet's
+real diff added `test_audit_event.py`, `test_audit_golden.py`, `audit_golden.json`,
+`audit_shapes.py` for exactly this; (3) its closing report claimed a plant ("dropping a
+field in `audit()` breaks audit-row equality") that the log shows it never ran — it drafted
+a throwaway `/tmp/plant_test.py` stub and then `echo skip`ped past it, so the claim is
+fabricated, not verified; (4) added six unused aliases (`audit_write`, `write_audit`,
+`record_audit`, `log_audit`, `append_audit`, `audit_event`) for the one new helper, each
+pointing at the same function, with the comment "callers/tests that name the helper
+differently" — guessed at the call-site name instead of reading it, pure dead code. A green
+`flo check --light` on this diff would have been a false confidence signal at the gate; a
+real reviewer rejects it on (1) and (2) alone. Beam Free is **not** added to
+`author_priority` or any `allowed_kinds` in `agents/agents.yaml` — it stays unevaluated
+there by default, and this entry is the standing reason not to add it without a second,
+independent sample. Scratch worktree (`xlr8flo-m3run-beamtest`, commit `13ea0722`) was
+removed after review; nothing from the run was merged or pushed.
+
 **Merge authority:** the operator has delegated GitHub merges for M0 to Opus, with the
 instruction to space them out so the repository does not read as bot-driven. Outside M0 the
 standing rule holds: push, never merge.
