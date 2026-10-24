@@ -3286,7 +3286,7 @@ epics:
           - SUP-005
         dep:
           - E23-S11
-        st: blocked
+        st: done
       - id: E23-S08
         t: Structured, commit-bound test-evidence records that flo gate verifies
         k: chore
@@ -3318,7 +3318,7 @@ epics:
         dep:
           - E23-S01
           - E23-S11
-        st: blocked
+        st: done
 
       - id: E23-S14
         t: One run record per reviewer, one reviewer at a time per story
