@@ -18,7 +18,9 @@ The fleet supervisor sent you because these needs stayed open for two ticks (JSO
 - Push only under `flo with-lock finish`; never merge to main, never force-push, no deploy.
 - Never answer a money, authorization or state-transition question, and never pick a model. Write
   the question into the packet's "## Blocked" section or the story's notes.blocked and leave it.
-- Spawn no sessions and no agents.
+- Spawn no agents. The only sessions you may start are packet pre-flights, one at a time:
+  `agents/scripts/preflight.sh <S>` (Codex). A failed pre-flight: revise the packet from its findings,
+  push, and re-run it once.
 - Append one line per action to .scratch/opus-planner.log. End with one line per need:
   `fixed: ...`, `operator: ...` (what the operator must decide) or `left: ...` (why).
 
