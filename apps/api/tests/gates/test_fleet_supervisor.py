@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 from importlib import machinery, util
 from pathlib import Path
 
@@ -646,3 +647,75 @@ def test_an_unproven_effect_stays_a_failure_for_the_operator(runner, monkeypatch
     assert not (state / "runs" / "S1.submit.exit").exists()
     assert [a for a in launched if a["story"] == "S1"] == []
     assert "submit failed" in status["needs"][0]["need"]
+
+
+# the auto-planner (operator, 24 Oct 2026) -----------------------------------------------------
+
+
+def need(story="S1", why="finish failed on this commit: read its finish log"):
+    return {"need": why, "story": story}
+
+
+def test_a_planner_goes_to_a_need_only_on_its_second_tick_and_only_once():
+    act, book = S.planner_act([need()], {}, ctx())
+    assert act is None
+    act, book = S.planner_act([need()], book, ctx())
+    assert act["step"] == "planner" and act["story"] == S.PLANNER and act["needs"] == [need()]
+    assert act["account"] in ("A", "B")
+    again, book = S.planner_act([need()], book, ctx())
+    assert again is None  # taken: never a second planner for the same need
+
+
+def test_a_closed_need_that_recurs_gets_a_new_planner():
+    _, book = S.planner_act([need()], {}, ctx())
+    _, book = S.planner_act([need()], book, ctx())
+    _, book = S.planner_act([], book, ctx())
+    assert book == {"open": {}, "done": []}
+    _, book = S.planner_act([need()], book, ctx())
+    act, _ = S.planner_act([need()], book, ctx())
+    assert act is not None
+
+
+def test_no_planner_for_a_blocked_question_while_one_runs_or_with_no_opus_room():
+    blocked = need(why="blocked: answer the question in its task packet (notes.blocked)")
+    _, book = S.planner_act([blocked], {}, ctx())
+    assert S.planner_act([blocked], book, ctx())[0] is None
+    _, book = S.planner_act([need()], {}, ctx())
+    running = ctx(busy={S.PLANNER: {("planner", "")}})
+    act, kept = S.planner_act([need()], book, running)
+    assert act is None and kept["done"] == []  # still due: the next free tick sends one
+    full = ctx(cap=S.capacity(snapshot(a=5, b=5), {}))
+    assert S.planner_act([need()], book, full)[0] is None
+
+
+def test_tick_launches_the_planner_once_with_its_needs(runner):
+    cfg, write, launched, _, _ = runner
+    cfg["steps"]["planner"] = "agents/scripts/planner.sh {account} {needs}"
+    write(facts(next=[], needs_preflight=["N1"]))
+    S.tick(cfg)
+    assert launched == []
+    S.tick(cfg)
+    S.tick(cfg)
+    assert [a["step"] for a in launched] == ["planner"]
+    assert launched[0]["needs"][0]["story"] == "N1"
+
+
+def test_without_a_planner_step_no_planner_runs(runner):
+    cfg, write, launched, _, _ = runner
+    write(facts(next=[], needs_preflight=["N1"]))
+    S.tick(cfg)
+    S.tick(cfg)
+    assert launched == []
+
+
+def test_launch_writes_the_needs_file_the_command_names(tmp_path):
+    (tmp_path / "runs").mkdir()
+    cfg = {"project": {"runner": str(tmp_path)}, "steps": {"planner": "cp {needs} got.json"}}
+    act = {"step": "planner", "story": S.PLANNER, "account": "A", "needs": [need()]}
+    S.launch(cfg, tmp_path, act, None)
+    ex = tmp_path / "runs" / f"{S.PLANNER}.planner.exit"
+    for _ in range(100):
+        if ex.exists() and ex.read_text().strip():
+            break
+        time.sleep(0.05)
+    assert json.loads((tmp_path / "got.json").read_text()) == [need()]

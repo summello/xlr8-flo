@@ -32,6 +32,8 @@ review = "agents/scripts/review.sh {story} {reviewer} {account}"
 round = 'f=$({flo} round {story}) && agents/scripts/author.sh {story} "$f"'
 fix = "agents/scripts/fix.sh {story}"
 finish = "agents/scripts/finish.sh {story}"
+# One Opus planner, once per need open two ticks (not for a blocked question). Remove to switch off.
+planner = "agents/scripts/planner.sh {account} {needs}"
 
 [reconcile]
 # Run on a failed or crashed step before anything repeats it: exit 0 means its effect already happened.
