@@ -18,7 +18,7 @@ policy:
   # 13 Oct 2026, operator-approved: Sonnet authors, Codex reviews every story (gated ones also
   # get a fresh Opus session), qwen then deepseek review whatever Codex authored or cannot reach.
   # 11 Oct 2026: kimi left this list at 0.0 findings in 2 reviews; deepseek 1.0 in 6.
-  ungated_reviewers: [opus, codex, qwen, deepseek]  # 24 Oct 2026 operator: Opus until Codex's window resets; then restore [codex, qwen, deepseek]
+  ungated_reviewers: [codex, qwen, deepseek]
   # 23 Oct 2026, operator: Sonnet authors every non-overridden story on account A or B.
   # When both accounts have no worker slot, the story waits; there is no overflow author.
   # A milestone sole_author override (M0 below) remains authoritative.
