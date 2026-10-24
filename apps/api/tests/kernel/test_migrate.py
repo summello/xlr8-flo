@@ -173,6 +173,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261022_0071",
         "20261022_0072",
         "20261022_0073",
+        "20261022_0074",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -2892,3 +2893,54 @@ def test_bid_late_columns_roundtrip_and_keep_submitted_bids(empty_database):
         with tenant_transaction(conn, scope):
             assert conn.execute("SELECT count(*) FROM bid").fetchone() == (1,)
         mig.upgrade(conn)
+
+
+def test_rfq_comparison_migration_is_reversible_and_tenant_scoped(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.org.schemas import OrgUnitCreate
+    from flo.modules.org.service import OrgService
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261022_0073"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261022_0074")
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("rfq-comparison-migration"),
+    ):
+        tenant = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(tenant.org_id)
+        bu = OrgService(conn, scope, actor).create_unit(
+            OrgUnitCreate(code="BU", name="BU", kind="bu")
+        )
+        rfq = uuid4()
+        mig.upgrade(conn)
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO rfq(id,org_id,number,title,unit_id,currency,owner_id)"
+                " VALUES(%s,%s,'RFQ-00001','T',%s,'USD',%s)",
+                (rfq, tenant.org_id, bu.id, actor),
+            )
+            conn.execute(
+                "INSERT INTO rfq_comparison(org_id,rfq_id,rate_date,frozen_at,rates)"
+                ' VALUES(%s,%s,\'2026-10-20\',now(),\'{"EUR": {"rate": "1.1"}}\')',
+                (tenant.org_id, rfq),
+            )
+        with pytest.raises(psycopg.errors.ForeignKeyViolation), tenant_transaction(conn, scope):
+            conn.execute(  # a comparison belongs to an RFQ of its own organization
+                "INSERT INTO rfq_comparison(org_id,rfq_id,rate_date,frozen_at,rates)"
+                " VALUES(%s,%s,'2026-10-20',now(),'{}')",
+                (tenant.org_id, uuid4()),
+            )
+        mig.downgrade(conn)
+        assert conn.execute("SELECT to_regclass('rfq_comparison')").fetchone() == (None,)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT count(*) FROM rfq").fetchone() == (1,)  # the RFQ stays
+        mig.upgrade(conn)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT count(*) FROM rfq_comparison").fetchone() == (0,)

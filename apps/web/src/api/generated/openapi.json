@@ -1098,6 +1098,77 @@
         "title": "BaseCurrencyPut",
         "type": "object"
       },
+      "Basis": {
+        "properties": {
+          "over_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Over By"
+          },
+          "partial": {
+            "title": "Partial",
+            "type": "boolean"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total"
+          },
+          "uncovered_lines": {
+            "default": [],
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Uncovered Lines",
+            "type": "array"
+          },
+          "vendor_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor Id"
+          },
+          "within_scope": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Within Scope"
+          }
+        },
+        "required": [
+          "vendor_id",
+          "total",
+          "partial",
+          "within_scope",
+          "over_by"
+        ],
+        "title": "Basis",
+        "type": "object"
+      },
       "BidCreate": {
         "additionalProperties": false,
         "properties": {
@@ -2060,6 +2131,97 @@
         "title": "CategoryAverage",
         "type": "object"
       },
+      "Cell": {
+        "properties": {
+          "freight_share": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Freight Share"
+          },
+          "landed": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Landed"
+          },
+          "not_quoted": {
+            "title": "Not Quoted",
+            "type": "boolean"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "tax": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax"
+          },
+          "unit_price": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Price"
+          },
+          "vendor_id": {
+            "format": "uuid",
+            "title": "Vendor Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "vendor_id",
+          "not_quoted",
+          "unit_price",
+          "quantity",
+          "price",
+          "tax",
+          "freight_share",
+          "landed"
+        ],
+        "title": "Cell",
+        "type": "object"
+      },
       "ChangeCreate": {
         "additionalProperties": false,
         "properties": {
@@ -2615,6 +2777,97 @@
         "title": "CommitBody",
         "type": "object"
       },
+      "ComparisonRead": {
+        "properties": {
+          "approved_scope": {
+            "title": "Approved Scope",
+            "type": "string"
+          },
+          "best_average_cost": {
+            "$ref": "#/components/schemas/Basis"
+          },
+          "bids_since_freeze": {
+            "title": "Bids Since Freeze",
+            "type": "integer"
+          },
+          "comparison_date": {
+            "format": "date",
+            "title": "Comparison Date",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "frozen_at": {
+            "format": "date-time",
+            "title": "Frozen At",
+            "type": "string"
+          },
+          "insight": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Insight"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/LineRow"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "lowest_cost_supplier": {
+            "$ref": "#/components/schemas/Basis"
+          },
+          "markers": {
+            "$ref": "#/components/schemas/Markers"
+          },
+          "rate_date": {
+            "format": "date",
+            "title": "Rate Date",
+            "type": "string"
+          },
+          "sealed": {
+            "const": false,
+            "default": false,
+            "title": "Sealed",
+            "type": "boolean"
+          },
+          "stale_rate": {
+            "title": "Stale Rate",
+            "type": "boolean"
+          },
+          "vendors": {
+            "items": {
+              "$ref": "#/components/schemas/VendorFigures"
+            },
+            "title": "Vendors",
+            "type": "array"
+          }
+        },
+        "required": [
+          "currency",
+          "comparison_date",
+          "rate_date",
+          "frozen_at",
+          "stale_rate",
+          "bids_since_freeze",
+          "approved_scope",
+          "vendors",
+          "lines",
+          "markers",
+          "lowest_cost_supplier",
+          "best_average_cost",
+          "insight"
+        ],
+        "title": "ComparisonRead",
+        "type": "object"
+      },
       "ConditionExplanation": {
         "additionalProperties": false,
         "properties": {
@@ -2826,6 +3079,45 @@
           "version"
         ],
         "title": "ContactRead",
+        "type": "object"
+      },
+      "ConversionNote": {
+        "properties": {
+          "base": {
+            "title": "Base",
+            "type": "string"
+          },
+          "effective_date": {
+            "format": "date",
+            "title": "Effective Date",
+            "type": "string"
+          },
+          "quote": {
+            "title": "Quote",
+            "type": "string"
+          },
+          "rate": {
+            "title": "Rate",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "stale": {
+            "title": "Stale",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "base",
+          "quote",
+          "rate",
+          "source",
+          "effective_date",
+          "stale"
+        ],
+        "title": "ConversionNote",
         "type": "object"
       },
       "CurrencyAggregate": {
@@ -5516,6 +5808,50 @@
         "title": "InboxStep",
         "type": "object"
       },
+      "Insight": {
+        "properties": {
+          "best_average_cost_vendors": {
+            "title": "Best Average Cost Vendors",
+            "type": "integer"
+          },
+          "dearer_basis": {
+            "enum": [
+              "lowest_cost_supplier",
+              "best_average_cost"
+            ],
+            "title": "Dearer Basis",
+            "type": "string"
+          },
+          "difference": {
+            "title": "Difference",
+            "type": "string"
+          },
+          "difference_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference Pct"
+          },
+          "lowest_cost_supplier_vendors": {
+            "title": "Lowest Cost Supplier Vendors",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "difference",
+          "difference_pct",
+          "dearer_basis",
+          "lowest_cost_supplier_vendors",
+          "best_average_cost_vendors"
+        ],
+        "title": "Insight",
+        "type": "object"
+      },
       "InstanceRead": {
         "additionalProperties": false,
         "properties": {
@@ -6644,6 +6980,72 @@
         "title": "LineRead",
         "type": "object"
       },
+      "LineRow": {
+        "properties": {
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/Cell"
+            },
+            "title": "Cells",
+            "type": "array"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "identical": {
+            "title": "Identical",
+            "type": "boolean"
+          },
+          "line_no": {
+            "title": "Line No",
+            "type": "integer"
+          },
+          "lowest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Marker"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "needed_by": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Needed By"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "string"
+          },
+          "rfq_line_id": {
+            "format": "uuid",
+            "title": "Rfq Line Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rfq_line_id",
+          "line_no",
+          "description",
+          "quantity",
+          "needed_by",
+          "identical",
+          "lowest",
+          "cells"
+        ],
+        "title": "LineRow",
+        "type": "object"
+      },
       "LineWriteResult": {
         "properties": {
           "currency": {
@@ -6954,6 +7356,66 @@
           "mapping"
         ],
         "title": "MappingPut",
+        "type": "object"
+      },
+      "Marker": {
+        "properties": {
+          "tied": {
+            "title": "Tied",
+            "type": "boolean"
+          },
+          "vendor_id": {
+            "format": "uuid",
+            "title": "Vendor Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "vendor_id",
+          "tied"
+        ],
+        "title": "Marker",
+        "type": "object"
+      },
+      "Markers": {
+        "properties": {
+          "fastest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Marker"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "highest_score": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Marker"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lowest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Marker"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "lowest",
+          "fastest",
+          "highest_score"
+        ],
+        "title": "Markers",
         "type": "object"
       },
       "MasterCreate": {
@@ -13058,6 +13520,18 @@
         "title": "SealedBidRead",
         "type": "object"
       },
+      "SealedComparisonRead": {
+        "properties": {
+          "sealed": {
+            "const": true,
+            "default": true,
+            "title": "Sealed",
+            "type": "boolean"
+          }
+        },
+        "title": "SealedComparisonRead",
+        "type": "object"
+      },
       "SensitiveAccess": {
         "description": "Whether the caller may reveal tax and banking values, and who to ask when not (VEN-014).",
         "properties": {
@@ -14665,6 +15139,209 @@
           "reason"
         ],
         "title": "VendorDisabled",
+        "type": "object"
+      },
+      "VendorFigures": {
+        "properties": {
+          "bid_id": {
+            "format": "uuid",
+            "title": "Bid Id",
+            "type": "string"
+          },
+          "conversion": {
+            "$ref": "#/components/schemas/ConversionNote"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "difference_from_lowest": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference From Lowest"
+          },
+          "freight": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Freight"
+          },
+          "freight_unallocated": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Freight Unallocated"
+          },
+          "freight_unallocated_converted": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Freight Unallocated Converted"
+          },
+          "full": {
+            "title": "Full",
+            "type": "boolean"
+          },
+          "landed_total": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Landed Total"
+          },
+          "lead_time_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Time Days"
+          },
+          "meets_need": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meets Need"
+          },
+          "met": {
+            "title": "Met",
+            "type": "integer"
+          },
+          "met_of": {
+            "title": "Met Of",
+            "type": "integer"
+          },
+          "not_quoted": {
+            "title": "Not Quoted",
+            "type": "boolean"
+          },
+          "on_current_version": {
+            "title": "On Current Version",
+            "type": "boolean"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price"
+          },
+          "ready_by": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ready By"
+          },
+          "rfq_version": {
+            "title": "Rfq Version",
+            "type": "integer"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "sent_at": {
+            "format": "date-time",
+            "title": "Sent At",
+            "type": "string"
+          },
+          "tax": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax"
+          },
+          "vendor_id": {
+            "format": "uuid",
+            "title": "Vendor Id",
+            "type": "string"
+          },
+          "vendor_name": {
+            "title": "Vendor Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "vendor_id",
+          "vendor_name",
+          "bid_id",
+          "currency",
+          "sent_at",
+          "rfq_version",
+          "on_current_version",
+          "not_quoted",
+          "full",
+          "price",
+          "tax",
+          "freight",
+          "freight_unallocated",
+          "freight_unallocated_converted",
+          "landed_total",
+          "difference_from_lowest",
+          "met",
+          "met_of",
+          "lead_time_days",
+          "ready_by",
+          "meets_need",
+          "score",
+          "conversion"
+        ],
+        "title": "VendorFigures",
         "type": "object"
       },
       "VendorPage": {
@@ -29281,6 +29958,152 @@
           }
         },
         "summary": "Submit Bid",
+        "tags": [
+          "sourcing"
+        ]
+      }
+    },
+    "/api/v1/sourcing/rfqs/{id}/comparison": {
+      "get": {
+        "operationId": "get_comparison_api_v1_sourcing_rfqs__id__comparison_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ComparisonRead"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SealedComparisonRead"
+                    }
+                  ],
+                  "title": "Response Get Comparison Api V1 Sourcing Rfqs  Id  Comparison Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Get Comparison",
+        "tags": [
+          "sourcing"
+        ]
+      }
+    },
+    "/api/v1/sourcing/rfqs/{id}/comparison/refresh-rate": {
+      "post": {
+        "operationId": "refresh_comparison_rate_api_v1_sourcing_rfqs__id__comparison_refresh_rate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComparisonRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Refresh Comparison Rate",
         "tags": [
           "sourcing"
         ]

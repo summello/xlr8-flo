@@ -5407,6 +5407,72 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E12-S06",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "money"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "qwen"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "qwen": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "qwen": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "6ae39a98-6dfa-45f6-a577-cbc6fdf1515f",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S06",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "launch-model",
+          "model": "qwen/qwen3.8-27b"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Adds the bid comparison engine (landed cost per converted component, freight pro rata in the bid currency, both award bases, scope figure), GET comparison and POST refresh-rate, and the rfq_comparison table that freezes rates at the deadline date. Every figure is checked against hand-computed Decimal literals.",
+      "title": "Comparison engine: normalized total and unit cost, tax, freight, lead time, vendor score",
+      "durations": {
+        "wall_s": 5366,
+        "author_s": 3586,
+        "review_s": {
+          "opus": 263,
+          "qwen": 575
+        },
+        "gate_s": 449
+      }
     }
   ]
 }

@@ -1725,7 +1725,7 @@ epics:
           - E12-S04
           - E05-S05
           - E12-S05
-        st: review
+        st: done
       - id: E12-S07
         t: Evaluation scoring with comments and conflict-of-interest declarations
         k: crud

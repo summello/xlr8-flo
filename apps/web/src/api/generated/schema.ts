@@ -2366,6 +2366,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sourcing/rfqs/{id}/comparison": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Comparison */
+        get: operations["get_comparison_api_v1_sourcing_rfqs__id__comparison_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sourcing/rfqs/{id}/comparison/refresh-rate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Refresh Comparison Rate */
+        post: operations["refresh_comparison_rate_api_v1_sourcing_rfqs__id__comparison_refresh_rate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sourcing/rfqs/{id}/extend-deadline": {
         parameters: {
             query?: never;
@@ -3599,6 +3633,24 @@ export interface components {
             /** Currency */
             currency: string;
         };
+        /** Basis */
+        Basis: {
+            /** Over By */
+            over_by: string | null;
+            /** Partial */
+            partial: boolean;
+            /** Total */
+            total: string | null;
+            /**
+             * Uncovered Lines
+             * @default []
+             */
+            uncovered_lines?: string[];
+            /** Vendor Id */
+            vendor_id: string | null;
+            /** Within Scope */
+            within_scope: boolean | null;
+        };
         /** BidCreate */
         BidCreate: {
             /** Currency */
@@ -3935,6 +3987,28 @@ export interface components {
             /** Count */
             count: number;
         };
+        /** Cell */
+        Cell: {
+            /** Freight Share */
+            freight_share: string | null;
+            /** Landed */
+            landed: string | null;
+            /** Not Quoted */
+            not_quoted: boolean;
+            /** Price */
+            price: string | null;
+            /** Quantity */
+            quantity: string | null;
+            /** Tax */
+            tax: string | null;
+            /** Unit Price */
+            unit_price: string | null;
+            /**
+             * Vendor Id
+             * Format: uuid
+             */
+            vendor_id: string;
+        };
         /** ChangeCreate */
         ChangeCreate: {
             /**
@@ -4120,6 +4194,46 @@ export interface components {
              */
             mode: "atomic" | "partial";
         };
+        /** ComparisonRead */
+        ComparisonRead: {
+            /** Approved Scope */
+            approved_scope: string;
+            best_average_cost: components["schemas"]["Basis"];
+            /** Bids Since Freeze */
+            bids_since_freeze: number;
+            /**
+             * Comparison Date
+             * Format: date
+             */
+            comparison_date: string;
+            /** Currency */
+            currency: string;
+            /**
+             * Frozen At
+             * Format: date-time
+             */
+            frozen_at: string;
+            insight: components["schemas"]["Insight"] | null;
+            /** Lines */
+            lines: components["schemas"]["LineRow"][];
+            lowest_cost_supplier: components["schemas"]["Basis"];
+            markers: components["schemas"]["Markers"];
+            /**
+             * Rate Date
+             * Format: date
+             */
+            rate_date: string;
+            /**
+             * Sealed
+             * @default false
+             * @constant
+             */
+            sealed?: false;
+            /** Stale Rate */
+            stale_rate: boolean;
+            /** Vendors */
+            vendors: components["schemas"]["VendorFigures"][];
+        };
         /** ConditionExplanation */
         ConditionExplanation: {
             /** Evaluated */
@@ -4193,6 +4307,24 @@ export interface components {
             updated_at: string;
             /** Version */
             version: number;
+        };
+        /** ConversionNote */
+        ConversionNote: {
+            /** Base */
+            base: string;
+            /**
+             * Effective Date
+             * Format: date
+             */
+            effective_date: string;
+            /** Quote */
+            quote: string;
+            /** Rate */
+            rate: string;
+            /** Source */
+            source: string;
+            /** Stale */
+            stale: boolean;
         };
         /** CurrencyAggregate */
         CurrencyAggregate: {
@@ -5093,6 +5225,22 @@ export interface components {
             /** Of */
             of: number;
         };
+        /** Insight */
+        Insight: {
+            /** Best Average Cost Vendors */
+            best_average_cost_vendors: number;
+            /**
+             * Dearer Basis
+             * @enum {string}
+             */
+            dearer_basis: "lowest_cost_supplier" | "best_average_cost";
+            /** Difference */
+            difference: string;
+            /** Difference Pct */
+            difference_pct: string | null;
+            /** Lowest Cost Supplier Vendors */
+            lowest_cost_supplier_vendors: number;
+        };
         /** InstanceRead */
         InstanceRead: {
             /** Current Node Id */
@@ -5484,6 +5632,27 @@ export interface components {
             /** Uom Code */
             uom_code: string;
         };
+        /** LineRow */
+        LineRow: {
+            /** Cells */
+            cells: components["schemas"]["Cell"][];
+            /** Description */
+            description: string;
+            /** Identical */
+            identical: boolean;
+            /** Line No */
+            line_no: number;
+            lowest: components["schemas"]["Marker"] | null;
+            /** Needed By */
+            needed_by: string | null;
+            /** Quantity */
+            quantity: string;
+            /**
+             * Rfq Line Id
+             * Format: uuid
+             */
+            rfq_line_id: string;
+        };
         /** LineWriteResult */
         LineWriteResult: {
             /** Currency */
@@ -5598,6 +5767,22 @@ export interface components {
             mapping: {
                 [key: string]: string;
             };
+        };
+        /** Marker */
+        Marker: {
+            /** Tied */
+            tied: boolean;
+            /**
+             * Vendor Id
+             * Format: uuid
+             */
+            vendor_id: string;
+        };
+        /** Markers */
+        Markers: {
+            fastest: components["schemas"]["Marker"] | null;
+            highest_score: components["schemas"]["Marker"] | null;
+            lowest: components["schemas"]["Marker"] | null;
         };
         /** MasterCreate */
         MasterCreate: {
@@ -7579,6 +7764,15 @@ export interface components {
              */
             vendor_id: string;
         };
+        /** SealedComparisonRead */
+        SealedComparisonRead: {
+            /**
+             * Sealed
+             * @default true
+             * @constant
+             */
+            sealed?: true;
+        };
         /**
          * SensitiveAccess
          * @description Whether the caller may reveal tax and banking values, and who to ask when not (VEN-014).
@@ -8160,6 +8354,63 @@ export interface components {
              * Format: uuid
              */
             unit_id: string;
+        };
+        /** VendorFigures */
+        VendorFigures: {
+            /**
+             * Bid Id
+             * Format: uuid
+             */
+            bid_id: string;
+            conversion: components["schemas"]["ConversionNote"];
+            /** Currency */
+            currency: string;
+            /** Difference From Lowest */
+            difference_from_lowest: string | null;
+            /** Freight */
+            freight: string | null;
+            /** Freight Unallocated */
+            freight_unallocated: string | null;
+            /** Freight Unallocated Converted */
+            freight_unallocated_converted: string | null;
+            /** Full */
+            full: boolean;
+            /** Landed Total */
+            landed_total: string | null;
+            /** Lead Time Days */
+            lead_time_days: number | null;
+            /** Meets Need */
+            meets_need: boolean | null;
+            /** Met */
+            met: number;
+            /** Met Of */
+            met_of: number;
+            /** Not Quoted */
+            not_quoted: boolean;
+            /** On Current Version */
+            on_current_version: boolean;
+            /** Price */
+            price: string | null;
+            /** Ready By */
+            ready_by: string | null;
+            /** Rfq Version */
+            rfq_version: number;
+            /** Score */
+            score: string | null;
+            /**
+             * Sent At
+             * Format: date-time
+             */
+            sent_at: string;
+            /** Tax */
+            tax: string | null;
+            /**
+             * Vendor Id
+             * Format: uuid
+             */
+            vendor_id: string;
+            /** Vendor Name */
+            vendor_name: string;
         };
         /** VendorPage */
         VendorPage: {
@@ -15629,6 +15880,90 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BidRead"] | components["schemas"]["SealedBidRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    get_comparison_api_v1_sourcing_rfqs__id__comparison_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComparisonRead"] | components["schemas"]["SealedComparisonRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    refresh_comparison_rate_api_v1_sourcing_rfqs__id__comparison_refresh_rate_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComparisonRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

@@ -18,6 +18,11 @@ from flo.modules.identity.models import AuthorizationContext, AuthorizationTarge
 from flo.modules.identity.service import IdentityAuthorizationConnection, granted_scopes
 from flo.modules.org.service import OrgService
 from flo.modules.sourcing.bids import BidService
+from flo.modules.sourcing.comparison import (
+    ComparisonRead,
+    ComparisonService,
+    SealedComparisonRead,
+)
 from flo.modules.sourcing.lifecycle import RfqLifecycle
 from flo.modules.sourcing.schemas import (
     BidCreate,
@@ -414,3 +419,17 @@ def replace_bid(
 ) -> BidRead | SealedBidRead:
     service = BidService(connection, current_scope(), context.user_id)
     return _bid_done(service.replace(id, bid_id, body), response)
+
+
+@router.get("/rfqs/{id}/comparison", response_model=ComparisonRead | SealedComparisonRead)
+def get_comparison(
+    id: UUID, context: ViewContext, connection: Connection
+) -> ComparisonRead | SealedComparisonRead:
+    return ComparisonService(connection, current_scope(), context.user_id).comparison(id)
+
+
+@router.post("/rfqs/{id}/comparison/refresh-rate", response_model=ComparisonRead)
+def refresh_comparison_rate(
+    id: UUID, context: EditContext, connection: Connection
+) -> ComparisonRead:
+    return ComparisonService(connection, current_scope(), context.user_id).refresh_rate(id)
