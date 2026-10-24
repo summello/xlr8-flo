@@ -232,6 +232,14 @@ there by default, and this entry is the standing reason not to add it without a 
 independent sample. Scratch worktree (`xlr8flo-m3run-beamtest`, commit `13ea0722`) was
 removed after review; nothing from the run was merged or pushed.
 
+**25 Oct 2026 — deepseek replaces qwen as the story-review fallback; Codex stays first. Operator.**
+qwen stopped at its call cap with no verdict on four packet pre-flights (three on 23 Oct, E12-S13
+on 25 Oct) and approved E12-S06 (money, L) with 0 findings. `ungated_reviewers` is now
+`[codex, deepseek]`; qwen stays a release reviewer. A comparison of three OpenCode Zen free models
+(beam, deepseek-v4.1-flash, glm-5.3-flash) as pre-flight reviewers was dropped: the free tier's
+limit is shared across all its free models and ran out after three runs, none reaching a verdict.
+Pre-flights stay on Codex; `FLO_PREFLIGHT_DRAFT=1 preflight.sh` runs one early without filing a record.
+
 **Merge authority:** the operator has delegated GitHub merges for M0 to Opus, with the
 instruction to space them out so the repository does not read as bot-driven. Outside M0 the
 standing rule holds: push, never merge.
