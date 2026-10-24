@@ -1810,7 +1810,7 @@ epics:
         dep:
           - E12-S01
           - E12-S11
-        st: todo
+        st: in_progress
       - id: E12-S13
         t: 'RFQ editor, invitations with the eligibility picker, publish and amend'
         k: ui
