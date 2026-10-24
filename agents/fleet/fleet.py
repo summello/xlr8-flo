@@ -351,7 +351,7 @@ def launch(cfg: dict, d: Path, act: dict, head: str | None) -> None:
     so no process exists that the next tick cannot see."""
     reviewer = (act.get("reviewer") or "") if act["step"] == "review" else ""
     name = f"{act['story']}.{act['step']}" + (f".{reviewer}" if reviewer else "")
-    needs = d / "runs" / f"{name}.needs.json"
+    needs = d / "runs" / f"{name}.needs"   # not *.json: records() reads every runs/*.json as a run record
     if act.get("needs"):
         put(needs, act["needs"])
     cmd = fill(cfg["steps"][act["step"]], cfg, story=act["story"], account=act.get("account") or "",
