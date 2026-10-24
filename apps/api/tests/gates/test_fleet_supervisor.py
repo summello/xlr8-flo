@@ -719,5 +719,6 @@ def test_launch_writes_the_needs_file_the_command_names(tmp_path):
             break
         time.sleep(0.05)
     assert json.loads((tmp_path / "got.json").read_text()) == [need()]
-    busy, results = S.records(tmp_path)  # the needs file is not a run record (24 Oct: every tick crashed)
+    # the needs file is not a run record (24 Oct: every tick crashed)
+    busy, results = S.records(tmp_path)
     assert list(results) == [(S.PLANNER, "planner", "")]
