@@ -201,6 +201,21 @@ E23-S11 added exactly two things to the original (sha256 `f22da510...`), both ou
 
 Everything else is the file as uploaded on 22 Oct 2026.
 
+### The auto-planner (operator, 24 Oct 2026)
+
+A need the fleet cannot clear (a failed gate, a missing pre-flight, arbitration, a milestone red)
+used to wait for someone to notice. With `[steps].planner` set, a need that is still open on its
+second tick gets **one** Opus planner session (`agents/scripts/planner.sh`, skill
+`xlr8flo-planner`) on the account with the most Opus room, with the open needs as JSON.
+
+- One at a time: its run record is the story `PLANNER`, so the next one waits until it exits, and
+  `planner.sh` holds `flo with-lock planner`, which also keeps a manual planner from racing it.
+- Once per need: `planner.json` in the state directory remembers the needs a planner took. A need
+  that closes and comes back gets a new one; one that stays open after the planner exits does not.
+- Never for `blocked:` (a question in a packet): only the operator answers those. The planner writes
+  any money, authorization or state-transition question into the packet and stops.
+- The operator is still notified of every need as before. Remove `[steps].planner` to switch it off.
+
 ## What `rounds` means in the scorecard
 
 Since E23-S13 a new scorecard record takes `rounds` from the round files

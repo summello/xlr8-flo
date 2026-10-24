@@ -231,6 +231,32 @@ def plan(facts: dict, ctx: dict) -> list[dict]:
     return acts
 
 
+PLANNER = "PLANNER"     # the run-record "story" of the auto-planner: one at a time, like any story step
+PLANNER_AFTER = 2       # ticks a need stays open before a planner is sent to it
+
+
+def need_key(n: dict) -> str:
+    return n.get("incident") or f"{n['story']}:{n['need']}"
+
+
+def planner_act(needs: list[dict], book: dict, ctx: dict) -> tuple[dict | None, dict]:
+    """One Opus planner for the needs open PLANNER_AFTER ticks that no planner has taken yet.
+    book = {"open": {key: ticks}, "done": [keys]}; a closed need leaves both, so a recurrence gets a
+    new planner. Operator-only needs (a blocked question) never get one: the planner may not answer it."""
+    keys = {need_key(n): n for n in needs if not n["need"].startswith("blocked:")}
+    seen = {k: book.get("open", {}).get(k, 0) + 1 for k in keys}
+    done = [k for k in book.get("done", []) if k in keys]
+    book = {"open": seen, "done": done}
+    due = [keys[k] for k, t in seen.items() if t >= PLANNER_AFTER and k not in done]
+    if not due or ctx["busy"].get(PLANNER):
+        return None, book
+    acct = opus_account(ctx["cap"], ctx["accounts"])
+    if not acct:
+        return None, book
+    book["done"] = done + [need_key(n) for n in due]
+    return {"step": "planner", "story": PLANNER, "account": acct, "needs": due}, book
+
+
 def heavy_slots(acts: list[dict], busy_heavy: int, limit: int) -> list[dict]:
     """Drop heavy steps beyond the limit; they are decided again next tick."""
     out, n = [], busy_heavy
@@ -325,8 +351,11 @@ def launch(cfg: dict, d: Path, act: dict, head: str | None) -> None:
     so no process exists that the next tick cannot see."""
     reviewer = (act.get("reviewer") or "") if act["step"] == "review" else ""
     name = f"{act['story']}.{act['step']}" + (f".{reviewer}" if reviewer else "")
+    needs = d / "runs" / f"{name}.needs.json"
+    if act.get("needs"):
+        put(needs, act["needs"])
     cmd = fill(cfg["steps"][act["step"]], cfg, story=act["story"], account=act.get("account") or "",
-               reviewer=reviewer)
+               reviewer=reviewer, needs=needs)
     rec, out, ex = d / "runs" / f"{name}.json", d / "runs" / f"{name}.out", d / "runs" / f"{name}.exit"
     ex.unlink(missing_ok=True)
     with open(out, "a") as fh:
@@ -431,6 +460,16 @@ def tick(cfg: dict, dry: bool = False) -> dict:
         status["capacity"] = {"known": cap["known"], "left": cap["left"], "codex": cap["codex"]}
         status["in_flight"] = facts.get("in_flight")
         status["line_stopped"] = facts.get("line_stopped")
+        if "planner" in cfg["steps"]:
+            book_f = d / "planner.json"
+            book = json.loads(book_f.read_text()) if book_f.exists() else {}
+            act, book = planner_act(status["needs"], book, ctx)
+            if act:
+                status["actions"].append(act)
+            if not dry:
+                put(book_f, book)
+                if act:
+                    launch(cfg, d, act, None)
         if not dry:
             seen_f = d / "notified.json"
             seen = set(json.loads(seen_f.read_text())) if seen_f.exists() else set()
