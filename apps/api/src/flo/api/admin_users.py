@@ -37,6 +37,7 @@ class AccessUserResponse(BaseModel):
 
     id: UUID
     email: str
+    name: str | None
     status: str
 
 

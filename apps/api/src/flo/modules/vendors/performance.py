@@ -31,7 +31,7 @@ from flo.modules.vendors.schemas import (
 KIND = "vendor_score_category"
 SCORE_COLUMNS = (
     "s.id, s.category_code, s.score, s.period, s.source_type, s.source_ref, s.rationale, "
-    "i.email, s.scored_at, s.supersedes, "
+    "i.email, i.display_name, s.scored_at, s.supersedes, "
     "(SELECT n.id FROM vendor_score n WHERE n.org_id = s.org_id AND n.supersedes = s.id)"
 )
 SCORE_FIELDS = (
@@ -43,22 +43,26 @@ SCORE_FIELDS = (
     "source_ref",
     "rationale",
     "scored_by_email",
+    "scored_by_name",
     "scored_at",
     "supersedes",
     "superseded_by",
 )
 DISPUTE_COLUMNS = (
-    "d.id, d.score_id, r.email, d.raised_at, d.reason, d.resolution, rb.email, d.resolved_at, "
+    "d.id, d.score_id, r.email, r.display_name, d.raised_at, d.reason, d.resolution, rb.email, "
+    "rb.display_name, d.resolved_at, "
     "d.resolution_note"
 )
 DISPUTE_FIELDS = (
     "id",
     "score_id",
     "raised_by_email",
+    "raised_by_name",
     "raised_at",
     "reason",
     "resolution",
     "resolved_by_email",
+    "resolved_by_name",
     "resolved_at",
     "resolution_note",
 )
@@ -377,7 +381,7 @@ class PerformanceMixin:
             dispute = self._dispute(dispute_id, lock=True)
             if dispute[1] != score_id:
                 raise ProblemError(ErrorCode.NOT_FOUND)
-            if dispute[5] is not None:
+            if dispute[DISPUTE_FIELDS.index("resolution")] is not None:
                 raise conflict("already_resolved", "This dispute was already decided.")
             if dispute[-1] == self.actor_id:
                 raise conflict(

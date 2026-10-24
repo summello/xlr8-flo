@@ -171,6 +171,8 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261022_0069",
         "20261022_0070",
         "20261022_0071",
+        "20261022_0072",
+        "20261022_0073",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -805,6 +807,7 @@ def test_requisition_migration_roundtrip_preserves_existing_data_and_plants_guar
                     (row.id, tenant.org_id, bu.id, f"PRJ-{index}", actor, actor),
                 )
         foreign = create(conn, "SECOND", "second@example.test")
+        conn.execute("ALTER TABLE identity ADD COLUMN IF NOT EXISTS display_name text")  # E22-S07
         before = conn.execute("SELECT * FROM project ORDER BY id").fetchall()
         tenant_rows = {
             table: conn.execute(f"SELECT * FROM {table} ORDER BY id").fetchall()
@@ -1093,6 +1096,7 @@ def test_requisition_lines_migration_roundtrip_preserves_lines_and_header(empty_
         org.set_base_currency(BaseCurrencyPut(currency="USD"))
         bu = org.create_unit(OrgUnitCreate(code="BU", name="BU", kind="bu"))
         requisitions = RequisitionService(conn, scope, actor, settings(conn))
+        conn.execute("ALTER TABLE identity ADD COLUMN IF NOT EXISTS display_name text")  # E22-S07
         row = legacy_draft(
             lambda: requisitions.create(RequisitionCreate(title="Preserved", bu_id=bu.id))
         )
@@ -1189,6 +1193,7 @@ def test_catalogue_migration_roundtrip_preserves_items_events_and_lines(empty_da
                 attributes={"dimension": "count"},
             ),
         )
+        conn.execute("ALTER TABLE identity ADD COLUMN IF NOT EXISTS display_name text")  # E22-S07
         row = legacy_draft(
             lambda: RequisitionService(conn, scope, actor, settings(conn)).create(
                 RequisitionCreate(title="Preserved", bu_id=bu.id)
@@ -1592,6 +1597,7 @@ def test_requisition_lifecycle_permissions_roundtrip_preserves_existing_data(emp
         org = OrgService(conn, scope, actor)
         org.set_base_currency(BaseCurrencyPut(currency="USD"))
         bu = org.create_unit(OrgUnitCreate(code="BU", name="BU", kind="bu"))
+        conn.execute("ALTER TABLE identity ADD COLUMN IF NOT EXISTS display_name text")  # E22-S07
         row = legacy_draft(
             lambda: RequisitionService(conn, scope, actor, settings(conn)).create(
                 RequisitionCreate(title="Preserve", bu_id=bu.id)
@@ -1752,6 +1758,7 @@ def test_requisition_revisions_roundtrip_and_plants_the_immutability_guards(empt
         org = OrgService(conn, scope, actor)
         org.set_base_currency(BaseCurrencyPut(currency="USD"))
         bu = org.create_unit(OrgUnitCreate(code="BU", name="BU", kind="bu"))
+        conn.execute("ALTER TABLE identity ADD COLUMN IF NOT EXISTS display_name text")  # E22-S07
         req = legacy_draft(
             lambda: RequisitionService(conn, scope, actor, settings(conn)).create(
                 RequisitionCreate(title="Seed", bu_id=bu.id)
@@ -2749,3 +2756,68 @@ def test_finance_vendor_view_grant_roundtrip_leaves_other_grants_alone(empty_dat
         mig.downgrade(conn)
         assert held("budget-finance-user") == before  # the reveal grant survives
         mig.upgrade(conn)
+
+
+def test_identity_display_name_backfills_and_roundtrips(empty_database):
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261022_0071"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261022_0072")
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        first = create(conn)
+        second = create(conn, "SECOND", "second@example.test")
+        actor = admin_id(conn)
+        conn.execute(
+            "INSERT INTO identity_membership(identity_id, org_id) VALUES (%s,%s)",
+            (actor, second.org_id),
+        )
+
+        def invite(org, email, name, used_at):
+            with tenant_transaction(conn, Scope(org.org_id)):
+                conn.execute(
+                    "INSERT INTO invitation(id,org_id,email,full_name,role_code,scope_type,"
+                    "invited_by,sent_at,expires_at,used_at,used_by) VALUES "
+                    "(%s,%s,%s,%s,'viewer','org',%s,now(),now()+interval '1 day',%s,%s)",
+                    (uuid4(), org.org_id, email, name, actor, used_at, actor),
+                )
+
+        # the latest used invitation overall is in the second org, whichever org is walked first
+        invite(first, "a@example.test", "Old Name", "2026-10-01T00:00:00Z")
+        invite(first, "b@example.test", " Alice Ng ", "2026-10-02T00:00:00Z")
+        invite(second, "c@example.test", "Newest Second", "2026-10-03T00:00:00Z")
+        invite(second, "d@example.test", "  ", "2026-10-09T00:00:00Z")  # blank names never win
+        # invitation is FORCE RLS: run the migration as a role that cannot bypass it
+        conn.execute("CREATE ROLE display_name_probe NOLOGIN NOSUPERUSER NOBYPASSRLS")
+        try:
+            conn.execute("GRANT ALL ON invitation, identity_membership TO display_name_probe")
+            conn.execute("GRANT TEMP ON DATABASE " + conn.info.dbname + " TO display_name_probe")
+            conn.execute("ALTER TABLE identity OWNER TO display_name_probe")
+            for _ in range(2):
+                conn.execute("SET ROLE display_name_probe")
+                try:
+                    mig.upgrade(conn)
+                finally:
+                    conn.execute("RESET ROLE")
+                row = conn.execute(
+                    "SELECT display_name, row_version FROM identity WHERE id=%s", (actor,)
+                ).fetchone()
+                assert row == ("Newest Second", 1)
+                conn.execute("SET ROLE display_name_probe")
+                try:
+                    mig.downgrade(conn)
+                finally:
+                    conn.execute("RESET ROLE")
+                assert conn.execute(
+                    "SELECT count(*) FROM information_schema.columns WHERE table_name='identity' "
+                    "AND column_name IN ('display_name','row_version')"
+                ).fetchone() == (0,)
+        finally:
+            conn.execute("ALTER TABLE identity OWNER TO CURRENT_USER")
+            conn.execute("DROP OWNED BY display_name_probe")
+            conn.execute("DROP ROLE display_name_probe")
+        assert conn.execute("SELECT count(*) FROM identity").fetchone() == (2,)

@@ -32,6 +32,7 @@ from flo.modules.identity.service import (
     AuthorizationResolver,
     IdentityAuthorizationConnection,
     emails_by_id,
+    names_by_id,
 )
 
 Connection = psycopg.Connection[tuple[object, ...]]
@@ -70,19 +71,23 @@ class ConditionExplanation(Contract):
 class ExplanationMember(Contract):
     user_id: UUID | None
     email: str
+    name: str | None
     basis: str
 
 
 class ExplanationExclusion(Contract):
     user_id: UUID
     email: str
+    name: str | None
     reason: str
     detail: str
 
 
 class ExplanationDecision(Contract):
     actor: str
+    actor_name: str | None
     on_behalf_of: str | None
+    on_behalf_of_name: str | None
     outcome: str
     decided_at: datetime
 
@@ -164,12 +169,15 @@ def _decisions(repo: WorkflowRepository, instance_ids: Sequence[UUID]) -> list[d
         cast(IdentityAuthorizationConnection, repo.connection),
         [cast(UUID, value) for row in rows for value in (row[3], row[4]) if value is not None],
     )
+    names = names_by_id(cast(IdentityAuthorizationConnection, repo.connection), list(emails))
     result: list[dict[str, object]] = []
     for row in rows:
         item = dict(zip(fields, row, strict=True))
         item["actor_email"] = emails.get(cast(UUID, item["actor_id"]), "(removed user)")
+        item["actor_name"] = names.get(cast(UUID, item["actor_id"]))
         owner = cast(UUID | None, item["on_behalf_of"])
         item["on_behalf_of_email"] = emails.get(owner, "(removed user)") if owner else None
+        item["on_behalf_of_name"] = names.get(owner) if owner else None
         result.append(item)
     return result
 
@@ -201,6 +209,7 @@ def _exclusions(
     emails = emails_by_id(
         cast(IdentityAuthorizationConnection, repo.connection), [row.user_id for row in rows]
     )
+    names = names_by_id(cast(IdentityAuthorizationConnection, repo.connection), list(emails))
     details = {
         "separation_of_duty": "Requested this document",
         "already_decided": "Already decided an earlier step",
@@ -211,6 +220,7 @@ def _exclusions(
         ExplanationExclusion(
             user_id=row.user_id,
             email=emails.get(row.user_id, "(removed user)"),
+            name=names.get(row.user_id),
             reason=row.reason,
             detail=details.get(row.reason, row.reason.replace("_", " ").capitalize()),
         )
@@ -253,6 +263,7 @@ def _live_members(
     )
     ids = [*effective.base, *effective.delegates]
     emails = emails_by_id(cast(IdentityAuthorizationConnection, repo.connection), ids)
+    names = names_by_id(cast(IdentityAuthorizationConnection, repo.connection), ids)
     escalation_ids = {member.user_id for member in escalated.members}
     base_ids = {member.user_id for member in base.members}
     members = []
@@ -266,6 +277,7 @@ def _live_members(
             ExplanationMember(
                 user_id=user_id,
                 email=emails.get(user_id, "(removed user)"),
+                name=names.get(user_id),
                 basis=basis,
             )
         )
@@ -279,6 +291,7 @@ def _live_members(
             ExplanationMember(
                 user_id=delegate_id,
                 email=emails.get(delegate_id, "(removed user)"),
+                name=names.get(delegate_id),
                 basis=delegate_basis or f"delegate for {owner_email}",
             )
         )
@@ -324,6 +337,7 @@ def _historical_members(
         )
         if basis:
             delegate_basis[cast(str, row["actor_email"])] = basis
+    names = names_by_id(cast(IdentityAuthorizationConnection, repo.connection), list(ids.values()))
     members = []
     for email in snapshot:
         user_id = ids.get(email)
@@ -335,7 +349,14 @@ def _historical_members(
             )
         else:
             basis = _basis(rule, permission, scope_name)
-        members.append(ExplanationMember(user_id=user_id, email=email, basis=basis))
+        members.append(
+            ExplanationMember(
+                user_id=user_id,
+                email=email,
+                name=names.get(user_id) if user_id else None,
+                basis=basis,
+            )
+        )
     return members
 
 
@@ -446,7 +467,9 @@ def explain(
                     decisions=[
                         ExplanationDecision(
                             actor=cast(str, row["actor_email"]),
+                            actor_name=cast(str | None, row["actor_name"]),
                             on_behalf_of=cast(str | None, row["on_behalf_of_email"]),
+                            on_behalf_of_name=cast(str | None, row["on_behalf_of_name"]),
                             outcome=str(row["outcome"]),
                             decided_at=cast(datetime, row["decided_at"]),
                         )

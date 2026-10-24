@@ -383,7 +383,8 @@ class RfqLifecycle(RfqService):
     def versions(self, id: UUID) -> list[RfqVersionRead]:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             rows = self.repo.execute(
-                "SELECT v.version, v.reason, v.diff, v.snapshot, i.email, v.published_at "
+                "SELECT v.version, v.reason, v.diff, v.snapshot, i.email, i.display_name, "
+                "v.published_at "
                 "FROM rfq_version v JOIN identity i ON i.id = v.published_by "
                 "WHERE v.org_id = %(org_id)s AND v.rfq_id = %(id)s ORDER BY v.version",
                 {"id": id},
@@ -398,6 +399,7 @@ class RfqLifecycle(RfqService):
                             "diff",
                             "snapshot",
                             "published_by_email",
+                            "published_by_name",
                             "published_at",
                         ),
                         r,

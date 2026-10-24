@@ -31,6 +31,7 @@ from flo.modules.identity.service import (
     AuthorizationResolver,
     IdentityAuthorizationConnection,
     emails_by_id,
+    names_by_id,
 )
 
 DECISION_FIELDS = (
@@ -73,12 +74,16 @@ def _decision_reads(
         cast(IdentityAuthorizationConnection, conn),
         [cast(UUID, id) for row in rows for id in (row[3], row[4]) if id is not None],
     )
+    names = names_by_id(cast(IdentityAuthorizationConnection, conn), list(emails))
     result = []
     for row in rows:
         data = dict(zip((*DECISION_FIELDS, "node_id", "step_label"), row, strict=True))
-        data["actor_email"] = emails.get(cast(UUID, data.pop("actor_id")), "(removed user)")
+        actor = cast(UUID, data.pop("actor_id"))
+        data["actor_email"] = emails.get(actor, "(removed user)")
+        data["actor_name"] = names.get(actor)
         behalf = cast(UUID | None, data.pop("on_behalf_of"))
         data["on_behalf_of_email"] = emails.get(behalf, "(removed user)") if behalf else None
+        data["on_behalf_of_name"] = names.get(behalf) if behalf else None
         result.append(DecisionRead.model_validate(data))
     return result
 

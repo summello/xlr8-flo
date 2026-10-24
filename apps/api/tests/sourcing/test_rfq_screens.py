@@ -128,6 +128,6 @@ def test_history_lists_the_rfq_events_newest_first_and_flags_follow_the_grants(l
     history, detail, viewer = session(steps)
     assert [e["action"] for e in history][:2] == ["rfq.extend", "rfq.publish"]
     assert history[0]["reason"] == "Vendors asked" and history[0]["actor_email"]
-    assert set(history[0]) == {"action", "at", "actor_email", "reason"}
+    assert set(history[0]) == {"action", "at", "actor_email", "actor_name", "reason"}
     assert detail["can_edit"] is True and detail["can_approve"] is True
     assert viewer["can_edit"] is False and viewer["can_approve"] is False

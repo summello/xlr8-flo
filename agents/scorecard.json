@@ -5171,6 +5171,58 @@
         },
         "gate_s": 299
       }
+    },
+    {
+      "story": "E22-S07",
+      "kind": "migration",
+      "size": "M",
+      "tags": [
+        "migration"
+      ],
+      "author": "sonnet",
+      "reviewers": [],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {},
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "codex",
+          "to": "opus",
+          "role": "reviewer",
+          "reason": "operator 24 Oct 2026: Codex usage exhausted; Opus (A/B) reviews in its place"
+        }
+      ],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "c9e11e09-f163-40a7-9b54-e38351c9304f",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S07",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Identity gains display_name (migration 0066, backfilled from the latest used invitation); acceptance copies it only when null, PATCH /auth/me edits it with If-Match and an audit row, and every person-email schema now returns a sibling name read in the same query, with name-prefix search.",
+      "title": "People have a display name, stored, copied at acceptance, returned beside every email",
+      "durations": {
+        "review_s": {
+          "opus": 153
+        },
+        "gate_s": 2
+      }
     }
   ]
 }

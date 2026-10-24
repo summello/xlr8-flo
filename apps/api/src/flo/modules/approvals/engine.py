@@ -297,11 +297,11 @@ def current_members(
     return result
 
 
-def _emails(repo: WorkflowRepository, ids: Sequence[UUID]) -> dict[UUID, str]:
+def _people(repo: WorkflowRepository, ids: Sequence[UUID]) -> dict[UUID, tuple[str, str | None]]:
     return {
-        cast(UUID, row[0]): str(row[1])
+        cast(UUID, row[0]): (str(row[1]), cast(str | None, row[2]))
         for row in repo.execute(
-            "SELECT i.id,i.email FROM identity i WHERE i.id=ANY(%(ids)s) AND EXISTS "
+            "SELECT i.id,i.email,i.display_name FROM identity i WHERE i.id=ANY(%(ids)s) AND EXISTS "
             "(SELECT 1 FROM identity_membership m WHERE m.org_id=%(org_id)s "
             "AND m.identity_id=i.id)",
             {"ids": list(ids)},
@@ -324,7 +324,7 @@ def _step(
         : next((i for i, e in enumerate(recorded) if e.get("node_id") == node.id), len(recorded))
     ]
     eligible = current_members(repo.connection, repo.scope, instance, node, snapshot, resolver)
-    emails = _emails(
+    people = _people(
         repo, [m.user_id for m in eligible.members] + [e.user_id for e in eligible.excluded]
     )
     rule = node.approvers
@@ -337,18 +337,24 @@ def _step(
             else f"permission {adapter_for(str(instance['document_type'])).approve_permission}"
         )
     )
+    ordered = sorted(people[m.user_id] for m in eligible.members)
     return RouteStep(
         node_id=node.id,
         label=node.name or node.id,
         mode="quorum" if isinstance(node.mode, Quorum) else node.mode,
         quorum=node.mode.quorum if isinstance(node.mode, Quorum) else None,
         rule=words,
-        approver_emails=sorted(emails[m.user_id] for m in eligible.members),
+        approver_emails=[p[0] for p in ordered],
+        approver_names=[p[1] for p in ordered],
         excluded=sorted(
             [
-                ExcludedApprover(email=emails[e.user_id], reason=e.reason)
+                ExcludedApprover(
+                    email=people[e.user_id][0],
+                    name=people[e.user_id][1],
+                    reason=e.reason,
+                )
                 for e in eligible.excluded
-                if e.user_id in emails
+                if e.user_id in people
             ],
             key=lambda e: e.email,
         ),
@@ -846,11 +852,14 @@ def get_instance(
                             "status": t["status"],
                             "outcome": t["outcome"],
                             "approver_emails": step.approver_emails,
+                            "approver_names": step.approver_names,
                             "due_at": t["due_at"],
                             "completed_at": t["completed_at"],
                         }
                     )
                 )
+        rid = cast(UUID, instance["requester_id"])
+        requester = _people(repo, [rid])[rid]
         return InstanceRead.model_validate(
             {
                 k: v
@@ -866,9 +875,8 @@ def get_instance(
             }
             | {
                 "workflow_version": version.version,
-                "requester_email": _emails(repo, [cast(UUID, instance["requester_id"])])[
-                    cast(UUID, instance["requester_id"])
-                ],
+                "requester_email": requester[0],
+                "requester_name": requester[1],
                 "route": route,
                 "tasks": read_tasks,
                 "evidence": json.loads(snapshot.material["evidence"])

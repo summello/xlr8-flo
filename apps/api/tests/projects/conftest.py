@@ -55,6 +55,11 @@ def project_db(org_database) -> Iterator:
     with db.connection.transaction():
         for migration in migrations:
             migration.upgrade(db.connection)
+        # E22-S07 columns only; migration 0066 itself needs tables this fixture never builds.
+        db.connection.execute(
+            "ALTER TABLE identity ADD COLUMN IF NOT EXISTS display_name text, "
+            "ADD COLUMN IF NOT EXISTS row_version integer NOT NULL DEFAULT 1"
+        )
     try:
         for org in (db.org_a, db.org_b):
             svc = OrgService(db.connection, Scope(org), db.actor_id)

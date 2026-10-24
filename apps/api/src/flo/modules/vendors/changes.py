@@ -38,8 +38,8 @@ from flo.modules.vendors.schemas import (
 )
 
 CHANGE_COLUMNS = (
-    "c.id, c.vendor_id, c.kind, c.payload, c.reason, c.status, i.email, c.requested_at, "
-    "c.decided_at"
+    "c.id, c.vendor_id, c.kind, c.payload, c.reason, c.status, i.email, "
+    "i.display_name, c.requested_at, c.decided_at"
 )
 CHANGE_FIELDS = (
     "id",
@@ -49,6 +49,7 @@ CHANGE_FIELDS = (
     "reason",
     "status",
     "requested_by_email",
+    "requested_by_name",
     "requested_at",
     "decided_at",
 )

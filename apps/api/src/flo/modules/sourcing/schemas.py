@@ -94,6 +94,7 @@ class RequirementRead(BaseModel):
     text: str
     waived: bool
     waived_by_email: str | None
+    waived_by_name: str | None
     waived_reason: str | None
 
 
@@ -118,6 +119,7 @@ class InviteeRead(BaseModel):
     vendor_snapshot: dict[str, object]
     override_reason: str | None
     invited_by_email: str
+    invited_by_name: str | None
     invited_at: datetime
     eligible: bool | None  # live, for the RFQ's unit; None if the vendor can no longer be read
     reasons: list[str]
@@ -151,6 +153,7 @@ class RfqRead(BaseModel):
     unit_id: UUID
     currency: str
     owner_email: str
+    owner_name: str | None
     version: int
     edit_revision: int
     created_at: datetime
@@ -180,6 +183,7 @@ class RfqListRow(BaseModel):
     status: RfqStatus
     unit_id: UUID
     owner_email: str
+    owner_name: str | None
     deadline_at: datetime
     deadline_tz: str
     invitee_count: int
@@ -204,6 +208,7 @@ class RfqEvent(BaseModel):
     action: str
     at: datetime
     actor_email: str | None
+    actor_name: str | None
     reason: str | None
 
 
@@ -340,6 +345,7 @@ class RfqVersionRead(BaseModel):
     diff: dict[str, object]
     snapshot: dict[str, object]
     published_by_email: str
+    published_by_name: str | None
     published_at: datetime
 
 

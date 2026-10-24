@@ -22,7 +22,7 @@ AVAILABLE_SQL = """((v.availability = 'global' AND NOT EXISTS (
    WHERE vu.org_id = v.org_id AND vu.vendor_id = v.id)))"""
 COLUMNS = (
     "v.id, v.number, v.trading_name, v.legal_name, v.status, v.availability, "
-    "i.email, v.created_at, v.updated_at, v.version"
+    "i.email, i.display_name, v.created_at, v.updated_at, v.version"
 )
 FIELDS = (
     "id",
@@ -32,6 +32,7 @@ FIELDS = (
     "status",
     "availability",
     "created_by_email",
+    "created_by_name",
     "created_at",
     "updated_at",
     "version",
