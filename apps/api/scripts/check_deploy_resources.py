@@ -144,8 +144,7 @@ def validate(workflow_path: Path, config_path: Path) -> list[str]:
         raise ValueError("--concurrency must be an integer") from exc
     if request_concurrency < max_concurrency:
         failures.append(
-            "Cloud Run --concurrency must not be lower than "
-            "identity_argon2_max_concurrency"
+            "Cloud Run --concurrency must not be lower than identity_argon2_max_concurrency"
         )
 
     if "--service-account" not in command:
@@ -158,9 +157,7 @@ def validate(workflow_path: Path, config_path: Path) -> list[str]:
     secrets = _assignments(_flag(command, "set-secrets"), "set-secrets")
     for name, reference in REQUIRED_SECRET_REFERENCES.items():
         if secrets.get(name) != reference:
-            failures.append(
-                f"Cloud Run secret reference is MISSING or wrong: {name}={reference}"
-            )
+            failures.append(f"Cloud Run secret reference is MISSING or wrong: {name}={reference}")
 
     runtime = _assignments(_flag(command, "set-env-vars"), "set-env-vars")
     for name, configured in REQUIRED_RUNTIME_CONFIGURATION.items():

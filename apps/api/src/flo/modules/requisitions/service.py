@@ -10,7 +10,7 @@ from uuid import UUID, uuid4
 
 import psycopg
 
-from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
+from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.config import Settings
 from flo.kernel.errors import ErrorCode, ProblemError
@@ -46,6 +46,7 @@ from flo.modules.requisitions.links import assert_current_upstream as assert_cur
 from flo.modules.requisitions.links import links as links
 from flo.modules.requisitions.links import register_link_provider as register_link_provider
 from flo.modules.requisitions.models import READ_FIELDS, READ_SQL, RequisitionRepository
+from flo.modules.requisitions.revisions import latest_instance
 from flo.modules.requisitions.schemas import (
     AmountTotal,
     Direction,
@@ -59,6 +60,10 @@ from flo.modules.requisitions.schemas import (
     invalid,
 )
 from flo.modules.requisitions.schemas import SubmissionInvalid as SubmissionInvalid
+from flo.modules.requisitions.sourcing import mark_sourced as mark_sourced
+from flo.modules.requisitions.sourcing import source_lines as source_lines
+from flo.modules.requisitions.sourcing import sourceable_lines as sourceable_lines
+from flo.modules.requisitions.sourcing import sourcing_basis as sourcing_basis
 from flo.modules.requisitions.validation import check_submission as check_submission
 
 __all__ = [
@@ -71,6 +76,10 @@ __all__ = [
     "routing_check",
     "assert_completable",
     "assert_current_upstream",
+    "source_lines",
+    "mark_sourced",
+    "sourceable_lines",
+    "sourcing_basis",
     "links",
     "register_link_provider",
     "register_downstream_counter",
@@ -194,16 +203,9 @@ class RequisitionService:
                     if can_view_budget(held.project_id)
                     else None,
                 )
-            instance = self.repo.execute(
-                "SELECT id,status FROM approval_instance WHERE org_id=%(org_id)s AND "
-                "document_type IN ('requisition','project_request') AND document_id=%(id)s"
-                " ORDER BY started_at DESC,id DESC LIMIT 1",
-                {"id": id},
-            ).fetchone()
+            instance = latest_instance(self.connection, self.scope, id)
             if instance:
-                result.approval = ApprovalRead(
-                    instance_id=cast(UUID, instance[0]), status=str(instance[1])
-                )
+                result.approval = ApprovalRead(instance_id=instance[0], status=instance[1])
             amendment = open_amendment(self.repo, id)
             if amendment and row["status"] == "sourcing_in_progress":
                 result.amendment = AmendmentRef(
@@ -289,7 +291,9 @@ class RequisitionService:
     def _audit(
         self, action: str, id: UUID, before: dict[str, object] | None, after: dict[str, object]
     ) -> None:
-        AuditWriter(cast(AuditConnection, self.connection), self.scope).write(
+        audit_event(
+            cast(AuditConnection, self.connection),
+            self.scope,
             actor=AuditActor(ActorKind.USER, self.actor_id)
             if self.actor_id != SYSTEM_ACTOR_ID
             else AuditActor(ActorKind.JOB, None),
@@ -297,10 +301,8 @@ class RequisitionService:
             target_type="requisition",
             target_id=id,
             outcome=Outcome.SUCCESS,
-            before_source=before,
-            before_fields=tuple(before or ()),
-            after_source=after,
-            after_fields=tuple(after),
+            before=before,
+            after=after,
         )
 
     @staticmethod
@@ -500,7 +502,9 @@ class RequisitionService:
         direction: Direction = "asc",
         cursor: str | None = None,
         page_size: int = 50,
+        visible: tuple[list[UUID], list[UUID]] | None = None,
     ) -> RequisitionPage:
+        """`visible` is (business units, projects) the caller may view; None means everything."""
         if not 1 <= page_size <= 50:
             raise invalid("page_size", "Choose a page size from 1 to 50.")
         # Only these constant strings ever reach the SQL text; the request values pick one.
@@ -525,6 +529,11 @@ class RequisitionService:
           AND (%(standalone)s::boolean IS NULL OR r.standalone=%(standalone)s)
           AND (%(requester_id)s::uuid IS NULL OR r.requester_id=%(requester_id)s)
           AND (r.number ILIKE %(prefix)s OR r.title ILIKE %(substring)s)"""
+        if visible is not None:
+            params.update(visible_units=visible[0], visible_projects=visible[1])
+            filters += """
+          AND ((r.standalone AND r.bu_id = ANY(%(visible_units)s::uuid[]))
+            OR (NOT r.standalone AND r.project_id = ANY(%(visible_projects)s::uuid[])))"""
         boundary = ""
         if cursor is not None:
             try:

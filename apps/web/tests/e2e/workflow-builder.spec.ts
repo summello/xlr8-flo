@@ -62,3 +62,34 @@ for (const theme of ["light","dark"]) test(`builder token contrast and visual st
  const ratios=await page.evaluate(()=>{const context=document.createElement("canvas").getContext("2d")!;const root=getComputedStyle(document.documentElement);const lum=(token:string)=>{context.fillStyle=root.getPropertyValue(token).trim();context.fillRect(0,0,1,1);return [...context.getImageData(0,0,1,1).data].slice(0,3).reduce((s,c,i)=>{const v=c/255;return s+(v<=0.04045?v/12.92:((v+0.055)/1.055)**2.4)*[0.2126,0.7152,0.0722][i]!;},0);};return [["--fg","--surface",4.5],["--fg-secondary","--canvas",4.5],["--border-control","--surface",3],["--ring","--surface",3]].map(([a,b,min])=>{const x=lum(a as string),y=lum(b as string);return {token:a,ratio:(Math.max(x,y)+0.05)/(Math.min(x,y)+0.05),min:Number(min)};});});for(const r of ratios)expect(r.ratio,`${theme} ${r.token}`).toBeGreaterThanOrEqual(r.min);
  await page.screenshot({path:testInfo.outputPath(`canvas-inspector-${theme}.png`),fullPage:true});await page.getByRole("tab",{name:"Outline",exact:true}).click();await page.screenshot({path:testInfo.outputPath(`outline-${theme}.png`),fullPage:true});
 });
+test("keyboard reaches a named approver, an unnamed approver and Escalate To, which lists name and email", async ({ page }) => {
+  await stubBuilder(page);
+  await page.goto(`/admin/approval-workflows/${workflowId}`);
+  await keyPress(page, "Add Approval Step");
+  const named = page.getByLabel("approver@example.test");
+  await expect(named).toBeVisible();
+  await named.focus();
+  await expect(named).toBeFocused();
+  await page.keyboard.press("Space");
+  await expect(named).toBeChecked();
+  await expect(page.locator("label:has(.person-name)")).toContainText("Ada Lovelace");
+  const unnamed = page.getByLabel("unnamed@example.test");
+  await expect(unnamed).toBeVisible();
+  await unnamed.focus();
+  await expect(unnamed).toBeFocused();
+  await page.keyboard.press("Space");
+  await expect(unnamed).toBeChecked();
+  const escalate = page.getByLabel("Escalate To", { exact: true });
+  await escalate.focus();
+  await expect(escalate.locator("option")).toHaveText(["Not set", "Ada Lovelace (approver@example.test)", "unnamed@example.test"]);
+});
+for (const theme of ["light", "dark"] as const) {
+  test(`axe is clean on the approval inspector with named and unnamed approvers in ${theme}`, async ({ page }) => {
+    await page.addInitScript(t => localStorage.setItem("xlr8flo.theme", t), theme);
+    await stubBuilder(page);
+    await page.goto(`/admin/approval-workflows/${workflowId}`);
+    await keyPress(page, "Add Approval Step");
+    await expect(page.locator(".person-name").first()).toBeVisible();
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  });
+}

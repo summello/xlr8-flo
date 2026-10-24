@@ -335,6 +335,12 @@ If this is the first service creation, copy its HTTPS `run.app` origin into the 
 variable `CLOUD_RUN_ORIGIN`, then re-run the failed deploy job. Do not put that hostname in a
 `VITE_` variable or browser bundle.
 
+The SPA is built once by the `frontend-build` job (main pushes and `main`/`milestone/*` dispatches only,
+when `apps/web` changed) and uploaded as the `web-dist` artifact with a `dist.sha256` manifest. The deploy
+job downloads it from the same run, verifies the manifest, runs the bundle guards (secret marker, GCP
+project id, Cloud Run host, absolute API URL) against those bytes, and uploads that bundle. It runs no
+`npm ci` or `vite build`; a failed `frontend-build` stops the deploy.
+
 The fixed release order is:
 
 1. Scan the built image and generate its SBOM.
@@ -561,3 +567,56 @@ and requesting a budget allocation, adjustment or transfer. Publish one workflow
 before the first user works. Budget allocations, including imported rows, now create pending
 requests and post only when approved.
 A pending allocation request also locks the funding mode of its units, like a ledger entry does; an approval refuses (`funding_plan_changed`) if the mode changed since the request.
+
+## Test database templates and CI shards
+
+Use `flo db reset` to select this worktree's private test database before pytest. The shared
+`migrated_database` fixture clones a migrated template keyed by the migration filenames, contents
+and worktree database name. Only templates marked `complete` are reused; interrupted builds and
+old migration hashes for this worktree are rebuilt or removed. Migration roundtrip tests still
+start with an empty database.
+
+CI distributes sorted API test files across four `backend-shard` runners using
+`apps/api/scripts/test_shard.py N 4`, pinning the exactly-once property file to shard 1. Coverage
+artifacts combine in `backend`, which retains the 80% floor and fails if any shard fails. Static
+backend checks, TEN-010 and the Python SBOM run once in `backend-static`, which `backend` also
+requires. Gitleaks is installed once by governance and shared with all
+shards because gate self-tests need it. Frontend static checks run once in `frontend-static`;
+Playwright uses three `frontend-e2e` shards with `fullyParallel: true` to split by test. CI builds
+the SPA once per shard and serves it with `vite preview`; dev-only grid and form HTTP fixtures
+are also registered for preview. The `perf` project still runs after `main`. The final `frontend`
+job requires static checks and every E2E shard to succeed. Both combined checks unconditionally
+require successful `detect`, even when the area output is missing; successful detection of an
+untouched area still skips its checks.
+Branch protection continues to require `detect`, `governance`, `security`, `backend` and `frontend`.
+Local Playwright still uses the dev server and reuses an existing server. CI retains one retry;
+remove it only after three consecutive green milestone runs report zero flaky tests.
+Runs use two workers: four workers on the shared fleet host caused browser and axe
+timeouts on both dev and preview. Tests remain fully parallel; override with `--workers`
+on an idle host. This matches Playwright's default on a four-CPU runner.
+CI's server startup timeout is 300 s (local dev remains at 60 s): build plus preview took
+268.17 s locally under host load around 69. This is a loaded-host observation; record the
+hosted startup and shard durations on submission. Source-mutation E2E plants target dev TSX
+locally and the production JS bundle on CI; each asserts that its mutation target exists,
+then retains the same guard-failure assertion. Parallel runs also exposed two skeleton tests
+whose fixed delays expired during geometry inspection; their responses now wait for the test
+to release them. Colour comparisons resolve the token in the browser so production CSS
+minification cannot turn equivalent spellings into a false failure.
+E22-S12 local validation: three complete fully parallel runs (dev, production, production).
+The final production run passed 441/441 in 5.2 min with two workers, no retries and no serial
+groups, including the dependent frame-budget test. Discovery runs under load found the fixture
+races and representation differences above; four-route axe scans also exceeded their 30 s
+budget while browser runs overlapped. No timeout or assertion was weakened for those scans.
+The planner still records hosted shard spread, combined wall times and failure-plant links.
+
+
+Local evidence, 22 Oct 2026 (same worktree and Postgres 17): full API `pytest -q` wall time was
+3412.98 s before and 2691.17 s after. The before run had 2853 passed, 1 skipped and 10 failures
+because the direct venv interpreter invocation omitted `lint-imports` from PATH. The after run
+included the venv tools on PATH: 2872 passed, 1 skipped and one existing identity timing-test
+failure (`test_saturated_unknown_and_known_paths_remain_timing_equivalent`, 17.6% versus its 10%
+limit); that test passed unchanged on an isolated rerun (1.31 s). Host load was around 7 during
+the baseline and reached 15–16 during the after run, so these wall times are observations rather
+than a controlled speedup claim. A setup-only sample under load measured 0.720 s for empty plus
+migrations and 0.273 s for a template clone. The planner records hosted wall times and the planted
+backend/E2E failure-run links after submitting the branch.

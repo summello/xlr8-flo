@@ -11,7 +11,7 @@ from typing import Annotated, cast
 from uuid import UUID
 
 import psycopg
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Header, Request, Response
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from flo.kernel.authz import public_route
@@ -45,11 +45,15 @@ from flo.kernel.session.store import (
     SessionStoreFactory,
     request_device,
 )
+from flo.kernel.tenancy.context import Scope
+from flo.modules.identity.schemas import Profile, ProfileUpdate
 from flo.modules.identity.service import (
     IdentityAuthorizationConnection,
     OrganizationMembership,
     list_identity_memberships,
+    read_profile,
     select_identity_organization,
+    set_display_name,
 )
 
 router = APIRouter(prefix="/api/v1/auth", tags=["authentication"])
@@ -632,10 +636,48 @@ def select_organization(
 
 class CurrentIdentityResponse(BaseModel):
     identity_id: UUID
+    email: str
+    display_name: str | None
+
+
+def _current_identity(
+    session: SessionRecord, profile: Profile, response: Response
+) -> CurrentIdentityResponse:
+    response.headers["ETag"] = f'"{profile.version}"'  # PATCH /me's If-Match
+    return CurrentIdentityResponse(
+        identity_id=session.identity_id, email=profile.email, display_name=profile.display_name
+    )
 
 
 @router.get("/me", response_model=CurrentIdentityResponse)
 @public_route
-def me(session: Annotated[SessionRecord, Depends(current_session)]) -> CurrentIdentityResponse:
-    """Return only the current session's identity; normal MFA and org gates apply."""
-    return CurrentIdentityResponse(identity_id=session.identity_id)
+def me(
+    session: Annotated[SessionRecord, Depends(current_session)],
+    connection: Annotated[psycopg.Connection[tuple[object, ...]], Depends(get_auth_connection)],
+    response: Response,
+) -> CurrentIdentityResponse:
+    """Return only the caller's own identity; normal MFA and org gates apply."""
+    profile = read_profile(cast(IdentityAuthorizationConnection, connection), session.identity_id)
+    return _current_identity(session, profile, response)
+
+
+@router.patch("/me", response_model=CurrentIdentityResponse)
+@public_route
+def update_me(
+    body: ProfileUpdate,
+    session: Annotated[SessionRecord, Depends(current_session)],
+    connection: Annotated[psycopg.Connection[tuple[object, ...]], Depends(get_auth_connection)],
+    response: Response,
+    if_match: Annotated[str | None, Header(alias="If-Match")] = None,
+) -> CurrentIdentityResponse:
+    """Set or clear the caller's own display name; audited in the session's organization."""
+    if session.org_id is None:
+        raise ProblemError(ErrorCode.BAD_REQUEST, detail="Select an organization first.")
+    profile = set_display_name(
+        cast(IdentityAuthorizationConnection, connection),
+        Scope(session.org_id),
+        session.identity_id,
+        body.display_name,
+        if_match,
+    )
+    return _current_identity(session, profile, response)

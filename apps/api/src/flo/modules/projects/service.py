@@ -10,10 +10,12 @@ from uuid import UUID, uuid4
 
 import psycopg
 
-from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
+from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
+from flo.kernel.authz import GrantedScopes
 from flo.kernel.config import Settings
-from flo.kernel.errors import ErrorCode, ProblemError, conflict
+from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError, conflict
+from flo.kernel.money import currency_exponent, quantize
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.approvals.service import require_workflow
@@ -43,6 +45,7 @@ from flo.modules.projects.risk_indicators import risk_indicators as compute_risk
 from flo.modules.projects.risks import Risks
 from flo.modules.projects.schedule import Schedule, with_variance
 from flo.modules.projects.schemas import (
+    BudgetRequest,
     ChildrenPage,
     Direction,
     MilestoneCreate,
@@ -54,6 +57,7 @@ from flo.modules.projects.schemas import (
     PhaseRead,
     ProjectCreate,
     ProjectGroup,
+    ProjectLookupOption,
     ProjectPage,
     ProjectPatch,
     ProjectRead,
@@ -66,6 +70,17 @@ from flo.modules.projects.schemas import (
     TreeNode,
     TreeRead,
 )
+
+
+def main_project_short() -> ProblemError:
+    """The refusal for a child the main project cannot cover; it carries no balance figures
+    (they need ledger.read, which neither the creator nor the approver necessarily holds)."""
+    return ProblemError(
+        ErrorCode.INSUFFICIENT_BUDGET,
+        detail="The main project cannot cover this budget. Lower the budget or ask "
+        "for funds to be added to the main project.",
+        checks={"problem": "insufficient_budget"},
+    )
 
 
 class ProjectService:
@@ -101,25 +116,32 @@ class ProjectService:
                     row
                     | {
                         "bu_name": str(unit[0]) if unit is not None else None,
-                        "sponsor_ids": [row["sponsor_id"]] if row["sponsor_id"] else [],
+                        "sponsor_ids": self._sponsors_of([row])[cast(UUID, row["id"])],
                     }
                 )
             )
         )
 
+    def _sponsors_of(self, rows: list[dict[str, object]]) -> dict[UUID, list[UUID]]:
+        """Every sponsor per project in one query; a project that predates sponsor lists
+        falls back to its `sponsor_id`."""
+        found: dict[UUID, list[UUID]] = {}
+        ids = [cast(UUID, r["id"]) for r in rows]
+        for project_id, user_id in self.repo.execute(
+            "SELECT project_id, user_id FROM project_sponsor WHERE org_id = %(org_id)s "
+            "AND project_id = ANY(%(ids)s) ORDER BY user_id",
+            {"ids": ids},
+        ).fetchall():
+            found.setdefault(cast(UUID, project_id), []).append(cast(UUID, user_id))
+        return {
+            cast(UUID, r["id"]): found.get(cast(UUID, r["id"]))
+            or ([cast(UUID, r["sponsor_id"])] if r["sponsor_id"] else [])
+            for r in rows
+        }
+
     def sponsors(self, project_id: UUID) -> list[UUID]:
-        """Every sponsor; a project that predates sponsor lists falls back to `sponsor_id`."""
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
-            found = [
-                cast(UUID, r[0])
-                for r in self.repo.execute(
-                    "SELECT user_id FROM project_sponsor WHERE org_id = %(org_id)s "
-                    "AND project_id = %(id)s ORDER BY user_id",
-                    {"id": project_id},
-                ).fetchall()
-            ]
-            row = self._get(project_id)
-            return found or ([cast(UUID, row["sponsor_id"])] if row["sponsor_id"] else [])
+            return self._sponsors_of([self._get(project_id)])[project_id]
 
     def _with_codes(self, project: ProjectRead) -> ProjectRead:
         # ponytail: four master lookups per row; batch if a page of 50 shows up in a profile.
@@ -204,6 +226,7 @@ class ProjectService:
                     cast(UUID | None, before["bu_id"]),
                     "Projects",
                 )
+                self._submission_ready(project_id, before)
             lifecycle.write(before, blocked, body)
             after = self._get(project_id)
             self._audit(
@@ -213,6 +236,26 @@ class ProjectService:
                 after | {"override": body.override, "blocked_by": blocked, "reason": body.reason},
             )
             return self._read(after)
+
+    def _submission_ready(self, project_id: UUID, row: dict[str, object]) -> None:
+        """A project is submitted with the budget it asks for and at least one sponsor."""
+        errors = []
+        if row["requested_budget"] is None:
+            errors.append(("budget", "Enter the budget this project asks for."))
+        if not self.sponsors(project_id):
+            errors.append(("sponsor_ids", "Name at least one sponsor."))
+        if not errors and row["parent_id"] is not None:
+            self.check_main_currency(cast(UUID, row["parent_id"]), cast(str, row["currency"]))
+            self.check_main_funds(
+                cast(UUID, row["parent_id"]), cast(Decimal, row["requested_budget"])
+            )
+        if errors:
+            raise ProblemError(
+                ErrorCode.VALIDATION_FAILED,
+                detail=f"Fix {len(errors)} things before you submit. Nothing was submitted.",
+                checks={"problem": "submission_invalid"},
+                errors=tuple(ProblemFieldError(field=f, message=m) for f, m in errors),
+            )
 
     def approval_outcome(
         self, project_id: UUID, status: ProjectStatus, reason: str | None
@@ -225,6 +268,8 @@ class ProjectService:
                 raise conflict("invalid_transition", "The project is no longer awaiting approval.")
             lifecycle.write(before, blocked, TransitionCreate(to=status, reason=reason))
             after = self._get(project_id)
+            if status == "active":
+                self._fund_on_approval(after)
             self._audit(
                 "project.activated" if status == "active" else "project.transition",
                 project_id,
@@ -232,6 +277,159 @@ class ProjectService:
                 after | {"reason": reason},
             )
             return self._read(after)
+
+    def _fund_on_approval(self, row: dict[str, object]) -> None:
+        """Allocate the requested budget: direct for a main project, a transfer for a child.
+
+        Runs inside the approval decision's transaction. Funding rows are locked, in id order,
+        before the posting validates availability; a child short of funds fails the whole
+        approval and nothing is written.
+        """
+        if row["requested_budget"] is None or self.actor_id is None:
+            return
+        from flo.modules.budget.schemas import AllocationCreate
+        from flo.modules.budget.service import (
+            InsufficientBudget,
+            allocate,
+            lock_balance,
+            post_entry,
+            post_legs,
+        )
+        from flo.modules.org.service import today
+
+        project_id = cast(UUID, row["id"])
+        parent_id = cast(UUID | None, row["parent_id"])
+        body = AllocationCreate.model_validate(
+            {
+                "amount": format(cast(Decimal, row["requested_budget"]), "f"),
+                "currency": row["currency"],
+                "effective_date": today(),
+                "reason": f"Project {row['number']} approved",
+                "evidence_ref": f"project:{row['number']}",
+            }
+        )
+        key = f"project:{project_id}:fund"
+        if parent_id is None:
+            allocate(self.connection, self.scope, project_id, body, self.actor_id, key)
+            return
+        # Ascending id order fixes the lock order against every other funding command;
+        # post_entry also takes the FOR UPDATE lock before it validates availability, which is
+        # what gives lock-before-validate.
+        for node_id in sorted((parent_id, project_id)):
+            lock_balance(self.connection, self.scope, node_id)
+        parent = self.get(parent_id)
+        if parent.currency != row["currency"]:
+            raise conflict(
+                "currency_mismatch",
+                f"The main project is in {parent.currency}, this project in {row['currency']}. "
+                "Use matching currencies.",
+            )
+        try:
+            post_legs(
+                self.connection,
+                self.scope,
+                body,
+                self.actor_id,
+                key,
+                [(parent, -body.amount, ":out"), (self.get(project_id), body.amount, ":in")],
+                allow_negative=False,
+                poster=post_entry,
+            )
+        except InsufficientBudget as exc:
+            raise main_project_short() from exc
+
+    def lookup_projects(
+        self, q: str, limit: int, can_read: Callable[[UUID], bool]
+    ) -> list[ProjectLookupOption]:
+        """Active projects that can be a main project, filtered to those the caller may read."""
+        if not 1 <= limit <= 50:
+            raise invalid("limit", "Choose a limit from 1 to 50.")
+        # ponytail: filters the first 50 matches per call; add a resolver-side filter when an
+        # organization holds thousands of projects the caller cannot read.
+        page = self.list(q=q.strip(), status="active", page_size=50)
+        rows = []
+        for project in page.rows:
+            if not can_read(project.id):
+                continue
+            full = self.depth_of(project.id) >= 5
+            rows.append(
+                ProjectLookupOption(
+                    value=str(project.id),
+                    label=f"{project.number} {project.name}",
+                    disabled=full,
+                    note="at the five-level limit" if full else None,
+                )
+            )
+            if len(rows) == limit:
+                break
+        return rows
+
+    def lookup_people(self, q: str, limit: int) -> list[ProjectLookupOption]:
+        """Active members of the organization, matched by email or name, for naming sponsors."""
+        if not 1 <= limit <= 50:
+            raise invalid("limit", "Choose a limit from 1 to 50.")
+        escaped = q.strip().casefold().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            found = self.repo.execute(
+                "SELECT i.id,i.email,i.display_name FROM identity i "
+                "WHERE i.status='active' AND EXISTS ("
+                "SELECT 1 FROM user_role r WHERE r.org_id=%(org_id)s AND r.user_id=i.id) "
+                "AND (lower(i.email) LIKE %(like)s OR lower(i.display_name) LIKE %(like)s) "
+                "ORDER BY lower(i.email) LIMIT %(limit)s",
+                {"like": "%" + escaped + "%", "limit": limit},
+            ).fetchall()
+        return [
+            ProjectLookupOption(
+                value=str(r[0]), label=str(r[2] or r[1]), note=str(r[1]) if r[2] else None
+            )
+            for r in found
+        ]
+
+    def check_main_funds(self, parent_id: UUID, amount: Decimal) -> None:
+        """Advisory, unlocked: refuse a child whose main project cannot cover it now.
+
+        Approval repeats the check under the lock. This path needs only project.create and
+        project.read, so the refusal carries no balance: the figures need ledger.read.
+        """
+        from flo.modules.budget.service import get_balance
+
+        if get_balance(self.connection, self.scope, parent_id).available < amount:
+            raise main_project_short()
+
+    def check_main_currency(self, parent_id: UUID, currency: str) -> None:
+        """A child draws from its main project, so both must hold the same currency."""
+        parent = self.get(parent_id)  # 404 for an unknown or foreign project
+        if parent.currency != currency:
+            raise invalid(
+                "parent_id",
+                f"The main project is in {parent.currency}, this project in {currency}. "
+                "Choose a main project in the same currency.",
+                "currency_mismatch",
+            )
+
+    def _check_budget(
+        self, budget: BudgetRequest | None, currency: str, parent_id: UUID | None
+    ) -> None:
+        """Currency, precision and (for a child) main-project funds of a requested budget."""
+        if budget is None:
+            return
+        if budget.currency != currency:
+            raise invalid(
+                "budget",
+                f"The budget is in {budget.currency}, the project in {currency}. "
+                "Use the project currency.",
+                "currency_mismatch",
+            )
+        if quantize(budget.amount, currency) != budget.amount:
+            raise invalid(
+                "budget",
+                f"{currency} allows {currency_exponent(currency)} decimal places. "
+                "Round the budget to that precision.",
+                "amount_precision",
+            )
+        if parent_id is not None:
+            self.check_main_currency(parent_id, currency)
+            self.check_main_funds(parent_id, budget.amount)
 
     def available_transitions(
         self, project_id: UUID, permitted: Callable[[str], bool]
@@ -267,16 +465,16 @@ class ProjectService:
         before: dict[str, object] | None,
         after: dict[str, object],
     ) -> None:
-        AuditWriter(cast(AuditConnection, self.connection), self.scope).write(
+        audit_event(
+            cast(AuditConnection, self.connection),
+            self.scope,
             actor=AuditActor(ActorKind.USER, self.actor_id),
             action=action,
             target_type="project",
             target_id=project_id,
             outcome=Outcome.SUCCESS,
-            before_source=before,
-            before_fields=tuple(before or ()),
-            after_source=after,
-            after_fields=tuple(after),
+            before=before,
+            after=after,
         )
 
     def _user(self, field: str, user_id: UUID | None) -> None:
@@ -326,8 +524,18 @@ class ProjectService:
                 raise RuntimeError("project creation requires an actor")
             self._user("owner_id", owner)
             self._user("sponsor_id", body.sponsor_id)
+            for sponsor in body.sponsor_ids:
+                self._user("sponsor_ids", sponsor)
+            if body.parent_id is not None:
+                self.check_main_currency(body.parent_id, body.currency)
+            self._check_budget(body.budget, body.currency, body.parent_id)
             self._dates(body.planned_start, body.planned_end)
-            return self._insert_project(body, codes=codes, owner=owner, on_date=on_date)
+            created = self._insert_project(body, codes=codes, owner=owner, on_date=on_date)
+            if body.sponsor_ids:
+                apply_sponsors(self.connection, self.scope, created.id, body.sponsor_ids)
+                created = self.get(created.id)
+                created.sponsor_ids = self.sponsors(created.id)
+            return created
 
     def _insert_project(
         self,
@@ -357,6 +565,7 @@ class ProjectService:
                     "number": number,
                     "owner_id": owner,
                     "created_by": self.actor_id,
+                    "requested_budget": body.budget.amount if body.budget else None,
                 }
             )
             try:
@@ -366,13 +575,13 @@ class ProjectService:
                         description, external_ref,
                         owner_id, sponsor_id, department_code, ledger_account_code, currency,
                         planned_start, planned_end, created_by, status,
-                        generated_by_requisition_id, source_requisition_id)
+                        generated_by_requisition_id, source_requisition_id, requested_budget)
                         VALUES (%(id)s, %(org_id)s, %(bu_id)s, %(parent_id)s, %(number)s, %(name)s,
                         %(description)s, %(external_ref)s, %(owner_id)s, %(sponsor_id)s,
                         %(department_code)s,
                         %(ledger_account_code)s, %(currency)s, %(planned_start)s, %(planned_end)s,
                         %(created_by)s, %(status)s, %(generated_by_requisition_id)s,
-                        %(source_requisition_id)s)
+                        %(source_requisition_id)s, %(requested_budget)s)
                         ON CONFLICT (org_id, bu_id, number)
                         DO NOTHING RETURNING id""",
                         values,
@@ -418,15 +627,16 @@ class ProjectService:
                     "requisition_id": source_requisition_id,
                     "source": "requisition",
                 }
-                AuditWriter(cast(AuditConnection, self.connection), self.scope).write(
+                audit_event(
+                    cast(AuditConnection, self.connection),
+                    self.scope,
                     actor=AuditActor(ActorKind.USER, self.actor_id),
                     action="project.create",
                     target_type="project",
                     target_id=project_id,
                     outcome=Outcome.SUCCESS,
                     reason=audit_reason,
-                    after_source=after,
-                    after_fields=tuple(after),
+                    after=after,
                 )
             return self._read(row)
 
@@ -604,6 +814,24 @@ class ProjectService:
                     checks={"problem": "stale_version"},
                 )
             changes = body.model_dump(exclude_unset=True)
+            budget_set = "budget" in changes
+            sponsors_set = changes.get("sponsor_ids") is not None
+            changes.pop("sponsor_ids", None)
+            requested = changes.pop("budget", None)
+            if budget_set or sponsors_set:
+                if before["status"] != "draft":
+                    raise conflict(
+                        "invalid_transition",
+                        "Budget and sponsors can change only while the project is a draft.",
+                    )
+                if budget_set:
+                    self._check_budget(
+                        None if requested is None else BudgetRequest.model_validate(requested),
+                        cast(str, before["currency"]),
+                        cast(UUID | None, before["parent_id"]),
+                    )
+                for sponsor in body.sponsor_ids or []:
+                    self._user("sponsor_ids", sponsor)
             if "external_ref" in changes:
                 if (
                     before["external_ref"] is not None
@@ -624,6 +852,8 @@ class ProjectService:
                 if field in changes:
                     self._user(field, cast(UUID | None, changes[field]))
             after = before | changes
+            if budget_set:
+                after["requested_budget"] = None if requested is None else requested["amount"]
             self._dates(
                 cast(date | None, after["planned_start"]), cast(date | None, after["planned_end"])
             )
@@ -642,6 +872,7 @@ class ProjectService:
                         planned_start = %(planned_start)s, planned_end = %(planned_end)s,
                         health = %(health)s, percent_complete = %(percent_complete)s,
                         actual_start = %(actual_start)s, actual_end = %(actual_end)s,
+                        requested_budget = %(requested_budget)s,
                         version = version + 1 WHERE org_id = %(org_id)s AND id = %(id)s""",
                         after,
                     )
@@ -649,6 +880,19 @@ class ProjectService:
                 if exc.diag.constraint_name != "project_external_ref":
                     raise
                 raise external_ref_locked() from exc
+            if sponsors_set:
+                self.repo.execute(
+                    "DELETE FROM project_sponsor WHERE org_id = %(org_id)s AND project_id = %(id)s",
+                    {"id": project_id},
+                )
+                if body.sponsor_ids:
+                    apply_sponsors(self.connection, self.scope, project_id, body.sponsor_ids)
+                else:
+                    self.repo.execute(
+                        "UPDATE project SET sponsor_id = NULL "
+                        "WHERE org_id = %(org_id)s AND id = %(id)s",
+                        {"id": project_id},
+                    )
             after = self._get(project_id)
             self._audit("project.update", project_id, before, after)
             return self._read(after)
@@ -665,8 +909,11 @@ class ProjectService:
         page_size: int = 50,
         group_by: ProjectGroup | None = None,
         balances: bool = False,
+        granted: GrantedScopes | None = None,
     ) -> ProjectPage:
-        # Organization-scoped project.read covers this collection.
+        # `granted` narrows rows to the caller's units and projects; None means the whole
+        # organization. ponytail: a project grant lists that project only, not its sub-projects;
+        # list descendants too when a project-scoped reader needs the tree.
         if sort not in ("number", "name", "status", "created_at") or direction not in (
             "asc",
             "desc",
@@ -716,11 +963,16 @@ class ProjectService:
                 "group_key": group_key,
                 "cursor_id": cursor_id,
                 "limit": page_size + 1,
+                "org_wide": granted is None or granted.org_wide,
+                "bu_ids": list(granted.bu_ids) if granted else [],
+                "project_ids": list(granted.project_ids) if granted else [],
             }
             filters = """p.org_id = %(org_id)s
                 AND (p.number ILIKE %(q)s OR p.name ILIKE %(q)s)
                 AND (%(status)s::text IS NULL OR p.status = %(status)s)
-                AND (%(bu_id)s::uuid IS NULL OR p.bu_id = %(bu_id)s)"""
+                AND (%(bu_id)s::uuid IS NULL OR p.bu_id = %(bu_id)s)
+                AND (%(org_wide)s OR p.bu_id = ANY(%(bu_ids)s::uuid[])
+                     OR p.id = ANY(%(project_ids)s::uuid[]))"""
             count = self.repo.execute(
                 "SELECT count(*) FROM project p WHERE " + filters, params
             ).fetchone()
@@ -749,18 +1001,31 @@ class ProjectService:
                 "b.allocated::text, b.available::text" if balances else "NULL::text, NULL::text"
             )
             rows = self.repo.execute(
-                f"SELECT {projection}, u.name, {amounts} FROM project p "
+                f"SELECT {projection}, u.name, {amounts}, COALESCE((SELECT array_agg(s.user_id "
+                "ORDER BY s.user_id) FROM project_sponsor s WHERE s.org_id = p.org_id "
+                "AND s.project_id = p.id), '{}') FROM project p "
                 "LEFT JOIN org_unit u ON u.org_id = p.org_id AND u.id = p.bu_id "
                 "LEFT JOIN project_balance b ON b.org_id = p.org_id AND b.project_id = p.id "
                 "WHERE " + filters + boundary + f" ORDER BY {order} LIMIT %(limit)s",
                 params,
             ).fetchall()
-            fields = (*FIELDS, "bu_name", "allocated", "available")
+            fields = (*FIELDS, "bu_name", "allocated", "available", "sponsors")
+            dicts = [dict(zip(fields, row, strict=True)) for row in rows[:page_size]]
             records = [
                 self._with_codes(
-                    ProjectRead.model_validate(with_variance(dict(zip(fields, row, strict=True))))
+                    ProjectRead.model_validate(
+                        with_variance(
+                            {k: v for k, v in d.items() if k != "sponsors"}
+                            | {
+                                # Sponsors ride in the page query; a project that predates
+                                # sponsor lists falls back to its `sponsor_id`.
+                                "sponsor_ids": d["sponsors"]
+                                or ([d["sponsor_id"]] if d["sponsor_id"] else [])
+                            }
+                        )
+                    )
                 )
-                for row in rows[:page_size]
+                for d in dicts
             ]
             next_cursor = None
             if len(rows) > page_size:
@@ -911,15 +1176,16 @@ def _abandon(
             system_actor=system_actor,
         )
         after = service._get(project_id)
-        AuditWriter(cast(AuditConnection, connection), scope).write(
+        audit_event(
+            cast(AuditConnection, connection),
+            scope,
             actor=AuditActor(ActorKind.JOB if system_actor else ActorKind.USER, actor_id),
             action=action,
             target_type="project",
             target_id=project_id,
             outcome=Outcome.SUCCESS,
-            before_source=before,
-            before_fields=tuple(before),
-            after_source=after
+            before=before,
+            after=after
             | {"reason": reason, "blocked_by": blocked}
             | ({"source": "requisition"} if own_open_documents else {}),
             after_fields=(

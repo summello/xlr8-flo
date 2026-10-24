@@ -2,6 +2,7 @@ import { CheckCircle, Prohibit, Spinner, UploadSimple } from "@phosphor-icons/re
 import { useRef, useState } from "react";
 import { apiClient } from "../../api/client";
 import { writeHeaders } from "../../features/auth/api";
+import Person from "../ui/Person";
 import { failure, type Attachment } from "./api";
 import { useLoad } from "./useLoad";
 
@@ -48,7 +49,7 @@ export default function Attachments({ id }: { id: string | null }) {
           const scan = SCAN[file.scan_status]; const Icon = scan.Icon;
           return <li key={file.id}>
             <div>{scan.why === null ? <a href={`/api/v1/attachments/${file.id}/content`}>{file.display_name}</a> : <span>{file.display_name}</span>}
-              <span>{file.media_type.split("/").pop()?.toUpperCase()} · {new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(Math.max(1, file.size_bytes / 1024))} KB · {file.uploaded_by_email}</span>
+              <span>{file.media_type.split("/").pop()?.toUpperCase()} · {new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(Math.max(1, file.size_bytes / 1024))} KB · <Person name={file.uploaded_by_name} email={file.uploaded_by_email} /></span>
               {scan.why && <span>{scan.why}</span>}</div>
             <span className="req-pill" data-tone={scan.word === "Clean" ? "success" : scan.word === "Scanning" ? "info" : "danger"}><Icon aria-hidden="true" weight="regular" />{scan.word}</span></li>;
         })}</ul>{list.loading && <p role="status" className="req-refreshing">Refreshing files…</p>}</>}

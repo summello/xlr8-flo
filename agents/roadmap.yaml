@@ -1403,7 +1403,7 @@ epics:
           - ORG-003
         dep:
           - E05-S01
-        st: todo
+        st: done
       - id: E11-S09
         t: 'Status vocabulary aligned to MASTER 2.3: vendor, RFQ, award and purchase-order
           maps and labels'
@@ -1420,7 +1420,7 @@ epics:
           - PO-007
         dep:
           - E11-S01
-        st: todo
+        st: done
       - id: E11-S10
         t: 'Shared decision panel at phone width: footer reflow, close button never
           covered'
@@ -1435,8 +1435,7 @@ epics:
           - APR-020
         dep:
           - E11-S09
-          - E22-S04
-        st: todo
+        st: done
       - id: E11-S02
         t: 'Typed contacts: billing, service/delivery, additional types'
         k: crud
@@ -1446,7 +1445,7 @@ epics:
           - VEN-002
         dep:
           - E11-S01
-        st: todo
+        st: done
       - id: E11-S03
         t: Vendor documents with issue/expiry, verification status, expiry notification
         k: crud
@@ -1460,7 +1459,7 @@ epics:
         dep:
           - E11-S01
           - E09-S10
-        st: todo
+        st: done
       - id: E11-S04
         t: Field-level access control and masking for tax and banking data
         k: security
@@ -1475,7 +1474,7 @@ epics:
         dep:
           - E11-S01
           - E02-S05
-        st: todo
+        st: done
       - id: E11-S05
         t: Onboarding request, configurable questionnaire, weights and scoring
         k: engine
@@ -1486,7 +1485,7 @@ epics:
           - VEN-006
         dep:
           - E11-S01
-        st: todo
+        st: done
       - id: E11-S06
         t: Duplicate identifier detection, approval on
           create/activate/suspend/reactivate
@@ -1500,7 +1499,9 @@ epics:
         dep:
           - E11-S05
           - E10-S13
-        st: todo
+          - E11-S02
+          - E11-S04
+        st: done
       - id: E11-S07
         t: Performance scoring across quality, price, delivery, service, with dispute
           history
@@ -1512,7 +1513,135 @@ epics:
           - VEN-015
         dep:
           - E11-S01
-        st: todo
+        st: done
+      - id: E11-S08
+        t: Vendor open questions for the operator (parking story)
+        k: docs
+        s: S
+        tags: []
+        reqs:
+          - VEN-003
+          - VEN-007
+          - VEN-014
+        dep: []
+        st: done
+      - id: E11-S11
+        t: 'Vendor eligibility: one server rule, one web component'
+        k: engine
+        s: M
+        tags:
+          - ui
+        reqs:
+          - VEN-012
+          - A11Y-004
+        dep:
+          - E11-S03
+          - E11-S06
+          - E11-S09
+        st: done
+      - id: E11-S12
+        t: Vendor list and profile screens, documents table and document sheet
+        k: ui
+        s: L
+        tags:
+          - ui
+        reqs:
+          - VEN-001
+          - VEN-002
+          - VEN-003
+          - VEN-011
+          - VEN-013
+          - OBS-004
+        dep:
+          - E11-S02
+          - E11-S03
+          - E11-S11
+        st: done
+      - id: E11-S13
+        t: 'Tax and Banking card: masked by default, audited reveal'
+        k: ui
+        s: M
+        tags:
+          - ui
+          - security
+        reqs:
+          - VEN-014
+          - CUS-008
+          - PRIV-001
+        dep:
+          - E11-S04
+          - E11-S12
+        st: done
+      - id: E11-S14
+        t: 'Request a vendor: form, live duplicate check, drafts, submit'
+        k: ui
+        s: L
+        tags:
+          - ui
+        reqs:
+          - VEN-004
+          - VEN-010
+          - A11Y-006
+        dep:
+          - E11-S06
+          - E11-S12
+        st: done
+      - id: E11-S15
+        t: 'Onboarding decision panel: vendor evidence block'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - VEN-005
+          - VEN-010
+          - APR-020
+        dep:
+          - E11-S06
+          - E11-S10
+          - E11-S11
+        st: done
+      - id: E11-S16
+        t: Vendor status, availability and local-disable dialogs
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - VEN-005
+          - VEN-008
+          - VEN-009
+          - A11Y-002
+        dep:
+          - E11-S06
+          - E11-S12
+        st: done
+      - id: E11-S17
+        t: Questionnaire administration screen
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - VEN-006
+          - CUS-007
+          - A11Y-003
+        dep:
+          - E11-S05
+        st: done
+      - id: E11-S18
+        t: Vendor Performance card and scorecard sheet
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - VEN-007
+          - VEN-015
+        dep:
+          - E11-S07
+          - E11-S12
+        st: done
 
   - id: E12
     name: Sourcing
@@ -1531,7 +1660,7 @@ epics:
         dep:
           - E09-S06
           - E11-S01
-        st: todo
+        st: done
       - id: E12-S02
         t: RFQ content, invitations, deadline, terms, attachments, vendor eligibility
           check
@@ -1543,7 +1672,9 @@ epics:
           - VEN-012
         dep:
           - E12-S01
-        st: todo
+          - E11-S02
+          - E11-S11
+        st: done
       - id: E12-S03
         t: RFQ lifecycle and post-publication versioning communicated to invitees
         k: engine
@@ -1554,7 +1685,7 @@ epics:
           - SRC-005
         dep:
           - E12-S02
-        st: todo
+        st: done
       - id: E12-S04
         t: 'Bid capture: line prices, currency, tax, freight, lead time, validity,
           exceptions'
@@ -1566,7 +1697,7 @@ epics:
           - SRC-006
         dep:
           - E12-S03
-        st: todo
+        st: done
       - id: E12-S05
         t: Bid confidentiality and late-bid block with audited override
         k: security
@@ -1579,7 +1710,7 @@ epics:
           - SRC-008
         dep:
           - E12-S04
-        st: todo
+        st: done
       - id: E12-S06
         t: 'Comparison engine: normalized total and unit cost, tax, freight, lead time,
           vendor score'
@@ -1593,6 +1724,7 @@ epics:
         dep:
           - E12-S04
           - E05-S05
+          - E12-S05
         st: todo
       - id: E12-S07
         t: Evaluation scoring with comments and conflict-of-interest declarations
@@ -1647,7 +1779,135 @@ epics:
         dep:
           - E12-S06
           - E04-S03
+          - E12-S07
+          - E11-S09
         st: todo
+      - id: E12-S11
+        t: 'RFQ list and RFQ detail screens'
+        k: ui
+        s: L
+        tags:
+          - ui
+        reqs:
+          - SRC-004
+          - SRC-015
+          - SRC-007
+        dep:
+          - E12-S03
+          - E11-S09
+        st: done
+      - id: E12-S12
+        t: 'New RFQ from approved lines: line picker with the open-quantity guard'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - SRC-001
+          - SRC-003
+          - REQ-014
+          - REQ-015
+        dep:
+          - E12-S01
+          - E12-S11
+        st: done
+      - id: E12-S13
+        t: 'RFQ editor, invitations with the eligibility picker, publish and amend'
+        k: ui
+        s: L
+        tags:
+          - ui
+        reqs:
+          - SRC-002
+          - SRC-004
+          - SRC-005
+          - VEN-012
+        dep:
+          - E12-S02
+          - E12-S03
+          - E12-S07
+          - E12-S11
+          - E11-S11
+        st: todo
+      - id: E12-S14
+        t: 'Record a bid: bid sheet, two times, vendor currency, late-bid override'
+        k: ui
+        s: L
+        tags:
+          - ui
+          - auth
+        reqs:
+          - SRC-006
+          - SRC-008
+          - SRC-010
+        dep:
+          - E12-S04
+          - E12-S05
+          - E12-S11
+        st: todo
+      - id: E12-S15
+        t: 'Evaluation screen: declare first, then score'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - SRC-011
+        dep:
+          - E12-S07
+          - E12-S11
+        st: todo
+      - id: E12-S16
+        t: 'Award draft screen: lines, justification, scope and funds check'
+        k: ui
+        s: L
+        tags:
+          - ui
+        reqs:
+          - SRC-012
+          - SRC-013
+          - SRC-014
+          - SRC-016
+        dep:
+          - E12-S08
+          - E12-S10
+        st: todo
+      - id: E12-S17
+        t: 'Award decision panel: Award Evidence block'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - SRC-013
+          - APR-003
+          - APR-020
+        dep:
+          - E12-S08
+          - E11-S10
+        st: todo
+      - id: E12-S18
+        t: 'Cancel RFQ and supersede award dialogs'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - SRC-017
+        dep:
+          - E12-S09
+          - E12-S11
+        st: todo
+      - id: E12-S19
+        t: Sourcing open questions for the operator (parking story)
+        k: docs
+        s: S
+        tags: []
+        reqs:
+          - SRC-016
+          - SRC-017
+        dep: []
+        st: done
 
   - id: E13
     name: Purchase orders
@@ -1691,6 +1951,7 @@ epics:
           - WF-002
         dep:
           - E13-S01
+          - E11-S09
         st: todo
       - id: E13-S04
         t: PO approval workflow before issue
@@ -1703,6 +1964,7 @@ epics:
         dep:
           - E13-S03
           - E10-S13
+          - E13-S02
         st: todo
       - id: E13-S05
         t: Issue converts reservation to commitment atomically; partial POs reduce open
@@ -1753,7 +2015,8 @@ epics:
         t: PO PDF reproducible from stored snapshot and template version
         k: engine
         s: L
-        tags: []
+        tags:
+          - security
         reqs:
           - PO-014
           - DATA-005
@@ -1807,6 +2070,162 @@ epics:
           - E13-S09
           - E09-S10
         st: todo
+      - id: E13-S12
+        t: 'PO list and PO detail screens'
+        k: ui
+        s: L
+        tags:
+          - ui
+        reqs:
+          - PO-007
+          - PO-013
+          - UX-004
+        dep:
+          - E13-S03
+          - E13-S05
+          - E11-S09
+        st: todo
+      - id: E13-S13
+        t: 'Create POs from awarded lines'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - PO-001
+          - PO-009
+          - SRC-018
+        dep:
+          - E13-S01
+          - E13-S12
+        st: todo
+      - id: E13-S14
+        t: 'PO editor: header, lines with tax and freight apart, budget preview, vendor eligibility'
+        k: ui
+        s: L
+        tags:
+          - ui
+        reqs:
+          - PO-002
+          - PO-016
+          - PO-017
+          - VEN-012
+        dep:
+          - E13-S01
+          - E13-S02
+          - E13-S04
+          - E13-S11
+          - E13-S12
+          - E11-S11
+        st: todo
+      - id: E13-S15
+        t: 'Issue: confirmation and signature moment 5'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - PO-008
+          - PO-012
+          - A11Y-009
+        dep:
+          - E13-S05
+          - E13-S09
+          - E13-S12
+        st: todo
+      - id: E13-S16
+        t: 'Transmission log, change recipient and resend'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - PO-004
+          - PO-015
+          - EML-002
+          - EML-003
+        dep:
+          - E13-S09
+          - E13-S10
+          - E13-S12
+        st: todo
+      - id: E13-S17
+        t: 'Vendor copy preview: email and PDF as the supplier sees them'
+        k: ui
+        s: M
+        tags:
+          - ui
+          - security
+        reqs:
+          - PO-014
+          - PO-017
+          - EML-005
+        dep:
+          - E13-S08
+          - E13-S11
+          - E13-S12
+        st: todo
+      - id: E13-S18
+        t: 'Change order screen: field diff, signed budget effect, reapproval line'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - PO-010
+          - PO-011
+          - ACC-005
+        dep:
+          - E13-S06
+          - E13-S12
+        st: todo
+      - id: E13-S19
+        t: 'Cancel or reduce dialog'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - PO-013
+          - ACC-006
+        dep:
+          - E13-S07
+          - E13-S12
+        st: todo
+      - id: E13-S20
+        t: 'PO decision panel: Purchase Order Evidence block'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - PO-003
+          - APR-020
+        dep:
+          - E13-S04
+          - E11-S10
+        st: todo
+      - id: E13-S21
+        t: 'Sending domain status and suppression list (Administration)'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - EML-001
+          - EML-003
+        dep:
+          - E13-S10
+        st: todo
+      - id: E13-S22
+        t: Purchase-order open questions for the operator (parking story)
+        k: docs
+        s: S
+        tags: []
+        reqs:
+          - PO-007
+        dep: []
+        st: done
 
   - id: E22
     name: Budget governance follow-ups
@@ -1825,7 +2244,7 @@ epics:
           - PROJ-003
         dep:
           - E09-S17
-        st: todo
+        st: done
       - id: E22-S02
         t: Soft delete for every draft document
         k: crud
@@ -1837,7 +2256,7 @@ epics:
           - DATA-002
         dep:
           - E09-S15
-        st: todo
+        st: review
       - id: E22-S03
         t: One audit helper instead of twelve, behaviour-preserving
         k: chore
@@ -1846,7 +2265,7 @@ epics:
         reqs:
           - AUD-001
         dep: []
-        st: todo
+        st: done
       - id: E22-S04
         t: 'M2 milestone review follow-ups: Money zero prop, shared lookup helper, internal
           collaboration readers, approvals read via service, e2e focus helper'
@@ -1858,7 +2277,7 @@ epics:
           - A11Y-001
           - UX-007
         dep: []
-        st: todo
+        st: done
       - id: E22-S05
         t: Replace MinIO with SeaweedFS in the local stack; bucket via the S3 API
         k: chore
@@ -1867,7 +2286,89 @@ epics:
         reqs:
           - OPS-007
         dep: []
-        st: todo
+        st: done
+      - id: E22-S06
+        t: Baseline roles read the projects and master data they work against
+        k: security
+        s: S
+        tags:
+          - auth
+          - security
+          - migration
+        reqs:
+          - USR-003
+          - USR-005
+          - USR-006
+          - USR-008
+          - ACC-004
+        dep: []
+        st: done
+      - id: E22-S07
+        t: People have a display name, stored, copied at acceptance, returned beside every email
+        k: migration
+        s: M
+        tags:
+          - migration
+        reqs:
+          - USR-009
+          - USR-010
+          - SEC-011
+        dep: []
+        st: done
+      - id: E22-S08
+        t: Expired requisitions use the warning tone
+        k: ui
+        s: S
+        tags:
+          - ui
+        reqs:
+          - A11Y-004
+        dep: []
+        st: done
+      - id: E22-S09
+        t: Show people by name, with the email as secondary text
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - A11Y-004
+          - UX-007
+        dep:
+          - E22-S07
+        st: done
+      - id: E22-S10
+        t: 'Approval Availability: set, list and revoke an out-of-office delegation'
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - APR-004
+          - APR-014
+          - APR-017
+          - APR-019
+          - A11Y-006
+        dep: []
+        st: done
+      - id: E22-S11
+        t: 'Faster checks: template test databases, sharded backend and E2E CI'
+        k: chore
+        s: M
+        tags: []
+        reqs:
+          - SEC-012
+        dep: []
+        st: done
+      - id: E22-S12
+        t: 'Balanced E2E shards on a production build; backend static job; combined checks need detect'
+        k: chore
+        s: M
+        tags: []
+        reqs:
+          - SEC-012
+        dep: []
+        st: done
 
   # ─────────────────── M4 — Full Phase-1 scope ───────────────────
 
@@ -2685,6 +3186,188 @@ epics:
         dep: []
         st: done
 
+  - id: E23
+    name: Fleet throughput
+    milestone: MT
+    stories:
+      - id: E23-S01
+        t: Stage durations in the scorecard record, with a flo score --durations report
+        k: chore
+        s: S
+        tags: []
+        reqs:
+          - SUP-005
+          - OBS-002
+        dep: []
+        st: done
+      - id: E23-S02
+        t: Sonnet round-churn analysis by kind and tag, with a routing recommendation
+        k: chore
+        s: S
+        tags: []
+        reqs:
+          - SUP-005
+        dep: []
+        st: done
+      - id: E23-S03
+        t: The nemotron launcher reads its model from agents.yaml and records what it launched
+        k: chore
+        s: S
+        tags: []
+        reqs:
+          - SUP-005
+        dep: []
+        st: done
+      - id: E23-S04
+        t: Reorder author_priority by measured record, reconcile nemotron history, pin it with tests
+        k: chore
+        s: S
+        tags: []
+        reqs:
+          - SUP-005
+        dep:
+          - E23-S02
+        st: done
+      - id: E23-S05
+        t: flo start refuses a story with no packet pre-flight record
+        k: chore
+        s: S
+        tags: []
+        reqs:
+          - SUP-005
+        dep: []
+        st: done
+      - id: E23-S06
+        t: 'flo reassign: capacity-aware, liveness-checked, per-story locked author reassignment'
+        k: concurrency
+        s: M
+        tags:
+          - concurrency
+        reqs:
+          - SUP-005
+        dep:
+          - E23-S04
+        st: done
+      - id: E23-S11
+        t: Track the fleet supervisor in the repo, with tests for its decision rules
+        k: chore
+        s: M
+        tags: []
+        reqs:
+          - SUP-005
+        dep: []
+        st: done
+      - id: E23-S12
+        t: Sonnet's effort comes from agents.yaml, which now says medium
+        k: chore
+        s: S
+        tags: []
+        reqs:
+          - SUP-005
+        dep: []
+        st: done
+      - id: E23-S13
+        t: Scorecard rounds come from the round files; void rounds are not charged; older records are marked
+        k: chore
+        s: S
+        tags: []
+        reqs:
+          - SUP-005
+          - OBS-002
+        dep:
+          - E22-S12
+        st: done
+      - id: E23-S07
+        t: Start a story when its would-be author has room, not only when a Claude account does
+        k: chore
+        s: S
+        tags: []
+        reqs:
+          - SUP-005
+        dep:
+          - E23-S11
+        st: blocked
+      - id: E23-S08
+        t: Structured, commit-bound test-evidence records that flo gate verifies
+        k: chore
+        s: M
+        tags:
+          - security
+        reqs:
+          - SUP-005
+          - SEC-012
+        dep: []
+        st: done
+      - id: E23-S09
+        t: Build the SPA bundle once in CI and deploy the same artifact
+        k: chore
+        s: S
+        tags: []
+        reqs:
+          - SEC-012
+        dep:
+          - E22-S12
+        st: done
+      - id: E23-S10
+        t: Completion-triggered supervisor wakeup instead of a fixed 300 s poll
+        k: chore
+        s: S
+        tags: []
+        reqs:
+          - SUP-005
+        dep:
+          - E23-S01
+          - E23-S11
+        st: blocked
+
+      - id: E23-S14
+        t: One run record per reviewer, one reviewer at a time per story
+        k: chore
+        s: M
+        tags: []
+        reqs:
+          - SUP-005
+        dep: []
+        st: done
+      - id: E23-S15
+        t: Process-owned locks for finish, submit and launch; one live author and one submit per story
+        k: chore
+        s: M
+        tags: []
+        reqs:
+          - SUP-005
+        dep: []
+        st: done
+      - id: E23-S16
+        t: 'Re-review economy: CI-only commits keep verdicts, void verdicts retry once, milestone red is fixed once'
+        k: chore
+        s: M
+        tags: []
+        reqs:
+          - SUP-005
+        dep:
+          - E23-S14
+        st: done
+      - id: E23-S17
+        t: 'Recoverable execution records: write before launch, process identity, transient-error retries'
+        k: chore
+        s: M
+        tags: []
+        reqs:
+          - SUP-005
+        dep:
+          - E23-S14
+          - E23-S15
+        st: done
+      - id: E23-S18
+        t: Light-check e2e retries failed specs once and reports load flakes apart from failures
+        k: chore
+        s: S
+        tags: []
+        reqs:
+          - SUP-005
+        dep: []
+        st: done
   - id: E30
     name: Future roadmap
     milestone: M7

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import DataGrid from "../../../components/grid/DataGrid";
 import { GRID_FEATURES } from "../../../components/grid/config";
 import StatusPill from "../../../components/status/StatusPill";
+import Person, { personLabel } from "../../../components/ui/Person";
 import Surface from "../../../components/ui/Surface";
 
 function record(value: unknown, label: string): Record<string, unknown> {
@@ -55,6 +56,7 @@ function parseGrant(value: unknown) {
 function parseAccess(value: unknown) {
   const source = record(value, "Effective access response");
   const user = record(source.user, "User");
+  const { email, name } = user;
   if (!Array.isArray(source.grants) || !Array.isArray(source.pending_grants)) {
     throw new Error("Grant lists are missing.");
   }
@@ -62,8 +64,9 @@ function parseAccess(value: unknown) {
     grants: source.grants.map(parseGrant),
     pendingGrants: source.pending_grants.map(parseGrant),
     user: {
-      email: text(user.email, "User email"),
+      email: text(email, "User email"),
       id: text(user.id, "User id"),
+      name: name == null ? null : text(name, "User name"),
       status: userStatus(user.status),
     },
   };
@@ -282,13 +285,13 @@ export default function EffectiveAccessExplorer({ userId }: { userId: string }) 
       <Surface as="section" aria-labelledby="access-user-email" className="access-user-summary" shadow="sm">
         <div>
           <p>User</p>
-          <h2 id="access-user-email">{access.user.email}</h2>
+          <h2 id="access-user-email"><Person name={access.user.name} email={access.user.email} /></h2>
           <span className="access-user-id">{access.user.id}</span>
         </div>
         <StatusPill docType="user" status={access.user.status} />
         <button
           disabled={access.user.status === "deactivated"}
-          onClick={() => runCommand(`${endpoint.replace("/effective-access", "")}/deactivate`, "POST", `${access.user.email} was deactivated.`)}
+          onClick={() => runCommand(`${endpoint.replace("/effective-access", "")}/deactivate`, "POST", `${personLabel(access.user.name, access.user.email)} was deactivated.`)}
           type="button"
         >
           <UserMinus aria-hidden="true" weight="regular" />

@@ -8,10 +8,10 @@ Loaded into every agent session. Updated by `flo done` (status) and by Opus at e
 | | |
 |---|---|
 | Milestone | **M3 — First sellable release** |
-| Stories | 90 / 186 done |
+| Stories | 144 / 240 done |
 | Branch | milestone/M3-sellable |
-| In flight | — |
-| Blocked | — |
+| In flight | E22-S02 |
+| Blocked | E23-S07, E23-S10 |
 <!-- STATE:END -->
 
 ## What this product is
@@ -173,6 +173,40 @@ Epic checkpoints replace train reviews; one PR per milestone stays. Revisit afte
 finish wall time, red-after-merge rate, Codex findings and blocker precision against Opus on the
 first ten gated stories (Codex ≥ Opus → Opus moves to epic level only).
 
+**21 Oct 2026 — `max_stories_in_flight` 4 → 6.** Four lanes sat in review or CI for hours while
+both Claude accounts had 75–80% of their five-hour window left and the ready queue held five stories.
+Review and CI are the bottleneck, not authoring, so more lanes overlap them. New lanes take stories
+with no migration first (migration lanes renumber at merge, three times on 21 Oct). Revisit if a
+milestone merge conflict or a gate collision traces to lane count.
+
+**22 Oct 2026 — Codex story reviews: 55 calls for every story, tests within the first 10.**
+Three ungated Codex reviews (E11-S10, E22-S04 twice, E22-S10) hit the 35-call cap after a milestone
+merge while still reading, and left `approve, ran_tests: false`, which the gate rejects; each cost a
+second review and a manual finish. Ungated budget 25 -> 40 commands, hard cap 35 -> 55 (gated was
+already 55), and the packet says to run `flo check --light` and set `ran_tests` within 10 commands.
+Revisit if Codex's 5-hour window starts capping.
+
+**23 Oct 2026 — nemotron last, maintenance only; Opus asleep until the flo fixes land. Operator.**
+Evidence: nemotron re-authored E12-S02 (already merged by Sonnet as 71977a0) in 116 min with 0 commits,
+63 ruff errors, a failing migration-chain test, no regenerated API client, and its own failing test skipped
+as "a test-environment limitation". `author_priority` is now [sonnet, codex, opencode-nemotron];
+nemotron takes `chore`/`docs` at size S only. Opus: both accounts ran low overnight, mostly on repeated
+reviews. Two reviews of one story shared one run record, so the fleet relaunched the "missing" reviewer
+(E11-S16 had four Opus reviews, two per round). And every CI-fix commit marked verdicts stale, so a red
+milestone (E12-S03's stale API client) set off a full Codex and Opus re-review on three stories.
+`fleet.toml` `accounts = []` stops Opus reviews; Codex plans and reviews E23-S14..S18
+(`.scratch/codex-planner-handoff-2026-10-23.md`). Restore `["A", "B"]` when those are on the milestone PR
+and its CI is green. Gated M3 stories wait for their Opus final until then.
+
+**23 Oct 2026 — Sonnet-only story authorship; E23-S14..S18 first. Operator.** The E12-S02
+comparison and the live routing evidence closed the overflow experiment: no new story goes to
+nemotron or Codex. Sonnet on account A or B authors every non-overridden story; when both accounts
+have no worker slot, the story waits. Codex remains the story reviewer, and M0's explicit
+`sole_author: codex` override remains intact. Finish the five P0 flo fixes before resuming the M3
+product queue. Codex is the only reviewer for E23-S14..S18. If an assigned Sonnet exhausts its
+capacity on one of those five stories, the Codex planner takes over that story and records the
+substitution; this is not a general Codex author lane.
+
 **Merge authority:** the operator has delegated GitHub merges for M0 to Opus, with the
 instruction to space them out so the repository does not read as bot-driven. Outside M0 the
 standing rule holds: push, never merge.
@@ -198,13 +232,14 @@ M1 handoff: `docs/handoff-2026-10-09.md` (9 Oct 2026): where M1 stands, the E05-
 
 ## Open questions for the human
 
-Raised by the M2 design pass (details in `docs/m2-decisions.md` Follow-ups). Each packet implements the conservative reading meanwhile; do not block on them.
-- **Decision 99 vs D-M2-5:** should a standalone request's approval draw on the organization's available budget instead of creating new budget? (E09-S06)
-- **Who may assign a standalone request to an existing project?** The packet's reading: the final approver holds `requisition.approve` there. (E09-S06)
-- **MASTER §2.3** has no requisition tones for `rejected`, `withdrawn` and `expired`. E09-S11 uses danger, neutral and danger. (MASTER amendment)
-- **M1 permissions gap:** no baseline role holds `project.read` or `master.read`. (E09-S03 works around it with requisition lookups.)
-- **No UI story** owns the delegation screen (STORY-NOTES §3). The resubmit and amendment screens are E09-S12.
-- Whether a PO commits against the parent project or the requisition-generated sub-project (M3).
+**Closed 21 Oct 2026** (operator, in batches; canvas DECISIONS 214 to 232): every question parked in
+E11-S08, E12-S19 and E13-S22 and the M2 follow-ups. Decision 99 became E30-S01 (organisation pool);
+standalone-to-project assignment stays with the final approver (216); baseline read grants are
+E22-S06 (217); requisition tones are in MASTER §2.3 and E22-S08 (231); people by name are E22-S07 and
+E22-S09 (232); a PO commits against the requisition's sub-project (209).
+The delegation screen is E22-S10 (233).
+
+_(none open)_
 
 ## Session handoff — 25 Aug 2026
 

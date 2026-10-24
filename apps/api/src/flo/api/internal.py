@@ -40,6 +40,8 @@ from flo.modules.imports.jobs import handlers as import_handlers
 from flo.modules.org.fx import MAX_BYTES, FeedFailure, Fetcher, ingest
 from flo.modules.org.schemas import FxIngestReport
 from flo.modules.requisitions.service import expire_org
+from flo.modules.sourcing import lifecycle as rfq_lifecycle
+from flo.modules.vendors import expiry as vendor_expiry
 
 _logger = logging.getLogger(__name__)
 _METADATA_TOKEN_URL = (
@@ -315,11 +317,19 @@ def _run_jobs_tick(settings: Settings) -> TickReport:
     database_url = settings.database_url.get_secret_value()
     connection = psycopg.connect(database_url)
     try:
+        with psycopg.connect(database_url) as due:
+            rfq_lifecycle.enqueue_due(due)  # each tick: RFQs past their deadline close this minute
         jobs = JobRunner(
             cast(RunnerConnection, connection),
             {
                 "budget-reconcile": job_handler(lambda: psycopg.connect(database_url)),
                 "approval.reminders": reminders_job_handler(lambda: psycopg.connect(database_url)),
+                rfq_lifecycle.JOB_KIND: rfq_lifecycle.job_handler(
+                    lambda: psycopg.connect(database_url)
+                ),
+                vendor_expiry.JOB_KIND: vendor_expiry.job_handler(
+                    lambda: psycopg.connect(database_url)
+                ),
                 **import_handlers(
                     lambda: psycopg.connect(database_url),
                     cast(PermissionResolverFactory, production_authorization_resolver),
@@ -542,6 +552,34 @@ async def approval_reminders(
 ) -> ReminderReport:
     """Require origin secret and Idempotency-Key; one digest per person per day, never replayed."""
     return await asyncio.to_thread(_run_approval_reminders, settings)
+
+
+class VendorExpiryTriggerReport(BaseModel):
+    organizations: int
+
+
+def _run_vendor_document_expiry(settings: Settings) -> VendorExpiryTriggerReport:
+    if settings.database_url is None:
+        raise RuntimeError("DATABASE_URL is not configured")
+    with psycopg.connect(settings.database_url.get_secret_value()) as connection:
+        return VendorExpiryTriggerReport(organizations=vendor_expiry.enqueue_all(connection))
+
+
+@router.post(
+    "/internal/jobs/vendor-document-expiry",
+    response_model=VendorExpiryTriggerReport,
+    include_in_schema=False,
+)
+@public_route
+async def vendor_document_expiry(
+    settings: Annotated[Settings, Depends(get_internal_settings)],
+) -> VendorExpiryTriggerReport:
+    """Require origin secret and Idempotency-Key; never replayed. Only queues tenant jobs.
+
+    A repeat queues another job per organization; a document is notified once per threshold
+    (stamped on the row), so extra runs send nothing.
+    """
+    return await asyncio.to_thread(_run_vendor_document_expiry, settings)
 
 
 def fetch_fx(url: str) -> bytes:

@@ -9,7 +9,7 @@ from flo.api.admin_users import organization_target
 from flo.api.auth import get_auth_settings
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
-from flo.kernel.authz import permits, require
+from flo.kernel.authz import GrantedScopes, permits, require, require_granted
 from flo.kernel.config import Settings
 from flo.kernel.tenancy.context import current_scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
@@ -28,6 +28,7 @@ from flo.modules.projects.schemas import (
     PhaseRead,
     ProjectCreate,
     ProjectGroup,
+    ProjectLookupRows,
     ProjectPage,
     ProjectPatch,
     ProjectRead,
@@ -52,6 +53,11 @@ router = APIRouter(prefix="/api/v1/projects", tags=["projects"])
 
 def create_target(body: ProjectCreate, connection: Connection) -> TargetProtocol:
     unit = OrgService(connection, current_scope()).get_unit(body.bu_id)
+    return cast(TargetProtocol, AuthorizationTarget(ScopeType.BU, unit.id))
+
+
+def lookup_target(bu_id: UUID, connection: Connection) -> TargetProtocol:
+    unit = OrgService(connection, current_scope()).get_unit(bu_id)  # 404 for a foreign unit
     return cast(TargetProtocol, AuthorizationTarget(ScopeType.BU, unit.id))
 
 
@@ -86,7 +92,41 @@ UpdateContext = Annotated[AuthorizationContext, Depends(require("project.update"
 SubstituteContext = Annotated[
     AuthorizationContext, Depends(require("master_code.substitute", project_target))
 ]
-ListContext = Annotated[AuthorizationContext, Depends(require("project.read", organization_target))]
+ListScopes = Annotated[GrantedScopes, Depends(require_granted("project.read"))]
+
+
+LookupContext = Annotated[AuthorizationContext, Depends(require("project.create", lookup_target))]
+
+
+# Registered before "/{id}" so "lookups" is never parsed as a project id.
+@router.get("/lookups/{kind}", response_model=ProjectLookupRows)
+def lookups(
+    kind: Literal["main_projects", "people"],
+    bu_id: UUID,
+    context: LookupContext,
+    connection: Connection,
+    request: Request,
+    q: str = "",
+    limit: Annotated[int, Query(ge=1, le=50)] = 20,
+) -> ProjectLookupRows:
+    """Options for the Create Project pickers; gated on project.create in the chosen unit."""
+    service = ProjectService(connection, current_scope(), context.user_id)
+    if kind == "people":
+        return ProjectLookupRows(rows=service.lookup_people(q, limit))
+    return ProjectLookupRows(
+        rows=service.lookup_projects(
+            q,
+            limit,
+            lambda id: permits(
+                request,
+                "project.read",
+                cast(
+                    TargetProtocol,
+                    AuthorizationTarget(ScopeType.PROJECT, id, "project", id),
+                ),
+            ),
+        )
+    )
 
 
 @router.post("", status_code=201, response_model=ProjectRead, dependencies=[Depends(parent_read)])
@@ -102,7 +142,7 @@ def create_project(
 @router.get("", response_model=ProjectPage)
 def list_projects(
     request: Request,
-    context: ListContext,
+    granted: ListScopes,
     connection: Connection,
     group_by: ProjectGroup | None = None,
     q: str = "",
@@ -113,7 +153,8 @@ def list_projects(
     cursor: str | None = None,
     page_size: Annotated[int, Query(ge=1, le=50)] = 50,
 ) -> ProjectPage:
-    return ProjectService(connection, current_scope(), context.user_id).list(
+    return ProjectService(connection, current_scope(), granted.user_id).list(
+        granted=granted,
         group_by=group_by,
         balances=permits(request, "ledger.read", organization_target()),
         q=q,

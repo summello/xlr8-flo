@@ -17,6 +17,23 @@ def days(value: object) -> bool:
     return type(value) is int and 0 <= value <= 365
 
 
+def is_bool(value: object) -> bool:
+    return type(value) is bool
+
+
+def code_text(value: object) -> bool:
+    # ponytail: a vendor_category master kind does not exist yet; E11-S08 should check the code.
+    return isinstance(value, str) and 1 <= len(value) <= 100
+
+
+def text_list(value: object) -> bool:
+    return (
+        isinstance(value, list)
+        and 1 <= len(value) <= 100
+        and all(isinstance(v, str) and 1 <= len(v) <= 500 for v in value)
+    )
+
+
 def choices(*values: str) -> Callable[[object], bool]:
     return lambda value: isinstance(value, str) and value in values
 
@@ -31,8 +48,31 @@ RULES: dict[str, dict[str, Callable[[object], bool]]] = {
     "payment_term": {"net_days": days, "discount_percent": percentage, "discount_days": days},
     "item_category": {},
     "service_category": {},
+    "vendor_contact_type": {},
+    "vendor_document_type": {"required": is_bool, "category": code_text},
+    "vendor_score_category": {},
+    "vendor_identifier_type": {"unique": is_bool},
+    "rfq_requirement_template": {"requirements": text_list},
 }
-OPTIONAL = {"payment_term": {"discount_percent", "discount_days"}}
+RESERVED_CONTACT_TYPES = ("billing", "service_delivery")  # built in to vendors
+# Seeded per org by vendors.performance on first use; they cannot be deactivated (VEN-007).
+CORE_SCORE_CATEGORIES = ("QUALITY", "PRICING", "DELIVERY", "SERVICE")
+OPTIONAL = {
+    "payment_term": {"discount_percent", "discount_days"},
+    "vendor_document_type": {"category"},
+}
+
+
+def core_category_active(kind: str, code: str, active: bool, effective_to: object) -> None:
+    """The four core score categories always apply: never inactive, never end-dated."""
+    if kind == "vendor_score_category" and code in CORE_SCORE_CATEGORIES:
+        if not active or effective_to is not None:
+            raise ProblemError(
+                ErrorCode.VALIDATION_FAILED,
+                detail="Quality, pricing, delivery and service always apply. Keep them active.",
+                errors=(ProblemFieldError(field="active", message="Must stay active."),),
+                checks={"problem": "core_category"},
+            )
 
 
 def known_kind(kind: str) -> None:

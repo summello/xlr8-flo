@@ -4,7 +4,7 @@
 version: 1
 
 policy:
-  max_stories_in_flight: 4      # 10 Oct 2026: parallel trains, one test database per worktree
+  max_stories_in_flight: 6      # 21 Oct 2026: 4 -> 6, review-bound lanes left both Claude accounts idle (see project-memory); 10 Oct: parallel trains, one test DB per worktree
   min_reviewers: 1              # one review per story, scaled to risk (below)
   release_reviewers: [qwen, deepseek]   # second and third pass on the whole milestone
                                         # diff, before the PR to main — not per story
@@ -19,9 +19,10 @@ policy:
   # get a fresh Opus session), qwen then deepseek review whatever Codex authored or cannot reach.
   # 11 Oct 2026: kimi left this list at 0.0 findings in 2 reviews; deepseek 1.0 in 6.
   ungated_reviewers: [codex, qwen, deepseek]
-  # First author in this order that may take the story wins; sonnet drops out when every
-  # account is at max_workers_per_account, which is how the overflow lanes get work.
-  author_priority: [sonnet, opencode-nemotron, codex]
+  # 23 Oct 2026, operator: Sonnet authors every non-overridden story on account A or B.
+  # When both accounts have no worker slot, the story waits; there is no overflow author.
+  # A milestone sole_author override (M0 below) remains authoritative.
+  author_priority: [sonnet]
 
 # Per-milestone overrides. A milestone may concentrate authorship on one agent when
 # the cost of getting it wrong is a rewrite rather than a patch. Reviewers are NOT
@@ -100,7 +101,7 @@ agents:
 
   sonnet:
     model: sonnet                # claude CLI alias, resolves to the current Sonnet
-    reasoning: high              # passed as --effort
+    reasoning: medium            # operator decision 13 Oct 2026 (5ba2460); passed as --effort
     cli: "claude -p --model sonnet"
     plan: claude-pro (two accounts)
     metered: rate
@@ -115,7 +116,7 @@ agents:
                                  # Drop an account back to 1 if it caps more than once a day.
     roles: [author]
     allowed_kinds: [ledger, concurrency, migration, security, engine, api, chore, ui, crud, docs, test]
-    fallback: [opencode-nemotron, codex]
+    fallback: []
     notes: >
       13 Oct 2026: primary author, one session per story with a pre-assigned id
       (flo account), resumed for review rounds and red story CI. Skill: xlr8flo-worker.
@@ -131,26 +132,28 @@ agents:
     weekly_story_budget: 18      # operator holds usage resets; the cap is not the
                                  # constraint it was. Still bounded so a runaway
                                  # loop cannot burn every reset in one night.
-    roles: [author, review]
+    roles: [review]
     # M0 needs api/chore/ui too, because the M0 override makes codex sole author.
     allowed_kinds: [ledger, concurrency, migration, security, engine, api, chore, ui, crud]  # crud only reaches codex when a free author avoids its tags
     prefer_tags: [money, concurrency, migration, security]
-    fallback: [opencode-nemotron]
+    fallback: []
     notes: >
-      ChatGPT Plus weekly cap is tight. Outside a milestone override, never assign
-      CRUD, docs or styling - that capacity belongs on the ledger and the engines.
+      ChatGPT Plus weekly cap is tight. Outside a milestone override, review only.
+      Operator exception, 23 Oct 2026: the Codex planner may take over an E23-S14..S18
+      implementation only after its assigned Sonnet actually exhausts capacity; record
+      that substitution explicitly before authoring.
 
   opencode-nemotron:
     model: nvidia/nemotron-3-ultra-550b-a55b:free      # via OpenRouter, not OpenCode Zen
     cli: "opencode run --model openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"
     plan: openrouter-credits
     metered: none                # :free variant — no credit drawdown
-    roles: [author]              # 11 Oct 2026: 0.0 findings in 5 reviews; it authors, others review
-    allowed_kinds: [crud, ui, api, chore, docs, test]   # 10 Oct 2026: engine, migration → codex
+    roles: []                    # 23 Oct 2026, operator: no story authorship
+    allowed_kinds: []
     avoid_tags: [money, auth, security, migration, concurrency]   # gated stories → codex
-    max_author_size: M           # 10 Oct 2026: E06-S07 (ui, L) ended exit 0 with nothing committed,
+    max_author_size: S           # 23 Oct 2026: S only. 10 Oct 2026: E06-S07 (ui, L) ended exit 0 with nothing committed,
                                  # no tests and an out-of-scope identity edit; L stories → codex
-    fallback: [opencode-ox, qwen, codex]
+    fallback: []
     notes: >
       10 Oct 2026: second parallel author lane, operator-approved. Takes the crud, ui and
       docs lanes so codex's cap stays on the money, engine and security trains. Evidence:
@@ -184,7 +187,7 @@ agents:
     metered: spend
     monthly_budget_usd: 20       # hard cap; flo budget refuses assignment past it
     reserve_for_review_usd: 12   # review capacity is protected from authoring spend
-    roles: [author, review]
+    roles: [review]
     allowed_kinds: [crud, ui, docs, chore, test]
     max_author_size: S           # authors small stories only
     fallback: [deepseek, kimi]
@@ -208,7 +211,7 @@ agents:
     metered: spend
     monthly_budget_usd: 20       # hard cap; flo budget refuses assignment past it
     reserve_for_review_usd: 12   # review capacity is protected from authoring spend
-    roles: [author, review]
+    roles: [review]
     allowed_kinds: [crud, ui, docs, chore, test]
     max_author_size: S           # authors small stories only
     fallback: [deepseek, qwen]

@@ -10,6 +10,7 @@ from psycopg import sql
 
 from flo.kernel.authz import AuthorizationDecision as DecisionProtocol
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
+from flo.kernel.authz import GrantedScopes
 from flo.kernel.db.repo import ScopedRepo
 from flo.kernel.identity import IdentityId
 from flo.kernel.tenancy.context import Scope
@@ -162,6 +163,34 @@ class AuthorizationResolver(ScopedRepo[AuthorizationDecision]):
                 scope_matched=cast(bool, _value(row, 0, "scope_matched")),
                 allowed=cast(bool, _value(row, 1, "allowed")),
             ),
+        )
+
+    def granted_scopes(self, user_id: IdentityId, permission: str) -> GrantedScopes:
+        """Scopes where the user's current assignments carry the permission."""
+
+        rows = self._connection.execute(
+            """
+            SELECT DISTINCT assignment.scope_type, assignment.scope_id
+              FROM user_role AS assignment
+              JOIN role_permission
+                ON role_permission.org_id = assignment.org_id
+               AND role_permission.role_id = assignment.role_id
+             WHERE assignment.org_id = %(org_id)s
+               AND assignment.user_id = %(user_id)s
+               AND role_permission.permission_code = %(permission)s
+               AND (assignment.effective_from IS NULL
+                    OR assignment.effective_from <= CURRENT_TIMESTAMP)
+            """,
+            self.scoped_params({"user_id": user_id, "permission": permission_code(permission)}),
+        ).fetchall()
+        found = [
+            (str(_value(r, 0, "scope_type")), cast(UUID, _value(r, 1, "scope_id"))) for r in rows
+        ]
+        return GrantedScopes(
+            user_id=user_id,
+            org_wide=any(kind == ScopeType.ORG.value for kind, _ in found),
+            bu_ids=frozenset(i for kind, i in found if kind == ScopeType.BU.value),
+            project_ids=frozenset(i for kind, i in found if kind == ScopeType.PROJECT.value),
         )
 
     def holders(self, permission: str, target: TargetProtocol) -> list[IdentityId]:

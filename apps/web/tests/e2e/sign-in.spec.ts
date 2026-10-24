@@ -106,11 +106,17 @@ for (const status of [500, 403]) test(`login ${status} preserves email and repor
   await login(page); await assertServiceFailure(page);
 });
 test('plant: mapping every login status to the credential alert fails service failure assertion', async ({ page }) => {
-  await page.route('**/src/features/auth/Screens.tsx*', async route => {
+  await page.route(process.env.CI ? '**/assets/*.js' : '**/src/features/auth/Screens.tsx*', async route => {
     const response = await route.fetch();
     const source = await response.text();
-    expect(source).toContain('response.status === 401');
-    await route.fulfill({ response, body: source.replace('response.status === 401', 'true') });
+    if (process.env.CI) {
+      const loginStatus = /body:\w+\.status===401\?/;
+      expect(source).toMatch(loginStatus);
+      await route.fulfill({ response, body: source.replace(loginStatus, 'body:true?') });
+    } else {
+      expect(source).toContain('response.status === 401');
+      await route.fulfill({ response, body: source.replace('response.status === 401', 'true') });
+    }
   });
   await stub(page); await page.goto('/sign-in');
   await page.route('**/api/v1/auth/login', route => route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify(problem(500)) }));

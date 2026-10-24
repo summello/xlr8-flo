@@ -13,7 +13,7 @@ from uuid import UUID, uuid4
 import psycopg
 from psycopg.errors import UniqueViolation
 
-from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
+from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.config import Settings
 from flo.kernel.db.repo import ScopedRepo
@@ -152,7 +152,15 @@ class InvitationRepository(ScopedRepo[InvitationRecord]):
                 {"id": invitation_id, "identity": identity, "now": now, "full_name": full_name}
             ),
         )
-        return self.get(invitation_id)
+        accepted = self.get(invitation_id)
+        # identity is global: copy the name the invitation now stores, and keep the name a
+        # person already has (second-org case)
+        self.connection.execute(
+            "UPDATE identity SET display_name = NULLIF(btrim(%s::text), '') "
+            "WHERE id = %s AND display_name IS NULL",
+            (accepted.full_name, identity),
+        )
+        return accepted
 
     def role_scope(
         self, code: str, kind: ScopeType, scope_id: UUID | None
@@ -225,13 +233,15 @@ class InvitationService:
         action: str,
         device: RequestDevice,
     ) -> None:
-        AuditWriter(cast(AuditConnection, self.connection), scope).write(
+        audit_event(
+            cast(AuditConnection, self.connection),
+            scope,
             actor=AuditActor(ActorKind.USER, actor),
             action="invitation." + action,
             target_type="invitation",
             target_id=row.id,
             outcome=Outcome.SUCCESS,
-            after_source=row,
+            after=row,
             after_fields=(
                 "id",
                 "org_id",

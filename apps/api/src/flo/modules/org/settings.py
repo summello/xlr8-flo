@@ -11,6 +11,7 @@ SETTING_DEFAULTS: dict[str, JsonValue] = {
     "approval.max_depth": 10,
     "approval.separation_of_duty": True,
     "requisition.expiry_days": None,
+    "vendor.allow_local_disable": False,
 }
 
 
@@ -27,5 +28,6 @@ SETTING_VALIDATORS: dict[str, Callable[[JsonValue], bool]] = {
     ),
     "allow_negative_budget": _is_bool,
     "budget.evidence_required": _is_bool,
+    "vendor.allow_local_disable": _is_bool,
     "funding_mode": lambda value: value in ("roll_down", "roll_up"),
 }

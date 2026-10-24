@@ -1,0 +1,52 @@
+# The fleet supervisor's view of this repository. The supervisor's reviewed, tested source is
+# agents/fleet/fleet.py (E23-S11); ~/.claude/fleet/fleet.py is the DEPLOYED COPY. After a merge,
+# copy it over (cp agents/fleet/fleet.py ~/.claude/fleet/fleet.py) and install from that copy,
+# never from the runner checkout: launchd runs the script from where it lives, and a merged story
+# would change the supervisor between two ticks. Everything specific to XLR8 FLO is here or in the
+# commands below. Steps run from the runner checkout, one at a time per story.
+#
+#   python3 ~/.claude/fleet/fleet.py install --config ~/Workbench/xlr8flo-m3run/agents/fleet.toml
+#   python3 ~/.claude/fleet/fleet.py resume  --config ~/Workbench/xlr8flo-m3run/agents/fleet.toml
+#
+# Installed paused. While it is active the planner does not drive stories by hand: the manual
+# scripts (story-run, review-run, ship, codex-run) refuse to run until it is paused again.
+
+[project]
+name = "xlr8flo"
+runner = "~/Workbench/xlr8flo-m3run"        # the milestone checkout; story worktrees sit beside it
+facts = "{flo} facts"
+interval = 300                               # seconds between ticks
+max_parallel_checks = 2                      # submits, finishes and starts running the light check at once
+
+[vars]
+flo = "env XDG_CACHE_HOME=$HOME/.cache UV_CACHE_DIR=$HOME/.cache/uv uv run -q --no-project --with pyyaml python agents/scripts/flo"
+accounts = ["A", "B"]                         # Claude accounts an Opus reviewer may run on. [] = Opus asleep (restored 23 Oct 2026:
+                                             # E23-S14..S18 merged, milestone CI green at 3aedc6f)
+
+[steps]
+ci_watch = "{flo} ci-watch"
+begin = "FLO_ACCOUNT={account} agents/scripts/begin.sh {story} && agents/scripts/inflight.sh {story}"
+resume = "agents/scripts/author.sh {story}"
+submit = "agents/scripts/submit.sh {story}"
+review = "agents/scripts/review.sh {story} {reviewer} {account}"
+round = 'f=$({flo} round {story}) && agents/scripts/author.sh {story} "$f"'
+fix = "agents/scripts/fix.sh {story}"
+finish = "agents/scripts/finish.sh {story}"
+# One Opus planner, once per need open two ticks (not for a blocked question). Remove to switch off.
+planner = "agents/scripts/planner.sh {account} {needs}"
+
+[reconcile]
+# Run on a failed or crashed step before anything repeats it: exit 0 means its effect already happened.
+submit = "{flo} reconcile submit {story}"
+finish = "{flo} reconcile finish {story}"
+
+[limits]
+# Mission Control's collector prints both Claude accounts, Codex and OpenRouter (5-hour and week).
+command = "python3 -I $HOME/.claude/mods/mission-control/hooks/collect.py {runner} 12 60"
+claude_start = [25, 15]                      # percent left (5h, week) to start a new story on an account
+claude_continue = [10, 5]                    # to resume, run a round, fix CI or run an Opus review
+codex = [20, 10]                             # to run a Codex review or a Codex-authored step
+
+[backup]
+paths = [".scratch"]                         # prompts, logs, round files, archived verdicts
+dest = "~/Workbench/xlr8flo-archive/runner"

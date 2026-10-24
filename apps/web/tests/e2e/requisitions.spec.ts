@@ -1,8 +1,9 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { generatedProjectId } from "./requisitions-fixture";
 import { instanceId, lineRow, requisition, reservation, reqId, stubRequisitions } from "./requisitions-fixture";
-import { projectId } from "./projects-fixture";
+import { projectId, unitId } from "./projects-fixture";
+import { keyboardFocus } from "./helpers";
 
 async function fillHeader(page: Page, over: Record<string, string> = {}) {
   const values: Record<string, string> = { title: "Press brake", project_id: projectId, department_code: "D", ledger_account_code: "L", needed_by: "2030-01-31", delivery_address_id: "aaaaaaaa-1111-4111-8111-111111111111", ...over };
@@ -20,16 +21,6 @@ async function addItem(page: Page, n: number, quantity: string, price: string, d
   await page.getByLabel(`Quantity, line ${n}`).fill(quantity);
   await page.getByLabel(`Unit, line ${n}`).selectOption("ea");
   await page.getByLabel(`Unit price, line ${n}`).fill(price);
-}
-async function keyboardFocus(page: Page, locator: Locator) {
-  for (let i = 0; i < 200; i++) {
-    await page.keyboard.press("Tab");
-    if (await locator.evaluate(node => node === document.activeElement)) {
-      await expect.poll(() => locator.evaluate(node => getComputedStyle(node).outlineStyle)).not.toBe("none");
-      return;
-    }
-  }
-  throw new Error("Control is unreachable by keyboard");
 }
 const heading = (page: Page, text: string | RegExp) => page.getByRole("heading", { name: text });
 
@@ -54,7 +45,7 @@ test("create with an item and a catalogue line, save, submit, then see the detai
   expect(page.url()).toContain(`/requisitions/${reqId}/edit`);
   await page.getByRole("button", { name: "Submit for approval" }).click();
   await expect(heading(page, "REQ-00418 Submitted for Approval")).toBeVisible();
-  await expect(page.getByText("Routed to amara@example.test, step 1 of 1.")).toBeVisible();
+  await expect(page.getByText("Routed to Amara Okafor (amara@example.test), step 1 of 1.")).toBeVisible();
   const submit = state.calls.find(c => c.path.endsWith("/transitions") && c.method === "POST")!;
   expect(submit.body).toEqual({ to: "approval_pending" });
   expect(submit.headers["idempotency-key"]).toBeTruthy();
@@ -436,11 +427,17 @@ test("keyboard only: create, add a line, remove it, submit, open the detail and 
 
 /* ---- Detail ---- */
 test("detail: initial load shows every card as a skeleton at its final place, then the cards replace them", async ({ page }) => {
-  const state = await stubRequisitions(page, { row: requisition({ estimate: "20.0000" }), lines: [lineRow(1)] });
-  state.getDelay = 800;
+  await stubRequisitions(page, { row: requisition({ estimate: "20.0000" }), lines: [lineRow(1)] });
+  let release = () => {};
+  const ready = new Promise<void>(resolve => { release = resolve; });
+  await page.route(`**/api/v1/requisitions/${reqId}`, async route => {
+    await ready;
+    await route.fallback();
+  });
   await page.goto(`/requisitions/${reqId}`);
   await expect(page.locator(".req-card-skeleton")).toHaveCount(6);
   for (const box of await page.locator(".req-card-skeleton").all()) expect((await box.boundingBox())!.height).toBeGreaterThan(100);
+  release();
   await expect(page.locator("#request-title")).toBeVisible();
   await expect(page.locator(".req-card-skeleton")).toHaveCount(0);
 });
@@ -469,8 +466,8 @@ for (const status of STATUSES) {
 test("detail: lifecycle words, remaining from the server, split award, linked records, history order", async ({ page }) => {
   const state = await stubRequisitions(page, { row: requisition({ status: "awarded", estimate: "20.0000", reservation: reservation("20.0000") }), lines: [lineRow(1, { requested_qty: "10.0000", awarded_qty: "6.0000", ordered_qty: "4.0000", cancelled_qty: "1.0000", remaining_qty: "5.0000" })] });
   state.events = [
-    { at: "2026-10-02T10:00:00Z", from_status: "draft", to_status: "approval_pending", actor_email: "dev@example.test", system: false, reason: null, funding_round: 1, ledger_entry_id: 1, decision_id: null },
-    { at: "2026-10-03T10:00:00Z", from_status: "approval_pending", to_status: "sourcing_in_progress", actor_email: null, system: true, reason: null, funding_round: 1, ledger_entry_id: null, decision_id: null },
+    { at: "2026-10-02T10:00:00Z", from_status: "draft", to_status: "approval_pending", actor_email: "dev@example.test", actor_name: null, system: false, reason: null, funding_round: 1, ledger_entry_id: 1, decision_id: null },
+    { at: "2026-10-03T10:00:00Z", from_status: "approval_pending", to_status: "sourcing_in_progress", actor_email: null, actor_name: null, system: true, reason: null, funding_round: 1, ledger_entry_id: null, decision_id: null },
   ];
   state.links = [{ key: "ledger:1", kind: "ledger_entry", id: "1", label: "Reservation 1", state: "Reserved", state_tone: "info", href: "/ledger/1", at: "2026-10-02T10:00:00Z" }];
   await page.goto(`/requisitions/${reqId}`);
@@ -519,7 +516,7 @@ test("detail: a draft with no reservation says nothing is reserved and discards 
 
 test("returned banner shows the approver's words and Edit and Resubmit opens the edit route", async ({ page }) => {
   const state = await stubRequisitions(page, { row: requisition({ estimate: "20.0000", reservation: reservation("20.0000"), approval: { instance_id: instanceId, status: "returned" } }), lines: [lineRow(1)] });
-  state.decisions = [{ id: "dddddddd-0000-4000-8000-000000000001", instance_id: instanceId, task_id: null, node_id: "n1", step_label: "Manager review", actor_email: "amara@example.test", on_behalf_of_email: null, authority: "member", outcome: "return", reject_mode: null, comment: "Please cut the second line", document_version: 2, members_at_decision: [], decided_at: "2026-10-04T09:00:00Z" }];
+  state.decisions = [{ id: "dddddddd-0000-4000-8000-000000000001", instance_id: instanceId, task_id: null, node_id: "n1", step_label: "Manager review", actor_email: "amara@example.test", actor_name: null, on_behalf_of_email: null, on_behalf_of_name: null, authority: "member", outcome: "return", reject_mode: null, comment: "Please cut the second line", document_version: 2, members_at_decision: [], decided_at: "2026-10-04T09:00:00Z" }];
   await page.goto(`/requisitions/${reqId}`);
   const banner = page.getByRole("region", { name: "Returned for Changes" });
   await expect(banner).toContainText("amara@example.test");
@@ -736,6 +733,7 @@ test("375px detail: no sideways scroll", async ({ page }) => {
 /* ---- axe, both themes ---- */
 for (const theme of ["light", "dark"] as const) {
   test(`axe is clean on the list, create, detail, and the open withdraw dialog in ${theme}`, async ({ page }) => {
+    test.slow(); // four axe scans: ~47 s on a loaded dev machine, over the 30 s default
     await page.addInitScript(t => localStorage.setItem("xlr8flo.theme", t), theme);
     const state = await stubRequisitions(page, pending());
     state.list = [requisition()];
@@ -748,3 +746,52 @@ for (const theme of ["light", "dark"] as const) {
     await expect(page.getByRole("alertdialog")).toBeVisible(); await scan();
   });
 }
+
+test("detail shows the requester by name with the email beside it, and the email alone when unnamed", async ({ page }) => {
+  await stubRequisitions(page, { row: requisition({ requester_name: "Ada Lovelace" }), lines: [lineRow(1)] });
+  await page.goto(`/requisitions/${reqId}`);
+  await expect(page.locator(".req-heading .person-name")).toHaveText("Ada Lovelace");
+  await expect(page.locator(".req-heading .person-email")).toHaveText("dev@example.test");
+  await stubRequisitions(page, { row: requisition(), lines: [lineRow(1)] });
+  await page.goto(`/requisitions/${reqId}`);
+  await expect(page.locator(".req-heading .person")).toHaveAttribute("title", "dev@example.test");
+  await expect(page.locator(".req-heading .person-name")).toHaveCount(0);
+});
+
+for (const theme of ["light", "dark"] as const) {
+  test(`axe is clean on the detail with a named requester in ${theme}`, async ({ page }) => {
+    await page.addInitScript(t => localStorage.setItem("xlr8flo.theme", t), theme);
+    await stubRequisitions(page, { row: requisition({ requester_name: "Ada Lovelace" }), lines: [lineRow(1)] });
+    await page.goto(`/requisitions/${reqId}`);
+    await expect(page.locator(".req-heading .person-name")).toBeVisible();
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  });
+}
+
+test("detail: a draft requisition has no Start RFQ", async ({ page }) => {
+  await stubRequisitions(page, { row: requisition({ status: "draft" }), lines: [lineRow(1)] });
+  await page.goto(`/requisitions/${reqId}`);
+  await expect(page.locator(".req-heading")).toContainText("REQ-00418");
+  await expect(page.getByRole("link", { name: "Start RFQ" })).toHaveCount(0);
+});
+
+test("detail: a pending amendment hides Start RFQ", async ({ page }) => {
+  await stubRequisitions(page, { row: requisition({ status: "sourcing_in_progress", amendment: { status: "pending" } as never }), lines: [lineRow(1)] });
+  await page.goto(`/requisitions/${reqId}`);
+  await expect(page.locator(".req-heading")).toContainText("REQ-00418");
+  await expect(page.getByRole("link", { name: "Start RFQ" })).toHaveCount(0);
+});
+
+test("detail: Start RFQ on a sourcing_in_progress requisition opens the picker with the lines checked", async ({ page }) => {
+  await stubRequisitions(page, { row: requisition({ status: "sourcing_in_progress" }), lines: [lineRow(1)] });
+  await page.route("**/api/v1/org/units**", route => route.fulfill({ status: 403, contentType: "application/json", body: JSON.stringify({ title: "Forbidden", status: 403 }) }));
+  await page.route("**/api/v1/sourcing/requisition-lines**", route => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ next_cursor: null, rows: [{
+    line_id: "aaaaaaaa-0000-4000-8000-000000000001", line_no: 1, description: "Press brake", uom_code: "EA", currency: "USD", needed_by: null, requisition_id: reqId, requisition_number: "REQ-00418", requisition_version: 1, unit_id: unitId,
+    requested_qty: "4.0000", sourced_qty: "0.0000", awarded_qty: "0.0000", ordered_qty: "0.0000", cancelled_qty: "0.0000", open_qty: "4.0000", selectable: true, reason: null }] }) }));
+  await page.goto(`/requisitions/${reqId}`);
+  await page.getByRole("link", { name: "Start RFQ" }).click();
+  const url = new URL(page.url());
+  expect(url.pathname).toBe("/sourcing/rfqs/new");
+  expect(Object.fromEntries(url.searchParams)).toEqual({ unit: unitId, unitName: "Infrastructure", requisition: "REQ-00418" });
+  await expect(page.getByRole("checkbox", { name: "Source line 1 of REQ-00418" })).toBeChecked();
+});

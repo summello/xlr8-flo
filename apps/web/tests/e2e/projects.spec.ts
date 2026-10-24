@@ -1,19 +1,10 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page, type Locator } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { firstActor, project, projectId, secondActor, stubProjects, unitId } from "./projects-fixture";
+import { keyboardFocus } from "./helpers";
 
 async function createFields(page: Page) {
   for (const [label, value] of [["Business unit", unitId], ["Project name", "Plant renewal"], ["Department", "D"], ["Ledger account", "L"], ["Currency", "USD"], ["Description", "Preserved description"], ["Planned start", "2026-10-01"], ["Planned end", "2026-12-31"]]) await page.getByLabel(new RegExp(`^${label}\\s*\\*?$`)).fill(value!);
-}
-async function keyboardFocus(page: Page, locator: Locator) {
-  for (let i = 0; i < 150; i++) {
-    await page.keyboard.press("Tab");
-    if (await locator.evaluate(node => node === document.activeElement)) {
-      await expect.poll(() => locator.evaluate(node => getComputedStyle(node).outlineStyle)).not.toBe("none");
-      return;
-    }
-  }
-  throw new Error("Control is unreachable by keyboard");
 }
 
 test("create, list, submit and approve with a second identity sends version and idempotency headers", async ({ page }) => {
@@ -276,6 +267,52 @@ test("loadPage still rejects an oversized server envelope and retries without lo
   await expect(page.locator("tr[data-grid-row]")).toHaveCount(1);
 });
 
+for (const theme of ["light", "dark"] as const) {
+  test(`create form passes axe in ${theme}`, async ({ page }) => {
+    await page.addInitScript(t => localStorage.setItem("xlr8flo.theme", t), theme);
+    await stubProjects(page); await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
+    await page.getByLabel(/^Business unit\s*\*?$/).fill(unitId);
+    await expect(page.getByRole("list", { name: "Matching sponsors" })).toContainText("Add Maker Person");
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  });
+}
+
+test("create with budget, main project and sponsors shows the funds check and sends them", async ({ page }) => {
+  const state = await stubProjects(page); await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
+  await createFields(page);
+  await page.getByLabel(/^Budget\s*\*?$/).fill("500");
+  await page.getByLabel(/^Main project\s*\*?$/).fill("Existing");
+  await page.getByRole("button", { name: /^Add PRJ-00001 Existing main project/ }).click();
+  const funds = page.getByTestId("funds-check");
+  await expect(funds).toContainText("Available in the main project");
+  await expect(funds).toContainText("The server checks the budget");
+  await page.getByLabel(/^Sponsors\s*\*?$/).fill("person");
+  await page.getByRole("button", { name: "Add Maker Person" }).click();
+  await page.getByRole("button", { name: "Add Approver Person" }).click();
+  await expect(page.getByRole("list", { name: "Chosen sponsors" })).toContainText("Approver Person");
+  await page.getByRole("button", { name: "Create project", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/projects/${projectId}$`));
+  const post = state.requests.find(r => r.path === "/api/v1/projects" && r.method === "POST")!;
+  expect(post.body).toMatchObject({ budget: { amount: "500", currency: "USD" }, parent_id: projectId, sponsor_ids: expect.arrayContaining([firstActor, secondActor]) });
+});
+
+test("the sponsor picker searches the server and says so when ten are named", async ({ page }) => {
+  const state = await stubProjects(page); await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
+  await page.getByLabel(/^Business unit\s*\*?$/).fill(unitId);
+  await page.getByLabel(/^Sponsors\s*\*?$/).fill("extra");
+  for (let i = 0; i < 10; i++) await page.getByRole("button", { name: /^Add Extra Person/ }).first().click();
+  await expect(page.getByRole("status").filter({ hasText: "the most allowed" })).toContainText("Remove one to add another");
+  await expect(page.getByRole("list", { name: "Matching sponsors" })).toHaveCount(0);
+  expect(state.requests.some(r => r.path === "/api/v1/projects/lookups/people" && r.query.get("q") === "extra" && r.query.get("bu_id") === unitId)).toBe(true);
+  await page.getByRole("button", { name: "Remove Extra Person 0" }).click();
+  await expect(page.getByRole("button", { name: /^Add Extra Person/ }).first()).toBeVisible();
+});
+
+test("keyboard-only path reaches budget, main project and sponsors in order", async ({ page }) => {
+  await stubProjects(page); await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
+  for (const label of ["Planned end", "Budget", "Main project", "Sponsors"]) await keyboardFocus(page, page.getByLabel(new RegExp(`^${label}\\s*\\*?$`)));
+});
+
 test("required create fields fail locally with a focused summary and no POST", async ({ page }) => {
   const state = await stubProjects(page); await page.goto("/projects/new");
   await page.getByRole("button", { name: "Create project", exact: true }).click();
@@ -301,8 +338,10 @@ test("record required and integer guards preserve input without writing invalid 
 
 test("initial overview skeleton reserves fact row dimensions without layout shift", async ({ page }) => {
   await stubProjects(page);
+  let release = () => {};
+  const ready = new Promise<void>(resolve => { release = resolve; });
   await page.route(`**/api/v1/projects/${projectId}`, async route => {
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await ready;
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(project) });
   });
   await page.addInitScript(() => {
@@ -315,6 +354,7 @@ test("initial overview skeleton reserves fact row dimensions without layout shif
   const skeleton = page.locator(".project-loading .project-facts > div");
   await expect(skeleton).toHaveCount(14);
   const height = await skeleton.first().evaluate(n => n.getBoundingClientRect().height);
+  release();
   await expect(page.getByRole("heading", { name: "Plant renewal", exact: true })).toBeVisible();
   expect(await page.locator('[role="tabpanel"] .project-facts > div').first().evaluate(n => n.getBoundingClientRect().height)).toBe(height);
   expect(await page.evaluate(() => (window as unknown as { projectShifts: number[] }).projectShifts.reduce((sum, value) => sum + value, 0))).toBeLessThan(0.1);

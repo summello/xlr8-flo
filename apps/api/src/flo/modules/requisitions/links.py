@@ -238,7 +238,9 @@ def _attachments(
             relation="attached",
             access=access,
         )
-        for a in CollaborationService(conn, scope).attachments_for("requisition", requisition_id)
+        for a in CollaborationService(conn, scope).attachments_unchecked(
+            "requisition", requisition_id
+        )
         if a.deleted_at is None
     ]
 
@@ -260,7 +262,7 @@ def _notes(
             relation="noted",
             access=access,
         )
-        for n in CollaborationService(conn, scope).notes_for("requisition", requisition_id)
+        for n in CollaborationService(conn, scope).notes_unchecked("requisition", requisition_id)
     ]
 
 
