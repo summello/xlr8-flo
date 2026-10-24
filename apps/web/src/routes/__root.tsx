@@ -34,6 +34,7 @@ import NewVendor from "./vendors/new";
 import EditVendor from "./vendors/edit";
 import RfqList from "./sourcing/rfqs/list";
 import RfqDetail from "./sourcing/rfqs/detail";
+import NewRfq from "./sourcing/rfqs/new";
 import { confirmLeave, consumeRestoring, installHistoryIndex, settlePop } from "../lib/navigation-guard";
 import type { Project } from "../components/projects/api";
 import type { RoutePath } from "./route-paths";
@@ -172,6 +173,13 @@ const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
     hierarchy: [ORGANIZATION, ["/sourcing/rfqs", "RFQs"]],
     phase: "commit",
     title: "RFQs",
+  },
+  "/sourcing/rfqs/new": {
+    activeHref: "/sourcing",
+    description: "Choose approved requisition lines and the quantity of each to source.",
+    hierarchy: [ORGANIZATION, ["/sourcing/rfqs", "RFQs"], ["/sourcing/rfqs/new", "New RFQ"]],
+    phase: "commit",
+    title: "New RFQ",
   },
   "/purchase-orders": {
     activeHref: "/purchase-orders",
@@ -396,6 +404,7 @@ export default function RootRoute() {
       {vendorId ? <VendorDetail key={vendorId} id={vendorId} navigate={navigate} /> : undefined}
       {shellRoute.path === "/requisitions" ? <RequisitionList key={window.location.search} navigate={navigate} /> : undefined}
       {shellRoute.path === "/requisitions/new" ? <NewRequisition navigate={navigate} /> : undefined}
+      {shellRoute.path === "/sourcing/rfqs/new" ? <NewRfq key={window.location.search} navigate={navigate} /> : undefined}
       {requisitionId ? <RequisitionDetail key={requisitionId} id={requisitionId} navigate={navigate} onLoaded={onRequisitionLoaded} /> : undefined}
       {requisitionEditId ? <EditRequisition key={requisitionEditId} id={requisitionEditId} navigate={navigate} onLoaded={onRequisitionLoaded} /> : undefined}
       {resubmitId ? <ResubmitRequisition key={resubmitId} id={resubmitId} navigate={navigate} /> : undefined}

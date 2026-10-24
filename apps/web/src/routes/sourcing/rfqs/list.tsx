@@ -1,3 +1,4 @@
+import { Plus } from "@phosphor-icons/react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiClient } from "../../../api/client";
@@ -62,7 +63,8 @@ export default function RfqList({ navigate }: { navigate: (href: string) => void
     return { rows: data.rows, total: data.counts[tab], startIndex: 0, nextCursor: data.next_cursor ?? null, previousCursor: null, lastCursor: null };
   }, [tab]);
   return <section className="req-page req-list" aria-label="RFQ list">
-    <header className="req-heading"><p>{counts ? `${counts.all} ${counts.all === 1 ? "RFQ" : "RFQs"}` : ""}</p></header>
+    <header className="req-heading"><p>{counts ? `${counts.all} ${counts.all === 1 ? "RFQ" : "RFQs"}` : ""}</p>
+      <a className="req-link-button form-submit" href="/sourcing/rfqs/new" onClick={e => { e.preventDefault(); navigate("/sourcing/rfqs/new"); }}><Plus aria-hidden="true" weight="regular" />New RFQ</a></header>
     <div role="tablist" aria-label="RFQ views" className="req-tabs">{TABS.map(([name, text], i) => <button key={name} type="button" role="tab" id={`rfq-tab-${name}`} aria-selected={tab === name} aria-controls="rfq-panel" tabIndex={tab === name ? 0 : -1} onClick={() => change(name)} onKeyDown={e => {
       const next = e.key === "ArrowRight" ? TABS[(i + 1) % TABS.length] : e.key === "ArrowLeft" ? TABS[(i + TABS.length - 1) % TABS.length] : e.key === "Home" ? TABS[0] : e.key === "End" ? TABS[TABS.length - 1] : undefined;
       if (next) { e.preventDefault(); change(next[0]); document.getElementById(`rfq-tab-${next[0]}`)?.focus(); }

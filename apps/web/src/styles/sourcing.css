@@ -8,3 +8,11 @@
 .rfq-was { color: var(--fg-muted); text-decoration: line-through; }
 .rfq-invitee { display: grid; gap: var(--space-1); padding-block: var(--space-2); border-block-end: 1px solid var(--border); }
 .rfq-invitee:last-child { border-block-end: 0; }
+
+/* New RFQ line picker (E12-S12). */
+.rfq-picker tbody th[scope="rowgroup"] { color: var(--fg); text-transform: none; letter-spacing: normal; font-size: var(--text-body); border-block-end: 1px solid var(--border-strong); }
+.rfq-picker td:last-child, .rfq-picker th:last-child { inline-size: 14ch; }
+.rfq-pick { display: flex; align-items: flex-start; gap: var(--space-2); }
+.rfq-pick > span { display: grid; gap: var(--space-1); min-width: 0; }
+.rfq-filters { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: end; }
+.rfq-filters > * { min-width: 0; }

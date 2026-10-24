@@ -2,7 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { generatedProjectId } from "./requisitions-fixture";
 import { instanceId, lineRow, requisition, reservation, reqId, stubRequisitions } from "./requisitions-fixture";
-import { projectId } from "./projects-fixture";
+import { projectId, unitId } from "./projects-fixture";
 import { keyboardFocus } from "./helpers";
 
 async function fillHeader(page: Page, over: Record<string, string> = {}) {
@@ -745,3 +745,31 @@ for (const theme of ["light", "dark"] as const) {
     await expect(page.getByRole("alertdialog")).toBeVisible(); await scan();
   });
 }
+
+test("detail: a draft requisition has no Start RFQ", async ({ page }) => {
+  await stubRequisitions(page, { row: requisition({ status: "draft" }), lines: [lineRow(1)] });
+  await page.goto(`/requisitions/${reqId}`);
+  await expect(page.locator(".req-heading")).toContainText("REQ-00418");
+  await expect(page.getByRole("link", { name: "Start RFQ" })).toHaveCount(0);
+});
+
+test("detail: a pending amendment hides Start RFQ", async ({ page }) => {
+  await stubRequisitions(page, { row: requisition({ status: "sourcing_in_progress", amendment: { status: "pending" } as never }), lines: [lineRow(1)] });
+  await page.goto(`/requisitions/${reqId}`);
+  await expect(page.locator(".req-heading")).toContainText("REQ-00418");
+  await expect(page.getByRole("link", { name: "Start RFQ" })).toHaveCount(0);
+});
+
+test("detail: Start RFQ on a sourcing_in_progress requisition opens the picker with the lines checked", async ({ page }) => {
+  await stubRequisitions(page, { row: requisition({ status: "sourcing_in_progress" }), lines: [lineRow(1)] });
+  await page.route("**/api/v1/org/units**", route => route.fulfill({ status: 403, contentType: "application/json", body: JSON.stringify({ title: "Forbidden", status: 403 }) }));
+  await page.route("**/api/v1/sourcing/requisition-lines**", route => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ next_cursor: null, rows: [{
+    line_id: "aaaaaaaa-0000-4000-8000-000000000001", line_no: 1, description: "Press brake", uom_code: "EA", currency: "USD", needed_by: null, requisition_id: reqId, requisition_number: "REQ-00418", requisition_version: 1, unit_id: unitId,
+    requested_qty: "4.0000", sourced_qty: "0.0000", awarded_qty: "0.0000", ordered_qty: "0.0000", cancelled_qty: "0.0000", open_qty: "4.0000", selectable: true, reason: null }] }) }));
+  await page.goto(`/requisitions/${reqId}`);
+  await page.getByRole("link", { name: "Start RFQ" }).click();
+  const url = new URL(page.url());
+  expect(url.pathname).toBe("/sourcing/rfqs/new");
+  expect(Object.fromEntries(url.searchParams)).toEqual({ unit: unitId, unitName: "Infrastructure", requisition: "REQ-00418" });
+  await expect(page.getByRole("checkbox", { name: "Source line 1 of REQ-00418" })).toBeChecked();
+});

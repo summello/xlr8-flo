@@ -16,6 +16,7 @@ export const ROUTE_PATHS = [
   "/vendors/new",
   "/sourcing",
   "/sourcing/rfqs",
+  "/sourcing/rfqs/new",
   "/purchase-orders",
   "/assets",
   "/help/keyboard",

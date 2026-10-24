@@ -55,7 +55,7 @@ async function stubRfqs(page: Page, { canEdit = true, bounced = false, refuseSer
   return state;
 }
 
-const FORBIDDEN = ["Bids", "Record Bid", "Evaluators", "New RFQ", "Start RFQ", "Edit", "Amend", "Cancel RFQ", "Open Comparison", "View Award"];
+const FORBIDDEN = ["Bids", "Record Bid", "Evaluators", "Start RFQ", "Edit", "Amend", "Cancel RFQ", "Open Comparison", "View Award"];
 
 test("tabs and counts, open an RFQ, extend its deadline and see the new version unsent", async ({ page }) => {
   const state = await stubRfqs(page);
@@ -134,6 +134,13 @@ test("a bounce shows Change Contact to someone who can edit", async ({ page }) =
   await stubRfqs(page, { bounced: true });
   await page.goto(`/sourcing/rfqs/${rfqId}`);
   await expect(page.getByRole("button", { name: /Change Contact/ })).toBeVisible();
+});
+
+test("/sourcing/rfqs shows New RFQ and it lands on the new page", async ({ page }) => {
+  await stubRfqs(page);
+  await page.goto("/sourcing/rfqs");
+  await page.getByRole("link", { name: "New RFQ", exact: true }).click();
+  await expect(page).toHaveURL("/sourcing/rfqs/new");
 });
 
 test("nothing owned by a later story is in the DOM", async ({ page }) => {

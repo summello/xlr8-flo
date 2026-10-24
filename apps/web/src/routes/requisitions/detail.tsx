@@ -1,4 +1,4 @@
-import { ArrowRight, NotePencil, PencilSimple, Trash } from "@phosphor-icons/react";
+import { ArrowRight, FileText, NotePencil, PencilSimple, Trash } from "@phosphor-icons/react";
 import { useState } from "react";
 import { apiClient } from "../../api/client";
 import StatusPill from "../../components/status/StatusPill";
@@ -76,6 +76,10 @@ export default function RequisitionDetail({ id, navigate, onLoaded }: { id: stri
         {row.status === "draft" && !held && can("withdrawn")?.allowed && <button type="button" className="req-destructive" onClick={() => void discard()}><Trash aria-hidden="true" weight="regular" />Discard draft</button>}
         {withdrawReady && (row.status !== "draft" || held) && can("withdrawn")?.allowed && <WithdrawDialog row={row} mode="withdraw" approvers={approvers} onDone={next => changed(next, "Requisition withdrawn.")} onStale={main.reload} />}
         {row.status === "sourcing_in_progress" && (!row.amendment || row.amendment.status === "draft") && <a className="req-link-button" href={`/requisitions/${id}/amend`} onClick={e => { e.preventDefault(); navigate(`/requisitions/${id}/amend`); }}><NotePencil aria-hidden="true" weight="regular" />{row.amendment ? "Continue amendment" : "Amend"}</a>}
+        {row.status === "sourcing_in_progress" && row.amendment?.status !== "pending" && (() => {
+          const href = `/sourcing/rfqs/new?unit=${encodeURIComponent(row.bu_id)}${row.bu_name ? `&unitName=${encodeURIComponent(row.bu_name)}` : ""}&requisition=${encodeURIComponent(row.number)}`;
+          return <a className="req-link-button" href={href} onClick={e => { e.preventDefault(); navigate(href); }}><FileText aria-hidden="true" weight="regular" />Start RFQ</a>;
+        })()}
         {row.amendment?.status === "pending" && <p className="req-pill" data-tone="info">Amendment pending approval</p>}
         {can("cancelled")?.allowed && <WithdrawDialog row={row} mode="cancel" approvers={approvers} onDone={next => changed(next, "Requisition cancelled.")} onStale={main.reload} />}
       </div>

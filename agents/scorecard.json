@@ -5223,6 +5223,65 @@
         },
         "gate_s": 2
       }
+    },
+    {
+      "story": "E12-S12",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "b9ecde7f-9be6-48ce-88e7-034271f7a0f5",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S12",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a16e30-d195-7833-a9a7-1d21aea8ead5",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Added /sourcing/rfqs/new: a business-unit-scoped line picker with locale quantities, an at-field open-quantity guard, 409 mapping, and a stable Idempotency-Key with one in-flight create. New RFQ and Start RFQ links added; no API change.",
+      "title": "New RFQ from approved lines: line picker with the open-quantity guard",
+      "durations": {
+        "wall_s": 5425,
+        "author_s": 4673,
+        "review_s": {
+          "codex": 20
+        },
+        "gate_s": 0
+      }
     }
   ]
 }
