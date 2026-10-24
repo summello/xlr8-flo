@@ -6,6 +6,7 @@ import Card from "../../../components/sourcing/Card";
 import ChangeContactDialog from "../../../components/sourcing/ChangeContactDialog";
 import RfqHeaderActions from "../../../components/sourcing/RfqHeaderActions";
 import { LIFECYCLE, relativeDeadline, wallClock, type Rfq, type RfqVersion } from "../../../components/sourcing/api";
+import Person from "../../../components/ui/Person";
 import { failure, formatDateTime, label } from "../../../components/requisitions/api";
 import { useLoad } from "../../../components/requisitions/useLoad";
 import "../../../styles/projects.css";
@@ -63,7 +64,7 @@ export default function RfqDetail({ id, navigate }: { id: string; navigate: (hre
   const closes = wallClock(r.deadline_at, r.deadline_tz ?? "UTC");
   return <section className="req-page vendor-profile" aria-label="RFQ detail">
     <header className="vendor-head">
-      <div><h2 className="vendor-name">{r.number} · {r.title}</h2><p className="req-sub">Owner {r.owner_email} · Deadline {closes.date} {closes.time} {r.deadline_tz ?? "UTC"} ({relativeDeadline(r.deadline_at)}) · Version {r.version}</p></div>
+      <div><h2 className="vendor-name">{r.number} · {r.title}</h2><p className="req-sub">Owner <Person name={r.owner_name} email={r.owner_email} /> · Deadline {closes.date} {closes.time} {r.deadline_tz ?? "UTC"} ({relativeDeadline(r.deadline_at)}) · Version {r.version}</p></div>
       <StatusPill docType="rfq" status={r.status} />
       <RfqHeaderActions rfq={r} onChanged={changed} />
     </header>
@@ -82,7 +83,7 @@ export default function RfqDetail({ id, navigate }: { id: string; navigate: (hre
         </table>
       </Card>
       <Card title="Versions" load={versions}>
-        {(versions.data ?? []).length === 0 ? <p>No version has been published yet.</p> : <ul className="vendor-list-plain">{[...(versions.data ?? [])].reverse().map(v => <li key={v.version}><strong>Version {v.version}</strong><span className="req-sub">{v.published_by_email}, {formatDateTime(v.published_at)}{v.reason ? `: ${v.reason}` : ""}</span><Diff version={v} rfq={r} /></li>)}</ul>}
+        {(versions.data ?? []).length === 0 ? <p>No version has been published yet.</p> : <ul className="vendor-list-plain">{[...(versions.data ?? [])].reverse().map(v => <li key={v.version}><strong>Version {v.version}</strong><span className="req-sub"><Person name={v.published_by_name} email={v.published_by_email} />, {formatDateTime(v.published_at)}{v.reason ? `: ${v.reason}` : ""}</span><Diff version={v} rfq={r} /></li>)}</ul>}
       </Card>
       <Card title="Invitees" load={rfq}>
         {(r.invitees ?? []).length === 0 ? <p>No vendors are invited yet.</p> : (r.invitees ?? []).map(i => {
@@ -98,7 +99,7 @@ export default function RfqDetail({ id, navigate }: { id: string; navigate: (hre
         })}
       </Card>
       <Card title="History" load={history}>
-        {(history.data ?? []).length === 0 ? <p>No events yet.</p> : <ul className="vendor-list-plain">{(history.data ?? []).map((e, n) => <li key={`${e.at}-${n}`}><strong>{label(e.action.replace(/^rfq\./, "").replaceAll(".", " "))}</strong><span className="req-sub">{e.actor_email ?? "System"}, {formatDateTime(e.at)}{e.reason ? `: ${e.reason}` : ""}</span></li>)}</ul>}
+        {(history.data ?? []).length === 0 ? <p>No events yet.</p> : <ul className="vendor-list-plain">{(history.data ?? []).map((e, n) => <li key={`${e.at}-${n}`}><strong>{label(e.action.replace(/^rfq\./, "").replaceAll(".", " "))}</strong><span className="req-sub">{e.actor_email ? <Person name={e.actor_name} email={e.actor_email} /> : "System"}, {formatDateTime(e.at)}{e.reason ? `: ${e.reason}` : ""}</span></li>)}</ul>}
       </Card>
       <Card title="Linked Records" load={rfq}>
         <ul className="vendor-list-plain">{requisitions.map(([reqId, number]) => <li key={reqId}><a href={`/requisitions/${reqId}`} onClick={e => { e.preventDefault(); navigate(`/requisitions/${reqId}`); }}>{number}</a></li>)}</ul>

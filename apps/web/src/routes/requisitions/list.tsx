@@ -6,6 +6,7 @@ import DataGrid, { type GridPage } from "../../components/grid/DataGrid";
 import { GRID_FEATURES } from "../../components/grid/config";
 import StatusPill from "../../components/status/StatusPill";
 import Money from "../../components/ui/Money";
+import Person from "../../components/ui/Person";
 import { failure, formatDate, label, statuses, type LookupOption, type Requisition, type RequisitionStatus } from "../../components/requisitions/api";
 import type { GridQuery } from "../../lib/grid-params";
 import "../../styles/projects.css";
@@ -83,7 +84,7 @@ export default function RequisitionList({ navigate }: { navigate: (href: string)
   };
   const columns = useMemo(() => helper.columns([
     helper.accessor("number", { header: "Number", meta: { label: "Number" }, cell: ({ row }) => <a className="numeric" href={`/requisitions/${row.original.id}`} onClick={e => { e.preventDefault(); navigate(`/requisitions/${row.original.id}`); }}>{row.original.number}</a> }),
-    helper.accessor("title", { header: "Title", meta: { label: "Title" }, cell: ({ row }) => <span className="req-title-cell"><span>{row.original.title}</span><span className="req-sub">{row.original.requester_email}</span></span> }),
+    helper.accessor("title", { header: "Title", meta: { label: "Title" }, cell: ({ row }) => <span className="req-title-cell"><span>{row.original.title}</span><span className="req-sub"><Person name={row.original.requester_name} email={row.original.requester_email} /></span></span> }),
     helper.accessor("project_name", { header: "Project", meta: { label: "Project" }, enableSorting: false, cell: ({ row }) => row.original.project_name ? `${row.original.project_number} ${row.original.project_name}` : "Project Request" }),
     helper.accessor("estimate", { header: "Amount", meta: { label: "Amount", numeric: true }, cell: ({ row }) => <Money zero="value" value={row.original.estimate} currency={row.original.currency} /> }),
     helper.accessor("status", { header: "Status", meta: { label: "Status" }, enableSorting: false, cell: ({ getValue }) => <StatusPill docType="requisition" status={getValue()} /> }),

@@ -125,7 +125,7 @@ export default function ProjectForm({ onCreated }: { onCreated: (id: string) => 
 . The server checks the budget against it when you create the project and again when it is approved.</>
         : "Checking the main project's available funds…"}</p>}
     <Field id="project-sponsor_ids" label="Sponsors" help="Choose one to ten people who sponsor the project. Search by email and add each person. Required to submit." error={errors.find(e => e.fieldId === "project-sponsor_ids")?.message}>
-      <Picker blocked={noUnit} load={loadPeople} selected={sponsors} max={10} noun="sponsors" onChange={setSponsors} />
+      <Picker blocked={noUnit} load={loadPeople} selected={sponsors} max={10} noun="sponsors" person onChange={setSponsors} />
     </Field>
     <button className="form-submit" disabled={busy} type="submit">{busy ? "Creating project…" : "Create project"}</button>
   </form>;

@@ -6,6 +6,7 @@ import DataGrid, { type GridPage } from "../../../components/grid/DataGrid";
 import { GRID_FEATURES } from "../../../components/grid/config";
 import StatusPill from "../../../components/status/StatusPill";
 import { MAX_INVITEES, relativeDeadline, type RfqCounts, type RfqListRow } from "../../../components/sourcing/api";
+import Person from "../../../components/ui/Person";
 import { failure, formatDate } from "../../../components/requisitions/api";
 import type { GridQuery } from "../../../lib/grid-params";
 import "../../../styles/projects.css";
@@ -51,7 +52,7 @@ export default function RfqList({ navigate }: { navigate: (href: string) => void
     helper.accessor("status", { header: "Status", meta: { label: "Status" }, enableSorting: false, cell: ({ getValue }) => <StatusPill docType="rfq" status={getValue()} /> }),
     helper.accessor("invitee_count", { header: "Invited", meta: { label: "Invited" }, enableSorting: false, cell: ({ getValue }) => `${getValue()} of ${MAX_INVITEES}` }),
     helper.accessor("deadline_at", { header: "Deadline", meta: { label: "Deadline" }, enableSorting: false, cell: ({ getValue }) => <span>{formatDate(getValue())}<span className="req-sub">{relativeDeadline(getValue())}</span></span> }),
-    helper.accessor("owner_email", { header: "Owner", meta: { label: "Owner" }, enableSorting: false }),
+    helper.accessor("owner_email", { header: "Owner", meta: { label: "Owner" }, enableSorting: false, cell: ({ row }) => <Person name={row.original.owner_name} email={row.original.owner_email} /> }),
   ]), [navigate]);
   const loadPage = useCallback(async (query: GridQuery, signal: AbortSignal): Promise<GridPage<RfqListRow>> => {
     const { data, error } = await apiClient.GET("/api/v1/sourcing/rfqs", { signal, params: { query: {

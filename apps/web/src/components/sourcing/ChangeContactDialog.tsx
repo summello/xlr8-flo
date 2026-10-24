@@ -1,4 +1,5 @@
 import * as Dialog from "@radix-ui/react-dialog";
+import Person from "../ui/Person";
 import { UserSwitch, X } from "@phosphor-icons/react";
 import { useRef, useState } from "react";
 import { apiClient } from "../../api/client";
@@ -50,7 +51,7 @@ export default function ChangeContactDialog({ rfq, invitee, onDone }: { rfq: Rfq
         <Dialog.Description>The email to {name} bounced. Choose who should receive the RFQ; it is sent again to them.</Dialog.Description>
         {contacts.error ? <div role="alert"><p>{contacts.error}</p><button type="button" onClick={contacts.reload}>Try again</button></div>
           : !contacts.data ? <p className="req-skeleton req-skeleton-short" role="status" aria-label="Loading contacts" />
-          : <fieldset className="perf-field"><legend>Send To</legend>{contacts.data.map(c => <label key={c.id}><input type="checkbox" checked={chosen.includes(c.id)} onChange={e => setChosen(list => e.target.checked ? [...list, c.id] : list.filter(id => id !== c.id))} /> {c.name} <span className="req-sub">{c.email}</span></label>)}</fieldset>}
+          : <fieldset className="perf-field"><legend>Send To</legend>{contacts.data.map(c => <label key={c.id}><input type="checkbox" checked={chosen.includes(c.id)} onChange={e => setChosen(list => e.target.checked ? [...list, c.id] : list.filter(id => id !== c.id))} /> <Person name={c.name} email={c.email} /></label>)}</fieldset>}
         {message && <p role="alert" className="field-error">{message} Your choice is kept.</p>}
         <div className="req-actions">
           <button type="button" ref={keep} onClick={() => setOpen(false)} disabled={busy}>Keep Current Contact</button>

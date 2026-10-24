@@ -27,7 +27,7 @@ export async function stubBuilder(page: Page) {
                 body = { detail: "Approver service is unavailable." };
             }
             else
-                body = { rows: [{ user_id: approverId, email: "approver@example.test" }] };
+                body = { rows: [{ user_id: approverId, email: "approver@example.test", name: "Ada Lovelace" }, { user_id: "cccccccc-0000-4000-8000-000000000009", email: "unnamed@example.test", name: null }] };
         }
         else if (path === "/api/v1/org/units")
             body = { rows: [{ id: approverId }], next_cursor: null };

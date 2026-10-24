@@ -5348,6 +5348,65 @@
         },
         "gate_s": 2
       }
+    },
+    {
+      "story": "E22-S09",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "fd9605ce-e344-4413-ab8d-28dc6a0b96fc",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S09",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a16ecc-63f3-7850-83bc-f208ddf91742",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Added a Person component and personLabel helper, and moved every site in the packet's inventory from a bare email to name-with-email. A vitest adoption guard fails when a new email reference skips them; fixtures and e2e now cover named and unnamed people.",
+      "title": "Show people by name, with the email as secondary text",
+      "durations": {
+        "wall_s": 17557,
+        "author_s": 13715,
+        "review_s": {
+          "codex": 16
+        },
+        "gate_s": 0
+      }
     }
   ]
 }

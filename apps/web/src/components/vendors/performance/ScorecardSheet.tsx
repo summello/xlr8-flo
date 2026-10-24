@@ -2,6 +2,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "@phosphor-icons/react";
 import { Fragment, useState } from "react";
 import { apiClient } from "../../../api/client";
+import Person, { personLabel } from "../../ui/Person";
 import { restoreFocus } from "../../../lib/focus";
 import { failure, formatDate, formatDateTime } from "../../requisitions/api";
 import { useLoad } from "../../requisitions/useLoad";
@@ -67,10 +68,10 @@ export default function ScorecardSheet({ vendorId, categories, opener, onClose, 
                     <span className="req-sub" aria-hidden="true">Replaced</span>{link(s.superseded_by, "See adjustment")}
                   </> : <>{s.score}{s.supersedes && <span className="req-sub">Adjustment {link(s.supersedes, "See original")}</span>}</>}
                 </td>
-                <td data-label="Rationale">{s.rationale}<span className="req-sub">{s.scored_by_email}, {formatDateTime(s.scored_at)}</span>
+                <td data-label="Rationale">{s.rationale}<span className="req-sub"><Person name={s.scored_by_name} email={s.scored_by_email} />, {formatDateTime(s.scored_at)}</span>
                   {s.disputes.map(d => <p key={d.id} className="perf-dispute">
-                    Dispute by {d.raised_by_email}, {formatDate(d.raised_at)}: {d.reason}
-                    <span className="req-sub">{d.resolution ? `${d.resolution === "upheld" ? "Upheld" : "Dismissed"} by ${d.resolved_by_email}, ${formatDate(d.resolved_at)}: ${d.resolution_note}` : "Open, waiting for a decision"}</span>
+                    Dispute by <Person name={d.raised_by_name} email={d.raised_by_email} />, {formatDate(d.raised_at)}: {d.reason}
+                    <span className="req-sub">{d.resolution ? `${d.resolution === "upheld" ? "Upheld" : "Dismissed"} by ${personLabel(d.resolved_by_name, d.resolved_by_email ?? "")}, ${formatDate(d.resolved_at)}: ${d.resolution_note}` : "Open, waiting for a decision"}</span>
                   </p>)}
                 </td>
                 <td>{s.superseded_by ? null : open

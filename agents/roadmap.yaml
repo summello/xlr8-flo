@@ -2335,7 +2335,7 @@ epics:
           - UX-007
         dep:
           - E22-S07
-        st: in_progress
+        st: done
       - id: E22-S10
         t: 'Approval Availability: set, list and revoke an out-of-office delegation'
         k: ui

@@ -115,7 +115,7 @@ export async function stubRequisitions(page: Page, initial: { row?: Req; lines?:
       const est = state.row.estimate;
       const after = money4(toCents4(state.available) - (toCents4(est) - toCents4(held)));
       return send({ ready: true, problems: [], funding: { available: state.available, this_requisition: est, already_reserved: held, available_after: after, currency: "USD", advisory: true },
-        route: { path_edge_indices: [], separation_of_duty_applied: true, workflow_version_id: null, workflow_version: 1, problems: [], steps: [{ node_id: "n1", label: "Manager review", mode: "any", quorum: null, rule: "Any one", approver_emails: ["amara@example.test"], excluded: [], state: "upcoming", due_at: null, reached_via: null }] } });
+        route: { path_edge_indices: [], separation_of_duty_applied: true, workflow_version_id: null, workflow_version: 1, problems: [], steps: [{ node_id: "n1", label: "Manager review", mode: "any", quorum: null, rule: "Any one", approver_emails: ["amara@example.test"], approver_names: ["Amara Okafor"], excluded: [], state: "upcoming", due_at: null, reached_via: null }] } });
     }
     if (path === `/api/v1/requisitions/${reqId}/transitions/available`) {
       const status = state.row.status;
@@ -141,9 +141,9 @@ export async function stubRequisitions(page: Page, initial: { row?: Req; lines?:
     if (path === `/api/v1/requisitions/${reqId}/links`) return state.linksFail ? problem("Links unavailable.", 503) : send({ nodes: state.links, edges: [], partial: false });
     if (path === `/api/v1/documents/requisition/${reqId}/attachments`) return method === "GET" ? send(state.attachments) : problem("Not supported in this fixture.", 400);
     if (path === `/api/v1/approvals/instances/${instanceId}/decisions`) return send(state.decisions);
-    if (path === `/api/v1/approvals/instances/${instanceId}`) return send({ separation_of_duty_applied: true, id: instanceId, document_type: "requisition", document_id: reqId, workflow_version: 1, workflow_version_id: instanceId, document_version: 2, status: "running", requester_email: "dev@example.test", requester_name: null, current_node_id: "n1",
-      route: [{ node_id: "n1", label: "Manager review", mode: "any", quorum: null, rule: "Any one", approver_emails: ["amara@example.test"], excluded: [], state: "open", due_at: null, reached_via: null }],
-      tasks: [{ id: instanceId, node_id: "n1", label: "Manager review", mode: "any", quorum: null, status: "open", outcome: null, approver_emails: ["amara@example.test"], due_at: null, completed_at: null }], started_at: "2026-10-02T00:00:00Z", finished_at: null });
+    if (path === `/api/v1/approvals/instances/${instanceId}`) return send({ separation_of_duty_applied: true, id: instanceId, document_type: "requisition", document_id: reqId, workflow_version: 1, workflow_version_id: instanceId, document_version: 2, status: "running", requester_email: "dev@example.test", requester_name: state.row?.requester_name ?? null, current_node_id: "n1",
+      route: [{ node_id: "n1", label: "Manager review", mode: "any", quorum: null, rule: "Any one", approver_emails: ["amara@example.test"], approver_names: ["Amara Okafor"], excluded: [], state: "open", due_at: null, reached_via: null }],
+      tasks: [{ id: instanceId, node_id: "n1", label: "Manager review", mode: "any", quorum: null, status: "open", outcome: null, approver_emails: ["amara@example.test"], approver_names: ["Amara Okafor"], due_at: null, completed_at: null }], started_at: "2026-10-02T00:00:00Z", finished_at: null });
     return problem("Not found.", 404);
   });
   return state;

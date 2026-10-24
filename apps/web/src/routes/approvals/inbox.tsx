@@ -18,6 +18,7 @@ import {
   type Tab,
 } from "../../components/approvals/inbox-model";
 import Money from "../../components/ui/Money";
+import Person from "../../components/ui/Person";
 import "../../styles/approvals.css";
 
 type Sort = "due" | "amount" | "decided";
@@ -144,7 +145,7 @@ export default function ApprovalInbox({ navigate }: { navigate: (href: string) =
       {away && (
         <p role="status" className="appr-note">
           <Info aria-hidden="true" />
-          {away.state === "active" ? "You are out of office." : "Your out-of-office is scheduled."} Approvals go to {away.delegate_email} until <time dateTime={away.ends_at}>{formatDate(away.ends_at)}</time>.{" "}
+          {away.state === "active" ? "You are out of office." : "Your out-of-office is scheduled."} Approvals go to <Person name={away.delegate_name} email={away.delegate_email} /> until <time dateTime={away.ends_at}>{formatDate(away.ends_at)}</time>.{" "}
           <a href="/approvals/availability" onClick={(event) => { event.preventDefault(); navigate("/approvals/availability"); }}>Change it</a>
         </p>
       )}
@@ -225,7 +226,7 @@ export default function ApprovalInbox({ navigate }: { navigate: (href: string) =
                           <button type="button" className="appr-doc" onClick={(event) => { opener.current = event.currentTarget; setOpen(row); }}>
                             <span className="appr-number">{row.number}</span> {row.title}
                           </button>
-                          <span className="appr-meta">{row.requester_email} · v{row.document_version}</span>
+                          <span className="appr-meta"><Person name={row.requester_name} email={row.requester_email} /> · v{row.document_version}</span>
                         </th>
                         <td className="appr-opt" data-label="Type">{TYPE_LABELS[row.document_type] ?? row.document_type}</td>
                         <td className="appr-num" data-label="Amount">{row.amount ? <Money value={row.amount.amount} currency={row.amount.currency} /> : "Not applicable"}</td>
@@ -240,7 +241,7 @@ export default function ApprovalInbox({ navigate }: { navigate: (href: string) =
                         </td>
                         <td data-label="Status">
                           <InboxStatus word={row.status_word} />
-                          {row.on_behalf_of_email && <span className="appr-meta">{tab === "completed" ? "On behalf of" : "Covering"} {row.on_behalf_of_email}</span>}
+                          {row.on_behalf_of_email && <span className="appr-meta">{tab === "completed" ? "On behalf of" : "Covering"} <Person name={row.on_behalf_of_name} email={row.on_behalf_of_email} /></span>}
                         </td>
                       </tr>
                     );

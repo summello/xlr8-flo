@@ -24,7 +24,7 @@ test("a justification-only edit is not material and returns to the same step", a
   await send(page).click();
   const done = page.getByRole("status").filter({ hasText: "Resubmitted as Version 2" });
   await expect(done).toBeFocused();
-  await expect(done).toContainText("Now with amara@example.test at Manager review");
+  await expect(done).toContainText("Now with Amara Okafor (amara@example.test) at Manager review");
   await expect(done.getByRole("link", { name: "Back to Requisition" })).toBeVisible();
   expect(state.calls.find(c => c.method === "POST")?.body).toMatchObject({ to: "approval_pending" });
 });

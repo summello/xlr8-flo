@@ -45,7 +45,7 @@ test("create with an item and a catalogue line, save, submit, then see the detai
   expect(page.url()).toContain(`/requisitions/${reqId}/edit`);
   await page.getByRole("button", { name: "Submit for approval" }).click();
   await expect(heading(page, "REQ-00418 Submitted for Approval")).toBeVisible();
-  await expect(page.getByText("Routed to amara@example.test, step 1 of 1.")).toBeVisible();
+  await expect(page.getByText("Routed to Amara Okafor (amara@example.test), step 1 of 1.")).toBeVisible();
   const submit = state.calls.find(c => c.path.endsWith("/transitions") && c.method === "POST")!;
   expect(submit.body).toEqual({ to: "approval_pending" });
   expect(submit.headers["idempotency-key"]).toBeTruthy();
@@ -733,6 +733,7 @@ test("375px detail: no sideways scroll", async ({ page }) => {
 /* ---- axe, both themes ---- */
 for (const theme of ["light", "dark"] as const) {
   test(`axe is clean on the list, create, detail, and the open withdraw dialog in ${theme}`, async ({ page }) => {
+    test.slow(); // four axe scans: ~47 s on a loaded dev machine, over the 30 s default
     await page.addInitScript(t => localStorage.setItem("xlr8flo.theme", t), theme);
     const state = await stubRequisitions(page, pending());
     state.list = [requisition()];
@@ -743,6 +744,27 @@ for (const theme of ["light", "dark"] as const) {
     await page.goto(`/requisitions/${reqId}`); await expect(page.locator("#request-title")).toBeVisible(); await scan();
     await page.getByRole("button", { name: "Withdraw requisition" }).click();
     await expect(page.getByRole("alertdialog")).toBeVisible(); await scan();
+  });
+}
+
+test("detail shows the requester by name with the email beside it, and the email alone when unnamed", async ({ page }) => {
+  await stubRequisitions(page, { row: requisition({ requester_name: "Ada Lovelace" }), lines: [lineRow(1)] });
+  await page.goto(`/requisitions/${reqId}`);
+  await expect(page.locator(".req-heading .person-name")).toHaveText("Ada Lovelace");
+  await expect(page.locator(".req-heading .person-email")).toHaveText("dev@example.test");
+  await stubRequisitions(page, { row: requisition(), lines: [lineRow(1)] });
+  await page.goto(`/requisitions/${reqId}`);
+  await expect(page.locator(".req-heading .person")).toHaveAttribute("title", "dev@example.test");
+  await expect(page.locator(".req-heading .person-name")).toHaveCount(0);
+});
+
+for (const theme of ["light", "dark"] as const) {
+  test(`axe is clean on the detail with a named requester in ${theme}`, async ({ page }) => {
+    await page.addInitScript(t => localStorage.setItem("xlr8flo.theme", t), theme);
+    await stubRequisitions(page, { row: requisition({ requester_name: "Ada Lovelace" }), lines: [lineRow(1)] });
+    await page.goto(`/requisitions/${reqId}`);
+    await expect(page.locator(".req-heading .person-name")).toBeVisible();
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   });
 }
 

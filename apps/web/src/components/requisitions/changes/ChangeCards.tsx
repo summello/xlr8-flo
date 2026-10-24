@@ -1,6 +1,7 @@
 import { ArrowDown, ArrowUp, ArrowsLeftRight, Equals, MinusCircle, PencilSimple, PlusCircle, WarningCircle } from "@phosphor-icons/react";
 import { useEffect, useRef } from "react";
 import Money from "../../ui/Money";
+import Person from "../../ui/Person";
 import { formatDate, formatDateTime, label } from "../api";
 import { qty } from "../model";
 import { CHANGE_LABEL, actorOf, consequence, deltaText, outcomeLabel, type ChangeRow, type ChangeSet, type Outcome, type Revision } from "./model";
@@ -68,13 +69,18 @@ export function FundingEffect({ set, retry }: { set: ChangeSet; retry: () => voi
   </section>;
 }
 
-export function Versions({ revisions, requester }: { revisions: readonly Revision[]; requester: { id: string; email: string } }) {
+function Actor({ id, requester }: { id: string; requester: { id: string; email: string; name: string | null } }) {
+  const a = actorOf(id, requester);
+  return typeof a === "string" ? <>{a}</> : <Person name={a.name} email={a.email} />;
+}
+
+export function Versions({ revisions, requester }: { revisions: readonly Revision[]; requester: { id: string; email: string; name: string | null } }) {
   const sorted = [...revisions].sort((a, b) => b.revision_no - a.revision_no);
   return <section className="req-card" aria-labelledby="versions-title">
     <header className="req-card-head"><h2 id="versions-title">Versions</h2></header>
     {sorted.length === 0 ? <p>No versions yet.</p> : <ol className="req-history">{sorted.map(r => <li key={r.revision_no}>
       <strong>Version {r.revision_no} · {label(r.kind)} · {label(r.status)}</strong>
-      <span>{actorOf(r.created_by, requester)} · {formatDateTime(r.created_at)}{r.note ? <>: <q>{r.note}</q></> : ""}</span>
+      <span><Actor id={r.created_by} requester={requester} /> · {formatDateTime(r.created_at)}{r.note ? <>: <q>{r.note}</q></> : ""}</span>
     </li>)}</ol>}
   </section>;
 }

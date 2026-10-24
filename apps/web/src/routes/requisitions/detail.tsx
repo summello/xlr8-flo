@@ -1,6 +1,7 @@
 import { ArrowRight, FileText, NotePencil, PencilSimple, Trash } from "@phosphor-icons/react";
 import { useState } from "react";
 import { apiClient } from "../../api/client";
+import Person, { personLabel } from "../../components/ui/Person";
 import StatusPill from "../../components/status/StatusPill";
 import ExpiredCodeBadge from "../../components/codes/ExpiredCodeBadge";
 import SubstituteCodes from "../../components/codes/SubstituteCodes";
@@ -55,7 +56,7 @@ export default function RequisitionDetail({ id, navigate, onLoaded }: { id: stri
   const returned = row.status === "draft" && row.approval?.status === "returned";
   const held = row.reservation != null && row.reservation.remaining !== "0.0000";
   const returnDecision = returned ? [...(decisions.data ?? [])].reverse().find(d => d.outcome === "return") : undefined;
-  const approvers = instance.data?.tasks.filter(t => t.status === "open").flatMap(t => t.approver_emails) ?? [];
+  const approvers = instance.data?.tasks.filter(t => t.status === "open").flatMap(t => t.approver_emails.map((e, i) => personLabel(t.approver_names[i], e))) ?? [];
   const withdrawReady = ["draft", "approval_pending", "sourcing_in_progress"].includes(row.status);
   const withdrawBlocked = withdrawReady && available.data && !can("withdrawn")?.allowed ? can("withdrawn")?.blocked_reasons[0] : undefined;
 
@@ -67,7 +68,7 @@ export default function RequisitionDetail({ id, navigate, onLoaded }: { id: stri
 
   return <section className="req-page req-detail" aria-label={row.standalone ? "Project Request" : "Requisition"}>
     <header className="req-heading">
-      <p>{row.number} · {row.project_name ?? "Project Request"} · requested by {row.requester_email}</p>
+      <p>{row.number} · {row.project_name ?? "Project Request"} · requested by <Person name={row.requester_name} email={row.requester_email} /></p>
       <StatusPill docType="requisition" status={row.status} />
       {row.codes_expired && <ExpiredCodeBadge />}
       <div className="req-actions">
@@ -89,7 +90,7 @@ export default function RequisitionDetail({ id, navigate, onLoaded }: { id: stri
     {toast && <p className="req-toast" role="status">{toast}</p>}
     {returned && <section className="req-banner" aria-labelledby="returned-title">
       <h2 id="returned-title">Returned for Changes</h2>
-      {returnDecision ? <p>{returnDecision.actor_email} returned it on {formatDateTime(returnDecision.decided_at)}{returnDecision.comment ? <>: <q>{returnDecision.comment}</q></> : "."}</p> : <p>An approver returned it for changes.</p>}
+      {returnDecision ? <p><Person name={returnDecision.actor_name} email={returnDecision.actor_email} /> returned it on {formatDateTime(returnDecision.decided_at)}{returnDecision.comment ? <>: <q>{returnDecision.comment}</q></> : "."}</p> : <p>An approver returned it for changes.</p>}
       <p>The reservation is held while you amend.</p>
       <div className="req-actions">
         <a className="req-link-button" href={`/requisitions/${id}/edit`} onClick={e => { e.preventDefault(); navigate(`/requisitions/${id}/edit`); }}>Edit and Resubmit</a>

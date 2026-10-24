@@ -1,5 +1,6 @@
 import { CheckCircle, Circle, Info, Warning, XCircle } from "@phosphor-icons/react";
 import Money from "../ui/Money";
+import Person from "../ui/Person";
 import { qty } from "./model";
 import { formatDate, formatDateTime, label, type Decision, type Linked, type Requisition, type RequisitionLine, type StatusEvent } from "./api";
 
@@ -52,9 +53,9 @@ export function HistoryCard({ events, decisions }: { events: StatusEvent[]; deci
   const byId = new Map(decisions.map(d => [d.id, d]));
   const used = new Set(events.map(e => e.decision_id).filter(Boolean));
   const entries = [
-    ...events.map(e => ({ at: e.at, who: e.system ? "System" : e.actor_email ?? "System",
+    ...events.map(e => ({ at: e.at, who: e.system || !e.actor_email ? "System" : <Person name={e.actor_name} email={e.actor_email} />,
       what: `${label(e.from_status)} to ${label(e.to_status)}`, note: e.reason ?? (e.decision_id ? byId.get(e.decision_id)?.comment ?? null : null) })),
-    ...decisions.filter(d => !used.has(d.id)).map(d => ({ at: d.decided_at, who: d.actor_email, what: `Decision: ${d.outcome}`, note: d.comment })),
+    ...decisions.filter(d => !used.has(d.id)).map(d => ({ at: d.decided_at, who: <Person name={d.actor_name} email={d.actor_email} />, what: `Decision: ${d.outcome}`, note: d.comment })),
   ].sort((a, b) => b.at.localeCompare(a.at));
   return <section className="req-card" aria-labelledby="history-title">
     <header className="req-card-head"><h2 id="history-title">History</h2></header>

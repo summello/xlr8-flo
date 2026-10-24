@@ -30,7 +30,9 @@ test("tabs carry counts, the tab is in the URL and arrows, Home and End move bet
   await expect(page.getByRole("tab", { name: /Pending/ })).toBeFocused();
   await page.goto("/approvals?tab=completed");
   await expect(page.getByRole("tab", { name: /Completed/ })).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByText("On behalf of owner@example.test")).toBeVisible();
+  const behalf = page.locator(".appr-meta", { hasText: "On behalf of" });
+  await expect(behalf.locator(".person-name")).toHaveText("Grace Hopper");
+  await expect(behalf.locator(".person-email")).toHaveText("owner@example.test");
 });
 
 test("the total is the server's figure, overdue is in words, and sorting is on the server", async ({ page }) => {
@@ -109,7 +111,7 @@ test("a separation-of-duty exclusion is visible text, not a tooltip, and a close
   const fold = page.locator(".appr-fold");
   await expect(fold).toContainText("requester@example.test excluded: Requested this document, so cannot approve it");
   await expect(fold.getByText(/requester@example.test excluded/)).toBeVisible();
-  expect(await fold.locator("[title]").count()).toBe(0);
+  expect(await fold.locator("[title]:not(.person)").count()).toBe(0);
   await page.keyboard.press("Escape");
   state.closedInstance = true;
   await openPanel(page, /REQ-00402/);
@@ -423,3 +425,24 @@ test("at 1440 the footer is one right-aligned flex row", async ({ page }) => {
   const ys = (await footerButtons(page)).map((b) => Math.round(b.y));
   expect(new Set(ys).size).toBe(1);
 });
+
+test("people show by name with the email beside it, and the email alone when there is no name", async ({ page }) => {
+  await stubApprovals(page);
+  await open(page);
+  const named = page.getByRole("row", { name: /Press brake 1/ });
+  await expect(named.locator(".person-name")).toHaveText("Ada Lovelace");
+  await expect(named.locator(".person-email")).toHaveText("requester@example.test");
+  const unnamed = page.getByRole("row", { name: /Press brake 2/ });
+  await expect(unnamed.locator(".person-name")).toHaveCount(0);
+  await expect(unnamed.locator(".person")).toHaveAttribute("title", "requester@example.test");
+});
+
+for (const theme of ["light", "dark"] as const) {
+  test(`axe is clean on the inbox with named and unnamed people in ${theme}`, async ({ page }) => {
+    await page.addInitScript(t => localStorage.setItem("xlr8flo.theme", t), theme);
+    await stubApprovals(page);
+    await open(page);
+    await expect(page.locator(".person-name").first()).toBeVisible();
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  });
+}

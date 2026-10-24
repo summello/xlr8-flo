@@ -2,6 +2,7 @@ import { XCircle } from "@phosphor-icons/react";
 import { useEffect, useState, type ReactNode } from "react";
 import { apiClient } from "../../api/client";
 import StatusPill from "../../components/status/StatusPill";
+import Person from "../../components/ui/Person";
 import Signal from "../../components/ui/Signal";
 import DocumentSheet from "../../components/vendors/DocumentSheet";
 import VendorDialog, { type DialogKind } from "../../components/vendors/dialogs/VendorDialog";
@@ -90,11 +91,11 @@ export default function VendorDetail({ id, navigate }: { id: string; navigate: (
       {eligibility.data && <Eligibility eligibility={eligibility.data} variant="header" unitName={unit.data?.name} />}
       {actions.length > 0 && <div className="vendor-head-actions">{actions.map(a => <button key={a.kind} type="button" className={a.destructive ? "vendor-destructive" : undefined} onClick={() => setDialog(a.kind)}>{a.destructive && <XCircle aria-hidden="true" />}{a.text}</button>)}</div>}
     </header>
-    {pending && <p className="req-notice" role="status">{PENDING_NOUN[pending.kind]} requested by {pending.requested_by_me ? "you" : pending.requested_by_email}, awaiting approval.</p>}
+    {pending && <p className="req-notice" role="status">{PENDING_NOUN[pending.kind]} requested by {pending.requested_by_me ? "you" : <Person name={pending.requested_by_name} email={pending.requested_by_email} />}, awaiting approval.</p>}
     {v.status === "pending_approval" && <p className="req-notice" role="status">This vendor is waiting for approval. You can read it here; nothing can be changed until it is decided.</p>}
     <div className="req-grid-detail">
       <Card title="Profile" load={vendor}>
-        <dl className="vendor-facts"><dt>Created by</dt><dd>{v.created_by_email}</dd><dt>Created</dt><dd>{formatDateTime(v.created_at)}</dd><dt>Updated</dt><dd>{formatDateTime(v.updated_at)}</dd></dl>
+        <dl className="vendor-facts"><dt>Created by</dt><dd><Person name={v.created_by_name} email={v.created_by_email} /></dd><dt>Created</dt><dd>{formatDateTime(v.created_at)}</dd><dt>Updated</dt><dd>{formatDateTime(v.updated_at)}</dd></dl>
         {onboarding.data && <details><summary>Onboarding Record</summary>
           <p className="req-sub">Questionnaire version {onboarding.data.version_number}</p>
           {answered.length === 0 ? <p>No answers recorded.</p> : <dl className="vendor-facts">{onboarding.data.questions.map(q => <><dt key={`${q.key}-q`}>{q.prompt}</dt><dd key={`${q.key}-a`}>{String(onboarding.data!.answers[q.key] ?? "—")}</dd></>)}</dl>}
@@ -103,10 +104,10 @@ export default function VendorDetail({ id, navigate }: { id: string; navigate: (
       <Card title="Availability" load={vendor}>
         <p>{AVAILABILITY[v.availability]}</p>
         {(v.units ?? []).length > 0 && <ul>{(v.units ?? []).map(u => <li key={u.unit_id}>{u.unit_code}</li>)}</ul>}
-        {(v.disabled_in ?? []).map(d => <p key={d.unit_id} className="req-sub">Disabled in {d.unit_code} by {d.by_email} on {formatDate(d.at)}: {d.reason}</p>)}
+        {(v.disabled_in ?? []).map(d => <p key={d.unit_id} className="req-sub">Disabled in {d.unit_code} by <Person name={d.by_name} email={d.by_email} /> on {formatDate(d.at)}: {d.reason}</p>)}
       </Card>
       <Card title="Contacts" load={contacts}>
-        {(contacts.data ?? []).length === 0 ? <p>No contacts yet.</p> : <ul className="vendor-list-plain">{(contacts.data ?? []).map(c => <li key={c.id}><strong>{label(c.type)}</strong> <span>{c.name}</span><span className="req-sub">{c.email}{c.phone ? ` · ${c.phone}` : ""}</span></li>)}</ul>}
+        {(contacts.data ?? []).length === 0 ? <p>No contacts yet.</p> : <ul className="vendor-list-plain">{(contacts.data ?? []).map(c => <li key={c.id}><strong>{label(c.type)}</strong> <span><Person name={c.name} email={c.email} /></span>{c.phone && <span className="req-sub">{c.phone}</span>}</li>)}</ul>}
       </Card>
       <Card title="Tax and Banking" load={vendor}>
         <TaxBankingCard key={id} vendorId={id} masked={v.sensitive ?? {}} access={v.sensitive_access ?? { can_reveal: false, ask: "an administrator" }} onSaved={vendor.reload} />
@@ -129,7 +130,7 @@ export default function VendorDetail({ id, navigate }: { id: string; navigate: (
         {performance.data && <PerformanceCard performance={performance.data} onOpen={opener => setScorecard({ opener })} />}
       </Card>
       <Card title="History" load={changes}>
-        {(changes.data ?? []).length === 0 ? <p>No status changes yet.</p> : <ul className="vendor-list-plain">{(changes.data ?? []).map(c => <li key={c.id}><strong>{label(c.kind)}</strong> · {label(c.status)}<span className="req-sub">{c.requested_by_email}, {formatDateTime(c.requested_at)}{c.reason ? `: ${c.reason}` : ""}</span></li>)}</ul>}
+        {(changes.data ?? []).length === 0 ? <p>No status changes yet.</p> : <ul className="vendor-list-plain">{(changes.data ?? []).map(c => <li key={c.id}><strong>{label(c.kind)}</strong> · {label(c.status)}<span className="req-sub"><Person name={c.requested_by_name} email={c.requested_by_email} />, {formatDateTime(c.requested_at)}{c.reason ? `: ${c.reason}` : ""}</span></li>)}</ul>}
       </Card>
       <Card title="Linked Records" load={vendor}>
         <p>RFQs and purchase orders that use this vendor appear here. They keep the vendor as it was when they were made.</p>

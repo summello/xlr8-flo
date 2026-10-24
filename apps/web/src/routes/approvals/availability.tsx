@@ -13,10 +13,11 @@ import {
 } from "../../components/approvals/availability-model";
 import InboxStatus from "../../components/approvals/InboxStatus";
 import type { StatusTone } from "../../components/approvals/inbox-model";
+import Person, { personLabel } from "../../components/ui/Person";
 import "../../styles/approvals.css";
 
 type Delegation = components["schemas"]["DelegationRead"];
-type Person = components["schemas"]["PickerRow"];
+type Picked = components["schemas"]["PickerRow"];
 const STATE_WORDS: Record<Delegation["state"], string> = { active: "Active", scheduled: "Upcoming", ended: "Ended", revoked: "Revoked" };
 const STATE_TONES: Record<Delegation["state"], StatusTone> = { active: "success", scheduled: "info", ended: "neutral", revoked: "danger" };
 const blank: AvailabilityForm = { starts: "", ends: "", delegate: "", reason: "Out of office", covers: "all" };
@@ -32,7 +33,7 @@ export default function Availability({ navigate }: { navigate: (href: string) =>
   const [covering, setCovering] = useState<Delegation[]>([]);
   const [organization, setOrganization] = useState<Delegation[]>();
   const [loadFailed, setLoadFailed] = useState(false);
-  const [people, setPeople] = useState<Person[]>([]);
+  const [people, setPeople] = useState<Picked[]>([]);
   const [peopleFailed, setPeopleFailed] = useState(false);
   const [behalf, setBehalf] = useState<components["schemas"]["DecisionRead"][]>();
   const [behalfFailed, setBehalfFailed] = useState(false);
@@ -94,7 +95,7 @@ export default function Availability({ navigate }: { navigate: (href: string) =>
       });
       if (response.data) {
         setProblems([]);
-        setSaved(`Saved. Approvals pass to ${response.data.delegate_email}.`);
+        setSaved(`Saved. Approvals pass to ${personLabel(response.data.delegate_name, response.data.delegate_email)}.`);
         setForm(blank);
         key.current = crypto.randomUUID();
         setReload((n) => n + 1);
@@ -169,7 +170,7 @@ export default function Availability({ navigate }: { navigate: (href: string) =>
               <label htmlFor="avail-delegate">Pass Approvals To <span className="appr-tag">Required</span></label>
               <select id="avail-delegate" value={form.delegate} aria-invalid={fieldError("delegate") ? true : undefined} aria-describedby={fieldError("delegate") ? "avail-delegate-error" : "avail-delegate-hint"} onChange={(e) => set({ delegate: e.target.value })}>
                 <option value="">Choose a colleague</option>
-                {people.map((p) => <option key={p.user_id} value={p.user_id}>{p.email}</option>)}
+                {people.map((p) => <option key={p.user_id} value={p.user_id}>{personLabel(p.name, p.email)}</option>)}
               </select>
               <p id="avail-delegate-hint" className="appr-meta">{peopleFailed ? "Eligible people could not load. Reload the page to try again." : "Only people who may approve what you cover are listed. The server checks again on save."}</p>
               {fieldError("delegate") && <p id="avail-delegate-error" className="field-error"><WarningCircle aria-hidden="true" weight="regular" /><span>{fieldError("delegate")}</span></p>}
@@ -208,11 +209,11 @@ export default function Availability({ navigate }: { navigate: (href: string) =>
                   <tbody>
                     {rows.map((d) => (
                       <tr key={d.id}>
-                        <th scope="row">{tab === "organization" ? `${d.delegator_email} to ${d.delegate_email}` : d.delegate_email}</th>
+                        <th scope="row">{tab === "organization" ? <><Person name={d.delegator_name} email={d.delegator_email} /> to <Person name={d.delegate_name} email={d.delegate_email} /></> : <Person name={d.delegate_name} email={d.delegate_email} />}</th>
                         <td data-label="Period"><time dateTime={d.starts_at}>{formatDay(d.starts_at)}</time> to <time dateTime={d.ends_at}>{formatDay(d.ends_at)}</time></td>
                         <td data-label="Covers">{d.document_types ? (d.document_types.join() === "po" ? "Purchase orders only" : d.document_types.join(", ")) : "All my approvals"}</td>
                         <td data-label="Status"><InboxStatus word={STATE_WORDS[d.state]} tone={STATE_TONES[d.state]} /></td>
-                        <td data-label="Action">{d.state === "active" || d.state === "scheduled" ? <button type="button" onClick={(event) => { opener.current = event.currentTarget; setRevokeError(""); setRevoking(d); }}>Revoke<span className="visually-hidden"> delegation to {d.delegate_email}</span></button> : <span className="appr-meta">Kept in the record</span>}</td>
+                        <td data-label="Action">{d.state === "active" || d.state === "scheduled" ? <button type="button" onClick={(event) => { opener.current = event.currentTarget; setRevokeError(""); setRevoking(d); }}>Revoke<span className="visually-hidden"> delegation to {personLabel(d.delegate_name, d.delegate_email)}</span></button> : <span className="appr-meta">Kept in the record</span>}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -235,7 +236,7 @@ export default function Availability({ navigate }: { navigate: (href: string) =>
                 <tbody>
                   {behalf.map((d) => (
                     <tr key={d.id}>
-                      <th scope="row">{d.actor_email}</th>
+                      <th scope="row"><Person name={d.actor_name} email={d.actor_email} /></th>
                       <td data-label="Step">{d.step_label ?? "Request"}</td>
                       <td data-label="Decision">{d.outcome}{d.comment && <span className="appr-meta">{d.comment}</span>}</td>
                       <td data-label="When"><time dateTime={d.decided_at}>{formatDay(d.decided_at)}</time></td>
@@ -249,7 +250,7 @@ export default function Availability({ navigate }: { navigate: (href: string) =>
         <aside className="appr-side">
           <section className="appr-card"><h2 className="appr-card-title">Eligible Delegates</h2><p>{people.length === 0 ? "No one else may approve everything you cover. Narrow what you cover or ask an administrator." : `${people.length} ${people.length === 1 ? "person is" : "people are"} eligible. Anyone missing cannot approve everything you cover.`}</p></section>
           <section className="appr-card"><h2 className="appr-card-title">Covering for Others</h2>
-            {covering.length === 0 ? <p>You are not covering for anyone. Even when you are, you cannot decide your own requests.</p> : <ul>{covering.map((d) => <li key={d.id}>{d.delegator_email} until <time dateTime={d.ends_at}>{formatDay(d.ends_at)}</time> ({STATE_WORDS[d.state]})</li>)}</ul>}
+            {covering.length === 0 ? <p>You are not covering for anyone. Even when you are, you cannot decide your own requests.</p> : <ul>{covering.map((d) => <li key={d.id}><Person name={d.delegator_name} email={d.delegator_email} /> until <time dateTime={d.ends_at}>{formatDay(d.ends_at)}</time> ({STATE_WORDS[d.state]})</li>)}</ul>}
           </section>
           <section className="appr-card"><h2 className="appr-card-title">Reminders and Escalation</h2><p>Reminders and escalation are set per step in the workflow builder. While a delegation is active, reminders go to the delegate and the due date does not move.</p></section>
         </aside>
@@ -260,7 +261,7 @@ export default function Availability({ navigate }: { navigate: (href: string) =>
           <Dialog.Content role="alertdialog" className="appr-dialog" onCloseAutoFocus={(event) => { event.preventDefault(); if (opener.current?.isConnected) opener.current.focus(); }} onOpenAutoFocus={(event) => { event.preventDefault(); document.getElementById("avail-keep")?.focus(); }}>
             <Dialog.Title>Revoke this delegation?</Dialog.Title>
             <Dialog.Description>
-              New approvals stop going to {revoking?.delegate_email}. Tasks still undecided come back to you. Decisions already made stay recorded as made by {revoking?.delegate_email}, acting for you.
+              New approvals stop going to {revoking && <Person name={revoking.delegate_name} email={revoking.delegate_email} />}. Tasks still undecided come back to you. Decisions already made stay recorded as made by {revoking && <Person name={revoking.delegate_name} email={revoking.delegate_email} />}, acting for you.
             </Dialog.Description>
             {revokeError && <p role="alert" className="field-error"><WarningCircle aria-hidden="true" weight="regular" /><span>{revokeError}</span></p>}
             <footer className="appr-actions">

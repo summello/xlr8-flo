@@ -1,5 +1,6 @@
 import { useId, useRef, useState, type ReactNode } from "react";
 import { apiClient } from "../../../api/client";
+import Person from "../../ui/Person";
 import ErrorSummary, { type SummaryError } from "../../form/ErrorSummary";
 import { failure, mutationHeaders } from "../../requisitions/api";
 import { CORE_CATEGORIES, monthStart, type Dispute, type Score } from "./api";
@@ -97,7 +98,7 @@ export function ResolveForm({ vendorId, score, dispute, onDone, onCancel }: Comm
     send={() => outcome(() => apiClient.POST("/api/v1/vendors/{id}/scores/{sid}/disputes/{did}/resolve", { params: { path: { id: vendorId, sid: score.id, did: dispute.id } }, headers: mutationHeaders(crypto.randomUUID()),
       body: upheld ? { resolution, note: note.trim(), adjusted_score: Number(adjusted), adjusted_rationale: adjustedWhy.trim() } : { resolution, note: note.trim() } }), "Resolving the dispute")}>
     {(p, err) => <>
-      <p className="req-sub">Raised by {dispute.raised_by_email}: {dispute.reason}</p>
+      <p className="req-sub">Raised by <Person name={dispute.raised_by_name} email={dispute.raised_by_email} />: {dispute.reason}</p>
       <fieldset className="perf-field"><legend>Decision</legend>
         <label><input type="radio" name={`res-${dispute.id}`} checked={upheld} onChange={() => setResolution("upheld")} /> Upheld</label>
         <label><input type="radio" name={`res-${dispute.id}`} checked={!upheld} onChange={() => setResolution("dismissed")} /> Dismissed</label></fieldset>

@@ -4,6 +4,7 @@ import { apiClient } from "../../api/client";
 import { registerGuard } from "../../lib/navigation-guard";
 import StatusPill from "../status/StatusPill";
 import Money from "../ui/Money";
+import Person, { personLabel } from "../ui/Person";
 import Attachments from "./Attachments";
 import Catalogue from "./Catalogue";
 import FundingCheck from "./FundingCheck";
@@ -164,7 +165,7 @@ export default function RequisitionForm({ navigate, initial }: { navigate: (href
         <StatusPill docType="requisition" status={done.status} />
         <h2 id="req-done-title" tabIndex={-1} ref={el => el?.focus()}>{done.number} Submitted for Approval</h2>
         <p role="status">{done.reservation ? <>Reserved <Money zero="value" value={done.reservation.remaining} currency={done.reservation.currency} /> against {done.project_name ?? "the project"}. </> : null}
-          {first ? `Routed to ${first.approver_emails.join(", ") || first.label}, step 1 of ${route.data?.route.length}. ` : ""}You can withdraw it while it is pending, and the reservation is released once.</p>
+          {first ? `Routed to ${first.approver_emails.map((e, i) => personLabel(first.approver_names[i], e)).join(", ") || first.label}, step 1 of ${route.data?.route.length}. ` : ""}You can withdraw it while it is pending, and the reservation is released once.</p>
         <div className="req-actions">
           <a className="form-submit" href={`/requisitions/${done.id}`} onClick={e => { e.preventDefault(); navigate(`/requisitions/${done.id}`); }}>View requisition</a>
           <a className="req-link-button" href="/requisitions/new" onClick={e => { e.preventDefault(); window.location.assign("/requisitions/new"); }}>New requisition</a>
@@ -213,7 +214,7 @@ export default function RequisitionForm({ navigate, initial }: { navigate: (href
                   {withCurrent(units.data, header.bu_id, "unit").map(o => <option key={o.value} value={o.value} disabled={o.disabled}>{optionLabel(o)}</option>)}</select>}</ReqField>}
             {isRequest && <ReqField id="req-sponsor_ids" label="Sponsors" help="Choose one to ten people who sponsor the project. Hold Ctrl or Command to choose several." error={errorFor("req-sponsor_ids")}>
               {p => <select {...p} multiple size={5} value={header.sponsor_ids} onChange={e => set({ sponsor_ids: Array.from(e.target.selectedOptions, o => o.value).slice(0, 10) })}>
-                {people.data?.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select>}</ReqField>}
+                {people.data?.map(o => <option key={o.value} value={o.value}>{o.note ? personLabel(o.label, o.note) : o.label}</option>)}</select>}</ReqField>}
             <ReqField id="req-department_code" label="Department" help="The department that bears the cost." error={errorFor("req-department_code")}>
               {p => <select {...p} value={header.department_code} onChange={e => set({ department_code: e.target.value })}><option value="">Choose a department</option>
                 {withCurrent(departments.data, header.department_code, "dept").map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select>}</ReqField>
@@ -226,7 +227,7 @@ export default function RequisitionForm({ navigate, initial }: { navigate: (href
               {p => <select {...p} value={header.delivery_address_id} onChange={e => set({ delivery_address_id: e.target.value })}><option value="">Choose a delivery location</option>
                 {withCurrent(addresses.data, header.delivery_address_id, "unit").map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select>}</ReqField>
             <div className="req-field"><span className="t-label" id="req-currency-label">Currency</span><output aria-labelledby="req-currency-label" className="req-readonly">{currency ?? "Set when saved"}</output><p className="field-help">Taken from the project; a standalone request uses the organization's base currency.</p></div>
-            <div className="req-field"><span className="t-label" id="req-requester-label">Requestor</span><output aria-labelledby="req-requester-label" className="req-readonly">{row?.requester_email ?? "You"}</output><p className="field-help">The signed-in user raising this request.</p></div>
+            <div className="req-field"><span className="t-label" id="req-requester-label">Requestor</span><output aria-labelledby="req-requester-label" className="req-readonly">{row ? <Person name={row.requester_name} email={row.requester_email} /> : "You"}</output><p className="field-help">The signed-in user raising this request.</p></div>
             <ReqField id="req-justification" label="Justification" wide help="Why this is needed, in plain words an approver can act on." error={errorFor("req-justification")}>
               {p => <textarea {...p} rows={3} maxLength={4000} value={header.justification} onChange={e => set({ justification: e.target.value })} />}</ReqField>
           </div>

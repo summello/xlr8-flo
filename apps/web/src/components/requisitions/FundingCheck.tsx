@@ -1,5 +1,6 @@
 import { CheckCircle, Warning } from "@phosphor-icons/react";
 import Money from "../ui/Money";
+import Person from "../ui/Person";
 import { formatMoney } from "../../lib/money";
 import { scaled } from "../../lib/decimal";
 import { fundingFor } from "./model";
@@ -36,7 +37,7 @@ export default function FundingCheck({ check, estimate, currency, standalone, sa
     <header className="req-card-head"><h2 id="funding-title">Funding Check</h2></header>
     {body}
     {route && route.steps.length > 0 && <div className="req-route"><h3>Approval Route</h3>
-      <ol>{route.steps.map(s => <li key={s.node_id}>{s.label}: {s.approver_emails.join(", ") || "no approver"} (step {route.steps.indexOf(s) + 1} of {route.steps.length})</li>)}</ol></div>}
+      <ol>{route.steps.map(s => <li key={s.node_id}>{s.label}: {s.approver_emails.length ? s.approver_emails.map((e, i) => <span key={e}>{i > 0 && ", "}<Person name={s.approver_names[i]} email={e} /></span>) : "no approver"} (step {route.steps.indexOf(s) + 1} of {route.steps.length})</li>)}</ol></div>}
   </section>;
 }
 

@@ -7,3 +7,7 @@
 .sig.is-n svg { color: var(--status-neutral); }
 .sig-why { flex-basis: 100%; margin: 0; padding: 0; list-style: none; color: var(--fg-secondary); font-size: var(--text-body-dense); }
 .elig { padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--surface); }
+.person { display: inline-flex; flex-wrap: wrap; column-gap: var(--space-2); min-width: 0; max-width: 100%; }
+.person > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.person-name { color: var(--fg); }
+.person-email { color: var(--fg-secondary); }
