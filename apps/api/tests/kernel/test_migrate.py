@@ -172,6 +172,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261022_0070",
         "20261022_0071",
         "20261022_0072",
+        "20261022_0073",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -2820,3 +2821,74 @@ def test_identity_display_name_backfills_and_roundtrips(empty_database):
             conn.execute("DROP OWNED BY display_name_probe")
             conn.execute("DROP ROLE display_name_probe")
         assert conn.execute("SELECT count(*) FROM identity").fetchone() == (2,)
+
+
+def test_bid_late_columns_roundtrip_and_keep_submitted_bids(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.org.schemas import OrgUnitCreate
+    from flo.modules.org.service import OrgService
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261022_0072"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261022_0073")
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("bid-late-migration"),
+    ):
+        tenant = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(tenant.org_id)
+        bu = OrgService(conn, scope, actor).create_unit(
+            OrgUnitCreate(code="BU", name="BU", kind="bu")
+        )
+        rfq, vendor, attachment, bid = uuid4(), uuid4(), uuid4(), uuid4()
+        mig.upgrade(conn)
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO rfq(id,org_id,number,title,unit_id,currency,owner_id)"
+                " VALUES(%s,%s,'RFQ-00001','T',%s,'USD',%s)",
+                (rfq, tenant.org_id, bu.id, actor),
+            )
+            conn.execute(
+                "INSERT INTO vendor(id,org_id,number,trading_name,legal_name,availability,"
+                "created_by)"
+                " VALUES(%s,%s,'V-1','V','V','global',%s)",
+                (vendor, tenant.org_id, actor),
+            )
+            conn.execute(
+                "INSERT INTO rfq_invitee(rfq_id,org_id,vendor_id,contact_ids,vendor_snapshot,"
+                "invited_by) VALUES(%s,%s,%s,ARRAY[gen_random_uuid()],'{}',%s)",
+                (rfq, tenant.org_id, vendor, actor),
+            )
+            conn.execute(
+                "INSERT INTO rfq_version(rfq_id,org_id,version,snapshot,diff,published_by)"
+                " VALUES(%s,%s,1,'{}','{}',%s)",
+                (rfq, tenant.org_id, actor),
+            )
+            conn.execute(
+                "INSERT INTO attachment(id,org_id,document_type,document_id,created_by)"
+                " VALUES(%s,%s,'bid',%s,%s)",
+                (attachment, tenant.org_id, bid, actor),
+            )
+            conn.execute(
+                "INSERT INTO bid(id,org_id,rfq_id,vendor_id,rfq_version,currency,sent_at,"
+                "keyed_by,evidence_attachment_id,status,submitted_at,late_accepted_by,"
+                "late_accepted_at,late_reason) VALUES(%s,%s,%s,%s,1,'USD',now(),%s,%s,"
+                "'submitted',now(),%s,now(),'Courier delay')",
+                (bid, tenant.org_id, rfq, vendor, actor, attachment, actor),
+            )
+        with pytest.raises(psycopg.errors.CheckViolation), tenant_transaction(conn, scope):
+            conn.execute(  # a reason without who and when is refused
+                "INSERT INTO bid(id,org_id,rfq_id,vendor_id,rfq_version,currency,sent_at,"
+                "keyed_by,late_reason) VALUES(%s,%s,%s,%s,1,'USD',now(),%s,'x')",
+                (uuid4(), tenant.org_id, rfq, vendor, actor),
+            )
+        mig.downgrade(conn)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT count(*) FROM bid").fetchone() == (1,)
+        mig.upgrade(conn)

@@ -1131,6 +1131,49 @@
         "title": "BidCreate",
         "type": "object"
       },
+      "BidLate": {
+        "properties": {
+          "accepted_by_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted By Email"
+          },
+          "accepted_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted By Name"
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accepted_by_name",
+          "accepted_by_email",
+          "at",
+          "reason"
+        ],
+        "title": "BidLate",
+        "type": "object"
+      },
       "BidLineIn": {
         "additionalProperties": false,
         "properties": {
@@ -1440,6 +1483,16 @@
             "title": "Keyed By",
             "type": "string"
           },
+          "late": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BidLate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "lead_time_days": {
             "anyOf": [
               {
@@ -1579,7 +1632,8 @@
           "lines",
           "requirements",
           "replaced_by_bid_id",
-          "current"
+          "current",
+          "late"
         ],
         "title": "BidRead",
         "type": "object"
@@ -1671,7 +1725,21 @@
       },
       "BidSubmit": {
         "additionalProperties": false,
-        "properties": {},
+        "properties": {
+          "accept_late_reason": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accept Late Reason"
+          }
+        },
         "title": "BidSubmit",
         "type": "object"
       },
@@ -12878,6 +12946,116 @@
           "disputes"
         ],
         "title": "ScoreRead",
+        "type": "object"
+      },
+      "SealedBidRead": {
+        "additionalProperties": false,
+        "description": "What a sealed bid shows: that it exists and when, never a figure (SRC-007).",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "keyed_at": {
+            "format": "date-time",
+            "title": "Keyed At",
+            "type": "string"
+          },
+          "keyed_by": {
+            "format": "uuid",
+            "title": "Keyed By",
+            "type": "string"
+          },
+          "late": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BidLate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "replaced_by_bid_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaced By Bid Id"
+          },
+          "replaces_bid_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaces Bid Id"
+          },
+          "rfq_id": {
+            "format": "uuid",
+            "title": "Rfq Id",
+            "type": "string"
+          },
+          "row_version": {
+            "title": "Row Version",
+            "type": "integer"
+          },
+          "sent_at": {
+            "format": "date-time",
+            "title": "Sent At",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "submitted"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "vendor_id": {
+            "format": "uuid",
+            "title": "Vendor Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "rfq_id",
+          "vendor_id",
+          "keyed_by",
+          "status",
+          "sent_at",
+          "keyed_at",
+          "submitted_at",
+          "replaces_bid_id",
+          "replaced_by_bid_id",
+          "row_version",
+          "late"
+        ],
+        "title": "SealedBidRead",
         "type": "object"
       },
       "SensitiveAccess": {
@@ -28565,7 +28743,14 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/BidRead"
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/BidRead"
+                      },
+                      {
+                        "$ref": "#/components/schemas/SealedBidRead"
+                      }
+                    ]
                   },
                   "title": "Response List Bids Api V1 Sourcing Rfqs  Id  Bids Get",
                   "type": "array"
@@ -28645,7 +28830,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BidRead"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BidRead"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SealedBidRead"
+                    }
+                  ],
+                  "title": "Response Create Bid Api V1 Sourcing Rfqs  Id  Bids Post"
                 }
               }
             },
@@ -28724,7 +28917,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BidRead"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BidRead"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SealedBidRead"
+                    }
+                  ],
+                  "title": "Response Get Bid Api V1 Sourcing Rfqs  Id  Bids  Bid Id  Get"
                 }
               }
             },
@@ -28827,7 +29028,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BidRead"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BidRead"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SealedBidRead"
+                    }
+                  ],
+                  "title": "Response Patch Bid Api V1 Sourcing Rfqs  Id  Bids  Bid Id  Patch"
                 }
               }
             },
@@ -28916,7 +29125,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BidRead"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BidRead"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SealedBidRead"
+                    }
+                  ],
+                  "title": "Response Replace Bid Api V1 Sourcing Rfqs  Id  Bids  Bid Id  Replace Post"
                 }
               }
             },
@@ -29028,7 +29245,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BidRead"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BidRead"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SealedBidRead"
+                    }
+                  ],
+                  "title": "Response Submit Bid Api V1 Sourcing Rfqs  Id  Bids  Bid Id  Submit Post"
                 }
               }
             },

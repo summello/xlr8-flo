@@ -43,6 +43,11 @@ class DocumentAccess:
     write_authorize: (
         Callable[[psycopg.Connection[tuple[object, ...]], Scope, UUID, UUID | None], None] | None
     ) = None
+    # Runs after the read permission passes and raises when the document is sealed to this actor
+    # (a bid's evidence before its deadline); it never runs for writes.
+    read_guard: (
+        Callable[[psycopg.Connection[tuple[object, ...]], Scope, UUID, UUID | None], None] | None
+    ) = None
 
 
 _ACCESS: dict[str, DocumentAccess] = {}
@@ -97,6 +102,8 @@ class CollaborationService:
             raise ProblemError(ErrorCode.FORBIDDEN)
         if write and access.write_guard is not None:
             access.write_guard(self.connection, self.scope, document_id)
+        if not write and access.read_guard is not None:
+            access.read_guard(self.connection, self.scope, document_id, self.actor_id)
 
     def linked_document(self, kind: str, id: UUID) -> tuple[str, UUID]:
         assert kind in {"note", "attachment"}

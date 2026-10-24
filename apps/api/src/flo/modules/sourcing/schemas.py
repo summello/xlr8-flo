@@ -425,6 +425,17 @@ class BidPatch(BaseModel):
 
 class BidSubmit(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    accept_late_reason: str | None = Field(default=None, min_length=1, max_length=500)
+
+    @field_validator("accept_late_reason")
+    @classmethod
+    def reason_trimmed(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        if not 1 <= len(value) <= 500:
+            raise ValueError("Enter 1 to 500 characters.")
+        return value
 
 
 class BidReplace(BaseModel):
@@ -456,6 +467,13 @@ class BidRequirementRead(BaseModel):
     note: str | None
 
 
+class BidLate(BaseModel):
+    accepted_by_name: str | None
+    accepted_by_email: str | None
+    at: datetime
+    reason: str
+
+
 class BidRead(BaseModel):
     id: UUID
     rfq_id: UUID
@@ -480,3 +498,22 @@ class BidRead(BaseModel):
     requirements: list[BidRequirementRead]
     replaced_by_bid_id: UUID | None
     current: bool
+    late: BidLate | None
+
+
+class SealedBidRead(BaseModel):
+    """What a sealed bid shows: that it exists and when, never a figure (SRC-007)."""
+
+    model_config = ConfigDict(extra="forbid")
+    id: UUID
+    rfq_id: UUID
+    vendor_id: UUID
+    keyed_by: UUID
+    status: Literal["draft", "submitted"]
+    sent_at: datetime
+    keyed_at: datetime
+    submitted_at: datetime | None
+    replaces_bid_id: UUID | None
+    replaced_by_bid_id: UUID | None
+    row_version: int
+    late: BidLate | None

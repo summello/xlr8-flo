@@ -3616,6 +3616,20 @@ export interface components {
              */
             vendor_id: string;
         };
+        /** BidLate */
+        BidLate: {
+            /** Accepted By Email */
+            accepted_by_email: string | null;
+            /** Accepted By Name */
+            accepted_by_name: string | null;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Reason */
+            reason: string;
+        };
         /** BidLineIn */
         BidLineIn: {
             /** Quoted */
@@ -3710,6 +3724,7 @@ export interface components {
              * Format: uuid
              */
             keyed_by: string;
+            late: components["schemas"]["BidLate"] | null;
             /** Lead Time Days */
             lead_time_days: number | null;
             /** Lines */
@@ -3786,7 +3801,10 @@ export interface components {
             requirement_id: string;
         };
         /** BidSubmit */
-        BidSubmit: Record<string, never>;
+        BidSubmit: {
+            /** Accept Late Reason */
+            accept_late_reason?: string | null;
+        };
         /** BudgetChangeRequestRead */
         BudgetChangeRequestRead: {
             /** Amount */
@@ -7510,6 +7528,56 @@ export interface components {
             superseded_by: string | null;
             /** Supersedes */
             supersedes: string | null;
+        };
+        /**
+         * SealedBidRead
+         * @description What a sealed bid shows: that it exists and when, never a figure (SRC-007).
+         */
+        SealedBidRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Keyed At
+             * Format: date-time
+             */
+            keyed_at: string;
+            /**
+             * Keyed By
+             * Format: uuid
+             */
+            keyed_by: string;
+            late: components["schemas"]["BidLate"] | null;
+            /** Replaced By Bid Id */
+            replaced_by_bid_id: string | null;
+            /** Replaces Bid Id */
+            replaces_bid_id: string | null;
+            /**
+             * Rfq Id
+             * Format: uuid
+             */
+            rfq_id: string;
+            /** Row Version */
+            row_version: number;
+            /**
+             * Sent At
+             * Format: date-time
+             */
+            sent_at: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "submitted";
+            /** Submitted At */
+            submitted_at: string | null;
+            /**
+             * Vendor Id
+             * Format: uuid
+             */
+            vendor_id: string;
         };
         /**
          * SensitiveAccess
@@ -15328,7 +15396,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BidRead"][];
+                    "application/json": (components["schemas"]["BidRead"] | components["schemas"]["SealedBidRead"])[];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */
@@ -15374,7 +15442,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BidRead"];
+                    "application/json": components["schemas"]["BidRead"] | components["schemas"]["SealedBidRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */
@@ -15417,7 +15485,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BidRead"];
+                    "application/json": components["schemas"]["BidRead"] | components["schemas"]["SealedBidRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */
@@ -15465,7 +15533,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BidRead"];
+                    "application/json": components["schemas"]["BidRead"] | components["schemas"]["SealedBidRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */
@@ -15512,7 +15580,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BidRead"];
+                    "application/json": components["schemas"]["BidRead"] | components["schemas"]["SealedBidRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */
@@ -15560,7 +15628,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BidRead"];
+                    "application/json": components["schemas"]["BidRead"] | components["schemas"]["SealedBidRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

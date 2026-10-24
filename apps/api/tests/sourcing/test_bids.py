@@ -30,6 +30,7 @@ from flo.modules.sourcing.schemas import (
     RequirementsPut,
     RfqAmend,
     RfqLineIn,
+    SealedBidRead,
 )
 from tests.collaboration.test_attachments import upload
 from tests.imports.test_upload import MemoryStorage
@@ -150,7 +151,8 @@ def test_submit_lists_every_problem_at_once_then_accepts_a_complete_bid(lifecycl
         ErrorCode.VALIDATION_FAILED,
     )
     done = submit(db, rfq, complete(db, rfq, bid))
-    assert done.status == "submitted" and done.submitted_at and done.current
+    assert done.status == "submitted" and done.submitted_at
+    assert isinstance(done, SealedBidRead)  # sealed the moment it is submitted (SRC-007)
     assert audit_after(db, rfq, "bid.create") == [{"bid_id": str(bid.id), "vendor_id": str(vid)}]
     assert audit_after(db, rfq, "bid.submit") == [{"bid_id": str(bid.id), "vendor_id": str(vid)}]
 
@@ -280,7 +282,10 @@ def test_fixed_fields_cannot_be_patched(lifecycle_db, field):
 
 def test_bid_exists_blocks_a_second_original_and_replace_corrects_it(lifecycle_db):
     db, _ = lifecycle_db
-    rfq, line, vid, done = submitted(db)
+    rfq, _, _, [vid] = live(db, requirements=("Warranty",))
+    first = complete(db, rfq, key(db, rfq, vid), price="98765.4321")
+    first = edit(db, rfq, first, freight="55.5", warranty="5 years")
+    done = submit(db, rfq, first)
     error = refused(lambda: key(db, rfq, vid))
     assert error.checks["problem"] == "bid_exists" and str(done.id) in error.detail
     assert sql(db, "SELECT count(*) FROM bid")[0][0] == 1
@@ -292,9 +297,14 @@ def test_bid_exists_blocks_a_second_original_and_replace_corrects_it(lifecycle_d
         and new.replaces_bid_id == done.id
         and new.evidence_attachment_id is None
     )
-    assert [(x.rfq_line_id, x.line_total) for x in new.lines] == [
-        (x.rfq_line_id, x.line_total) for x in done.lines
-    ]
+    # a replacement copies structure only (Q1 = A): the keyer re-keys every figure and answer
+    assert [x.rfq_line_id for x in new.lines] == [rfq_line(db, rfq)]
+    assert all(
+        x.quoted is False and x.unit_price is None and x.line_total is None for x in new.lines
+    )
+    assert Decimal(new.freight) == 0 and new.requirements == []
+    assert new.lead_time_days is None and new.warranty is None and new.delivery_terms is None
+    assert "98765.4321" not in new.model_dump_json() and "55.5" not in new.model_dump_json()
     assert audit_after(db, rfq, "bid.replace") == [
         {
             "bid_id": str(new.id),
@@ -308,9 +318,9 @@ def test_bid_exists_blocks_a_second_original_and_replace_corrects_it(lifecycle_d
     again = refused(lambda: bids(db).replace(rfq.id, done.id, body))
     assert again.checks["problem"] == "already_replaced"
     swapped = submit(db, rfq, complete(db, rfq, new, price="2"))
-    assert swapped.current
+    assert swapped.status == "submitted"
     old = bids(db).read(rfq.id, done.id, all_bids=True)
-    assert old.replaced_by_bid_id == new.id and old.current is False
+    assert old.replaced_by_bid_id == new.id
     assert refused(lambda: key(db, rfq, vid)).checks["problem"] == "bid_exists"
 
 
@@ -471,7 +481,14 @@ def test_evidence_is_a_bid_attachment_that_locks_at_submit(lifecycle_db):
             for response in writes:
                 assert response.status_code == 409, response.text
                 assert response.json()["checks"]["problem"] == "not_draft"
-            assert (await browser.get(url)).status_code == 200  # reading stays open
+            sealed = await browser.get(url)  # the vendor's quote is bid content: sealed (SRC-007)
+            assert sealed.status_code == 409 and sealed.json()["checks"]["problem"] == "bid_sealed"
+            sql(
+                db,
+                "UPDATE rfq SET deadline_at=now()-interval '1 minute' WHERE id=%s RETURNING 1",
+                (rfq.id,),
+            )
+            assert (await browser.get(url)).status_code == 200  # after the deadline reading opens
             regrant(db, ["rfq.edit", "record.read"])
             assert (await browser.get(url)).status_code == 403  # the content needs rfq.approve
             regrant(db, ["rfq.edit", "rfq.approve"])

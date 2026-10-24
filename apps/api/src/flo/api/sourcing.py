@@ -40,6 +40,7 @@ from flo.modules.sourcing.schemas import (
     RfqRead,
     RfqTab,
     RfqVersionRead,
+    SealedBidRead,
     SourceablePage,
     VisibilityPut,
 )
@@ -325,27 +326,27 @@ def rfq_history(id: UUID, context: ViewContext, connection: Connection) -> list[
     return RfqService(connection, current_scope(), context.user_id).history(id)
 
 
-def _bid_done(bid: BidRead, response: Response) -> BidRead:
+def _bid_done(bid: BidRead | SealedBidRead, response: Response) -> BidRead | SealedBidRead:
     response.headers["ETag"] = f'"{bid.row_version}"'
     return bid
 
 
-@router.post("/rfqs/{id}/bids", status_code=201, response_model=BidRead)
+@router.post("/rfqs/{id}/bids", status_code=201, response_model=BidRead | SealedBidRead)
 def create_bid(
     id: UUID, body: BidCreate, context: EditContext, connection: Connection, response: Response
-) -> BidRead:
+) -> BidRead | SealedBidRead:
     return _bid_done(
         BidService(connection, current_scope(), context.user_id).capture(id, body), response
     )
 
 
-@router.get("/rfqs/{id}/bids", response_model=list[BidRead])
+@router.get("/rfqs/{id}/bids", response_model=list[BidRead | SealedBidRead])
 def list_bids(
     id: UUID,
     user_id: Annotated[IdentityId, Depends(require_member())],
     connection: Connection,
     request: Request,
-) -> list[BidRead]:
+) -> list[BidRead | SealedBidRead]:
     target = rfq_target(id, connection)  # a foreign RFQ is 404 before any permission is weighed
     approve = permits(request, "rfq.approve", target)
     if not approve and not permits(request, "rfq.edit", target):
@@ -353,7 +354,7 @@ def list_bids(
     return BidService(connection, current_scope(), user_id).list_bids(id, all_bids=approve)
 
 
-@router.get("/rfqs/{id}/bids/{bid_id}", response_model=BidRead)
+@router.get("/rfqs/{id}/bids/{bid_id}", response_model=BidRead | SealedBidRead)
 def get_bid(
     id: UUID,
     bid_id: UUID,
@@ -361,14 +362,14 @@ def get_bid(
     connection: Connection,
     request: Request,
     response: Response,
-) -> BidRead:
+) -> BidRead | SealedBidRead:
     target = rfq_target(id, connection)
     approve = permits(request, "rfq.approve", target)
     bid = BidService(connection, current_scope(), user_id).read(id, bid_id, all_bids=approve)
     return _bid_done(bid, response)
 
 
-@router.patch("/rfqs/{id}/bids/{bid_id}", response_model=BidRead)
+@router.patch("/rfqs/{id}/bids/{bid_id}", response_model=BidRead | SealedBidRead)
 def patch_bid(
     id: UUID,
     bid_id: UUID,
@@ -377,26 +378,32 @@ def patch_bid(
     connection: Connection,
     response: Response,
     revision: Revision = None,
-) -> BidRead:
+) -> BidRead | SealedBidRead:
     service = BidService(connection, current_scope(), context.user_id)
     return _bid_done(service.patch(id, bid_id, body, revision), response)
 
 
-@router.post("/rfqs/{id}/bids/{bid_id}/submit", response_model=BidRead)
+@router.post("/rfqs/{id}/bids/{bid_id}/submit", response_model=BidRead | SealedBidRead)
 def submit_bid(
     id: UUID,
     bid_id: UUID,
     context: EditContext,
     connection: Connection,
     response: Response,
+    request: Request,
     body: BidSubmit | None = None,
     revision: Revision = None,
-) -> BidRead:
+) -> BidRead | SealedBidRead:
     service = BidService(connection, current_scope(), context.user_id)
-    return _bid_done(service.submit(id, bid_id, body or BidSubmit(), revision), response)
+    # the lead may accept a late bid; the service never reads permissions itself
+    late_ok = permits(request, "rfq.approve", rfq_target(id, connection))
+    submitted = service.submit(id, bid_id, body or BidSubmit(), revision, may_accept_late=late_ok)
+    return _bid_done(submitted, response)
 
 
-@router.post("/rfqs/{id}/bids/{bid_id}/replace", status_code=201, response_model=BidRead)
+@router.post(
+    "/rfqs/{id}/bids/{bid_id}/replace", status_code=201, response_model=BidRead | SealedBidRead
+)
 def replace_bid(
     id: UUID,
     bid_id: UUID,
@@ -404,6 +411,6 @@ def replace_bid(
     context: EditContext,
     connection: Connection,
     response: Response,
-) -> BidRead:
+) -> BidRead | SealedBidRead:
     service = BidService(connection, current_scope(), context.user_id)
     return _bid_done(service.replace(id, bid_id, body), response)

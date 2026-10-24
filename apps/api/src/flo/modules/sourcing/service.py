@@ -61,6 +61,7 @@ from flo.modules.sourcing.schemas import (
     VisibilityPut,
     invalid,
 )
+from flo.modules.sourcing.sealing import visible
 from flo.modules.vendors.service import VendorService
 
 type Conn = psycopg.Connection[tuple[object, ...]]
@@ -1141,6 +1142,28 @@ def bid_attachments_open(connection: Conn, scope: Scope, id: UUID) -> None:
         raise conflict("not_draft", "A submitted bid cannot change. Key a replacement.")
 
 
+def bid_attachments_sealed(connection: Conn, scope: Scope, id: UUID, actor_id: UUID | None) -> None:
+    """A bid's evidence and notes are bid content: sealed until the deadline (SRC-007).
+
+    A draft is its keyer's alone, before and after the deadline; a `None` actor never keys.
+    """
+    row = connection.execute(
+        "SELECT b.status, b.keyed_by, r.deadline_at, now() FROM bid b "
+        "JOIN rfq r ON r.org_id = b.org_id AND r.id = b.rfq_id "
+        "WHERE b.org_id = %(org_id)s AND b.id = %(id)s",
+        {"org_id": scope.org_id, "id": id},
+    ).fetchone()
+    if row is None:
+        return
+    open_to_caller = (
+        row[1] == actor_id
+        if row[0] == "draft"
+        else visible(cast(datetime, row[2]), cast(datetime, row[3]))
+    )
+    if not open_to_caller:
+        raise conflict("bid_sealed", "Bids are sealed until the bidding stop time.")
+
+
 def register_access() -> None:
     """Attachments on an RFQ use the collaboration routes: read rfq.view, write rfq.edit."""
     register_document_access(
@@ -1148,5 +1171,12 @@ def register_access() -> None:
     )
     # Evidence content holds the vendor's figures, so reading it needs rfq.approve (narrower).
     register_document_access(
-        DocumentAccess("bid", "rfq.approve", "rfq.edit", bid_access, bid_attachments_open)
+        DocumentAccess(
+            "bid",
+            "rfq.approve",
+            "rfq.edit",
+            bid_access,
+            bid_attachments_open,
+            read_guard=bid_attachments_sealed,
+        )
     )

@@ -5282,6 +5282,72 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E12-S05",
+      "kind": "security",
+      "size": "M",
+      "tags": [
+        "security",
+        "auth"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 3
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 3,
+          "findings": 2,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "65ec4e41-2f29-4f33-9113-360edc457eb1",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S05",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a16e72-bd03-7520-86ec-335e8876c3b8",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Bids now leave the server only through BidService._present: sealed (SealedBidRead, no figures) until rfq.deadline_at, drafts visible to their keyer alone, and a bid's evidence/notes sealed by a new DocumentAccess.read_guard. Submit enforces live RFQ states, blocks late bids (vendor sent_at) unless rfq.approve gives a reason, stored in new late_* columns (migration 0073) and audited as bid.late_override; replace copies structure only.",
+      "title": "Bid confidentiality and late-bid block with audited override",
+      "durations": {
+        "wall_s": 11032,
+        "author_s": 4589,
+        "review_s": {
+          "codex": 30,
+          "opus": 500
+        },
+        "gate_s": 2
+      }
     }
   ]
 }
