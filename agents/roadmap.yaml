@@ -1828,7 +1828,7 @@ epics:
           - E12-S03
           - E12-S11
           - E11-S11
-        st: todo
+        st: in_progress
       - id: E12-S14
         t: 'Record a bid: bid sheet, two times, vendor currency, late-bid override'
         k: ui
