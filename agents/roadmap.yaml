@@ -1843,7 +1843,7 @@ epics:
           - E12-S04
           - E12-S05
           - E12-S11
-        st: review
+        st: done
       - id: E12-S15
         t: 'Evaluation screen: declare first, then score'
         k: ui

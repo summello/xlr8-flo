@@ -110,7 +110,7 @@ def complete(db, rfq, bid, price="1.2345"):
         db,
         rfq,
         bid,
-        lines=[BidLineIn(rfq_line_id=line, quoted=True, unit_price=price)],
+        lines=[BidLineIn(rfq_line_id=line, quoted=True, unit_price=price, tax="0")],
         requirements=answers,
         evidence_attachment_id=evidence(db, bid.id),
     )
@@ -162,7 +162,9 @@ def test_line_total_is_exact_decimal_in_the_vendors_currency(lifecycle_db):
     rfq, _, _, [vid] = live(db, qty="3")
     line = rfq_line(db, rfq)
     kwd = key(db, rfq, vid, "KWD")
-    kwd = edit(db, rfq, kwd, lines=[BidLineIn(rfq_line_id=line, quoted=True, unit_price="1.2345")])
+    kwd = edit(
+        db, rfq, kwd, lines=[BidLineIn(rfq_line_id=line, quoted=True, unit_price="1.2345", tax="0")]
+    )
     assert Decimal(kwd.lines[0].line_total) == Decimal("3.704")  # 3.7035 at 3 decimals, HALF_UP
     assert Decimal(kwd.lines[0].quantity) == 3 and kwd.currency == "KWD"
     jpy = edit(db, rfq, kwd, currency="JPY")  # the lines are redone at 0 decimals
@@ -194,7 +196,7 @@ def test_a_bid_answers_the_quantity_of_its_version_even_after_amendment(lifecycl
         ),
     )
     rfq_line_id = rfq_line(db, rfq)
-    lines = [BidLineIn(rfq_line_id=rfq_line_id, quoted=True, unit_price="10")]
+    lines = [BidLineIn(rfq_line_id=rfq_line_id, quoted=True, unit_price="10", tax="0")]
     bid = key(db, rfq, vid, "USD", version=1)
     bid = edit(db, rfq, bid, lines=lines)
     assert Decimal(bid.lines[0].quantity) == 4 and Decimal(bid.lines[0].line_total) == 40
@@ -638,3 +640,130 @@ def test_baseline_roles_over_the_bid_routes(lifecycle_db, role, writes):
                 assert mine.status_code == 200, mine.text
 
     asyncio.run(scenario())
+
+
+def test_a_quoted_line_needs_its_tax_and_a_line_not_quoted_has_none(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, _, _, [vid] = live(db)
+    bid, line = key(db, rfq, vid), rfq_line(db, rfq)
+    blank = refused(
+        lambda: edit(
+            db, rfq, bid, lines=[BidLineIn(rfq_line_id=line, quoted=True, unit_price="1")]
+        ),
+        ErrorCode.VALIDATION_FAILED,
+    )
+    assert [(e.field, e.message) for e in blank.errors] == [
+        (f"lines/{line}", "Enter the tax on this line, or 0 if none.")
+    ]
+    taxed = refused(
+        lambda: edit(db, rfq, bid, lines=[BidLineIn(rfq_line_id=line, quoted=False, tax="1")]),
+        ErrorCode.VALIDATION_FAILED,
+    )
+    assert taxed.errors[0].message == "A line not quoted has no tax."
+    saved = edit(db, rfq, bid, lines=[BidLineIn(rfq_line_id=line, quoted=False)])
+    assert Decimal(saved.lines[0].tax) == 0  # stored as 0, the column is NOT NULL
+
+
+def test_totals_are_exact_decimals_in_the_bid_currency_and_never_on_a_sealed_read(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, _, _, [vid] = live(db, qty="3")
+    first = rfq_line(db, rfq)
+    second, source = uuid4(), uuid4()
+    clone = (
+        "INSERT INTO {t} SELECT (jsonb_populate_record(null::{t}, to_jsonb(l) || "
+        "%s::jsonb)).* FROM {t} l WHERE l.id = %s RETURNING 1"
+    )
+    [req_line] = sql(db, "SELECT requisition_line_id FROM rfq_line WHERE id=%s", (first,))[0]
+    sql(
+        db,
+        clone.format(t="requisition_line"),
+        (f'{{"id": "{source}", "line_no": 2}}', req_line),
+    )
+    sql(
+        db,
+        clone.format(t="rfq_line"),
+        (f'{{"id": "{second}", "line_no": 2, "requisition_line_id": "{source}"}}', first),
+    )
+    with tenant_transaction(db[0], Scope(db[1])):  # the answered version's snapshot is
+        db[0].execute(
+            "SELECT set_config('session_replication_role', 'replica', true)"
+        )  # append-only
+        db[0].execute(
+            "UPDATE rfq_version SET snapshot = jsonb_set(snapshot, ARRAY['lines', %s], "
+            "snapshot->'lines'->%s) WHERE rfq_id=%s",
+            (str(source), str(req_line), rfq.id),
+        )
+    bid = key(db, rfq, vid, "KWD")
+    bid = edit(
+        db,
+        rfq,
+        bid,
+        freight="1.2345",
+        lines=[
+            BidLineIn(rfq_line_id=first, quoted=True, unit_price="1.2345", tax="0.5"),
+            BidLineIn(rfq_line_id=second, quoted=True, unit_price="2", tax="0"),
+        ],
+    )
+    # lines 3.7035 -> 3.704 and 6.000; freight 1.2345 -> 1.235; quantized at KWD's 3 decimals
+    assert bid.totals is not None
+    assert (bid.totals.lines, bid.totals.tax, bid.totals.freight, bid.totals.total) == (
+        "9.704",
+        "0.500",
+        "1.235",
+        "11.439",
+    )
+    assert "totals" not in SealedBidRead.model_fields
+
+
+def test_a_lead_accepts_another_users_late_draft_only_when_late_and_with_a_reason(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, _, _, [vid] = live(db)
+    sql(
+        db, "UPDATE rfq SET deadline_at=now()-interval '2 hours' WHERE id=%s RETURNING 1", (rfq.id,)
+    )
+    buyer = second_user(db)
+    draft = key(db, rfq, vid, actor=buyer)
+    line = rfq_line(db, rfq)
+    with correlation_context("bid"):
+        draft = bids(db, buyer).patch(
+            rfq.id,
+            draft.id,
+            BidPatch(
+                lines=[BidLineIn(rfq_line_id=line, quoted=True, unit_price="1", tax="0")],
+                evidence_attachment_id=evidence(db, draft.id),
+            ),
+            str(draft.row_version),
+        )
+
+    def lead(reason, may=True):
+        with correlation_context("late"):
+            body = BidSubmit(accept_late_reason=reason)
+            return bids(db).submit(rfq.id, draft.id, body, str(draft.row_version), may)
+
+    refused(lambda: lead("Courier strike", may=False), ErrorCode.FORBIDDEN)
+    assert refused(lambda: lead(None)).checks["problem"] == "late_bid"
+    # on time (sent before the deadline): a non-keyer lead is refused
+    sql(db, "UPDATE bid SET sent_at=now()-interval '3 hours' WHERE id=%s RETURNING 1", (draft.id,))
+    refused(lambda: lead("Courier strike"), ErrorCode.FORBIDDEN)
+    sql(db, "UPDATE bid SET sent_at=now()-interval '1 hour' WHERE id=%s RETURNING 1", (draft.id,))
+    done = lead("Courier strike")
+    assert done.status == "submitted"
+    row = sql(db, "SELECT keyed_by, late_accepted_by FROM bid WHERE id=%s", (draft.id,))[0]
+    assert row == (buyer, db[3])  # keyed_by stays the buyer; the lead accepted
+    assert len(audit_after(db, rfq, "bid.submit")) == 1
+    assert audit_after(db, rfq, "bid.late_override")[0]["reason"] == "Courier strike"
+    refused(lambda: lead("again"), ErrorCode.CONFLICT)  # no longer a draft
+
+
+def test_bids_received_counts_a_replaced_vendor_once_and_never_a_draft(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, _, _, [a, b] = live(db, names=("A", "B"))
+    assert life(db).get(rfq.id).bids_received == 0
+    done = submit(db, rfq, complete(db, rfq, key(db, rfq, a)))
+    key(db, rfq, b)  # a draft
+    assert life(db).get(rfq.id).bids_received == 1
+    with correlation_context("replace"):
+        new = bids(db).replace(rfq.id, done.id, BidReplace(reason="r", sent_at=datetime.now(UTC)))
+    assert life(db).get(rfq.id).bids_received == 1  # replacement still a draft
+    submit(db, rfq, complete(db, rfq, new))
+    assert life(db).get(rfq.id).bids_received == 1  # replaced once, counted once

@@ -15,6 +15,11 @@ describe("deadline helpers", () => {
     expect(instantIn("2026-10-23", "24:00", "UTC")).toBeNull();
     expect(instantIn("23/10/2026", "10:00", "UTC")).toBeNull();
   });
+  it("refuses a wall time the clocks skip and settles a repeated one", () => {
+    expect(instantIn("2026-03-29", "01:30", "Europe/London")).toBeNull(); // clocks go 01:00 to 02:00
+    expect(instantIn("2026-03-29", "02:30", "Europe/London")?.toISOString()).toBe("2026-03-29T01:30:00.000Z");
+    expect(instantIn("2026-10-25", "01:30", "Europe/London")?.toISOString()).toBe("2026-10-25T01:30:00.000Z"); // 01:30 happens twice (BST then GMT); the later instant wins
+  });
   it("says in or closed ... ago", () => {
     const now = Date.parse("2026-10-23T00:00:00Z");
     expect(relativeDeadline("2026-10-25T00:00:00Z", now)).toBe("in 2 days");

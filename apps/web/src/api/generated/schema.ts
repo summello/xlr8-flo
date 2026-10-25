@@ -3695,11 +3695,8 @@ export interface components {
              * Format: uuid
              */
             rfq_line_id: string;
-            /**
-             * Tax
-             * @default 0
-             */
-            tax?: string;
+            /** Tax */
+            tax?: string | null;
             /** Unit Price */
             unit_price?: string | null;
         };
@@ -3812,6 +3809,7 @@ export interface components {
             status: "draft" | "submitted";
             /** Submitted At */
             submitted_at: string | null;
+            totals?: components["schemas"]["BidTotals"] | null;
             /** Valid Until */
             valid_until: string | null;
             /**
@@ -3860,6 +3858,20 @@ export interface components {
         BidSubmit: {
             /** Accept Late Reason */
             accept_late_reason?: string | null;
+        };
+        /**
+         * BidTotals
+         * @description All in the bid's own currency; nothing converts (SRC-006).
+         */
+        BidTotals: {
+            /** Freight */
+            freight: string;
+            /** Lines */
+            lines: string;
+            /** Tax */
+            tax: string;
+            /** Total */
+            total: string;
         };
         /** BudgetChangeRequestRead */
         BudgetChangeRequestRead: {
@@ -7301,6 +7313,11 @@ export interface components {
         /** RfqListRow */
         RfqListRow: {
             /**
+             * Bids Received
+             * @default 0
+             */
+            bids_received?: number;
+            /**
              * Deadline At
              * Format: date-time
              */
@@ -7346,6 +7363,11 @@ export interface components {
              * @default []
              */
             attachments?: components["schemas"]["RfqAttachmentRead"][];
+            /**
+             * Bids Received
+             * @default 0
+             */
+            bids_received?: number;
             /**
              * Can Approve
              * @default false

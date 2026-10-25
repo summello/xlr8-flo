@@ -1258,9 +1258,15 @@
             "type": "string"
           },
           "tax": {
-            "default": "0",
-            "title": "Tax",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax"
           },
           "unit_price": {
             "anyOf": [
@@ -1651,6 +1657,16 @@
             ],
             "title": "Submitted At"
           },
+          "totals": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BidTotals"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "valid_until": {
             "anyOf": [
               {
@@ -1812,6 +1828,35 @@
           }
         },
         "title": "BidSubmit",
+        "type": "object"
+      },
+      "BidTotals": {
+        "description": "All in the bid's own currency; nothing converts (SRC-006).",
+        "properties": {
+          "freight": {
+            "title": "Freight",
+            "type": "string"
+          },
+          "lines": {
+            "title": "Lines",
+            "type": "string"
+          },
+          "tax": {
+            "title": "Tax",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "string"
+          }
+        },
+        "required": [
+          "lines",
+          "tax",
+          "freight",
+          "total"
+        ],
+        "title": "BidTotals",
         "type": "object"
       },
       "BudgetChangeRequestRead": {
@@ -12209,6 +12254,11 @@
       },
       "RfqListRow": {
         "properties": {
+          "bids_received": {
+            "default": 0,
+            "title": "Bids Received",
+            "type": "integer"
+          },
           "deadline_at": {
             "format": "date-time",
             "title": "Deadline At",
@@ -12323,6 +12373,11 @@
             },
             "title": "Attachments",
             "type": "array"
+          },
+          "bids_received": {
+            "default": 0,
+            "title": "Bids Received",
+            "type": "integer"
           },
           "can_approve": {
             "default": false,

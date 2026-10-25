@@ -171,6 +171,7 @@ class RfqRead(BaseModel):
     published_at: datetime | None = None
     can_edit: bool = False
     can_approve: bool = False
+    bids_received: int = 0
 
 
 type RfqTab = Literal["drafts", "open", "evaluating", "awarded", "all"]
@@ -188,6 +189,7 @@ class RfqListRow(BaseModel):
     deadline_tz: str
     invitee_count: int
     requisition_numbers: list[str]
+    bids_received: int = 0
 
 
 class RfqCounts(BaseModel):
@@ -374,7 +376,7 @@ class BidLineIn(BaseModel):
     rfq_line_id: UUID
     quoted: bool
     unit_price: Amount | None = None
-    tax: Amount = "0"
+    tax: Amount | None = None
 
 
 class BidRequirementIn(BaseModel):
@@ -474,6 +476,15 @@ class BidLate(BaseModel):
     reason: str
 
 
+class BidTotals(BaseModel):
+    """All in the bid's own currency; nothing converts (SRC-006)."""
+
+    lines: str
+    tax: str
+    freight: str
+    total: str
+
+
 class BidRead(BaseModel):
     id: UUID
     rfq_id: UUID
@@ -499,6 +510,7 @@ class BidRead(BaseModel):
     replaced_by_bid_id: UUID | None
     current: bool
     late: BidLate | None
+    totals: BidTotals | None = None
 
 
 class SealedBidRead(BaseModel):

@@ -21,6 +21,7 @@ from flo.modules.sourcing.schemas import (
     BidReplace,
     BidRequirementRead,
     BidSubmit,
+    BidTotals,
     SealedBidRead,
     invalid,
 )
@@ -76,11 +77,23 @@ class BidService(RfqService):
             raise ProblemError(ErrorCode.NOT_FOUND)  # another RFQ's bid is just an unknown id
         return row
 
-    def _own_draft(self, row: tuple[object, ...]) -> None:
-        if row[7] != self.actor_id:
+    def _own_draft(
+        self,
+        row: tuple[object, ...],
+        late_lead: tuple[object, ...] | None = None,
+    ) -> None:
+        """Only the keyer changes a draft. `late_lead` (the locked RFQ row) lets a lead submit
+        another user's draft, and only when that draft is late (SRC-008)."""
+        if row[7] != self.actor_id and late_lead is None:
             raise ProblemError(ErrorCode.FORBIDDEN)
         if row[15] != "draft":
             raise conflict("not_draft", "A submitted bid cannot change. Key a replacement.")
+        if (
+            late_lead is not None
+            and row[7] != self.actor_id
+            and cast(datetime, row[5]) <= cast(datetime, late_lead[2])
+        ):
+            raise ProblemError(ErrorCode.FORBIDDEN)  # a lead accepts late bids, not on-time ones
 
     @staticmethod
     def _fail(errors: list[ProblemFieldError], problem: str = "invalid_bid") -> ProblemError:
@@ -140,6 +153,20 @@ class BidService(RfqService):
         quantities = self._quantities(rfq_id, version)
         errors = []
         for line in lines:
+            if line.quoted and line.tax is None:
+                errors.append(
+                    ProblemFieldError(
+                        field=f"lines/{line.rfq_line_id}",
+                        message="Enter the tax on this line, or 0 if none.",
+                    )
+                )
+            elif not line.quoted and line.tax is not None:
+                errors.append(
+                    ProblemFieldError(
+                        field=f"lines/{line.rfq_line_id}",
+                        message="A line not quoted has no tax.",
+                    )
+                )
             if line.rfq_line_id not in quantities:
                 errors.append(
                     ProblemFieldError(
@@ -171,7 +198,7 @@ class BidService(RfqService):
                     "quantity": quantity,
                     "quoted": line.quoted,
                     "price": price,
-                    "tax": Decimal(line.tax),
+                    "tax": Decimal(line.tax or "0"),
                     "total": None if price is None else quantize(price * quantity, currency),
                 },
             )
@@ -248,9 +275,20 @@ class BidService(RfqService):
         values = dict(zip(fields, row, strict=True))
         for late in ("late_accepted_by", "late_accepted_at", "late_reason"):
             del values[late]
+        currency = cast(str, values["currency"])
+        line_sum = sum((r[5] for r in lines if r[2]), Decimal(0))
+        tax_sum = sum((r[4] for r in lines if r[2]), Decimal(0))
+        freight = quantize(cast(Decimal, row[9]), currency)
+        lines_total, tax_total = quantize(line_sum, currency), quantize(tax_sum, currency)
         values["freight"] = _text(cast(Decimal, values["freight"]))
         return BidRead(
             **values,  # type: ignore[arg-type]
+            totals=BidTotals(
+                lines=format(lines_total, "f"),
+                tax=format(tax_total, "f"),
+                freight=format(freight, "f"),
+                total=format(lines_total + tax_total + freight, "f"),
+            ),
             lines=[
                 BidLineRead(
                     rfq_line_id=r[0],
@@ -423,7 +461,7 @@ class BidService(RfqService):
                             rfq_line_id=r[0],
                             quoted=r[1],
                             unit_price=_text(r[2]),
-                            tax=_text(r[3]) or "0",
+                            tax=_text(r[3]) if r[1] else None,
                         )
                         for r in existing
                     ],
@@ -486,7 +524,7 @@ class BidService(RfqService):
             if rfq[0] == "draft":
                 raise conflict("rfq_not_published", "This RFQ is not published yet.")
             row = self._lock_bid(rfq_id, bid_id)
-            self._own_draft(row)
+            self._own_draft(row, rfq if may_accept_late else None)
             self._check_edit_revision(cast(int, row[18]), if_match)
             errors = [
                 ProblemFieldError(

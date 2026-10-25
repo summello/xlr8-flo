@@ -90,6 +90,14 @@ def _encode(row: SourcingBasis) -> str:
     ).decode()
 
 
+# Current bids: submitted and not replaced by a submitted bid (the rule behind `BidRead.current`).
+CURRENT_BIDS = (
+    "(SELECT count(*) FROM bid {a} WHERE {a}.org_id = {r}.org_id AND {a}.rfq_id = {r}.id "
+    "AND {a}.status = 'submitted' AND NOT EXISTS (SELECT 1 FROM bid n WHERE "
+    "n.org_id = {a}.org_id AND n.replaces_bid_id = {a}.id AND n.status = 'submitted'))"
+)
+
+
 class RfqService:
     def __init__(
         self,
@@ -168,7 +176,9 @@ class RfqService:
                 "AND n.rfq_id = r.id), COALESCE((SELECT array_agg(DISTINCT q.number ORDER BY "
                 "q.number) FROM rfq_line l JOIN requisition q ON q.org_id = l.org_id "
                 "AND q.id = l.requisition_id WHERE l.org_id = r.org_id AND l.rfq_id = r.id), "
-                "'{}'), i.display_name FROM rfq r JOIN identity i ON i.id = r.owner_id WHERE "
+                "'{}'), i.display_name, "
+                + CURRENT_BIDS.format(a="b", r="r")
+                + " FROM rfq r JOIN identity i ON i.id = r.owner_id WHERE "
                 + scope
                 + " AND (%(statuses)s::text[] IS NULL OR r.status = ANY(%(statuses)s))"
                 + boundary
@@ -188,6 +198,7 @@ class RfqService:
             "invitee_count",
             "requisition_numbers",
             "owner_name",
+            "bids_received",
         )
         last_row = page[-1] if len(rows) > page_size else None
         return RfqPage(
@@ -233,8 +244,9 @@ class RfqService:
                 "SELECT r.id, r.number, r.title, r.status, r.unit_id, r.currency, i.email, "
                 "i.display_name, r.version, r.edit_revision, r.created_at, r.updated_at, "
                 "r.specifications, r.delivery_location, r.delivery_terms, r.terms, "
-                "r.deadline_at, r.deadline_tz, r.published_at "
-                "FROM rfq r JOIN identity i ON i.id = r.owner_id "
+                "r.deadline_at, r.deadline_tz, r.published_at, "
+                + CURRENT_BIDS.format(a="b", r="r")
+                + " FROM rfq r JOIN identity i ON i.id = r.owner_id "
                 "WHERE r.org_id = %(org_id)s AND r.id = %(id)s",
                 {"id": id},
             ).fetchone()
@@ -290,6 +302,7 @@ class RfqService:
                 "updated_at": head[11],
                 "lines": lines,
                 "published_at": head[18],
+                "bids_received": head[19],
                 **dict(zip(CONTENT.split(", "), head[12:18], strict=True)),
                 **extra,
             }

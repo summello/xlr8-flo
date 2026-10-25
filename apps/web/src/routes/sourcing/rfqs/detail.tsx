@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { apiClient } from "../../../api/client";
 import StatusPill from "../../../components/status/StatusPill";
 import Card from "../../../components/sourcing/Card";
-import ChangeContactDialog from "../../../components/sourcing/ChangeContactDialog";
+import InviteesCard, { BidsCard } from "../../../components/sourcing/bids/BidsCard";
 import RfqHeaderActions from "../../../components/sourcing/RfqHeaderActions";
 import { LIFECYCLE, relativeDeadline, wallClock, type Rfq, type RfqVersion } from "../../../components/sourcing/api";
 import Person from "../../../components/ui/Person";
@@ -85,19 +85,8 @@ export default function RfqDetail({ id, navigate }: { id: string; navigate: (hre
       <Card title="Versions" load={versions}>
         {(versions.data ?? []).length === 0 ? <p>No version has been published yet.</p> : <ul className="vendor-list-plain">{[...(versions.data ?? [])].reverse().map(v => <li key={v.version}><strong>Version {v.version}</strong><span className="req-sub"><Person name={v.published_by_name} email={v.published_by_email} />, {formatDateTime(v.published_at)}{v.reason ? `: ${v.reason}` : ""}</span><Diff version={v} rfq={r} /></li>)}</ul>}
       </Card>
-      <Card title="Invitees" load={rfq}>
-        {(r.invitees ?? []).length === 0 ? <p>No vendors are invited yet.</p> : (r.invitees ?? []).map(i => {
-          const sent = i.latest_sent_version, deliveries = i.deliveries ?? [], notTold = i.not_told_of ?? [], bounced = deliveries.some(d => d.state === "bounced");
-          const states = Object.entries(deliveries.reduce<Record<string, number>>((n, d) => ({ ...n, [d.state]: (n[d.state] ?? 0) + 1 }), {}));
-          return <div className="rfq-invitee" key={i.vendor_id}>
-            <strong>{String(i.vendor_snapshot.trading_name ?? "Vendor")}</strong>
-            <span className="req-sub">{sent === null || sent === undefined ? "No version sent yet" : `Version ${sent} sent`}</span>
-            {states.length > 0 && <span className="req-sub">Email: {states.map(([state, n]) => `${n} ${state}`).join(", ")}</span>}
-            {notTold.length > 0 && <span className="req-sub" role="status">Not yet told of version {notTold.join(", ")}</span>}
-            {bounced && r.can_edit && <ChangeContactDialog rfq={r} invitee={i} onDone={() => { rfq.reload(); versions.reload(); history.reload(); }} />}
-          </div>;
-        })}
-      </Card>
+      <InviteesCard rfq={r} onChanged={() => { rfq.reload(); versions.reload(); history.reload(); }} />
+      <BidsCard rfq={r} navigate={navigate} />
       <Card title="History" load={history}>
         {(history.data ?? []).length === 0 ? <p>No events yet.</p> : <ul className="vendor-list-plain">{(history.data ?? []).map((e, n) => <li key={`${e.at}-${n}`}><strong>{label(e.action.replace(/^rfq\./, "").replaceAll(".", " "))}</strong><span className="req-sub">{e.actor_email ? <Person name={e.actor_name} email={e.actor_email} /> : "System"}, {formatDateTime(e.at)}{e.reason ? `: ${e.reason}` : ""}</span></li>)}</ul>}
       </Card>

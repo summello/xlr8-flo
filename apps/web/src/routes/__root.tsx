@@ -34,6 +34,7 @@ import NewVendor from "./vendors/new";
 import EditVendor from "./vendors/edit";
 import RfqList from "./sourcing/rfqs/list";
 import RfqDetail from "./sourcing/rfqs/detail";
+import RfqComparison from "./sourcing/rfqs/comparison";
 import NewRfq from "./sourcing/rfqs/new";
 import { confirmLeave, consumeRestoring, installHistoryIndex, settlePop } from "../lib/navigation-guard";
 import type { Project } from "../components/projects/api";
@@ -64,6 +65,7 @@ const REQUISITION_AMEND_REVIEW_PATH = /^\/requisitions\/([0-9a-f-]{36})\/amend\/
 const VENDOR_PATH = /^\/vendors\/([0-9a-f-]{36})$/;
 const VENDOR_EDIT_PATH = /^\/vendors\/([0-9a-f-]{36})\/edit$/;
 const RFQ_PATH = /^\/sourcing\/rfqs\/([0-9a-f-]{36})$/;
+const RFQ_COMPARISON_PATH = /^\/sourcing\/rfqs\/([0-9a-f-]{36})\/comparison$/;
 const ADMIN_USER_PATH = /^\/admin\/users\/([^/]+)$/;
 
 const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
@@ -259,6 +261,10 @@ function routeFor(path: string): ShellRoute {
     activeHref: "/sourcing", path, phase: "commit", title: "RFQ", description: "Where this RFQ is, and who has what.",
     breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/sourcing/rfqs", label: "RFQs" }, { href: path, label: "RFQ" }],
   };
+  if (RFQ_COMPARISON_PATH.test(path)) return {
+    activeHref: "/sourcing", path, phase: "commit", title: "Bid Comparison", description: "Bids side by side, once the bidding stop time has passed.",
+    breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/sourcing/rfqs", label: "RFQs" }, { href: path.replace(/\/comparison$/, ""), label: "RFQ" }, { href: path, label: "Bid Comparison" }],
+  };
   const adminUser = path.match(ADMIN_USER_PATH)?.[1];
   if (adminUser !== undefined) {
     return {
@@ -392,6 +398,7 @@ export default function RootRoute() {
   const vendorId = shellRoute.path.match(VENDOR_PATH)?.[1];
   const vendorEditId = shellRoute.path.match(VENDOR_EDIT_PATH)?.[1];
   const rfqId = shellRoute.path.match(RFQ_PATH)?.[1];
+  const comparisonRfqId = shellRoute.path.match(RFQ_COMPARISON_PATH)?.[1];
 
   return (
     <AppShell navigate={navigate} route={{ ...titledRoute, breadcrumbs: titledRoute.breadcrumbs.map(item => ({ ...item, label: item.href === "/organization" && tenantName ? tenantName : item.label })) }}>
@@ -401,6 +408,7 @@ export default function RootRoute() {
       {vendorEditId ? <EditVendor key={vendorEditId} id={vendorEditId} navigate={navigate} /> : undefined}
       {shellRoute.path === "/sourcing" || shellRoute.path === "/sourcing/rfqs" ? <RfqList key={window.location.search} navigate={navigate} /> : undefined}
       {rfqId ? <RfqDetail key={rfqId} id={rfqId} navigate={navigate} /> : undefined}
+      {comparisonRfqId ? <RfqComparison key={comparisonRfqId} id={comparisonRfqId} navigate={navigate} /> : undefined}
       {vendorId ? <VendorDetail key={vendorId} id={vendorId} navigate={navigate} /> : undefined}
       {shellRoute.path === "/requisitions" ? <RequisitionList key={window.location.search} navigate={navigate} /> : undefined}
       {shellRoute.path === "/requisitions/new" ? <NewRequisition navigate={navigate} /> : undefined}

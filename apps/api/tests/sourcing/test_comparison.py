@@ -164,7 +164,7 @@ def test_a_bid_after_the_freeze_joins_at_the_frozen_date_and_the_rest_stays(life
         line = rfq_line(db, rfq)
         bid = edit(
             db, rfq, bid,
-            lines=[BidLineIn(rfq_line_id=line, quoted=True, unit_price="8")],
+            lines=[BidLineIn(rfq_line_id=line, quoted=True, unit_price="8", tax="0")],
             evidence_attachment_id=evidence(db, bid.id),
         )  # fmt: skip
         sql(db, "UPDATE bid SET sent_at=now()-interval '5 days' WHERE id=%s RETURNING 1", (bid.id,))
@@ -192,7 +192,7 @@ def test_a_replaced_bid_counts_once_at_the_replacements_figures(lifecycle_db):
     line = rfq_line(db, rfq)
     draft = edit(
         db, rfq, draft,
-        lines=[BidLineIn(rfq_line_id=line, quoted=True, unit_price="9")],
+        lines=[BidLineIn(rfq_line_id=line, quoted=True, unit_price="9", tax="0")],
         evidence_attachment_id=evidence(db, draft.id),
     )  # fmt: skip
     submit(db, rfq, draft)

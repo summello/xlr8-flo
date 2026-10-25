@@ -5526,6 +5526,73 @@
         },
         "gate_s": 2
       }
+    },
+    {
+      "story": "E12-S14",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui",
+        "auth"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 3,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 3
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 3,
+          "findings": 5,
+          "blockers": 4,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "451086ba-d96b-4cfc-bac3-90448c31ba1a",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S14",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "launch-model",
+          "model": "gpt-5.6-sol"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Bid sheet side sheet on the RFQ Invitees card: vendor-currency lines with required per-line tax, server totals, sent time entered in the RFQ's zone, late callout with a lead-only accept path (backend now lets a lead submit a late non-keyer draft), replace form, Bids card and list column from bids_received. instantIn now round-trips so a skipped clock-change time is refused.",
+      "title": "Record a bid: bid sheet, two times, vendor currency, late-bid override",
+      "durations": {
+        "wall_s": 16901,
+        "author_s": 3670,
+        "review_s": {
+          "codex": 15,
+          "opus": 389
+        },
+        "gate_s": 2
+      }
     }
   ]
 }

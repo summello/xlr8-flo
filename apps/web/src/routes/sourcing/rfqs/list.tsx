@@ -51,6 +51,7 @@ export default function RfqList({ navigate }: { navigate: (href: string) => void
     helper.accessor("title", { header: "Title", meta: { label: "Title" }, enableSorting: false, cell: ({ row }) => <span className="req-title-cell"><span>{row.original.title}</span><span className="req-sub">{row.original.requisition_numbers.join(", ")}</span></span> }),
     helper.accessor("status", { header: "Status", meta: { label: "Status" }, enableSorting: false, cell: ({ getValue }) => <StatusPill docType="rfq" status={getValue()} /> }),
     helper.accessor("invitee_count", { header: "Invited", meta: { label: "Invited" }, enableSorting: false, cell: ({ getValue }) => `${getValue()} of ${MAX_INVITEES}` }),
+    helper.accessor("bids_received", { header: "Bids", meta: { label: "Bids" }, enableSorting: false, cell: ({ getValue }) => <span className="numeric">{getValue() ?? 0}</span> }),
     helper.accessor("deadline_at", { header: "Deadline", meta: { label: "Deadline" }, enableSorting: false, cell: ({ getValue }) => <span>{formatDate(getValue())}<span className="req-sub">{relativeDeadline(getValue())}</span></span> }),
     helper.accessor("owner_email", { header: "Owner", meta: { label: "Owner" }, enableSorting: false, cell: ({ row }) => <Person name={row.original.owner_name} email={row.original.owner_email} /> }),
   ]), [navigate]);

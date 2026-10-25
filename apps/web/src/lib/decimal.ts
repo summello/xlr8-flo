@@ -44,7 +44,7 @@ export function isPositiveDecimal(value: string): boolean {
   return /^[0-9]{1,14}(?:\.[0-9]{1,4})?$/.test(value) && /[1-9]/.test(value);
 }
 
-const separators = (locale?: string) => {
+export const separators = (locale?: string) => {
   const parts = new Intl.NumberFormat(locale).formatToParts(12345.6);
   return { group: parts.find(p => p.type === "group")?.value ?? "", decimal: parts.find(p => p.type === "decimal")?.value ?? "." };
 };

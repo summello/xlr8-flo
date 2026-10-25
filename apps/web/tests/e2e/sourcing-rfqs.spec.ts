@@ -22,7 +22,7 @@ async function stubRfqs(page: Page, { canEdit = true, bounced = false, refuseSer
       deliveries: [{ contact_id: "c1", version: 1, state: bounced ? "bounced" : "sent" }], latest_sent_version: 1, not_told_of: state.version > 1 ? [2] : [] }],
     can_edit: canEdit, can_approve: false,
   });
-  const row = (id: string, number: string, status: string) => ({ id, number, title: "Centrifugal pumps", status, unit_id: unitId, owner_email: "buyer@example.test", deadline_at: state.deadline, deadline_tz: "UTC", invitee_count: 1, requisition_numbers: ["REQ-0042"] });
+  const row = (id: string, number: string, status: string) => ({ id, number, title: "Centrifugal pumps", status, unit_id: unitId, owner_email: "buyer@example.test", deadline_at: state.deadline, deadline_tz: "UTC", invitee_count: 1, requisition_numbers: ["REQ-0042"], bids_received: 0 });
   await page.route("**/api/v1/**", async route => {
     const req = route.request(), url = new URL(req.url()), path = url.pathname;
     const send = (body: unknown, status = 200) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
@@ -41,6 +41,7 @@ async function stubRfqs(page: Page, { canEdit = true, bounced = false, refuseSer
       return send({ rows, next_cursor: null, counts: { drafts: 1, open: 1, evaluating: 0, awarded: 0, all: 2 } });
     }
     if (path === `/api/v1/sourcing/rfqs/${rfqId}`) return send(detail());
+    if (path === `/api/v1/sourcing/rfqs/${rfqId}/bids`) return send([]);
     if (path === `/api/v1/sourcing/rfqs/${rfqId}/versions`) return send(Array.from({ length: state.version }, (_, i) => ({ version: i + 1, reason: i ? "Vendors asked" : null, diff: i ? { deadline_at: { was: "2026-10-02", now: "2026-10-09" } } : {}, snapshot: {}, published_by_email: "buyer@example.test", published_at: NOW })));
     if (path === `/api/v1/sourcing/rfqs/${rfqId}/history`) return send([...(state.version > 1 ? [{ action: "rfq.extend", at: NOW, actor_email: "buyer@example.test", reason: "Vendors asked" }] : []), { action: "rfq.publish", at: NOW, actor_email: "buyer@example.test", reason: null }]);
     if (path === `/api/v1/sourcing/rfqs/${rfqId}/extend-deadline` && req.method() === "POST") {
@@ -55,7 +56,7 @@ async function stubRfqs(page: Page, { canEdit = true, bounced = false, refuseSer
   return state;
 }
 
-const FORBIDDEN = ["Bids", "Record Bid", "Evaluators", "Start RFQ", "Edit", "Amend", "Cancel RFQ", "Open Comparison", "View Award"];
+const FORBIDDEN = ["Evaluators", "Start RFQ", "Edit", "Amend", "Cancel RFQ", "Open Comparison", "View Award"];
 
 test("tabs and counts, open an RFQ, extend its deadline and see the new version unsent", async ({ page }) => {
   const state = await stubRfqs(page);

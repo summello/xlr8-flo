@@ -36,7 +36,7 @@ export function wallClock(iso: string, zone: string): { date: string; time: stri
   return { date: `${p.year}-${p.month}-${p.day}`, time: `${p.hour}:${p.minute}` };
 }
 
-/** The instant a wall-clock date and time mean in `zone`; null if either is malformed. Two passes settle a daylight-saving edge. */
+/** The instant a wall-clock date and time mean in `zone`; null if either is malformed or the clocks skipped it. Two passes settle a daylight-saving edge. */
 export function instantIn(date: string, time: string, zone: string): Date | null {
   const d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date), t = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(time);
   if (!d || !t) return null;
@@ -44,5 +44,6 @@ export function instantIn(date: string, time: string, zone: string): Date | null
   if (Number.isNaN(wall) || new Date(wall).getUTCDate() !== +d[3]!) return null;
   let guess = wall;
   for (let i = 0; i < 2; i++) guess = wall - (asUtc(parts(guess, zone)) - guess);
-  return new Date(guess);
+  const result = new Date(guess), back = wallClock(result.toISOString(), zone);
+  return back.date === date && back.time === time ? result : null; // a wall time the clocks skipped never happened
 }
