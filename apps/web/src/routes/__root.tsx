@@ -36,6 +36,8 @@ import RfqList from "./sourcing/rfqs/list";
 import RfqDetail from "./sourcing/rfqs/detail";
 import RfqComparison from "./sourcing/rfqs/comparison";
 import NewRfq from "./sourcing/rfqs/new";
+import EditRfq from "./sourcing/rfqs/$id.edit";
+import AmendRfq from "./sourcing/rfqs/$id.amend";
 import { confirmLeave, consumeRestoring, installHistoryIndex, settlePop } from "../lib/navigation-guard";
 import type { Project } from "../components/projects/api";
 import type { RoutePath } from "./route-paths";
@@ -66,6 +68,8 @@ const VENDOR_PATH = /^\/vendors\/([0-9a-f-]{36})$/;
 const VENDOR_EDIT_PATH = /^\/vendors\/([0-9a-f-]{36})\/edit$/;
 const RFQ_PATH = /^\/sourcing\/rfqs\/([0-9a-f-]{36})$/;
 const RFQ_COMPARISON_PATH = /^\/sourcing\/rfqs\/([0-9a-f-]{36})\/comparison$/;
+const RFQ_EDIT_PATH = /^\/sourcing\/rfqs\/([0-9a-f-]{36})\/edit$/;
+const RFQ_AMEND_PATH = /^\/sourcing\/rfqs\/([0-9a-f-]{36})\/amend$/;
 const ADMIN_USER_PATH = /^\/admin\/users\/([^/]+)$/;
 
 const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
@@ -265,6 +269,13 @@ function routeFor(path: string): ShellRoute {
     activeHref: "/sourcing", path, phase: "commit", title: "Bid Comparison", description: "Bids side by side, once the bidding stop time has passed.",
     breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/sourcing/rfqs", label: "RFQs" }, { href: path.replace(/\/comparison$/, ""), label: "RFQ" }, { href: path, label: "Bid Comparison" }],
   };
+  if (RFQ_EDIT_PATH.test(path) || RFQ_AMEND_PATH.test(path)) {
+    const editing = RFQ_EDIT_PATH.test(path), detail = path.replace(/\/(edit|amend)$/, "");
+    return {
+      activeHref: "/sourcing", path, phase: "commit", title: editing ? "Edit RFQ" : "Amend RFQ", description: editing ? "What exactly am I asking for, and from whom?" : "What changed, why, and who will be told?",
+      breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/sourcing/rfqs", label: "RFQs" }, { href: detail, label: "RFQ" }, { href: path, label: editing ? "Edit" : "Amend" }],
+    };
+  }
   const adminUser = path.match(ADMIN_USER_PATH)?.[1];
   if (adminUser !== undefined) {
     return {
@@ -399,6 +410,8 @@ export default function RootRoute() {
   const vendorEditId = shellRoute.path.match(VENDOR_EDIT_PATH)?.[1];
   const rfqId = shellRoute.path.match(RFQ_PATH)?.[1];
   const comparisonRfqId = shellRoute.path.match(RFQ_COMPARISON_PATH)?.[1];
+  const editRfqId = shellRoute.path.match(RFQ_EDIT_PATH)?.[1];
+  const amendRfqId = shellRoute.path.match(RFQ_AMEND_PATH)?.[1];
 
   return (
     <AppShell navigate={navigate} route={{ ...titledRoute, breadcrumbs: titledRoute.breadcrumbs.map(item => ({ ...item, label: item.href === "/organization" && tenantName ? tenantName : item.label })) }}>
@@ -408,6 +421,8 @@ export default function RootRoute() {
       {vendorEditId ? <EditVendor key={vendorEditId} id={vendorEditId} navigate={navigate} /> : undefined}
       {shellRoute.path === "/sourcing" || shellRoute.path === "/sourcing/rfqs" ? <RfqList key={window.location.search} navigate={navigate} /> : undefined}
       {rfqId ? <RfqDetail key={rfqId} id={rfqId} navigate={navigate} /> : undefined}
+      {editRfqId ? <EditRfq key={editRfqId} id={editRfqId} navigate={navigate} /> : undefined}
+      {amendRfqId ? <AmendRfq key={amendRfqId} id={amendRfqId} navigate={navigate} /> : undefined}
       {comparisonRfqId ? <RfqComparison key={comparisonRfqId} id={comparisonRfqId} navigate={navigate} /> : undefined}
       {vendorId ? <VendorDetail key={vendorId} id={vendorId} navigate={navigate} /> : undefined}
       {shellRoute.path === "/requisitions" ? <RequisitionList key={window.location.search} navigate={navigate} /> : undefined}

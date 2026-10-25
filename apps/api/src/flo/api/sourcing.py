@@ -31,6 +31,7 @@ from flo.modules.sourcing.schemas import (
     BidReplace,
     BidSubmit,
     ExtendDeadline,
+    InviteeCandidatePage,
     InviteeCreate,
     InviteePatch,
     RequirementsFromTemplate,
@@ -230,6 +231,19 @@ def put_visibility(
 ) -> RfqRead:
     service = RfqService(connection, current_scope(), context.user_id)
     return _done(service.set_visibility(id, aid, body, revision), response)
+
+
+@router.get("/rfqs/{id}/invitee-candidates", response_model=InviteeCandidatePage)
+def invitee_candidates(
+    id: UUID,
+    context: EditContext,
+    connection: Connection,
+    q: Annotated[str, Query(max_length=200)] = "",
+    cursor: str | None = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+) -> InviteeCandidatePage:
+    service = RfqService(connection, current_scope(), context.user_id)
+    return service.invitee_candidates(id, q, cursor, limit)
 
 
 @router.post("/rfqs/{id}/invitees", status_code=201, response_model=RfqRead)

@@ -2437,6 +2437,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sourcing/rfqs/{id}/invitee-candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Invitee Candidates */
+        get: operations["invitee_candidates_api_v1_sourcing_rfqs__id__invitee_candidates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sourcing/rfqs/{id}/invitees": {
         parameters: {
             query?: never;
@@ -5437,6 +5454,47 @@ export interface components {
             /** Tenant Label */
             tenant_label: string | null;
         };
+        /** InviteeCandidate */
+        InviteeCandidate: {
+            eligibility: components["schemas"]["Eligibility"];
+            /** Invited */
+            invited: boolean;
+            /** Trading Name */
+            trading_name: string;
+            /**
+             * Vendor Id
+             * Format: uuid
+             */
+            vendor_id: string;
+        };
+        /** InviteeCandidatePage */
+        InviteeCandidatePage: {
+            /** Next Cursor */
+            next_cursor?: string | null;
+            /** Rows */
+            rows: components["schemas"]["InviteeCandidate"][];
+        };
+        /**
+         * InviteeContact
+         * @description What the RFQ editor needs of a contact; read inside sourcing, so no `vendor.view`.
+         */
+        InviteeContact: {
+            /** Chosen */
+            chosen: boolean;
+            /** Email */
+            email: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Receives Documents */
+            receives_documents: boolean;
+            /** Type */
+            type: string;
+        };
         /** InviteeCreate */
         InviteeCreate: {
             /** Contact Ids */
@@ -5458,6 +5516,11 @@ export interface components {
         InviteeRead: {
             /** Contact Ids */
             contact_ids: string[];
+            /**
+             * Contacts
+             * @default []
+             */
+            contacts?: components["schemas"]["InviteeContact"][];
             /**
              * Deliveries
              * @default []
@@ -16290,6 +16353,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RfqEvent"][];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    invitee_candidates_api_v1_sourcing_rfqs__id__invitee_candidates_get: {
+        parameters: {
+            query?: {
+                q?: string;
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteeCandidatePage"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

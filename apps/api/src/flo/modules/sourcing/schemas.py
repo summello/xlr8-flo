@@ -20,6 +20,7 @@ from pydantic import (
 )
 
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError
+from flo.modules.vendors.schemas import Eligibility
 
 type RfqStatus = Literal["draft", "published", "closed", "under_evaluation", "awarded", "cancelled"]
 type NotSelectable = Literal["another_unit", "different_currency", "amendment_pending", "on_rfq"]
@@ -113,9 +114,21 @@ class DeliveryRead(BaseModel):
     state: Literal["queued", "sent", "failed", "bounced"]  # follows the outbox row; dead = bounced
 
 
+class InviteeContact(BaseModel):
+    """What the RFQ editor needs of a contact; read inside sourcing, so no `vendor.view`."""
+
+    id: UUID
+    name: str
+    email: str
+    type: str
+    receives_documents: bool
+    chosen: bool
+
+
 class InviteeRead(BaseModel):
     vendor_id: UUID
     contact_ids: list[UUID]
+    contacts: list[InviteeContact] = []  # those that receive documents, plus any already chosen
     vendor_snapshot: dict[str, object]
     override_reason: str | None
     invited_by_email: str
@@ -126,6 +139,18 @@ class InviteeRead(BaseModel):
     deliveries: list[DeliveryRead] = []
     latest_sent_version: int | None = None
     not_told_of: list[int] = []  # versions with no email sent to any contact of this vendor
+
+
+class InviteeCandidate(BaseModel):
+    vendor_id: UUID
+    trading_name: str
+    eligibility: Eligibility
+    invited: bool
+
+
+class InviteeCandidatePage(BaseModel):
+    rows: list[InviteeCandidate]
+    next_cursor: str | None = None
 
 
 class RfqLineRead(BaseModel):

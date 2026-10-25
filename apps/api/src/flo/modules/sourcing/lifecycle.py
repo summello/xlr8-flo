@@ -36,6 +36,12 @@ from flo.modules.vendors.service import VendorService
 
 type Conn = psycopg.Connection[tuple[object, ...]]
 
+REQUIRED_TEXT = (
+    ("specifications", "specifications"),
+    ("delivery_location", "delivery location"),
+    ("delivery_terms", "delivery terms"),
+    ("terms", "terms"),
+)
 JOB_KIND = "rfq-close"
 TEMPLATE = "rfq-version-v1"
 TRANSITIONS = {
@@ -109,9 +115,23 @@ class RfqLifecycle(RfqService):
         assert self.actor_id is not None
         return self.actor_id
 
+    def _blank_text_problems(self, id: UUID) -> list[ProblemFieldError]:
+        """SRC-002: the four text fields an RFQ cannot be published, or amended, without."""
+        row = self.repo.execute(
+            "SELECT specifications, delivery_location, delivery_terms, terms FROM rfq "
+            "WHERE org_id = %(org_id)s AND id = %(id)s",
+            {"id": id},
+        ).fetchone()
+        assert row is not None
+        return [
+            ProblemFieldError(field=field, message=f"Add the {label}.")
+            for (field, label), value in zip(REQUIRED_TEXT, row, strict=True)
+            if not (cast(str | None, value) or "").strip()
+        ]
+
     def _check_publishable(self, id: UUID) -> None:
         """Every problem at once, as field errors."""
-        problems: list[ProblemFieldError] = []
+        problems = self._blank_text_problems(id)
         lines = self.repo.execute(
             "SELECT count(*) FROM rfq_line WHERE org_id = %(org_id)s AND rfq_id = %(id)s",
             {"id": id},
@@ -307,6 +327,15 @@ class RfqLifecycle(RfqService):
             if body.lines is not None:
                 self._quantities_only(id, body)
             self._apply_content(id, body)
+            # ponytail: legacy rows published before SRC-002 would also refuse an extension, so
+            # only an amendment is checked; check `extend` too once such rows are backfilled
+            if action == "amend" and (problems := self._blank_text_problems(id)):
+                raise ProblemError(
+                    ErrorCode.VALIDATION_FAILED,
+                    detail=problems[0].message,
+                    errors=tuple(problems),
+                    checks={"problem": "cannot_amend"},
+                )
             if diff(before, snapshot(self.repo, id)) == {}:
                 raise invalid("reason", "Change something to amend the RFQ.", "no_change")
             version = cast(int, head[2]) + 1

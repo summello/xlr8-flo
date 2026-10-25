@@ -66,7 +66,7 @@ export default function RfqDetail({ id, navigate }: { id: string; navigate: (hre
     <header className="vendor-head">
       <div><h2 className="vendor-name">{r.number} · {r.title}</h2><p className="req-sub">Owner <Person name={r.owner_name} email={r.owner_email} /> · Deadline {closes.date} {closes.time} {r.deadline_tz ?? "UTC"} ({relativeDeadline(r.deadline_at)}) · Version {r.version}</p></div>
       <StatusPill docType="rfq" status={r.status} />
-      <RfqHeaderActions rfq={r} onChanged={changed} />
+      <RfqHeaderActions rfq={r} onChanged={changed} navigate={navigate} />
     </header>
     <Lifecycle rfq={r} />
     <div className="req-grid-detail">

@@ -2,7 +2,7 @@
 
 import asyncio
 from datetime import UTC, datetime, timedelta
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import psycopg
 import pytest
@@ -49,7 +49,11 @@ def ready(db, qty="4", names=("V",)):
     life(db).update_content(
         rfq.id,
         RfqContentPatch(
-            specifications="Pump spec", deadline_at=datetime.now(UTC) + timedelta(days=3)
+            specifications="Pump spec",
+            delivery_location="Dock 4",
+            delivery_terms="DAP",
+            terms="Net 30",
+            deadline_at=datetime.now(UTC) + timedelta(days=3),
         ),
         str(rfq.edit_revision),
     )
@@ -117,7 +121,8 @@ def test_publish_lists_every_problem_at_once(lifecycle_db):
     rfq = draft_rfq(db, entry(row, line, "1"))
     sql(
         db,
-        "UPDATE rfq SET deadline_at=now()+interval '10 minutes' WHERE id=%s RETURNING 1",
+        "UPDATE rfq SET deadline_at=now()+interval '10 minutes', specifications='s', "
+        "delivery_location='l', delivery_terms='d', terms='t' WHERE id=%s RETURNING 1",
         (rfq.id,),
     )
     with correlation_context("publish"):
@@ -130,6 +135,56 @@ def test_publish_lists_every_problem_at_once(lifecycle_db):
         error = refused(lambda: life(db).publish(rfq.id), ErrorCode.VALIDATION_FAILED)
         assert {e.field for e in error.errors} == {"deadline_at", f"invitees/{mute.id}"}
     assert life(db).get(rfq.id).status == "draft" and emails(db, rfq) == []
+
+
+def test_publish_names_every_blank_text_field_and_whitespace_is_blank(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, _, _ = ready(db)
+    fields = ("specifications", "delivery_location", "delivery_terms", "terms")
+    with correlation_context("publish"):
+        for blank in fields:
+            sql(db, f"UPDATE rfq SET {blank}='  ' WHERE id=%s RETURNING 1", (rfq.id,))
+            error = refused(lambda: life(db).publish(rfq.id), ErrorCode.VALIDATION_FAILED)
+            assert error.checks["problem"] == "cannot_publish"
+            assert [e.field for e in error.errors] == [blank]
+            sql(db, f"UPDATE rfq SET {blank}='x' WHERE id=%s RETURNING 1", (rfq.id,))
+        sql(
+            db,
+            "UPDATE rfq SET specifications=NULL, delivery_location='', delivery_terms=NULL, "
+            "terms=' ' WHERE id=%s RETURNING 1",
+            (rfq.id,),
+        )
+        error = refused(lambda: life(db).publish(rfq.id), ErrorCode.VALIDATION_FAILED)
+        assert [e.field for e in error.errors] == list(fields)
+        assert error.errors[3].message == "Add the terms."
+        sql(
+            db,
+            "UPDATE rfq SET specifications='s', delivery_location='l', delivery_terms='d', "
+            "terms='t' WHERE id=%s RETURNING 1",
+            (rfq.id,),
+        )
+        assert life(db).publish(rfq.id).status == "published"  # no attachment needed
+
+
+def test_amend_cannot_blank_a_required_text_field(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, _, _ = publish(db)
+    for blank in (" ", ""):
+        with correlation_context("amend"):
+            error = refused(
+                lambda: life(db).amend(rfq.id, RfqAmend(reason="r", terms=blank)),
+                ErrorCode.VALIDATION_FAILED,
+            )
+        assert error.checks["problem"] == "cannot_amend"
+        assert [e.field for e in error.errors] == ["terms"]
+    with correlation_context("amend"):
+        error = refused(
+            lambda: life(db).amend(rfq.id, RfqAmend(reason="r", terms=None, specifications=None)),
+            ErrorCode.VALIDATION_FAILED,
+        )
+    assert {e.field for e in error.errors} == {"terms", "specifications"}
+    after = life(db).get(rfq.id)
+    assert after.version == 1 and after.terms == "Net 30" and len(life(db).versions(rfq.id)) == 1
 
 
 def test_publish_needs_no_approval_and_queues_one_email_per_contact_never_sending(lifecycle_db):
@@ -167,22 +222,22 @@ def test_amend_records_a_diff_keeps_v1_and_tells_each_contact_once(lifecycle_db)
     rfq, row, line = publish(db)
     with correlation_context("amend"):
         done = life(db).amend(
-            rfq.id, RfqAmend(reason="Spec change", terms="Net 30", specifications="Pump spec 2")
+            rfq.id, RfqAmend(reason="Spec change", terms="Net 45", specifications="Pump spec 2")
         )
-    assert done.version == 2 and done.terms == "Net 30"
+    assert done.version == 2 and done.terms == "Net 45"
     v1, v2 = life(db).versions(rfq.id)
-    assert v1.snapshot["specifications"] == "Pump spec" and v1.snapshot["terms"] is None
+    assert v1.snapshot["specifications"] == "Pump spec" and v1.snapshot["terms"] == "Net 30"
     assert v2.reason == "Spec change"
     assert v2.diff == {
         "specifications": {"was": "Pump spec", "now": "Pump spec 2"},
-        "terms": {"was": None, "now": "Net 30"},
+        "terms": {"was": "Net 30", "now": "Net 45"},
     }
     assert len(emails(db, rfq, 2)) == 1 and len(emails(db, rfq, 1)) == 1
     for statement in ("UPDATE rfq_version SET reason='x'", "DELETE FROM rfq_version"):
         with pytest.raises(psycopg.errors.ObjectNotInPrerequisiteState):
             sql(db, statement + " RETURNING 1")  # a raw UPDATE of a published version raises
     error = refused(
-        lambda: life(db).amend(rfq.id, RfqAmend(reason="again", terms="Net 30")),
+        lambda: life(db).amend(rfq.id, RfqAmend(reason="again", terms="Net 45")),
         ErrorCode.VALIDATION_FAILED,
     )
     assert error.checks["problem"] == "no_change"
@@ -289,7 +344,15 @@ def test_requisition_is_sourced_only_when_every_line_is_on_a_published_rfq(lifec
     def make(qty):
         rfq = draft_rfq(db, entry(row, line, qty))
         life(db).update_content(
-            rfq.id, RfqContentPatch(deadline_at=deadline), str(rfq.edit_revision)
+            rfq.id,
+            RfqContentPatch(
+                specifications="s",
+                delivery_location="l",
+                delivery_terms="d",
+                terms="t",
+                deadline_at=deadline,
+            ),
+            str(rfq.edit_revision),
         )
         invite(db, life(db).get(rfq.id), vendor(db, f"V{uuid4().hex[:4]}"))
         return rfq
@@ -411,6 +474,41 @@ def test_only_editors_publish_and_viewers_read_versions(lifecycle_db, permission
     assert attempt.status_code == status
     assert read.status_code == 200
     assert life(db).get(rfq.id).status == ("published" if status == 200 else "draft")
+
+
+def test_a_unit_scoped_editor_chooses_among_the_offered_contacts_and_publishes(lifecycle_db):
+    from flo.modules.identity.models import AuthorizationTarget, ScopeType
+
+    db, _ = lifecycle_db
+    rfq, _, _ = ready(db)
+    vendor_id = rfq.invitees[0].vendor_id
+    billing = vendors(db).create_contact(
+        vendor_id,
+        ContactCreate(
+            type="billing", name="B", email=f"{uuid4().hex}@x.test", receives_documents=True
+        ),
+    )
+    regrant(db, ["rfq.view", "rfq.edit"], AuthorizationTarget(ScopeType.BU, rfq.unit_id))
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)  # no org-wide vendor.view: /vendors/{id}/contacts is closed
+            read = await send(browser, "GET", f"/rfqs/{rfq.id}")
+            offered = {c["id"] for c in read.json()["invitees"][0]["contacts"]}
+            assert billing.id in {UUID(c) for c in offered}
+            patched = await send(
+                browser,
+                "PATCH",
+                f"/rfqs/{rfq.id}/invitees/{vendor_id}",
+                {"contact_ids": [str(billing.id)]},
+                {"If-Match": str(read.json()["edit_revision"])},
+            )
+            assert patched.status_code == 200, patched.text
+            published = await send(browser, "POST", f"/rfqs/{rfq.id}/publish")
+            assert published.status_code == 200, published.text
+
+    asyncio.run(scenario())
+    assert life(db).get(rfq.id).invitees[0].contact_ids == [billing.id]
 
 
 def test_lifecycle_routes_conceal_foreign_tenants(lifecycle_db):

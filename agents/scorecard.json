@@ -5593,6 +5593,72 @@
         },
         "gate_s": 2
       }
+    },
+    {
+      "story": "E12-S13",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui",
+        "auth"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "21ce951a-1755-4a05-9a03-a2533274c30c",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S13",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1745d-0497-7883-9acc-765f4b9fe22b",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Adds the SRC-002 four-text-field check to publish and amend, the unit-scoped invitee-candidates read and per-invitee contacts, and the /edit and /amend editor screens with the eligibility picker, publish dialog and What Changed. Edit and Amend header actions now show on the RFQ detail.",
+      "title": "RFQ editor, invitations with the eligibility picker, publish and amend",
+      "durations": {
+        "wall_s": 4130,
+        "author_s": 2846,
+        "review_s": {
+          "codex": 491,
+          "opus": 393
+        },
+        "gate_s": 2
+      }
     }
   ]
 }

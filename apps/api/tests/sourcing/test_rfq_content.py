@@ -14,6 +14,7 @@ from flo.kernel.errors import ErrorCode
 from flo.kernel.logging import correlation_context
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import tenant_transaction
+from flo.modules.identity.models import AuthorizationTarget, ScopeType
 from flo.modules.org.schemas import MasterCreate
 from flo.modules.org.service import OrgService
 from flo.modules.sourcing.schemas import (
@@ -340,6 +341,56 @@ def test_content_permissions_and_a_hidden_override_is_refused_by_the_server(life
     assert [i.vendor_id for i in service(db).get(rfq.id).invitees] == [susp.id]
 
 
+def test_candidates_need_rfq_edit_on_the_unit_and_show_nothing_beyond_the_four_fields(
+    lifecycle_db,
+):
+    db, _ = lifecycle_db
+    rfq = new_rfq(db)
+    ok, bad, taken = vendor(db, "Okay"), vendor(db, "Bad", status="suspended"), vendor(db, "Taken")
+    invite(db, rfq, taken)
+    muted = vendors(db).create_contact(
+        taken.id,
+        ContactCreate(type="billing", name="M", email="m@x.test", receives_documents=False),
+    )
+    [before] = service(db).get(rfq.id).invitees
+    assert muted.id not in {c.id for c in before.contacts}  # does not receive documents, not chosen
+    chosen = service(db).update_invitee(rfq.id, taken.id, InviteePatch(contact_ids=[muted.id]), "2")
+    listed = {c.id: c.chosen for c in chosen.invitees[0].contacts}
+    assert listed[muted.id] is True  # already chosen, so offered even though it does not receive
+    assert set(chosen.invitees[0].contacts[0].model_dump()) == {
+        "id", "name", "email", "type", "receives_documents", "chosen",
+    }  # fmt: skip
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            url = f"/rfqs/{rfq.id}/invitee-candidates"
+            # org-wide grants without vendor.view: unit-scoped rfq.edit works, view-only does not
+            regrant(db, ["rfq.view"], AuthorizationTarget(ScopeType.BU, rfq.unit_id))
+            assert (await send(browser, "GET", url)).status_code == 403
+            regrant(db, ["rfq.view", "rfq.edit"], AuthorizationTarget(ScopeType.BU, rfq.unit_id))
+            page = await send(browser, "GET", url)
+            assert page.status_code == 200, page.text
+            rows = {r["trading_name"]: r for r in page.json()["rows"]}
+            assert set(page.json()) == {"rows", "next_cursor"}
+            assert all(
+                set(r) == {"vendor_id", "trading_name", "eligibility", "invited"}
+                for r in rows.values()
+            )
+            assert rows["Okay"]["eligibility"]["eligible"] is True and not rows["Okay"]["invited"]
+            assert rows["Bad"]["eligibility"]["eligible"] is False
+            assert rows["Bad"]["eligibility"]["reasons"] and rows["Taken"]["invited"]
+            narrowed = await send(browser, "GET", url + "?q=Okay&limit=1")
+            assert [r["trading_name"] for r in narrowed.json()["rows"]] == ["Okay"]
+            assert (await send(browser, "GET", url + "?limit=0")).status_code == 422
+            sql(db, "UPDATE rfq SET status='published' WHERE id=%s RETURNING 1", (rfq.id,))
+            late = await send(browser, "GET", url)
+            assert late.status_code == 409 and late.json()["checks"]["problem"] == "not_draft"
+
+    asyncio.run(scenario())
+    assert ok and bad
+
+
 def test_rfq_content_routes_conceal_foreign_tenants(lifecycle_db):
     db, _ = lifecycle_db
     mine = new_rfq(db)
@@ -374,6 +425,7 @@ def test_rfq_content_routes_conceal_foreign_tenants(lifecycle_db):
                     f"/rfqs/{foreign_rfq}/attachments/{uuid4()}/visibility",
                     {"vendor_visible": True},
                 ),
+                ("GET", f"/rfqs/{foreign_rfq}/invitee-candidates", None),
                 ("POST", f"/rfqs/{foreign_rfq}/invitees", {"vendor_id": str(other_org_vendor.id)}),
                 ("DELETE", f"/rfqs/{foreign_rfq}/invitees/{other_org_vendor.id}", None),
                 (

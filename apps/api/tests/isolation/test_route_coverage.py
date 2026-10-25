@@ -85,6 +85,7 @@ COVERED = {
     ("POST", "/api/v1/sourcing/rfqs/{id}/requirements/from-template"): CONTENT_ROUTES,
     ("POST", "/api/v1/sourcing/rfqs/{id}/requirements/{rid}/waive"): CONTENT_ROUTES,
     ("PUT", "/api/v1/sourcing/rfqs/{id}/attachments/{aid}/visibility"): CONTENT_ROUTES,
+    ("GET", "/api/v1/sourcing/rfqs/{id}/invitee-candidates"): CONTENT_ROUTES,
     ("POST", "/api/v1/sourcing/rfqs/{id}/invitees"): CONTENT_ROUTES,
     ("DELETE", "/api/v1/sourcing/rfqs/{id}/invitees/{vendor_id}"): CONTENT_ROUTES,
     ("PATCH", "/api/v1/sourcing/rfqs/{id}/invitees/{vendor_id}"): CONTENT_ROUTES,

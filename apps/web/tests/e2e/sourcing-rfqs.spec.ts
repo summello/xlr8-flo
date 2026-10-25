@@ -56,7 +56,7 @@ async function stubRfqs(page: Page, { canEdit = true, bounced = false, refuseSer
   return state;
 }
 
-const FORBIDDEN = ["Evaluators", "Start RFQ", "Edit", "Amend", "Cancel RFQ", "Open Comparison", "View Award"];
+const FORBIDDEN = ["Evaluators", "Start RFQ", "Cancel RFQ", "Open Comparison", "View Award"];
 
 test("tabs and counts, open an RFQ, extend its deadline and see the new version unsent", async ({ page }) => {
   const state = await stubRfqs(page);

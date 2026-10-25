@@ -6384,6 +6384,101 @@
         "title": "InvitationValid",
         "type": "object"
       },
+      "InviteeCandidate": {
+        "properties": {
+          "eligibility": {
+            "$ref": "#/components/schemas/Eligibility"
+          },
+          "invited": {
+            "title": "Invited",
+            "type": "boolean"
+          },
+          "trading_name": {
+            "title": "Trading Name",
+            "type": "string"
+          },
+          "vendor_id": {
+            "format": "uuid",
+            "title": "Vendor Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "vendor_id",
+          "trading_name",
+          "eligibility",
+          "invited"
+        ],
+        "title": "InviteeCandidate",
+        "type": "object"
+      },
+      "InviteeCandidatePage": {
+        "properties": {
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/InviteeCandidate"
+            },
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rows"
+        ],
+        "title": "InviteeCandidatePage",
+        "type": "object"
+      },
+      "InviteeContact": {
+        "description": "What the RFQ editor needs of a contact; read inside sourcing, so no `vendor.view`.",
+        "properties": {
+          "chosen": {
+            "title": "Chosen",
+            "type": "boolean"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "receives_documents": {
+            "title": "Receives Documents",
+            "type": "boolean"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "type",
+          "receives_documents",
+          "chosen"
+        ],
+        "title": "InviteeContact",
+        "type": "object"
+      },
       "InviteeCreate": {
         "additionalProperties": false,
         "properties": {
@@ -6457,6 +6552,14 @@
               "type": "string"
             },
             "title": "Contact Ids",
+            "type": "array"
+          },
+          "contacts": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/InviteeContact"
+            },
+            "title": "Contacts",
             "type": "array"
           },
           "deliveries": {
@@ -30942,6 +31045,114 @@
           }
         },
         "summary": "Rfq History",
+        "tags": [
+          "sourcing"
+        ]
+      }
+    },
+    "/api/v1/sourcing/rfqs/{id}/invitee-candidates": {
+      "get": {
+        "operationId": "invitee_candidates_api_v1_sourcing_rfqs__id__invitee_candidates_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 200,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InviteeCandidatePage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Invitee Candidates",
         "tags": [
           "sourcing"
         ]

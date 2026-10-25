@@ -36,6 +36,9 @@ from flo.modules.requisitions.service import (
 from flo.modules.sourcing.models import RfqRepository
 from flo.modules.sourcing.schemas import (
     DeliveryRead,
+    InviteeCandidate,
+    InviteeCandidatePage,
+    InviteeContact,
     InviteeCreate,
     InviteePatch,
     InviteeRead,
@@ -382,10 +385,23 @@ class RfqService:
         def sent(vendor: UUID) -> set[int]:
             return {d.version for d in told.get(vendor, []) if d.state == "sent"}
 
+        vendors = VendorService(self.connection, self.scope)
         invitees = [
             InviteeRead(
                 vendor_id=cast(UUID, r[0]),
                 contact_ids=cast(list[UUID], r[1]),
+                contacts=[
+                    InviteeContact(
+                        id=c.id,
+                        name=c.name,
+                        email=c.email,
+                        type=c.type,
+                        receives_documents=c.receives_documents,
+                        chosen=c.id in cast(list[UUID], r[1]),
+                    )
+                    for c in vendors.list_contacts(cast(UUID, r[0]))
+                    if c.receives_documents or c.id in cast(list[UUID], r[1])
+                ],
                 vendor_snapshot=cast(dict[str, object], r[2]),
                 override_reason=cast(str | None, r[3]),
                 invited_by_email=cast(str, r[4]),
@@ -950,6 +966,39 @@ class RfqService:
         if not set(wanted) <= {c.id for c in contacts}:
             raise invalid("contact_ids", "Choose contacts of this vendor.", "invalid_contacts")
         return list(dict.fromkeys(wanted))
+
+    def invitee_candidates(
+        self, id: UUID, q: str, cursor: str | None, limit: int
+    ) -> InviteeCandidatePage:
+        """One page of vendors to pick from, with eligibility for the RFQ's unit; nothing else of
+        the vendor record leaves (the caller may hold `rfq.edit` without `vendor.view`)."""
+        vendors = VendorService(self.connection, self.scope)
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            unit = self._draft(id, versioned=False)
+            page = vendors.search(q=q, cursor=cursor, limit=limit)
+            ids = [v.id for v in page.rows]
+            live = vendors.eligibility(ids, unit, today())
+            invited = {
+                cast(UUID, r[0])
+                for r in self.repo.execute(
+                    "SELECT vendor_id FROM rfq_invitee WHERE org_id = %(org_id)s "
+                    "AND rfq_id = %(id)s",
+                    {"id": id},
+                ).fetchall()
+            }
+        return InviteeCandidatePage(
+            rows=[
+                InviteeCandidate(
+                    vendor_id=v.id,
+                    trading_name=v.trading_name,
+                    eligibility=live[v.id],
+                    invited=v.id in invited,
+                )
+                for v in page.rows
+                if v.id in live
+            ],
+            next_cursor=page.next_cursor,
+        )
 
     def add_invitee(self, id: UUID, body: InviteeCreate, can_override: bool) -> RfqRead:
         """`can_override`: the caller holds `rfq.approve` on the RFQ's unit (decision 146)."""
