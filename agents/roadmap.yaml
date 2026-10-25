@@ -1817,6 +1817,7 @@ epics:
         s: L
         tags:
           - ui
+          - auth
         reqs:
           - SRC-002
           - SRC-004
