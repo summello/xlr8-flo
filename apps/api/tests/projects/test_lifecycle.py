@@ -453,14 +453,14 @@ def test_balance_lock_precedes_status_read(project_db, monkeypatch):
     row = project(db, "active")
     original = ProjectRepository.get
 
-    def checked(repo, id, *, lock=False):
+    def checked(repo, id, *, lock=False, **kwargs):
         if lock:
             held = repo.connection.execute(
                 "SELECT count(*) FROM pg_locks WHERE pid=pg_backend_pid() "
                 "AND relation='project_balance'::regclass AND mode='RowShareLock'"
             ).fetchone()[0]
             assert held > 0, "status read occurred before balance FOR UPDATE"
-        return original(repo, id, lock=lock)
+        return original(repo, id, lock=lock, **kwargs)
 
     monkeypatch.setattr(ProjectRepository, "get", checked)
     assert transition(db, row, "completed").status == "completed"

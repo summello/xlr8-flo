@@ -98,8 +98,10 @@ class ProjectService:
         self.repo = ProjectRepository(connection, scope)
         self.risks = Risks(self.repo, actor_id)
 
-    def _get(self, project_id: UUID, *, lock: bool = False) -> dict[str, object]:
-        row = self.repo.get(project_id, lock=lock)
+    def _get(
+        self, project_id: UUID, *, lock: bool = False, include_deleted: bool = False
+    ) -> dict[str, object]:
+        row = self.repo.get(project_id, lock=lock, include_deleted=include_deleted)
         if row is None:
             raise ProblemError(ErrorCode.NOT_FOUND)
         return row
@@ -139,9 +141,10 @@ class ProjectService:
             for r in rows
         }
 
-    def sponsors(self, project_id: UUID) -> list[UUID]:
+    def sponsors(self, project_id: UUID, *, include_deleted: bool = False) -> list[UUID]:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
-            return self._sponsors_of([self._get(project_id)])[project_id]
+            row = self._get(project_id, include_deleted=include_deleted)
+            return self._sponsors_of([row])[project_id]
 
     def _with_codes(self, project: ProjectRead) -> ProjectRead:
         # ponytail: four master lookups per row; batch if a page of 50 shows up in a profile.
@@ -181,9 +184,9 @@ class ProjectService:
             )
             return self._read(self._get(project_id))
 
-    def get(self, project_id: UUID) -> ProjectRead:
+    def get(self, project_id: UUID, *, include_deleted: bool = False) -> ProjectRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
-            return self._read(self._get(project_id))
+            return self._read(self._get(project_id, include_deleted=include_deleted))
 
     def transition(
         self,
@@ -455,6 +458,23 @@ class ProjectService:
     ) -> MilestoneRead:
         return cast(MilestoneRead, Schedule(self.repo, self.actor_id).write(project_id, body, mid))
 
+    def delete(self, project_id: UUID) -> None:
+        """Soft-delete a draft project; its number and external reference stay on the row.
+
+        # ponytail: dependents (sub-projects, requisitions) are left as they are, hidden from the
+        # tree; cascade them in the Bin story if a draft parent with live children must be refused.
+        """
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            before = self._get(project_id, lock=True)
+            if before["status"] != "draft":
+                raise conflict("not_draft", "Only a draft can be deleted.")
+            self.repo.execute(
+                "UPDATE project SET status='deleted',version=version+1 "
+                "WHERE org_id=%(org_id)s AND id=%(id)s",
+                {"id": project_id},
+            )
+            self._audit("project.delete", project_id, before, {"status": "deleted"})
+
     def get_status(self, project_id: UUID) -> str:
         return self.get(project_id).status
 
@@ -707,7 +727,7 @@ class ProjectService:
             self._get(project_id)
             rows = self.repo.execute(
                 """SELECT id, parent_id, root_id, number, name, status, depth FROM project
-                WHERE org_id = %(org_id)s AND parent_id = %(parent)s
+                WHERE org_id = %(org_id)s AND parent_id = %(parent)s AND status <> 'deleted'
                 AND (number, id) > (%(number)s, %(cursor_id)s)
                 ORDER BY number, id LIMIT %(limit)s""",
                 {
@@ -740,10 +760,11 @@ class ProjectService:
             rows = self.repo.execute(
                 """WITH RECURSIVE walk AS (
                 SELECT id, parent_id, number, name, status, depth, 1 AS depth_guard
-                FROM project WHERE org_id = %(org_id)s AND id = %(id)s
+                FROM project WHERE org_id = %(org_id)s AND id = %(id)s AND status <> 'deleted'
                 UNION
                 SELECT p.id, p.parent_id, p.number, p.name, p.status, p.depth, depth_guard + 1
                 FROM walk JOIN project p ON p.parent_id = walk.id AND p.org_id = %(org_id)s
+                AND p.status <> 'deleted'
                 WHERE depth_guard < 6 AND depth_guard < %(max_depth)s
                 ) , bounded AS (SELECT DISTINCT ON (depth, id) * FROM walk
                 ORDER BY depth, id LIMIT 501)
@@ -971,6 +992,7 @@ class ProjectService:
                 AND (p.number ILIKE %(q)s OR p.name ILIKE %(q)s)
                 AND (%(status)s::text IS NULL OR p.status = %(status)s)
                 AND (%(bu_id)s::uuid IS NULL OR p.bu_id = %(bu_id)s)
+                AND p.status <> 'deleted'
                 AND (%(org_wide)s OR p.bu_id = ANY(%(bu_ids)s::uuid[])
                      OR p.id = ANY(%(project_ids)s::uuid[]))"""
             count = self.repo.execute(
@@ -1208,7 +1230,7 @@ def generated_for(
             ProjectRepository(connection, scope)
             .execute(
                 f"SELECT {', '.join(REF_FIELDS)} FROM project WHERE org_id=%(org_id)s "
-                "AND generated_by_requisition_id=%(id)s",
+                "AND generated_by_requisition_id=%(id)s AND status<>'deleted'",
                 {"id": requisition_id},
             )
             .fetchone()
@@ -1321,7 +1343,8 @@ def get_by_external_ref(
         row = (
             ProjectRepository(connection, scope)
             .execute(
-                f"SELECT {COLUMNS} FROM project WHERE org_id=%(org_id)s AND external_ref=%(ref)s",
+                f"SELECT {COLUMNS} FROM project WHERE org_id=%(org_id)s AND external_ref=%(ref)s "
+                "AND status<>'deleted'",
                 {"ref": ref},
             )
             .fetchone()

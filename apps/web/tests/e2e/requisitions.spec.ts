@@ -505,13 +505,21 @@ test("detail: nothing linked, and one failing card does not blank the others", a
   await expect(page.getByText("Could not load linked records")).toBeVisible();
 });
 
-test("detail: a draft with no reservation says nothing is reserved and discards without a dialog", async ({ page }) => {
+test("detail: a draft with no reservation says nothing is reserved and Delete draft asks first, keyboard only", async ({ page }) => {
   const state = await stubRequisitions(page, { row: requisition({ estimate: "20.0000" }), lines: [lineRow(1)] });
   await page.goto(`/requisitions/${reqId}`);
   await expect(page.getByText("Nothing is reserved yet.")).toBeVisible();
-  await page.getByRole("button", { name: "Discard draft" }).click();
+  await page.getByRole("button", { name: "Delete draft" }).focus();
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("alertdialog");
+  await expect(dialog.getByRole("button", { name: "Keep Draft" })).toBeFocused();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.keyboard.press("Tab");
+  await expect(dialog.getByRole("button", { name: "Delete Draft" })).toBeFocused();
+  await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/requisitions$/);
-  expect(state.calls.find(c => c.path.endsWith("/transitions"))?.body).toEqual({ to: "withdrawn" });
+  expect(state.calls.find(c => c.method === "DELETE")?.path).toBe(`/api/v1/requisitions/${reqId}`);
+  expect(state.calls.some(c => c.path.endsWith("/transitions") && c.method === "POST")).toBe(false);
 });
 
 test("returned banner shows the approver's words and Edit and Resubmit opens the edit route", async ({ page }) => {
@@ -616,7 +624,7 @@ test("a returned draft that holds a reservation gets the dialog; a non-requester
   await page.keyboard.press("Escape");
   state.withdrawAllowed = false;
   await page.reload();
-  await expect(page.getByRole("button", { name: /Withdraw|Discard/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Withdraw|Delete draft/ })).toHaveCount(0);
   await expect(page.getByText("Withdraw is not available: Only the requester can withdraw.")).toBeVisible();
 });
 
@@ -746,6 +754,13 @@ for (const theme of ["light", "dark"] as const) {
     await expect(page.getByRole("alertdialog")).toBeVisible(); await scan();
   });
 }
+
+test("detail: Delete draft follows the edit permission the server checks, not the withdraw rule", async ({ page }) => {
+  await stubRequisitions(page, { row: requisition({ estimate: "20.0000", can_edit: false }), lines: [lineRow(1)] });
+  await page.goto(`/requisitions/${reqId}`);
+  await expect(page.getByText("Nothing is reserved yet.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Delete draft" })).toHaveCount(0);
+});
 
 test("detail shows the requester by name with the email beside it, and the email alone when unnamed", async ({ page }) => {
   await stubRequisitions(page, { row: requisition({ requester_name: "Ada Lovelace" }), lines: [lineRow(1)] });

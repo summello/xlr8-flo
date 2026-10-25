@@ -26,7 +26,8 @@ def enrich(repo: WorkflowRepository, row: WorkflowRead) -> WorkflowRead:
         "SELECT v.version,v.status,v.created_at,v.published_at,i.email,"
         + count
         + "FROM workflow_version v JOIN identity i ON i.id=v.created_by "
-        "WHERE v.org_id=%(org_id)s AND v.definition_id=%(id)s ORDER BY v.version",
+        "WHERE v.org_id=%(org_id)s AND v.definition_id=%(id)s AND v.status<>'deleted' "
+        "ORDER BY v.version",
         {"id": row.id},
     ).fetchall()
     row.versions = [

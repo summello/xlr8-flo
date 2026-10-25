@@ -2268,7 +2268,7 @@ epics:
           - DATA-002
         dep:
           - E09-S15
-        st: review
+        st: done
       - id: E22-S03
         t: One audit helper instead of twelve, behaviour-preserving
         k: chore

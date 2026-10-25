@@ -561,7 +561,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E10-S12** Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11) | E10 | ui | L | APR-011, APR-021, ACC-007 | ~~E10-S11~~, ~~E10-S05~~ |
 | ✅ | **E10-S13** Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes | E10 | engine | M | APR-003, PROJ-002, VEN-005, BUD-007 | ~~E10-S07~~ |
 
-#### M3 — First sellable release · 39/72 done
+#### M3 — First sellable release · 40/72 done
 
 > Vendors, RFQs, awards and purchase orders by email. Closes the money loop end to end.
 
@@ -628,7 +628,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E13-S21** Sending domain status and suppression list (Administration) | E13 | ui | M | EML-001, EML-003 | E13-S10 |
 | ✅ | **E13-S22** Purchase-order open questions for the operator (parking story) | E13 | docs | S | PO-007 | — |
 | ✅ | **E22-S01** Create Project with budget: form and Excel, sponsors, through the project approval workflow | E22 | engine | L | PROJ-003 | ~~E09-S17~~ |
-| 👀 | **E22-S02** Soft delete for every draft document | E22 | crud | M | DATA-002 | ~~E09-S15~~ |
+| ✅ | **E22-S02** Soft delete for every draft document | E22 | crud | M | DATA-002 | ~~E09-S15~~ |
 | ✅ | **E22-S03** One audit helper instead of twelve, behaviour-preserving | E22 | chore | M | AUD-001 | — |
 | ✅ | **E22-S04** M2 milestone review follow-ups: Money zero prop, shared lookup helper, internal collaboration readers, approvals read via service, e2e focus helper | E22 | chore | M | A11Y-001, UX-007 | — |
 | ✅ | **E22-S05** Replace MinIO with SeaweedFS in the local stack; bucket via the S3 API | E22 | chore | S | OPS-007 | — |
@@ -720,7 +720,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 |---|---|---|---|---|---|---|
 | ⬜ | **E30-S01** Organisation budget pool: allocations draw from an organisation-level pool instead of creating budget | E30 | ledger | L | BUD-007 | — |
 | ⬜ | **E30-S02** Release and re-reserve when an amendment or substitution changes a code or ledger account | E30 | ledger | M | REQ-012 | ~~E09-S18~~ |
-| ⬜ | **E30-S03** Bin: view and restore soft-deleted drafts | E30 | ui | M | DATA-002 | E22-S02 |
+| ⬜ | **E30-S03** Bin: view and restore soft-deleted drafts | E30 | ui | M | DATA-002 | ~~E22-S02~~ |
 
 #### MT — Delivery tooling · 19/19 done
 

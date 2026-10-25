@@ -50,6 +50,12 @@ IDEMPOTENCY_BYPASS_PATHS = frozenset(
 # must skip storage.
 IDEMPOTENCY_BYPASS_PATTERN = re.compile(r"^/api/v1/vendors/[^/]+/sensitive/reveal/?$")
 
+# E22-S02: the soft-delete commands replay like a POST; no other DELETE route is keyed.
+IDEMPOTENT_DELETE_PATTERN = re.compile(
+    r"^/api/v1/(?:requisitions|projects|budget/change-requests)/[^/]+/?$"
+    r"|^/api/v1/workflows/[^/]+/versions/[^/]+/?$"
+)
+
 _logger = logging.getLogger(__name__)
 
 type ConnectionFactory = Callable[[], AbstractContextManager[IdempotencyConnection]]
@@ -225,8 +231,16 @@ class IdempotencyMiddleware:
         self._connection_factory = connection_factory
         self._required_key = required_key
 
+    @staticmethod
+    def _keyed(scope: ASGIScope) -> bool:
+        method = scope.get("method")
+        return method == "POST" or (
+            method == "DELETE"
+            and IDEMPOTENT_DELETE_PATTERN.match(str(scope.get("path", ""))) is not None
+        )
+
     async def __call__(self, scope: ASGIScope, receive: Receive, send: Send) -> None:
-        if scope["type"] != "http" or scope.get("method") != "POST":
+        if scope["type"] != "http" or not self._keyed(scope):
             await self._app(scope, receive, send)
             return
 

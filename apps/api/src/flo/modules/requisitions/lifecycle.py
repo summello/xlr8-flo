@@ -102,7 +102,9 @@ def assert_completable(
         )
 
 
-def read_row(repo: RequisitionRepository, id: UUID, *, lock: bool = False) -> dict[str, object]:
+def read_row(
+    repo: RequisitionRepository, id: UUID, *, lock: bool = False, include_deleted: bool = False
+) -> dict[str, object]:
     fields = (
         "id",
         "project_id",
@@ -126,6 +128,7 @@ def read_row(repo: RequisitionRepository, id: UUID, *, lock: bool = False) -> di
         "SELECT "
         + ",".join(fields)
         + " FROM requisition WHERE org_id=%(org_id)s AND id=%(id)s"
+        + ("" if include_deleted else " AND status<>'deleted'")
         + (" FOR UPDATE" if lock else ""),
         {"id": id},
     ).fetchone()

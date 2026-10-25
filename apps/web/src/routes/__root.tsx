@@ -417,8 +417,8 @@ export default function RootRoute() {
       {shellRoute.path === "/budget" ? <BudgetOverview key={window.location.search} navigate={navigate} /> : undefined}
       {shellRoute.path === "/admin/approval-workflows" ? <WorkflowList navigate={navigate} /> : undefined}
       {shellRoute.path === "/admin/vendor-questionnaires" ? <VendorQuestionnaires /> : undefined}
-      {workflowId ? <WorkflowBuilder key={workflowId} id={workflowId} /> : undefined}
-      {projectId ? <ProjectDetail key={projectId} id={projectId} onLoaded={onProjectLoaded} /> : undefined}
+      {workflowId ? <WorkflowBuilder key={workflowId} id={workflowId} navigate={navigate} /> : undefined}
+      {projectId ? <ProjectDetail key={projectId} id={projectId} navigate={navigate} onLoaded={onProjectLoaded} /> : undefined}
       {shellRoute.path === "/_dev/status-gallery" ? <StatusGallery /> : undefined}
       {shellRoute.path === "/_dev/grid" ? <GridGallery /> : undefined}
       {shellRoute.path === "/_dev/forms" ? <FormGallery /> : undefined}

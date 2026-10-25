@@ -174,6 +174,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261022_0072",
         "20261022_0073",
         "20261022_0074",
+        "20261022_0075",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 

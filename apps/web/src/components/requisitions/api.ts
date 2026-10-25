@@ -3,7 +3,8 @@ import { apiClient } from "../../api/client";
 import { writeHeaders } from "../../features/auth/api";
 
 export type Requisition = components["schemas"]["RequisitionRead"];
-export type RequisitionStatus = Requisition["status"];
+/** `deleted` rows are the Bin's (M7); every screen here works on live ones. */
+export type RequisitionStatus = Exclude<Requisition["status"], "deleted">;
 export type RequisitionLine = components["schemas"]["LineRead"];
 export type LineBody = components["schemas"]["ReplacementLine"];
 export type SubmissionCheck = components["schemas"]["SubmissionCheck"];

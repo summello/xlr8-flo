@@ -283,6 +283,11 @@ def test_change_request_foreign_tenant(wiring):
             await authenticate(wiring, browser, email="second@example.test")
             response = await browser.get(f"/api/v1/budget/change-requests/{request.id}")
             assert response.status_code == 404, response.text
+            response = await browser.delete(
+                f"/api/v1/budget/change-requests/{request.id}",
+                headers=headers(browser, uuid4().hex),
+            )
+            assert response.status_code == 404, response.text
             response = await browser.post(
                 f"/api/v1/projects/{project.id}/budget/adjustments",
                 json=payload(),
@@ -297,6 +302,7 @@ def test_change_request_foreign_tenant(wiring):
             assert response.status_code == 404, response.text
 
     asyncio.run(run())
+    assert get_request(db[0], Scope(db[1]), request.id).status == "pending"
 
 
 def test_get_request_authorization_and_openapi_202(wiring):
@@ -618,3 +624,40 @@ def test_idempotency_key_reuse_across_kinds_is_refused(wiring):
     assert reused.value.code == ErrorCode.IDEMPOTENCY_KEY_REUSED
     replay = request_change(db[0], scope, project.id, AllocationCreate(**payload()), db[3], "same")
     assert replay.id == first.id
+
+
+def test_budget_change_request_is_never_deletable(wiring):
+    """E22-S02 (DATA-002): no draft status exists; DELETE is 409 not_draft and changes nothing."""
+    db, project, _ = wiring
+    publish(wiring, "budget_change")
+    request = read(wiring, request_budget(wiring))
+    decided = read(wiring, request_budget(wiring, allocation=True))
+    assert decide_budget(wiring, decided, key=uuid4().hex).status_code == 200
+
+    async def run():
+        async with client(app) as browser:
+            await authenticate(wiring, browser)
+            sent = headers(browser, "k-bcr-delete")
+            unkeyed = {k: v for k, v in sent.items() if k != "Idempotency-Key"}
+            path = f"/api/v1/budget/change-requests/{request.id}"
+            assert (await browser.delete(path, headers=unkeyed)).status_code == 400
+            for id in (request.id, decided.id):
+                refused = await browser.delete(
+                    f"/api/v1/budget/change-requests/{id}", headers=headers(browser, uuid4().hex)
+                )
+                assert refused.status_code == 409, refused.text
+                assert refused.json()["checks"]["problem"] == "not_draft"
+            unknown = await browser.delete(
+                f"/api/v1/budget/change-requests/{uuid4()}", headers=headers(browser, uuid4().hex)
+            )
+            assert unknown.status_code == 404
+
+    asyncio.run(run())
+    scope = Scope(db[1])
+    assert get_request(db[0], scope, request.id).status == "pending"
+    assert instances_for(db[0], scope, "budget_change", request.id)[-1].status == "running"
+    assert get_request(db[0], scope, decided.id).status == "approved"
+    actions = db[0].execute(
+        "SELECT action FROM audit_log WHERE target_id=%s", (request.id,)
+    ).fetchall()
+    assert ("budget_change_request.delete",) not in actions

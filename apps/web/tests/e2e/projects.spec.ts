@@ -388,3 +388,40 @@ test("business-unit grouping keeps equal display names in distinct id runs", asy
   await expect(page.locator('[data-grid-row="1"] [data-column-id="group"]')).toBeEmpty();
   await expect(page.locator('[data-grid-row="2"] [data-column-id="group"]')).toContainText("Group: Infrastructure");
 });
+
+test("detail: Delete draft asks first, keyboard only, shows the server reason and keeps one key across Try Again", async ({ page }) => {
+  const state = await stubProjects(page);
+  state.failDelete = true;
+  await page.goto(`/projects/${projectId}`);
+  await page.getByRole("button", { name: "Delete draft" }).focus();
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("alertdialog");
+  await expect(dialog.getByRole("button", { name: "Keep Draft" })).toBeFocused();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Enter");
+  await expect(dialog).toContainText("Only a draft can be deleted.");
+  state.failDelete = false;
+  await dialog.getByRole("button", { name: "Try Again" }).click();
+  await expect(page).toHaveURL(/\/projects$/);
+  const deletes = state.requests.filter(r => r.method === "DELETE");
+  expect(deletes.map(r => r.path)).toEqual([`/api/v1/projects/${projectId}`, `/api/v1/projects/${projectId}`]);
+  expect(deletes[0]!.headers["idempotency-key"]).toBeTruthy();
+  expect(deletes[1]!.headers["idempotency-key"]).toBe(deletes[0]!.headers["idempotency-key"]);
+});
+
+test("detail: a project that is not a draft offers no Delete draft", async ({ page }) => {
+  const state = await stubProjects(page);
+  state.row = { ...state.row, status: "active" };
+  await page.goto(`/projects/${projectId}`);
+  await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Delete draft" })).toHaveCount(0);
+});
+
+test("detail: a draft project the caller cannot edit offers no Delete draft", async ({ page }) => {
+  const state = await stubProjects(page);
+  state.row = { ...state.row, can_edit: false };
+  await page.goto(`/projects/${projectId}`);
+  await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Delete draft" })).toHaveCount(0);
+});

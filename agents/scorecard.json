@@ -5473,6 +5473,59 @@
         },
         "gate_s": 449
       }
+    },
+    {
+      "story": "E22-S02",
+      "kind": "crud",
+      "size": "M",
+      "tags": [
+        "ui",
+        "migration"
+      ],
+      "author": "sonnet",
+      "reviewers": [],
+      "rounds": 4,
+      "void_rounds": 2,
+      "escalations": 1,
+      "rounds_basis": "round_files",
+      "review_runs": {},
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "codex",
+          "to": "opus",
+          "role": "reviewer",
+          "reason": "operator 24 Oct 2026: Codex usage exhausted; Opus (A/B) reviews in its place"
+        }
+      ],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "76f57306-f3ec-4056-9f6b-1647f9a3b321",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S02",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Drafts of requisitions/project requests, projects and workflow versions can be soft-deleted through keyed, replayable DELETEs (hidden from reads, audited, numbers kept, a returned draft's reservation released once; record.read include_deleted reads). Budget change requests are never deletable (409 not_draft) until a draft status exists, and the requisition Delete draft button follows the server's edit permission.",
+      "title": "Soft delete for every draft document",
+      "durations": {
+        "review_s": {
+          "opus": 339
+        },
+        "gate_s": 2
+      }
     }
   ]
 }

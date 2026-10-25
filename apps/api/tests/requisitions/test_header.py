@@ -160,7 +160,9 @@ def test_project_defaults_standalone_currency_estimate_audit_and_idempotency(hea
                 replay = await send(browser, "POST", data=data, key=key)
                 assert replay.json() == row
                 get = await send(browser, "GET", "/" + row["id"])
-                assert get.json() == row and get.headers["etag"] == '"1"'
+                # can_edit is set by the single-record GET only (E22-S02)
+                assert get.json() == row | {"can_edit": True}
+                assert get.headers["etag"] == '"1"'
                 updated = await send(
                     browser,
                     "PATCH",

@@ -13,7 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from flo.api.auth import _database_url, get_auth_settings
 from flo.kernel.authz import AuthorizationTarget as AuthorizationTargetProtocol
-from flo.kernel.authz import require
+from flo.kernel.authz import permits, require
 from flo.kernel.config import Settings
 from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.identity import IdentityId
@@ -129,6 +129,14 @@ def organization_target() -> AuthorizationTargetProtocol:
 
     scope = current_scope()
     return cast(AuthorizationTargetProtocol, AuthorizationTarget.organization(scope.org_id))
+
+
+def deleted_visible(request: Request, include_deleted: bool) -> bool:
+    """E22-S02: soft-deleted drafts are 404 to everyone except holders of `record.read`."""
+
+    if include_deleted and not permits(request, "record.read", organization_target()):
+        raise ProblemError(ErrorCode.NOT_FOUND)
+    return include_deleted
 
 
 _read_access = require("admin.access.read", organization_target)

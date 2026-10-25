@@ -183,7 +183,7 @@ def test_concurrent_publish_and_lock(workflow_db, monkeypatch):
     draft(db, row)
     original = WorkflowRepository.version
 
-    def checked(repo, id, version):
+    def checked(repo, id, version, **kwargs):
         assert (
             repo.connection.execute(
                 "SELECT count(*) FROM pg_locks WHERE pid=pg_backend_pid() AND "
@@ -191,7 +191,7 @@ def test_concurrent_publish_and_lock(workflow_db, monkeypatch):
             ).fetchone()[0]
             > 0
         ), "publish must lock before reading version"
-        return original(repo, id, version)
+        return original(repo, id, version, **kwargs)
 
     monkeypatch.setattr(WorkflowRepository, "version", checked)
     barrier = Barrier(2)

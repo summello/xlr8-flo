@@ -11,7 +11,7 @@ import FundingCheck from "./FundingCheck";
 import LinesCard from "./LinesCard";
 import ReqField from "./ReqField";
 import SubmitSummary from "./SubmitSummary";
-import { failure, formatTime, lookup, mutationHeaders, type CatalogueItem, type LookupOption, type Problem, type Requisition, type RequisitionLine, type SubmissionCheck } from "./api";
+import { failure, formatTime, lookup, mutationHeaders, type CatalogueItem, type LookupOption, type Problem, type Requisition, type RequisitionStatus, type RequisitionLine, type SubmissionCheck } from "./api";
 import { EMPTY_HEADER, clientProblems, estimateOf, initialHeader, initialLines, lineBody, localToday, newLine, problemFromError, type DraftLine, type Header, type SummaryProblem } from "./model";
 import { useLoad } from "./useLoad";
 
@@ -162,7 +162,7 @@ export default function RequisitionForm({ navigate, initial }: { navigate: (href
     const first = route.data?.route[0];
     return <section className="req-page req-confirmation" aria-labelledby="req-done-title">
       <div className="req-card">
-        <StatusPill docType="requisition" status={done.status} />
+        <StatusPill docType="requisition" status={done.status as RequisitionStatus} />
         <h2 id="req-done-title" tabIndex={-1} ref={el => el?.focus()}>{done.number} Submitted for Approval</h2>
         <p role="status">{done.reservation ? <>Reserved <Money zero="value" value={done.reservation.remaining} currency={done.reservation.currency} /> against {done.project_name ?? "the project"}. </> : null}
           {first ? `Routed to ${first.approver_emails.map((e, i) => personLabel(first.approver_names[i], e)).join(", ") || first.label}, step 1 of ${route.data?.route.length}. ` : ""}You can withdraw it while it is pending, and the reservation is released once.</p>

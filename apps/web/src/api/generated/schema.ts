@@ -760,7 +760,8 @@ export interface paths {
         get: operations["read_change_request_api_v1_budget_change_requests__id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Delete Change Request */
+        delete: operations["delete_change_request_api_v1_budget_change_requests__id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1581,7 +1582,8 @@ export interface paths {
         get: operations["get_project_api_v1_projects__id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Delete Project */
+        delete: operations["delete_project_api_v1_projects__id__delete"];
         options?: never;
         head?: never;
         /** Patch Project */
@@ -1943,7 +1945,8 @@ export interface paths {
         get: operations["get_requisition_api_v1_requisitions__id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Delete Requisition */
+        delete: operations["delete_requisition_api_v1_requisitions__id__delete"];
         options?: never;
         head?: never;
         /** Patch Requisition */
@@ -3184,7 +3187,8 @@ export interface paths {
         /** Update Version */
         put: operations["update_version_api_v1_workflows__id__versions__version__put"];
         post?: never;
-        delete?: never;
+        /** Delete Version */
+        delete: operations["delete_version_api_v1_workflows__id__versions__version__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3904,7 +3908,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "pending" | "approved" | "rejected" | "withdrawn";
+            status: "pending" | "approved" | "rejected" | "withdrawn" | "deleted";
         };
         /** BudgetRequest */
         BudgetRequest: {
@@ -6640,6 +6644,11 @@ export interface components {
             /** Bu Name */
             bu_name?: string | null;
             /**
+             * Can Edit
+             * @default false
+             */
+            can_edit?: boolean;
+            /**
              * Can Substitute Codes
              * @default false
              */
@@ -6698,7 +6707,8 @@ export interface components {
             sponsor_id: string | null;
             /** Sponsor Ids */
             sponsor_ids?: string[];
-            status: components["schemas"]["ProjectStatus"];
+            /** Status */
+            status: components["schemas"]["ProjectStatus"] | "deleted";
             /** Version */
             version: number;
         };
@@ -6983,6 +6993,11 @@ export interface components {
             /** Bu Name */
             bu_name: string;
             /**
+             * Can Edit
+             * @default false
+             */
+            can_edit?: boolean;
+            /**
              * Can Substitute Codes
              * @default false
              */
@@ -7041,7 +7056,8 @@ export interface components {
             sponsor_ids?: string[];
             /** Standalone */
             standalone: boolean;
-            status: components["schemas"]["RequisitionStatus"];
+            /** Status */
+            status: components["schemas"]["RequisitionStatus"] | "deleted";
             /** Submitted At */
             submitted_at: string | null;
             /** Title */
@@ -8685,7 +8701,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "draft" | "published" | "superseded";
+            status: "draft" | "published" | "superseded" | "deleted";
             /** Version */
             version: number;
         };
@@ -8712,7 +8728,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "draft" | "published" | "superseded";
+            status: "draft" | "published" | "superseded" | "deleted";
             /** Version */
             version: number;
         };
@@ -10698,7 +10714,9 @@ export interface operations {
     };
     read_change_request_api_v1_budget_change_requests__id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
             };
@@ -10717,6 +10735,48 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["BudgetChangeRequestRead"];
                 };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    delete_change_request_api_v1_budget_change_requests__id__delete: {
+        parameters: {
+            query?: {
+                include_deleted?: boolean;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Client error expressed as RFC 9457 problem details. */
             "4XX": {
@@ -13190,7 +13250,9 @@ export interface operations {
     };
     get_project_api_v1_projects__id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
             };
@@ -13230,9 +13292,53 @@ export interface operations {
             };
         };
     };
+    delete_project_api_v1_projects__id__delete: {
+        parameters: {
+            query?: {
+                include_deleted?: boolean;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     patch_project_api_v1_projects__id__patch: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "If-Match"?: string | null;
                 "X-FLO-Origin-Secret"?: string | null;
@@ -13282,6 +13388,7 @@ export interface operations {
             query?: {
                 cursor?: string | null;
                 page_size?: number;
+                include_deleted?: boolean;
             };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
@@ -13324,7 +13431,9 @@ export interface operations {
     };
     substitute_project_codes_api_v1_projects__id__codes_post: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
             };
@@ -13370,7 +13479,9 @@ export interface operations {
     };
     list_milestones_api_v1_projects__id__milestones_get: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
             };
@@ -13412,7 +13523,9 @@ export interface operations {
     };
     create_milestone_api_v1_projects__id__milestones_post: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
             };
@@ -13458,7 +13571,9 @@ export interface operations {
     };
     patch_milestone_api_v1_projects__id__milestones__mid__patch: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
             };
@@ -13505,7 +13620,9 @@ export interface operations {
     };
     list_phases_api_v1_projects__id__phases_get: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
             };
@@ -13547,7 +13664,9 @@ export interface operations {
     };
     create_phase_api_v1_projects__id__phases_post: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
             };
@@ -13593,7 +13712,9 @@ export interface operations {
     };
     patch_phase_api_v1_projects__id__phases__phase_id__patch: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
             };
@@ -13640,7 +13761,9 @@ export interface operations {
     };
     read_risk_indicators_api_v1_projects__id__risk_indicators_get: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
             };
@@ -13687,6 +13810,7 @@ export interface operations {
                 min_score?: number | null;
                 cursor?: string | null;
                 page_size?: number;
+                include_deleted?: boolean;
             };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
@@ -13729,7 +13853,9 @@ export interface operations {
     };
     create_risk_api_v1_projects__id__risks_post: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
             };
@@ -13775,7 +13901,9 @@ export interface operations {
     };
     patch_risk_api_v1_projects__id__risks__risk_id__patch: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "If-Match"?: string | null;
                 "X-FLO-Origin-Secret"?: string | null;
@@ -13823,7 +13951,9 @@ export interface operations {
     };
     transition_project_api_v1_projects__id__transitions_post: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "If-Match"?: string | null;
                 "X-FLO-Origin-Secret"?: string | null;
@@ -13870,7 +14000,9 @@ export interface operations {
     };
     available_project_transitions_api_v1_projects__id__transitions_available_get: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
             };
@@ -13915,6 +14047,7 @@ export interface operations {
             query?: {
                 include?: "balances" | null;
                 max_depth?: number;
+                include_deleted?: boolean;
             };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
@@ -14382,7 +14515,9 @@ export interface operations {
     };
     get_requisition_api_v1_requisitions__id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
             };
@@ -14422,9 +14557,53 @@ export interface operations {
             };
         };
     };
+    delete_requisition_api_v1_requisitions__id__delete: {
+        parameters: {
+            query?: {
+                include_deleted?: boolean;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     patch_requisition_api_v1_requisitions__id__patch: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "If-Match"?: string | null;
                 "X-FLO-Origin-Secret"?: string | null;
@@ -14471,7 +14650,9 @@ export interface operations {
     };
     open_amendment_api_v1_requisitions__id__amendments_post: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "If-Match"?: string | null;
                 "X-FLO-Origin-Secret"?: string | null;
@@ -14514,7 +14695,9 @@ export interface operations {
     };
     current_amendment_api_v1_requisitions__id__amendments_current_get: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
             };
@@ -14556,7 +14739,9 @@ export interface operations {
     };
     put_amendment_api_v1_requisitions__id__amendments__revision_no__put: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "If-Match"?: string | null;
                 "X-FLO-Origin-Secret"?: string | null;
@@ -14604,7 +14789,9 @@ export interface operations {
     };
     delete_amendment_api_v1_requisitions__id__amendments__revision_no__delete: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
             };
@@ -14645,7 +14832,9 @@ export interface operations {
     };
     submit_amendment_api_v1_requisitions__id__amendments__revision_no__submit_post: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "If-Match"?: string | null;
                 "X-FLO-Origin-Secret"?: string | null;
@@ -14693,7 +14882,9 @@ export interface operations {
     };
     withdraw_amendment_api_v1_requisitions__id__amendments__revision_no__withdraw_post: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
             };
@@ -14738,6 +14929,7 @@ export interface operations {
         parameters: {
             query?: {
                 against?: number | null;
+                include_deleted?: boolean;
             };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
@@ -14780,7 +14972,9 @@ export interface operations {
     };
     substitute_requisition_codes_api_v1_requisitions__id__codes_post: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
             };
@@ -14826,7 +15020,9 @@ export interface operations {
     };
     requisition_events_api_v1_requisitions__id__events_get: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
             };
@@ -14868,7 +15064,9 @@ export interface operations {
     };
     get_lines_api_v1_requisitions__id__lines_get: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
             };
@@ -14910,7 +15108,9 @@ export interface operations {
     };
     replace_lines_api_v1_requisitions__id__lines_put: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "If-Match"?: string | null;
                 "X-FLO-Origin-Secret"?: string | null;
@@ -14957,7 +15157,9 @@ export interface operations {
     };
     add_line_api_v1_requisitions__id__lines_post: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "If-Match"?: string | null;
                 "X-FLO-Origin-Secret"?: string | null;
@@ -15004,7 +15206,9 @@ export interface operations {
     };
     put_line_api_v1_requisitions__id__lines__line_id__put: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "If-Match"?: string | null;
                 "X-FLO-Origin-Secret"?: string | null;
@@ -15052,7 +15256,9 @@ export interface operations {
     };
     delete_line_api_v1_requisitions__id__lines__line_id__delete: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "If-Match"?: string | null;
                 "X-FLO-Origin-Secret"?: string | null;
@@ -15096,7 +15302,9 @@ export interface operations {
     };
     requisition_links_api_v1_requisitions__id__links_get: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
             };
@@ -15138,7 +15346,9 @@ export interface operations {
     };
     list_revisions_api_v1_requisitions__id__revisions_get: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
             };
@@ -15180,7 +15390,9 @@ export interface operations {
     };
     submission_check_api_v1_requisitions__id__submission_check_get: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
             };
@@ -15222,7 +15434,9 @@ export interface operations {
     };
     transition_requisition_api_v1_requisitions__id__transitions_post: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "If-Match"?: string | null;
                 "X-FLO-Origin-Secret"?: string | null;
@@ -15269,7 +15483,9 @@ export interface operations {
     };
     available_transitions_api_v1_requisitions__id__transitions_available_get: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
             };
@@ -18352,7 +18568,9 @@ export interface operations {
     };
     get_version_api_v1_workflows__id__versions__version__get: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+            };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
             };
@@ -18420,6 +18638,47 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["WorkflowVersionRead"];
                 };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    delete_version_api_v1_workflows__id__versions__version__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Client error expressed as RFC 9457 problem details. */
             "4XX": {
