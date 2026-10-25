@@ -1730,7 +1730,7 @@ epics:
         t: Evaluation scoring with comments and conflict-of-interest declarations
         k: crud
         s: M
-        tags: []
+        tags: [auth]
         reqs:
           - SRC-011
         dep:
