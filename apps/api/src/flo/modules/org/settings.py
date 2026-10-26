@@ -12,11 +12,34 @@ SETTING_DEFAULTS: dict[str, JsonValue] = {
     "approval.separation_of_duty": True,
     "requisition.expiry_days": None,
     "vendor.allow_local_disable": False,
+    "sourcing.default_criteria": None,
 }
+
+
+# A value validator never sees the scope, so the service refuses these keys with a unit.
+ORG_ONLY_SETTINGS = frozenset({"sourcing.default_criteria"})
 
 
 def _is_bool(value: JsonValue) -> bool:
     return isinstance(value, bool)
+
+
+def valid_default_criteria(value: JsonValue) -> bool:
+    """Decision 222: 1..20 unique-named `{name, weight}` items, weights 1..100 totalling 100."""
+    if not isinstance(value, list) or not 1 <= len(value) <= 20:
+        return False
+    names, total = set(), 0
+    for item in value:
+        if not isinstance(item, dict) or item.keys() != {"name", "weight"}:
+            return False
+        name, weight = item["name"], item["weight"]
+        if not isinstance(name, str) or not 1 <= len(name) <= 120 or name in names:
+            return False
+        if type(weight) is not int or not 1 <= weight <= 100:
+            return False
+        names.add(name)
+        total += weight
+    return total == 100
 
 
 # Money policy reads these values, so a truthy string such as "false" must never be storable.
@@ -29,5 +52,6 @@ SETTING_VALIDATORS: dict[str, Callable[[JsonValue], bool]] = {
     "allow_negative_budget": _is_bool,
     "budget.evidence_required": _is_bool,
     "vendor.allow_local_disable": _is_bool,
+    "sourcing.default_criteria": valid_default_criteria,
     "funding_mode": lambda value: value in ("roll_down", "roll_up"),
 }

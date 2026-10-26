@@ -2403,6 +2403,125 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sourcing/rfqs/{id}/evaluation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Evaluation */
+        get: operations["get_evaluation_api_v1_sourcing_rfqs__id__evaluation_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sourcing/rfqs/{id}/evaluation/criteria": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Criteria */
+        put: operations["put_criteria_api_v1_sourcing_rfqs__id__evaluation_criteria_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sourcing/rfqs/{id}/evaluation/declaration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Declare Conflict */
+        post: operations["declare_conflict_api_v1_sourcing_rfqs__id__evaluation_declaration_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sourcing/rfqs/{id}/evaluation/evaluators": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Evaluator */
+        post: operations["add_evaluator_api_v1_sourcing_rfqs__id__evaluation_evaluators_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sourcing/rfqs/{id}/evaluation/evaluators/{identity_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Evaluator */
+        delete: operations["remove_evaluator_api_v1_sourcing_rfqs__id__evaluation_evaluators__identity_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sourcing/rfqs/{id}/evaluation/scores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Scores */
+        put: operations["put_scores_api_v1_sourcing_rfqs__id__evaluation_scores_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sourcing/rfqs/{id}/evaluation/scores/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit Scores */
+        post: operations["submit_scores_api_v1_sourcing_rfqs__id__evaluation_scores_submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sourcing/rfqs/{id}/extend-deadline": {
         parameters: {
             query?: never;
@@ -4359,6 +4478,41 @@ export interface components {
             /** Stale */
             stale: boolean;
         };
+        /** CriteriaPut */
+        CriteriaPut: {
+            /** Criteria */
+            criteria: components["schemas"]["CriterionIn"][];
+        };
+        /** CriteriaRead */
+        CriteriaRead: {
+            /** Criteria */
+            criteria: components["schemas"]["CriterionRead"][];
+            /** Edit Revision */
+            edit_revision: number;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "default" | "rfq";
+        };
+        /** CriterionIn */
+        CriterionIn: {
+            /** Name */
+            name: string;
+            /** Weight */
+            weight: number;
+        };
+        /** CriterionRead */
+        CriterionRead: {
+            /** Id */
+            id: string | null;
+            /** Name */
+            name: string;
+            /** Position */
+            position: number;
+            /** Weight */
+            weight: number;
+        };
         /** CurrencyAggregate */
         CurrencyAggregate: {
             /** Currency */
@@ -4459,6 +4613,13 @@ export interface components {
             /** Reject Mode */
             reject_mode?: ("return_to_draft" | "permanent") | null;
             substitutions?: components["schemas"]["CodeSubstitutions"] | null;
+        };
+        /** DeclarationIn */
+        DeclarationIn: {
+            /** Conflict */
+            conflict: boolean;
+            /** Detail */
+            detail?: string | null;
         };
         /** DelegationCreate */
         DelegationCreate: {
@@ -4823,6 +4984,102 @@ export interface components {
              * @default []
              */
             warnings?: components["schemas"]["Reason"][];
+        };
+        /** EvaluationRead */
+        EvaluationRead: {
+            /** Complete */
+            complete: boolean;
+            /** Criteria */
+            criteria: components["schemas"]["CriterionRead"][];
+            /** Edit Revision */
+            edit_revision: number;
+            /** Evaluator Count */
+            evaluator_count: number;
+            /** Evaluators */
+            evaluators: components["schemas"]["EvaluatorRead"][] | null;
+            me: components["schemas"]["MeRead"] | null;
+            /** Scores */
+            scores: components["schemas"]["EvaluationScoreRead"][];
+            /** Scoring Open */
+            scoring_open: boolean;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "default" | "rfq";
+            /** Status */
+            status: string;
+            /** Vendors */
+            vendors: components["schemas"]["VendorRef"][];
+            /** Weighted */
+            weighted: components["schemas"]["WeightedRead"][] | null;
+        };
+        /** EvaluationScoreRead */
+        EvaluationScoreRead: {
+            /** Comment */
+            comment: string | null;
+            /**
+             * Criterion Id
+             * Format: uuid
+             */
+            criterion_id: string;
+            /**
+             * Identity Id
+             * Format: uuid
+             */
+            identity_id: string;
+            /** Score */
+            score: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "submitted";
+            /**
+             * Vendor Id
+             * Format: uuid
+             */
+            vendor_id: string;
+        };
+        /** EvaluationScoreResult */
+        EvaluationScoreResult: {
+            /** Saved */
+            saved: number;
+            /** Submitted */
+            submitted: boolean;
+            /** Version */
+            version: number;
+        };
+        /** EvaluatorAdd */
+        EvaluatorAdd: {
+            /**
+             * Identity Id
+             * Format: uuid
+             */
+            identity_id: string;
+        };
+        /** EvaluatorRead */
+        EvaluatorRead: {
+            /**
+             * Declaration
+             * @enum {string}
+             */
+            declaration: "none" | "clear" | "conflict";
+            /** Declared At */
+            declared_at: string | null;
+            /** Detail */
+            detail: string | null;
+            /** Display Name */
+            display_name: string;
+            /**
+             * Identity Id
+             * Format: uuid
+             */
+            identity_id: string;
+            /** Submitted */
+            submitted: boolean;
+            /** Version */
+            version: number;
         };
         /** ExcludedApprover */
         ExcludedApprover: {
@@ -5953,6 +6210,23 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /** MeRead */
+        MeRead: {
+            /**
+             * Declaration
+             * @enum {string}
+             */
+            declaration: "none" | "clear";
+            /**
+             * Identity Id
+             * Format: uuid
+             */
+            identity_id: string;
+            /** Submitted */
+            submitted: boolean;
+            /** Version */
+            version: number;
         };
         /**
          * MfaCodeRequest
@@ -7767,6 +8041,23 @@ export interface components {
              */
             source_type?: "po" | "manual";
         };
+        /** ScoreIn */
+        ScoreIn: {
+            /** Comment */
+            comment?: string | null;
+            /**
+             * Criterion Id
+             * Format: uuid
+             */
+            criterion_id: string;
+            /** Score */
+            score: number;
+            /**
+             * Vendor Id
+             * Format: uuid
+             */
+            vendor_id: string;
+        };
         /** ScorePage */
         ScorePage: {
             /** Next Cursor */
@@ -7814,6 +8105,11 @@ export interface components {
             superseded_by: string | null;
             /** Supersedes */
             supersedes: string | null;
+        };
+        /** ScoresPut */
+        ScoresPut: {
+            /** Cells */
+            cells: components["schemas"]["ScoreIn"][];
         };
         /**
          * SealedBidRead
@@ -8575,6 +8871,16 @@ export interface components {
             /** Version */
             version: number;
         };
+        /** VendorRef */
+        VendorRef: {
+            /**
+             * Vendor Id
+             * Format: uuid
+             */
+            vendor_id: string;
+            /** Vendor Name */
+            vendor_name: string;
+        };
         /** @enum {string} */
         VendorStatus: "draft" | "pending_approval" | "active" | "suspended" | "inactive" | "rejected";
         /** VendorUnit */
@@ -8642,6 +8948,16 @@ export interface components {
         VisibilityPut: {
             /** Vendor Visible */
             vendor_visible: boolean;
+        };
+        /** WeightedRead */
+        WeightedRead: {
+            /** Score */
+            score: string;
+            /**
+             * Vendor Id
+             * Format: uuid
+             */
+            vendor_id: string;
         };
         /** WithdrawWrite */
         WithdrawWrite: {
@@ -16265,6 +16581,318 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ComparisonRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    get_evaluation_api_v1_sourcing_rfqs__id__evaluation_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvaluationRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    put_criteria_api_v1_sourcing_rfqs__id__evaluation_criteria_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CriteriaPut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CriteriaRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    declare_conflict_api_v1_sourcing_rfqs__id__evaluation_declaration_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeclarationIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvaluatorRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    add_evaluator_api_v1_sourcing_rfqs__id__evaluation_evaluators_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EvaluatorAdd"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvaluatorRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    remove_evaluator_api_v1_sourcing_rfqs__id__evaluation_evaluators__identity_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                identity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    put_scores_api_v1_sourcing_rfqs__id__evaluation_scores_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScoresPut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvaluationScoreResult"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    submit_scores_api_v1_sourcing_rfqs__id__evaluation_scores_submit_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvaluationScoreResult"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

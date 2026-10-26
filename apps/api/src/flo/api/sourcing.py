@@ -23,6 +23,17 @@ from flo.modules.sourcing.comparison import (
     ComparisonService,
     SealedComparisonRead,
 )
+from flo.modules.sourcing.evaluation import (
+    CriteriaPut,
+    CriteriaRead,
+    DeclarationIn,
+    EvaluationRead,
+    EvaluationScoreResult,
+    EvaluationService,
+    EvaluatorAdd,
+    EvaluatorRead,
+    ScoresPut,
+)
 from flo.modules.sourcing.lifecycle import RfqLifecycle
 from flo.modules.sourcing.schemas import (
     BidCreate,
@@ -447,3 +458,99 @@ def refresh_comparison_rate(
     id: UUID, context: EditContext, connection: Connection
 ) -> ComparisonRead:
     return ComparisonService(connection, current_scope(), context.user_id).refresh_rate(id)
+
+
+EVALUATION = "/rfqs/{id}/evaluation"
+
+
+@router.get(EVALUATION, response_model=EvaluationRead)
+def get_evaluation(
+    id: UUID, context: ViewContext, connection: Connection, request: Request, response: Response
+) -> EvaluationRead:
+    target = rfq_target(id, connection)
+    view = EvaluationService(connection, current_scope(), context.user_id).view(
+        id,
+        can_edit=permits(request, "rfq.edit", target),
+        can_approve=permits(request, "rfq.approve", target),
+    )
+    if view.me is not None:
+        response.headers["ETag"] = f'"{view.me.version}"'
+    return view
+
+
+@router.put(f"{EVALUATION}/criteria", response_model=CriteriaRead)
+def put_criteria(
+    id: UUID,
+    body: CriteriaPut,
+    context: EditContext,
+    connection: Connection,
+    response: Response,
+    revision: Revision = None,
+) -> CriteriaRead:
+    saved = EvaluationService(connection, current_scope(), context.user_id).put_criteria(
+        id, body, revision
+    )
+    response.headers["ETag"] = f'"{saved.edit_revision}"'
+    return saved
+
+
+@router.post(f"{EVALUATION}/evaluators", status_code=201, response_model=EvaluatorRead)
+def add_evaluator(
+    id: UUID, body: EvaluatorAdd, context: EditContext, connection: Connection
+) -> EvaluatorRead:
+    unit_id = RfqService(connection, current_scope()).unit_of(id)
+    org_wide, units, _ = granted_scopes(
+        cast(IdentityAuthorizationConnection, connection),
+        current_scope(),
+        IdentityId(body.identity_id),
+        "rfq.view",
+    )
+    return EvaluationService(connection, current_scope(), context.user_id).add_evaluator(
+        id, body.identity_id, may_view=org_wide or unit_id in units
+    )
+
+
+@router.delete(f"{EVALUATION}/evaluators/{{identity_id}}", status_code=204)
+def remove_evaluator(
+    id: UUID,
+    identity_id: UUID,
+    context: EditContext,
+    connection: Connection,
+    revision: Revision = None,
+) -> Response:
+    EvaluationService(connection, current_scope(), context.user_id).remove_evaluator(
+        id, identity_id, revision
+    )
+    return Response(status_code=204)
+
+
+@router.post(f"{EVALUATION}/declaration", status_code=201, response_model=EvaluatorRead)
+def declare_conflict(
+    id: UUID, body: DeclarationIn, context: ViewContext, connection: Connection
+) -> EvaluatorRead:
+    return EvaluationService(connection, current_scope(), context.user_id).declare(id, body)
+
+
+@router.put(f"{EVALUATION}/scores", response_model=EvaluationScoreResult)
+def put_scores(
+    id: UUID,
+    body: ScoresPut,
+    context: ViewContext,
+    connection: Connection,
+    response: Response,
+    revision: Revision = None,
+) -> EvaluationScoreResult:
+    saved = EvaluationService(connection, current_scope(), context.user_id).save_scores(
+        id, body, revision
+    )
+    response.headers["ETag"] = f'"{saved.version}"'
+    return saved
+
+
+@router.post(f"{EVALUATION}/scores/submit", response_model=EvaluationScoreResult)
+def submit_scores(
+    id: UUID, context: ViewContext, connection: Connection, response: Response
+) -> EvaluationScoreResult:
+    done = EvaluationService(connection, current_scope(), context.user_id).submit_scores(id)
+    response.headers["ETag"] = f'"{done.version}"'
+    return done

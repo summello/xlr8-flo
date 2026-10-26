@@ -11,6 +11,7 @@ from uuid import UUID, uuid4
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError, conflict
 from flo.kernel.money import currency_exponent, quantize
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
+from flo.modules.sourcing.evaluation import assert_may_see_bids
 from flo.modules.sourcing.schemas import (
     BidCreate,
     BidLate,
@@ -326,6 +327,8 @@ class BidService(RfqService):
         """`all_bids` (rfq.approve) sees every bid; otherwise only those the caller keyed."""
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             passed = self._deadline_passed(rfq_id)
+            if passed:
+                assert_may_see_bids(self.repo, rfq_id, self.actor_id)
             rows = self.repo.execute(
                 f"SELECT {COLUMNS} FROM bid WHERE org_id = %(org_id)s AND rfq_id = %(rfq)s"
                 + ("" if all_bids else " AND keyed_by = %(actor)s")
@@ -346,6 +349,8 @@ class BidService(RfqService):
                 raise ProblemError(ErrorCode.NOT_FOUND)
             if not all_bids and row[7] != self.actor_id:
                 raise ProblemError(ErrorCode.FORBIDDEN)
+            if passed:
+                assert_may_see_bids(self.repo, rfq_id, self.actor_id)
             return self._present(passed, row)
 
     # -- writes ----------------------------------------------------------------------------

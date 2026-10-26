@@ -65,7 +65,7 @@ from flo.modules.org.schemas import (
     SettingPut,
     SettingSource,
 )
-from flo.modules.org.settings import SETTING_DEFAULTS, SETTING_VALIDATORS
+from flo.modules.org.settings import ORG_ONLY_SETTINGS, SETTING_DEFAULTS, SETTING_VALIDATORS
 
 # The module boundary (AGENTS.md 3.3): other modules import these from here, never from
 # fiscal, numbering, models or repo directly.
@@ -354,6 +354,13 @@ class OrgService:
     def set_setting(self, key: str, body: SettingPut) -> SettingPut:
         known_key(key)
         valid_value(key, body.value)
+        if key in ORG_ONLY_SETTINGS and body.unit_id is not None:
+            raise ProblemError(
+                ErrorCode.VALIDATION_FAILED,
+                detail="This setting applies to the whole organization, not to a unit.",
+                errors=(ProblemFieldError(field="unit_id", message="Leave the unit empty."),),
+                checks={"problem": "org_only_setting"},
+            )
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             self.repo.lock_organization()
             if body.unit_id is not None:

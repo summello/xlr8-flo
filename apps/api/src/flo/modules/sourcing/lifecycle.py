@@ -162,12 +162,21 @@ class RfqLifecycle(RfqService):
                         message=f"{name} has no contact with an email address to receive the RFQ.",
                     )
                 )
+        weights = self.repo.execute(
+            "SELECT sum(weight) FROM rfq_criterion WHERE org_id = %(org_id)s AND rfq_id = %(id)s",
+            {"id": id},
+        ).fetchone()
+        bad_weights = bool(weights and weights[0] is not None and weights[0] != 100)
+        if bad_weights:
+            problems.append(
+                ProblemFieldError(field="criteria", message="Criteria weights must total 100.")
+            )
         if problems:
             raise ProblemError(
                 ErrorCode.VALIDATION_FAILED,
                 detail=problems[0].message,
                 errors=tuple(problems),
-                checks={"problem": "cannot_publish"},
+                checks={"problem": "weights_total" if bad_weights else "cannot_publish"},
             )
 
     # -- versions and telling invitees -------------------------------------------------------

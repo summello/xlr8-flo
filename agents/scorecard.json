@@ -5659,6 +5659,71 @@
         },
         "gate_s": 2
       }
+    },
+    {
+      "story": "E12-S07",
+      "kind": "crud",
+      "size": "M",
+      "tags": [
+        "auth"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "6f3ea6ef-2f2c-4f73-82ea-7182f6f37c01",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S07",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1765e-f107-77b1-a85d-697f5f2dbce5",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Adds RFQ evaluation (migration 0076, evaluation.py, seven routes): criteria with an org default, evaluators, append-only conflict declarations that gate all bid-content reads, and sealed per-evaluator scores whose weighted result feeds the comparison score. The weights-total publish check and the org-only default setting are in.",
+      "title": "Evaluation scoring with comments and conflict-of-interest declarations",
+      "durations": {
+        "wall_s": 43780,
+        "author_s": 2305,
+        "review_s": {
+          "codex": 48,
+          "opus": 406
+        },
+        "gate_s": 2
+      }
     }
   ]
 }

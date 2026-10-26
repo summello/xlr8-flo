@@ -1735,7 +1735,7 @@ epics:
           - SRC-011
         dep:
           - E12-S06
-        st: in_progress
+        st: done
       - id: E12-S08
         t: 'Award: split by line/quantity, scope and reserved-funds guard, non-lowest
           justification'

@@ -19,6 +19,7 @@ from flo.kernel.errors import ErrorCode, ProblemError, conflict
 from flo.kernel.money import Money, quantize
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.org.service import rate_for, today
+from flo.modules.sourcing.evaluation import assert_may_see_bids, weighted
 from flo.modules.sourcing.sealing import visible
 from flo.modules.sourcing.service import RfqService
 
@@ -246,8 +247,10 @@ def compute(
     rate_date: date,
     frozen_at: datetime,
     bids_since_freeze: int,
+    scores: dict[UUID, Decimal] | None = None,
 ) -> ComparisonRead:
     priced = [_price(b, lines, currency, rates[b.currency]) for b in bids]
+    scores = scores or {}
     quoted = [p for p in priced if p.cells]  # a bid quoting no line is in no basis, no marker
     full = [p for p in quoted if len(p.cells) == len(lines)]
     pool = full or quoted
@@ -292,7 +295,7 @@ def compute(
                 lead_time_days=b.lead_time_days,
                 ready_by=ready,
                 meets_need=None if ready is None or not needed else ready <= min(needed),
-                score=None,  # E12-S07
+                score=_s(scores.get(b.vendor_id)),
                 conversion=ConversionNote(
                     base=b.currency,
                     quote=currency,
@@ -400,7 +403,10 @@ def compute(
             fastest=_pick(
                 [(p.bid.lead_time_days, p) for p in quoted if p.bid.lead_time_days is not None]
             ),
-            highest_score=None,  # E12-S07
+            highest_score=_pick(
+                [(scores[p.bid.vendor_id], p) for p in quoted if p.bid.vendor_id in scores],
+                high=True,
+            ),
         ),
         lowest_cost_supplier=lcs,
         best_average_cost=bac,
@@ -555,6 +561,7 @@ class ComparisonService(RfqService):
             rate_date=rate_date,
             frozen_at=frozen_at,
             bids_since_freeze=sum(1 for r in bid_rows if r[8] > frozen_at),
+            scores=weighted(self.repo, rfq_id),
         )
 
     def comparison(self, rfq_id: UUID) -> ComparisonRead | SealedComparisonRead:
@@ -562,6 +569,7 @@ class ComparisonService(RfqService):
             head = self._head(rfq_id)
             if not visible(head[1], head[2]):
                 return SealedComparisonRead()
+            assert_may_see_bids(self.repo, rfq_id, self.actor_id)
             return self._build(rfq_id, head)
 
     def refresh_rate(self, rfq_id: UUID) -> ComparisonRead:
@@ -579,6 +587,7 @@ class ComparisonService(RfqService):
                     "comparison_sealed", "Rates can be refreshed once the bidding stop time passes."
                 )
             assert status in REFRESHABLE
+            assert_may_see_bids(self.repo, rfq_id, self.actor_id)
             currency, on = cast(str, head[3]).strip(), today()
             currencies = {cast(str, r[3]) for r in self._current_bids(rfq_id)}
             taken = self._take(currency, currencies, on)
