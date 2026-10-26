@@ -592,7 +592,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E12-S05** Bid confidentiality and late-bid block with audited override | E12 | security | M | SRC-007, SRC-008 | ~~E12-S04~~ |
 | ✅ | **E12-S06** Comparison engine: normalized total and unit cost, tax, freight, lead time, vendor score | E12 | engine | L | SRC-009, SRC-010 | ~~E12-S04~~, ~~E05-S05~~, ~~E12-S05~~ |
 | ✅ | **E12-S07** Evaluation scoring with comments and conflict-of-interest declarations | E12 | crud | M | SRC-011 | ~~E12-S06~~ |
-| ⬜ | **E12-S08** Award: split by line/quantity, scope and reserved-funds guard, non-lowest justification | E12 | ledger | L | SRC-012, SRC-013, SRC-014, SRC-016, REQ-014 | ~~E12-S07~~, ~~E07-S04~~ |
+| 🔨 | **E12-S08** Award: split by line/quantity, scope and reserved-funds guard, non-lowest justification | E12 | ledger | L | SRC-012, SRC-013, SRC-014, SRC-016, REQ-014 | ~~E12-S07~~, ~~E07-S04~~ |
 | ⬜ | **E12-S09** Cancel or supersede RFQ/award, preserve history, reconcile budget effect | E12 | ledger | M | SRC-017, SRC-015, WF-005 | E12-S08 |
 | ⬜ | **E12-S10** Comparison dashboard screen with accessible table equivalent | E12 | ui | L | SRC-009, A11Y-009, RPT-013 | ~~E12-S06~~, ~~E04-S03~~, ~~E12-S07~~, ~~E11-S09~~, E12-S21 |
 | ✅ | **E12-S11** RFQ list and RFQ detail screens | E12 | ui | L | SRC-004, SRC-015, SRC-007 | ~~E12-S03~~, ~~E11-S09~~ |

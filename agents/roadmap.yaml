@@ -1752,7 +1752,7 @@ epics:
         dep:
           - E12-S07
           - E07-S04
-        st: todo
+        st: in_progress
       - id: E12-S09
         t: Cancel or supersede RFQ/award, preserve history, reconcile budget effect
         k: ledger
