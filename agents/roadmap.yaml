@@ -1856,7 +1856,7 @@ epics:
         dep:
           - E12-S07
           - E12-S11
-        st: in_progress
+        st: review
       - id: E12-S16
         t: 'Award draft screen: lines, justification, scope and funds check'
         k: ui
