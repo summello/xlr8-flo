@@ -21,4 +21,9 @@ flo_manual_guard() {
     echo "the fleet supervisor is active; pause it first: python3 ~/.claude/fleet/fleet.py pause --config agents/fleet.toml" >&2
     exit 3
   fi
+  # Omnissiah's supervisor (bin/flo-fleet, state in ~/.claude/omnissiah) owns the steps the same way.
+  if [ -e "$HOME/Library/LaunchAgents/com.omnissiah.xlr8flo.plist" ] && [ ! -e "$HOME/.claude/omnissiah/state/xlr8flo/paused" ]; then
+    echo "the Omnissiah supervisor is active; pause it first: python3 ~/Workbench/omnissiah/bin/flo-fleet pause --config .flo/fleet.toml" >&2
+    exit 3
+  fi
 }
