@@ -604,7 +604,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E12-S17** Award decision panel: Award Evidence block | E12 | ui | M | SRC-013, APR-003, APR-020 | E12-S08, ~~E11-S10~~ |
 | ⬜ | **E12-S18** Cancel RFQ and supersede award dialogs | E12 | ui | M | SRC-017 | E12-S09, ~~E12-S11~~ |
 | ✅ | **E12-S19** Sourcing open questions for the operator (parking story) | E12 | docs | S | SRC-016, SRC-017 | — |
-| ⬜ | **E12-S20** RFQ editor: Evaluation Criteria and Evaluators cards (split from E12-S13) | E12 | ui | M | SRC-002, SRC-011 | ~~E12-S07~~, ~~E12-S13~~ |
+| 🔨 | **E12-S20** RFQ editor: Evaluation Criteria and Evaluators cards (split from E12-S13) | E12 | ui | M | SRC-002, SRC-011 | ~~E12-S07~~, ~~E12-S13~~ |
 | ⬜ | **E12-S21** Comparison engine follow-up: selection totals, amount to spare, late override, counts (for E12-S10) | E12 | engine | M | SRC-009, SRC-008, SRC-014, SRC-016 | ~~E12-S06~~ |
 | ⬜ | **E13-S01** PO from awarded requisition lines or authorized project items, scoped numbering | E13 | crud | L | PO-001, PO-002, PO-006, SEQ-001 | E12-S08 |
 | ⬜ | **E13-S02** Tax and freight per BU/OU policy, separately visible on line and document | E13 | ledger | M | FIN-008, FIN-009, PO-016 | E13-S01 |

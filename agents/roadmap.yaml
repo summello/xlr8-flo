@@ -1921,7 +1921,7 @@ epics:
         dep:
           - E12-S07
           - E12-S13
-        st: todo
+        st: in_progress
       - id: E12-S21
         t: 'Comparison engine follow-up: selection totals, amount to spare, late override,
           counts (for E12-S10)'
