@@ -86,6 +86,7 @@ class Cell(BaseModel):
     vendor_id: UUID
     not_quoted: bool
     unit_price: str | None  # as the vendor keyed it, in the bid currency
+    unit_price_converted: str | None  # display only: unit_price at the frozen rate, RFQ currency
     quantity: str | None
     price: str | None
     tax: str | None
@@ -209,6 +210,7 @@ class _Priced:
     cells: dict[UUID, tuple[Decimal, Decimal, Decimal]] = field(default_factory=dict)
     unallocated: Decimal | None = None
     unallocated_converted: Decimal = Decimal(0)
+    units: dict[UUID, Decimal] = field(default_factory=dict)
 
     def landed(self, line: UUID) -> Decimal:
         return sum(self.cells[line], Decimal(0))
@@ -254,6 +256,7 @@ def _price(bid: BidIn, lines: list[LineIn], currency: str, rate: Rate) -> _Price
                 quantize(bid.quotes[line.id].tax * rate.rate, currency),
                 quantize(share * rate.rate, currency),
             )
+            priced.units[line.id] = quantize(bid.quotes[line.id].unit_price * rate.rate, currency)
     return priced
 
 
@@ -353,6 +356,7 @@ def compute(
                 not_quoted=line.id not in p.cells,
                 unit_price=_s(p.bid.quotes[line.id].unit_price) if line.id in p.cells else None,
                 quantity=_s(p.bid.quotes[line.id].quantity) if line.id in p.cells else None,
+                unit_price_converted=_s(p.units[line.id]) if line.id in p.cells else None,
                 price=_s(p.cells[line.id][0]) if line.id in p.cells else None,
                 tax=_s(p.cells[line.id][1]) if line.id in p.cells else None,
                 freight_share=_s(p.cells[line.id][2]) if line.id in p.cells else None,

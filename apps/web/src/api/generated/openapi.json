@@ -2563,6 +2563,17 @@
             ],
             "title": "Unit Price"
           },
+          "unit_price_converted": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Price Converted"
+          },
           "vendor_id": {
             "format": "uuid",
             "title": "Vendor Id",
@@ -2573,6 +2584,7 @@
           "vendor_id",
           "not_quoted",
           "unit_price",
+          "unit_price_converted",
           "quantity",
           "price",
           "tax",

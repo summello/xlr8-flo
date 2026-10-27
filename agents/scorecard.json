@@ -5925,6 +5925,71 @@
         },
         "gate_s": 2
       }
+    },
+    {
+      "story": "E12-S22",
+      "kind": "engine",
+      "size": "S",
+      "tags": [
+        "money"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "9f0d4cfb-7746-4e41-80f7-937241a1ffb3",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S22",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a17c6e-6664-75f3-b37b-7191e9478dc6",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Each comparison Cell now carries unit_price_converted: the keyed unit price times the frozen rate, quantized to the RFQ currency's minor unit; null when not quoted. Display only, no existing figure changed; API client regenerated.",
+      "title": "Comparison engine: converted unit price on each cell (SRC-009 unit cost, for E12-S10)",
+      "durations": {
+        "wall_s": 2320,
+        "author_s": 900,
+        "review_s": {
+          "codex": 541,
+          "opus": 275
+        },
+        "gate_s": 286
+      }
     }
   ]
 }

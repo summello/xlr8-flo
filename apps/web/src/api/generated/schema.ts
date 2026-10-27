@@ -4368,6 +4368,8 @@ export interface components {
             tax: string | null;
             /** Unit Price */
             unit_price: string | null;
+            /** Unit Price Converted */
+            unit_price_converted: string | null;
             /**
              * Vendor Id
              * Format: uuid

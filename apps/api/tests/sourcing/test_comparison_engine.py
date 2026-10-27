@@ -123,6 +123,12 @@ def test_three_vendors_four_lines_every_figure():
     assert r.markers.highest_score is None and a.score is None
     # the vendor's own paper is untouched
     assert cells[2][L1].unit_price == "8" and B.freight == D("30")
+    # converted unit price: unit x rate, minor unit of the RFQ currency; null when not quoted
+    assert [row.cells[1].unit_price_converted for row in r.lines] == [
+        "8.80", "18.70", "49.50", "104.50",
+    ]  # fmt: skip
+    assert cells[1][L1].unit_price_converted == "10.00"
+    assert cells[3][L4].unit_price_converted is None
 
 
 def test_row_is_identical_only_when_every_vendor_agrees():
@@ -284,3 +290,41 @@ def test_identical_measures_name_what_every_quoting_vendor_shares():
     assert r.identical_rows == 2
     r = run([x], lines=LINES[:1])  # fewer than two quoting vendors: nothing to compare
     assert (r.identical_measures, r.identical_rows) == ([], 0)
+
+
+def _unit(ccy, unit, qty, rate, rfq="USD"):
+    """One vendor, one line; returns the cell."""
+    line = LineIn(L1, 1, "One", D(qty), None)
+    r = compute(
+        currency=rfq,
+        lines=[line],
+        bids=[bid(1, ccy, "0", {L1: (qty, unit, 0)})],
+        requirements=0,
+        rates={ccy: rate, rfq: Rate(D(1), "identity", TODAY)},
+        current_version=1,
+        approved_scope=D("0"),
+        comparison_date=TODAY,
+        rate_date=TODAY,
+        frozen_at=T0,
+        bids_since_freeze=0,
+    )
+    return r.lines[0].cells[0]
+
+
+def test_converted_unit_price_uses_the_frozen_rate_and_the_rfq_minor_unit():
+    # EUR 8.125 x 1.0837 = 8.8050625 -> 8.81 (HALF_UP, 2 places); the keyed price is untouched
+    c = _unit("EUR", "8.125", 1, Rate(D("1.0837"), "ECB", TODAY))
+    assert (c.unit_price, c.unit_price_converted) == ("8.125", "8.81")
+    # JPY RFQ has no minor unit: EUR 8.125 x 150.5 = 1222.8125 -> 1223
+    c = _unit("EUR", "8.125", 1, Rate(D("150.5"), "ECB", TODAY), rfq="JPY")
+    assert c.unit_price_converted == "1223"
+
+
+def test_converted_unit_price_rounds_half_up_not_half_even():
+    assert _unit("USD", "2.125", 1, Rate(D(1), "identity", TODAY)).unit_price_converted == "2.13"
+
+
+def test_converted_unit_price_is_not_the_quantized_price_over_quantity():
+    # price 10 x 0.0046 = 0.046 -> 0.05; / 10 would give 0.01 where the rule gives 0.00
+    c = _unit("USD", "0.0046", 10, Rate(D(1), "identity", TODAY))
+    assert c.unit_price_converted == "0.00"
