@@ -2318,6 +2318,23 @@ export interface paths {
         patch: operations["patch_award_api_v1_sourcing_rfqs__id__award_patch"];
         trace?: never;
     };
+    "/api/v1/sourcing/rfqs/{id}/award/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Award */
+        post: operations["cancel_award_api_v1_sourcing_rfqs__id__award_cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sourcing/rfqs/{id}/award/lines": {
         parameters: {
             query?: never;
@@ -2352,6 +2369,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sourcing/rfqs/{id}/award/supersede": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Supersede Award */
+        post: operations["supersede_award_api_v1_sourcing_rfqs__id__award_supersede_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sourcing/rfqs/{id}/award/withdraw": {
         parameters: {
             query?: never;
@@ -2363,6 +2397,23 @@ export interface paths {
         put?: never;
         /** Withdraw Award */
         post: operations["withdraw_award_api_v1_sourcing_rfqs__id__award_withdraw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sourcing/rfqs/{id}/awards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Awards */
+        get: operations["list_awards_api_v1_sourcing_rfqs__id__awards_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2433,6 +2484,23 @@ export interface paths {
         put?: never;
         /** Submit Bid */
         post: operations["submit_bid_api_v1_sourcing_rfqs__id__bids__bid_id__submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sourcing/rfqs/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Rfq */
+        post: operations["cancel_rfq_api_v1_sourcing_rfqs__id__cancel_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7425,6 +7493,14 @@ export interface components {
             document_type?: string | null;
             /** Text */
             text: string;
+        };
+        /**
+         * ReasonBody
+         * @description Cancel or supersede: the reason is kept in the audit trail (SRC-017).
+         */
+        ReasonBody: {
+            /** Reason */
+            reason: string;
         };
         /** ReassignWrite */
         ReassignWrite: {
@@ -16682,6 +16758,52 @@ export interface operations {
             };
         };
     };
+    cancel_award_api_v1_sourcing_rfqs__id__award_cancel_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AwardRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     put_award_lines_api_v1_sourcing_rfqs__id__award_lines_put: {
         parameters: {
             query?: never;
@@ -16771,6 +16893,52 @@ export interface operations {
             };
         };
     };
+    supersede_award_api_v1_sourcing_rfqs__id__award_supersede_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AwardRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     withdraw_award_api_v1_sourcing_rfqs__id__award_withdraw_post: {
         parameters: {
             query?: never;
@@ -16791,6 +16959,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AwardRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    list_awards_api_v1_sourcing_rfqs__id__awards_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AwardRead"][];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */
@@ -17065,6 +17275,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BidRead"] | components["schemas"]["SealedBidRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    cancel_rfq_api_v1_sourcing_rfqs__id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RfqRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

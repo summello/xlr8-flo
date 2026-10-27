@@ -44,6 +44,7 @@ def move_funds(
     key: str,
     reason: str,
     actor_id: UUID,
+    allow_negative: bool | None = None,
 ) -> None:
     """Transfer `amount` source to target in one balanced group (D-M2-19); caller holds the locks.
 
@@ -74,6 +75,7 @@ def move_funds(
         ],
         source_type="requisition",
         source_id=cast(UUID, requisition_row["id"]),
+        allow_negative=allow_negative,
     )
 
 

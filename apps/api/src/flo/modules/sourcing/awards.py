@@ -36,12 +36,16 @@ from flo.modules.requisitions.service import (
     award_funding,
     award_lines,
     mark_awarded,
+    mark_unawarded,
     register_link_provider,
     release_unawarded,
+    restore_unawarded,
     sourcing_basis,
 )
 from flo.modules.sourcing.comparison import ComparisonRead, ComparisonService, SealedComparisonRead
 from flo.modules.sourcing.evaluation import weighted
+from flo.modules.sourcing.schemas import ReasonBody
+from flo.modules.sourcing.service import SUPERSEDE_GUARDS
 
 type Conn = psycopg.Connection[tuple[object, ...]]
 type Basis = Literal["lowest_cost_supplier", "best_average_cost", "manual"]
@@ -785,6 +789,100 @@ class AwardService(ComparisonService):
             )
         return self.read(rfq_id)
 
+    def awards(self, rfq_id: UUID) -> list[AwardRead]:
+        """Every award of the RFQ, newest first, superseded and cancelled included (WF-005)."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            _, unit_id, ccy, _ = self._rfq(rfq_id)
+            ids = [
+                cast(UUID, r[0])
+                for r in self.repo.execute(
+                    "SELECT id FROM award WHERE org_id = %(org_id)s AND rfq_id = %(rfq)s "
+                    "ORDER BY created_at DESC, id",
+                    {"rfq": rfq_id},
+                ).fetchall()
+            ]
+            return [self._read(self.award_by_id(i), ccy, unit_id) for i in ids]
+
+    def cancel(self, rfq_id: UUID, body: ReasonBody) -> AwardRead:
+        """A draft award posted nothing, so nothing reverses; an approval in flight is withdrawn
+        first (SRC-017)."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self._rfq(rfq_id, lock=True)
+            award = self._award(rfq_id, lock=True)
+            if award["status"] != "draft":
+                raise conflict(
+                    "invalid_transition",
+                    "Only a draft award can be cancelled. Withdraw one pending approval first.",
+                )
+            self.repo.execute(
+                "UPDATE award SET status = 'cancelled', version = version + 1 "
+                "WHERE org_id = %(org_id)s AND id = %(id)s",
+                {"id": award["id"]},
+            )
+            self._audit_award(
+                "award.cancel",
+                award["id"],
+                {"status": "draft"},
+                {"status": "cancelled", "reason": body.reason},
+            )
+        return self.read(rfq_id)
+
+    def supersede(self, rfq_id: UUID, body: ReasonBody) -> AwardRead:
+        """Decision 213: undo an approved award exactly; refused once a PO exists (SRC-017).
+
+        Lock order: project_balance rows, the award, the RFQ (the requisitions follow inside
+        `award_lines`). The approved check runs under the award lock, before any amount is read,
+        so the second of two concurrent supersedes posts nothing (FIN-011).
+        """
+        actor = cast(UUID, self.actor_id)
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self._rfq(rfq_id)
+            live = self._award(rfq_id)
+            id = cast(UUID, live["id"])
+            rows = self._rows(id)
+            requisitions = sorted({r.requisition_id for r in rows})
+            award_funding(self.connection, self.scope, requisitions, lock=True)
+            award = self.award_by_id(id, lock=True)
+            if award["status"] != "approved":
+                raise conflict("invalid_transition", "Only an approved award can be superseded.")
+            self._rfq(rfq_id, lock=True)
+            if any(probe(self.connection, self.scope, id) for probe in SUPERSEDE_GUARDS):
+                raise conflict(
+                    "po_exists", "A purchase order was created from this award. It stays."
+                )
+            award_lines(
+                self.connection,
+                self.scope,
+                [(r.requisition_line_id, -r.quantity) for r in rows],
+                actor,
+            )
+            for requisition_id in requisitions:
+                restore_unawarded(self.connection, self.scope, requisition_id, id, actor)
+                mark_unawarded(self.connection, self.scope, requisition_id, actor)
+            self.repo.execute(
+                "UPDATE award SET status = 'superseded', version = version + 1 "
+                "WHERE org_id = %(org_id)s AND id = %(id)s",
+                {"id": id},
+            )
+            self.repo.execute(
+                "UPDATE rfq SET status = 'under_evaluation', updated_at = now(), "
+                "edit_revision = edit_revision + 1 WHERE org_id = %(org_id)s AND id = %(id)s",
+                {"id": rfq_id},
+            )
+            self._audit_award(
+                "award.supersede",
+                id,
+                {"status": "approved"},
+                {"status": "superseded", "reason": body.reason},
+            )
+            self._audit(
+                "rfq.supersede_award",
+                rfq_id,
+                {"status": "awarded"},
+                {"status": "under_evaluation", "reason": body.reason},
+            )
+        return self.read(rfq_id)
+
     # -- the approval outcomes (inside the decision's transaction) ---------------------------
 
     def settle(self, award_id: UUID, outcome: str, context: OutcomeContext) -> None:
@@ -825,6 +923,9 @@ class AwardService(ComparisonService):
         award = self.award_by_id(id, lock=True)
         if award["status"] != "approval_pending":
             raise conflict("invalid_transition", "This award is no longer pending approval.")
+        status, *_ = self._rfq(rfq_id, lock=True)
+        if status != "under_evaluation":
+            raise conflict("invalid_transition", "This RFQ is no longer under evaluation.")
         for c in checks:
             unused = Decimal(c.scope) - Decimal(c.award)
             if unused > 0:

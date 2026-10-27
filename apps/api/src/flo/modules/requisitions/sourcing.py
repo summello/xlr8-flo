@@ -13,9 +13,13 @@ from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError, conflict
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
-from flo.modules.budget.service import lock_balance, reservation_remaining
+from flo.modules.budget.service import (
+    entry_by_idempotency_key,
+    lock_balance,
+    reservation_remaining,
+)
 from flo.modules.requisitions.funding import move_funds, reduce_to
-from flo.modules.requisitions.lifecycle import read_row, write_status
+from flo.modules.requisitions.lifecycle import read_row, rereserve, write_status
 from flo.modules.requisitions.links import assert_current_upstream
 from flo.modules.requisitions.models import RequisitionRepository
 from flo.modules.requisitions.schemas import LineSourcing, SourcingBasis
@@ -367,3 +371,74 @@ def award_funding(
                 for i in held
             }
         return {i: held[i].remaining if i in held else Decimal(0) for i in rows}
+
+
+def mark_unsourced(conn: Conn, scope: Scope, requisition_id: UUID, actor_id: UUID) -> bool:
+    """`sourced` -> `sourcing_in_progress` once quantity is open again (inverse of mark_sourced).
+
+    Returns whether the requisition moved; a no-op for any other state. Call in a transaction.
+    """
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        repo = RequisitionRepository(conn, scope)
+        row = read_row(repo, requisition_id, lock=True)
+        if row["status"] != "sourced":
+            return False
+        open_lines = repo.execute(
+            "SELECT 1 FROM requisition_line WHERE org_id = %(org_id)s AND requisition_id = %(id)s "
+            "AND cancelled_qty < quantity AND sourced_qty <> quantity - cancelled_qty LIMIT 1",
+            {"id": requisition_id},
+        ).fetchone()
+        if not open_lines:
+            return False
+        write_status(conn, scope, row, "sourcing_in_progress", actor_id, None, None)
+        return True
+
+
+def restore_unawarded(
+    conn: Conn, scope: Scope, requisition_id: UUID, award_id: UUID, actor_id: UUID
+) -> None:
+    """Exactly reverse what `release_unawarded` did for this award (decision 213).
+
+    Moves the returned amount main -> sub (refused when main no longer has it, whatever
+    `allow_negative_budget` says) and adds it back to the live reservation. The caller holds the
+    project_balance locks. No-op when the award used the whole scope.
+    """
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        row = read_row(RequisitionRepository(conn, scope), requisition_id, lock=True)
+        back = entry_by_idempotency_key(conn, scope, f"award:{award_id}:return:{requisition_id}")
+        if back is None or back.amount == 0:
+            return
+        held = reservation_remaining(conn, scope, cast(int, row["reservation_entry_id"]))
+        move_funds(
+            conn,
+            scope,
+            row,
+            source_id=cast(UUID, row["project_id"]),
+            target_id=held.project_id,
+            amount=back.amount,
+            key=f"award:{award_id}:supersede:return:{requisition_id}",
+            reason=f"Award superseded, funds of requisition {row['number']} returned",
+            actor_id=actor_id,
+            allow_negative=False,
+        )
+        rereserve(
+            conn,
+            scope,
+            requisition_id,
+            amount=back.amount,
+            key=f"award:{award_id}:supersede",
+            actor_id=actor_id,
+        )
+
+
+def mark_unawarded(conn: Conn, scope: Scope, requisition_id: UUID, actor_id: UUID) -> bool:
+    """`awarded` / `open_for_purchase` -> `sourced` when an award is superseded.
+
+    Returns whether the requisition moved; a no-op for any other state. Call in a transaction.
+    """
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        row = read_row(RequisitionRepository(conn, scope), requisition_id, lock=True)
+        if row["status"] not in ("awarded", "open_for_purchase"):
+            return False
+        write_status(conn, scope, row, "sourced", actor_id, None, None)
+        return True

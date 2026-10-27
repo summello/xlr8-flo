@@ -2,6 +2,7 @@
 
 import base64
 import json
+from collections.abc import Callable
 from datetime import date, datetime
 from decimal import Decimal
 from typing import cast
@@ -76,6 +77,16 @@ TAB_STATUSES: dict[str, list[str]] = {
     "evaluating": ["closed", "under_evaluation"],
     "awarded": ["awarded"],
 }
+# E13 registers a probe: (conn, scope, award_id) -> True when a PO was created from the award.
+SUPERSEDE_GUARDS: list[Callable[[Conn, Scope, UUID], bool]] = []
+
+
+def register_supersede_guard(probe: Callable[[Conn, Scope, UUID], bool]) -> None:
+    """Idempotent: a supersede is refused (409 `po_exists`) while any probe answers True."""
+    if probe not in SUPERSEDE_GUARDS:
+        SUPERSEDE_GUARDS.append(probe)
+
+
 CONTENT = "specifications, delivery_location, delivery_terms, terms, deadline_at, deadline_tz"
 
 

@@ -54,6 +54,7 @@ from flo.modules.sourcing.schemas import (
     InviteeCandidatePage,
     InviteeCreate,
     InviteePatch,
+    ReasonBody,
     RequirementsFromTemplate,
     RequirementsPut,
     RequirementWaive,
@@ -315,6 +316,15 @@ def publish_rfq(
     return _done(RfqLifecycle(connection, current_scope(), context.user_id).publish(id), response)
 
 
+@router.post("/rfqs/{id}/cancel", response_model=RfqRead)
+def cancel_rfq(
+    id: UUID, body: ReasonBody, context: ApproveContext, connection: Connection, response: Response
+) -> RfqRead:
+    return _done(
+        RfqLifecycle(connection, current_scope(), context.user_id).cancel(id, body), response
+    )
+
+
 @router.post("/rfqs/{id}/amend", response_model=RfqRead)
 def amend_rfq(
     id: UUID, body: RfqAmend, context: EditContext, connection: Connection, response: Response
@@ -534,6 +544,27 @@ def withdraw_award(
 ) -> AwardRead:
     service = AwardService(connection, current_scope(), context.user_id)
     return _award_done(service.withdraw(id), response)
+
+
+@router.post(f"{AWARD}/cancel", response_model=AwardRead)
+def cancel_award(
+    id: UUID, body: ReasonBody, context: ApproveContext, connection: Connection, response: Response
+) -> AwardRead:
+    service = AwardService(connection, current_scope(), context.user_id)
+    return _award_done(service.cancel(id, body), response)
+
+
+@router.post(f"{AWARD}/supersede", response_model=AwardRead)
+def supersede_award(
+    id: UUID, body: ReasonBody, context: ApproveContext, connection: Connection, response: Response
+) -> AwardRead:
+    service = AwardService(connection, current_scope(), context.user_id)
+    return _award_done(service.supersede(id, body), response)
+
+
+@router.get("/rfqs/{id}/awards", response_model=list[AwardRead])
+def list_awards(id: UUID, context: ViewContext, connection: Connection) -> list[AwardRead]:
+    return AwardService(connection, current_scope(), context.user_id).awards(id)
 
 
 EVALUATION = "/rfqs/{id}/evaluation"

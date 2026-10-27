@@ -5990,6 +5990,71 @@
         },
         "gate_s": 286
       }
+    },
+    {
+      "story": "E12-S09",
+      "kind": "ledger",
+      "size": "M",
+      "tags": [
+        "money"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 2,
+          "blockers": 1,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "de3c7c90-4ada-4fac-a45f-749c8e2d04bf",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S09",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a17d2d-3b3b-7e20-8ba4-b5fdfd2a6143",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Adds RFQ cancel (quantity back, no money, invitees emailed), award cancel, and supersede of an approved award that reverses the S08 release and return exactly under the same locks; approve now refuses an RFQ that left under_evaluation.",
+      "title": "Cancel or supersede RFQ/award, preserve history, reconcile budget effect",
+      "durations": {
+        "wall_s": 12831,
+        "author_s": 2157,
+        "review_s": {
+          "codex": 23,
+          "opus": 300
+        },
+        "gate_s": 2
+      }
     }
   ]
 }

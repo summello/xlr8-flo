@@ -653,9 +653,13 @@ def test_award_routes_conceal_foreign_tenants(lifecycle_db):
                     ("PATCH", "", {"rationale": "x"}),
                     ("POST", "/submit", None),
                     ("POST", "/withdraw", None),
+                    ("POST", "/cancel", {"reason": "x"}),
+                    ("POST", "/supersede", {"reason": "x"}),
                 ]:
                     response = await send(browser, method, base + suffix, data, {"If-Match": '"1"'})
                     assert response.status_code == 404, (method, suffix, response.text)
+                listed = await send(browser, "GET", f"/rfqs/{id}/awards")
+                assert listed.status_code == 404, listed.text
 
     asyncio.run(scenario())
 

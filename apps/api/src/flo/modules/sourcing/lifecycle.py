@@ -19,10 +19,12 @@ from flo.kernel.logging import correlation_context
 from flo.kernel.outbox.store import OutboxConnection, OutboxStore
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
-from flo.modules.requisitions.service import mark_sourced
+from flo.modules.requisitions.schemas import LineSourcing
+from flo.modules.requisitions.service import mark_sourced, mark_unsourced, source_lines
 from flo.modules.sourcing.models import RfqRepository
 from flo.modules.sourcing.schemas import (
     ExtendDeadline,
+    ReasonBody,
     RfqAmend,
     RfqLinesPatch,
     RfqRead,
@@ -44,12 +46,17 @@ REQUIRED_TEXT = (
 )
 JOB_KIND = "rfq-close"
 TEMPLATE = "rfq-version-v1"
+CANCELLED_TEMPLATE = "rfq-cancelled-v1"
 TRANSITIONS = {
     ("draft", "publish"): "published",
     ("published", "amend"): "published",
     ("published", "extend"): "published",
     ("published", "close"): "closed",
     ("closed", "start_evaluation"): "under_evaluation",
+    ("draft", "cancel"): "cancelled",
+    ("published", "cancel"): "cancelled",
+    ("closed", "cancel"): "cancelled",
+    ("under_evaluation", "cancel"): "cancelled",
 }
 
 
@@ -415,6 +422,61 @@ class RfqLifecycle(RfqService):
             )
             self._audit(
                 "rfq.start_evaluation", id, {"status": "closed"}, {"status": "under_evaluation"}
+            )
+        return self.get(id)
+
+    def cancel(self, id: UUID, body: ReasonBody) -> RfqRead:
+        """SRC-017: history stays, quantity goes back, no money moves (decision 212)."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            head = self._lock(id, "cancel")
+            if self.repo.execute(
+                "SELECT 1 FROM award WHERE org_id = %(org_id)s AND rfq_id = %(id)s "
+                "AND status IN ('draft', 'approval_pending') LIMIT 1",
+                {"id": id},
+            ).fetchone():
+                raise conflict(
+                    "award_in_progress",
+                    "This RFQ has an award in progress. Withdraw or reject it, cancel the "
+                    "award, then cancel the RFQ.",
+                )
+            lines = self.repo.execute(
+                "SELECT requisition_id, requisition_line_id, requisition_version, quantity "
+                "FROM rfq_line WHERE org_id = %(org_id)s AND rfq_id = %(id)s "
+                "ORDER BY requisition_id, requisition_line_id",
+                {"id": id},
+            ).fetchall()
+            source_lines(
+                self.connection,
+                self.scope,
+                [LineSourcing(r[0], r[1], r[2], -cast(Decimal, r[3])) for r in lines],  # type: ignore[arg-type]
+                self.actor_id,
+            )
+            for requisition_id in sorted({cast(UUID, r[0]) for r in lines}):
+                mark_unsourced(self.connection, self.scope, requisition_id, self._actor())
+            self.repo.execute(
+                "UPDATE rfq SET status = 'cancelled', updated_at = now(), "
+                "edit_revision = edit_revision + 1 WHERE org_id = %(org_id)s AND id = %(id)s",
+                {"id": id},
+            )
+            if head[0] != "draft":  # every post-publication state had invitees
+                outbox = OutboxStore(cast(OutboxConnection, self.connection), self.scope)
+                for vendor_id, contact_ids, _ in self._invitees(id):
+                    for contact in self._recipients(vendor_id, contact_ids):
+                        outbox.add_email(
+                            to=contact.email,
+                            template=CANCELLED_TEMPLATE,
+                            context={
+                                "rfq_number": head[4],
+                                "title": head[5],
+                                "reason": body.reason,
+                            },
+                            idempotency_key=f"rfq:{id}:cancelled:{contact.id}",
+                        )
+            self._audit(
+                "rfq.cancel",
+                id,
+                {"status": head[0]},
+                {"status": "cancelled", "reason": body.reason},
             )
         return self.get(id)
 

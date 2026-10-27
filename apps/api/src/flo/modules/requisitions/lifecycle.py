@@ -403,6 +403,47 @@ def transition(
             )
 
 
+def rereserve(
+    conn: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    requisition_id: UUID,
+    *,
+    amount: Decimal,
+    key: str,
+    actor_id: UUID,
+) -> None:
+    """Add `amount` to the live reservation as a new round: release what is held, reserve
+    `remaining + amount` on the same project (never a second live reservation).
+
+    The caller holds the project_balance locks. `key` names the cause and keys the release.
+    """
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        repo = RequisitionRepository(conn, scope)
+        row = read_row(repo, requisition_id, lock=True)
+        held = reservation_remaining(conn, scope, cast(int, row["reservation_entry_id"]))
+        release_live(conn, scope, row, key, actor_id=actor_id)
+        round = cast(int, row["funding_round"]) + 1
+        reservation = reserve(
+            conn,
+            scope,
+            project_id=held.project_id,
+            amount=held.remaining + amount,
+            currency=held.currency,
+            source_type="requisition",
+            source_id=requisition_id,
+            effective_date=today(),
+            actor_id=actor_id,
+            department_code=str(row["department_code"]),
+            ledger_account_code=str(row["ledger_account_code"]),
+            idempotency_key=f"req:{requisition_id}:reserve:{round}",
+        )
+        repo.execute(
+            "UPDATE requisition SET funding_round=%(round)s,reservation_entry_id=%(entry)s"
+            " WHERE org_id=%(org_id)s AND id=%(id)s",
+            {"id": requisition_id, "round": round, "entry": reservation.id},
+        )
+
+
 def stop_approved(
     conn: psycopg.Connection[tuple[object, ...]],
     scope: Scope,

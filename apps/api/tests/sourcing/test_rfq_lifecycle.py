@@ -18,6 +18,7 @@ from flo.modules.sourcing.lifecycle import TRANSITIONS, RfqLifecycle
 from flo.modules.sourcing.schemas import (
     ExtendDeadline,
     InviteePatch,
+    ReasonBody,
     RfqAmend,
     RfqContentPatch,
     RfqLineIn,
@@ -35,7 +36,7 @@ from tests.sourcing.test_rfq_content import audit_actions, invite, vendor, vendo
 from tests.vendors.test_vendors import regrant
 
 STATUSES = ("draft", "published", "closed", "under_evaluation", "awarded", "cancelled")
-ACTIONS = ("publish", "amend", "extend", "close", "start_evaluation")
+ACTIONS = ("publish", "amend", "extend", "close", "start_evaluation", "cancel")
 
 
 def life(db, connection=None):
@@ -92,6 +93,7 @@ def test_every_state_and_action_pair(lifecycle_db):
             rfq.id, ExtendDeadline(deadline_at=datetime.now(UTC) + timedelta(days=9))
         ),
         "start_evaluation": lambda: life(db).start_evaluation(rfq.id),
+        "cancel": lambda: life(db).cancel(rfq.id, ReasonBody(reason="r")),
     }
     for status in STATUSES:
         for action in ACTIONS:
@@ -112,6 +114,10 @@ def test_every_state_and_action_pair(lifecycle_db):
         ("published", "extend"),
         ("published", "close"),
         ("closed", "start_evaluation"),
+        ("draft", "cancel"),
+        ("published", "cancel"),
+        ("closed", "cancel"),
+        ("under_evaluation", "cancel"),
     }
 
 
@@ -539,6 +545,7 @@ def test_lifecycle_routes_conceal_foreign_tenants(lifecycle_db):
                 ("POST", f"/rfqs/{foreign_rfq}/start-evaluation", None),
                 ("POST", f"/rfqs/{foreign_rfq}/invitees/{uuid4()}/resend", None),
                 ("GET", f"/rfqs/{foreign_rfq}/versions", None),
+                ("POST", f"/rfqs/{foreign_rfq}/cancel", {"reason": "x"}),
                 ("POST", f"/rfqs/{mine.id}/invitees/{uuid4()}/resend", None),
             ]:
                 response = await send(browser, method, suffix, data)

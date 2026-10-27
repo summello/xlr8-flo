@@ -349,6 +349,17 @@ class RfqAmend(RfqContentPatch):
     lines: list[RfqLineIn] | None = Field(default=None, min_length=1, max_length=500)
 
 
+class ReasonBody(BaseModel):
+    """Cancel or supersede: the reason is kept in the audit trail (SRC-017)."""
+
+    model_config = ConfigDict(extra="forbid")
+    reason: str = Field(min_length=1, max_length=2000)
+
+    _strip = field_validator("reason", mode="before")(
+        lambda cls, v: v.strip() if isinstance(v, str) else v
+    )
+
+
 class ExtendDeadline(BaseModel):
     model_config = ConfigDict(extra="forbid")
     deadline_at: datetime

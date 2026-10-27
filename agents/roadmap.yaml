@@ -1765,7 +1765,7 @@ epics:
           - WF-005
         dep:
           - E12-S08
-        st: in_progress
+        st: done
       - id: E12-S10
         t: Comparison dashboard screen with accessible table equivalent
         k: ui
