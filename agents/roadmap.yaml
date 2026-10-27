@@ -1782,7 +1782,7 @@ epics:
           - E12-S07
           - E11-S09
           - E12-S21
-        st: todo
+        st: in_progress
       - id: E12-S11
         t: 'RFQ list and RFQ detail screens'
         k: ui
