@@ -58,6 +58,17 @@ class EvaluatorAdd(BaseModel):
     identity_id: UUID
 
 
+class EligibleEvaluator(BaseModel):
+    identity_id: UUID
+    display_name: str
+    email: str
+
+
+class EligibleEvaluatorPage(BaseModel):
+    rows: list[EligibleEvaluator]
+    has_more: bool
+
+
 class DeclarationIn(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     conflict: bool
@@ -448,7 +459,11 @@ class EvaluationService(RfqService):
             head = self._head(rfq_id, lock=True)
             if head[0] in TERMINAL:
                 raise conflict("rfq_terminal", "This RFQ is closed to evaluation changes.")
-            if not may_view:
+            active = self.repo.execute(
+                "SELECT 1 FROM identity WHERE id = %(who)s AND status = 'active'",
+                {"who": identity_id},
+            ).fetchone()
+            if not may_view or active is None:
                 raise _invalid(
                     "identity_id", "An evaluator needs to be able to view this RFQ.", "not_eligible"
                 )
@@ -463,6 +478,31 @@ class EvaluationService(RfqService):
             self._audit("rfq.evaluator.add", rfq_id, None, {"identity_id": str(identity_id)})
             t = tally(self.repo, rfq_id)
             return next(e for e in self._evaluators(rfq_id, t) if e.identity_id == identity_id)
+
+    def eligible_evaluators(
+        self, rfq_id: UUID, holders: list[UUID], q: str, limit: int, offset: int
+    ) -> EligibleEvaluatorPage:
+        """Active `rfq.view` holders (the router resolves them) not yet on the RFQ, by name."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self._head(rfq_id)
+            rows = _all(
+                self.repo,
+                "SELECT i.id, coalesce(i.display_name, i.email), i.email FROM identity i "
+                "WHERE i.status = 'active' AND i.id = ANY(%(ids)s) "
+                "AND NOT EXISTS (SELECT 1 FROM rfq_evaluator e WHERE e.org_id = %(org_id)s "
+                "AND e.rfq_id = %(rfq)s AND e.identity_id = i.id) "
+                "AND (strpos(lower(coalesce(i.display_name, '')), lower(%(q)s)) > 0 "
+                "OR strpos(lower(i.email), lower(%(q)s)) > 0) "
+                "ORDER BY 2, i.id LIMIT %(limit)s OFFSET %(offset)s",
+                {"rfq": rfq_id, "ids": holders, "q": q, "limit": limit + 1, "offset": offset},
+            )
+        return EligibleEvaluatorPage(
+            rows=[
+                EligibleEvaluator(identity_id=r[0], display_name=r[1], email=r[2])
+                for r in rows[:limit]
+            ],
+            has_more=len(rows) > limit,
+        )
 
     def remove_evaluator(self, rfq_id: UUID, identity_id: UUID, if_match: str | None) -> None:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):

@@ -412,7 +412,7 @@ def test_role_eligibility_uses_injected_resolver(eligibility_tree):
     db, targets, users = eligibility_tree
 
     class Resolver:
-        def holders(self, permission, target):
+        def holders(self, permission, target, **_):
             assert permission == "requisition.approve"
             assert target == targets["a"]
             return [users["both"]]
@@ -440,7 +440,7 @@ def test_validation_and_publish_use_injected_resolver(eligibility_tree):
     db, targets, users = eligibility_tree
 
     class Resolver:
-        def holders(self, permission, target):
+        def holders(self, permission, target, **_):
             assert permission == "requisition.approve"
             assert target == targets["org"]
             return []

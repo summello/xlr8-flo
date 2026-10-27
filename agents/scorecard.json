@@ -5724,6 +5724,71 @@
         },
         "gate_s": 2
       }
+    },
+    {
+      "story": "E12-S20",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 4,
+      "void_rounds": 0,
+      "escalations": 1,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 3
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 3,
+          "findings": 4,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "7501a8cc-b97c-4aae-965b-0900a0190c60",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S20",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "launch-model",
+          "model": "qwen/qwen3.8-27b"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a17b15-2afa-7600-b30f-d7e42cf981fb",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Added the Evaluation Criteria and Evaluators cards to the RFQ editor, with a new evaluator-picker route (GET .../evaluation/evaluators/eligible) and a refusal of inactive identities in add_evaluator. The criteria card hands the new edit_revision to the editor so a draft save after a criteria save is not a 409.",
+      "title": "RFQ editor: Evaluation Criteria and Evaluators cards (split from E12-S13)",
+      "durations": {
+        "wall_s": 20428,
+        "author_s": 3906,
+        "review_s": {
+          "codex": 793
+        },
+        "gate_s": 0
+      }
     }
   ]
 }

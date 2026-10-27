@@ -49,6 +49,9 @@ def _value(row: DatabaseRow, index: int, name: str) -> object:
     return row[index]
 
 
+HOLDER_CAP = 1000
+
+
 def _scope_cte() -> str:
     """One scope and effective-date definition for checks and holder queries."""
     return """
@@ -193,14 +196,22 @@ class AuthorizationResolver(ScopedRepo[AuthorizationDecision]):
             project_ids=frozenset(i for kind, i in found if kind == ScopeType.PROJECT.value),
         )
 
-    def holders(self, permission: str, target: TargetProtocol) -> list[IdentityId]:
-        return self._holders(target, permission=permission_code(permission))
+    def holders(
+        self, permission: str, target: TargetProtocol, *, limit: int | None = None
+    ) -> list[IdentityId]:
+        """Active holders; `limit=None` is the approvals default cap, `0` lifts it."""
+        return self._holders(target, permission=permission_code(permission), limit=limit)
 
     def role_holders(self, role_code: str, target: TargetProtocol) -> list[IdentityId]:
         return self._holders(target, role_code=role_code)
 
     def _holders(
-        self, target: TargetProtocol, *, permission: str | None = None, role_code: str | None = None
+        self,
+        target: TargetProtocol,
+        *,
+        permission: str | None = None,
+        role_code: str | None = None,
+        limit: int | None = None,
     ) -> list[IdentityId]:
         if target.scope_type is ScopeType.ORG and target.scope_id != self.scope.org_id:
             return []
@@ -217,12 +228,13 @@ class AuthorizationResolver(ScopedRepo[AuthorizationDecision]):
                   WHERE role_permission.org_id = %(org_id)s
                     AND role_permission.role_id = eligible_grants.role_id
                     AND role_permission.permission_code = %(permission)s))
-            ORDER BY identity.id LIMIT 1000
+            ORDER BY identity.id LIMIT %(limit)s
             """,
             self.scoped_params(
                 {
                     "permission": permission,
                     "role_code": role_code,
+                    "limit": (limit or HOLDER_CAP) if limit != 0 else None,
                     "user_id": None,
                     "target_scope_type": cast(ScopeType, target.scope_type).value,
                     "target_scope_id": target.scope_id,

@@ -1752,7 +1752,7 @@ epics:
         dep:
           - E12-S07
           - E07-S04
-        st: in_progress
+        st: review
       - id: E12-S09
         t: Cancel or supersede RFQ/award, preserve history, reconcile budget effect
         k: ledger
@@ -1921,7 +1921,7 @@ epics:
         dep:
           - E12-S07
           - E12-S13
-        st: in_progress
+        st: done
       - id: E12-S21
         t: 'Comparison engine follow-up: selection totals, amount to spare, late override,
           counts (for E12-S10)'
@@ -1936,7 +1936,7 @@ epics:
           - SRC-016
         dep:
           - E12-S06
-        st: in_progress
+        st: review
 
   - id: E13
     name: Purchase orders

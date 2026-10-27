@@ -7,9 +7,10 @@ from fastapi import APIRouter, Depends, Header, Query, Request, Response
 
 from flo.api.admin_users import organization_target
 from flo.api.auth import get_auth_settings
+from flo.api.authz_factory import production_authorization_resolver
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
-from flo.kernel.authz import permits, require, require_member
+from flo.kernel.authz import HoldersResolverFactory, permits, require, require_member
 from flo.kernel.config import Settings
 from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.identity import IdentityId
@@ -27,6 +28,7 @@ from flo.modules.sourcing.evaluation import (
     CriteriaPut,
     CriteriaRead,
     DeclarationIn,
+    EligibleEvaluatorPage,
     EvaluationRead,
     EvaluationScoreResult,
     EvaluationService,
@@ -507,6 +509,25 @@ def add_evaluator(
     )
     return EvaluationService(connection, current_scope(), context.user_id).add_evaluator(
         id, body.identity_id, may_view=org_wide or unit_id in units
+    )
+
+
+@router.get(f"{EVALUATION}/evaluators/eligible", response_model=EligibleEvaluatorPage)
+def eligible_evaluators(
+    id: UUID,
+    context: EditContext,
+    connection: Connection,
+    q: Annotated[str, Query(min_length=2, max_length=100)],
+    limit: Annotated[int, Query(ge=1, le=50)] = 20,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> EligibleEvaluatorPage:
+    target = rfq_target(id, connection)
+    factory: HoldersResolverFactory = production_authorization_resolver
+    with factory(current_scope()) as resolver:
+        holders = resolver.holders("rfq.view", target, limit=0)
+    # ponytail: all holder ids go to one query, paged by offset; keyset past ~10k holders
+    return EvaluationService(connection, current_scope(), context.user_id).eligible_evaluators(
+        id, list(holders), q, limit, offset
     )
 
 

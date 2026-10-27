@@ -2471,6 +2471,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sourcing/rfqs/{id}/evaluation/evaluators/eligible": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Eligible Evaluators */
+        get: operations["eligible_evaluators_api_v1_sourcing_rfqs__id__evaluation_evaluators_eligible_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sourcing/rfqs/{id}/evaluation/evaluators/{identity_id}": {
         parameters: {
             query?: never;
@@ -4984,6 +5001,25 @@ export interface components {
              * @default []
              */
             warnings?: components["schemas"]["Reason"][];
+        };
+        /** EligibleEvaluator */
+        EligibleEvaluator: {
+            /** Display Name */
+            display_name: string;
+            /** Email */
+            email: string;
+            /**
+             * Identity Id
+             * Format: uuid
+             */
+            identity_id: string;
+        };
+        /** EligibleEvaluatorPage */
+        EligibleEvaluatorPage: {
+            /** Has More */
+            has_more: boolean;
+            /** Rows */
+            rows: components["schemas"]["EligibleEvaluator"][];
         };
         /** EvaluationRead */
         EvaluationRead: {
@@ -16762,6 +16798,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EvaluatorRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    eligible_evaluators_api_v1_sourcing_rfqs__id__evaluation_evaluators_eligible_get: {
+        parameters: {
+            query: {
+                q: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EligibleEvaluatorPage"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

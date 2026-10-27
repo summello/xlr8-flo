@@ -71,7 +71,9 @@ type PermissionResolverFactory = Callable[[Scope], AbstractContextManager[Permis
 class PermissionHoldersResolver(PermissionResolver, Protocol):
     """Live permission membership for approval eligibility."""
 
-    def holders(self, permission: str, target: AuthorizationTarget) -> list[IdentityId]: ...
+    def holders(
+        self, permission: str, target: AuthorizationTarget, *, limit: int | None = None
+    ) -> list[IdentityId]: ...
 
     def role_holders(self, role_code: str, target: AuthorizationTarget) -> list[IdentityId]: ...
 

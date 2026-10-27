@@ -14,10 +14,12 @@ const VENDORS = [
 ];
 const eligibility = (ok: boolean) => ok ? { eligible: true, reasons: [], warnings: [] } : { eligible: false, reasons: [{ code: "insurance", text: "No valid insurance certificate", document_type: "insurance" }], warnings: [] };
 
-type Options = { canApprove?: boolean; status?: "draft" | "published"; sourced?: boolean; blank?: boolean };
+type Options = { canApprove?: boolean; status?: "draft" | "published"; sourced?: boolean; blank?: boolean; canEdit?: boolean; seedEvaluators?: boolean };
+const PEOPLE = [{ identity_id: "aaaaaaaa-0000-4000-8000-000000000001", display_name: "Ana Reyes", email: "ana@example.test" }, { identity_id: "aaaaaaaa-0000-4000-8000-000000000002", display_name: "Ben Okoye", email: "ben@example.test" }, { identity_id: "aaaaaaaa-0000-4000-8000-000000000003", display_name: "Cal Ng", email: "cal@example.test" }];
+const evaluatorRead = (p: (typeof PEOPLE)[number], conflict = false) => ({ identity_id: p.identity_id, display_name: p.display_name, version: 1, declaration: conflict ? "conflict" : "none", detail: conflict ? "Owns shares in a bidder" : null, declared_at: null, submitted: false });
 
 /** An in-memory stand-in for the RFQ, candidates, invitee, publish and amend endpoints. */
-async function stub(page: Page, { canApprove = true, status = "draft", sourced = false, blank = true }: Options = {}) {
+async function stub(page: Page, { canApprove = true, status = "draft", sourced = false, blank = true, canEdit = true, seedEvaluators = false }: Options = {}) {
   const rfq = {
     status: status as string, version: status === "draft" ? 0 : 1, edit_revision: 1, deadline_at: DEADLINE,
     specifications: blank ? "" : "Pump spec", delivery_location: blank ? "" : "Dock 4", delivery_terms: blank ? "" : "DAP", terms: blank ? "" : "Net 30",
@@ -25,7 +27,12 @@ async function stub(page: Page, { canApprove = true, status = "draft", sourced =
     invitees: (status === "published" ? [1].map(n => invitee(n, false, null)) : []) as ReturnType<typeof invitee>[],
     lineSpec: null as string | null, quantity: "4.0000",
   };
-  const state = { rfq, patches: [] as { body: Record<string, unknown>; ifMatch: string | undefined }[], amends: [] as Record<string, unknown>[], invites: [] as Record<string, unknown>[], published: 0, candidateUrls: [] as URL[], vendorListCalls: 0, versions: [] as unknown[] };
+  const evaluation = {
+    criteria: [{ name: "Quality", weight: 60 }, { name: "Price", weight: 40 }], source: "default" as "default" | "rfq",
+    evaluators: (seedEvaluators ? [evaluatorRead(PEOPLE[0]!, true)] : []) as ReturnType<typeof evaluatorRead>[],
+    puts: [] as { body: { criteria: { name: string; weight: number }[] }; ifMatch: string | undefined }[], adds: [] as string[], removes: [] as { id: string; ifMatch: string | undefined }[], eligibleUrls: [] as URL[],
+  };
+  const state = { evaluation, rfq, patches: [] as { body: Record<string, unknown>; ifMatch: string | undefined }[], amends: [] as Record<string, unknown>[], invites: [] as Record<string, unknown>[], published: 0, candidateUrls: [] as URL[], vendorListCalls: 0, versions: [] as unknown[] };
   function invitee(n: number, overridden: boolean, reason: string | null) {
     const v = VENDORS[n - 1]!;
     return {
@@ -39,7 +46,7 @@ async function stub(page: Page, { canApprove = true, status = "draft", sourced =
     version: rfq.version, edit_revision: rfq.edit_revision, created_at: NOW, updated_at: NOW, deadline_at: rfq.deadline_at, deadline_tz: "UTC", published_at: rfq.status === "draft" ? null : NOW,
     specifications: rfq.specifications, delivery_location: rfq.delivery_location, delivery_terms: rfq.delivery_terms, terms: rfq.terms,
     lines: [{ id: "a1", line_no: 1, requisition_id: reqId, requisition_number: "REQ-0042", requisition_line_id: "b1", requisition_line_no: 1, requisition_version: 3, quantity: rfq.quantity, description: "Pump, 3 inch", uom_code: "EA", needed_by: null, currency: "USD", open_qty: "0.0000", specification: rfq.lineSpec }],
-    requirements: rfq.requirements.map(r => ({ ...r, waived_by_email: null, waived_by_name: null })), attachments: [], invitees: rfq.invitees, can_edit: true, can_approve: canApprove, bids_received: 0,
+    requirements: rfq.requirements.map(r => ({ ...r, waived_by_email: null, waived_by_name: null })), attachments: [], invitees: rfq.invitees, can_edit: canEdit, can_approve: canApprove, bids_received: 0,
   });
   const bump = () => { rfq.edit_revision += 1; };
   await page.route("**/api/v1/**", async route => {
@@ -58,6 +65,7 @@ async function stub(page: Page, { canApprove = true, status = "draft", sourced =
     if (path === base && method === "PATCH") {
       const body = req.postDataJSON() as Record<string, unknown>;
       state.patches.push({ body, ifMatch: req.headers()["if-match"] });
+      if (req.headers()["if-match"] !== String(rfq.edit_revision)) return send({ title: "Conflict", status: 409, detail: "This RFQ changed since you loaded it.", checks: { problem: "stale_version" } }, 409);
       for (const k of ["specifications", "delivery_location", "delivery_terms", "terms"] as const) if (k in body) rfq[k] = (body[k] as string | null) ?? "";
       if (body.line_specifications) rfq.lineSpec = Object.values(body.line_specifications as Record<string, string>)[0] ?? null;
       bump(); return send(read());
@@ -80,6 +88,7 @@ async function stub(page: Page, { canApprove = true, status = "draft", sourced =
     if (path === `${base}/publish`) {
       state.published += 1;
       const errors = ([["specifications", "Add the specifications."], ["delivery_location", "Add the delivery location."], ["delivery_terms", "Add the delivery terms."], ["terms", "Add the terms."]] as const).filter(([k]) => !rfq[k].trim()).map(([field, message]) => ({ field, message }));
+      if (evaluation.criteria.reduce((sum, c) => sum + c.weight, 0) !== 100) errors.push({ field: "weights_total", message: "Criteria weights must total 100." } as never);
       if (rfq.invitees.length === 0) errors.push({ field: "invitees", message: "Invite at least one vendor." } as never);
       if (errors.length) return send({ title: "Validation failed", status: 422, detail: errors[0]!.message, errors, checks: { problem: "cannot_publish" } }, 422);
       rfq.status = "published"; rfq.version = 1; bump(); return send(read());
@@ -92,6 +101,34 @@ async function stub(page: Page, { canApprove = true, status = "draft", sourced =
       if (sourced && lines && Number(lines[0]!.quantity) < Number(rfq.quantity)) return send({ title: "Conflict", status: 409, detail: "This requisition is fully sourced, so its quantity cannot be reduced here.", checks: { problem: "requisition_sourced" } }, 409);
       if (typeof body.terms === "string") rfq.terms = body.terms;
       rfq.version += 1; bump(); return send(read());
+    }
+    const ev = `${base}/evaluation`;
+    const rows = (all = evaluation.criteria) => all.map((c, n) => ({ id: evaluation.source === "rfq" ? `c${n}` : null, position: n + 1, name: c.name, weight: c.weight }));
+    if (path === ev && method === "GET") return send({ status: rfq.status, scoring_open: false, criteria: rows(), source: evaluation.source, edit_revision: rfq.edit_revision, me: null, evaluators: evaluation.evaluators, evaluator_count: evaluation.evaluators.length, complete: false, vendors: [], scores: [], weighted: null });
+    if (path === `${ev}/criteria` && method === "PUT") {
+      const body = req.postDataJSON() as { criteria: { name: string; weight: number }[] };
+      evaluation.puts.push({ body, ifMatch: req.headers()["if-match"] });
+      if (req.headers()["if-match"] !== String(rfq.edit_revision)) return send({ title: "Conflict", status: 409, detail: "This RFQ changed since you loaded it.", checks: { problem: "stale_version" } }, 409);
+      if (rfq.status !== "draft") return send({ title: "Conflict", status: 409, detail: "Only a draft RFQ can change its criteria.", checks: { problem: "not_draft" } }, 409);
+      evaluation.criteria = body.criteria; evaluation.source = "rfq"; bump();
+      return send({ criteria: rows(), source: "rfq", edit_revision: rfq.edit_revision });
+    }
+    if (path === `${ev}/evaluators/eligible`) {
+      evaluation.eligibleUrls.push(url);
+      const q = (url.searchParams.get("q") ?? "").toLowerCase();
+      return send({ rows: PEOPLE.filter(p => p.display_name.toLowerCase().includes(q) && !evaluation.evaluators.some(e => e.identity_id === p.identity_id)), has_more: false });
+    }
+    if (path === `${ev}/evaluators` && method === "POST") {
+      const body = req.postDataJSON() as { identity_id: string };
+      const person = PEOPLE.find(p => p.identity_id === body.identity_id)!;
+      evaluation.adds.push(body.identity_id); evaluation.evaluators.push(evaluatorRead(person));
+      return send(evaluatorRead(person), 201);
+    }
+    if (path.startsWith(`${ev}/evaluators/`) && method === "DELETE") {
+      const id = path.split("/").pop()!;
+      evaluation.removes.push({ id, ifMatch: req.headers()["if-match"] });
+      evaluation.evaluators = evaluation.evaluators.filter(e => e.identity_id !== id);
+      return route.fulfill({ status: 204 });
     }
     return send({ detail: "Not found." }, 404);
   });
@@ -143,6 +180,104 @@ test("lead: edit a draft, add a template, invite three vendors (one ineligible, 
   await expect(page.getByText("Version 2").first()).toBeVisible();
   expect(state.amends[0]).toEqual({ reason: "Payment terms moved", terms: "Net 45" });
   expect(state.vendorListCalls).toBe(0); // the picker never calls /vendors
+});
+
+const criterionName = (page: Page, n: number) => page.getByLabel(`Criterion ${n} Name`);
+const criterionWeight = (page: Page, n: number) => page.getByLabel(`Criterion ${n} Weight`);
+const addEvaluator = async (page: Page, term: string, name: string) => {
+  await page.getByLabel("Find an Evaluator").fill(term);
+  await page.getByRole("search", { name: "Evaluator search" }).getByRole("button", { name: "Search" }).click();
+  await page.getByRole("button", { name: `Add ${name} as an evaluator` }).click();
+  await expect(page.getByRole("button", { name: `Remove ${name}` })).toBeVisible();
+};
+
+test("criteria prefill from the default, save with the revision, then the draft saves too; two evaluators; publish lists weights_total", async ({ page }) => {
+  const state = await stub(page, { blank: false });
+  await page.goto(EDIT);
+  const card = page.locator("section[aria-labelledby=rfq-card-criteria]");
+  await expect(card.getByText("From your organisation's default. Save to keep them for this RFQ.")).toBeVisible();
+  await expect(criterionName(page, 1)).toHaveValue("Quality");
+  await expect(criterionWeight(page, 2)).toHaveValue("40");
+  await expect(card.getByText(/total/i)).toHaveCount(0); // the page computes and shows no weight total
+  await criterionWeight(page, 1).fill("70");
+  await card.getByRole("button", { name: "Save Criteria" }).click();
+  await expect(card.getByText("Criteria saved.")).toBeVisible();
+  await expect(card.getByText("From your organisation's default.")).toHaveCount(0);
+  expect(state.evaluation.puts[0]).toEqual({ body: { criteria: [{ name: "Quality", weight: 70 }, { name: "Price", weight: 40 }] }, ifMatch: "1" });
+  await page.getByLabel(/^Terms/).fill("Net 45"); // the card handed the editor the new revision, so this is not a 409
+  await page.getByRole("button", { name: "Save Draft" }).click();
+  await expect(page.getByText("Draft saved.")).toBeVisible();
+  expect(state.patches[0]!.ifMatch).toBe("2");
+  const evaluators = page.locator("section[aria-labelledby=rfq-card-evaluators]");
+  await expect(evaluators.getByText("No evaluators yet.")).toBeVisible();
+  await addEvaluator(page, "an", "Ana Reyes");
+  await addEvaluator(page, "ben", "Ben Okoye");
+  expect(state.evaluation.adds).toHaveLength(2);
+  await invite(page, "Alpha Pumps").check();
+  await page.getByRole("button", { name: "Invite Selected" }).click();
+  await expect(page.getByText("1 of 5 invited.")).toBeVisible();
+  await page.getByRole("button", { name: "Publish RFQ" }).click();
+  await page.getByRole("dialog", { name: "Publish RFQ" }).getByRole("button", { name: "Publish RFQ" }).click();
+  const summary = page.getByRole("alert").filter({ hasText: "Review the fields below" });
+  await expect(summary.getByText("Criteria weights must total 100.")).toBeVisible();
+  await evaluators.getByRole("button", { name: "Remove Ben Okoye" }).click();
+  await expect(evaluators.getByRole("button", { name: "Remove Ben Okoye" })).toHaveCount(0);
+  expect(state.evaluation.removes).toEqual([{ id: PEOPLE[1]!.identity_id, ifMatch: "1" }]); // the evaluator's own version
+});
+
+test("criteria: invalid rows are refused in words before any request; one-character searches are not sent", async ({ page }) => {
+  const state = await stub(page);
+  await page.goto(EDIT);
+  const card = page.locator("section[aria-labelledby=rfq-card-criteria]");
+  await criterionName(page, 1).fill("");
+  await criterionWeight(page, 2).fill("101");
+  await card.getByRole("button", { name: "Save Criteria" }).click();
+  await expect(card.getByText("Enter a name of 1 to 120 characters.")).toBeVisible();
+  await expect(card.getByText("Enter a whole-number weight from 1 to 100.")).toBeVisible();
+  await expect(criterionName(page, 1)).toHaveAttribute("aria-invalid", "true");
+  expect(state.evaluation.puts).toHaveLength(0);
+  await page.getByLabel("Find an Evaluator").fill("a");
+  await page.getByRole("search", { name: "Evaluator search" }).getByRole("button", { name: "Search" }).click();
+  await expect(page.getByText("Type at least two characters to search for an evaluator.").first()).toBeVisible();
+  expect(state.evaluation.eligibleUrls).toHaveLength(0);
+});
+
+test("criteria reorder by keyboard with Move Up and Move Down", async ({ page }) => {
+  await stub(page);
+  await page.goto(EDIT);
+  await page.getByRole("button", { name: "Move criterion 1 down" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(criterionName(page, 1)).toHaveValue("Price");
+  await expect(criterionName(page, 2)).toHaveValue("Quality");
+  await expect(page.getByText("Quality moved to position 2 of 2.")).toBeAttached();
+  await expect(page.getByRole("button", { name: "Move criterion 1 up" })).toBeDisabled();
+});
+
+test("amend: criteria are read-only, evaluators stay editable", async ({ page }) => {
+  const state = await stub(page, { status: "published", blank: false });
+  await page.goto(AMEND);
+  const card = page.locator("section[aria-labelledby=rfq-card-criteria]");
+  await expect(card.getByText("Criteria cannot change after publication.")).toBeVisible();
+  await expect(card.getByText("Quality")).toBeVisible();
+  await expect(card.getByRole("textbox")).toHaveCount(0);
+  await expect(card.getByRole("button")).toHaveCount(0);
+  await addEvaluator(page, "cal", "Cal Ng");
+  expect(state.evaluation.puts).toHaveLength(0);
+  expect(state.evaluation.adds).toEqual([PEOPLE[2]!.identity_id]);
+});
+
+test("a recused evaluator shows Recused with the declaration to the owner", async ({ page }) => {
+  await stub(page, { seedEvaluators: true });
+  await page.goto(EDIT);
+  await expect(page.getByText("Recused: Owns shares in a bidder")).toBeVisible();
+});
+
+test("a user without rfq.edit sees neither card", async ({ page }) => {
+  await stub(page, { canEdit: false });
+  await page.goto(EDIT);
+  await expect(page.getByText("You cannot change this RFQ.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Evaluation Criteria" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Evaluators" })).toHaveCount(0);
 });
 
 test("a requester without rfq.approve is offered no Override", async ({ page }) => {
@@ -241,11 +376,13 @@ for (const theme of ["light", "dark"] as const) {
   for (const [name, route, status] of [["edit", EDIT, "draft"], ["amend", AMEND, "published"]] as const) {
     test(`/sourcing/rfqs/:id/${name} passes axe in ${theme} theme`, async ({ page }) => {
       await page.addInitScript(t => localStorage.setItem("xlr8flo.theme", t), theme);
-      await stub(page, { status, blank: false });
+      await stub(page, { status, blank: false, seedEvaluators: true });
       await page.goto(route);
       await page.locator(".app-shell").waitFor();
       await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
       await expect(page.getByLabel(/^Specifications/)).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Evaluation Criteria" })).toBeVisible();
+      await expect(page.getByText("Recused: Owns shares in a bidder")).toBeVisible();
       if (name === "edit") await expect(invite(page, "Alpha Pumps")).toBeVisible();
       expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
       if (name === "edit") {
