@@ -6055,6 +6055,77 @@
         },
         "gate_s": 2
       }
+    },
+    {
+      "story": "E12-S10",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 4,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 4
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 4,
+          "findings": 6,
+          "blockers": 5,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [
+        {
+          "from": "codex",
+          "to": "opus",
+          "reason": "fleet ran Opus (flo-reviewer-claude) as code_reviewer at 8ec0f7c while the Codex slot was unavailable; Codex later reviewed the same commit too. Recorded by planner 27 Oct 2026 after finish gate failed on unassigned reviewer."
+        }
+      ],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "054a04b4-2282-488e-abdf-2761adedf34a",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S10",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a17cfb-b34c-7100-88ef-216b2a27ddd6",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Replaced the E12-S14 placeholder with the RFQ comparison dashboard: basis cards, verdict strip, matrix, By Line, Cost Breakdown (chart and table), Scoring, bid sheet and all states, rendering only server figures; added Open Comparison to the RFQ header. Start Award is deliberately absent until E12-S16.",
+      "title": "Comparison dashboard screen with accessible table equivalent",
+      "durations": {
+        "wall_s": 39378,
+        "author_s": 2632,
+        "review_s": {
+          "codex": 44,
+          "opus": 260
+        },
+        "gate_s": 265
+      }
     }
   ]
 }

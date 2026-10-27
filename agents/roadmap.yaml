@@ -1783,7 +1783,7 @@ epics:
           - E11-S09
           - E12-S21
           - E12-S22
-        st: review
+        st: done
       - id: E12-S11
         t: 'RFQ list and RFQ detail screens'
         k: ui

@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { comparison } from "./comparison-fixture";
 
 const rfqId = "11111111-1111-4111-8111-111111111111";
 const vendorId = "44444444-4444-4444-8444-444444444444";
@@ -54,7 +55,7 @@ async function stubBids(page: Page, { lead = false, deadline = minute(2 * 24 * H
     if (path === "/api/v1/auth/organizations") return send({ items: [], current_org_id: unitId });
     if (path === "/api/v1/sourcing/rfqs") return send({ rows: [{ id: rfqId, number: "RFQ-0001", title: "Centrifugal pumps", status: "published", unit_id: unitId, owner_email: "buyer@example.test", deadline_at: deadline, deadline_tz: tz, invitee_count: 1, requisition_numbers: ["REQ-0042"], bids_received: detail().bids_received }], next_cursor: null, counts: { drafts: 0, open: 1, evaluating: 0, awarded: 0, all: 1 } });
     if (path === base) return send(detail());
-    if (path === `${base}/comparison`) return send({ sealed: false });
+    if (path === `${base}/comparison`) return send(comparison());
     if (path === `${base}/versions` || path === `${base}/history`) return send([]);
     if (path === `${base}/bids` && method === "GET") return send(state.bids.filter(b => lead || b.mine).map(read));
     const record = (body: unknown) => state.posts.push({ path: path.replace(base, ""), method, key: req.headers()["idempotency-key"], ifMatch: req.headers()["if-match"], body });
@@ -207,7 +208,7 @@ test("after the deadline the Bids card opens the comparison and a submitted bid 
   await page.goto(`/sourcing/rfqs/${rfqId}`);
   await page.getByRole("link", { name: "Open the bid comparison" }).click();
   await expect(page).toHaveURL(`/sourcing/rfqs/${rfqId}/comparison`);
-  await expect(page.getByRole("heading", { name: "Bid Comparison", level: 2 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "RFQ-0001 · Centrifugal pumps", level: 2 })).toBeVisible();
   await page.getByRole("link", { name: "Back to the RFQ" }).click();
   await page.getByRole("button", { name: "Record Bid" }).click();
   const dialog = page.getByRole("dialog");
