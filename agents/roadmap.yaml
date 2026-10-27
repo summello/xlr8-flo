@@ -1880,6 +1880,7 @@ epics:
         s: M
         tags:
           - ui
+          - auth
         reqs:
           - SRC-013
           - APR-003
