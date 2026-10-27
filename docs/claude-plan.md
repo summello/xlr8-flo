@@ -601,7 +601,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E12-S14** Record a bid: bid sheet, two times, vendor currency, late-bid override | E12 | ui | L | SRC-006, SRC-008, SRC-010 | ~~E12-S04~~, ~~E12-S05~~, ~~E12-S11~~ |
 | 👀 | **E12-S15** Evaluation screen: declare first, then score | E12 | ui | M | SRC-011 | ~~E12-S07~~, ~~E12-S11~~ |
 | ⬜ | **E12-S16** Award draft screen: lines, justification, scope and funds check | E12 | ui | L | SRC-012, SRC-013, SRC-014, SRC-016 | ~~E12-S08~~, E12-S10 |
-| ⬜ | **E12-S17** Award decision panel: Award Evidence block | E12 | ui | M | SRC-013, APR-003, APR-020 | ~~E12-S08~~, ~~E11-S10~~ |
+| ⬜ | **E12-S17** Award decision panel: Award Evidence block | E12 | ui | M | SRC-013, APR-003, APR-020 | ~~E12-S08~~, ~~E11-S10~~, E12-S16 |
 | ⬜ | **E12-S18** Cancel RFQ and supersede award dialogs | E12 | ui | M | SRC-017 | E12-S09, ~~E12-S11~~ |
 | ✅ | **E12-S19** Sourcing open questions for the operator (parking story) | E12 | docs | S | SRC-016, SRC-017 | — |
 | ✅ | **E12-S20** RFQ editor: Evaluation Criteria and Evaluators cards (split from E12-S13) | E12 | ui | M | SRC-002, SRC-011 | ~~E12-S07~~, ~~E12-S13~~ |
