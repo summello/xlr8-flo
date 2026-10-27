@@ -1952,7 +1952,7 @@ epics:
         dep:
           - E12-S06
           - E12-S21
-        st: todo
+        st: in_progress
 
   - id: E13
     name: Purchase orders
