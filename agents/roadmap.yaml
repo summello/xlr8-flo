@@ -1886,6 +1886,7 @@ epics:
         dep:
           - E12-S08
           - E11-S10
+          - E12-S16
         st: todo
       - id: E12-S18
         t: 'Cancel RFQ and supersede award dialogs'
