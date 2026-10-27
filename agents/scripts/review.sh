@@ -93,9 +93,11 @@ if [ "$A" = codex ]; then
   # ~/.codex/config.toml silently ran reviews at `low` on 12 Oct.
   set -- $("$W/apps/api/.venv/bin/python" -c 'import sys,yaml; c=yaml.safe_load(open(sys.argv[1]))["agents"]["codex"]; print(c["model"], c["review_reasoning"])' "$R/agents/agents.yaml")
   T0="$(date +%Y-%m-%dT%H:%M:%S%z)"
-  # Hard stop: the packet's budget is advisory to the model, this is not. Gated 15 min, else 10;
+  # Hard stop: the packet's budget is advisory to the model, this is not. Gated 30 min, else 20
+  # (27 Oct 2026: doubled; Codex 0.164.0's code-mode host negotiation adds ~30-100 s to every shell
+  # command, so 10/15 min stopped S15, S20 and S08 reviews before a verdict. Halve again once fixed);
   # the reviewer keeps a draft verdict current, so a stopped run still leaves one.
-  CAP=$(python3 -c 'import json,sys; print(900 if json.load(open(sys.argv[1]))["opus_final"] else 600)' "$W/task.json")
+  CAP=$(python3 -c 'import json,sys; print(1800 if json.load(open(sys.argv[1]))["opus_final"] else 1200)' "$W/task.json")
   [ -n "$ARGS" ] && CAP=480
   # calls: the packet's budget plus 10-15 (re-review 20, gated 45, ungated 40; 22 Oct: 35 stopped
   # three ungated Codex reviews before they reached the tests)
