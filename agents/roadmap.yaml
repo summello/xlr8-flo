@@ -1974,7 +1974,7 @@ epics:
         dep:
           - E12-S08
           - E12-S09
-        st: todo
+        st: in_progress
       - id: E13-S02
         t: Tax and freight per BU/OU policy, separately visible on line and document
         k: ledger
