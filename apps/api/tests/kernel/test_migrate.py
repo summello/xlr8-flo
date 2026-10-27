@@ -176,6 +176,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261022_0074",
         "20261022_0075",
         "20261022_0076",
+        "20261022_0077",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -3009,3 +3010,59 @@ def test_rfq_evaluation_migration_is_reversible_and_append_only(empty_database):
         mig.upgrade(conn)
         with tenant_transaction(conn, scope):
             assert conn.execute("SELECT count(*) FROM rfq_evaluator").fetchone() == (0,)
+
+
+def test_award_migration_is_reversible_one_live_award_per_rfq_and_keeps_the_rfq(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.org.schemas import OrgUnitCreate
+    from flo.modules.org.service import OrgService
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261022_0076"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261022_0077")
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("award-migration"),
+    ):
+        tenant = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(tenant.org_id)
+        bu = OrgService(conn, scope, actor).create_unit(
+            OrgUnitCreate(code="BU", name="BU", kind="bu")
+        )
+        rfq = uuid4()
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO rfq(id,org_id,number,title,unit_id,currency,owner_id)"
+                " VALUES(%s,%s,'RFQ-00001','T',%s,'USD',%s)",
+                (rfq, tenant.org_id, bu.id, actor),
+            )
+        mig.upgrade(conn)
+
+        def award(number, status):
+            conn.execute(
+                "INSERT INTO award(id,org_id,number,rfq_id,basis,status,rates,created_by)"
+                " VALUES(%s,%s,%s,%s,'manual',%s,'{}',%s)",
+                (uuid4(), tenant.org_id, number, rfq, status, actor),
+            )
+
+        with tenant_transaction(conn, scope):
+            award("AWD-00001", "cancelled")
+            award("AWD-00002", "draft")
+        with pytest.raises(psycopg.errors.UniqueViolation), tenant_transaction(conn, scope):
+            award("AWD-00003", "approval_pending")  # a second live award on the RFQ
+        with tenant_transaction(conn, scope):
+            award("AWD-00004", "superseded")  # terminal awards do not count
+        mig.downgrade(conn)
+        for name in ("award", "award_line"):
+            assert conn.execute("SELECT to_regclass(%s)", (name,)).fetchone() == (None,)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT count(*) FROM rfq").fetchone() == (1,)  # the RFQ stays
+        mig.upgrade(conn)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT count(*) FROM award").fetchone() == (0,)

@@ -5860,6 +5860,71 @@
         },
         "gate_s": 228
       }
+    },
+    {
+      "story": "E12-S08",
+      "kind": "ledger",
+      "size": "L",
+      "tags": [
+        "money"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 3
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 3,
+          "findings": 2,
+          "blockers": 1,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "740cdf0b-bdc2-4f42-9e88-40ec2f4c34db",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S08",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a17bad-00e7-76a2-b822-101f1a911e94",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Awards split a line by quantity across vendors, price tax and freight pro rata, and are guarded against scope and reserved funds at submit and again at approval. Approval releases the unused reservation once, returns it from the sub-project to the main project, awards the quantities and opens a fully awarded requisition for purchase.",
+      "title": "Award: split by line/quantity, scope and reserved-funds guard, non-lowest justification",
+      "durations": {
+        "wall_s": 30699,
+        "author_s": 6548,
+        "review_s": {
+          "codex": 120,
+          "opus": 240
+        },
+        "gate_s": 2
+      }
     }
   ]
 }

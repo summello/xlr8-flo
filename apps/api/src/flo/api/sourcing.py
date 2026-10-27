@@ -18,6 +18,13 @@ from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.identity.service import IdentityAuthorizationConnection, granted_scopes
 from flo.modules.org.service import OrgService
+from flo.modules.sourcing.awards import (
+    AwardCreate,
+    AwardLinesPut,
+    AwardPatch,
+    AwardRead,
+    AwardService,
+)
 from flo.modules.sourcing.bids import BidService
 from flo.modules.sourcing.comparison import (
     ComparisonRead,
@@ -460,6 +467,73 @@ def refresh_comparison_rate(
     id: UUID, context: EditContext, connection: Connection
 ) -> ComparisonRead:
     return ComparisonService(connection, current_scope(), context.user_id).refresh_rate(id)
+
+
+AWARD = "/rfqs/{id}/award"
+
+
+def _award_done(award: AwardRead, response: Response) -> AwardRead:
+    response.headers["ETag"] = f'"{award.version}"'
+    return award
+
+
+@router.post(AWARD, status_code=201, response_model=AwardRead)
+def create_award(
+    id: UUID, body: AwardCreate, context: EditContext, connection: Connection, response: Response
+) -> AwardRead:
+    service = AwardService(connection, current_scope(), context.user_id)
+    return _award_done(service.draft(id, body), response)
+
+
+@router.get(AWARD, response_model=AwardRead)
+def get_award(
+    id: UUID, context: ViewContext, connection: Connection, response: Response
+) -> AwardRead:
+    return _award_done(
+        AwardService(connection, current_scope(), context.user_id).read(id), response
+    )
+
+
+@router.put(f"{AWARD}/lines", response_model=AwardRead)
+def put_award_lines(
+    id: UUID,
+    body: AwardLinesPut,
+    context: EditContext,
+    connection: Connection,
+    response: Response,
+    revision: Revision = None,
+) -> AwardRead:
+    service = AwardService(connection, current_scope(), context.user_id)
+    return _award_done(service.put_lines(id, body, revision), response)
+
+
+@router.patch(AWARD, response_model=AwardRead)
+def patch_award(
+    id: UUID,
+    body: AwardPatch,
+    context: EditContext,
+    connection: Connection,
+    response: Response,
+    revision: Revision = None,
+) -> AwardRead:
+    service = AwardService(connection, current_scope(), context.user_id)
+    return _award_done(service.patch(id, body, revision), response)
+
+
+@router.post(f"{AWARD}/submit", response_model=AwardRead)
+def submit_award(
+    id: UUID, context: ApproveContext, connection: Connection, response: Response
+) -> AwardRead:
+    service = AwardService(connection, current_scope(), context.user_id)
+    return _award_done(service.submit(id), response)
+
+
+@router.post(f"{AWARD}/withdraw", response_model=AwardRead)
+def withdraw_award(
+    id: UUID, context: EditContext, connection: Connection, response: Response
+) -> AwardRead:
+    service = AwardService(connection, current_scope(), context.user_id)
+    return _award_done(service.withdraw(id), response)
 
 
 EVALUATION = "/rfqs/{id}/evaluation"

@@ -60,7 +60,11 @@ from flo.modules.requisitions.schemas import (
     invalid,
 )
 from flo.modules.requisitions.schemas import SubmissionInvalid as SubmissionInvalid
+from flo.modules.requisitions.sourcing import award_funding as award_funding
+from flo.modules.requisitions.sourcing import award_lines as award_lines
+from flo.modules.requisitions.sourcing import mark_awarded as mark_awarded
 from flo.modules.requisitions.sourcing import mark_sourced as mark_sourced
+from flo.modules.requisitions.sourcing import release_unawarded as release_unawarded
 from flo.modules.requisitions.sourcing import source_lines as source_lines
 from flo.modules.requisitions.sourcing import sourceable_lines as sourceable_lines
 from flo.modules.requisitions.sourcing import sourcing_basis as sourcing_basis
@@ -78,6 +82,10 @@ __all__ = [
     "assert_current_upstream",
     "source_lines",
     "mark_sourced",
+    "award_funding",
+    "award_lines",
+    "release_unawarded",
+    "mark_awarded",
     "sourceable_lines",
     "sourcing_basis",
     "links",

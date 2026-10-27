@@ -966,6 +966,355 @@
         "title": "AvailabilityPayload",
         "type": "object"
       },
+      "AwardCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/Basis-Input"
+          }
+        },
+        "required": [
+          "basis"
+        ],
+        "title": "AwardCreate",
+        "type": "object"
+      },
+      "AwardLineIn": {
+        "additionalProperties": false,
+        "properties": {
+          "justification": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Justification"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "string"
+          },
+          "rfq_line_id": {
+            "format": "uuid",
+            "title": "Rfq Line Id",
+            "type": "string"
+          },
+          "tie_override_reason": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tie Override Reason"
+          },
+          "vendor_id": {
+            "format": "uuid",
+            "title": "Vendor Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rfq_line_id",
+          "vendor_id",
+          "quantity"
+        ],
+        "title": "AwardLineIn",
+        "type": "object"
+      },
+      "AwardLineRead": {
+        "properties": {
+          "amount_rfq": {
+            "title": "Amount Rfq",
+            "type": "string"
+          },
+          "amount_vendor": {
+            "title": "Amount Vendor",
+            "type": "string"
+          },
+          "bid_id": {
+            "format": "uuid",
+            "title": "Bid Id",
+            "type": "string"
+          },
+          "budget_amount": {
+            "title": "Budget Amount",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "justification": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Justification"
+          },
+          "line_no": {
+            "title": "Line No",
+            "type": "integer"
+          },
+          "not_lowest": {
+            "title": "Not Lowest",
+            "type": "boolean"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "string"
+          },
+          "rfq_line_id": {
+            "format": "uuid",
+            "title": "Rfq Line Id",
+            "type": "string"
+          },
+          "tie_override_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tie Override Reason"
+          },
+          "unit_price": {
+            "title": "Unit Price",
+            "type": "string"
+          },
+          "vendor_id": {
+            "format": "uuid",
+            "title": "Vendor Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rfq_line_id",
+          "line_no",
+          "vendor_id",
+          "bid_id",
+          "quantity",
+          "unit_price",
+          "currency",
+          "amount_vendor",
+          "amount_rfq",
+          "budget_amount",
+          "not_lowest",
+          "justification",
+          "tie_override_reason"
+        ],
+        "title": "AwardLineRead",
+        "type": "object"
+      },
+      "AwardLinesPut": {
+        "additionalProperties": false,
+        "properties": {
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/AwardLineIn"
+            },
+            "maxItems": 500,
+            "title": "Lines",
+            "type": "array"
+          }
+        },
+        "required": [
+          "lines"
+        ],
+        "title": "AwardLinesPut",
+        "type": "object"
+      },
+      "AwardPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "rationale": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rationale"
+          }
+        },
+        "title": "AwardPatch",
+        "type": "object"
+      },
+      "AwardRead": {
+        "properties": {
+          "approved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved At"
+          },
+          "basis": {
+            "$ref": "#/components/schemas/flo__modules__sourcing__awards__Basis"
+          },
+          "budget_total": {
+            "title": "Budget Total",
+            "type": "string"
+          },
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/RequisitionCheck"
+            },
+            "title": "Checks",
+            "type": "array"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "format": "uuid",
+            "title": "Created By",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "evaluator_results": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evaluator Results"
+          },
+          "exceptions": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exceptions"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/AwardLineRead"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "rates": {
+            "additionalProperties": true,
+            "title": "Rates",
+            "type": "object"
+          },
+          "rationale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rationale"
+          },
+          "rfq_id": {
+            "format": "uuid",
+            "title": "Rfq Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "approval_pending",
+              "approved",
+              "superseded",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "total": {
+            "title": "Total",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "rfq_id",
+          "basis",
+          "status",
+          "rationale",
+          "version",
+          "currency",
+          "rates",
+          "evaluator_results",
+          "exceptions",
+          "created_by",
+          "created_at",
+          "submitted_at",
+          "approved_at",
+          "total",
+          "budget_total",
+          "lines",
+          "checks"
+        ],
+        "title": "AwardRead",
+        "type": "object"
+      },
       "BalanceQueryRead": {
         "properties": {
           "actual": {
@@ -1098,109 +1447,13 @@
         "title": "BaseCurrencyPut",
         "type": "object"
       },
-      "Basis": {
-        "properties": {
-          "not_lowest_count": {
-            "default": 0,
-            "title": "Not Lowest Count",
-            "type": "integer"
-          },
-          "not_lowest_lines": {
-            "default": [],
-            "items": {
-              "format": "uuid",
-              "type": "string"
-            },
-            "title": "Not Lowest Lines",
-            "type": "array"
-          },
-          "over_by": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Over By"
-          },
-          "partial": {
-            "title": "Partial",
-            "type": "boolean"
-          },
-          "to_spare": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "To Spare"
-          },
-          "total": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Total"
-          },
-          "uncovered_lines": {
-            "default": [],
-            "items": {
-              "format": "uuid",
-              "type": "string"
-            },
-            "title": "Uncovered Lines",
-            "type": "array"
-          },
-          "vendor_id": {
-            "anyOf": [
-              {
-                "format": "uuid",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Vendor Id"
-          },
-          "vendors": {
-            "default": [],
-            "items": {
-              "$ref": "#/components/schemas/BasisVendor"
-            },
-            "title": "Vendors",
-            "type": "array"
-          },
-          "within_scope": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Within Scope"
-          }
-        },
-        "required": [
-          "vendor_id",
-          "total",
-          "partial",
-          "within_scope",
-          "over_by"
+      "Basis-Input": {
+        "enum": [
+          "lowest_cost_supplier",
+          "best_average_cost",
+          "manual"
         ],
-        "title": "Basis",
-        "type": "object"
+        "type": "string"
       },
       "BasisVendor": {
         "properties": {
@@ -2891,7 +3144,7 @@
             "type": "string"
           },
           "best_average_cost": {
-            "$ref": "#/components/schemas/Basis"
+            "$ref": "#/components/schemas/flo__modules__sourcing__comparison__Basis"
           },
           "bids_since_freeze": {
             "title": "Bids Since Freeze",
@@ -2944,7 +3197,7 @@
             "type": "array"
           },
           "lowest_cost_supplier": {
-            "$ref": "#/components/schemas/Basis"
+            "$ref": "#/components/schemas/flo__modules__sourcing__comparison__Basis"
           },
           "markers": {
             "$ref": "#/components/schemas/Markers"
@@ -11625,6 +11878,50 @@
         "title": "RequirementsPut",
         "type": "object"
       },
+      "RequisitionCheck": {
+        "properties": {
+          "award": {
+            "title": "Award",
+            "type": "string"
+          },
+          "funds": {
+            "title": "Funds",
+            "type": "string"
+          },
+          "over_funds_by": {
+            "title": "Over Funds By",
+            "type": "string"
+          },
+          "over_scope_by": {
+            "title": "Over Scope By",
+            "type": "string"
+          },
+          "requisition": {
+            "title": "Requisition",
+            "type": "string"
+          },
+          "requisition_id": {
+            "format": "uuid",
+            "title": "Requisition Id",
+            "type": "string"
+          },
+          "scope": {
+            "title": "Scope",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requisition_id",
+          "requisition",
+          "scope",
+          "funds",
+          "award",
+          "over_scope_by",
+          "over_funds_by"
+        ],
+        "title": "RequisitionCheck",
+        "type": "object"
+      },
       "RequisitionCreate": {
         "additionalProperties": false,
         "properties": {
@@ -17036,6 +17333,118 @@
           "graph"
         ],
         "title": "WorkflowVersionWrite",
+        "type": "object"
+      },
+      "flo__modules__sourcing__awards__Basis": {
+        "enum": [
+          "lowest_cost_supplier",
+          "best_average_cost",
+          "manual"
+        ],
+        "type": "string"
+      },
+      "flo__modules__sourcing__comparison__Basis": {
+        "properties": {
+          "not_lowest_count": {
+            "default": 0,
+            "title": "Not Lowest Count",
+            "type": "integer"
+          },
+          "not_lowest_lines": {
+            "default": [],
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Not Lowest Lines",
+            "type": "array"
+          },
+          "over_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Over By"
+          },
+          "partial": {
+            "title": "Partial",
+            "type": "boolean"
+          },
+          "to_spare": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Spare"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total"
+          },
+          "uncovered_lines": {
+            "default": [],
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Uncovered Lines",
+            "type": "array"
+          },
+          "vendor_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor Id"
+          },
+          "vendors": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/BasisVendor"
+            },
+            "title": "Vendors",
+            "type": "array"
+          },
+          "within_scope": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Within Scope"
+          }
+        },
+        "required": [
+          "vendor_id",
+          "total",
+          "partial",
+          "within_scope",
+          "over_by"
+        ],
+        "title": "Basis",
         "type": "object"
       }
     }
@@ -30837,6 +31246,478 @@
           }
         },
         "summary": "Put Visibility",
+        "tags": [
+          "sourcing"
+        ]
+      }
+    },
+    "/api/v1/sourcing/rfqs/{id}/award": {
+      "get": {
+        "operationId": "get_award_api_v1_sourcing_rfqs__id__award_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AwardRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Get Award",
+        "tags": [
+          "sourcing"
+        ]
+      },
+      "patch": {
+        "operationId": "patch_award_api_v1_sourcing_rfqs__id__award_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AwardPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AwardRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Patch Award",
+        "tags": [
+          "sourcing"
+        ]
+      },
+      "post": {
+        "operationId": "create_award_api_v1_sourcing_rfqs__id__award_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AwardCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AwardRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Create Award",
+        "tags": [
+          "sourcing"
+        ]
+      }
+    },
+    "/api/v1/sourcing/rfqs/{id}/award/lines": {
+      "put": {
+        "operationId": "put_award_lines_api_v1_sourcing_rfqs__id__award_lines_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AwardLinesPut"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AwardRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Put Award Lines",
+        "tags": [
+          "sourcing"
+        ]
+      }
+    },
+    "/api/v1/sourcing/rfqs/{id}/award/submit": {
+      "post": {
+        "operationId": "submit_award_api_v1_sourcing_rfqs__id__award_submit_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AwardRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Submit Award",
+        "tags": [
+          "sourcing"
+        ]
+      }
+    },
+    "/api/v1/sourcing/rfqs/{id}/award/withdraw": {
+      "post": {
+        "operationId": "withdraw_award_api_v1_sourcing_rfqs__id__award_withdraw_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AwardRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Withdraw Award",
         "tags": [
           "sourcing"
         ]

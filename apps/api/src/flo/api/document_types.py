@@ -19,6 +19,7 @@ from flo.modules.requisitions.service import (
     RequisitionService,
     open_document_count,
 )
+from flo.modules.sourcing.approval import AwardAdapter
 from flo.modules.sourcing.service import register_access as register_rfq_access
 from flo.modules.vendors.documents import register_access as register_vendor_access
 
@@ -50,6 +51,7 @@ def register_document_types() -> None:
     register_document_type(BudgetChangeAdapter())
     register_document_type(RequisitionAdapter())
     register_document_type(ProjectRequestAdapter())
+    register_document_type(AwardAdapter())
     register_open_document_counter(open_document_count)
     register_document_access(
         DocumentAccess("requisition", "requisition.view", "requisition.edit", requisition_access)

@@ -2299,6 +2299,76 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sourcing/rfqs/{id}/award": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Award */
+        get: operations["get_award_api_v1_sourcing_rfqs__id__award_get"];
+        put?: never;
+        /** Create Award */
+        post: operations["create_award_api_v1_sourcing_rfqs__id__award_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Award */
+        patch: operations["patch_award_api_v1_sourcing_rfqs__id__award_patch"];
+        trace?: never;
+    };
+    "/api/v1/sourcing/rfqs/{id}/award/lines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Award Lines */
+        put: operations["put_award_lines_api_v1_sourcing_rfqs__id__award_lines_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sourcing/rfqs/{id}/award/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit Award */
+        post: operations["submit_award_api_v1_sourcing_rfqs__id__award_submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sourcing/rfqs/{id}/award/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Withdraw Award */
+        post: operations["withdraw_award_api_v1_sourcing_rfqs__id__award_withdraw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sourcing/rfqs/{id}/bids": {
         parameters: {
             query?: never;
@@ -3746,6 +3816,136 @@ export interface components {
             /** Unit Ids */
             unit_ids?: string[];
         };
+        /** AwardCreate */
+        AwardCreate: {
+            basis: components["schemas"]["Basis-Input"];
+        };
+        /** AwardLineIn */
+        AwardLineIn: {
+            /** Justification */
+            justification?: string | null;
+            /** Quantity */
+            quantity: string;
+            /**
+             * Rfq Line Id
+             * Format: uuid
+             */
+            rfq_line_id: string;
+            /** Tie Override Reason */
+            tie_override_reason?: string | null;
+            /**
+             * Vendor Id
+             * Format: uuid
+             */
+            vendor_id: string;
+        };
+        /** AwardLineRead */
+        AwardLineRead: {
+            /** Amount Rfq */
+            amount_rfq: string;
+            /** Amount Vendor */
+            amount_vendor: string;
+            /**
+             * Bid Id
+             * Format: uuid
+             */
+            bid_id: string;
+            /** Budget Amount */
+            budget_amount: string;
+            /** Currency */
+            currency: string;
+            /** Justification */
+            justification: string | null;
+            /** Line No */
+            line_no: number;
+            /** Not Lowest */
+            not_lowest: boolean;
+            /** Quantity */
+            quantity: string;
+            /**
+             * Rfq Line Id
+             * Format: uuid
+             */
+            rfq_line_id: string;
+            /** Tie Override Reason */
+            tie_override_reason: string | null;
+            /** Unit Price */
+            unit_price: string;
+            /**
+             * Vendor Id
+             * Format: uuid
+             */
+            vendor_id: string;
+        };
+        /** AwardLinesPut */
+        AwardLinesPut: {
+            /** Lines */
+            lines: components["schemas"]["AwardLineIn"][];
+        };
+        /** AwardPatch */
+        AwardPatch: {
+            /** Rationale */
+            rationale?: string | null;
+        };
+        /** AwardRead */
+        AwardRead: {
+            /** Approved At */
+            approved_at: string | null;
+            basis: components["schemas"]["flo__modules__sourcing__awards__Basis"];
+            /** Budget Total */
+            budget_total: string;
+            /** Checks */
+            checks: components["schemas"]["RequisitionCheck"][];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Created By
+             * Format: uuid
+             */
+            created_by: string;
+            /** Currency */
+            currency: string;
+            /** Evaluator Results */
+            evaluator_results: {
+                [key: string]: unknown;
+            } | null;
+            /** Exceptions */
+            exceptions: unknown[] | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Lines */
+            lines: components["schemas"]["AwardLineRead"][];
+            /** Number */
+            number: string;
+            /** Rates */
+            rates: {
+                [key: string]: unknown;
+            };
+            /** Rationale */
+            rationale: string | null;
+            /**
+             * Rfq Id
+             * Format: uuid
+             */
+            rfq_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "approval_pending" | "approved" | "superseded" | "cancelled";
+            /** Submitted At */
+            submitted_at: string | null;
+            /** Total */
+            total: string;
+            /** Version */
+            version: number;
+        };
         /** BalanceQueryRead */
         BalanceQueryRead: {
             /** Actual */
@@ -3790,41 +3990,8 @@ export interface components {
             /** Currency */
             currency: string;
         };
-        /** Basis */
-        Basis: {
-            /**
-             * Not Lowest Count
-             * @default 0
-             */
-            not_lowest_count?: number;
-            /**
-             * Not Lowest Lines
-             * @default []
-             */
-            not_lowest_lines?: string[];
-            /** Over By */
-            over_by: string | null;
-            /** Partial */
-            partial: boolean;
-            /** To Spare */
-            to_spare?: string | null;
-            /** Total */
-            total: string | null;
-            /**
-             * Uncovered Lines
-             * @default []
-             */
-            uncovered_lines?: string[];
-            /** Vendor Id */
-            vendor_id: string | null;
-            /**
-             * Vendors
-             * @default []
-             */
-            vendors?: components["schemas"]["BasisVendor"][];
-            /** Within Scope */
-            within_scope: boolean | null;
-        };
+        /** @enum {string} */
+        "Basis-Input": "lowest_cost_supplier" | "best_average_cost" | "manual";
         /** BasisVendor */
         BasisVendor: {
             /** Lines */
@@ -4396,7 +4563,7 @@ export interface components {
         ComparisonRead: {
             /** Approved Scope */
             approved_scope: string;
-            best_average_cost: components["schemas"]["Basis"];
+            best_average_cost: components["schemas"]["flo__modules__sourcing__comparison__Basis"];
             /** Bids Since Freeze */
             bids_since_freeze: number;
             /**
@@ -4420,7 +4587,7 @@ export interface components {
             insight: components["schemas"]["Insight"] | null;
             /** Lines */
             lines: components["schemas"]["LineRow"][];
-            lowest_cost_supplier: components["schemas"]["Basis"];
+            lowest_cost_supplier: components["schemas"]["flo__modules__sourcing__comparison__Basis"];
             markers: components["schemas"]["Markers"];
             /**
              * Rate Date
@@ -7350,6 +7517,26 @@ export interface components {
             /** Requirements */
             requirements: string[];
         };
+        /** RequisitionCheck */
+        RequisitionCheck: {
+            /** Award */
+            award: string;
+            /** Funds */
+            funds: string;
+            /** Over Funds By */
+            over_funds_by: string;
+            /** Over Scope By */
+            over_scope_by: string;
+            /** Requisition */
+            requisition: string;
+            /**
+             * Requisition Id
+             * Format: uuid
+             */
+            requisition_id: string;
+            /** Scope */
+            scope: string;
+        };
         /** RequisitionCreate */
         RequisitionCreate: {
             /** Bu Id */
@@ -9212,6 +9399,43 @@ export interface components {
         /** WorkflowVersionWrite */
         WorkflowVersionWrite: {
             graph: components["schemas"]["WorkflowGraph"];
+        };
+        /** @enum {string} */
+        flo__modules__sourcing__awards__Basis: "lowest_cost_supplier" | "best_average_cost" | "manual";
+        /** Basis */
+        flo__modules__sourcing__comparison__Basis: {
+            /**
+             * Not Lowest Count
+             * @default 0
+             */
+            not_lowest_count?: number;
+            /**
+             * Not Lowest Lines
+             * @default []
+             */
+            not_lowest_lines?: string[];
+            /** Over By */
+            over_by: string | null;
+            /** Partial */
+            partial: boolean;
+            /** To Spare */
+            to_spare?: string | null;
+            /** Total */
+            total: string | null;
+            /**
+             * Uncovered Lines
+             * @default []
+             */
+            uncovered_lines?: string[];
+            /** Vendor Id */
+            vendor_id: string | null;
+            /**
+             * Vendors
+             * @default []
+             */
+            vendors?: components["schemas"]["BasisVendor"][];
+            /** Within Scope */
+            within_scope: boolean | null;
         };
     };
     responses: never;
@@ -16299,6 +16523,272 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RfqRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    get_award_api_v1_sourcing_rfqs__id__award_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AwardRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    create_award_api_v1_sourcing_rfqs__id__award_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AwardCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AwardRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    patch_award_api_v1_sourcing_rfqs__id__award_patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AwardPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AwardRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    put_award_lines_api_v1_sourcing_rfqs__id__award_lines_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AwardLinesPut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AwardRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    submit_award_api_v1_sourcing_rfqs__id__award_submit_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AwardRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    withdraw_award_api_v1_sourcing_rfqs__id__award_withdraw_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AwardRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

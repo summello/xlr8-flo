@@ -13,6 +13,9 @@ SETTING_DEFAULTS: dict[str, JsonValue] = {
     "requisition.expiry_days": None,
     "vendor.allow_local_disable": False,
     "sourcing.default_criteria": None,
+    "sourcing.require_non_lowest_justification": True,
+    "tax.consumes_budget": True,
+    "freight.consumes_budget": True,
 }
 
 
@@ -53,5 +56,8 @@ SETTING_VALIDATORS: dict[str, Callable[[JsonValue], bool]] = {
     "budget.evidence_required": _is_bool,
     "vendor.allow_local_disable": _is_bool,
     "sourcing.default_criteria": valid_default_criteria,
+    "sourcing.require_non_lowest_justification": _is_bool,
+    "tax.consumes_budget": _is_bool,
+    "freight.consumes_budget": _is_bool,
     "funding_mode": lambda value: value in ("roll_down", "roll_up"),
 }

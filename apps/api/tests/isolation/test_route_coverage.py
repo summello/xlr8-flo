@@ -45,6 +45,7 @@ PICKER_ROUTE = (
     "sourcing/test_evaluator_picker.py::test_the_picker_conceals_a_foreign_or_unknown_rfq"
 )
 EVALUATION_ROUTES = "sourcing/test_evaluation.py::test_evaluation_routes_conceal_foreign_tenants"
+AWARD_ROUTES = "sourcing/test_award.py::test_award_routes_conceal_foreign_tenants"
 QROUTES = "vendors/test_questionnaire.py::test_questionnaire_routes_conceal_foreign_tenants"
 OROUTES = (
     "vendors/test_questionnaire.py::"
@@ -107,6 +108,12 @@ COVERED = {
     ("POST", "/api/v1/sourcing/rfqs/{id}/bids/{bid_id}/replace"): BID_ROUTES,
     ("GET", "/api/v1/sourcing/rfqs/{id}/comparison"): COMPARISON_ROUTES,
     ("POST", "/api/v1/sourcing/rfqs/{id}/comparison/refresh-rate"): COMPARISON_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/award"): AWARD_ROUTES,
+    ("GET", "/api/v1/sourcing/rfqs/{id}/award"): AWARD_ROUTES,
+    ("PUT", "/api/v1/sourcing/rfqs/{id}/award/lines"): AWARD_ROUTES,
+    ("PATCH", "/api/v1/sourcing/rfqs/{id}/award"): AWARD_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/award/submit"): AWARD_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/award/withdraw"): AWARD_ROUTES,
     ("GET", "/api/v1/sourcing/rfqs/{id}/evaluation"): EVALUATION_ROUTES,
     ("PUT", "/api/v1/sourcing/rfqs/{id}/evaluation/criteria"): EVALUATION_ROUTES,
     ("POST", "/api/v1/sourcing/rfqs/{id}/evaluation/evaluators"): EVALUATION_ROUTES,

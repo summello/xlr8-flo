@@ -1752,7 +1752,7 @@ epics:
         dep:
           - E12-S07
           - E07-S04
-        st: review
+        st: done
       - id: E12-S09
         t: Cancel or supersede RFQ/award, preserve history, reconcile budget effect
         k: ledger
@@ -1782,7 +1782,7 @@ epics:
           - E12-S07
           - E11-S09
           - E12-S21
-        st: in_progress
+        st: review
       - id: E12-S11
         t: 'RFQ list and RFQ detail screens'
         k: ui
