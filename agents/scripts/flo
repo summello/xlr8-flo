@@ -1140,7 +1140,13 @@ def evidence_failure(pkt, review):
     if not isinstance(block, dict) or not block.get("commit"):
         return "it carries no evidence block"
     submitted = pkt.get("submitted_sha")
-    if block["commit"] != submitted:
+    # E23-S16: `flo facts` carries a verdict over a milestone-only delta; follow that chain here too,
+    # or facts says approve, the fleet finishes, and the gate refuses on every tick
+    seen = block["commit"]
+    for c in pkt.get("carried_reviews") or []:
+        if c.get("reviewer") == review.get("reviewer") and c.get("carried_from") == seen:
+            seen = c.get("carried_to")
+    if seen != submitted:
         return f"its evidence is for {str(block['commit'])[:10]}, not the submitted {str(submitted)[:10]}"
     profile = block.get("profile") or "light"
     if not evidence_for(pkt, submitted, profile):

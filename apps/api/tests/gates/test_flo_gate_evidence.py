@@ -119,6 +119,21 @@ def test_evidence_for_another_commit_is_refused(gate):
     assert "not the submitted" in out
 
 
+def test_evidence_carried_over_a_milestone_merge_passes_only_for_its_reviewer(gate):
+    old = "c" * 40
+    carry = {"reviewer": "codex", "carried_from": old, "carried_to": SHA, "paths": []}
+    code, out = gate(
+        packet(carried_reviews=[carry]), [verdict(evidence={"commit": old, "profile": "light"})]
+    )
+    assert code == 0, out
+    code, out = gate(
+        packet(carried_reviews=[{**carry, "reviewer": "opus"}]),
+        [verdict(evidence={"commit": old, "profile": "light"})],
+    )
+    assert code == 1
+    assert "not the submitted" in out
+
+
 @pytest.mark.parametrize("bad", [{"clean": False}, {"result": "fail"}, {"commit": "b" * 40}])
 def test_a_record_that_proves_nothing_is_refused(gate, bad):
     code, out = gate(packet(evidence=[record(**bad)]))
