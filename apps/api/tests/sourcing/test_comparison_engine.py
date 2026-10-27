@@ -1,5 +1,6 @@
 """The comparison engine against hand-computed figures (SRC-009, SRC-010). No database."""
 
+from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal as D
 from uuid import UUID
@@ -227,3 +228,59 @@ def test_a_rate_eight_days_old_is_stale_and_seven_is_not():
     fresh = {**RATES, "EUR": Rate(D("1.10"), "ECB", TODAY - timedelta(days=7))}
     assert not run([B], rates=fresh).stale_rate
     assert not run([A]).stale_rate  # an identity rate never goes stale
+
+
+def selection_example(scope):
+    x = bid(1, "USD", "0", {L1: (1, 10, 0), L2: (1, 20, 0), L3: (1, 30, 0)}, 0)
+    y = bid(2, "USD", "0", {L1: (1, 10, 0), L2: (1, 25, 0), L3: (1, 20, 0)}, 1)
+    z = bid(3, "USD", "0", {L1: (1, 12, 0), L2: (1, 15, 0)}, 2)  # partial
+    return run([x, y, z], lines=LINES[:3], scope=scope)
+
+
+def test_selection_totals_sum_to_the_basis_total_and_amount_to_spare_is_hand_computed():
+    r = selection_example("50.00")
+    lcs, bac = r.lowest_cost_supplier, r.best_average_cost
+    assert [(v.vendor_id, v.total, v.lines) for v in lcs.vendors] == [
+        (UUID(int=201), "10.00", [L1]), (UUID(int=202), "20.00", [L3]),
+        (UUID(int=203), "15.00", [L2]),
+    ]  # fmt: skip
+    assert [(v.vendor_id, v.total, v.lines) for v in bac.vendors] == [
+        (UUID(int=202), "55.00", [L1, L2, L3])
+    ]
+    for b in (lcs, bac):
+        assert sum(D(v.total) for v in b.vendors) == D(b.total)
+    assert (lcs.total, lcs.to_spare, lcs.over_by) == ("45.00", "5.00", "0.00")
+    assert (bac.total, bac.to_spare, bac.over_by) == ("55.00", "0.00", "5.00")
+    assert selection_example("55.00").best_average_cost.to_spare == "0.00"
+
+
+def test_not_lowest_lines_are_those_where_another_vendor_is_strictly_cheaper():
+    r = selection_example("50.00")
+    # Best Average Cost is vendor 2: tied at the lowest on L1, cheapest on L3, dearer on L2
+    assert r.best_average_cost.not_lowest_lines == [L2]
+    assert r.best_average_cost.not_lowest_count == 1
+    assert r.lowest_cost_supplier.not_lowest_lines == []
+    assert r.lowest_cost_supplier.not_lowest_count == 0
+
+
+def test_unmet_and_exceptions_count_and_identical_lines():
+    r = run([replace(A, exceptions=None), replace(B, exceptions="  \n")], lines=LINES)
+    assert [(v.unmet, v.exceptions_count) for v in r.vendors] == [(0, 0), (1, 0)]
+    r = run([replace(A, exceptions="a\n \nb")], lines=LINES)
+    assert vendor(r, 1).exceptions_count == 2
+    same = {L1: (1, 5, 0)}
+    r = run([bid(1, "USD", "0", same), bid(2, "USD", "0", same, 1)], lines=LINES[:1])
+    assert r.identical_lines == 1
+    r = run([A, B, C])
+    assert r.identical_lines == 0
+
+
+def test_identical_measures_name_what_every_quoting_vendor_shares():
+    x = replace(bid(1, "USD", "1", {L1: (1, 10, 1)}, lead=7, met=1), exceptions="a")
+    y = bid(2, "USD", "2", {L1: (1, 12, 2)}, 1, lead=7, met=2)
+    r = run([x, y], lines=LINES[:1], scores={x.vendor_id: D("1"), y.vendor_id: D("2")})
+    # same lead time means the same readiness against the need, so the two go together
+    assert r.identical_measures == ["lead_time_days", "meets_need"]
+    assert r.identical_rows == 2
+    r = run([x], lines=LINES[:1])  # fewer than two quoting vendors: nothing to compare
+    assert (r.identical_measures, r.identical_rows) == ([], 0)

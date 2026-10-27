@@ -20,9 +20,14 @@ from flo.kernel.money import Money, quantize
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.org.service import rate_for, today
 from flo.modules.sourcing.evaluation import assert_may_see_bids, weighted
+from flo.modules.sourcing.schemas import BidLate
 from flo.modules.sourcing.sealing import visible
 from flo.modules.sourcing.service import RfqService
 
+IDENTICAL_MEASURES = (
+    "landed_total", "difference_from_lowest", "price", "tax", "freight", "lead_time_days",
+    "meets_need", "met", "unmet", "score", "exceptions_count",
+)  # fmt: skip
 STALE_AFTER = timedelta(days=7)  # decision 117
 REFRESHABLE = ("published", "closed", "under_evaluation")
 
@@ -67,10 +72,13 @@ class VendorFigures(BaseModel):
     difference_from_lowest: str | None
     met: int
     met_of: int
+    unmet: int
     lead_time_days: int | None
     ready_by: date | None
     meets_need: bool | None
     score: str | None
+    exceptions_count: int
+    late: BidLate | None
     conversion: ConversionNote
 
 
@@ -96,6 +104,12 @@ class LineRow(BaseModel):
     cells: list[Cell]
 
 
+class BasisVendor(BaseModel):
+    vendor_id: UUID
+    total: str
+    lines: list[UUID]
+
+
 class Basis(BaseModel):
     vendor_id: UUID | None
     total: str | None
@@ -103,6 +117,10 @@ class Basis(BaseModel):
     within_scope: bool | None
     over_by: str | None
     uncovered_lines: list[UUID] = []
+    to_spare: str | None = None
+    vendors: list[BasisVendor] = []
+    not_lowest_lines: list[UUID] = []
+    not_lowest_count: int = 0
 
 
 class Insight(BaseModel):
@@ -130,6 +148,9 @@ class ComparisonRead(BaseModel):
     approved_scope: str
     vendors: list[VendorFigures]
     lines: list[LineRow]
+    identical_lines: int
+    identical_measures: list[str]
+    identical_rows: int
     markers: Markers
     lowest_cost_supplier: Basis
     best_average_cost: Basis
@@ -171,6 +192,8 @@ class BidIn:
     lead_time_days: int | None
     met: int
     quotes: dict[UUID, Quote]  # only the lines the vendor quoted
+    exceptions: str | None = None
+    late: BidLate | None = None
 
 
 @dataclass(frozen=True)
@@ -292,10 +315,14 @@ def compute(
                 else None,
                 met=b.met,
                 met_of=requirements,
+                unmet=requirements - b.met,
                 lead_time_days=b.lead_time_days,
                 ready_by=ready,
                 meets_need=None if ready is None or not needed else ready <= min(needed),
                 score=_s(scores.get(b.vendor_id)),
+                # ponytail: line count of free text; a structured list replaces it
+                exceptions_count=sum(1 for x in (b.exceptions or "").splitlines() if x.strip()),
+                late=b.late,
                 conversion=ConversionNote(
                     base=b.currency,
                     quote=currency,
@@ -309,9 +336,12 @@ def compute(
         )
 
     rows, won, covered, uncovered = [], [], [], []
+    cheapest: dict[UUID, Decimal] = {}
     for line in lines:
         quotes = [(p.landed(line.id), p) for p in quoted if line.id in p.cells]
         lowest = _pick(quotes)
+        if quotes:
+            cheapest[line.id] = min(v for v, _ in quotes)
         if lowest is None:
             uncovered.append(line.id)
         else:
@@ -343,16 +373,29 @@ def compute(
             )
         )
 
-    def basis(vendor_id: UUID | None, total: Decimal | None, partial: bool) -> Basis:
-        over = (
-            None if total is None else max(quantize(Decimal(0), currency), total - approved_scope)
-        )
+    def basis(
+        vendor_id: UUID | None,
+        total: Decimal | None,
+        partial: bool,
+        shares: list[tuple[_Priced, Decimal, list[UUID]]],
+    ) -> Basis:
+        zero = quantize(Decimal(0), currency)
+        over = None if total is None else max(zero, total - approved_scope)
+        # the selected vendor's line is not lowest only when strictly dearer than the cheapest
+        dearer = [k for p, _, ks in shares for k in ks if p.landed(k) > cheapest[k]]
         return Basis(
             vendor_id=vendor_id,
             total=_s(total),
             partial=partial,
             within_scope=None if over is None else over == 0,
             over_by=_s(over),
+            to_spare=None if total is None else _s(max(zero, approved_scope - total)),
+            vendors=[
+                BasisVendor(vendor_id=p.bid.vendor_id, total=cast(str, _s(t)), lines=ks)
+                for p, t, ks in shares
+            ],
+            not_lowest_lines=dearer,
+            not_lowest_count=len(dearer),
         )
 
     lcs_total = (
@@ -360,7 +403,15 @@ def compute(
         if won
         else None
     )
-    lcs = basis(None, lcs_total, bool(uncovered) and lcs_total is not None)
+    wins: dict[UUID, list[UUID]] = {}  # bid id -> the lines it wins, in line order
+    for w, line in zip(won, covered, strict=True):
+        wins.setdefault(w.bid.id, []).append(line.id)
+    lcs_shares = [
+        (p, sum((p.landed(k) for k in wins[p.bid.id]), Decimal(0)), wins[p.bid.id])
+        for p in sorted(quoted, key=_order)
+        if p.bid.id in wins
+    ]
+    lcs = basis(None, lcs_total, bool(uncovered) and lcs_total is not None, lcs_shares)
     lcs.uncovered_lines = uncovered
     best = _pick([(p.total, p) for p in pool])
     best_priced = next((p for p in pool if best and p.bid.vendor_id == best.vendor_id), None)
@@ -370,6 +421,15 @@ def compute(
         best_id,
         best_total,
         bool(best_priced) and not full,
+        [
+            (
+                best_priced,
+                best_priced.total,
+                [k for k in (ln.id for ln in lines) if k in best_priced.cells],
+            )
+        ]
+        if best_priced
+        else [],
     )
 
     insight = None
@@ -388,6 +448,13 @@ def compute(
             best_average_cost_vendors=1,
         )
 
+    offered = [v for v in vendors if not v.not_quoted]
+    same = (
+        [m for m in IDENTICAL_MEASURES if len({getattr(v, m) for v in offered}) == 1]
+        if len(offered) > 1
+        else []
+    )
+
     return ComparisonRead(
         currency=currency,
         comparison_date=comparison_date,
@@ -398,6 +465,9 @@ def compute(
         approved_scope=cast(str, _s(approved_scope)),
         vendors=vendors,
         lines=rows,
+        identical_lines=sum(row.identical for row in rows),
+        identical_measures=same,
+        identical_rows=len(same),
         markers=Markers(
             lowest=_pick([(p.total, p) for p in full]),
             fastest=_pick(
@@ -435,7 +505,9 @@ class ComparisonService(RfqService):
     def _current_bids(self, rfq_id: UUID) -> list[tuple[Any, ...]]:
         return self.repo.execute(
             "SELECT b.id, b.vendor_id, i.vendor_snapshot->>'trading_name', b.currency, b.sent_at, "
-            "b.rfq_version, b.freight, b.lead_time_days, b.submitted_at FROM bid b "
+            "b.rfq_version, b.freight, b.lead_time_days, b.submitted_at, b.exceptions, "
+            "b.late_accepted_at, b.late_reason, p.display_name, p.email FROM bid b "
+            "LEFT JOIN identity p ON p.id = b.late_accepted_by "
             "JOIN rfq_invitee i ON i.rfq_id = b.rfq_id AND i.vendor_id = b.vendor_id "
             "WHERE b.org_id = %(org_id)s AND b.rfq_id = %(rfq)s AND b.status = 'submitted' "
             "AND NOT EXISTS (SELECT 1 FROM bid r WHERE r.org_id = b.org_id "
@@ -549,7 +621,20 @@ class ComparisonService(RfqService):
             lines=lines,
             bids=[
                 BidIn(
-                    r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], met.get(r[0], 0), quotes[r[0]]
+                    r[0],
+                    r[1],
+                    r[2],
+                    r[3],
+                    r[4],
+                    r[5],
+                    r[6],
+                    r[7],
+                    met.get(r[0], 0),
+                    quotes[r[0]],
+                    r[9],
+                    BidLate(accepted_by_name=r[12], accepted_by_email=r[13], at=r[10], reason=r[11])
+                    if r[10] is not None
+                    else None,
                 )
                 for r in bid_rows
             ],

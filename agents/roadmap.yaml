@@ -1936,7 +1936,7 @@ epics:
           - SRC-016
         dep:
           - E12-S06
-        st: review
+        st: done
 
   - id: E13
     name: Purchase orders

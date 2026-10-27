@@ -3792,10 +3792,22 @@ export interface components {
         };
         /** Basis */
         Basis: {
+            /**
+             * Not Lowest Count
+             * @default 0
+             */
+            not_lowest_count?: number;
+            /**
+             * Not Lowest Lines
+             * @default []
+             */
+            not_lowest_lines?: string[];
             /** Over By */
             over_by: string | null;
             /** Partial */
             partial: boolean;
+            /** To Spare */
+            to_spare?: string | null;
             /** Total */
             total: string | null;
             /**
@@ -3805,8 +3817,25 @@ export interface components {
             uncovered_lines?: string[];
             /** Vendor Id */
             vendor_id: string | null;
+            /**
+             * Vendors
+             * @default []
+             */
+            vendors?: components["schemas"]["BasisVendor"][];
             /** Within Scope */
             within_scope: boolean | null;
+        };
+        /** BasisVendor */
+        BasisVendor: {
+            /** Lines */
+            lines: string[];
+            /** Total */
+            total: string;
+            /**
+             * Vendor Id
+             * Format: uuid
+             */
+            vendor_id: string;
         };
         /** BidCreate */
         BidCreate: {
@@ -4382,6 +4411,12 @@ export interface components {
              * Format: date-time
              */
             frozen_at: string;
+            /** Identical Lines */
+            identical_lines: number;
+            /** Identical Measures */
+            identical_measures: string[];
+            /** Identical Rows */
+            identical_rows: number;
             insight: components["schemas"]["Insight"] | null;
             /** Lines */
             lines: components["schemas"]["LineRow"][];
@@ -8800,6 +8835,8 @@ export interface components {
             currency: string;
             /** Difference From Lowest */
             difference_from_lowest: string | null;
+            /** Exceptions Count */
+            exceptions_count: number;
             /** Freight */
             freight: string | null;
             /** Freight Unallocated */
@@ -8810,6 +8847,7 @@ export interface components {
             full: boolean;
             /** Landed Total */
             landed_total: string | null;
+            late: components["schemas"]["BidLate"] | null;
             /** Lead Time Days */
             lead_time_days: number | null;
             /** Meets Need */
@@ -8837,6 +8875,8 @@ export interface components {
             sent_at: string;
             /** Tax */
             tax: string | null;
+            /** Unmet */
+            unmet: number;
             /**
              * Vendor Id
              * Format: uuid

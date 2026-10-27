@@ -1100,6 +1100,20 @@
       },
       "Basis": {
         "properties": {
+          "not_lowest_count": {
+            "default": 0,
+            "title": "Not Lowest Count",
+            "type": "integer"
+          },
+          "not_lowest_lines": {
+            "default": [],
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Not Lowest Lines",
+            "type": "array"
+          },
           "over_by": {
             "anyOf": [
               {
@@ -1114,6 +1128,17 @@
           "partial": {
             "title": "Partial",
             "type": "boolean"
+          },
+          "to_spare": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Spare"
           },
           "total": {
             "anyOf": [
@@ -1147,6 +1172,14 @@
             ],
             "title": "Vendor Id"
           },
+          "vendors": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/BasisVendor"
+            },
+            "title": "Vendors",
+            "type": "array"
+          },
           "within_scope": {
             "anyOf": [
               {
@@ -1167,6 +1200,34 @@
           "over_by"
         ],
         "title": "Basis",
+        "type": "object"
+      },
+      "BasisVendor": {
+        "properties": {
+          "lines": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "string"
+          },
+          "vendor_id": {
+            "format": "uuid",
+            "title": "Vendor Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "vendor_id",
+          "total",
+          "lines"
+        ],
+        "title": "BasisVendor",
         "type": "object"
       },
       "BidCreate": {
@@ -2850,6 +2911,21 @@
             "title": "Frozen At",
             "type": "string"
           },
+          "identical_lines": {
+            "title": "Identical Lines",
+            "type": "integer"
+          },
+          "identical_measures": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Identical Measures",
+            "type": "array"
+          },
+          "identical_rows": {
+            "title": "Identical Rows",
+            "type": "integer"
+          },
           "insight": {
             "anyOf": [
               {
@@ -2906,6 +2982,9 @@
           "approved_scope",
           "vendors",
           "lines",
+          "identical_lines",
+          "identical_measures",
+          "identical_rows",
           "markers",
           "lowest_cost_supplier",
           "best_average_cost",
@@ -15885,6 +15964,10 @@
             ],
             "title": "Difference From Lowest"
           },
+          "exceptions_count": {
+            "title": "Exceptions Count",
+            "type": "integer"
+          },
           "freight": {
             "anyOf": [
               {
@@ -15932,6 +16015,16 @@
               }
             ],
             "title": "Landed Total"
+          },
+          "late": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BidLate"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "lead_time_days": {
             "anyOf": [
@@ -16025,6 +16118,10 @@
             ],
             "title": "Tax"
           },
+          "unmet": {
+            "title": "Unmet",
+            "type": "integer"
+          },
           "vendor_id": {
             "format": "uuid",
             "title": "Vendor Id",
@@ -16054,10 +16151,13 @@
           "difference_from_lowest",
           "met",
           "met_of",
+          "unmet",
           "lead_time_days",
           "ready_by",
           "meets_need",
           "score",
+          "exceptions_count",
+          "late",
           "conversion"
         ],
         "title": "VendorFigures",

@@ -5789,6 +5789,77 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E12-S21",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "money"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "79ce9165-141a-4178-9159-e6c8488f3159",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S21",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "launch-model",
+          "model": "qwen/qwen3.8-27b"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a17af2-3bbe-7980-a9bc-6467eb7424dc",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Comparison engine now returns unmet, late, exceptions_count per vendor; to_spare, per-vendor selection totals and not-lowest lines per basis; and identical line/measure counts. Sealed response unchanged; client regenerated.",
+      "title": "Comparison engine follow-up: selection totals, amount to spare, late override, counts (for E12-S10)",
+      "durations": {
+        "wall_s": 21796,
+        "author_s": 3724,
+        "review_s": {
+          "codex": 27,
+          "opus": 290
+        },
+        "gate_s": 228
+      }
     }
   ]
 }

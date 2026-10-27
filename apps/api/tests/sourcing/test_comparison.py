@@ -181,6 +181,40 @@ def test_a_bid_after_the_freeze_joins_at_the_frozen_date_and_the_rest_stays(life
     assert gb.landed_total == "50.00"  # 4 x 8 GBP x 1.5625
 
 
+def test_a_late_bid_shows_who_accepted_it_and_an_on_time_bid_shows_none(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, _, _, [early, late] = live(db, qty="4", names=("E", "L"))
+    quoted(db, rfq, early)
+    deadline_ago(db, rfq, 3)
+    with correlation_context("late"):
+        bid = key(db, rfq, late, "USD")
+        line = rfq_line(db, rfq)
+        bid = edit(
+            db, rfq, bid,
+            lines=[BidLineIn(rfq_line_id=line, quoted=True, unit_price="8", tax="0")],
+            evidence_attachment_id=evidence(db, bid.id),
+        )  # fmt: skip
+        sql(db, "UPDATE bid SET sent_at=now()-interval '1 day' WHERE id=%s RETURNING 1", (bid.id,))
+        bids(db).submit(
+            rfq.id, bid.id, BidSubmit(accept_late_reason="Courier"), str(bid.row_version), True
+        )
+    read = cmp(db).comparison(rfq.id)
+    on_time = next(v for v in read.vendors if v.vendor_id == early)
+    lated = next(v for v in read.vendors if v.vendor_id == late)
+    sql(db, "UPDATE identity SET display_name='Lena Lead' WHERE id=%s RETURNING 1", (db[3],))
+    email = sql(db, "SELECT email FROM identity WHERE id=%s", (db[3],))[0][0]
+    read = cmp(db).comparison(rfq.id)
+    on_time = next(v for v in read.vendors if v.vendor_id == early)
+    lated = next(v for v in read.vendors if v.vendor_id == late)
+    assert on_time.late is None
+    assert (lated.late.accepted_by_name, lated.late.accepted_by_email) == ("Lena Lead", email)
+    assert lated.late.reason == "Courier"
+    assert (
+        lated.late.at
+        == sql(db, "SELECT late_accepted_at FROM bid WHERE id=%s", (lated.bid_id,))[0][0]
+    )
+
+
 def test_a_replaced_bid_counts_once_at_the_replacements_figures(lifecycle_db):
     db, _ = lifecycle_db
     rfq, _, _, [vid] = live(db, qty="4")
