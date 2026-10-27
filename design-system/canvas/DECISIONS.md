@@ -221,7 +221,7 @@ Operator answers to the open Budget Transfer questions, then the screen list con
 114. **Best Average Cost is the lowest total landed cost among vendors that quoted every line** (operator). A partial bid cannot win it. Settles the assumption in decision 104.
 115. **Only an Organization Administrator changes `Allow Cross-Level Transfers` and the evidence-required setting** (operator). Every change is audited.
 116. **Freight is shared across lines pro rata by line value** (operator), for per-line comparison.
-117. **A rate older than 7 days shows a warning, and any sourcing role may refresh it** (operator). The rate, its source and its date are stored with the comparison; the vendor's bid never changes.
+117. **A rate older than 7 days shows a warning, and any sourcing role may refresh it** (operator). The rate, its source and its date are stored with the comparison; the vendor's bid never changes. **Amended 27 Oct 2026 (operator): the server wins. `Refresh Rate` requires `rfq.edit` on the RFQ's unit (`api/sourcing.py`, E12-S06), not any sourcing role; the page shows it only to `rfq.edit` holders (E12-S10).**
 118. **A sealed round is hidden from everyone until the deadline** (operator), including evaluators and the RFQ owner; it opens on its own.
 119. **Ties on a line read `Tied` and the earlier submission takes the line; the buyer may override with a reason** (operator). **Compliance requirements belong to the RFQ** (copied from a template); **waiving one needs a reason and the sourcing lead** (operator), and is audited. **Still open:** how a split award interacts with vendor minimum order values.
 
