@@ -360,6 +360,29 @@ def test_over_funds_alone_is_a_409_at_submit_and_again_at_approval(lifecycle_db)
     assert state(db, row.id).status == "sourced"
 
 
+def test_the_draft_release_is_what_approval_posts_and_a_full_award_releases_nothing(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, row, _, [a, _b] = scene(db, amount="100", qty="1", prices=("80", "90"))
+    draft = prepare(db, rfq, pick(db, rfq, a, "1"))  # scope 100, award 80
+    [check] = draft.checks
+    main = sql(db, "SELECT p.number FROM project p JOIN requisition r ON r.project_id=p.id "
+               "WHERE r.id=%s", (row.id,))[0][0]
+    assert (check.release, check.main_project) == ("20.00", main)
+    assert draft.justification_required in (True, False)
+    base = ledger(db)
+    decide_award(db, submit(db, rfq).id)
+    posted = ledger(db)[len(base) :]
+    assert [-e[2] for e in posted if e[0] == "release"] == [Decimal(check.release)]
+    assert [e[2] for e in posted if e[0] == "transfer" and e[2] > 0] == [Decimal(check.release)]
+
+
+def test_an_award_at_or_over_scope_shows_a_zero_release(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, _, _, [a, _b] = scene(db, amount="100", qty="1", prices=("100", "110"))
+    [check] = prepare(db, rfq, pick(db, rfq, a, "1")).checks
+    assert check.release == "0.00"
+
+
 # -- the outcomes ------------------------------------------------------------------------
 
 

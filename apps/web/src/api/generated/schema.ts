@@ -3987,6 +3987,11 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /**
+             * Justification Required
+             * @default false
+             */
+            justification_required?: boolean;
             /** Lines */
             lines: components["schemas"]["AwardLineRead"][];
             /** Number */
@@ -7601,10 +7606,14 @@ export interface components {
             award: string;
             /** Funds */
             funds: string;
+            /** Main Project */
+            main_project: string;
             /** Over Funds By */
             over_funds_by: string;
             /** Over Scope By */
             over_scope_by: string;
+            /** Release */
+            release: string;
             /** Requisition */
             requisition: string;
             /**

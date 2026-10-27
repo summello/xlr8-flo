@@ -6191,6 +6191,65 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E12-S16",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 2,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "65570d8e-981f-42a0-b0af-ed9f6b7e00d7",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S16",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a17ede-5f49-7900-aebf-cd6deeb7a794",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds the award draft screen (load-or-create, per-vendor quantities with split, justification/tie-override reasons, rationale, server-figure verdict beside the total and in the pinned bar, scope and funds check with release preview) plus Start Award on the comparison. Server: RequisitionCheck.release/main_project and AwardRead.justification_required, read-only.",
+      "title": "Award draft screen: lines, justification, scope and funds check",
+      "durations": {
+        "wall_s": 20819,
+        "author_s": 18249,
+        "review_s": {
+          "codex": 16
+        },
+        "gate_s": 0
+      }
     }
   ]
 }

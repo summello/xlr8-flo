@@ -1227,6 +1227,11 @@
             "title": "Id",
             "type": "string"
           },
+          "justification_required": {
+            "default": false,
+            "title": "Justification Required",
+            "type": "boolean"
+          },
           "lines": {
             "items": {
               "$ref": "#/components/schemas/AwardLineRead"
@@ -11917,12 +11922,20 @@
             "title": "Funds",
             "type": "string"
           },
+          "main_project": {
+            "title": "Main Project",
+            "type": "string"
+          },
           "over_funds_by": {
             "title": "Over Funds By",
             "type": "string"
           },
           "over_scope_by": {
             "title": "Over Scope By",
+            "type": "string"
+          },
+          "release": {
+            "title": "Release",
             "type": "string"
           },
           "requisition": {
@@ -11946,7 +11959,9 @@
           "funds",
           "award",
           "over_scope_by",
-          "over_funds_by"
+          "over_funds_by",
+          "release",
+          "main_project"
         ],
         "title": "RequisitionCheck",
         "type": "object"

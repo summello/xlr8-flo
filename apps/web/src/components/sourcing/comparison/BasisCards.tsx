@@ -26,11 +26,12 @@ export default function BasisCards({ c, basis, onChange }: { c: Comparison; basi
   </section>;
 }
 
-/** The sticky draft bar. `Start Award` joins it when E12-S16 exists; until then the page only states the draft. */
-export function AwardBar({ c, basis }: { c: Comparison; basis: BasisName }) {
+/** The sticky draft bar: the selection, and `Start Award` to carry it to the award draft. */
+export function AwardBar({ c, basis, onStart }: { c: Comparison; basis: BasisName; onStart: () => void }) {
   const chosen = c[basis], text = BASES.find(b => b[0] === basis)![1], n = vendorsOf(chosen).length;
   return <div className="cmp-award" role="region" aria-label="Award draft">
     <span>Award draft: {text} · {n} {n === 1 ? "vendor" : "vendors"} · {chosen.total === null ? "no total" : <Money value={chosen.total} currency={c.currency} zero="value" />}</span>
     {chosen.partial && <span className="req-sub">Some lines have no quote in this selection.</span>}
+    <button type="button" onClick={onStart}>Start Award</button>
   </div>;
 }

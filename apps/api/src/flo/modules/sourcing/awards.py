@@ -124,6 +124,8 @@ class RequisitionCheck(BaseModel):
     award: str
     over_scope_by: str
     over_funds_by: str
+    release: str  # scope - award when positive, else 0: what approval returns to main_project
+    main_project: str  # number of the requisition's project; '' when it has none
 
 
 class AwardRead(BaseModel):
@@ -146,6 +148,7 @@ class AwardRead(BaseModel):
     budget_total: str
     lines: list[AwardLineRead]
     checks: list[RequisitionCheck]
+    justification_required: bool = False
 
 
 # -- the figures ---------------------------------------------------------------------------
@@ -354,18 +357,23 @@ class AwardService(ComparisonService):
         funds = award_funding(self.connection, self.scope, list(by_requisition), lock=lock)
         scope: dict[UUID, Decimal] = defaultdict(Decimal)
         numbers: dict[UUID, str] = {}
+        mains: dict[UUID, str] = {}
         awarded: list[tuple[Any, ...]] = self.repo.execute(
-            "SELECT rl.requisition_id, q.number, ql.amount, ql.quantity, sum(al.quantity) "
+            "SELECT rl.requisition_id, q.number, ql.amount, ql.quantity, sum(al.quantity), "
+            "coalesce(p.number, '') "
             "FROM award_line al JOIN rfq_line rl ON rl.id = al.rfq_line_id "
             "JOIN requisition q ON q.org_id = rl.org_id AND q.id = rl.requisition_id "
             "JOIN requisition_line ql ON ql.id = rl.requisition_line_id "
+            "LEFT JOIN project p ON p.org_id = q.org_id AND p.id = q.project_id "
             "WHERE al.org_id = %(org_id)s AND al.award_id = %(id)s "
-            "GROUP BY rl.requisition_id, q.number, rl.requisition_line_id, ql.amount, ql.quantity",
+            "GROUP BY rl.requisition_id, q.number, rl.requisition_line_id, ql.amount, ql.quantity, "
+            "p.number",
             {"id": award["id"]},
         ).fetchall()
         for a in awarded:
             scope[cast(UUID, a[0])] += quantize(a[2] * a[4] / a[3], rfq_ccy)
             numbers[cast(UUID, a[0])] = cast(str, a[1])
+            mains[cast(UUID, a[0])] = cast(str, a[5])
         zero = quantize(Decimal(0), rfq_ccy)
         checks = [
             RequisitionCheck(
@@ -378,6 +386,8 @@ class AwardService(ComparisonService):
                 over_funds_by=format(
                     max(zero, quantize(by_requisition[i] - funds[i], rfq_ccy)), "f"
                 ),
+                release=format(max(zero, scope[i] - by_requisition[i]), "f"),
+                main_project=mains[i],
             )
             for i in sorted(by_requisition, key=lambda i: numbers[i])
         ]
@@ -455,6 +465,10 @@ class AwardService(ComparisonService):
                 for r, b in zip(rows, budgets, strict=True)
             ],
             checks=checks,
+            justification_required=OrgService(self.connection, self.scope)
+            .effective_setting(unit_id, "sourcing.require_non_lowest_justification")
+            .value
+            is True,
         )
 
     # -- writes ----------------------------------------------------------------------------

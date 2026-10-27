@@ -88,9 +88,8 @@ export default function RfqComparison({ id, navigate }: { id: string; navigate: 
       {tab === "cost" && <CostBreakdown c={c} />}
       {tab === "scoring" && <Scoring c={c} id={id} />}
     </Tabs>
-    <AwardBar c={c as Comparison} basis={basis} />
+    <AwardBar c={c as Comparison} basis={basis} onStart={() => navigate(`/sourcing/rfqs/${id}/award?basis=${basis}`)} />
     {sheetVendor && sheet && <VendorSheet c={c} rfq={r} v={sheetVendor} opener={sheet.opener} onClose={() => setSheet(null)} />}
-    {/* ponytail: Start Award is absent until E12-S16 adds its route and button; the draft bar above only states the selection. */}
     {/* ponytail: a vendor minimum order value is not enforced in v1 (no field, the engine computes nothing); upgrade path is an award-time check in E12-S08. */}
   </section>;
 }

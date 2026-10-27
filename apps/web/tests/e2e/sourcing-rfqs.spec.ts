@@ -9,13 +9,13 @@ const unitId = "55555555-5555-4555-8555-555555555555";
 const NOW = "2026-10-01T00:00:00Z";
 const minute = (ms: number) => new Date(Math.floor((Date.now() + ms) / 60_000) * 60_000).toISOString();
 
-type Options = { recused?: boolean; evaluator?: boolean; canEdit?: boolean; bounced?: boolean; refuseServer?: boolean; twoPages?: boolean };
+type Options = { recused?: boolean; evaluator?: boolean; canEdit?: boolean; bounced?: boolean; refuseServer?: boolean; twoPages?: boolean; status?: string };
 
 /** An in-memory stand-in for the sourcing API: one published RFQ and one draft. */
-async function stubRfqs(page: Page, { recused = false, evaluator = true, canEdit = true, bounced = false, refuseServer = false, twoPages = false }: Options = {}) {
+async function stubRfqs(page: Page, { recused = false, evaluator = true, canEdit = true, bounced = false, refuseServer = false, twoPages = false, status = "published" }: Options = {}) {
   const state = { deadline: minute(2 * 86_400_000), version: 1, posts: [] as { path: string; key: string | undefined; body: unknown }[], requests: [] as URL[] };
   const detail = () => ({
-    id: rfqId, number: "RFQ-0001", title: "Centrifugal pumps", status: "published", unit_id: unitId, currency: "USD", owner_email: "buyer@example.test",
+    id: rfqId, number: "RFQ-0001", title: "Centrifugal pumps", status, unit_id: unitId, currency: "USD", owner_email: "buyer@example.test",
     version: state.version, edit_revision: state.version, created_at: NOW, updated_at: NOW, deadline_at: state.deadline, deadline_tz: "UTC", published_at: NOW,
     lines: [{ id: "a1", line_no: 1, requisition_id: reqId, requisition_number: "REQ-0042", requisition_line_id: "b1", requisition_line_no: 1, requisition_version: 1, quantity: "4.0000", description: "Pump, 3 inch", uom_code: "EA", needed_by: null, currency: "USD", open_qty: "0.0000", specification: null }],
     invitees: [{ vendor_id: vendorId, contact_ids: ["c1"], vendor_snapshot: { trading_name: "Acme Tooling" }, override_reason: null, invited_by_email: "buyer@example.test", invited_at: NOW, eligible: true, reasons: [],
@@ -110,6 +110,13 @@ test("a recused evaluator gets the server's 409 and the card says so, with a way
   await expect(page.getByRole("heading", { name: "Evaluators" })).toBeVisible();
   await expect(page.getByText("You are recused from this RFQ.")).toBeVisible();
   await expect(page.getByRole("link", { name: "Open Evaluation" })).toBeVisible();
+});
+
+test("an awarded RFQ offers View Award, and no other state does", async ({ page }) => {
+  await stubRfqs(page, { status: "awarded" });
+  await page.goto(`/sourcing/rfqs/${rfqId}`);
+  await page.getByRole("link", { name: "View Award" }).click();
+  await expect(page).toHaveURL(`/sourcing/rfqs/${rfqId}/award`);
 });
 
 test("the shared grid loads the next page with the server's cursor", async ({ page }) => {

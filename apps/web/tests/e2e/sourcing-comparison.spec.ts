@@ -21,7 +21,7 @@ test("every visible figure is the server's: a deliberately inconsistent total re
   await expect(page.getByText(/Within approved scope,\s*107,000\.00\s*USD\s*to spare/)).toBeVisible();
   await page.getByRole("radio", { name: /Best Average Cost/ }).check();
   await expect(page.getByText(/Award draft: Best Average Cost · 1 vendor · 96,500\.00/)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Start Award" })).toHaveCount(0); // joins when E12-S16 exists
+  await expect(page.getByRole("button", { name: "Start Award" })).toBeVisible();
 });
 
 test("matrix: markers in words, Show Only Differences says how many it hides, partial and late are marked", async ({ page }) => {
