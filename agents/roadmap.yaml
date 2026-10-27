@@ -1782,6 +1782,7 @@ epics:
           - E12-S07
           - E11-S09
           - E12-S21
+          - E12-S22
         st: review
       - id: E12-S11
         t: 'RFQ list and RFQ detail screens'
@@ -1938,6 +1939,20 @@ epics:
         dep:
           - E12-S06
         st: done
+      - id: E12-S22
+        t: 'Comparison engine: converted unit price on each cell (SRC-009 unit cost,
+          for E12-S10)'
+        k: engine
+        s: S
+        tags:
+          - money
+        reqs:
+          - SRC-009
+          - SRC-010
+        dep:
+          - E12-S06
+          - E12-S21
+        st: todo
 
   - id: E13
     name: Purchase orders
