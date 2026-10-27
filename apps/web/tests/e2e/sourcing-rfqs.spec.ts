@@ -9,10 +9,10 @@ const unitId = "55555555-5555-4555-8555-555555555555";
 const NOW = "2026-10-01T00:00:00Z";
 const minute = (ms: number) => new Date(Math.floor((Date.now() + ms) / 60_000) * 60_000).toISOString();
 
-type Options = { canEdit?: boolean; bounced?: boolean; refuseServer?: boolean; twoPages?: boolean };
+type Options = { recused?: boolean; evaluator?: boolean; canEdit?: boolean; bounced?: boolean; refuseServer?: boolean; twoPages?: boolean };
 
 /** An in-memory stand-in for the sourcing API: one published RFQ and one draft. */
-async function stubRfqs(page: Page, { canEdit = true, bounced = false, refuseServer = false, twoPages = false }: Options = {}) {
+async function stubRfqs(page: Page, { recused = false, evaluator = true, canEdit = true, bounced = false, refuseServer = false, twoPages = false }: Options = {}) {
   const state = { deadline: minute(2 * 86_400_000), version: 1, posts: [] as { path: string; key: string | undefined; body: unknown }[], requests: [] as URL[] };
   const detail = () => ({
     id: rfqId, number: "RFQ-0001", title: "Centrifugal pumps", status: "published", unit_id: unitId, currency: "USD", owner_email: "buyer@example.test",
@@ -42,6 +42,8 @@ async function stubRfqs(page: Page, { canEdit = true, bounced = false, refuseSer
     }
     if (path === `/api/v1/sourcing/rfqs/${rfqId}`) return send(detail());
     if (path === `/api/v1/sourcing/rfqs/${rfqId}/bids`) return send([]);
+    if (path === `/api/v1/sourcing/rfqs/${rfqId}/evaluation` && recused) return send({ title: "Conflict", status: 409, detail: "You declared a conflict and are recused from this RFQ.", checks: { problem: "recused" } }, 409);
+    if (path === `/api/v1/sourcing/rfqs/${rfqId}/evaluation`) return send({ status: "published", scoring_open: false, criteria: [], source: "default", edit_revision: 1, me: evaluator ? { identity_id: unitId, version: 1, declaration: "none", submitted: false } : null, evaluators: canEdit ? [{ identity_id: unitId, display_name: "Eva Evaluator", version: 1, declaration: "conflict", detail: "Owns shares", declared_at: NOW, submitted: false }, { identity_id: reqId, display_name: "Sam Scorer", version: 1, declaration: "clear", detail: null, declared_at: NOW, submitted: true }] : null, evaluator_count: 1, complete: false, vendors: [], scores: [], weighted: null });
     if (path === `/api/v1/sourcing/rfqs/${rfqId}/versions`) return send(Array.from({ length: state.version }, (_, i) => ({ version: i + 1, reason: i ? "Vendors asked" : null, diff: i ? { deadline_at: { was: "2026-10-02", now: "2026-10-09" } } : {}, snapshot: {}, published_by_email: "buyer@example.test", published_at: NOW })));
     if (path === `/api/v1/sourcing/rfqs/${rfqId}/history`) return send([...(state.version > 1 ? [{ action: "rfq.extend", at: NOW, actor_email: "buyer@example.test", reason: "Vendors asked" }] : []), { action: "rfq.publish", at: NOW, actor_email: "buyer@example.test", reason: null }]);
     if (path === `/api/v1/sourcing/rfqs/${rfqId}/extend-deadline` && req.method() === "POST") {
@@ -56,7 +58,7 @@ async function stubRfqs(page: Page, { canEdit = true, bounced = false, refuseSer
   return state;
 }
 
-const FORBIDDEN = ["Evaluators", "Start RFQ", "Cancel RFQ", "Open Comparison", "View Award"];
+const FORBIDDEN = ["Start RFQ", "Cancel RFQ", "Open Comparison", "View Award"];
 
 test("tabs and counts, open an RFQ, extend its deadline and see the new version unsent", async ({ page }) => {
   const state = await stubRfqs(page);
@@ -80,6 +82,34 @@ test("tabs and counts, open an RFQ, extend its deadline and see the new version 
   await expect(page.getByText("Version 2").first()).toBeVisible();
   await expect(page.getByText("Not yet told of version 2")).toBeVisible();
   await expect(page.getByText("Vendors asked").first()).toBeVisible();
+});
+
+test("the Evaluators card shows declarations to an editor and links to the evaluation only for an evaluator", async ({ page }) => {
+  await stubRfqs(page);
+  await page.goto(`/sourcing/rfqs/${rfqId}`);
+  await expect(page.getByRole("heading", { name: "Evaluators" })).toBeVisible();
+  await expect(page.getByText("1 evaluator (not recused).")).toBeVisible();
+  await expect(page.getByText("Eva Evaluator")).toBeVisible();
+  await expect(page.getByText("Recused", { exact: true })).toBeVisible();
+  await expect(page.getByText("Scores submitted")).toBeVisible();
+  await page.getByRole("link", { name: "Open Evaluation" }).click();
+  await expect(page).toHaveURL(`/sourcing/rfqs/${rfqId}/evaluation`);
+});
+
+test("without rfq.edit the Evaluators card shows the count only, and no link for a non-evaluator", async ({ page }) => {
+  await stubRfqs(page, { canEdit: false, evaluator: false });
+  await page.goto(`/sourcing/rfqs/${rfqId}`);
+  await expect(page.getByText("1 evaluator (not recused).")).toBeVisible();
+  await expect(page.getByText("Eva Evaluator")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Open Evaluation" })).toHaveCount(0);
+});
+
+test("a recused evaluator gets the server's 409 and the card says so, with a way back to the evaluation", async ({ page }) => {
+  await stubRfqs(page, { recused: true });
+  await page.goto(`/sourcing/rfqs/${rfqId}`);
+  await expect(page.getByRole("heading", { name: "Evaluators" })).toBeVisible();
+  await expect(page.getByText("You are recused from this RFQ.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open Evaluation" })).toBeVisible();
 });
 
 test("the shared grid loads the next page with the server's cursor", async ({ page }) => {

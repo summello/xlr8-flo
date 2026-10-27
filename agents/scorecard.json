@@ -6126,6 +6126,71 @@
         },
         "gate_s": 265
       }
+    },
+    {
+      "story": "E12-S15",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 4
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 4,
+          "findings": 2,
+          "blockers": 1,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "a918df27-c079-4423-babb-89bc79788fdc",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S15",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "launch-model",
+          "model": "qwen/qwen3.8-27b"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a17d9b-e20a-79c3-a868-47f2a3cbab05",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds the /sourcing/rfqs/:id/evaluation page (declaration first, recused, sealed, per-vendor scoring folds with Save for Later and Submit Scores) and an Evaluators card on the RFQ detail. Playwright covers every state, the request-log seal check, keyboard path and axe in both themes.",
+      "title": "Evaluation screen: declare first, then score",
+      "durations": {
+        "wall_s": 81125,
+        "author_s": 2134,
+        "review_s": {
+          "codex": 170
+        },
+        "gate_s": 0
+      }
     }
   ]
 }

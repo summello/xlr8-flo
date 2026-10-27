@@ -38,6 +38,7 @@ import RfqComparison from "./sourcing/rfqs/comparison";
 import NewRfq from "./sourcing/rfqs/new";
 import EditRfq from "./sourcing/rfqs/$id.edit";
 import AmendRfq from "./sourcing/rfqs/$id.amend";
+import RfqEvaluation from "./sourcing/rfqs/$id.evaluation";
 import { confirmLeave, consumeRestoring, installHistoryIndex, settlePop } from "../lib/navigation-guard";
 import type { Project } from "../components/projects/api";
 import type { RoutePath } from "./route-paths";
@@ -68,6 +69,7 @@ const VENDOR_PATH = /^\/vendors\/([0-9a-f-]{36})$/;
 const VENDOR_EDIT_PATH = /^\/vendors\/([0-9a-f-]{36})\/edit$/;
 const RFQ_PATH = /^\/sourcing\/rfqs\/([0-9a-f-]{36})$/;
 const RFQ_COMPARISON_PATH = /^\/sourcing\/rfqs\/([0-9a-f-]{36})\/comparison$/;
+const RFQ_EVALUATION_PATH = /^\/sourcing\/rfqs\/([0-9a-f-]{36})\/evaluation$/;
 const RFQ_EDIT_PATH = /^\/sourcing\/rfqs\/([0-9a-f-]{36})\/edit$/;
 const RFQ_AMEND_PATH = /^\/sourcing\/rfqs\/([0-9a-f-]{36})\/amend$/;
 const ADMIN_USER_PATH = /^\/admin\/users\/([^/]+)$/;
@@ -269,6 +271,10 @@ function routeFor(path: string): ShellRoute {
     activeHref: "/sourcing", path, phase: "commit", title: "Bid Comparison", description: "Bids side by side, once the bidding stop time has passed.",
     breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/sourcing/rfqs", label: "RFQs" }, { href: path.replace(/\/comparison$/, ""), label: "RFQ" }, { href: path, label: "Bid Comparison" }],
   };
+  if (RFQ_EVALUATION_PATH.test(path)) return {
+    activeHref: "/sourcing", path, phase: "commit", title: "Evaluation", description: "Declare any conflict first, then score each vendor.",
+    breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/sourcing/rfqs", label: "RFQs" }, { href: path.replace(/\/evaluation$/, ""), label: "RFQ" }, { href: path, label: "Evaluation" }],
+  };
   if (RFQ_EDIT_PATH.test(path) || RFQ_AMEND_PATH.test(path)) {
     const editing = RFQ_EDIT_PATH.test(path), detail = path.replace(/\/(edit|amend)$/, "");
     return {
@@ -411,6 +417,7 @@ export default function RootRoute() {
   const rfqId = shellRoute.path.match(RFQ_PATH)?.[1];
   const comparisonRfqId = shellRoute.path.match(RFQ_COMPARISON_PATH)?.[1];
   const editRfqId = shellRoute.path.match(RFQ_EDIT_PATH)?.[1];
+  const evaluationRfqId = shellRoute.path.match(RFQ_EVALUATION_PATH)?.[1];
   const amendRfqId = shellRoute.path.match(RFQ_AMEND_PATH)?.[1];
 
   return (
@@ -423,6 +430,7 @@ export default function RootRoute() {
       {rfqId ? <RfqDetail key={rfqId} id={rfqId} navigate={navigate} /> : undefined}
       {editRfqId ? <EditRfq key={editRfqId} id={editRfqId} navigate={navigate} /> : undefined}
       {amendRfqId ? <AmendRfq key={amendRfqId} id={amendRfqId} navigate={navigate} /> : undefined}
+      {evaluationRfqId ? <RfqEvaluation key={evaluationRfqId} id={evaluationRfqId} navigate={navigate} /> : undefined}
       {comparisonRfqId ? <RfqComparison key={comparisonRfqId} id={comparisonRfqId} navigate={navigate} /> : undefined}
       {vendorId ? <VendorDetail key={vendorId} id={vendorId} navigate={navigate} /> : undefined}
       {shellRoute.path === "/requisitions" ? <RequisitionList key={window.location.search} navigate={navigate} /> : undefined}

@@ -4,6 +4,7 @@ import { apiClient } from "../../../api/client";
 import StatusPill from "../../../components/status/StatusPill";
 import Card from "../../../components/sourcing/Card";
 import InviteesCard, { BidsCard } from "../../../components/sourcing/bids/BidsCard";
+import EvaluatorsCard from "../../../components/sourcing/evaluation/EvaluatorsCard";
 import RfqHeaderActions from "../../../components/sourcing/RfqHeaderActions";
 import { LIFECYCLE, relativeDeadline, wallClock, type Rfq, type RfqVersion } from "../../../components/sourcing/api";
 import Person from "../../../components/ui/Person";
@@ -87,6 +88,7 @@ export default function RfqDetail({ id, navigate }: { id: string; navigate: (hre
       </Card>
       <InviteesCard rfq={r} onChanged={() => { rfq.reload(); versions.reload(); history.reload(); }} />
       <BidsCard rfq={r} navigate={navigate} />
+      <EvaluatorsCard id={id} navigate={navigate} />
       <Card title="History" load={history}>
         {(history.data ?? []).length === 0 ? <p>No events yet.</p> : <ul className="vendor-list-plain">{(history.data ?? []).map((e, n) => <li key={`${e.at}-${n}`}><strong>{label(e.action.replace(/^rfq\./, "").replaceAll(".", " "))}</strong><span className="req-sub">{e.actor_email ? <Person name={e.actor_name} email={e.actor_email} /> : "System"}, {formatDateTime(e.at)}{e.reason ? `: ${e.reason}` : ""}</span></li>)}</ul>}
       </Card>

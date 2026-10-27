@@ -27,3 +27,14 @@
 .bid-totals { max-inline-size: var(--sheet-w); margin-inline-start: auto; }
 .bid-sheet .field-error { color: var(--status-danger); margin: 0; }
 .bid-link { border: 0; background: none; padding: 0; text-decoration: underline; cursor: pointer; font: inherit; }
+.eval-page { display: grid; gap: var(--space-4); align-content: start; }
+.eval-scoring, .eval-all { display: grid; gap: var(--space-4); }
+.eval-fold { border: 1px solid var(--border); border-radius: var(--radius-card); padding: var(--space-3) var(--space-4); }
+.eval-fold > summary { cursor: pointer; font-weight: var(--weight-heading); min-height: var(--touch-target); display: flex; align-items: center; }
+.eval-fold input { inline-size: 8ch; }
+.eval-fold textarea { inline-size: 100%; }
+.eval-summary { border: 1px solid var(--status-danger); border-radius: var(--radius-card); padding: var(--space-3) var(--space-4); }
+.eval-radio { display: flex; align-items: center; gap: var(--space-2); min-height: var(--touch-target); }
+.eval-state { display: flex; align-items: center; gap: var(--space-2); }
+.eval-state svg { inline-size: var(--icon-inline); block-size: var(--icon-inline); flex-shrink: 0; }
+.eval-declaration .req-actions { justify-content: flex-start; }

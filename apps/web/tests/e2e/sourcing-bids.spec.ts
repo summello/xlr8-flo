@@ -55,6 +55,7 @@ async function stubBids(page: Page, { lead = false, deadline = minute(2 * 24 * H
     if (path === "/api/v1/auth/organizations") return send({ items: [], current_org_id: unitId });
     if (path === "/api/v1/sourcing/rfqs") return send({ rows: [{ id: rfqId, number: "RFQ-0001", title: "Centrifugal pumps", status: "published", unit_id: unitId, owner_email: "buyer@example.test", deadline_at: deadline, deadline_tz: tz, invitee_count: 1, requisition_numbers: ["REQ-0042"], bids_received: detail().bids_received }], next_cursor: null, counts: { drafts: 0, open: 1, evaluating: 0, awarded: 0, all: 1 } });
     if (path === base) return send(detail());
+    if (path === `${base}/evaluation`) return send({ status: "published", scoring_open: false, criteria: [], source: "default", edit_revision: 1, me: null, evaluators: null, evaluator_count: 0, complete: false, vendors: [], scores: [], weighted: null });
     if (path === `${base}/comparison`) return send(comparison());
     if (path === `${base}/versions` || path === `${base}/history`) return send([]);
     if (path === `${base}/bids` && method === "GET") return send(state.bids.filter(b => lead || b.mine).map(read));
