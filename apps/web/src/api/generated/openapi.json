@@ -10491,6 +10491,10 @@
       "PoLinePatch": {
         "additionalProperties": false,
         "properties": {
+          "freight": {
+            "title": "Freight",
+            "type": "string"
+          },
           "line_no": {
             "minimum": 1.0,
             "title": "Line No",
@@ -10499,17 +10503,28 @@
           "quantity": {
             "title": "Quantity",
             "type": "string"
+          },
+          "tax": {
+            "title": "Tax",
+            "type": "string"
           }
         },
         "required": [
-          "line_no",
-          "quantity"
+          "line_no"
         ],
         "title": "PoLinePatch",
         "type": "object"
       },
       "PoLineRead": {
         "properties": {
+          "budget_amount": {
+            "title": "Budget Amount",
+            "type": "string"
+          },
+          "budget_amount_project": {
+            "title": "Budget Amount Project",
+            "type": "string"
+          },
           "department_code": {
             "anyOf": [
               {
@@ -10523,6 +10538,10 @@
           },
           "description": {
             "title": "Description",
+            "type": "string"
+          },
+          "freight": {
+            "title": "Freight",
             "type": "string"
           },
           "ledger_account_code": {
@@ -10539,6 +10558,14 @@
           "line_no": {
             "title": "Line No",
             "type": "integer"
+          },
+          "line_total": {
+            "title": "Line Total",
+            "type": "string"
+          },
+          "price": {
+            "title": "Price",
+            "type": "string"
           },
           "project_id": {
             "format": "uuid",
@@ -10557,6 +10584,10 @@
           "rfq_line_id": {
             "format": "uuid",
             "title": "Rfq Line Id",
+            "type": "string"
+          },
+          "tax": {
+            "title": "Tax",
             "type": "string"
           },
           "unit_price": {
@@ -10587,6 +10618,12 @@
           "project_id",
           "department_code",
           "ledger_account_code",
+          "price",
+          "tax",
+          "freight",
+          "line_total",
+          "budget_amount",
+          "budget_amount_project",
           "value",
           "value_converted"
         ],
@@ -10695,6 +10732,25 @@
         "additionalProperties": false,
         "description": "A field left out is unchanged; `terms` and `needed_by` may be set to null. A given\n`ship_to_address_id` must be an active Ship To (null is refused: 422 `ship_to_invalid`).",
         "properties": {
+          "document_freight": {
+            "title": "Document Freight",
+            "type": "string"
+          },
+          "freight_mode": {
+            "anyOf": [
+              {
+                "enum": [
+                  "line",
+                  "document"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Freight Mode"
+          },
           "lines": {
             "anyOf": [
               {
@@ -10762,6 +10818,14 @@
             "title": "Bill To",
             "type": "object"
           },
+          "budget_total": {
+            "title": "Budget Total",
+            "type": "string"
+          },
+          "budget_total_project": {
+            "title": "Budget Total Project",
+            "type": "string"
+          },
           "converted_currency": {
             "title": "Converted Currency",
             "type": "string"
@@ -10773,6 +10837,29 @@
           },
           "currency": {
             "title": "Currency",
+            "type": "string"
+          },
+          "document_freight": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Freight"
+          },
+          "freight_mode": {
+            "enum": [
+              "line",
+              "document"
+            ],
+            "title": "Freight Mode",
+            "type": "string"
+          },
+          "freight_total": {
+            "title": "Freight Total",
             "type": "string"
           },
           "id": {
@@ -10801,6 +10888,10 @@
           },
           "number": {
             "title": "Number",
+            "type": "string"
+          },
+          "price_total": {
+            "title": "Price Total",
             "type": "string"
           },
           "rate": {
@@ -10840,6 +10931,10 @@
           },
           "status": {
             "$ref": "#/components/schemas/PoStatus"
+          },
+          "tax_total": {
+            "title": "Tax Total",
+            "type": "string"
           },
           "terms": {
             "anyOf": [
@@ -10900,8 +10995,15 @@
           "status",
           "version",
           "created_at",
+          "freight_mode",
+          "document_freight",
           "lines",
+          "price_total",
+          "tax_total",
+          "freight_total",
           "total",
+          "budget_total",
+          "budget_total_project",
           "total_converted"
         ],
         "title": "PoRead",

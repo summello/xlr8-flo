@@ -593,3 +593,18 @@ class AwardedLine:
     requisition_id: UUID
     requisition_line_id: UUID
     requisition_version: int
+
+
+class AwardLineQuote(BaseModel):
+    """The bid line behind an award line: what a PO line prices tax and freight from (E13-S02).
+
+    `tax` and `freight_share` are for `quoted_quantity`; amounts are decimal strings in `currency`.
+    """
+
+    rfq_line_id: UUID
+    vendor_id: UUID
+    currency: str
+    quoted_quantity: str
+    unit_price: str
+    tax: str
+    freight_share: str

@@ -23,6 +23,12 @@ def _qty(value: object) -> object:
     return value
 
 
+def _amount(value: object) -> object:
+    if not isinstance(value, str) or not re.fullmatch(r"[0-9]{1,14}(?:\.[0-9]{1,4})?", value):
+        raise ValueError("Enter an amount of zero or more with at most 4 decimals.")
+    return value
+
+
 class PoLineIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     rfq_line_id: UUID
@@ -49,10 +55,15 @@ class PoCreate(BaseModel):
 class PoLinePatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
     line_no: int = Field(ge=1)
-    quantity: str
+    quantity: str | None = None
+    tax: str | None = None
+    freight: str | None = None  # `line` freight mode only
 
     _quantity = field_validator("quantity", mode="before", json_schema_input_type=str)(
-        lambda cls, v: _qty(v)
+        lambda cls, v: v if v is None else _qty(v)
+    )
+    _amounts = field_validator("tax", "freight", mode="before", json_schema_input_type=str)(
+        lambda cls, v: v if v is None else _amount(v)
     )
 
 
@@ -65,6 +76,12 @@ class PoPatch(BaseModel):
     needed_by: date | None = None
     ship_to_address_id: UUID | None = None
     lines: list[PoLinePatch] | None = Field(default=None, max_length=500)
+    freight_mode: Literal["line", "document"] | None = None
+    document_freight: str | None = None  # `document` freight mode only
+
+    _document_freight = field_validator(
+        "document_freight", mode="before", json_schema_input_type=str
+    )(lambda cls, v: v if v is None else _amount(v))
 
 
 class PurchaseOrderTransitionCreate(BaseModel):
@@ -86,7 +103,13 @@ class PoLineRead(BaseModel):
     project_id: UUID
     department_code: str | None
     ledger_account_code: str | None
-    value: str
+    price: str
+    tax: str
+    freight: str
+    line_total: str
+    budget_amount: str
+    budget_amount_project: str
+    value: str  # the landed line, as `line_total`
     value_converted: str
 
 
@@ -110,8 +133,15 @@ class PoRead(BaseModel):
     status: PoStatus
     version: int
     created_at: datetime
+    freight_mode: Literal["line", "document"]
+    document_freight: str | None
     lines: list[PoLineRead]
+    price_total: str
+    tax_total: str
+    freight_total: str
     total: str
+    budget_total: str
+    budget_total_project: str
     total_converted: str
 
 

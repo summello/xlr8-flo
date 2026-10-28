@@ -6503,6 +6503,71 @@
         },
         "gate_s": 306
       }
+    },
+    {
+      "story": "E13-S02",
+      "kind": "ledger",
+      "size": "M",
+      "tags": [
+        "money"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 1,
+          "blockers": 1,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "d1066a25-9023-4a6d-bcd6-a9fbcf231bab",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S02",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1815b-558d-7fc2-8b6b-f49840b00f34",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Every PO line now stores price, tax, freight, landed total and budget amount (quantized per line, freight taking the rounding residual), with a line or document freight mode and quantity edits rescaling from the award quote. The award engine and comparison split a zero-price bid's freight equally over its quoted lines.",
+      "title": "Tax and freight per BU/OU policy, separately visible on line and document",
+      "durations": {
+        "wall_s": 5801,
+        "author_s": 2312,
+        "review_s": {
+          "codex": 30,
+          "opus": 423
+        },
+        "gate_s": 2
+      }
     }
   ]
 }

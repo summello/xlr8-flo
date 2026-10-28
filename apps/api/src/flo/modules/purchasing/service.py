@@ -29,6 +29,7 @@ from flo.modules.org.service import NumberingService, OrgService, today
 from flo.modules.projects.service import generated_for
 from flo.modules.purchasing.lifecycle import parse_if_match, transition
 from flo.modules.purchasing.models import PurchaseOrderRepository
+from flo.modules.purchasing.pricing import Figures, landed, spread
 from flo.modules.purchasing.schemas import (
     AwardedLineRead,
     AwardedLinesRead,
@@ -49,6 +50,7 @@ from flo.modules.requisitions.service import (
     register_link_provider,
 )
 from flo.modules.sourcing.service import (
+    award_line_quotes,
     award_unit,
     awarded_lines,
     lock_award,
@@ -64,7 +66,7 @@ PAGE = 50
 HEADER = (
     "id, number, unit_id, vendor_id, vendor_snapshot, requisition_id, award_id, currency, rate, "
     "bill_to, ship_to_address_id, recipients, requester_id, terms, needed_by, status, version, "
-    "created_at"
+    "created_at, freight_mode, document_freight"
 )
 
 
@@ -129,23 +131,55 @@ class PurchaseOrderService:
     def award_unit(self, award_id: UUID) -> UUID:
         return award_unit(self.connection, self.scope, award_id)
 
+    def _flags(self, unit_id: UUID) -> tuple[bool, bool]:
+        org = OrgService(self.connection, self.scope)
+        return (
+            org.effective_setting(unit_id, "tax.consumes_budget").value is True,
+            org.effective_setting(unit_id, "freight.consumes_budget").value is True,
+        )
+
+    @staticmethod
+    def _budget(
+        f: Figures, flags: tuple[bool, bool], rate: dict[str, str], currency: str
+    ) -> tuple[Decimal, Decimal]:
+        """The line's budget amount in the PO currency and, at the PO rate, the project's."""
+        budget = f.budget(tax_on=flags[0], freight_on=flags[1])
+        return budget, quantize(budget * Decimal(rate["rate"]), rate["to"])
+
     def get(self, id: UUID) -> PoRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             h = self._row(id)
             lines = self.repo.execute(
                 "SELECT line_no, rfq_line_id, requisition_line_id, description, uom_code, "
-                "quantity, unit_price, project_id, department_code, ledger_account_code "
+                "quantity, unit_price, project_id, department_code, ledger_account_code, "
+                "price, tax, freight, budget_amount, budget_amount_project "
                 "FROM po_line WHERE org_id = %(org_id)s AND po_id = %(id)s ORDER BY line_no",
                 {"id": id},
             ).fetchall()
+            flags = self._flags(cast(UUID, h["unit_id"]))
         currency = cast(str, h["currency"]).strip()
         rate = cast(dict[str, str], h["rate"])
         to, factor = rate["to"], Decimal(rate["rate"])
-        reads, total, converted = [], Decimal(0), Decimal(0)
+        live = h["status"] in ("draft", "approval_pending", "approved")
+        reads: list[PoLineRead] = []
+        sums = {
+            k: Decimal(0) for k in ("price", "tax", "freight", "total", "budget", "project", "conv")
+        }
         for r in lines:
-            value = quantize(cast(Decimal, r[5]) * cast(Decimal, r[6]), currency)
-            value_converted = quantize(value * factor, to)
-            total, converted = total + value, converted + value_converted
+            f = Figures(*(quantize(cast(Decimal, v), currency) for v in r[10:13]))
+            # until issue the budget amount follows the unit's settings; E13-S05 freezes it at issue
+            budget, project = (
+                self._budget(f, flags, rate, currency)
+                if live
+                else (quantize(cast(Decimal, r[13]), currency), quantize(cast(Decimal, r[14]), to))
+            )
+            converted = quantize(f.line_total * factor, to)
+            for k, v in zip(
+                sums,
+                (f.price, f.tax, f.freight, f.line_total, budget, project, converted),
+                strict=True,
+            ):
+                sums[k] += v
             reads.append(
                 PoLineRead(
                     line_no=cast(int, r[0]),
@@ -158,12 +192,34 @@ class PurchaseOrderService:
                     project_id=cast(UUID, r[7]),
                     department_code=cast(str | None, r[8]),
                     ledger_account_code=cast(str | None, r[9]),
-                    value=_fmt(value),
-                    value_converted=_fmt(value_converted),
+                    price=_fmt(f.price),
+                    tax=_fmt(f.tax),
+                    freight=_fmt(f.freight),
+                    line_total=_fmt(f.line_total),
+                    budget_amount=_fmt(budget),
+                    budget_amount_project=_fmt(project),
+                    value=_fmt(f.line_total),
+                    value_converted=_fmt(converted),
                 )
             )
-        fields: dict[str, Any] = {**h, "currency": currency, "converted_currency": to}
-        return PoRead(**fields, lines=reads, total=_fmt(total), total_converted=_fmt(converted))
+        document = cast(Decimal | None, h["document_freight"])
+        fields: dict[str, Any] = {
+            **h,
+            "currency": currency,
+            "converted_currency": to,
+            "document_freight": None if document is None else _fmt(quantize(document, currency)),
+        }
+        return PoRead(
+            **fields,
+            lines=reads,
+            price_total=_fmt(sums["price"]),
+            tax_total=_fmt(sums["tax"]),
+            freight_total=_fmt(sums["freight"]),
+            total=_fmt(sums["total"]),
+            budget_total=_fmt(sums["budget"]),
+            budget_total_project=_fmt(sums["project"]),
+            total_converted=_fmt(sums["conv"]),
+        )
 
     def awarded(self, award_id: UUID, vendor_id: UUID | None) -> AwardedLinesRead:
         """Open to order per award line, with the value already on draft POs."""
@@ -171,13 +227,13 @@ class PurchaseOrderService:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             ordered: dict[tuple[UUID, UUID], Decimal] = defaultdict(Decimal)
             for r in self.repo.execute(
-                "SELECT l.rfq_line_id, l.vendor_id, l.quantity, l.unit_price, p.currency "
+                "SELECT l.rfq_line_id, l.vendor_id, l.line_total, p.currency "
                 "FROM po_line l JOIN purchase_order p ON p.org_id = l.org_id AND p.id = l.po_id "
                 "WHERE l.org_id = %(org_id)s AND l.award_id = %(id)s AND p.status <> 'deleted'",
                 {"id": award_id},
             ).fetchall():
                 key = (cast(UUID, r[0]), cast(UUID, r[1]))
-                ordered[key] += quantize(cast(Decimal, r[2]) * cast(Decimal, r[3]), str(r[4]))
+                ordered[key] += quantize(cast(Decimal, r[2]), str(r[3]).strip())
         return AwardedLinesRead(
             award_id=award_id,
             lines=[
@@ -246,15 +302,15 @@ class PurchaseOrderService:
         page = rows[:page_size]
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             priced = self.repo.execute(
-                "SELECT po_id, quantity, unit_price FROM po_line "
+                "SELECT po_id, line_total FROM po_line "
                 "WHERE org_id = %(org_id)s AND po_id = ANY(%(ids)s)",
                 {"ids": [r[0] for r in page]},
             ).fetchall()
         totals: dict[UUID, Decimal] = defaultdict(Decimal)
         currencies = {cast(UUID, r[0]): cast(str, r[6]).strip() for r in page}
-        for po_id, quantity, price in priced:  # the same per-line rounding as `get`
+        for po_id, line_total in priced:  # the sum of the rounded landed lines, as `get`
             totals[cast(UUID, po_id)] += quantize(
-                cast(Decimal, quantity) * cast(Decimal, price), currencies[cast(UUID, po_id)]
+                cast(Decimal, line_total), currencies[cast(UUID, po_id)]
             )
         return PoPage(
             rows=[
@@ -419,14 +475,27 @@ class PurchaseOrderService:
                     "by": actor,
                 },
             )
+            quotes = {(q.rfq_line_id, q.vendor_id): q for q in award_line_quotes(
+                self.connection, self.scope, body.award_id
+            )}  # fmt: skip
+            flags = self._flags(header.unit_id)
+            rate = {**header.rates[currency], "to": header.rfq_currency}
             for line_no, x in enumerate(chosen, 1):
+                quote = quotes[(x.rfq_line_id, x.vendor_id)]
+                f = landed(
+                    x.unit_price, quantities[x.rfq_line_id], Decimal(quote.tax),
+                    Decimal(quote.freight_share), Decimal(quote.quoted_quantity), currency,
+                )  # fmt: skip
+                budget, project = self._budget(f, flags, rate, currency)
                 self.repo.execute(
                     "INSERT INTO po_line (org_id, po_id, line_no, award_id, rfq_line_id, "
                     "vendor_id, requisition_id, requisition_line_id, description, uom_code, "
-                    "quantity, unit_price, project_id, department_code, ledger_account_code) "
+                    "quantity, unit_price, project_id, department_code, ledger_account_code, "
+                    "price, tax, freight, line_total, budget_amount, budget_amount_project) "
                     "VALUES (%(org_id)s, %(id)s, %(no)s, %(award)s, %(line)s, %(vendor)s, "
                     "%(req)s, %(req_line)s, %(description)s, %(uom)s, %(qty)s, %(price)s, "
-                    "%(project)s, %(department)s, %(ledger)s)",
+                    "%(project)s, %(department)s, %(ledger)s, %(f_price)s, %(f_tax)s, "
+                    "%(f_freight)s, %(f_total)s, %(budget)s, %(budget_project)s)",
                     {
                         "id": id,
                         "no": line_no,
@@ -442,6 +511,12 @@ class PurchaseOrderService:
                         "project": sub.id,
                         "department": requisition.department_code,
                         "ledger": requisition.ledger_account_code,
+                        "f_price": f.price,
+                        "f_tax": f.tax,
+                        "f_freight": f.freight,
+                        "f_total": f.line_total,
+                        "budget": budget,
+                        "budget_project": project,
                     },
                 )
             self._audit(
@@ -529,6 +604,91 @@ class PurchaseOrderService:
             )
         return {n: cast(Decimal, r[5]) for n, r in found.items()}
 
+    def _reprice(
+        self, row: dict[str, object], body: PoPatch, before: dict[int, Decimal]
+    ) -> dict[str, object]:
+        """Rewrite every line's figures after a draft write; returns the header columns to set.
+
+        A quantity edit rescales that line's tax and freight from the award quote, and any value
+        the same PATCH sets explicitly wins over the rescale. `document` mode re-spreads the
+        document freight over all lines. The budget columns follow the unit's settings.
+        """
+        id, currency = cast(UUID, row["id"]), cast(str, row["currency"]).strip()
+        mode = cast(str, row["freight_mode"])
+        document = cast(Decimal | None, row["document_freight"])
+        new_mode = body.freight_mode or mode
+        patches = {x.line_no: x for x in body.lines or []}
+        lines = self.repo.execute(
+            "SELECT line_no, rfq_line_id, vendor_id, quantity, unit_price, tax, freight "
+            "FROM po_line WHERE org_id = %(org_id)s AND po_id = %(id)s ORDER BY line_no",
+            {"id": id},
+        ).fetchall()
+        for n in patches:
+            if n not in {cast(int, r[0]) for r in lines}:
+                raise _invalid("lines", f"The order has no line {n}.", "unknown_line")
+        if body.document_freight is not None and new_mode != "document":
+            raise _invalid(
+                "document_freight", "Document freight needs the document freight mode.",
+                "freight_mode_mismatch",
+            )  # fmt: skip
+        if new_mode != "line" and any(x.freight is not None for x in patches.values()):
+            raise _invalid(
+                "lines", "Line freight needs the line freight mode.", "freight_mode_mismatch"
+            )
+        quotes = {
+            (q.rfq_line_id, q.vendor_id): q
+            for q in award_line_quotes(self.connection, self.scope, cast(UUID, row["award_id"]))
+        } if any(x.quantity is not None for x in patches.values()) else {}  # fmt: skip
+        figures: list[Figures] = []
+        exact: list[Decimal] = []
+        for r in lines:
+            n, qty, unit_price = cast(int, r[0]), cast(Decimal, r[3]), cast(Decimal, r[4])
+            patch = patches.get(n)
+            tax, freight = cast(Decimal, r[5]), cast(Decimal, r[6])
+            if patch is not None and qty != before.get(n, qty):
+                q = quotes[(cast(UUID, r[1]), cast(UUID, r[2]))]
+                f = landed(
+                    unit_price, qty, Decimal(q.tax), Decimal(q.freight_share),
+                    Decimal(q.quoted_quantity), currency,
+                )  # fmt: skip
+                tax, freight = f.tax, f.freight
+            if patch is not None and patch.tax is not None:
+                tax = quantize(Decimal(patch.tax), currency)
+            figures.append(Figures(quantize(unit_price * qty, currency), tax, freight))
+            exact.append(unit_price * qty)
+        if mode == "document" and document is not None:  # shares follow the new prices
+            shares = spread(document, exact, currency)
+            figures = [Figures(f.price, f.tax, s) for f, s in zip(figures, shares, strict=True)]
+        if new_mode == "line":
+            document = None
+            for i, r in enumerate(lines):
+                patch = patches.get(cast(int, r[0]))
+                if patch is not None and patch.freight is not None:
+                    f = figures[i]
+                    figures[i] = Figures(f.price, f.tax, quantize(Decimal(patch.freight), currency))
+        else:
+            if body.document_freight is not None:
+                document = quantize(Decimal(body.document_freight), currency)
+            elif mode == "line":
+                document = sum((f.freight for f in figures), Decimal(0))
+            shares = spread(cast(Decimal, document), exact, currency)
+            figures = [Figures(f.price, f.tax, s) for f, s in zip(figures, shares, strict=True)]
+        rate = cast(dict[str, str], row["rate"])
+        flags = self._flags(cast(UUID, row["unit_id"]))
+        for r, f in zip(lines, figures, strict=True):
+            budget, project = self._budget(f, flags, rate, currency)
+            self.repo.execute(
+                "UPDATE po_line SET price = %(price)s, tax = %(tax)s, freight = %(freight)s, "
+                "line_total = %(total)s, budget_amount = %(budget)s, "
+                "budget_amount_project = %(project)s "
+                "WHERE org_id = %(org_id)s AND po_id = %(id)s AND line_no = %(no)s",
+                {
+                    "id": id, "no": r[0], "price": f.price, "tax": f.tax, "freight": f.freight,
+                    "total": f.line_total, "budget": budget, "project": project,
+                },
+            )  # fmt: skip
+        return {"freight_mode": new_mode, "document_freight": document}
+
     def update(self, id: UUID, body: PoPatch, if_match: str | None) -> PoRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             row = self._draft(id, if_match)
@@ -556,12 +716,29 @@ class PurchaseOrderService:
                     before[field] = str(row[field]) if row[field] is not None else None
                     value = getattr(body, field)
                     after[field] = str(value) if value is not None else None
+            moved: dict[int, Decimal] = {}
             if body.lines is not None:
                 if len({x.line_no for x in body.lines}) != len(body.lines):
                     raise _invalid("lines", "A line appears twice.", "duplicate_line")
-                current = self._move(row, {x.line_no: Decimal(x.quantity) for x in body.lines})
-                before["lines"] = {str(x.line_no): _fmt(current[x.line_no]) for x in body.lines}
-                after["lines"] = {str(x.line_no): x.quantity for x in body.lines}
+                resized = [x for x in body.lines if x.quantity is not None]
+                goal = {x.line_no: Decimal(cast(str, x.quantity)) for x in resized}
+                moved = self._move(row, goal)
+                if resized:
+                    before["lines"] = {str(x.line_no): _fmt(moved[x.line_no]) for x in resized}
+                    after["lines"] = {str(x.line_no): x.quantity for x in resized}
+            header = self._reprice(row, body, moved)
+            sets += ["freight_mode = %(mode)s", "document_freight = %(document)s"]
+            params |= {"mode": header["freight_mode"], "document": header["document_freight"]}
+            for key, value in (("freight_mode", header["freight_mode"]),
+                               ("document_freight", header["document_freight"])):  # fmt: skip
+                if str(row[key]) != str(value):
+                    before[key], after[key] = str(row[key]), str(value)
+            edits = {
+                str(x.line_no): {k: v for k, v in (("tax", x.tax), ("freight", x.freight)) if v}
+                for x in body.lines or []
+            }
+            if any(edits.values()):
+                after["pricing"] = {n: e for n, e in edits.items() if e}
             self.repo.execute(
                 f"UPDATE purchase_order SET {', '.join(sets)} "
                 "WHERE org_id = %(org_id)s AND id = %(id)s",

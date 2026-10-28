@@ -179,6 +179,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261022_0077",
         "20261027_0078",
         "20261028_0079",
+        "20261028_0080",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -3149,4 +3150,83 @@ def test_purchase_order_status_migration_up_down_and_preserves_orders(empty_data
         mig.downgrade(conn)
         [(definition,)] = conn.execute(check, ("purchase_order_status_check",)).fetchall()
         assert "closed" not in definition and "deleted" in definition
+        mig.upgrade(conn)
+
+
+def test_po_pricing_migration_backfills_a_row_and_goes_down_and_up(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.org.schemas import OrgUnitCreate
+    from flo.modules.org.service import OrgService
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261028_0079"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261028_0080")
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("po-pricing-migration"),
+    ):
+        tenant = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(tenant.org_id)
+        bu = OrgService(conn, scope, actor).create_unit(
+            OrgUnitCreate(code="BU", name="BU", kind="bu")
+        )
+        rfq, award, po, rl, req, req_line, project = (uuid4() for _ in range(7))
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO rfq(id,org_id,number,title,unit_id,currency,owner_id)"
+                " VALUES(%s,%s,'RFQ-00001','T',%s,'KWD',%s)",
+                (rfq, tenant.org_id, bu.id, actor),
+            )
+            conn.execute(
+                "INSERT INTO award(id,org_id,number,rfq_id,basis,status,rates,created_by)"
+                " VALUES(%s,%s,'AWD-00001',%s,'manual','approved','{}',%s)",
+                (award, tenant.org_id, rfq, actor),
+            )
+        # the PO tables carry foreign keys to requisitions and bids; a pre-existing row is
+        # planted with those checks off, as the backfill reads only the row itself
+        with tenant_transaction(conn, scope):
+            conn.execute("SET LOCAL session_replication_role = replica")
+            conn.execute(
+                "INSERT INTO purchase_order(id,org_id,number,unit_id,vendor_id,requisition_id,"
+                "vendor_snapshot,award_id,currency,rate,bill_to,recipients,requester_id,created_by)"
+                " VALUES(%s,%s,'PO-1',%s,%s,%s,'{}',%s,'KWD','{\"to\":\"USD\",\"rate\":\"3.25\"}',"
+                "'{}','[]',%s,%s)",
+                (po, tenant.org_id, bu.id, uuid4(), req, award, actor, actor),
+            )
+            conn.execute(
+                "INSERT INTO po_line(org_id,po_id,line_no,award_id,rfq_line_id,vendor_id,"
+                "requisition_id,requisition_line_id,description,uom_code,quantity,unit_price,"
+                "project_id) VALUES(%s,%s,1,%s,%s,%s,%s,%s,'d','EA','3','1.2345',%s)",
+                (tenant.org_id, po, award, rl, uuid4(), req, req_line, project),
+            )
+        mig.upgrade(conn)
+        with tenant_transaction(conn, scope):
+            row = conn.execute(
+                "SELECT price,tax,freight,line_total,budget_amount,budget_amount_project"
+                " FROM po_line"
+            ).fetchone()
+            mode = conn.execute("SELECT freight_mode, document_freight FROM purchase_order")
+            assert mode.fetchone() == ("line", None)
+        # 3 x 1.2345 = 3.7035 -> 3.704 KWD; x 3.25 = 12.038 -> 12.04 USD
+        assert row == (
+            Decimal("3.7040"),
+            0,
+            0,
+            Decimal("3.7040"),
+            Decimal("3.7040"),
+            Decimal("12.0400"),
+        )
+        mig.downgrade(conn)
+        assert conn.execute(
+            "SELECT count(*) FROM information_schema.columns WHERE table_name='po_line'"
+            " AND column_name IN ('price','tax','freight','line_total','budget_amount')"
+        ).fetchone() == (0,)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT count(*) FROM po_line").fetchone() == (1,)
         mig.upgrade(conn)

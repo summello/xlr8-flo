@@ -7272,21 +7272,35 @@ export interface components {
         };
         /** PoLinePatch */
         PoLinePatch: {
+            /** Freight */
+            freight?: string;
             /** Line No */
             line_no: number;
             /** Quantity */
-            quantity: string;
+            quantity?: string;
+            /** Tax */
+            tax?: string;
         };
         /** PoLineRead */
         PoLineRead: {
+            /** Budget Amount */
+            budget_amount: string;
+            /** Budget Amount Project */
+            budget_amount_project: string;
             /** Department Code */
             department_code: string | null;
             /** Description */
             description: string;
+            /** Freight */
+            freight: string;
             /** Ledger Account Code */
             ledger_account_code: string | null;
             /** Line No */
             line_no: number;
+            /** Line Total */
+            line_total: string;
+            /** Price */
+            price: string;
             /**
              * Project Id
              * Format: uuid
@@ -7304,6 +7318,8 @@ export interface components {
              * Format: uuid
              */
             rfq_line_id: string;
+            /** Tax */
+            tax: string;
             /** Unit Price */
             unit_price: string;
             /** Uom Code */
@@ -7367,6 +7383,10 @@ export interface components {
          *     `ship_to_address_id` must be an active Ship To (null is refused: 422 `ship_to_invalid`).
          */
         PoPatch: {
+            /** Document Freight */
+            document_freight?: string;
+            /** Freight Mode */
+            freight_mode?: ("line" | "document") | null;
             /** Lines */
             lines?: components["schemas"]["PoLinePatch"][] | null;
             /** Needed By */
@@ -7387,6 +7407,10 @@ export interface components {
             bill_to: {
                 [key: string]: unknown;
             };
+            /** Budget Total */
+            budget_total: string;
+            /** Budget Total Project */
+            budget_total_project: string;
             /** Converted Currency */
             converted_currency: string;
             /**
@@ -7396,6 +7420,15 @@ export interface components {
             created_at: string;
             /** Currency */
             currency: string;
+            /** Document Freight */
+            document_freight: string | null;
+            /**
+             * Freight Mode
+             * @enum {string}
+             */
+            freight_mode: "line" | "document";
+            /** Freight Total */
+            freight_total: string;
             /**
              * Id
              * Format: uuid
@@ -7407,6 +7440,8 @@ export interface components {
             needed_by: string | null;
             /** Number */
             number: string;
+            /** Price Total */
+            price_total: string;
             /** Rate */
             rate: {
                 [key: string]: unknown;
@@ -7428,6 +7463,8 @@ export interface components {
             /** Ship To Address Id */
             ship_to_address_id: string | null;
             status: components["schemas"]["PoStatus"];
+            /** Tax Total */
+            tax_total: string;
             /** Terms */
             terms: string | null;
             /** Total */

@@ -1987,7 +1987,7 @@ epics:
           - PO-016
         dep:
           - E13-S01
-        st: in_progress
+        st: done
       - id: E13-S03
         t: PO lifecycle state machine
         k: engine

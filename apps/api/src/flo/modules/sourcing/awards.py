@@ -299,12 +299,10 @@ class AwardService(ComparisonService):
         out: dict[tuple[UUID, UUID], Quote] = {}
         for bid_id, lines in by_bid.items():
             ratios = [int((r[2] * r[3]).scaleb(8)) for r in lines]
+            if not any(ratios):  # every quoted price is 0: split equally over the quoted lines
+                ratios = [1] * len(lines)
             freight = quantize(lines[0][5], lines[0][6])
-            shares = (
-                [m.amount for m in Money(freight, lines[0][6]).allocate(ratios)]
-                if any(ratios)
-                else [Decimal(0)] * len(lines)
-            )
+            shares = [m.amount for m in Money(freight, lines[0][6]).allocate(ratios)]
             for line, share in zip(lines, shares, strict=True):
                 out[(bid_id, line[1])] = Quote(line[2], line[3], line[4], share)
         return out

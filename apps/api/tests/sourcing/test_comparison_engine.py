@@ -150,16 +150,19 @@ def test_tie_goes_to_the_earlier_submission_then_the_lower_id():
     assert run(same_time, lines=LINES[:1]).markers.lowest.vendor_id == UUID(int=201)
 
 
-def test_every_line_at_zero_price_folds_the_bid_currency_freight_in_once():
+def test_every_line_at_zero_price_splits_the_bid_freight_equally_over_the_quoted_lines():
     zero = {L1: (1, 0, 0), L2: (1, 0, 0)}
-    usd = bid(1, "USD", "10.0050", zero)  # sub-minor freight: quantize(10.0050, USD) = 10.01
-    eur = bid(2, "EUR", "12.345", zero, 1)  # 12.35 EUR x 1.10 = 13.585 -> 13.59 USD
-    r = run([usd, eur], lines=LINES[:2])
-    u, e = vendor(r, 1), vendor(r, 2)
-    assert (u.freight_unallocated, u.landed_total, u.freight) == ("10.01", "10.01", "0.00")
-    assert (e.freight_unallocated, e.freight_unallocated_converted) == ("12.35", "13.59")
+    usd = bid(1, "USD", "0.10", zero)
+    odd = bid(2, "USD", "0.0050", zero)  # sub-minor freight: quantize(0.0050, USD) = 0.01
+    eur = bid(3, "EUR", "12.345", zero, 1)  # 12.35 EUR -> 6.18 + 6.17, x 1.10 -> 6.80 + 6.79 USD
+    r = run([usd, odd, eur], lines=LINES[:2])
+    u, o, e = vendor(r, 1), vendor(r, 2), vendor(r, 3)
+    assert (u.freight_unallocated, u.landed_total, u.freight) == (None, "0.10", "0.10")
+    assert [c.freight_share for c in r.lines[0].cells][:1] == ["0.05"]
+    assert [c.freight_share for c in r.lines[1].cells][:1] == ["0.05"]
+    assert (o.freight_unallocated, o.landed_total) == (None, "0.01")
+    assert (e.freight_unallocated, e.freight_unallocated_converted) == (None, None)
     assert e.landed_total == "13.59"
-    assert [c.freight_share for c in r.lines[0].cells] == ["0.00", "0.00"]
 
 
 def test_freight_shares_sum_back_exactly_in_the_bid_currency():

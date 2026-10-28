@@ -241,14 +241,13 @@ def _price(bid: BidIn, lines: list[LineIn], currency: str, rate: Rate) -> _Price
     prices = {k: q.unit_price * q.quantity for k, q in bid.quotes.items()}
     fq = quantize(bid.freight, bid.currency)
     ratios = [int(prices.get(line.id, Decimal(0)).scaleb(8)) for line in lines]
+    if bid.quotes and not any(ratios):  # every quoted price is 0: split equally over quoted lines
+        ratios = [int(line.id in bid.quotes) for line in lines]
     shares = (
         [m.amount for m in Money(fq, bid.currency).allocate(ratios)]
         if any(ratios)
         else [Decimal(0)] * len(lines)
     )
-    if not any(ratios) and bid.quotes:
-        priced.unallocated = fq
-        priced.unallocated_converted = quantize(fq * rate.rate, currency)
     for line, share in zip(lines, shares, strict=True):
         if line.id in bid.quotes:
             priced.cells[line.id] = (

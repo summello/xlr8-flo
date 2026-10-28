@@ -221,9 +221,14 @@ def test_the_list_total_rounds_in_the_po_currency_like_the_detail(lifecycle_db):
     db, _ = lifecycle_db
     rfq, _, a, _, award_id, _ = ready(db)
     po = create(db, rfq, a, award_id, "3")
-    for currency, price, total in (("KWD", "1.234", "3.702"), ("JPY", "1.5", "5")):
+    for currency, price, total, digits in (("KWD", "1.234", "3.702", 3), ("JPY", "1.5", "5", 0)):
         sql(db, "UPDATE purchase_order SET currency=%s RETURNING 1", (currency,))
         sql(db, "UPDATE po_line SET unit_price=%s RETURNING 1", (price,))
+        sql(  # the stored landed line, rounded in the PO currency
+            db,
+            f"UPDATE po_line SET price=round(quantity*unit_price, {digits}), "
+            f"line_total=round(quantity*unit_price, {digits}), tax=0, freight=0 RETURNING 1",
+        )
         listed = pos(db).list_orders(_all(db), "all", None).rows[0]
         assert listed.total == pos(db).get(po.id).total == total, currency
 

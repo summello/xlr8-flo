@@ -38,6 +38,7 @@ from flo.modules.sourcing.models import RfqRepository
 from flo.modules.sourcing.schemas import (
     AwardedLine,
     AwardHeader,
+    AwardLineQuote,
     DeliveryRead,
     InviteeCandidate,
     InviteeCandidatePage,
@@ -1329,6 +1330,29 @@ def awarded_lines(
         for r in rows
     ]
     return found
+
+
+def award_line_quotes(conn: Conn, scope: Scope, award_id: UUID) -> list[AwardLineQuote]:
+    """Each award line's bid quote, read through the award's own `_quotes` (one source)."""
+    from flo.modules.sourcing.awards import AwardService  # awards imports this module
+
+    service = AwardService(conn, scope)
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        rows = service._rows(award_id)
+        quotes = service._quotes(sorted({r.bid_id for r in rows}))
+    return [
+        AwardLineQuote(
+            rfq_line_id=r.rfq_line_id,
+            vendor_id=r.vendor_id,
+            currency=r.currency.strip(),
+            quoted_quantity=format(q.quantity, "f"),
+            unit_price=format(q.unit_price, "f"),
+            tax=format(q.tax, "f"),
+            freight_share=format(q.freight_share, "f"),
+        )
+        for r in rows
+        for q in [quotes[(r.bid_id, r.rfq_line_id)]]
+    ]
 
 
 def order_award_lines(
