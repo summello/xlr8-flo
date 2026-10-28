@@ -2004,7 +2004,7 @@ epics:
         t: PO approval workflow before issue
         k: engine
         s: M
-        tags: []
+        tags: [migration]
         reqs:
           - PO-003
           - APR-003
