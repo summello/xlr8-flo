@@ -66,8 +66,8 @@ A = bid(
 B = bid(  # EUR, freight 30.00 splits 6.86 / 7.29 / 7.71 / 8.14 (residual to the earliest)
     2, "EUR", "30", {L1: (10, 8, 4), L2: (5, 17, 0), L3: (2, 45, 0), L4: (1, 95, 0)}, 1, 5, met=1
 )
-C = bid(  # a zero-price line takes no freight; the others absorb it
-    3, "USD", "50", {L1: (10, 9, 2), L2: (5, 0, 0), L3: (2, 40, 0)}, 2, None
+C = bid(  # a near-free line takes a near-zero share of the freight; the others absorb it
+    3, "USD", "50", {L1: (10, 9, 2), L2: (5, "0.01", 0), L3: (2, 40, 0)}, 2, None
 )
 
 
@@ -84,13 +84,13 @@ def test_three_vendors_four_lines_every_figure():
     }
     assert [row.cells[0].landed for row in r.lines] == ["130.00", "125.00", "135.00", "125.00"]
     assert [row.cells[1].landed for row in r.lines] == ["99.95", "101.52", "107.48", "113.45"]
-    assert [row.cells[2].landed for row in r.lines] == ["118.48", "0.00", "103.52", None]
+    assert [row.cells[2].landed for row in r.lines] == ["118.47", "0.06", "103.52", None]
     assert [row.cells[1].freight_share for row in r.lines] == ["7.55", "8.02", "8.48", "8.95"]
-    assert cells[3][L2].freight_share == "0.00" and cells[3][L4].not_quoted
+    assert cells[3][L2].freight_share == "0.01" and cells[3][L4].not_quoted
     # a breakdown that reconciles to the minor unit
     assert (a.price, a.tax, a.freight, a.landed_total) == ("400.00", "15.00", "100.00", "515.00")
     assert (b.price, b.tax, b.freight, b.landed_total) == ("385.00", "4.40", "33.00", "422.40")
-    assert (c.price, c.tax, c.freight, c.landed_total) == ("170.00", "2.00", "50.00", "222.00")
+    assert (c.price, c.tax, c.freight, c.landed_total) == ("170.05", "2.00", "50.00", "222.05")
     for v in (a, b, c):
         assert D(v.price) + D(v.tax) + D(v.freight) == D(v.landed_total)
     assert (a.full, b.full, c.full) == (True, True, False)
@@ -103,13 +103,13 @@ def test_three_vendors_four_lines_every_figure():
         b.vendor_id, c.vendor_id, c.vendor_id, b.vendor_id,
     ]  # fmt: skip
     # both bases
-    assert r.lowest_cost_supplier.total == "316.92" and not r.lowest_cost_supplier.partial
+    assert r.lowest_cost_supplier.total == "316.98" and not r.lowest_cost_supplier.partial
     assert r.best_average_cost.total == "422.40" and r.best_average_cost.vendor_id == b.vendor_id
     assert not r.best_average_cost.partial
     assert r.approved_scope == "400.00"
     assert (r.lowest_cost_supplier.within_scope, r.lowest_cost_supplier.over_by) == (True, "0.00")
     assert (r.best_average_cost.within_scope, r.best_average_cost.over_by) == (False, "22.40")
-    assert r.insight.difference == "105.48" and r.insight.difference_pct == "33.28"
+    assert r.insight.difference == "105.42" and r.insight.difference_pct == "33.26"
     assert r.insight.dearer_basis == "best_average_cost"
     assert (r.insight.lowest_cost_supplier_vendors, r.insight.best_average_cost_vendors) == (2, 1)
     # lead time counts from the comparison date; needed_by is the earliest line's
@@ -150,19 +150,19 @@ def test_tie_goes_to_the_earlier_submission_then_the_lower_id():
     assert run(same_time, lines=LINES[:1]).markers.lowest.vendor_id == UUID(int=201)
 
 
-def test_every_line_at_zero_price_splits_the_bid_freight_equally_over_the_quoted_lines():
-    zero = {L1: (1, 0, 0), L2: (1, 0, 0)}
+def test_lines_at_equal_prices_split_the_bid_freight_equally_over_the_quoted_lines():
+    zero = {L1: (1, 1, 0), L2: (1, 1, 0)}
     usd = bid(1, "USD", "0.10", zero)
     odd = bid(2, "USD", "0.0050", zero)  # sub-minor freight: quantize(0.0050, USD) = 0.01
     eur = bid(3, "EUR", "12.345", zero, 1)  # 12.35 EUR -> 6.18 + 6.17, x 1.10 -> 6.80 + 6.79 USD
     r = run([usd, odd, eur], lines=LINES[:2])
     u, o, e = vendor(r, 1), vendor(r, 2), vendor(r, 3)
-    assert (u.freight_unallocated, u.landed_total, u.freight) == (None, "0.10", "0.10")
+    assert (u.freight_unallocated, u.landed_total, u.freight) == (None, "2.10", "0.10")
     assert [c.freight_share for c in r.lines[0].cells][:1] == ["0.05"]
     assert [c.freight_share for c in r.lines[1].cells][:1] == ["0.05"]
-    assert (o.freight_unallocated, o.landed_total) == (None, "0.01")
+    assert (o.freight_unallocated, o.landed_total) == (None, "2.01")
     assert (e.freight_unallocated, e.freight_unallocated_converted) == (None, None)
-    assert e.landed_total == "13.59"
+    assert e.landed_total == "15.79"
 
 
 def test_freight_shares_sum_back_exactly_in_the_bid_currency():
@@ -220,14 +220,6 @@ def test_an_amended_rfq_flags_the_bid_on_an_older_version():
     assert not v.on_current_version and v.rfq_version == 1
     assert r.lines[0].cells[0].quantity == "4"  # priced at the quantity the vendor answered
     assert v.landed_total == "40.00"
-
-
-def test_difference_pct_is_null_when_the_lower_total_is_zero():
-    free = bid(1, "USD", "0", {L1: (1, 0, 0)})
-    pricey = bid(2, "USD", "0", {L1: (1, 10, 0)}, 1)
-    r = run([free, pricey], lines=LINES[:1])
-    assert r.lowest_cost_supplier.total == "0.00" and r.best_average_cost.total == "0.00"
-    assert r.insight.difference == "0.00" and r.insight.difference_pct is None
 
 
 def test_a_rate_eight_days_old_is_stale_and_seven_is_not():

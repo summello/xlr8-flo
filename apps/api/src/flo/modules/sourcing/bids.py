@@ -181,6 +181,18 @@ class BidService(RfqService):
                         message="A quoted line needs a unit price; a line not quoted has none.",
                     )
                 )
+            elif line.unit_price is not None and line.rfq_line_id in quantities:
+                quoted_price = Decimal(line.unit_price)
+                if quoted_price <= 0:
+                    message = "Enter a unit price above 0, or leave this line not quoted."
+                elif quantize(quoted_price * quantities[line.rfq_line_id], currency) == 0:
+                    message = (
+                        "This price rounds to 0 on this quantity. "
+                        "Enter a higher price, or leave this line not quoted."
+                    )
+                else:
+                    continue
+                errors.append(ProblemFieldError(field=f"lines/{line.rfq_line_id}", message=message))
         if errors:
             raise self._fail(errors)
         self.repo.execute(
@@ -565,6 +577,17 @@ class BidService(RfqService):
                 )
             if errors:
                 raise self._fail(errors, "cannot_submit")
+            if not self.repo.execute(
+                "SELECT 1 FROM bid_line WHERE org_id = %(org_id)s AND bid_id = %(bid)s AND quoted",
+                {"bid": bid_id},
+            ).fetchone():
+                raise self._fail(
+                    [
+                        ProblemFieldError(
+                            field="lines", message="Quote at least one line before submitting."
+                        )
+                    ]
+                )
             late = self._before_submit(rfq, row, body, may_accept_late)
             self.repo.execute(  # `late` has fixed column names; its values are bound parameters
                 "UPDATE bid SET status = 'submitted', submitted_at = now(), "

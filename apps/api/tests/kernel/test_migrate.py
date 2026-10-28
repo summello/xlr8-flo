@@ -181,6 +181,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261028_0079",
         "20261028_0080",
         "20261028_0081",
+        "20261028_0082",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -3291,3 +3292,45 @@ def test_po_requisition_version_migration_backfills_and_goes_down_and_up(empty_d
         with tenant_transaction(conn, scope):
             assert conn.execute("SELECT count(*) FROM purchase_order").fetchone() == (1,)
         mig.upgrade(conn)
+
+
+def test_bid_line_quoted_price_positive_refuses_zero_and_roundtrips(empty_database):
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from tests.org.test_bootstrap import create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261028_0081"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261028_0082")
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        org = create(conn).org_id
+        scope = Scope(org)
+
+        def put(price, quoted=True):
+            with tenant_transaction(conn, scope):
+                conn.execute("SET LOCAL session_replication_role = replica")  # keys absent
+                conn.execute(
+                    "INSERT INTO bid_line(org_id,bid_id,rfq_line_id,quantity,quoted,unit_price,"
+                    "line_total) VALUES(%s,%s,%s,1,%s,%s,%s)",
+                    (org, uuid4(), uuid4(), quoted, price, price),
+                )
+
+        put(Decimal("0.0000"))  # a zero-price quoted row from before: the upgrade aborts
+        with pytest.raises(psycopg.errors.CheckViolation):
+            mig.upgrade(conn)
+        with tenant_transaction(conn, scope):
+            conn.execute("SET LOCAL session_replication_role = replica")
+            conn.execute("DELETE FROM bid_line")
+        put(Decimal("1.0000"))
+        put(None, quoted=False)
+        mig.upgrade(conn)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT count(*) FROM bid_line").fetchone() == (2,)
+        with pytest.raises(psycopg.errors.CheckViolation):
+            put(Decimal("0.0000"))
+        mig.downgrade(conn)
+        put(Decimal("0.0000"))
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT count(*) FROM bid_line").fetchone() == (3,)

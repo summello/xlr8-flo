@@ -6692,6 +6692,72 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E12-S23",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "money",
+        "migration"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 2,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "61849f03-7eb2-472c-92a3-a6970bf253fb",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S23",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a183e2-7d7d-71c3-9ab1-f3dee493ed84",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Bid patch now refuses a quoted price of 0 or one that rounds to 0, submit refuses a bid with no quoted line, and migration 0082 adds a validated CHECK on bid_line; the zero-price allocation branches are deleted and PO creation/draft edits refuse a line that prices to 0.",
+      "title": "No zero-value lines: bids refuse a quoted price of 0 or one that rounds to 0, a bid must quote a line, and the zero-price special cases go",
+      "durations": {
+        "wall_s": 3547,
+        "author_s": 2339,
+        "review_s": {
+          "codex": 335,
+          "opus": 309
+        },
+        "gate_s": 2
+      }
     }
   ]
 }

@@ -51,12 +51,10 @@ def landed(
 def spread(document_freight: Decimal, exact_prices: list[Decimal], currency: str) -> list[Decimal]:
     """Share the document freight pro rata by exact line price, in whole minor units.
 
-    The remainder goes to the largest lines (ties: the lowest index, i.e. `line_no`); all-zero
-    prices split equally. Returned in the input order.
+    The remainder goes to the largest lines (ties: the lowest index, i.e. `line_no`).
+    Returned in the input order.
     """
     ratios = [int(p.scaleb(8)) for p in exact_prices]
-    if not any(ratios):
-        ratios = [1] * len(ratios)
     order = sorted(range(len(ratios)), key=lambda i: (-ratios[i], i))
     parts = Money(quantize(document_freight, currency), currency).allocate(
         [ratios[i] for i in order]

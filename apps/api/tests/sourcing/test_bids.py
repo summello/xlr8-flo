@@ -157,6 +157,62 @@ def test_submit_lists_every_problem_at_once_then_accepts_a_complete_bid(lifecycl
     assert audit_after(db, rfq, "bid.submit") == [{"bid_id": str(bid.id), "vendor_id": str(vid)}]
 
 
+def test_a_quoted_line_must_price_above_zero_and_not_round_to_zero(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, _, _, [vid] = live(db, qty="3")
+    line = rfq_line(db, rfq)
+    bid = key(db, rfq, vid)
+    for currency, price, text in (
+        ("USD", "0", "above 0"),
+        ("USD", "0.001", "rounds to 0"),  # 0.003 at 2 decimals
+        ("KWD", "0.0001", "rounds to 0"),  # 0.0003 at 3 decimals
+        ("JPY", "0.1", "rounds to 0"),  # 0.3 at 0 decimals
+    ):
+        error = refused(
+            lambda currency=currency, price=price: edit(
+                db,
+                rfq,
+                bid,
+                currency=currency,
+                lines=[BidLineIn(rfq_line_id=line, quoted=True, unit_price=price, tax="0")],
+            ),
+            ErrorCode.VALIDATION_FAILED,
+        )
+        assert error.checks["problem"] == "invalid_bid"
+        assert error.errors[0].field == f"lines/{line}" and text in error.errors[0].message
+        assert sql(db, "SELECT count(*) FROM bid_line WHERE bid_id=%s", (bid.id,)) == [(0,)]
+    # a line left not quoted is fine
+    edit(db, rfq, bid, lines=[BidLineIn(rfq_line_id=line, quoted=False)])
+
+
+def test_a_bid_with_no_quoted_line_is_a_draft_but_cannot_be_submitted(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, _, _, [vid] = live(db)
+    bid = key(db, rfq, vid)
+    bid = edit(
+        db,
+        rfq,
+        bid,
+        lines=[BidLineIn(rfq_line_id=rfq_line(db, rfq), quoted=False)],
+        evidence_attachment_id=evidence(db, bid.id),
+    )
+    error = refused(lambda: submit(db, rfq, bid), ErrorCode.VALIDATION_FAILED)
+    assert [e.field for e in error.errors] == ["lines"] and error.checks["problem"] == "invalid_bid"
+
+
+def test_the_database_refuses_a_quoted_bid_line_at_price_zero(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, _, _, [vid] = live(db)
+    bid = key(db, rfq, vid)
+    with pytest.raises(psycopg.errors.CheckViolation):
+        sql(
+            db,
+            "INSERT INTO bid_line(org_id,bid_id,rfq_line_id,quantity,quoted,unit_price,line_total)"
+            " SELECT org_id,%s,%s,1,true,0,0 FROM bid WHERE id=%s RETURNING 1",
+            (bid.id, rfq_line(db, rfq), bid.id),
+        )
+
+
 def test_line_total_is_exact_decimal_in_the_vendors_currency(lifecycle_db):
     db, _ = lifecycle_db
     rfq, _, _, [vid] = live(db, qty="3")
@@ -474,7 +530,9 @@ def test_evidence_is_a_bid_attachment_that_locks_at_submit(lifecycle_db):
                 db,
                 rfq,
                 bids(db).read(rfq.id, bid.id, all_bids=True),
-                lines=[BidLineIn(rfq_line_id=rfq_line(db, rfq), quoted=False)],
+                lines=[
+                    BidLineIn(rfq_line_id=rfq_line(db, rfq), quoted=True, unit_price="1", tax="0")
+                ],
             )
             submit(db, rfq, current)
             writes = [

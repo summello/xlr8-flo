@@ -561,7 +561,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E10-S12** Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11) | E10 | ui | L | APR-011, APR-021, ACC-007 | ~~E10-S11~~, ~~E10-S05~~ |
 | ✅ | **E10-S13** Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes | E10 | engine | M | APR-003, PROJ-002, VEN-005, BUD-007 | ~~E10-S07~~ |
 
-#### M3 — First sellable release · 58/76 done
+#### M3 — First sellable release · 59/76 done
 
 > Vendors, RFQs, awards and purchase orders by email. Closes the money loop end to end.
 
@@ -607,13 +607,13 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E12-S20** RFQ editor: Evaluation Criteria and Evaluators cards (split from E12-S13) | E12 | ui | M | SRC-002, SRC-011 | ~~E12-S07~~, ~~E12-S13~~ |
 | ✅ | **E12-S21** Comparison engine follow-up: selection totals, amount to spare, late override, counts (for E12-S10) | E12 | engine | M | SRC-009, SRC-008, SRC-014, SRC-016 | ~~E12-S06~~ |
 | ✅ | **E12-S22** Comparison engine: converted unit price on each cell (SRC-009 unit cost, for E12-S10) | E12 | engine | S | SRC-009, SRC-010 | ~~E12-S06~~, ~~E12-S21~~ |
-| 🔨 | **E12-S23** No zero-value lines: bids refuse a quoted price of 0 or one that rounds to 0, a bid must quote a line, and the zero-price special cases go | E12 | engine | M | SRC-006, FIN-009 | ~~E13-S02~~ |
-| ⬜ | **E12-S24** Lines with no priced quote: one derived rule across documents, auto-cancel at award approval, a small notice | E12 | engine | L | SRC-009, SRC-018 | E12-S23, ~~E12-S08~~, E13-S07 |
+| ✅ | **E12-S23** No zero-value lines: bids refuse a quoted price of 0 or one that rounds to 0, a bid must quote a line, and the zero-price special cases go | E12 | engine | M | SRC-006, FIN-009 | ~~E13-S02~~ |
+| ⬜ | **E12-S24** Lines with no priced quote: one derived rule across documents, auto-cancel at award approval, a small notice | E12 | engine | L | SRC-009, SRC-018 | ~~E12-S23~~, ~~E12-S08~~, E13-S07 |
 | ✅ | **E13-S01** PO from awarded requisition lines or authorized project items, scoped numbering | E13 | crud | L | PO-001, PO-002, PO-006, SEQ-001 | ~~E12-S08~~, ~~E12-S09~~ |
 | ✅ | **E13-S02** Tax and freight per BU/OU policy, separately visible on line and document | E13 | ledger | M | FIN-008, FIN-009, PO-016 | ~~E13-S01~~ |
 | ✅ | **E13-S03** PO lifecycle state machine | E13 | engine | M | PO-007, WF-002 | ~~E13-S01~~, ~~E11-S09~~ |
 | ✅ | **E13-S04** PO approval workflow before issue | E13 | engine | M | PO-003, APR-003 | ~~E13-S03~~, ~~E10-S13~~, ~~E13-S02~~ |
-| ⬜ | **E13-S05** Issue converts reservation to commitment atomically; partial POs reduce open quantity only | E13 | ledger | L | PO-008, PO-009, WF-003, ACC-002 | ~~E13-S04~~, ~~E07-S05~~, E12-S23 |
+| ⬜ | **E13-S05** Issue converts reservation to commitment atomically; partial POs reduce open quantity only | E13 | ledger | L | PO-008, PO-009, WF-003, ACC-002 | ~~E13-S04~~, ~~E07-S05~~, ~~E12-S23~~ |
 | ⬜ | **E13-S06** Immutable issued PO; numbered, approved change orders with field-level diff | E13 | engine | L | PO-010, PO-011, DATA-005, ACC-005 | E13-S05 |
 | ⬜ | **E13-S07** Cancel or reduce releases unused commitment exactly once, history preserved | E13 | ledger | M | PO-013, FIN-011, ACC-006, WF-005 | E13-S06 |
 | ⬜ | **E13-S08** PO PDF reproducible from stored snapshot and template version | E13 | engine | L | PO-014, DATA-005 | E13-S06 |

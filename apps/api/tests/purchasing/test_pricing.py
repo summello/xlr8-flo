@@ -31,8 +31,6 @@ def test_document_freight_is_shared_pro_rata_and_the_cent_goes_to_the_largest_li
     # the largest line (index 1) takes the remainder, shares sum exactly, input order kept
     shares = spread(D("0.05"), [D(1), D(2), D(1)], "USD")
     assert shares == [D("0.01"), D("0.03"), D("0.01")] and sum(shares) == D("0.05")
-    # all-zero prices split equally, the remainder as `allocate` places it (Decided 2)
-    assert spread(D("0.10"), [D(0)] * 3, "USD") == [D("0.04"), D("0.03"), D("0.03")]
 
 
 def test_freight_takes_the_rounding_residual_so_the_total_is_the_awards_landed_line():
@@ -158,9 +156,6 @@ def test_document_freight_over_three_lines_and_a_three_decimal_currency(lifecycl
     sql(db, "UPDATE purchase_order SET currency='KWD' RETURNING 1")
     kwd = patch(db, po, 2, document_freight="0.1")
     assert [x.freight for x in kwd.lines] == ["0.034", "0.033", "0.033"]
-    sql(db, "UPDATE po_line SET unit_price=0 RETURNING 1")
-    zero = patch(db, po, 3, document_freight="0.1")
-    assert [x.freight for x in zero.lines] == ["0.034", "0.033", "0.033"]  # equal split
 
 
 def test_totals_are_the_sum_of_the_rounded_lines_not_a_document_rounding(lifecycle_db):
@@ -233,8 +228,42 @@ def test_the_budget_amount_follows_the_units_settings_on_every_read(lifecycle_db
     assert sql(db, "SELECT budget_amount FROM po_line") == [(D("840.0000"),)]
 
 
-def test_a_zero_price_bid_keeps_its_freight_through_the_award_to_the_po(lifecycle_db):
+def test_a_one_cent_price_bid_keeps_its_freight_through_the_award_to_the_po(lifecycle_db):
     db, _ = lifecycle_db
-    rfq, a, award, _ = taxed(db, price="0", tax="0", freight="0.10")
+    rfq, a, award, _ = taxed(db, price="0.01", tax="0", freight="0.10")
     po = create(db, rfq, a, award.id, "10")
-    assert po.lines[0].freight == "0.10" and po.lines[0].line_total == "0.10"
+    assert po.lines[0].freight == "0.10" and po.lines[0].line_total == "0.20"
+
+
+def tiny(db):
+    """A 10 000-unit award at 0.0001: the whole line is 1.00, forty units price to 0.00."""
+    return taxed(db, "10000", "10000", "0.0001", tax="0", freight="0")
+
+
+def test_po_creation_refuses_a_line_that_rounds_to_zero(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, a, award, _ = tiny(db)
+    error = refused(lambda: create(db, rfq, a, award.id, "40"), ErrorCode.VALIDATION_FAILED)
+    assert error.errors[0].field == "lines/1/quantity" and error.checks["problem"] == "zero_line"
+    assert sql(db, "SELECT count(*) FROM purchase_order") == [(0,)]
+
+
+def test_po_draft_quantity_edit_refuses_a_line_that_rounds_to_zero(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, a, award, _ = tiny(db)
+    po = create(db, rfq, a, award.id, "10000")
+    error = refused(
+        lambda: patch(db, po, 1, lines=[PoLinePatch(line_no=1, quantity="40")]),
+        ErrorCode.VALIDATION_FAILED,
+    )
+    assert error.errors[0].field == "lines/1/quantity" and error.checks["problem"] == "zero_line"
+    assert sql(db, "SELECT quantity FROM po_line") == [(D("10000.0000"),)]
+
+
+def test_a_zero_quantity_is_a_validation_error_on_both_paths():
+    from flo.modules.purchasing.schemas import PoLineIn
+
+    with pytest.raises(ValidationError):
+        PoLineIn(rfq_line_id="00000000-0000-0000-0000-000000000001", quantity="0")
+    with pytest.raises(ValidationError):
+        PoLinePatch(line_no=1, quantity="0")

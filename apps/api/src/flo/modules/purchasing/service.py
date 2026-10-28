@@ -498,6 +498,12 @@ class PurchaseOrderService:
                     x.unit_price, quantities[x.rfq_line_id], Decimal(quote.tax),
                     Decimal(quote.freight_share), Decimal(quote.quoted_quantity), currency,
                 )  # fmt: skip
+                if f.price == 0:
+                    raise _invalid(
+                        f"lines/{line_no}/quantity",
+                        "This quantity is too small to price.",
+                        "zero_line",
+                    )
                 budget, project = self._budget(f, flags, rate, currency)
                 self.repo.execute(
                     "INSERT INTO po_line (org_id, po_id, line_no, award_id, rfq_line_id, "
@@ -666,6 +672,10 @@ class PurchaseOrderService:
                 tax, freight = f.tax, f.freight
             if patch is not None and patch.tax is not None:
                 tax = quantize(Decimal(patch.tax), currency)
+            if quantize(unit_price * qty, currency) == 0:
+                raise _invalid(
+                    f"lines/{n}/quantity", "This quantity is too small to price.", "zero_line"
+                )
             figures.append(Figures(quantize(unit_price * qty, currency), tax, freight))
             exact.append(unit_price * qty)
         if mode == "document" and document is not None:  # shares follow the new prices
