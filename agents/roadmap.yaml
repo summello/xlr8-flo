@@ -1889,7 +1889,7 @@ epics:
           - E12-S08
           - E11-S10
           - E12-S16
-        st: review
+        st: done
       - id: E12-S18
         t: 'Cancel RFQ and supersede award dialogs'
         k: ui
@@ -1999,7 +1999,7 @@ epics:
         dep:
           - E13-S01
           - E11-S09
-        st: in_progress
+        st: review
       - id: E13-S04
         t: PO approval workflow before issue
         k: engine

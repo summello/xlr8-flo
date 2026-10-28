@@ -1,5 +1,6 @@
 """The award's implementation of the frozen document-adapter protocol (E12-S08)."""
 
+import json
 from collections.abc import Mapping, Sequence
 from typing import cast
 from uuid import UUID
@@ -42,7 +43,14 @@ class AwardAdapter:
             cast(UUID, award["created_by"]),
             _target(unit_id, cast(UUID, award["rfq_id"])),
             {"amount": total},
-            {"lines": material, "rationale": cast(str | None, award["rationale"]) or ""},
+            {
+                "lines": material,
+                "rationale": cast(str | None, award["rationale"]) or "",
+                # vendor totals, per-requisition release and return, justifications, evaluators
+                "evidence": json.dumps(
+                    AwardService(conn, scope).evidence(document_id), sort_keys=True, default=str
+                ),
+            },
         )
 
     def summaries(

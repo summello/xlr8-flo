@@ -6380,6 +6380,72 @@
         },
         "gate_s": 1258
       }
+    },
+    {
+      "story": "E12-S17",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui",
+        "auth"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 3,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 3
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 3,
+          "findings": 4,
+          "blockers": 1,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "3db4eec2-2bca-46e0-bd19-c4fb0121c0cb",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S17",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a180ee-58e9-77c0-af35-fe621c6cc79a",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Award tasks now carry frozen evidence (vendor totals, per-requisition release/return, not-lowest, tie overrides, exceptions, frozen scores) in the approval snapshot, and rfq.approve holders can read evaluator declarations. The decision panel renders an Award Evidence block with live funds/declarations that degrade on 403.",
+      "title": "Award decision panel: Award Evidence block",
+      "durations": {
+        "wall_s": 8182,
+        "author_s": 2582,
+        "review_s": {
+          "codex": 219,
+          "opus": 312
+        },
+        "gate_s": 1
+      }
     }
   ]
 }

@@ -38,9 +38,20 @@ export async function stubApprovals(page: Page, options: { delegateAdmin?: boole
     version: 1,
     evidence: {} as Record<string, Record<string, unknown>>,
     tasksQueries: [] as URLSearchParams[],
+    // The sourcing reads the Award Evidence block makes beside the instance (E12-S17); a status other than 200 is the refusal.
+    awardRead: { status: 200, checks: [] as Record<string, string>[] },
+    evaluationRead: { status: 200, evaluators: [] as Record<string, unknown>[] | null, scores: "88.00" },
     posts: [] as { path: string; body: Record<string, unknown>; headers: Record<string, string> }[],
   };
   const person = { user_id: uuid(900), email: "delegate@example.test" };
+  await page.route("**/api/v1/sourcing/**", async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    const send = (value: unknown, status = 200) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(value) });
+    const refusal = (status: number) => send({ detail: "Not allowed.", status, correlation_id: "ref-1234", type: "about:blank", title: "Request failed" }, status);
+    if (/\/rfqs\/[^/]+\/award$/.test(path)) return state.awardRead.status === 200 ? send({ checks: state.awardRead.checks }) : refusal(state.awardRead.status);
+    if (/\/rfqs\/[^/]+\/evaluation$/.test(path)) return state.evaluationRead.status === 200 ? send({ evaluators: state.evaluationRead.evaluators, scores: [{ weighted: state.evaluationRead.scores }] }) : refusal(state.evaluationRead.status);
+    return route.fallback();
+  });
   await page.route("**/api/v1/approvals/**", async (route) => {
     const request = route.request(), url = new URL(request.url()), path = url.pathname, method = request.method();
     const send = (value: unknown, status = 200) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(value) });

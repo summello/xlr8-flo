@@ -984,6 +984,80 @@ class AwardService(ComparisonService):
         material = ";".join(f"{r.rfq_line_id}:{r.vendor_id}:{r.quantity:f}" for r in rows)
         return award, unit_id, Money(total, ccy), number, material
 
+    def evidence(self, award_id: UUID) -> dict[str, Any]:
+        """What the approver's panel shows (SRC-013), decimal strings only.
+
+        Holds nothing that moves on approval: `funds` and `over_funds_by` are left out because
+        approval releases the remainder; the material digest compares this with a fresh snapshot.
+        """
+        award = self.award_by_id(award_id)
+        rfq_id = cast(UUID, award["rfq_id"])
+        _, unit_id, ccy, _ = self._rfq(rfq_id)
+        rows = self._rows(award_id)
+        budgets, checks = self.figures(award, rows, ccy, unit_id)
+        names = {
+            cast(UUID, r[0]): cast(str, r[1] or "")
+            for r in self.repo.execute(
+                "SELECT vendor_id, vendor_snapshot->>'trading_name' FROM rfq_invitee "
+                "WHERE org_id = %(org_id)s AND rfq_id = %(rfq)s",
+                {"rfq": rfq_id},
+            ).fetchall()
+        }
+        full: dict[UUID, Decimal] = defaultdict(Decimal)
+        budget: dict[UUID, Decimal] = defaultdict(Decimal)
+        for r, b in zip(rows, budgets, strict=True):
+            full[r.vendor_id] += r.amount_rfq
+            budget[r.vendor_id] += b
+        return {
+            "rfq_id": str(rfq_id),
+            "basis": award["basis"],
+            "currency": ccy,
+            "totals_by_vendor": [
+                {
+                    "vendor_id": str(v),
+                    "vendor_name": names.get(v, ""),
+                    "budget_total": format(budget[v], "f"),
+                    "total": format(quantize(full[v], ccy), "f"),
+                }
+                for v in sorted(full, key=lambda v: (names.get(v, ""), v))
+            ],
+            "requisitions": [
+                {
+                    "requisition_id": str(c.requisition_id),
+                    "requisition": c.requisition,
+                    "scope": c.scope,
+                    "award": c.award,
+                    "over_scope_by": c.over_scope_by,
+                    "release": c.release,
+                    "return_project": c.main_project,
+                }
+                for c in checks
+            ],
+            "not_lowest": [
+                {
+                    "line_no": r.line_no,
+                    "vendor_name": names.get(r.vendor_id, ""),
+                    "justification": r.justification,
+                }
+                for r in rows
+                if r.not_lowest
+            ],
+            "tie_overrides": [
+                {
+                    "line_no": r.line_no,
+                    "vendor_name": names.get(r.vendor_id, ""),
+                    "tie_override_reason": r.tie_override_reason,
+                }
+                for r in rows
+                if r.tie_override_reason
+            ],
+            "exceptions": award["exceptions"],
+            "rationale": award["rationale"],
+            "evaluator_results": award["evaluator_results"],
+            # scored bidders include vendors that were not awarded; the invitee snapshot is frozen
+            "vendor_names": {str(v): n for v, n in names.items()},
+        }
+
 
 _TONES: dict[str, Tone] = {
     "draft": "neutral",

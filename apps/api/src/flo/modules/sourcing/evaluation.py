@@ -385,7 +385,7 @@ class EvaluationService(RfqService):
                     declaration="none" if t.state[me] is None else "clear",
                     submitted=t.done(me),
                 ),
-                evaluators=self._evaluators(rfq_id, t) if can_edit else None,
+                evaluators=self._evaluators(rfq_id, t) if can_edit or can_approve else None,
                 evaluator_count=len(t.active),
                 complete=t.complete,
                 vendors=[VendorRef(vendor_id=v, vendor_name=n or "") for v, n in names.items()],

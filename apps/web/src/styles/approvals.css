@@ -97,3 +97,6 @@
 .appr-evidence-table { width: 100%; border-collapse: collapse; margin-top: var(--space-2); }
 .appr-evidence-table th, .appr-evidence-table td { text-align: start; padding: var(--space-1) var(--space-2); border-bottom: 1px solid var(--border); font-variant-numeric: tabular-nums; }
 .appr-evidence-docs { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-1); }
+.appr-evidence-table caption { text-align: start; font-weight: var(--weight-heading); padding-block: var(--space-1); }
+.appr-evidence-table .appr-num { text-align: end; }
+.appr-scroll { overflow-x: auto; max-width: 100%; }
