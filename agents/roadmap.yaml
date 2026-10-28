@@ -1999,7 +1999,7 @@ epics:
         dep:
           - E13-S01
           - E11-S09
-        st: review
+        st: done
       - id: E13-S04
         t: PO approval workflow before issue
         k: engine

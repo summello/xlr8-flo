@@ -10619,8 +10619,7 @@
             "type": "string"
           },
           "status": {
-            "title": "Status",
-            "type": "string"
+            "$ref": "#/components/schemas/PoStatus"
           },
           "total": {
             "title": "Total",
@@ -10840,8 +10839,7 @@
             "title": "Ship To Address Id"
           },
           "status": {
-            "title": "Status",
-            "type": "string"
+            "$ref": "#/components/schemas/PoStatus"
           },
           "terms": {
             "anyOf": [
@@ -10908,6 +10906,22 @@
         ],
         "title": "PoRead",
         "type": "object"
+      },
+      "PoStatus": {
+        "enum": [
+          "draft",
+          "approval_pending",
+          "approved",
+          "issued",
+          "partially_delivered",
+          "delivered",
+          "accepted",
+          "closed",
+          "cancelled",
+          "superseded",
+          "deleted"
+        ],
+        "type": "string"
       },
       "Position": {
         "additionalProperties": false,
@@ -11867,6 +11881,29 @@
           }
         },
         "title": "PublishWrite",
+        "type": "object"
+      },
+      "PurchaseOrderTransitionCreate": {
+        "additionalProperties": false,
+        "description": "M3 accepts `close` only; E13-S04 and S07 widen `action`.",
+        "properties": {
+          "action": {
+            "const": "close",
+            "title": "Action",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "reason"
+        ],
+        "title": "PurchaseOrderTransitionCreate",
         "type": "object"
       },
       "QuestionAdmin": {
@@ -29264,6 +29301,101 @@
           }
         },
         "summary": "Patch Purchase Order",
+        "tags": [
+          "purchasing"
+        ]
+      }
+    },
+    "/api/v1/purchase-orders/{id}/transitions": {
+      "post": {
+        "operationId": "transition_purchase_order_api_v1_purchase_orders__id__transitions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchaseOrderTransitionCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Transition Purchase Order",
         "tags": [
           "purchasing"
         ]

@@ -27,6 +27,7 @@ from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.org.service import NumberingService, OrgService, today
 from flo.modules.projects.service import generated_for
+from flo.modules.purchasing.lifecycle import parse_if_match, transition
 from flo.modules.purchasing.models import PurchaseOrderRepository
 from flo.modules.purchasing.schemas import (
     AwardedLineRead,
@@ -37,7 +38,9 @@ from flo.modules.purchasing.schemas import (
     PoPage,
     PoPatch,
     PoRead,
+    PoStatus,
     PoTab,
+    PurchaseOrderTransitionCreate,
 )
 from flo.modules.requisitions.schemas import LineSourcing, LinkAccess, LinkedNode
 from flo.modules.requisitions.service import (
@@ -263,7 +266,7 @@ class PurchaseOrderService:
                     vendor_name=cast(str, r[4]),
                     requisition_id=cast(UUID, r[5]),
                     currency=cast(str, r[6]).strip(),
-                    status=cast(str, r[7]),
+                    status=cast(PoStatus, r[7]),
                     created_at=cast(datetime, r[8]),
                     total=_fmt(totals.get(cast(UUID, r[0]), Decimal(0))),
                 )
@@ -463,20 +466,7 @@ class PurchaseOrderService:
     @staticmethod
     def _check_version(current: int, if_match: str | None) -> None:
         """PATCH and DELETE need `If-Match`; a stale version is a 409 (convention O)."""
-        if if_match is None:
-            raise ProblemError(
-                ErrorCode.BAD_REQUEST,
-                detail="Supply If-Match with the purchase order version.",
-                checks={"problem": "if_match_required"},
-            )
-        try:
-            expected = int(if_match.strip('"'))
-        except ValueError:
-            raise ProblemError(
-                ErrorCode.BAD_REQUEST,
-                detail="If-Match must contain an integer version.",
-                checks={"problem": "if_match_invalid"},
-            ) from None
+        expected = parse_if_match(if_match)
         if expected != current:
             raise conflict("stale_version", "The purchase order changed. Reload it and retry.")
 
@@ -585,12 +575,18 @@ class PurchaseOrderService:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             row = self._draft(id, if_match)
             self._move(row, None)
-            self.repo.execute(
-                "UPDATE purchase_order SET status = 'deleted', version = version + 1 "
-                "WHERE org_id = %(org_id)s AND id = %(id)s",
-                {"id": id},
+            transition(
+                self.connection, self.scope, id, "delete", self.actor_id, cast(int, row["version"])
             )
-            self._audit("purchase_order.delete", id, {"status": "draft"}, {"status": "deleted"})
+
+    def close(self, id: UUID, body: PurchaseOrderTransitionCreate, if_match: str | None) -> PoRead:
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self._row(id)  # 404 before any version talk
+            transition(
+                self.connection, self.scope, id, body.action, self.actor_id,
+                parse_if_match(if_match), body.reason,
+            )  # fmt: skip
+        return self.get(id)
 
 
 # -- wiring -----------------------------------------------------------------------------------

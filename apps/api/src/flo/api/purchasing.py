@@ -19,6 +19,7 @@ from flo.modules.purchasing.schemas import (
     PoPatch,
     PoRead,
     PoTab,
+    PurchaseOrderTransitionCreate,
 )
 from flo.modules.purchasing.service import PurchaseOrderService
 
@@ -50,6 +51,7 @@ AwardViewContext = Annotated[
 CreateContext = Annotated[
     AuthorizationContext, Depends(require("purchase_order.create", create_target))
 ]
+CloseContext = Annotated[AuthorizationContext, Depends(require("purchase_order.close", po_target))]
 EditContext = Annotated[AuthorizationContext, Depends(require("purchase_order.create", po_target))]
 ListScopes = Annotated[GrantedScopes, Depends(require_granted("purchase_order.view"))]
 
@@ -132,3 +134,16 @@ def delete_purchase_order(
 ) -> Response:
     PurchaseOrderService(connection, current_scope(), context.user_id).delete(id, version)
     return Response(status_code=204)
+
+
+@router.post("/{id}/transitions", response_model=PoRead)
+def transition_purchase_order(
+    id: UUID,
+    body: PurchaseOrderTransitionCreate,
+    context: CloseContext,
+    connection: Connection,
+    response: Response,
+    version: Annotated[str | None, Header(alias="If-Match")] = None,
+) -> PoRead:
+    po = PurchaseOrderService(connection, current_scope(), context.user_id).close(id, body, version)
+    return _etag(po, response)

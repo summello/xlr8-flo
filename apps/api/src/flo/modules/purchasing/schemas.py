@@ -9,6 +9,10 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 type PoTab = Literal["all", "draft"]
+type PoStatus = Literal[
+    "draft", "approval_pending", "approved", "issued", "partially_delivered", "delivered",
+    "accepted", "closed", "cancelled", "superseded", "deleted",
+]  # fmt: skip
 
 
 def _qty(value: object) -> object:
@@ -63,6 +67,14 @@ class PoPatch(BaseModel):
     lines: list[PoLinePatch] | None = Field(default=None, max_length=500)
 
 
+class PurchaseOrderTransitionCreate(BaseModel):
+    """M3 accepts `close` only; E13-S04 and S07 widen `action`."""
+
+    model_config = ConfigDict(extra="forbid")
+    action: Literal["close"]
+    reason: str = Field(min_length=1, max_length=500)
+
+
 class PoLineRead(BaseModel):
     line_no: int
     rfq_line_id: UUID
@@ -95,7 +107,7 @@ class PoRead(BaseModel):
     requester_id: UUID
     terms: str | None
     needed_by: date | None
-    status: str
+    status: PoStatus
     version: int
     created_at: datetime
     lines: list[PoLineRead]
@@ -112,7 +124,7 @@ class PoListRow(BaseModel):
     requisition_id: UUID
     currency: str
     total: str
-    status: str
+    status: PoStatus
     created_at: datetime
 
 

@@ -6446,6 +6446,63 @@
         },
         "gate_s": 1
       }
+    },
+    {
+      "story": "E13-S03",
+      "kind": "engine",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 2,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "921ea784-ba7b-46d8-a575-a656aefc2a79",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S03",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a180fd-a990-7743-8b38-9c7753ed4879",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Added purchasing/lifecycle.py, the single status writer with a locked, version-checked, audited transition table; draft delete and a manual close route (POST /purchase-orders/{id}/transitions) now go through it. Migration 0079 widens the status CHECK.",
+      "title": "PO lifecycle state machine",
+      "durations": {
+        "wall_s": 5239,
+        "author_s": 2364,
+        "review_s": {
+          "codex": 20
+        },
+        "gate_s": 306
+      }
     }
   ]
 }

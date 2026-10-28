@@ -1953,6 +1953,23 @@ export interface paths {
         patch: operations["patch_purchase_order_api_v1_purchase_orders__id__patch"];
         trace?: never;
     };
+    "/api/v1/purchase-orders/{id}/transitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Transition Purchase Order */
+        post: operations["transition_purchase_order_api_v1_purchase_orders__id__transitions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/requisitions": {
         parameters: {
             query?: never;
@@ -7317,8 +7334,7 @@ export interface components {
              * Format: uuid
              */
             requisition_id: string;
-            /** Status */
-            status: string;
+            status: components["schemas"]["PoStatus"];
             /** Total */
             total: string;
             /**
@@ -7411,8 +7427,7 @@ export interface components {
             requisition_id: string;
             /** Ship To Address Id */
             ship_to_address_id: string | null;
-            /** Status */
-            status: string;
+            status: components["schemas"]["PoStatus"];
             /** Terms */
             terms: string | null;
             /** Total */
@@ -7436,6 +7451,8 @@ export interface components {
             /** Version */
             version: number;
         };
+        /** @enum {string} */
+        PoStatus: "draft" | "approval_pending" | "approved" | "issued" | "partially_delivered" | "delivered" | "accepted" | "closed" | "cancelled" | "superseded" | "deleted";
         /** Position */
         Position: {
             /** X */
@@ -7720,6 +7737,19 @@ export interface components {
              * @default false
              */
             acknowledge_warnings?: boolean;
+        };
+        /**
+         * PurchaseOrderTransitionCreate
+         * @description M3 accepts `close` only; E13-S04 and S07 widen `action`.
+         */
+        PurchaseOrderTransitionCreate: {
+            /**
+             * Action
+             * @constant
+             */
+            action: "close";
+            /** Reason */
+            reason: string;
         };
         /**
          * QuestionAdmin
@@ -15703,6 +15733,53 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["PoPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    transition_purchase_order_api_v1_purchase_orders__id__transitions_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchaseOrderTransitionCreate"];
             };
         };
         responses: {

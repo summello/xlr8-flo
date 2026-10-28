@@ -178,6 +178,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261022_0076",
         "20261022_0077",
         "20261027_0078",
+        "20261028_0079",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -3132,3 +3133,20 @@ def test_purchase_order_migration_up_down_and_preserves_awards(empty_database):
         with tenant_transaction(conn, scope):
             assert conn.execute("SELECT count(*) FROM award").fetchone() == (1,)
             assert conn.execute("SELECT count(*) FROM purchase_order").fetchone() == (0,)
+
+
+def test_purchase_order_status_migration_up_down_and_preserves_orders(empty_database):
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261027_0078"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261028_0079")
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        mig.upgrade(conn)
+        check = "SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname=%s"
+        [(definition,)] = conn.execute(check, ("purchase_order_status_check",)).fetchall()
+        assert all(s in definition for s in ("approval_pending", "superseded", "accepted"))
+        mig.downgrade(conn)
+        [(definition,)] = conn.execute(check, ("purchase_order_status_check",)).fetchall()
+        assert "closed" not in definition and "deleted" in definition
+        mig.upgrade(conn)
