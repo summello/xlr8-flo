@@ -43,8 +43,8 @@ finish = "{flo} reconcile finish {story}"
 [limits]
 # Mission Control's collector prints both Claude accounts, Codex and OpenRouter (5-hour and week).
 command = "python3 -I $HOME/.claude/mods/mission-control/hooks/collect.py {runner} 12 60"
-claude_start = [25, 15]                      # percent left (5h, week) to start a new story on an account
-claude_continue = [10, 5]                    # to resume, run a round, fix CI or run an Opus review
+claude_start = [25, 0]                      # percent left (5h, week) to start a new story on an account
+claude_continue = [10, 0]                    # to resume, run a round, fix CI or run an Opus review
 codex = [20, 10]                             # to run a Codex review or a Codex-authored step
 
 [backup]

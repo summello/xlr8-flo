@@ -14,8 +14,8 @@ agent:
   stall_timeout_s: 300
   retry_backoff_s: [60, 300, 900]
 limits:                          # percent left (5-hour, week)
-  claude_start: [25, 15]
-  claude_continue: [10, 5]
+  claude_start: [25, 0]    # weekly ignored (operator, 28 Oct 2026): the operator overrides by hand if A and B drift
+  claude_continue: [10, 0]
   codex: [20, 10]
 budget:
   milestone_reviewer_usd_month: 20
