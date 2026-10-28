@@ -15,7 +15,7 @@ import re
 # retries on a short backoff), so they are told apart. Matched on the log's last lines only: this
 # product has rate-limiting stories, and an author's report about them must not read as limited.
 LIMIT = re.compile(
-    r"hit your (?:session |usage |weekly )?limit|usage limit reached|session limit",
+    r"hit your (?:session |usage |weekly |\d+-hour )?limit|usage limit reached|session limit",
     re.IGNORECASE,
 )
 NETWORK = re.compile(r"ENOTFOUND|ECONNRESET", re.IGNORECASE)

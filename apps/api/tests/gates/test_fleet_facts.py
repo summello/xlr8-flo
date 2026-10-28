@@ -30,6 +30,7 @@ spec.loader.exec_module(F)
         ("done\nexit 0\n", "ok"),
         ("boom\nexit 1\n", "failed"),
         ("You've hit your session limit · resets 7:30pm\nexit 1\n", "limit"),
+        ("You've hit your 5-hour limit · resets 4:50am (Asia/Calcutta)\nexit 1\n", "limit"),
         ("getaddrinfo ENOTFOUND api.anthropic.com\nexit 1\n", "network"),
         ("read ECONNRESET\nexit 1\n", "network"),
         # a network error far up the log is history, like any other
