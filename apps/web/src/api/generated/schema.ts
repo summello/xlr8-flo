@@ -1899,6 +1899,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/purchase-orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Purchase Orders */
+        get: operations["list_purchase_orders_api_v1_purchase_orders_get"];
+        put?: never;
+        /** Create Purchase Order */
+        post: operations["create_purchase_order_api_v1_purchase_orders_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/purchase-orders/awarded-lines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Awarded Lines */
+        get: operations["awarded_lines_api_v1_purchase_orders_awarded_lines_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/purchase-orders/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Purchase Order */
+        get: operations["get_purchase_order_api_v1_purchase_orders__id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Purchase Order */
+        delete: operations["delete_purchase_order_api_v1_purchase_orders__id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Purchase Order */
+        patch: operations["patch_purchase_order_api_v1_purchase_orders__id__patch"];
+        trace?: never;
+    };
     "/api/v1/requisitions": {
         parameters: {
             query?: never;
@@ -4018,6 +4072,57 @@ export interface components {
             total: string;
             /** Version */
             version: number;
+        };
+        /** AwardedLineRead */
+        AwardedLineRead: {
+            /** Awarded Qty */
+            awarded_qty: string;
+            /** Currency */
+            currency: string;
+            /** Description */
+            description: string;
+            /** Line No */
+            line_no: number;
+            /** Open Qty */
+            open_qty: string;
+            /** Ordered Qty */
+            ordered_qty: string;
+            /** Ordered Value */
+            ordered_value: string;
+            /**
+             * Requisition Id
+             * Format: uuid
+             */
+            requisition_id: string;
+            /**
+             * Requisition Line Id
+             * Format: uuid
+             */
+            requisition_line_id: string;
+            /**
+             * Rfq Line Id
+             * Format: uuid
+             */
+            rfq_line_id: string;
+            /** Unit Price */
+            unit_price: string;
+            /** Uom Code */
+            uom_code: string;
+            /**
+             * Vendor Id
+             * Format: uuid
+             */
+            vendor_id: string;
+        };
+        /** AwardedLinesRead */
+        AwardedLinesRead: {
+            /**
+             * Award Id
+             * Format: uuid
+             */
+            award_id: string;
+            /** Lines */
+            lines: components["schemas"]["AwardedLineRead"][];
         };
         /** BalanceQueryRead */
         BalanceQueryRead: {
@@ -7120,6 +7225,216 @@ export interface components {
              * Format: uuid
              */
             user_id: string;
+        };
+        /** PoCreate */
+        PoCreate: {
+            /**
+             * Award Id
+             * Format: uuid
+             */
+            award_id: string;
+            /** Lines */
+            lines: components["schemas"]["PoLineIn"][];
+            /** Override Reason */
+            override_reason?: string | null;
+            /**
+             * Vendor Id
+             * Format: uuid
+             */
+            vendor_id: string;
+        };
+        /** PoLineIn */
+        PoLineIn: {
+            /** Quantity */
+            quantity: string;
+            /**
+             * Rfq Line Id
+             * Format: uuid
+             */
+            rfq_line_id: string;
+        };
+        /** PoLinePatch */
+        PoLinePatch: {
+            /** Line No */
+            line_no: number;
+            /** Quantity */
+            quantity: string;
+        };
+        /** PoLineRead */
+        PoLineRead: {
+            /** Department Code */
+            department_code: string | null;
+            /** Description */
+            description: string;
+            /** Ledger Account Code */
+            ledger_account_code: string | null;
+            /** Line No */
+            line_no: number;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Quantity */
+            quantity: string;
+            /**
+             * Requisition Line Id
+             * Format: uuid
+             */
+            requisition_line_id: string;
+            /**
+             * Rfq Line Id
+             * Format: uuid
+             */
+            rfq_line_id: string;
+            /** Unit Price */
+            unit_price: string;
+            /** Uom Code */
+            uom_code: string;
+            /** Value */
+            value: string;
+            /** Value Converted */
+            value_converted: string;
+        };
+        /** PoListRow */
+        PoListRow: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Currency */
+            currency: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: string;
+            /**
+             * Requisition Id
+             * Format: uuid
+             */
+            requisition_id: string;
+            /** Status */
+            status: string;
+            /** Total */
+            total: string;
+            /**
+             * Unit Id
+             * Format: uuid
+             */
+            unit_id: string;
+            /**
+             * Vendor Id
+             * Format: uuid
+             */
+            vendor_id: string;
+            /** Vendor Name */
+            vendor_name: string;
+        };
+        /** PoPage */
+        PoPage: {
+            /** Counts */
+            counts: {
+                [key: string]: number;
+            };
+            /** Next Cursor */
+            next_cursor: string | null;
+            /** Rows */
+            rows: components["schemas"]["PoListRow"][];
+        };
+        /**
+         * PoPatch
+         * @description A field left out is unchanged; `terms` and `needed_by` may be set to null. A given
+         *     `ship_to_address_id` must be an active Ship To (null is refused: 422 `ship_to_invalid`).
+         */
+        PoPatch: {
+            /** Lines */
+            lines?: components["schemas"]["PoLinePatch"][] | null;
+            /** Needed By */
+            needed_by?: string | null;
+            /** Ship To Address Id */
+            ship_to_address_id?: string | null;
+            /** Terms */
+            terms?: string | null;
+        };
+        /** PoRead */
+        PoRead: {
+            /**
+             * Award Id
+             * Format: uuid
+             */
+            award_id: string;
+            /** Bill To */
+            bill_to: {
+                [key: string]: unknown;
+            };
+            /** Converted Currency */
+            converted_currency: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Currency */
+            currency: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Lines */
+            lines: components["schemas"]["PoLineRead"][];
+            /** Needed By */
+            needed_by: string | null;
+            /** Number */
+            number: string;
+            /** Rate */
+            rate: {
+                [key: string]: unknown;
+            };
+            /** Recipients */
+            recipients: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Requester Id
+             * Format: uuid
+             */
+            requester_id: string;
+            /**
+             * Requisition Id
+             * Format: uuid
+             */
+            requisition_id: string;
+            /** Ship To Address Id */
+            ship_to_address_id: string | null;
+            /** Status */
+            status: string;
+            /** Terms */
+            terms: string | null;
+            /** Total */
+            total: string;
+            /** Total Converted */
+            total_converted: string;
+            /**
+             * Unit Id
+             * Format: uuid
+             */
+            unit_id: string;
+            /**
+             * Vendor Id
+             * Format: uuid
+             */
+            vendor_id: string;
+            /** Vendor Snapshot */
+            vendor_snapshot: {
+                [key: string]: unknown;
+            };
+            /** Version */
+            version: number;
         };
         /** Position */
         Position: {
@@ -15138,6 +15453,266 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LedgerPage"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    list_purchase_orders_api_v1_purchase_orders_get: {
+        parameters: {
+            query?: {
+                tab?: "all" | "draft";
+                cursor?: string | null;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoPage"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    create_purchase_order_api_v1_purchase_orders_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PoCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    awarded_lines_api_v1_purchase_orders_awarded_lines_get: {
+        parameters: {
+            query: {
+                award_id: string;
+                vendor_id?: string | null;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AwardedLinesRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    get_purchase_order_api_v1_purchase_orders__id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    delete_purchase_order_api_v1_purchase_orders__id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    patch_purchase_order_api_v1_purchase_orders__id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PoPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

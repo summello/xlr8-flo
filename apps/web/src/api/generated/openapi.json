@@ -1320,6 +1320,105 @@
         "title": "AwardRead",
         "type": "object"
       },
+      "AwardedLineRead": {
+        "properties": {
+          "awarded_qty": {
+            "title": "Awarded Qty",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "line_no": {
+            "title": "Line No",
+            "type": "integer"
+          },
+          "open_qty": {
+            "title": "Open Qty",
+            "type": "string"
+          },
+          "ordered_qty": {
+            "title": "Ordered Qty",
+            "type": "string"
+          },
+          "ordered_value": {
+            "title": "Ordered Value",
+            "type": "string"
+          },
+          "requisition_id": {
+            "format": "uuid",
+            "title": "Requisition Id",
+            "type": "string"
+          },
+          "requisition_line_id": {
+            "format": "uuid",
+            "title": "Requisition Line Id",
+            "type": "string"
+          },
+          "rfq_line_id": {
+            "format": "uuid",
+            "title": "Rfq Line Id",
+            "type": "string"
+          },
+          "unit_price": {
+            "title": "Unit Price",
+            "type": "string"
+          },
+          "uom_code": {
+            "title": "Uom Code",
+            "type": "string"
+          },
+          "vendor_id": {
+            "format": "uuid",
+            "title": "Vendor Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rfq_line_id",
+          "line_no",
+          "vendor_id",
+          "requisition_id",
+          "requisition_line_id",
+          "description",
+          "uom_code",
+          "currency",
+          "unit_price",
+          "awarded_qty",
+          "ordered_qty",
+          "open_qty",
+          "ordered_value"
+        ],
+        "title": "AwardedLineRead",
+        "type": "object"
+      },
+      "AwardedLinesRead": {
+        "properties": {
+          "award_id": {
+            "format": "uuid",
+            "title": "Award Id",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/AwardedLineRead"
+            },
+            "title": "Lines",
+            "type": "array"
+          }
+        },
+        "required": [
+          "award_id",
+          "lines"
+        ],
+        "title": "AwardedLinesRead",
+        "type": "object"
+      },
       "BalanceQueryRead": {
         "properties": {
           "actual": {
@@ -10324,6 +10423,490 @@
           "name"
         ],
         "title": "PickerRow",
+        "type": "object"
+      },
+      "PoCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "award_id": {
+            "format": "uuid",
+            "title": "Award Id",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/PoLineIn"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Lines",
+            "type": "array"
+          },
+          "override_reason": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override Reason"
+          },
+          "vendor_id": {
+            "format": "uuid",
+            "title": "Vendor Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "award_id",
+          "vendor_id",
+          "lines"
+        ],
+        "title": "PoCreate",
+        "type": "object"
+      },
+      "PoLineIn": {
+        "additionalProperties": false,
+        "properties": {
+          "quantity": {
+            "title": "Quantity",
+            "type": "string"
+          },
+          "rfq_line_id": {
+            "format": "uuid",
+            "title": "Rfq Line Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rfq_line_id",
+          "quantity"
+        ],
+        "title": "PoLineIn",
+        "type": "object"
+      },
+      "PoLinePatch": {
+        "additionalProperties": false,
+        "properties": {
+          "line_no": {
+            "minimum": 1.0,
+            "title": "Line No",
+            "type": "integer"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "string"
+          }
+        },
+        "required": [
+          "line_no",
+          "quantity"
+        ],
+        "title": "PoLinePatch",
+        "type": "object"
+      },
+      "PoLineRead": {
+        "properties": {
+          "department_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department Code"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "ledger_account_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ledger Account Code"
+          },
+          "line_no": {
+            "title": "Line No",
+            "type": "integer"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "string"
+          },
+          "requisition_line_id": {
+            "format": "uuid",
+            "title": "Requisition Line Id",
+            "type": "string"
+          },
+          "rfq_line_id": {
+            "format": "uuid",
+            "title": "Rfq Line Id",
+            "type": "string"
+          },
+          "unit_price": {
+            "title": "Unit Price",
+            "type": "string"
+          },
+          "uom_code": {
+            "title": "Uom Code",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          },
+          "value_converted": {
+            "title": "Value Converted",
+            "type": "string"
+          }
+        },
+        "required": [
+          "line_no",
+          "rfq_line_id",
+          "requisition_line_id",
+          "description",
+          "uom_code",
+          "quantity",
+          "unit_price",
+          "project_id",
+          "department_code",
+          "ledger_account_code",
+          "value",
+          "value_converted"
+        ],
+        "title": "PoLineRead",
+        "type": "object"
+      },
+      "PoListRow": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "requisition_id": {
+            "format": "uuid",
+            "title": "Requisition Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "string"
+          },
+          "unit_id": {
+            "format": "uuid",
+            "title": "Unit Id",
+            "type": "string"
+          },
+          "vendor_id": {
+            "format": "uuid",
+            "title": "Vendor Id",
+            "type": "string"
+          },
+          "vendor_name": {
+            "title": "Vendor Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "unit_id",
+          "vendor_id",
+          "vendor_name",
+          "requisition_id",
+          "currency",
+          "total",
+          "status",
+          "created_at"
+        ],
+        "title": "PoListRow",
+        "type": "object"
+      },
+      "PoPage": {
+        "properties": {
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Counts",
+            "type": "object"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/PoListRow"
+            },
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rows",
+          "counts",
+          "next_cursor"
+        ],
+        "title": "PoPage",
+        "type": "object"
+      },
+      "PoPatch": {
+        "additionalProperties": false,
+        "description": "A field left out is unchanged; `terms` and `needed_by` may be set to null. A given\n`ship_to_address_id` must be an active Ship To (null is refused: 422 `ship_to_invalid`).",
+        "properties": {
+          "lines": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PoLinePatch"
+                },
+                "maxItems": 500,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lines"
+          },
+          "needed_by": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Needed By"
+          },
+          "ship_to_address_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ship To Address Id"
+          },
+          "terms": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terms"
+          }
+        },
+        "title": "PoPatch",
+        "type": "object"
+      },
+      "PoRead": {
+        "properties": {
+          "award_id": {
+            "format": "uuid",
+            "title": "Award Id",
+            "type": "string"
+          },
+          "bill_to": {
+            "additionalProperties": true,
+            "title": "Bill To",
+            "type": "object"
+          },
+          "converted_currency": {
+            "title": "Converted Currency",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/PoLineRead"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "needed_by": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Needed By"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "rate": {
+            "additionalProperties": true,
+            "title": "Rate",
+            "type": "object"
+          },
+          "recipients": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Recipients",
+            "type": "array"
+          },
+          "requester_id": {
+            "format": "uuid",
+            "title": "Requester Id",
+            "type": "string"
+          },
+          "requisition_id": {
+            "format": "uuid",
+            "title": "Requisition Id",
+            "type": "string"
+          },
+          "ship_to_address_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ship To Address Id"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "terms": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terms"
+          },
+          "total": {
+            "title": "Total",
+            "type": "string"
+          },
+          "total_converted": {
+            "title": "Total Converted",
+            "type": "string"
+          },
+          "unit_id": {
+            "format": "uuid",
+            "title": "Unit Id",
+            "type": "string"
+          },
+          "vendor_id": {
+            "format": "uuid",
+            "title": "Vendor Id",
+            "type": "string"
+          },
+          "vendor_snapshot": {
+            "additionalProperties": true,
+            "title": "Vendor Snapshot",
+            "type": "object"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "unit_id",
+          "vendor_id",
+          "vendor_snapshot",
+          "requisition_id",
+          "award_id",
+          "currency",
+          "converted_currency",
+          "rate",
+          "bill_to",
+          "ship_to_address_id",
+          "recipients",
+          "requester_id",
+          "terms",
+          "needed_by",
+          "status",
+          "version",
+          "created_at",
+          "lines",
+          "total",
+          "total_converted"
+        ],
+        "title": "PoRead",
         "type": "object"
       },
       "Position": {
@@ -28203,6 +28786,486 @@
         "summary": "Read Ledger",
         "tags": [
           "budget"
+        ]
+      }
+    },
+    "/api/v1/purchase-orders": {
+      "get": {
+        "operationId": "list_purchase_orders_api_v1_purchase_orders_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tab",
+            "required": false,
+            "schema": {
+              "default": "all",
+              "enum": [
+                "all",
+                "draft"
+              ],
+              "title": "Tab",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "List Purchase Orders",
+        "tags": [
+          "purchasing"
+        ]
+      },
+      "post": {
+        "operationId": "create_purchase_order_api_v1_purchase_orders_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PoCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Create Purchase Order",
+        "tags": [
+          "purchasing"
+        ]
+      }
+    },
+    "/api/v1/purchase-orders/awarded-lines": {
+      "get": {
+        "operationId": "awarded_lines_api_v1_purchase_orders_awarded_lines_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "award_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Award Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "vendor_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Vendor Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AwardedLinesRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Awarded Lines",
+        "tags": [
+          "purchasing"
+        ]
+      }
+    },
+    "/api/v1/purchase-orders/{id}": {
+      "delete": {
+        "operationId": "delete_purchase_order_api_v1_purchase_orders__id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Delete Purchase Order",
+        "tags": [
+          "purchasing"
+        ]
+      },
+      "get": {
+        "operationId": "get_purchase_order_api_v1_purchase_orders__id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Get Purchase Order",
+        "tags": [
+          "purchasing"
+        ]
+      },
+      "patch": {
+        "operationId": "patch_purchase_order_api_v1_purchase_orders__id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PoPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Patch Purchase Order",
+        "tags": [
+          "purchasing"
         ]
       }
     },

@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Annotated, Literal, cast
+from typing import Annotated, Any, Literal, cast
 from uuid import UUID
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -565,3 +566,30 @@ class SealedBidRead(BaseModel):
     replaced_by_bid_id: UUID | None
     row_version: int
     late: BidLate | None
+
+
+@dataclass(frozen=True)
+class AwardHeader:
+    """What a purchase order needs of its approved award: the RFQ unit and the frozen rates."""
+
+    unit_id: UUID
+    rfq_currency: str
+    rates: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class AwardedLine:
+    """One award line with the RFQ line and requisition line it prices (E13-S01)."""
+
+    rfq_line_id: UUID
+    vendor_id: UUID
+    line_no: int
+    description: str
+    uom_code: str
+    quantity: Decimal
+    ordered_qty: Decimal
+    unit_price: Decimal
+    currency: str
+    requisition_id: UUID
+    requisition_line_id: UUID
+    requisition_version: int

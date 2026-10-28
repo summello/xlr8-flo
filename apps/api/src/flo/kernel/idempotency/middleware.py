@@ -52,7 +52,7 @@ IDEMPOTENCY_BYPASS_PATTERN = re.compile(r"^/api/v1/vendors/[^/]+/sensitive/revea
 
 # E22-S02: the soft-delete commands replay like a POST; no other DELETE route is keyed.
 IDEMPOTENT_DELETE_PATTERN = re.compile(
-    r"^/api/v1/(?:requisitions|projects|budget/change-requests)/[^/]+/?$"
+    r"^/api/v1/(?:requisitions|projects|purchase-orders|budget/change-requests)/[^/]+/?$"
     r"|^/api/v1/workflows/[^/]+/versions/[^/]+/?$"
 )
 

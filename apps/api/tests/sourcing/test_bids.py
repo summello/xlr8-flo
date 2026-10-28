@@ -234,8 +234,8 @@ def test_a_submitted_bid_and_its_children_are_immutable_in_the_database(lifecycl
 @pytest.mark.parametrize(
     "statement",
     [
-        "TRUNCATE bid, bid_line, bid_requirement, award_line",
-        "TRUNCATE bid_line, award_line",  # award_line references bid_line, so it goes along
+        "TRUNCATE bid, bid_line, bid_requirement, award_line, po_line",
+        "TRUNCATE bid_line, award_line, po_line",  # referencing tables go along
         "TRUNCATE bid_requirement",
     ],
 )

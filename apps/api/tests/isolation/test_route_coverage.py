@@ -18,6 +18,7 @@ from flo.api.invitations import router as invitations_router
 from flo.api.master import router as master_router
 from flo.api.org import router as org_router
 from flo.api.projects import router as projects_router
+from flo.api.purchasing import router as purchasing_router
 from flo.api.requisitions import router as requisitions_router
 from flo.api.sourcing import router as sourcing_router
 from flo.api.vendor_questionnaires import router as vendor_questionnaires_router
@@ -46,6 +47,7 @@ PICKER_ROUTE = (
 )
 EVALUATION_ROUTES = "sourcing/test_evaluation.py::test_evaluation_routes_conceal_foreign_tenants"
 AWARD_ROUTES = "sourcing/test_award.py::test_award_routes_conceal_foreign_tenants"
+PO_ROUTES = "purchasing/test_purchase_orders.py::test_purchase_order_routes_conceal_foreign_tenants"
 QROUTES = "vendors/test_questionnaire.py::test_questionnaire_routes_conceal_foreign_tenants"
 OROUTES = (
     "vendors/test_questionnaire.py::"
@@ -58,6 +60,12 @@ LISTDOCS = (
     "test_counts_and_documents_filter_routes_conceal_foreign_tenants"
 )
 COVERED = {
+    ("GET", "/api/v1/purchase-orders"): PO_ROUTES,
+    ("GET", "/api/v1/purchase-orders/awarded-lines"): PO_ROUTES,
+    ("POST", "/api/v1/purchase-orders"): PO_ROUTES,
+    ("GET", "/api/v1/purchase-orders/{id}"): PO_ROUTES,
+    ("PATCH", "/api/v1/purchase-orders/{id}"): PO_ROUTES,
+    ("DELETE", "/api/v1/purchase-orders/{id}"): PO_ROUTES,
     ("GET", "/api/v1/vendors/counts"): LISTDOCS,
     ("GET", "/api/v1/vendors/duplicate-check"): CROUTES,
     ("POST", "/api/v1/vendors/{id}/submit"): CROUTES,
@@ -754,6 +762,7 @@ def test_every_id_route_has_a_named_foreign_tenant_case() -> None:
                 vendors_router,
                 vendor_questionnaires_router,
                 sourcing_router,
+                purchasing_router,
                 collaboration_router,
             ),
             COVERED,
@@ -783,6 +792,7 @@ def test_gate_fails_on_an_uncovered_route_and_on_a_dangling_reference() -> None:
             vendors_router,
             vendor_questionnaires_router,
             sourcing_router,
+            purchasing_router,
             collaboration_router,
         )
         | widget

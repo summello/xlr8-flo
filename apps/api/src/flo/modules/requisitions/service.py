@@ -67,6 +67,7 @@ from flo.modules.requisitions.sourcing import mark_awarded as mark_awarded
 from flo.modules.requisitions.sourcing import mark_sourced as mark_sourced
 from flo.modules.requisitions.sourcing import mark_unawarded as mark_unawarded
 from flo.modules.requisitions.sourcing import mark_unsourced as mark_unsourced
+from flo.modules.requisitions.sourcing import order_lines as order_lines
 from flo.modules.requisitions.sourcing import release_unawarded as release_unawarded
 from flo.modules.requisitions.sourcing import restore_unawarded as restore_unawarded
 from flo.modules.requisitions.sourcing import source_lines as source_lines
@@ -92,6 +93,7 @@ __all__ = [
     "rereserve",
     "award_funding",
     "award_lines",
+    "order_lines",
     "release_unawarded",
     "mark_awarded",
     "sourceable_lines",

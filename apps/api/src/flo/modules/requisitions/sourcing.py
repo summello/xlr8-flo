@@ -184,6 +184,85 @@ def source_lines(
             )
 
 
+def order_lines(
+    conn: Conn, scope: Scope, changes: Sequence[LineSourcing], actor_id: UUID | None
+) -> None:
+    """Move `ordered_qty` by each delta, all or nothing, in the caller's transaction (PO-009).
+
+    Lock order is requisitions then their lines, each by id; only then `assert_current_upstream`
+    (its own read is unlocked, so the header lock is what stops a racing amendment). A positive
+    delta must fit `awarded_qty - ordered_qty`; handing quantity back is always allowed.
+    """
+    if not changes:
+        return
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        repo = RequisitionRepository(conn, scope)
+        for requisition_id in sorted({c.requisition_id for c in changes}):
+            read_row(repo, requisition_id, lock=True)  # 404 for a foreign or unknown id
+        deltas: dict[UUID, Decimal] = defaultdict(Decimal)
+        for c in changes:
+            deltas[c.requisition_line_id] += c.delta
+        lines = {
+            cast(UUID, r[0]): r
+            for r in repo.execute(
+                "SELECT id, requisition_id, awarded_qty, ordered_qty FROM requisition_line "
+                "WHERE org_id = %(org_id)s AND id = ANY(%(ids)s) ORDER BY id FOR UPDATE",
+                {"ids": sorted(deltas)},
+            ).fetchall()
+        }
+        for c in changes:
+            line = lines.get(c.requisition_line_id)
+            if line is None or line[1] != c.requisition_id:
+                raise ProblemError(ErrorCode.NOT_FOUND)
+        for requisition_id, version in sorted(
+            {(c.requisition_id, c.requisition_version) for c in changes if c.delta > 0}
+        ):
+            assert_current_upstream(conn, scope, requisition_id, version)
+        over = [
+            (line_id, cast(Decimal, lines[line_id][2]) - cast(Decimal, lines[line_id][3]), delta)
+            for line_id, delta in deltas.items()
+            if delta > cast(Decimal, lines[line_id][2]) - cast(Decimal, lines[line_id][3])
+        ]
+        if over:
+            checks = {"problem": "over_open_quantity"}
+            for line_id, open_qty, requested in over:
+                checks[f"open.{line_id}"] = format(open_qty, "f")
+                checks[f"requested.{line_id}"] = format(requested, "f")
+            raise ProblemError(
+                ErrorCode.CONFLICT,
+                detail="The quantity asked for is more than the open quantity on a requisition "
+                "line. Lower it to the open quantity, or amend the requisition first.",
+                errors=tuple(
+                    ProblemFieldError(
+                        field=f"lines/{line_id}",
+                        message=f"Open {open_qty:f}, requested {requested:f}.",
+                    )
+                    for line_id, open_qty, requested in over
+                ),
+                checks=checks,
+            )
+        for line_id, delta in deltas.items():
+            ordered = cast(Decimal, lines[line_id][3])
+            if ordered + delta < 0:  # the CHECK constraint stays as the backstop
+                raise conflict("over_return", "More quantity was returned than was ordered.")
+            repo.execute(
+                "UPDATE requisition_line SET ordered_qty = ordered_qty + %(delta)s, "
+                "updated_at = now() WHERE org_id = %(org_id)s AND id = %(id)s",
+                {"id": line_id, "delta": delta},
+            )
+            audit_event(
+                cast(AuditConnection, conn),
+                scope,
+                actor=AuditActor(ActorKind.USER, actor_id),
+                action="requisition.order.update",
+                target_type="requisition",
+                target_id=cast(UUID, lines[line_id][1]),
+                outcome=Outcome.SUCCESS,
+                before={str(line_id): format(ordered, "f")},
+                after={str(line_id): format(ordered + delta, "f")},
+            )
+
+
 def mark_sourced(conn: Conn, scope: Scope, requisition_id: UUID, actor_id: UUID) -> bool:
     """`sourcing_in_progress` -> `sourced` once nothing is left to source (decision 206).
 

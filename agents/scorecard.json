@@ -6315,6 +6315,71 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E13-S01",
+      "kind": "crud",
+      "size": "L",
+      "tags": [
+        "money"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 3,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 4
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 4,
+          "findings": 2,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "c0f8cf71-edc4-43a9-bb4e-c4ad62aef1a2",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S01",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a18045-d54d-7742-b550-ba9fda67d5a7",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Adds the purchasing module: draft POs from an approved award, one per vendor and requisition, holding quantity through both ordered-quantity counters under the award-header lock, numbered per unit, with derived value and the supersede guard. New sourcing and requisitions service functions carry the counters; routes, migration 0078, client and tests included.",
+      "title": "PO from awarded requisition lines or authorized project items, scoped numbering",
+      "durations": {
+        "wall_s": 49513,
+        "author_s": 19876,
+        "review_s": {
+          "codex": 32,
+          "opus": 435
+        },
+        "gate_s": 1258
+      }
     }
   ]
 }

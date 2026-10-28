@@ -2,10 +2,10 @@
 
 import base64
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import date, datetime
 from decimal import Decimal
-from typing import cast
+from typing import Any, cast
 from uuid import UUID, uuid4
 
 import psycopg
@@ -36,6 +36,8 @@ from flo.modules.requisitions.service import (
 )
 from flo.modules.sourcing.models import RfqRepository
 from flo.modules.sourcing.schemas import (
+    AwardedLine,
+    AwardHeader,
     DeliveryRead,
     InviteeCandidate,
     InviteeCandidatePage,
@@ -1235,6 +1237,158 @@ def bid_attachments_sealed(connection: Conn, scope: Scope, id: UUID, actor_id: U
     )
     if not open_to_caller:
         raise conflict("bid_sealed", "Bids are sealed until the bidding stop time.")
+
+
+# -- purchase orders draw on an approved award (E13-S01) ------------------------------------
+
+
+def award_unit(conn: Conn, scope: Scope, award_id: UUID) -> UUID:
+    """The unit of an award's RFQ, 404 for an unknown or foreign id."""
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        row = (
+            RfqRepository(conn, scope)
+            .execute(
+                "SELECT r.unit_id FROM award a "
+                "JOIN rfq r ON r.org_id = a.org_id AND r.id = a.rfq_id "
+                "WHERE a.org_id = %(org_id)s AND a.id = %(id)s",
+                {"id": award_id},
+            )
+            .fetchone()
+        )
+    if row is None:
+        raise ProblemError(ErrorCode.NOT_FOUND)
+    return cast(UUID, row[0])
+
+
+def lock_award(conn: Conn, scope: Scope, award_id: UUID) -> AwardHeader:
+    """Lock the award header (the lock supersede takes) and require `approved` under it.
+
+    A PO create and a supersede of one award serialize here: supersede either ran first (this
+    sees `superseded`) or waits, then finds the PO through its `po_exists` probe.
+    """
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        row = (
+            RfqRepository(conn, scope)
+            .execute(
+                "SELECT a.status, a.rates, r.unit_id, r.currency FROM award a "
+                "JOIN rfq r ON r.org_id = a.org_id AND r.id = a.rfq_id "
+                "WHERE a.org_id = %(org_id)s AND a.id = %(id)s FOR UPDATE OF a",
+                {"id": award_id},
+            )
+            .fetchone()
+        )
+    if row is None:
+        raise ProblemError(ErrorCode.NOT_FOUND)
+    if row[0] != "approved":
+        raise conflict("invalid_transition", "Only an approved award can be ordered from.")
+    return AwardHeader(cast(UUID, row[2]), cast(str, row[3]).strip(), cast(dict[str, Any], row[1]))
+
+
+def awarded_lines(
+    conn: Conn,
+    scope: Scope,
+    award_id: UUID,
+    *,
+    vendor_id: UUID | None = None,
+) -> list[AwardedLine]:
+    """The award's lines, optionally of one vendor.
+
+    `requisition_version` is the live one: every status write bumps it (as award submit does).
+    """
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        rows = (
+            RfqRepository(conn, scope)
+            .execute(
+                "SELECT al.rfq_line_id, al.vendor_id, rl.line_no, rl.description, rl.uom_code, "
+                "al.quantity, al.ordered_qty, al.unit_price, al.currency, rl.requisition_id, "
+                "rl.requisition_line_id, q.version FROM award_line al "
+                "JOIN rfq_line rl ON rl.org_id = al.org_id AND rl.id = al.rfq_line_id "
+                "JOIN requisition q ON q.org_id = rl.org_id AND q.id = rl.requisition_id "
+                "WHERE al.org_id = %(org_id)s AND al.award_id = %(id)s "
+                "AND (%(vendor)s::uuid IS NULL OR al.vendor_id = %(vendor)s) "
+                "ORDER BY rl.line_no, al.vendor_id",
+                {"id": award_id, "vendor": vendor_id},
+            )
+            .fetchall()
+        )
+    found = [
+        AwardedLine(
+            cast(UUID, r[0]),
+            cast(UUID, r[1]),
+            cast(int, r[2]),
+            cast(str, r[3]),
+            cast(str, r[4]),
+            cast(Decimal, r[5]),
+            cast(Decimal, r[6]),
+            cast(Decimal, r[7]),
+            cast(str, r[8]).strip(),
+            cast(UUID, r[9]),
+            cast(UUID, r[10]),
+            cast(int, r[11]),
+        )  # fmt: skip
+        for r in rows
+    ]
+    return found
+
+
+def order_award_lines(
+    conn: Conn, scope: Scope, award_id: UUID, changes: Sequence[tuple[UUID, UUID, Decimal]]
+) -> None:
+    """`ordered_qty += delta` per (rfq line, vendor, delta), all or nothing, in the caller's tx.
+
+    Call `lock_award` first. The award lines lock in key order; only then is the open quantity
+    (`quantity - ordered_qty`) checked. Handing quantity back is always allowed.
+    """
+    deltas: dict[tuple[UUID, UUID], Decimal] = {}
+    for rfq_line_id, vendor_id, delta in changes:
+        deltas[(rfq_line_id, vendor_id)] = deltas.get((rfq_line_id, vendor_id), Decimal(0)) + delta
+    if not deltas:
+        return
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        repo = RfqRepository(conn, scope)
+        have = {
+            (cast(UUID, r[0]), cast(UUID, r[1])): (cast(Decimal, r[2]), cast(Decimal, r[3]))
+            for r in repo.execute(
+                "SELECT rfq_line_id, vendor_id, quantity, ordered_qty FROM award_line "
+                "WHERE org_id = %(org_id)s AND award_id = %(id)s ORDER BY rfq_line_id, vendor_id "
+                "FOR UPDATE",
+                {"id": award_id},
+            ).fetchall()
+        }
+        over = []
+        for key, delta in deltas.items():
+            if key not in have:
+                raise ProblemError(ErrorCode.NOT_FOUND)
+            quantity, ordered = have[key]
+            if delta > quantity - ordered:
+                over.append((key[0], quantity - ordered, delta))
+            elif ordered + delta < 0:
+                raise conflict("over_return", "More quantity was returned than was ordered.")
+        if over:
+            checks = {"problem": "over_open_quantity"}
+            for line_id, open_qty, requested in over:
+                checks[f"open.{line_id}"] = format(open_qty, "f")
+                checks[f"requested.{line_id}"] = format(requested, "f")
+            raise ProblemError(
+                ErrorCode.CONFLICT,
+                detail="The quantity asked for is more than is still open to order on an "
+                "award line. Lower it to the open quantity.",
+                errors=tuple(
+                    ProblemFieldError(
+                        field=f"lines/{line_id}",
+                        message=f"Open {open_qty:f}, requested {requested:f}.",
+                    )
+                    for line_id, open_qty, requested in over
+                ),
+                checks=checks,
+            )
+        for (rfq_line_id, vendor_id), delta in deltas.items():
+            repo.execute(
+                "UPDATE award_line SET ordered_qty = ordered_qty + %(delta)s "
+                "WHERE org_id = %(org_id)s AND award_id = %(id)s AND rfq_line_id = %(line)s "
+                "AND vendor_id = %(vendor)s",
+                {"id": award_id, "line": rfq_line_id, "vendor": vendor_id, "delta": delta},
+            )
 
 
 def register_access() -> None:

@@ -177,6 +177,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261022_0075",
         "20261022_0076",
         "20261022_0077",
+        "20261027_0078",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -3066,3 +3067,68 @@ def test_award_migration_is_reversible_one_live_award_per_rfq_and_keeps_the_rfq(
         mig.upgrade(conn)
         with tenant_transaction(conn, scope):
             assert conn.execute("SELECT count(*) FROM award").fetchone() == (0,)
+
+
+def test_purchase_order_migration_up_down_and_preserves_awards(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.org.schemas import OrgUnitCreate
+    from flo.modules.org.service import OrgService
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261022_0077"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261027_0078")
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("po-migration"),
+    ):
+        tenant = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(tenant.org_id)
+        bu = OrgService(conn, scope, actor).create_unit(
+            OrgUnitCreate(code="BU", name="BU", kind="bu")
+        )
+        rfq, award = uuid4(), uuid4()
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO rfq(id,org_id,number,title,unit_id,currency,owner_id)"
+                " VALUES(%s,%s,'RFQ-00001','T',%s,'USD',%s)",
+                (rfq, tenant.org_id, bu.id, actor),
+            )
+            conn.execute(
+                "INSERT INTO award(id,org_id,number,rfq_id,basis,status,rates,created_by)"
+                " VALUES(%s,%s,'AWD-00001',%s,'manual','approved','{}',%s)",
+                (award, tenant.org_id, rfq, actor),
+            )
+        mig.upgrade(conn)
+        columns = {
+            r[0]
+            for r in conn.execute(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name IN ('award_line','purchase_order','po_line')"
+            )
+        }
+        assert "ordered_qty" in columns
+        assert not {c for c in columns if "amount" in c and c.startswith("ordered")}
+        for table in ("purchase_order", "po_line"):
+            assert conn.execute(
+                "SELECT relrowsecurity AND relforcerowsecurity FROM pg_class WHERE relname=%s",
+                (table,),
+            ).fetchone() == (True,)
+        mig.downgrade(conn)
+        for name in ("purchase_order", "po_line"):
+            assert conn.execute("SELECT to_regclass(%s)", (name,)).fetchone() == (None,)
+        assert conn.execute(
+            "SELECT count(*) FROM information_schema.columns "
+            "WHERE table_name='award_line' AND column_name='ordered_qty'"
+        ).fetchone() == (0,)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT count(*) FROM award").fetchone() == (1,)  # the award stays
+        mig.upgrade(conn)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT count(*) FROM award").fetchone() == (1,)
+            assert conn.execute("SELECT count(*) FROM purchase_order").fetchone() == (0,)
