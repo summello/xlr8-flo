@@ -9,18 +9,18 @@ const unitId = "55555555-5555-4555-8555-555555555555";
 const NOW = "2026-10-01T00:00:00Z";
 const minute = (ms: number) => new Date(Math.floor((Date.now() + ms) / 60_000) * 60_000).toISOString();
 
-type Options = { recused?: boolean; evaluator?: boolean; canEdit?: boolean; bounced?: boolean; refuseServer?: boolean; twoPages?: boolean; status?: string };
+type Options = { recused?: boolean; evaluator?: boolean; canEdit?: boolean; bounced?: boolean; refuseServer?: boolean; twoPages?: boolean; status?: string; canApprove?: boolean; award?: boolean; refuse?: "insufficient-budget" | "po_exists"; awardsFail?: boolean; refreshFail?: boolean };
 
 /** An in-memory stand-in for the sourcing API: one published RFQ and one draft. */
-async function stubRfqs(page: Page, { recused = false, evaluator = true, canEdit = true, bounced = false, refuseServer = false, twoPages = false, status = "published" }: Options = {}) {
-  const state = { deadline: minute(2 * 86_400_000), version: 1, posts: [] as { path: string; key: string | undefined; body: unknown }[], requests: [] as URL[] };
+async function stubRfqs(page: Page, { recused = false, evaluator = true, canEdit = true, bounced = false, refuseServer = false, twoPages = false, status = "published", canApprove = false, award = false, refuse, awardsFail = false, refreshFail = false }: Options = {}) {
+  const state = { failAwards: awardsFail, failRefresh: false, status: award ? "awarded" : status, awardStatus: "approved", deadline: minute(2 * 86_400_000), version: 1, posts: [] as { path: string; key: string | undefined; body: unknown }[], requests: [] as URL[] };
   const detail = () => ({
-    id: rfqId, number: "RFQ-0001", title: "Centrifugal pumps", status, unit_id: unitId, currency: "USD", owner_email: "buyer@example.test",
+    id: rfqId, number: "RFQ-0001", title: "Centrifugal pumps", status: state.status, unit_id: unitId, currency: "USD", owner_email: "buyer@example.test", bids_received: 2,
     version: state.version, edit_revision: state.version, created_at: NOW, updated_at: NOW, deadline_at: state.deadline, deadline_tz: "UTC", published_at: NOW,
     lines: [{ id: "a1", line_no: 1, requisition_id: reqId, requisition_number: "REQ-0042", requisition_line_id: "b1", requisition_line_no: 1, requisition_version: 1, quantity: "4.0000", description: "Pump, 3 inch", uom_code: "EA", needed_by: null, currency: "USD", open_qty: "0.0000", specification: null }],
     invitees: [{ vendor_id: vendorId, contact_ids: ["c1"], vendor_snapshot: { trading_name: "Acme Tooling" }, override_reason: null, invited_by_email: "buyer@example.test", invited_at: NOW, eligible: true, reasons: [],
       deliveries: [{ contact_id: "c1", version: 1, state: bounced ? "bounced" : "sent" }], latest_sent_version: 1, not_told_of: state.version > 1 ? [2] : [] }],
-    can_edit: canEdit, can_approve: false,
+    can_edit: canEdit, can_approve: canApprove,
   });
   const row = (id: string, number: string, status: string) => ({ id, number, title: "Centrifugal pumps", status, unit_id: unitId, owner_email: "buyer@example.test", deadline_at: state.deadline, deadline_tz: "UTC", invitee_count: 1, requisition_numbers: ["REQ-0042"], bids_received: 0 });
   await page.route("**/api/v1/**", async route => {
@@ -40,7 +40,10 @@ async function stubRfqs(page: Page, { recused = false, evaluator = true, canEdit
       }
       return send({ rows, next_cursor: null, counts: { drafts: 1, open: 1, evaluating: 0, awarded: 0, all: 2 } });
     }
-    if (path === `/api/v1/sourcing/rfqs/${rfqId}`) return send(detail());
+    if (path === `/api/v1/sourcing/rfqs/${rfqId}`) {
+      if (refreshFail && state.failRefresh) { state.failRefresh = false; return send({ detail: "Down." }, 500); }
+      return send(detail());
+    }
     if (path === `/api/v1/sourcing/rfqs/${rfqId}/bids`) return send([]);
     if (path === `/api/v1/sourcing/rfqs/${rfqId}/evaluation` && recused) return send({ title: "Conflict", status: 409, detail: "You declared a conflict and are recused from this RFQ.", checks: { problem: "recused" } }, 409);
     if (path === `/api/v1/sourcing/rfqs/${rfqId}/evaluation`) return send({ status: "published", scoring_open: false, criteria: [], source: "default", edit_revision: 1, me: evaluator ? { identity_id: unitId, version: 1, declaration: "none", submitted: false } : null, evaluators: canEdit ? [{ identity_id: unitId, display_name: "Eva Evaluator", version: 1, declaration: "conflict", detail: "Owns shares", declared_at: NOW, submitted: false }, { identity_id: reqId, display_name: "Sam Scorer", version: 1, declaration: "clear", detail: null, declared_at: NOW, submitted: true }] : null, evaluator_count: 1, complete: false, vendors: [], scores: [], weighted: null });
@@ -53,9 +56,127 @@ async function stubRfqs(page: Page, { recused = false, evaluator = true, canEdit
       state.deadline = body.deadline_at; state.version = 2;
       return send(detail());
     }
+    if (path === `/api/v1/sourcing/rfqs/${rfqId}/awards`) return state.failAwards ? (state.failAwards = false, send({}, 500)) : send(award ? [{ id: "aw1", number: "AWD-0001", status: state.awardStatus, total: "1200.0000", budget_total: "1200.0000", currency: "USD", rfq_id: rfqId, created_at: NOW, lines: [{ vendor_id: vendorId, line_no: 1, quantity: "4.0000" }] }] : []);
+    if (req.method() === "POST" && (path === `/api/v1/sourcing/rfqs/${rfqId}/cancel` || path === `/api/v1/sourcing/rfqs/${rfqId}/award/supersede`)) {
+      state.posts.push({ path, key: req.headers()["idempotency-key"], body: req.postDataJSON() });
+      if (refuse === "insufficient-budget") return send({ title: "Conflict", status: 409, type: "insufficient-budget", detail: "The main project no longer has the amount this award returned." }, 409);
+      if (refuse === "po_exists") return send({ title: "Conflict", status: 409, detail: "A purchase order was created from this award. It stays." }, 409);
+      if (refreshFail) state.failRefresh = true;
+      if (path.endsWith("/cancel")) state.status = "cancelled"; else { state.status = "under_evaluation"; state.awardStatus = "superseded"; }
+      return send(path.endsWith("/cancel") ? detail() : { id: "aw1" });
+    }
     return send({ detail: "Not found." }, 404);
   });
   return state;
+}
+
+test("Cancel RFQ: safe button focused, consequence rows from the server, reason required, cancelled RFQ stays readable", async ({ page }) => {
+  const state = await stubRfqs(page, { canApprove: true });
+  await page.goto(`/sourcing/rfqs/${rfqId}`);
+  const opener = page.getByRole("button", { name: "Cancel RFQ", exact: true });
+  await opener.focus();
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("dialog", { name: "Cancel RFQ" });
+  await expect(page.getByRole("button", { name: "Keep RFQ" })).toBeFocused();
+  await expect(dialog).toContainText("1 invitee is told it is cancelled");
+  await expect(dialog).toContainText("2 submitted bids are kept on record");
+  await expect(dialog).toContainText("reservation is kept");
+  await dialog.getByRole("button", { name: "Cancel RFQ" }).click();
+  await expect(dialog.getByRole("alert")).toContainText("Give a reason.");
+  expect(state.posts).toHaveLength(0);
+  await dialog.getByLabel(/^Reason/).fill("Scope withdrawn");
+  await dialog.getByRole("button", { name: "Cancel RFQ" }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(state.posts[0]).toMatchObject({ path: `/api/v1/sourcing/rfqs/${rfqId}/cancel`, body: { reason: "Scope withdrawn" } });
+  expect(state.posts[0]!.key).toBeTruthy();
+  await expect(page.getByText("This RFQ is closed to bids")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Cancel RFQ", exact: true })).toHaveCount(0);
+});
+
+test("Cancel RFQ is hidden without rfq.approve", async ({ page }) => {
+  await stubRfqs(page);
+  await page.goto(`/sourcing/rfqs/${rfqId}`);
+  await expect(page.getByRole("button", { name: "Extend Deadline" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Cancel RFQ", exact: true })).toHaveCount(0);
+});
+
+test("Escape closes the Cancel RFQ dialog, returns focus to its opener and sends nothing", async ({ page }) => {
+  const state = await stubRfqs(page, { canApprove: true });
+  await page.goto(`/sourcing/rfqs/${rfqId}`);
+  const opener = page.getByRole("button", { name: "Cancel RFQ", exact: true });
+  await opener.click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(opener).toBeFocused();
+  expect(state.posts).toHaveLength(0);
+});
+
+for (const refuse of ["insufficient-budget", "po_exists"] as const) {
+  test(`Supersede Award: ${refuse} is shown in words and the reason is kept`, async ({ page }) => {
+    const state = await stubRfqs(page, { canApprove: true, award: true, refuse });
+    await page.goto(`/sourcing/rfqs/${rfqId}`);
+    await page.getByRole("button", { name: "Supersede Award", exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: "Supersede Award" });
+    await expect(page.getByRole("button", { name: "Keep Award" })).toBeFocused();
+    await dialog.getByLabel(/^Reason/).fill("Wrong vendor");
+    await dialog.getByRole("button", { name: "Supersede Award" }).click();
+    await expect(dialog.getByRole("alert")).toContainText(refuse === "po_exists" ? "purchase order was created" : "no longer has the amount");
+    await expect(dialog.getByLabel(/^Reason/)).toHaveValue("Wrong vendor");
+    expect(state.posts).toHaveLength(1);
+  });
+}
+
+test("Supersede Award: consequence rows, success returns the RFQ to evaluation", async ({ page }) => {
+  const state = await stubRfqs(page, { canApprove: true, award: true });
+  await page.goto(`/sourcing/rfqs/${rfqId}`);
+  await page.getByRole("button", { name: "Supersede Award", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Supersede Award" });
+  await expect(dialog).toContainText(/AWD-0001 \(1,200.00\s*USD\)/);
+  await expect(dialog).toContainText("1 awarded line to 1 vendor");
+  await expect(dialog).toContainText("Refused if a purchase order was created");
+  await dialog.getByLabel(/^Reason/).fill("Wrong vendor");
+  await dialog.getByRole("button", { name: "Supersede Award" }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(state.posts[0]).toMatchObject({ path: `/api/v1/sourcing/rfqs/${rfqId}/award/supersede`, body: { reason: "Wrong vendor" } });
+  await expect(page.getByRole("button", { name: "Supersede Award", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("listitem").filter({ hasText: "Under Evaluation" }).first()).toHaveAttribute("aria-current", "step");
+});
+
+test("a failed awards read shows an error with a retry, never a silent missing action", async ({ page }) => {
+  await stubRfqs(page, { canApprove: true, award: true, awardsFail: true });
+  await page.goto(`/sourcing/rfqs/${rfqId}`);
+  await expect(page.getByRole("alert").filter({ hasText: "Loading the award failed" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Supersede Award", exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Try again" }).click();
+  await expect(page.getByRole("button", { name: "Supersede Award", exact: true })).toBeVisible();
+});
+
+test("Supersede Award: a failed RFQ reload keeps the dialog open and the retry does not post again", async ({ page }) => {
+  const state = await stubRfqs(page, { canApprove: true, award: true, refreshFail: true });
+  await page.goto(`/sourcing/rfqs/${rfqId}`);
+  await page.getByRole("button", { name: "Supersede Award", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Supersede Award" });
+  await dialog.getByLabel(/^Reason/).fill("Wrong vendor");
+  await dialog.getByRole("button", { name: "Supersede Award" }).click();
+  await expect(dialog.getByRole("alert")).toContainText("could not be reloaded");
+  await dialog.getByRole("button", { name: "Supersede Award" }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(state.posts).toHaveLength(1);
+  await expect(page.getByRole("button", { name: "Supersede Award", exact: true })).toHaveCount(0);
+});
+
+for (const theme of ["light", "dark"] as const) {
+  for (const [name, award] of [["Cancel RFQ", false], ["Supersede Award", true]] as const) {
+    test(`the ${name} dialog passes axe in ${theme} theme`, async ({ page }) => {
+      await page.addInitScript(t => localStorage.setItem("xlr8flo.theme", t), theme);
+      await stubRfqs(page, { canApprove: true, award });
+      await page.goto(`/sourcing/rfqs/${rfqId}`);
+      await page.locator(".app-shell").waitFor();
+      await page.getByRole("button", { name, exact: true }).click();
+      await expect(page.getByRole("dialog", { name })).toBeVisible();
+      expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    });
+  }
 }
 
 const FORBIDDEN = ["Start RFQ", "Cancel RFQ", "Open Comparison", "View Award"];

@@ -6250,6 +6250,71 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E12-S18",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 3
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 3,
+          "findings": 2,
+          "blockers": 1,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "b85acf55-754a-4447-afe4-88bf526c8830",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S18",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a17ff0-cf00-7641-aef3-dafa5dafa991",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Cancel RFQ (published, rfq.approve) and Supersede Award (latest award approved) are destructive reason dialogs on the RFQ detail header, sharing one ReasonDialog shell; consequence rows come from RfqRead and the awards read, no API change. The detail route now loads the awards and refreshes them after either command.",
+      "title": "Cancel RFQ and supersede award dialogs",
+      "durations": {
+        "wall_s": 38822,
+        "author_s": 3321,
+        "review_s": {
+          "codex": 14,
+          "opus": 379
+        },
+        "gate_s": 0
+      }
     }
   ]
 }

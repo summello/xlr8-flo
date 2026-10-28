@@ -47,3 +47,5 @@ export function instantIn(date: string, time: string, zone: string): Date | null
   const result = new Date(guess), back = wallClock(result.toISOString(), zone);
   return back.date === date && back.time === time ? result : null; // a wall time the clocks skipped never happened
 }
+
+export type Award = components["schemas"]["AwardRead"];

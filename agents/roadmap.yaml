@@ -1901,7 +1901,7 @@ epics:
         dep:
           - E12-S09
           - E12-S11
-        st: review
+        st: done
       - id: E12-S19
         t: Sourcing open questions for the operator (parking story)
         k: docs
@@ -1974,7 +1974,7 @@ epics:
         dep:
           - E12-S08
           - E12-S09
-        st: in_progress
+        st: review
       - id: E13-S02
         t: Tax and freight per BU/OU policy, separately visible on line and document
         k: ledger

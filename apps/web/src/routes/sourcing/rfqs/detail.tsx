@@ -55,8 +55,16 @@ export default function RfqDetail({ id, navigate }: { id: string; navigate: (hre
     if (!data) throw new Error(failure(error, "Loading history"));
     return data;
   }, [id]);
+  // Only an RFQ that has reached evaluation can have an award; the latest one decides Supersede Award.
+  const awardable = rfq.data?.status === "under_evaluation" || rfq.data?.status === "awarded";
+  const awards = useLoad(async () => {
+    if (!awardable) return null;
+    const { data, error } = await apiClient.GET("/api/v1/sourcing/rfqs/{id}/awards", { params: { path: { id } } });
+    if (!data) throw new Error(failure(error, "Loading the award"));
+    return [...data].sort((a, b) => a.created_at.localeCompare(b.created_at)).at(-1) ?? null;
+  }, [id, awardable]);
   useEffect(() => { if (rfq.data) document.title = `${rfq.data.number} ${rfq.data.title}`; }, [rfq.data]);
-  const changed = (next: Rfq) => { rfq.set(next); versions.reload(); history.reload(); };
+  const changed = (next: Rfq) => { rfq.set(next); versions.reload(); history.reload(); awards.reload(); };
 
   if (rfq.error) return <section className="req-page" aria-label="RFQ"><div role="alert"><p>{rfq.error}</p><button type="button" onClick={rfq.reload}>Try again</button></div><a href="/sourcing/rfqs" onClick={e => { e.preventDefault(); navigate("/sourcing/rfqs"); }}>Back to RFQs</a></section>;
   if (!rfq.data) return <section className="req-page" aria-label="RFQ"><div className="req-card req-card-skeleton" aria-busy="true"><p className="req-skeleton" role="status" aria-label="Loading RFQ" /></div></section>;
@@ -67,8 +75,10 @@ export default function RfqDetail({ id, navigate }: { id: string; navigate: (hre
     <header className="vendor-head">
       <div><h2 className="vendor-name">{r.number} · {r.title}</h2><p className="req-sub">Owner <Person name={r.owner_name} email={r.owner_email} /> · Deadline {closes.date} {closes.time} {r.deadline_tz ?? "UTC"} ({relativeDeadline(r.deadline_at)}) · Version {r.version}</p></div>
       <StatusPill docType="rfq" status={r.status} />
-      <RfqHeaderActions rfq={r} onChanged={changed} navigate={navigate} />
+      <RfqHeaderActions rfq={r} award={awards.data ?? null} onChanged={changed} navigate={navigate} />
     </header>
+    {awardable && awards.error && <div role="alert" className="rfq-banner"><span>{awards.error}</span><button type="button" onClick={awards.reload}>Try again</button></div>}
+    {awardable && awards.loading && !awards.data && !awards.error && <p className="req-sub" role="status">Loading the award…</p>}
     <Lifecycle rfq={r} />
     <div className="req-grid-detail">
       <Card title="Request" load={rfq} wide>
