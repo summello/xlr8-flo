@@ -601,7 +601,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E12-S14** Record a bid: bid sheet, two times, vendor currency, late-bid override | E12 | ui | L | SRC-006, SRC-008, SRC-010 | ~~E12-S04~~, ~~E12-S05~~, ~~E12-S11~~ |
 | ✅ | **E12-S15** Evaluation screen: declare first, then score | E12 | ui | M | SRC-011 | ~~E12-S07~~, ~~E12-S11~~ |
 | ✅ | **E12-S16** Award draft screen: lines, justification, scope and funds check | E12 | ui | L | SRC-012, SRC-013, SRC-014, SRC-016 | ~~E12-S08~~, ~~E12-S10~~ |
-| 🔨 | **E12-S17** Award decision panel: Award Evidence block | E12 | ui | M | SRC-013, APR-003, APR-020 | ~~E12-S08~~, ~~E11-S10~~, ~~E12-S16~~ |
+| 👀 | **E12-S17** Award decision panel: Award Evidence block | E12 | ui | M | SRC-013, APR-003, APR-020 | ~~E12-S08~~, ~~E11-S10~~, ~~E12-S16~~ |
 | ✅ | **E12-S18** Cancel RFQ and supersede award dialogs | E12 | ui | M | SRC-017 | ~~E12-S09~~, ~~E12-S11~~ |
 | ✅ | **E12-S19** Sourcing open questions for the operator (parking story) | E12 | docs | S | SRC-016, SRC-017 | — |
 | ✅ | **E12-S20** RFQ editor: Evaluation Criteria and Evaluators cards (split from E12-S13) | E12 | ui | M | SRC-002, SRC-011 | ~~E12-S07~~, ~~E12-S13~~ |
@@ -609,7 +609,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E12-S22** Comparison engine: converted unit price on each cell (SRC-009 unit cost, for E12-S10) | E12 | engine | S | SRC-009, SRC-010 | ~~E12-S06~~, ~~E12-S21~~ |
 | ✅ | **E13-S01** PO from awarded requisition lines or authorized project items, scoped numbering | E13 | crud | L | PO-001, PO-002, PO-006, SEQ-001 | ~~E12-S08~~, ~~E12-S09~~ |
 | ⬜ | **E13-S02** Tax and freight per BU/OU policy, separately visible on line and document | E13 | ledger | M | FIN-008, FIN-009, PO-016 | ~~E13-S01~~ |
-| ⬜ | **E13-S03** PO lifecycle state machine | E13 | engine | M | PO-007, WF-002 | ~~E13-S01~~, ~~E11-S09~~ |
+| 🔨 | **E13-S03** PO lifecycle state machine | E13 | engine | M | PO-007, WF-002 | ~~E13-S01~~, ~~E11-S09~~ |
 | ⬜ | **E13-S04** PO approval workflow before issue | E13 | engine | M | PO-003, APR-003 | E13-S03, ~~E10-S13~~, E13-S02 |
 | ⬜ | **E13-S05** Issue converts reservation to commitment atomically; partial POs reduce open quantity only | E13 | ledger | L | PO-008, PO-009, WF-003, ACC-002 | E13-S04, ~~E07-S05~~ |
 | ⬜ | **E13-S06** Immutable issued PO; numbered, approved change orders with field-level diff | E13 | engine | L | PO-010, PO-011, DATA-005, ACC-005 | E13-S05 |
