@@ -147,3 +147,21 @@ def transition_purchase_order(
 ) -> PoRead:
     po = PurchaseOrderService(connection, current_scope(), context.user_id).close(id, body, version)
     return _etag(po, response)
+
+
+@router.post("/{id}/submit", response_model=PoRead)
+def submit_purchase_order(
+    id: UUID, context: EditContext, connection: Connection, response: Response
+) -> PoRead:
+    return _etag(
+        PurchaseOrderService(connection, current_scope(), context.user_id).submit(id), response
+    )
+
+
+@router.post("/{id}/withdraw", response_model=PoRead)
+def withdraw_purchase_order(
+    id: UUID, context: EditContext, connection: Connection, response: Response
+) -> PoRead:
+    return _etag(
+        PurchaseOrderService(connection, current_scope(), context.user_id).withdraw(id), response
+    )

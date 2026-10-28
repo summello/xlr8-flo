@@ -67,6 +67,8 @@ COVERED = {
     ("PATCH", "/api/v1/purchase-orders/{id}"): PO_ROUTES,
     ("DELETE", "/api/v1/purchase-orders/{id}"): PO_ROUTES,
     ("POST", "/api/v1/purchase-orders/{id}/transitions"): PO_ROUTES,
+    ("POST", "/api/v1/purchase-orders/{id}/submit"): PO_ROUTES,
+    ("POST", "/api/v1/purchase-orders/{id}/withdraw"): PO_ROUTES,
     ("GET", "/api/v1/vendors/counts"): LISTDOCS,
     ("GET", "/api/v1/vendors/duplicate-check"): CROUTES,
     ("POST", "/api/v1/vendors/{id}/submit"): CROUTES,

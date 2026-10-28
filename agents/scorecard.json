@@ -6568,6 +6568,71 @@
         },
         "gate_s": 2
       }
+    },
+    {
+      "story": "E13-S04",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "migration"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "5fb5571d-10f0-4769-910c-79c81f882185",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S04",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a18219-ff7c-7a90-ad95-ef4f1a4b6443",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "PoAdapter registers document type po; POST /purchase-orders/{id}/submit and /withdraw (creator only) start and end the approval, approve moves to approved and reject or withdraw to draft, posting nothing. Migration 0081 stores the requisition version at create so submit can detect an amended requisition.",
+      "title": "PO approval workflow before issue",
+      "durations": {
+        "wall_s": 5814,
+        "author_s": 3378,
+        "review_s": {
+          "codex": 19,
+          "opus": 189
+        },
+        "gate_s": 2
+      }
     }
   ]
 }

@@ -25,6 +25,10 @@ from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError, confli
 from flo.kernel.money import quantize
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
+from flo.modules.approvals.schemas import Outcome as ApprovalOutcome
+from flo.modules.approvals.schemas import OutcomeContext
+from flo.modules.approvals.service import require_workflow_for, start, withdraw
+from flo.modules.identity.service import AuthorizationConnection, AuthorizationResolver
 from flo.modules.org.service import NumberingService, OrgService, today
 from flo.modules.projects.service import generated_for
 from flo.modules.purchasing.lifecycle import parse_if_match, transition
@@ -46,10 +50,12 @@ from flo.modules.purchasing.schemas import (
 from flo.modules.requisitions.schemas import LineSourcing, LinkAccess, LinkedNode
 from flo.modules.requisitions.service import (
     RequisitionService,
+    assert_current_upstream,
     order_lines,
     register_link_provider,
 )
 from flo.modules.sourcing.service import (
+    award_evidence,
     award_line_quotes,
     award_unit,
     awarded_lines,
@@ -76,6 +82,15 @@ def _invalid(field: str, message: str, problem: str) -> ProblemError:
         detail=message,
         errors=(ProblemFieldError(field=field, message=message),),
         checks={"problem": problem},
+    )
+
+
+def _not_eligible(result: Eligibility) -> ProblemError:
+    reasons = "; ".join(r.text for r in result.reasons)
+    return ProblemError(
+        ErrorCode.CONFLICT,
+        detail=f"The vendor is not eligible: {reasons}",
+        checks={"problem": "vendor_not_eligible", "reasons": reasons},
     )
 
 
@@ -368,12 +383,7 @@ class PurchaseOrderService:
         if result.eligible:
             return result, None
         if not (body.override_reason and can_override):
-            reasons = "; ".join(r.text for r in result.reasons)
-            raise ProblemError(
-                ErrorCode.CONFLICT,
-                detail=f"The vendor is not eligible: {reasons}",
-                checks={"problem": "vendor_not_eligible", "reasons": reasons},
-            )
+            raise _not_eligible(result)
         return result, body.override_reason
 
     def create(self, body: PoCreate, can_override: bool = False) -> PoRead:
@@ -453,10 +463,11 @@ class PurchaseOrderService:
             self.repo.execute(
                 "INSERT INTO purchase_order (id, org_id, number, unit_id, vendor_id, "
                 "requisition_id, vendor_snapshot, award_id, currency, rate, bill_to, "
-                "ship_to_address_id, recipients, requester_id, needed_by, created_by) VALUES "
+                "ship_to_address_id, recipients, requester_id, needed_by, created_by, "
+                "requisition_version) VALUES "
                 "(%(id)s, %(org_id)s, %(number)s, %(unit)s, %(vendor)s, %(req)s, %(snapshot)s, "
                 "%(award)s, %(currency)s, %(rate)s, %(bill)s, %(ship)s, %(recipients)s, "
-                "%(requester)s, %(needed)s, %(by)s)",
+                "%(requester)s, %(needed)s, %(by)s, %(req_version)s)",
                 {
                     "id": id,
                     "number": number,
@@ -473,6 +484,7 @@ class PurchaseOrderService:
                     "requester": requisition.requester_id,
                     "needed": requisition.needed_by,
                     "by": actor,
+                    "req_version": requisition.version,
                 },
             )
             quotes = {(q.rfq_line_id, q.vendor_id): q for q in award_line_quotes(
@@ -765,8 +777,130 @@ class PurchaseOrderService:
             )  # fmt: skip
         return self.get(id)
 
+    # -- wiring -----------------------------------------------------------------------------------
 
-# -- wiring -----------------------------------------------------------------------------------
+    # -- approval (E13-S04) ----------------------------------------------------------------
+
+    def creator(self, id: UUID) -> UUID:
+        """The buyer who drafted the PO: the approval requester, the only one to submit it."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            row = self.repo.execute(
+                "SELECT created_by FROM purchase_order WHERE org_id = %(org_id)s AND id = %(id)s "
+                "AND status <> 'deleted'",
+                {"id": id},
+            ).fetchone()
+        if row is None:
+            raise ProblemError(ErrorCode.NOT_FOUND)
+        return cast(UUID, row[0])
+
+    def _creator_only(self, id: UUID) -> None:
+        if self.creator(id) != self.actor_id:
+            raise ProblemError(
+                ErrorCode.FORBIDDEN, detail="Only the buyer who drafted this order can do that."
+            )
+
+    def submit(self, id: UUID) -> PoRead:
+        """Decision 208: a published workflow is required, never auto-approved; a 409 writes
+        nothing."""
+        actor = cast(UUID, self.actor_id)
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            h = self._row(id, lock=True)
+            self._creator_only(id)
+            if h["status"] != "draft":
+                raise conflict(
+                    "invalid_transition", "Only a draft purchase order can be submitted."
+                )
+            require_workflow_for(self.connection, self.scope, "po", id, "purchase orders")
+            version = cast(
+                int,
+                self.repo.execute(
+                    "SELECT requisition_version FROM purchase_order "
+                    "WHERE org_id = %(org_id)s AND id = %(id)s",
+                    {"id": id},
+                ).fetchone()[0],  # type: ignore[index]
+            )
+            assert_current_upstream(
+                self.connection, self.scope, cast(UUID, h["requisition_id"]), version
+            )
+            # a PO that already carries an override was created for an ineligible vendor
+            if cast(dict[str, Any], h["vendor_snapshot"])["eligibility"]["eligible"]:
+                found = VendorService(self.connection, self.scope).eligibility(
+                    [cast(UUID, h["vendor_id"])], cast(UUID, h["unit_id"]), today()
+                )[cast(UUID, h["vendor_id"])]
+                if not found.eligible:
+                    raise _not_eligible(found)
+            transition(self.connection, self.scope, id, "submit", actor, cast(int, h["version"]))
+            start(
+                self.connection,
+                self.scope,
+                document_type="po",
+                document_id=id,
+                actor_id=actor,
+                resolver=AuthorizationResolver(
+                    cast(AuthorizationConnection, self.connection), self.scope
+                ),
+            )
+        return self.get(id)
+
+    def withdraw(self, id: UUID) -> PoRead:
+        """The approval ends WITHDRAWN and the adapter moves the PO back to draft."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            h = self._row(id, lock=True)
+            self._creator_only(id)
+            if h["status"] != "approval_pending":
+                raise conflict(
+                    "invalid_transition", "Only a purchase order pending approval can be withdrawn."
+                )
+            withdraw(
+                self.connection,
+                self.scope,
+                document_type="po",
+                document_id=id,
+                actor_id=cast(UUID, self.actor_id),
+                reason="",
+            )
+        return self.get(id)
+
+    def settle(self, id: UUID, outcome: ApprovalOutcome, context: OutcomeContext) -> None:
+        """Inside the decision's transaction. Nothing is posted: issue commits, not approval."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            h = self._row(id, lock=True)
+            if outcome == ApprovalOutcome.APPROVED and h["status"] == "approved":
+                return  # a retried decision changes nothing
+            # a return for changes also lands in draft: the buyer edits and submits again
+            action = {
+                ApprovalOutcome.APPROVED: "approve",
+                ApprovalOutcome.WITHDRAWN: "withdraw",
+            }.get(outcome, "reject")
+            transition(
+                self.connection, self.scope, id, action, context.actor_id, cast(int, h["version"])
+            )
+
+    def evidence(self, po: PoRead) -> dict[str, Any]:
+        """What the approver's panel shows (PO-003); decimal strings only."""
+        eligibility = (
+            VendorService(self.connection, self.scope)
+            .eligibility([po.vendor_id], po.unit_id, today())
+            .get(po.vendor_id)
+        )
+        effect: dict[UUID, Decimal] = defaultdict(Decimal)
+        for line in po.lines:
+            effect[line.project_id] += Decimal(line.budget_amount_project)
+        return {
+            "award": award_evidence(self.connection, self.scope, po.award_id),
+            "budget_effect": [
+                {"project_id": str(k), "currency": po.converted_currency, "amount": _fmt(v)}
+                for k, v in sorted(effect.items())
+            ],
+            "vendor_eligibility_now": None
+            if eligibility is None
+            else {
+                "eligible": eligibility.eligible,
+                "reasons": [r.text for r in eligibility.reasons],
+            },
+            # the vendor-visible items (E13-S11) join here when that story lands
+            "recipients": po.recipients,
+        }
 
 
 def _po_exists(conn: Conn, scope: Scope, award_id: UUID) -> bool:

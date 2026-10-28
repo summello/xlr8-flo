@@ -572,8 +572,9 @@ def test_purchase_order_routes_conceal_foreign_tenants(lifecycle_db):
         )
         db[0].execute(
             "INSERT INTO purchase_order (id,org_id,number,unit_id,vendor_id,requisition_id,"
-            "vendor_snapshot,award_id,currency,rate,bill_to,recipients,requester_id,created_by) "
-            "VALUES (%s,%s,'PO-X',%s,%s,%s,'{}',%s,'USD','{}','{}','[]',%s,%s)",
+            "vendor_snapshot,award_id,currency,rate,bill_to,recipients,requester_id,created_by,"
+            "requisition_version) "
+            "VALUES (%s,%s,'PO-X',%s,%s,%s,'{}',%s,'USD','{}','{}','[]',%s,%s,1)",
             (foreign_po, db[2], foreign_unit.id, a, row.id, foreign_award, db[3], db[3]),
         )
     payload = {
@@ -591,6 +592,8 @@ def test_purchase_order_routes_conceal_foreign_tenants(lifecycle_db):
                     ("PATCH", f"/{id}", {"terms": "x"}),
                     ("DELETE", f"/{id}", None),
                     ("POST", f"/{id}/transitions", {"action": "close", "reason": "x"}),
+                    ("POST", f"/{id}/submit", None),
+                    ("POST", f"/{id}/withdraw", None),
                 ):
                     response = await send(browser, method, suffix, data, {"If-Match": '"1"'})
                     assert response.status_code == 404, (method, response.text)

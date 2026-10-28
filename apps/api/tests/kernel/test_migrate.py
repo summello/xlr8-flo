@@ -180,6 +180,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261027_0078",
         "20261028_0079",
         "20261028_0080",
+        "20261028_0081",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -3229,4 +3230,64 @@ def test_po_pricing_migration_backfills_a_row_and_goes_down_and_up(empty_databas
         ).fetchone() == (0,)
         with tenant_transaction(conn, scope):
             assert conn.execute("SELECT count(*) FROM po_line").fetchone() == (1,)
+        mig.upgrade(conn)
+
+
+def test_po_requisition_version_migration_backfills_and_goes_down_and_up(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.org.schemas import OrgUnitCreate
+    from flo.modules.org.service import OrgService
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261028_0080"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261028_0081")
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("po-requisition-version-migration"),
+    ):
+        tenant = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(tenant.org_id)
+        bu = OrgService(conn, scope, actor).create_unit(
+            OrgUnitCreate(code="BU", name="BU", kind="bu")
+        )
+        rfq, award, po, req = (uuid4() for _ in range(4))
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO rfq(id,org_id,number,title,unit_id,currency,owner_id)"
+                " VALUES(%s,%s,'RFQ-00001','T',%s,'KWD',%s)",
+                (rfq, tenant.org_id, bu.id, actor),
+            )
+            conn.execute(
+                "INSERT INTO award(id,org_id,number,rfq_id,basis,status,rates,created_by)"
+                " VALUES(%s,%s,'AWD-00001',%s,'manual','approved','{}',%s)",
+                (award, tenant.org_id, rfq, actor),
+            )
+            # the requisition is absent (foreign keys off): the backfill falls back to 1
+            conn.execute("SET LOCAL session_replication_role = replica")
+            conn.execute(
+                "INSERT INTO purchase_order(id,org_id,number,unit_id,vendor_id,requisition_id,"
+                "vendor_snapshot,award_id,currency,rate,bill_to,recipients,requester_id,created_by)"
+                " VALUES(%s,%s,'PO-1',%s,%s,%s,'{}',%s,'KWD','{}','{}','[]',%s,%s)",
+                (po, tenant.org_id, bu.id, uuid4(), req, award, actor, actor),
+            )
+        mig.upgrade(conn)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT requisition_version FROM purchase_order").fetchone() == (1,)
+        assert conn.execute(
+            "SELECT is_nullable FROM information_schema.columns"
+            " WHERE table_name='purchase_order' AND column_name='requisition_version'"
+        ).fetchone() == ("NO",)
+        mig.downgrade(conn)
+        assert conn.execute(
+            "SELECT count(*) FROM information_schema.columns"
+            " WHERE table_name='purchase_order' AND column_name='requisition_version'"
+        ).fetchone() == (0,)
+        with tenant_transaction(conn, scope):
+            assert conn.execute("SELECT count(*) FROM purchase_order").fetchone() == (1,)
         mig.upgrade(conn)

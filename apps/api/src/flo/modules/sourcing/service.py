@@ -1355,6 +1355,14 @@ def award_line_quotes(conn: Conn, scope: Scope, award_id: UUID) -> list[AwardLin
     ]
 
 
+def award_evidence(conn: Conn, scope: Scope, award_id: UUID) -> dict[str, Any]:
+    """The award panel's evidence (vendor totals, justifications), for a PO's approval."""
+    from flo.modules.sourcing.awards import AwardService  # awards imports this module
+
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        return AwardService(conn, scope).evidence(award_id)
+
+
 def order_award_lines(
     conn: Conn, scope: Scope, award_id: UUID, changes: Sequence[tuple[UUID, UUID, Decimal]]
 ) -> None:
