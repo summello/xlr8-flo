@@ -1954,6 +1954,35 @@ epics:
           - E12-S06
           - E12-S21
         st: done
+      - id: E12-S23
+        t: 'No zero-value lines: bids refuse a quoted price of 0 or one that rounds to 0, a
+          bid must quote a line, and the zero-price special cases go'
+        k: engine
+        s: M
+        tags:
+          - money
+          - migration
+        reqs:
+          - SRC-006
+          - FIN-009
+        dep:
+          - E13-S02
+        st: todo
+      - id: E12-S24
+        t: 'Lines with no priced quote: one derived rule across documents, auto-cancel at
+          award approval, a small notice'
+        k: engine
+        s: L
+        tags:
+          - money
+        reqs:
+          - SRC-009
+          - SRC-018
+        dep:
+          - E12-S23
+          - E12-S08
+          - E13-S07
+        st: todo
 
   - id: E13
     name: Purchase orders
@@ -2029,6 +2058,7 @@ epics:
         dep:
           - E13-S04
           - E07-S05
+          - E12-S23
         st: todo
       - id: E13-S06
         t: Immutable issued PO; numbered, approved change orders with field-level diff

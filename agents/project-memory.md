@@ -8,7 +8,7 @@ Loaded into every agent session. Updated by `flo done` (status) and by Opus at e
 | | |
 |---|---|
 | Milestone | **M3 — First sellable release** |
-| Stories | 166 / 243 done |
+| Stories | 166 / 245 done |
 | Branch | milestone/M3-sellable |
 | In flight | — |
 | Blocked | — |
@@ -49,6 +49,8 @@ Multi-tenant SaaS. Free-tier infrastructure until 10 paying customers or 200 MAU
 - First sellable release is **M3**, the full money loop including RFQ (D-16)
 - **One public origin**, `xlr8flo.summello.com`; Cloudflare path-splits `/api/*` to Cloud Run, the rest to Pages. No CORS anywhere — if a story needs it, D-17 has been violated (D-17)
 - **M2 (10 Oct 2026, full text in `docs/m2-decisions.md`):** a project-linked requisition **reserves at submit** (D-M2-15, D-21), with at most one live reservation per requisition, tracked in funding rounds (`docs/m2-conventions.md` L). Approval keeps it and generates the sub-project; a standalone request reserves at approval (D-M2-5). Return-for-changes keeps the reservation; reject (to draft or permanent), withdraw, cancel and expiry release it once. Approval-group membership is **live** (D-M2-2, D-M2-9). The material-change list is fixed: amount, project, ledger account, catalogue item, line count (D-M2-13, canvas 79). Only the requester withdraws, until sourcing starts (canvas 78). Workflow conditions use the estimate only (canvas 83). Approval depth is 1..50, default 10.
+
+- **No zero-value lines (operator, 28 Oct 2026):** a line with no quantity, no price, or an amount that rounds to 0 is never stored, listed or shown on a PO. Bids refuse a quoted price of 0 or one that rounds to 0 (E12-S23), a bid must quote a line, and the zero-price special cases are deleted. A line no vendor priced is a derived condition across documents, with auto-cancel at award approval and a small notice (E12-S24, after E13-S07).
 
 ## Rejected, with reasons — do not re-propose
 
