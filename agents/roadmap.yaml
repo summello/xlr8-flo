@@ -2012,7 +2012,7 @@ epics:
           - E13-S03
           - E10-S13
           - E13-S02
-        st: todo
+        st: in_progress
       - id: E13-S05
         t: Issue converts reservation to commitment atomically; partial POs reduce open
           quantity only
