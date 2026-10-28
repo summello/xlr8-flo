@@ -2251,7 +2251,7 @@ epics:
         dep:
           - E13-S04
           - E11-S10
-        st: in_progress
+        st: done
       - id: E13-S21
         t: 'Sending domain status and suppression list (Administration)'
         k: ui

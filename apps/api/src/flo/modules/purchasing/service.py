@@ -30,7 +30,7 @@ from flo.modules.approvals.schemas import OutcomeContext
 from flo.modules.approvals.service import require_workflow_for, start, withdraw
 from flo.modules.identity.service import AuthorizationConnection, AuthorizationResolver
 from flo.modules.org.service import NumberingService, OrgService, today
-from flo.modules.projects.service import generated_for
+from flo.modules.projects.service import ProjectService, generated_for
 from flo.modules.purchasing.lifecycle import parse_if_match, transition
 from flo.modules.purchasing.models import PurchaseOrderRepository
 from flo.modules.purchasing.pricing import Figures, landed, spread
@@ -886,18 +886,23 @@ class PurchaseOrderService:
         effect: dict[UUID, Decimal] = defaultdict(Decimal)
         for line in po.lines:
             effect[line.project_id] += Decimal(line.budget_amount_project)
+        # ponytail: one ProjectService.get per project; a PO spans few, batch if that grows
+        projects = {k: ProjectService(self.connection, self.scope).get(k) for k in effect}
         return {
             "award": award_evidence(self.connection, self.scope, po.award_id),
             "budget_effect": [
-                {"project_id": str(k), "currency": po.converted_currency, "amount": _fmt(v)}
+                {
+                    "project_id": str(k),
+                    "project_number": projects[k].number,
+                    "project_name": projects[k].name,
+                    "currency": po.converted_currency,
+                    "amount": _fmt(v),
+                }
                 for k, v in sorted(effect.items())
             ],
             "vendor_eligibility_now": None
             if eligibility is None
-            else {
-                "eligible": eligibility.eligible,
-                "reasons": [r.text for r in eligibility.reasons],
-            },
+            else eligibility.model_dump(mode="json"),
             # the vendor-visible items (E13-S11) join here when that story lands
             "recipients": po.recipients,
         }

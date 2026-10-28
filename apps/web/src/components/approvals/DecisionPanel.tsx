@@ -8,6 +8,7 @@ import { writeHeaders } from "../../features/auth/api";
 import ExpiredCodeBadge from "../codes/ExpiredCodeBadge";
 import Money from "../ui/Money";
 import AwardEvidence from "./evidence/AwardEvidence";
+import PurchaseOrderEvidence from "./evidence/PurchaseOrderEvidence";
 import VendorEvidence from "./evidence/VendorEvidence";
 import InboxStatus from "./InboxStatus";
 import type { InboxRow, Tab } from "./inbox-model";
@@ -224,9 +225,10 @@ export default function DecisionPanel({ row, tab, next, onOpen, onClose, onDecid
                 <div><dt>Step</dt><dd>{stepLabel(row)}</dd></div>
                 {row.requester_note && <div><dt>Note from the requester</dt><dd className="appr-requester-note">{row.requester_note}</dd></div>}
               </dl>
-              {!(row.document_type === "award" && instance?.evidence) && <a className="appr-link" href={row.href}>Open the full {row.document_type === "vendor" ? "vendor" : row.document_type === "award" ? "award" : "requisition"}<ArrowRight aria-hidden="true" /></a>}
+              {!(row.document_type === "award" && instance?.evidence) && <a className="appr-link" href={row.href}>Open the full {row.document_type === "vendor" ? "vendor" : row.document_type === "award" ? "award" : row.document_type === "po" ? "purchase order" : "requisition"}<ArrowRight aria-hidden="true" /></a>}
               {row.document_type === "vendor" && instance?.evidence && <VendorEvidence evidence={instance.evidence} />}
               {row.document_type === "award" && instance?.evidence && <AwardEvidence evidence={instance.evidence} />}
+              {row.document_type === "po" && instance?.evidence && <PurchaseOrderEvidence evidence={instance.evidence} />}
 
               <section aria-labelledby="appr-trail">
                 <h3 id="appr-trail">Decision Trail <span className="appr-count">{(trail?.length ?? 0) + (canDecide ? 1 : 0)}</span></h3>

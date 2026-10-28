@@ -2,6 +2,7 @@
 
 import asyncio
 from copy import deepcopy
+from datetime import date
 
 import pytest
 
@@ -12,6 +13,8 @@ from flo.kernel.tenancy.context import Scope
 from flo.modules.approvals import engine
 from flo.modules.approvals.schemas import DecisionWrite
 from flo.modules.approvals.service import decide, get_instance
+from flo.modules.vendors.schemas import Eligibility, Reason
+from flo.modules.vendors.service import VendorService
 from tests.approvals.test_engine import graph
 from tests.approvals.test_workflow_definitions import definition, draft, svc
 from tests.isolation.test_real_sessions import client, login
@@ -200,7 +203,11 @@ def test_adapter_is_registered_with_conditions_evidence_and_inbox_summary(lifecy
         "recipients",
     }
     assert detail.evidence["budget_effect"][0]["amount"]
-    assert detail.evidence["vendor_eligibility_now"]["eligible"] is True
+    [effect] = detail.evidence["budget_effect"]
+    assert effect["project_number"] and effect["project_name"]
+    assert detail.evidence["vendor_eligibility_now"] == {
+        "eligible": True, "reasons": [], "warnings": []
+    }  # fmt: skip
     row = adapter.summaries(db[0], Scope(db[1]), [po.id])[po.id]
     assert (row.number, row.title, row.href) == (
         po.number, f"Purchase order {po.number}", f"/purchase-orders/{po.id}"
@@ -209,6 +216,45 @@ def test_adapter_is_registered_with_conditions_evidence_and_inbox_summary(lifecy
     assert str(row.amount.currency) == "USD" and row.requester_id == db[3] and row.note is None
     snapshot = adapter.snapshot(db[0], Scope(db[1]), po.id)
     assert snapshot.requester_id == db[3] and snapshot.version == 2
+
+
+def test_evidence_eligibility_keeps_reasons_and_warnings_as_objects(lifecycle_db, monkeypatch):
+    db, _ = lifecycle_db
+    po = one(db)
+    reason = Reason(
+        code="document_expired",
+        text="Insurance expired",
+        document_type="INS",
+        date=date(2026, 1, 31),
+    )
+    warning = Reason(
+        code="document_expiring",
+        text="Tax expiring in 5 Days",
+        document_type="TAX",
+        date=date(2026, 11, 2),
+    )
+    answer = Eligibility(eligible=False, reasons=[reason], warnings=[warning])
+    monkeypatch.setattr(VendorService, "eligibility", lambda *_a, **_k: {po.vendor_id: answer})
+    shown = pos(db).evidence(pos(db).get(po.id))["vendor_eligibility_now"]
+    assert shown == {
+        "eligible": False,
+        "reasons": [
+            {
+                "code": "document_expired",
+                "text": "Insurance expired",
+                "document_type": "INS",
+                "date": "2026-01-31",
+            }
+        ],
+        "warnings": [
+            {
+                "code": "document_expiring",
+                "text": "Tax expiring in 5 Days",
+                "document_type": "TAX",
+                "date": "2026-11-02",
+            }
+        ],
+    }  # fmt: skip
 
 
 def test_submit_and_withdraw_routes_authorize_and_replay(lifecycle_db):

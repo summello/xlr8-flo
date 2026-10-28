@@ -561,7 +561,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E10-S12** Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11) | E10 | ui | L | APR-011, APR-021, ACC-007 | ~~E10-S11~~, ~~E10-S05~~ |
 | ✅ | **E10-S13** Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes | E10 | engine | M | APR-003, PROJ-002, VEN-005, BUD-007 | ~~E10-S07~~ |
 
-#### M3 — First sellable release · 57/74 done
+#### M3 — First sellable release · 58/74 done
 
 > Vendors, RFQs, awards and purchase orders by email. Closes the money loop end to end.
 
@@ -626,7 +626,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E13-S17** Vendor copy preview: email and PDF as the supplier sees them | E13 | ui | M | PO-014, PO-017, EML-005 | E13-S08, E13-S11, E13-S12 |
 | ⬜ | **E13-S18** Change order screen: field diff, signed budget effect, reapproval line | E13 | ui | M | PO-010, PO-011, ACC-005 | E13-S06, E13-S12 |
 | ⬜ | **E13-S19** Cancel or reduce dialog | E13 | ui | M | PO-013, ACC-006 | E13-S07, E13-S12 |
-| 🔨 | **E13-S20** PO decision panel: Purchase Order Evidence block | E13 | ui | M | PO-003, APR-020 | ~~E13-S04~~, ~~E11-S10~~ |
+| ✅ | **E13-S20** PO decision panel: Purchase Order Evidence block | E13 | ui | M | PO-003, APR-020 | ~~E13-S04~~, ~~E11-S10~~ |
 | ⬜ | **E13-S21** Sending domain status and suppression list (Administration) | E13 | ui | M | EML-001, EML-003 | E13-S10 |
 | ✅ | **E13-S22** Purchase-order open questions for the operator (parking story) | E13 | docs | S | PO-007 | — |
 | ✅ | **E22-S01** Create Project with budget: form and Excel, sponsors, through the project approval workflow | E22 | engine | L | PROJ-003 | ~~E09-S17~~ |

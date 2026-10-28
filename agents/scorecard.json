@@ -6633,6 +6633,65 @@
         },
         "gate_s": 2
       }
+    },
+    {
+      "story": "E13-S20",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 1,
+          "blockers": 1,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "78c6af3f-978e-4ac5-85d8-44672e753a98",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S20",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a18314-1979-73b3-a85c-c4779176dd1a",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "PO evidence now returns project number/name per budget row and the full Eligibility shape; DecisionPanel mounts a new PurchaseOrderEvidence block for po tasks with a 'purchase order' link label.",
+      "title": "PO decision panel: Purchase Order Evidence block",
+      "durations": {
+        "wall_s": 2902,
+        "author_s": 1172,
+        "review_s": {
+          "codex": 23
+        },
+        "gate_s": 0
+      }
     }
   ]
 }
