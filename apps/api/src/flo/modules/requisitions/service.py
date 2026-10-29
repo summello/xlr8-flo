@@ -71,6 +71,7 @@ from flo.modules.requisitions.sourcing import mark_unawarded as mark_unawarded
 from flo.modules.requisitions.sourcing import mark_unsourced as mark_unsourced
 from flo.modules.requisitions.sourcing import order_lines as order_lines
 from flo.modules.requisitions.sourcing import release_unawarded as release_unawarded
+from flo.modules.requisitions.sourcing import reopen_for_purchase as reopen_for_purchase
 from flo.modules.requisitions.sourcing import reservation_entry as reservation_entry
 from flo.modules.requisitions.sourcing import restore_unawarded as restore_unawarded
 from flo.modules.requisitions.sourcing import source_lines as source_lines
@@ -99,6 +100,7 @@ __all__ = [
     "order_lines",
     "issue_lines",
     "mark_completed",
+    "reopen_for_purchase",
     "reservation_entry",
     "release_unawarded",
     "mark_awarded",

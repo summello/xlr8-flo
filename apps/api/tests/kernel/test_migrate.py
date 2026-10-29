@@ -183,6 +183,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261028_0081",
         "20261028_0082",
         "20261029_0083",
+        "20261029_0084",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -3363,4 +3364,76 @@ def test_po_issue_migration_adds_issued_qty_and_roundtrips(empty_database):
         mig.downgrade(conn)
         assert "issued_qty" not in columns("requisition_line")
         assert not {"issued_at", "issued_by"} & columns("purchase_order")
+        mig.upgrade(conn)
+
+
+def test_po_change_migration_freezes_issued_orders_and_roundtrips(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.org.schemas import OrgUnitCreate
+    from flo.modules.org.service import OrgService
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261029_0083"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261029_0084")
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("po-change-migration"),
+    ):
+        tenant = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(tenant.org_id)
+        bu = OrgService(conn, scope, actor).create_unit(
+            OrgUnitCreate(code="BU", name="BU", kind="bu")
+        )
+        rfq, award, po = uuid4(), uuid4(), uuid4()
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO rfq(id,org_id,number,title,unit_id,currency,owner_id)"
+                " VALUES(%s,%s,'RFQ-00001','T',%s,'KWD',%s)",
+                (rfq, tenant.org_id, bu.id, actor),
+            )
+            conn.execute(
+                "INSERT INTO award(id,org_id,number,rfq_id,basis,status,rates,created_by)"
+                " VALUES(%s,%s,'AWD-00001',%s,'manual','approved','{}',%s)",
+                (award, tenant.org_id, rfq, actor),
+            )
+            conn.execute("SET LOCAL session_replication_role = replica")  # requisition absent
+            conn.execute(
+                "INSERT INTO purchase_order(id,org_id,number,unit_id,vendor_id,requisition_id,"
+                "vendor_snapshot,award_id,currency,rate,bill_to,recipients,requester_id,"
+                "created_by,requisition_version,status,issued_at)"
+                " VALUES(%s,%s,'PO-1',%s,%s,%s,'{}',%s,'KWD','{}','{}','[]',%s,%s,1,'issued',"
+                "now())",
+                (po, tenant.org_id, bu.id, uuid4(), uuid4(), award, actor, actor),
+            )
+        mig.upgrade(conn)
+        with tenant_transaction(conn, scope):
+            assert conn.execute(
+                "SELECT revision, supersedes_id FROM purchase_order"
+            ).fetchone() == (
+                0,
+                None,
+            )
+            assert conn.execute("SELECT count(*) FROM purchase_order").fetchone() == (1,)
+        for statement in (  # plant: without the trigger these succeed
+            "UPDATE purchase_order SET terms = 'x'",
+            "UPDATE purchase_order SET status = 'draft', version = version + 1",
+            "UPDATE purchase_order SET version = version + 1",
+            "DELETE FROM purchase_order",
+        ):
+            with (
+                pytest.raises(psycopg.errors.CheckViolation, match="issued_is_immutable"),
+                tenant_transaction(conn, scope),
+            ):
+                conn.execute(statement)
+        mig.downgrade(conn)
+        assert conn.execute("SELECT to_regclass('po_change')").fetchone() == (None,)
+        with tenant_transaction(conn, scope):
+            conn.execute("UPDATE purchase_order SET terms = 'x'")  # the trigger went with it
+            assert conn.execute("SELECT count(*) FROM purchase_order").fetchone() == (1,)
         mig.upgrade(conn)

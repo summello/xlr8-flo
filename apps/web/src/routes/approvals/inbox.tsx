@@ -32,6 +32,7 @@ const TYPE_OPTIONS: readonly [string, string][] = [
   ["rfq", "RFQ"],
   ["award", "Award"],
   ["po", "Purchase order"],
+  ["po_change", "Purchase order change"],
 ];
 const TYPE_LABELS = Object.fromEntries(TYPE_OPTIONS);
 

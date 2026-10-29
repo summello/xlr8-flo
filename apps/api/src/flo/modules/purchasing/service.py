@@ -72,7 +72,7 @@ PAGE = 50
 HEADER = (
     "id, number, unit_id, vendor_id, vendor_snapshot, requisition_id, award_id, currency, rate, "
     "bill_to, ship_to_address_id, recipients, requester_id, terms, needed_by, status, version, "
-    "created_at, freight_mode, document_freight"
+    "revision, supersedes_id, created_at, freight_mode, document_freight"
 )
 
 
@@ -568,6 +568,10 @@ class PurchaseOrderService:
         award_id = cast(UUID, self._row(id)["award_id"])
         lock_award(self.connection, self.scope, award_id)
         row = self._row(id, lock=True)
+        if row["status"] in ("issued", "superseded"):
+            raise conflict(
+                "issued_is_immutable", "An issued purchase order changes only by change order."
+            )
         if row["status"] != "draft":
             raise conflict("po_not_draft", "Only a draft purchase order can change.")
         self._check_version(cast(int, row["version"]), if_match)

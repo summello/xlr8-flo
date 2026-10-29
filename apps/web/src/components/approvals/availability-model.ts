@@ -44,6 +44,6 @@ export function buildDelegation(form: AvailabilityForm): components["schemas"]["
     starts_at: period.startsAt,
     ends_at: period.endsAt,
     reason: form.reason.trim(),
-    ...(form.covers === "po" ? { document_types: ["po" as const] } : {}),
+    ...(form.covers === "po" ? { document_types: ["po" as const, "po_change" as const] } : {}),
   };
 }

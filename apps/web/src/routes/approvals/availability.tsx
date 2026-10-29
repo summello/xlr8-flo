@@ -74,7 +74,7 @@ export default function Availability({ navigate }: { navigate: (href: string) =>
   const selection = form.covers === "po" ? "po" : "";
   useEffect(() => {
     let active = true;
-    const document_types = selection === "" ? undefined : (["po"] as "po"[]);
+    const document_types = selection === "" ? undefined : (["po", "po_change"] as ("po" | "po_change")[]);
     void apiClient.GET("/api/v1/approvals/delegations/eligible-delegates", { params: { query: { document_types } } })
       .then((r) => { if (!active) return; setPeople(r.data?.rows ?? []); setPeopleFailed(!r.data); })
       .catch(() => { if (active) setPeopleFailed(true); });
@@ -211,7 +211,7 @@ export default function Availability({ navigate }: { navigate: (href: string) =>
                       <tr key={d.id}>
                         <th scope="row">{tab === "organization" ? <><Person name={d.delegator_name} email={d.delegator_email} /> to <Person name={d.delegate_name} email={d.delegate_email} /></> : <Person name={d.delegate_name} email={d.delegate_email} />}</th>
                         <td data-label="Period"><time dateTime={d.starts_at}>{formatDay(d.starts_at)}</time> to <time dateTime={d.ends_at}>{formatDay(d.ends_at)}</time></td>
-                        <td data-label="Covers">{d.document_types ? (d.document_types.join() === "po" ? "Purchase orders only" : d.document_types.join(", ")) : "All my approvals"}</td>
+                        <td data-label="Covers">{d.document_types ? (d.document_types.join() === "po,po_change" ? "Purchase orders only" : d.document_types.join(", ")) : "All my approvals"}</td>
                         <td data-label="Status"><InboxStatus word={STATE_WORDS[d.state]} tone={STATE_TONES[d.state]} /></td>
                         <td data-label="Action">{d.state === "active" || d.state === "scheduled" ? <button type="button" onClick={(event) => { opener.current = event.currentTarget; setRevokeError(""); setRevoking(d); }}>Revoke<span className="visually-hidden"> delegation to {personLabel(d.delegate_name, d.delegate_email)}</span></button> : <span className="appr-meta">Kept in the record</span>}</td>
                       </tr>

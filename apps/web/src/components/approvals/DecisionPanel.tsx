@@ -225,7 +225,7 @@ export default function DecisionPanel({ row, tab, next, onOpen, onClose, onDecid
                 <div><dt>Step</dt><dd>{stepLabel(row)}</dd></div>
                 {row.requester_note && <div><dt>Note from the requester</dt><dd className="appr-requester-note">{row.requester_note}</dd></div>}
               </dl>
-              {!(row.document_type === "award" && instance?.evidence) && <a className="appr-link" href={row.href}>Open the full {row.document_type === "vendor" ? "vendor" : row.document_type === "award" ? "award" : row.document_type === "po" ? "purchase order" : "requisition"}<ArrowRight aria-hidden="true" /></a>}
+              {!(row.document_type === "award" && instance?.evidence) && <a className="appr-link" href={row.href}>Open the full {row.document_type === "vendor" ? "vendor" : row.document_type === "award" ? "award" : row.document_type === "po" || row.document_type === "po_change" ? "purchase order" : "requisition"}<ArrowRight aria-hidden="true" /></a>}
               {row.document_type === "vendor" && instance?.evidence && <VendorEvidence evidence={instance.evidence} />}
               {row.document_type === "award" && instance?.evidence && <AwardEvidence evidence={instance.evidence} />}
               {row.document_type === "po" && instance?.evidence && <PurchaseOrderEvidence evidence={instance.evidence} />}

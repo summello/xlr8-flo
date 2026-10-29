@@ -6824,6 +6824,71 @@
         },
         "gate_s": 1
       }
+    },
+    {
+      "story": "E13-S06",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "money"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 3,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 5
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 5,
+          "findings": 5,
+          "blockers": 5,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "3ca60301-1543-4cbc-bf44-ae943a9af13b",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S06",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1895f-8ff1-78e2-b70a-30de520dcfa0",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "An issued PO is now frozen by service checks and database triggers; any change goes through a numbered change order (po_change) that stores a field diff, a signed budget effect and a server-computed materiality flag. Non-material changes apply at once, material ones go through a new po_change approval workflow, and applying writes a new revision row, supersedes the old one, moves award/requisition quantities and posts the commit or newest-first release plus re-reserve.",
+      "title": "Immutable issued PO; numbered, approved change orders with field-level diff",
+      "durations": {
+        "wall_s": 27759,
+        "author_s": 4756,
+        "review_s": {
+          "codex": 16,
+          "opus": 274
+        },
+        "gate_s": 2
+      }
     }
   ]
 }

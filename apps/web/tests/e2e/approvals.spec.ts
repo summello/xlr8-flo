@@ -275,7 +275,7 @@ test("eligibility is requested for what is covered and decisions on my behalf re
   await expect(table).toContainText("delegate@example.test");
   await expect(table).toContainText("Finance");
   await page.getByLabel("Purchase orders only").check();
-  await expect.poll(() => state.eligibleQueries.at(-1)?.getAll("document_types")).toEqual(["po"]);
+  await expect.poll(() => state.eligibleQueries.at(-1)?.getAll("document_types")).toEqual(["po", "po_change"]);
   await expect(page.getByText("No one else may approve everything you cover")).toBeVisible();
 });
 

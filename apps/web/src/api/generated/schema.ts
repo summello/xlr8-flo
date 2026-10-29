@@ -1953,6 +1953,93 @@ export interface paths {
         patch: operations["patch_purchase_order_api_v1_purchase_orders__id__patch"];
         trace?: never;
     };
+    "/api/v1/purchase-orders/{id}/changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Changes */
+        get: operations["list_changes_api_v1_purchase_orders__id__changes_get"];
+        put?: never;
+        /** Create Change */
+        post: operations["create_change_api_v1_purchase_orders__id__changes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/purchase-orders/{id}/changes/{number}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Change */
+        get: operations["get_change_api_v1_purchase_orders__id__changes__number__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Change */
+        patch: operations["patch_change_api_v1_purchase_orders__id__changes__number__patch"];
+        trace?: never;
+    };
+    "/api/v1/purchase-orders/{id}/changes/{number}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Apply Change */
+        post: operations["apply_change_api_v1_purchase_orders__id__changes__number__apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/purchase-orders/{id}/changes/{number}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit Change */
+        post: operations["submit_change_api_v1_purchase_orders__id__changes__number__submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/purchase-orders/{id}/changes/{number}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Withdraw Change */
+        post: operations["withdraw_change_api_v1_purchase_orders__id__changes__number__withdraw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/purchase-orders/{id}/issue": {
         parameters: {
             query?: never;
@@ -4753,6 +4840,8 @@ export interface components {
              */
             to: "draft" | "amendment";
         };
+        /** @enum {string} */
+        ChangeStatus: "draft" | "approval_pending" | "approved" | "rejected" | "withdrawn";
         /** ChildrenPage */
         ChildrenPage: {
             /** Next Cursor */
@@ -5096,7 +5185,7 @@ export interface components {
              */
             delegate_id: string;
             /** Document Types */
-            document_types?: ("project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po")[] | null;
+            document_types?: ("project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po" | "po_change")[] | null;
             /**
              * Ends At
              * Format: date-time
@@ -7294,6 +7383,124 @@ export interface components {
              */
             user_id: string;
         };
+        /**
+         * PoChangeAdd
+         * @description A line from another awarded line of the PO's vendor, award and requisition.
+         */
+        PoChangeAdd: {
+            /** Quantity */
+            quantity: string;
+            /**
+             * Rfq Line Id
+             * Format: uuid
+             */
+            rfq_line_id: string;
+        };
+        /** PoChangeCreate */
+        PoChangeCreate: {
+            /** Reason */
+            reason?: string | null;
+        };
+        /**
+         * PoChangeLineEdit
+         * @description An existing line: `remove`, or a lower or higher `quantity`, a lower `unit_price`, `tax`,
+         *     `freight` (`line` mode only). A project, department or ledger account is accepted only to be
+         *     refused (422 `use_transfer`).
+         */
+        PoChangeLineEdit: {
+            /** Department Code */
+            department_code?: string | null;
+            /** Freight */
+            freight?: string;
+            /** Ledger Account Code */
+            ledger_account_code?: string | null;
+            /** Line No */
+            line_no: number;
+            /** Project Id */
+            project_id?: string | null;
+            /** Quantity */
+            quantity?: string;
+            /**
+             * Remove
+             * @default false
+             */
+            remove?: boolean;
+            /** Tax */
+            tax?: string;
+            /** Unit Price */
+            unit_price?: string;
+        };
+        /**
+         * PoChangePatch
+         * @description A field left out is unchanged; `lines` and `add` replace the draft's list; `terms` and
+         *     `needed_by` may be set to null.
+         */
+        PoChangePatch: {
+            /** Add */
+            add?: components["schemas"]["PoChangeAdd"][] | null;
+            /** Document Freight */
+            document_freight?: string;
+            /** Lines */
+            lines?: components["schemas"]["PoChangeLineEdit"][] | null;
+            /** Needed By */
+            needed_by?: string | null;
+            /** Reason */
+            reason?: string | null;
+            /** Terms */
+            terms?: string | null;
+        };
+        /** PoChangeRead */
+        PoChangeRead: {
+            /** Budget Effect */
+            budget_effect: {
+                [key: string]: unknown;
+            }[];
+            /** Budget Total Project */
+            budget_total_project: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Created By
+             * Format: uuid
+             */
+            created_by: string;
+            /** Diff */
+            diff: {
+                [key: string]: unknown;
+            }[];
+            /** Draft */
+            draft: {
+                [key: string]: unknown;
+            };
+            /** From Version */
+            from_version: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Material */
+            material: boolean;
+            /** Number */
+            number: number;
+            /**
+             * Po Id
+             * Format: uuid
+             */
+            po_id: string;
+            /** Reason */
+            reason: string | null;
+            /** Result Po Id */
+            result_po_id: string | null;
+            status: components["schemas"]["ChangeStatus"];
+            /** Total */
+            total: string;
+            /** Version */
+            version: number;
+        };
         /** PoCreate */
         PoCreate: {
             /**
@@ -7511,9 +7718,13 @@ export interface components {
              * Format: uuid
              */
             requisition_id: string;
+            /** Revision */
+            revision: number;
             /** Ship To Address Id */
             ship_to_address_id: string | null;
             status: components["schemas"]["PoStatus"];
+            /** Supersedes Id */
+            supersedes_id: string | null;
             /** Tax Total */
             tax_total: string;
             /** Terms */
@@ -9753,7 +9964,7 @@ export interface components {
              * Document Type
              * @enum {string}
              */
-            document_type: "project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po";
+            document_type: "project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po" | "po_change";
             /** Name */
             name: string;
             /** Scope Id */
@@ -9803,7 +10014,7 @@ export interface components {
              * Document Type
              * @enum {string}
              */
-            document_type: "project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po";
+            document_type: "project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po" | "po_change";
             /** Draft Version */
             draft_version?: number | null;
             /** Edited At */
@@ -10703,8 +10914,8 @@ export interface operations {
     eligible_delegates_route_api_v1_approvals_delegations_eligible_delegates_get: {
         parameters: {
             query?: {
-                document_type?: ("project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po") | null;
-                document_types?: ("project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po")[] | null;
+                document_type?: ("project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po" | "po_change") | null;
+                document_types?: ("project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po" | "po_change")[] | null;
             };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
@@ -10788,7 +10999,7 @@ export interface operations {
     eligible_picker_api_v1_approvals_eligible_approvers_get: {
         parameters: {
             query: {
-                document_type: "project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po";
+                document_type: "project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po" | "po_change";
                 scope_type: "org" | "bu";
                 scope_id: string;
                 q?: string | null;
@@ -11006,7 +11217,7 @@ export interface operations {
         parameters: {
             query?: {
                 view?: "pending" | "overdue" | "completed" | "delegated";
-                type?: ("project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po") | null;
+                type?: ("project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po" | "po_change") | null;
                 q?: string;
                 sort?: ("due" | "amount" | "decided") | null;
                 direction?: ("asc" | "desc") | null;
@@ -15831,6 +16042,317 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PoRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    list_changes_api_v1_purchase_orders__id__changes_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoChangeRead"][];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    create_change_api_v1_purchase_orders__id__changes_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PoChangeCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoChangeRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    get_change_api_v1_purchase_orders__id__changes__number__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                number: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoChangeRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    patch_change_api_v1_purchase_orders__id__changes__number__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                number: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PoChangePatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoChangeRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    apply_change_api_v1_purchase_orders__id__changes__number__apply_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                number: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoChangeRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    submit_change_api_v1_purchase_orders__id__changes__number__submit_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                number: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoChangeRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    withdraw_change_api_v1_purchase_orders__id__changes__number__withdraw_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                number: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoChangeRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */
@@ -20812,7 +21334,7 @@ export interface operations {
     list_workflows_api_v1_workflows_get: {
         parameters: {
             query?: {
-                document_type?: ("project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po") | null;
+                document_type?: ("project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po" | "po_change") | null;
                 cursor?: string | null;
                 search?: string;
             };
@@ -20900,7 +21422,7 @@ export interface operations {
     workflow_catalog_api_v1_workflows_catalog_get: {
         parameters: {
             query: {
-                document_type: "project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po";
+                document_type: "project" | "requisition" | "project_request" | "budget_change" | "vendor" | "rfq" | "award" | "po" | "po_change";
             };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;

@@ -595,6 +595,13 @@ def test_purchase_order_routes_conceal_foreign_tenants(lifecycle_db):
                     ("POST", f"/{id}/submit", None),
                     ("POST", f"/{id}/withdraw", None),
                     ("POST", f"/{id}/issue", None),
+                    ("POST", f"/{id}/changes", {}),
+                    ("GET", f"/{id}/changes", None),
+                    ("GET", f"/{id}/changes/1", None),
+                    ("PATCH", f"/{id}/changes/1", {"terms": "x"}),
+                    ("POST", f"/{id}/changes/1/submit", None),
+                    ("POST", f"/{id}/changes/1/withdraw", None),
+                    ("POST", f"/{id}/changes/1/apply", None),
                 ):
                     response = await send(browser, method, suffix, data, {"If-Match": '"1"'})
                     assert response.status_code == 404, (method, response.text)

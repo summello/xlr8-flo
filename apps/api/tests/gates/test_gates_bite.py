@@ -1201,6 +1201,7 @@ def test_account_picker_balances_load_and_resumes_a_recorded_session(
     monkeypatch.setattr(flo, "worker_load", lambda name: load)
     monkeypatch.setattr(flo, "state", lambda: saved)
     monkeypatch.setattr(flo, "save_state", saved.update)
+    monkeypatch.delenv("FLO_ACCOUNT", raising=False)  # a worker session pins its own account
 
     flo.cmd_account(["E99-S01"])
     kind, config_dir, session, account = capsys.readouterr().out.split()

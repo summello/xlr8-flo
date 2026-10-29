@@ -23,6 +23,6 @@ describe("out-of-office form", () => {
 
   it("sends purchase orders only when chosen", () => {
     expect(buildDelegation(good).document_types).toBeUndefined();
-    expect(buildDelegation({ ...good, covers: "po" }).document_types).toEqual(["po"]);
+    expect(buildDelegation({ ...good, covers: "po" }).document_types).toEqual(["po", "po_change"]);
   });
 });

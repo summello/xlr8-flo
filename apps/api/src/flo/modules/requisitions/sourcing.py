@@ -341,6 +341,37 @@ def mark_completed(conn: Conn, scope: Scope, requisition_id: UUID, actor_id: UUI
         return True
 
 
+def reopen_for_purchase(conn: Conn, scope: Scope, requisition_id: UUID, actor_id: UUID) -> bool:
+    """`completed` -> `open_for_purchase` when a change order left a line short of issued (E13-S06).
+
+    Returns whether the requisition moved; `mark_completed` closes it again once the quantity is
+    re-issued. Call in a transaction.
+    """
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        repo = RequisitionRepository(conn, scope)
+        row = read_row(repo, requisition_id, lock=True)
+        if row["status"] != "completed":
+            return False
+        short = repo.execute(
+            "SELECT 1 FROM requisition_line WHERE org_id = %(org_id)s AND requisition_id = %(id)s "
+            "AND issued_qty < quantity - cancelled_qty LIMIT 1",
+            {"id": requisition_id},
+        ).fetchone()
+        if not short:
+            return False
+        write_status(
+            conn,
+            scope,
+            row,
+            "open_for_purchase",
+            actor_id,
+            "Issued quantity reduced",
+            None,
+            audit_action="requisition.reopen_for_purchase",
+        )
+        return True
+
+
 def mark_sourced(conn: Conn, scope: Scope, requisition_id: UUID, actor_id: UUID) -> bool:
     """`sourcing_in_progress` -> `sourced` once nothing is left to source (decision 206).
 

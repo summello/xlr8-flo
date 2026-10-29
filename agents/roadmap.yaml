@@ -2073,7 +2073,7 @@ epics:
           - ACC-005
         dep:
           - E13-S05
-        st: in_progress
+        st: done
       - id: E13-S07
         t: Cancel or reduce releases unused commitment exactly once, history preserved
         k: ledger

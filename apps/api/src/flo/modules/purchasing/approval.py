@@ -19,6 +19,7 @@ from flo.modules.approvals.schemas import (
     OutcomeContext,
 )
 from flo.modules.identity.service import AuthorizationTarget, ScopeType
+from flo.modules.purchasing.changes import ChangeService
 from flo.modules.purchasing.service import PurchaseOrderService
 
 type Conn = psycopg.Connection[tuple[object, ...]]
@@ -89,3 +90,68 @@ class PoAdapter:
         context: OutcomeContext,
     ) -> None:
         PurchaseOrderService(conn, scope, context.actor_id).settle(document_id, outcome, context)
+
+
+class PoChangeAdapter:
+    """A material change order approves like the PO it changes; the id is the change's (E13-S06)."""
+
+    document_type = "po_change"
+    approve_permission = "purchase_order.approve"
+    read_permission = "purchase_order.view"
+    accepts_project_assignment = False
+
+    def fields(self) -> Mapping[str, FieldType]:
+        return PoAdapter().fields()
+
+    def snapshot(self, conn: Conn, scope: Scope, document_id: UUID) -> DocumentSnapshot:
+        changes = ChangeService(conn, scope)
+        change = changes.get_by_id(document_id)
+        po = PurchaseOrderService(conn, scope).get(change.po_id)
+        # stored, never re-proposed: a stale draft must stay readable so it can be rejected
+        # or withdrawn; `_apply` re-validates against the live award when it is approved
+        return DocumentSnapshot(
+            change.version,
+            change.created_by,
+            cast(Target, AuthorizationTarget(ScopeType.BU, po.unit_id, "purchase_order", po.id)),
+            {
+                "total": Money(Decimal(change.total), po.currency),
+                "budget_total_project": Money(
+                    Decimal(change.budget_total_project), po.converted_currency
+                ),
+                "vendor_id": str(po.vendor_id),
+                "unit_id": str(po.unit_id),
+            },
+            {
+                "total": change.total,
+                "diff": json.dumps(change.diff, sort_keys=True, default=str),
+                "budget_effect": json.dumps(change.budget_effect, sort_keys=True),
+            },
+        )
+
+    def summaries(
+        self, conn: Conn, scope: Scope, document_ids: Sequence[UUID]
+    ) -> Mapping[UUID, DocumentSummary]:
+        changes = ChangeService(conn, scope)
+        out = {}
+        for id in document_ids:
+            change = changes.get_by_id(id)
+            po = PurchaseOrderService(conn, scope).get(change.po_id)
+            out[id] = DocumentSummary(
+                f"{po.number} change {change.number}",
+                f"Purchase order {po.number}, change order {change.number}",
+                Money(Decimal(change.total), po.currency),
+                change.created_by,
+                f"/purchase-orders/{po.id}",
+                None,
+            )
+        return out
+
+    def on_outcome(
+        self,
+        conn: Conn,
+        scope: Scope,
+        document_id: UUID,
+        outcome: Outcome,
+        context: OutcomeContext,
+    ) -> None:
+        ChangeService(conn, scope, context.actor_id).settle(document_id, outcome, context)

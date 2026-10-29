@@ -31,7 +31,8 @@ from flo.kernel.tenancy.context import Scope
 from flo.modules.org.schemas import CodesRead
 
 DocumentType = Literal[
-    "project", "requisition", "project_request", "budget_change", "vendor", "rfq", "award", "po"
+    "project", "requisition", "project_request", "budget_change", "vendor", "rfq", "award", "po",
+    "po_change",
 ]
 VersionStatus = Literal["draft", "published", "superseded", "deleted"]
 
@@ -579,7 +580,7 @@ class DelegationCreate(Contract):
     delegate_id: UUID
     starts_at: datetime
     ends_at: datetime
-    document_types: list[DocumentType] | None = Field(default=None, min_length=1, max_length=8)
+    document_types: list[DocumentType] | None = Field(default=None, min_length=1, max_length=9)
     reason: str = Field(min_length=1, max_length=500)
 
     @model_validator(mode="after")

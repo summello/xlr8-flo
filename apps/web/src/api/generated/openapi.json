@@ -3063,6 +3063,16 @@
         "title": "ChangeSet",
         "type": "object"
       },
+      "ChangeStatus": {
+        "enum": [
+          "draft",
+          "approval_pending",
+          "approved",
+          "rejected",
+          "withdrawn"
+        ],
+        "type": "string"
+      },
       "ChildrenPage": {
         "properties": {
           "next_cursor": {
@@ -4107,11 +4117,12 @@
                     "vendor",
                     "rfq",
                     "award",
-                    "po"
+                    "po",
+                    "po_change"
                   ],
                   "type": "string"
                 },
-                "maxItems": 8,
+                "maxItems": 9,
                 "minItems": 1,
                 "type": "array"
               },
@@ -10425,6 +10436,310 @@
         "title": "PickerRow",
         "type": "object"
       },
+      "PoChangeAdd": {
+        "additionalProperties": false,
+        "description": "A line from another awarded line of the PO's vendor, award and requisition.",
+        "properties": {
+          "quantity": {
+            "title": "Quantity",
+            "type": "string"
+          },
+          "rfq_line_id": {
+            "format": "uuid",
+            "title": "Rfq Line Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rfq_line_id",
+          "quantity"
+        ],
+        "title": "PoChangeAdd",
+        "type": "object"
+      },
+      "PoChangeCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "title": "PoChangeCreate",
+        "type": "object"
+      },
+      "PoChangeLineEdit": {
+        "additionalProperties": false,
+        "description": "An existing line: `remove`, or a lower or higher `quantity`, a lower `unit_price`, `tax`,\n`freight` (`line` mode only). A project, department or ledger account is accepted only to be\nrefused (422 `use_transfer`).",
+        "properties": {
+          "department_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department Code"
+          },
+          "freight": {
+            "title": "Freight",
+            "type": "string"
+          },
+          "ledger_account_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ledger Account Code"
+          },
+          "line_no": {
+            "minimum": 1.0,
+            "title": "Line No",
+            "type": "integer"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "string"
+          },
+          "remove": {
+            "default": false,
+            "title": "Remove",
+            "type": "boolean"
+          },
+          "tax": {
+            "title": "Tax",
+            "type": "string"
+          },
+          "unit_price": {
+            "title": "Unit Price",
+            "type": "string"
+          }
+        },
+        "required": [
+          "line_no"
+        ],
+        "title": "PoChangeLineEdit",
+        "type": "object"
+      },
+      "PoChangePatch": {
+        "additionalProperties": false,
+        "description": "A field left out is unchanged; `lines` and `add` replace the draft's list; `terms` and\n`needed_by` may be set to null.",
+        "properties": {
+          "add": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PoChangeAdd"
+                },
+                "maxItems": 500,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Add"
+          },
+          "document_freight": {
+            "title": "Document Freight",
+            "type": "string"
+          },
+          "lines": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PoChangeLineEdit"
+                },
+                "maxItems": 500,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lines"
+          },
+          "needed_by": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Needed By"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "terms": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terms"
+          }
+        },
+        "title": "PoChangePatch",
+        "type": "object"
+      },
+      "PoChangeRead": {
+        "properties": {
+          "budget_effect": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Budget Effect",
+            "type": "array"
+          },
+          "budget_total_project": {
+            "title": "Budget Total Project",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "format": "uuid",
+            "title": "Created By",
+            "type": "string"
+          },
+          "diff": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Diff",
+            "type": "array"
+          },
+          "draft": {
+            "additionalProperties": true,
+            "title": "Draft",
+            "type": "object"
+          },
+          "from_version": {
+            "title": "From Version",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "material": {
+            "title": "Material",
+            "type": "boolean"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "po_id": {
+            "format": "uuid",
+            "title": "Po Id",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "result_po_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Po Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ChangeStatus"
+          },
+          "total": {
+            "title": "Total",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "po_id",
+          "number",
+          "version",
+          "from_version",
+          "status",
+          "material",
+          "reason",
+          "created_by",
+          "created_at",
+          "draft",
+          "diff",
+          "budget_effect",
+          "result_po_id",
+          "total",
+          "budget_total_project"
+        ],
+        "title": "PoChangeRead",
+        "type": "object"
+      },
       "PoCreate": {
         "additionalProperties": false,
         "properties": {
@@ -10917,6 +11232,10 @@
             "title": "Requisition Id",
             "type": "string"
           },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
           "ship_to_address_id": {
             "anyOf": [
               {
@@ -10931,6 +11250,18 @@
           },
           "status": {
             "$ref": "#/components/schemas/PoStatus"
+          },
+          "supersedes_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supersedes Id"
           },
           "tax_total": {
             "title": "Tax Total",
@@ -10994,6 +11325,8 @@
           "needed_by",
           "status",
           "version",
+          "revision",
+          "supersedes_id",
           "created_at",
           "freight_mode",
           "document_freight",
@@ -17686,7 +18019,8 @@
               "vendor",
               "rfq",
               "award",
-              "po"
+              "po",
+              "po_change"
             ],
             "title": "Document Type",
             "type": "string"
@@ -17815,7 +18149,8 @@
               "vendor",
               "rfq",
               "award",
-              "po"
+              "po",
+              "po_change"
             ],
             "title": "Document Type",
             "type": "string"
@@ -19587,7 +19922,8 @@
                     "vendor",
                     "rfq",
                     "award",
-                    "po"
+                    "po",
+                    "po_change"
                   ],
                   "type": "string"
                 },
@@ -19614,7 +19950,8 @@
                       "vendor",
                       "rfq",
                       "award",
-                      "po"
+                      "po",
+                      "po_change"
                     ],
                     "type": "string"
                   },
@@ -19768,7 +20105,8 @@
                 "vendor",
                 "rfq",
                 "award",
-                "po"
+                "po",
+                "po_change"
               ],
               "title": "Document Type",
               "type": "string"
@@ -20193,7 +20531,8 @@
                     "vendor",
                     "rfq",
                     "award",
-                    "po"
+                    "po",
+                    "po_change"
                   ],
                   "type": "string"
                 },
@@ -29403,6 +29742,618 @@
           }
         },
         "summary": "Patch Purchase Order",
+        "tags": [
+          "purchasing"
+        ]
+      }
+    },
+    "/api/v1/purchase-orders/{id}/changes": {
+      "get": {
+        "operationId": "list_changes_api_v1_purchase_orders__id__changes_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PoChangeRead"
+                  },
+                  "title": "Response List Changes Api V1 Purchase Orders  Id  Changes Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "List Changes",
+        "tags": [
+          "purchasing"
+        ]
+      },
+      "post": {
+        "operationId": "create_change_api_v1_purchase_orders__id__changes_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PoChangeCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoChangeRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Create Change",
+        "tags": [
+          "purchasing"
+        ]
+      }
+    },
+    "/api/v1/purchase-orders/{id}/changes/{number}": {
+      "get": {
+        "operationId": "get_change_api_v1_purchase_orders__id__changes__number__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "number",
+            "required": true,
+            "schema": {
+              "title": "Number",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoChangeRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Get Change",
+        "tags": [
+          "purchasing"
+        ]
+      },
+      "patch": {
+        "operationId": "patch_change_api_v1_purchase_orders__id__changes__number__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "number",
+            "required": true,
+            "schema": {
+              "title": "Number",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PoChangePatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoChangeRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Patch Change",
+        "tags": [
+          "purchasing"
+        ]
+      }
+    },
+    "/api/v1/purchase-orders/{id}/changes/{number}/apply": {
+      "post": {
+        "operationId": "apply_change_api_v1_purchase_orders__id__changes__number__apply_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "number",
+            "required": true,
+            "schema": {
+              "title": "Number",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoChangeRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Apply Change",
+        "tags": [
+          "purchasing"
+        ]
+      }
+    },
+    "/api/v1/purchase-orders/{id}/changes/{number}/submit": {
+      "post": {
+        "operationId": "submit_change_api_v1_purchase_orders__id__changes__number__submit_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "number",
+            "required": true,
+            "schema": {
+              "title": "Number",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoChangeRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Submit Change",
+        "tags": [
+          "purchasing"
+        ]
+      }
+    },
+    "/api/v1/purchase-orders/{id}/changes/{number}/withdraw": {
+      "post": {
+        "operationId": "withdraw_change_api_v1_purchase_orders__id__changes__number__withdraw_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "number",
+            "required": true,
+            "schema": {
+              "title": "Number",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoChangeRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Withdraw Change",
         "tags": [
           "purchasing"
         ]
@@ -39086,7 +40037,8 @@
                     "vendor",
                     "rfq",
                     "award",
-                    "po"
+                    "po",
+                    "po_change"
                   ],
                   "type": "string"
                 },
@@ -39263,7 +40215,8 @@
                 "vendor",
                 "rfq",
                 "award",
-                "po"
+                "po",
+                "po_change"
               ],
               "title": "Document Type",
               "type": "string"

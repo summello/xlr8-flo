@@ -12,9 +12,13 @@ from flo.kernel.authz import GrantedScopes, permits, require, require_granted
 from flo.kernel.config import Settings
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
+from flo.modules.purchasing.changes import ChangeService
 from flo.modules.purchasing.issue import issue
 from flo.modules.purchasing.schemas import (
     AwardedLinesRead,
+    PoChangeCreate,
+    PoChangePatch,
+    PoChangeRead,
     PoCreate,
     PoPage,
     PoPatch,
@@ -55,10 +59,11 @@ CreateContext = Annotated[
 IssueContext = Annotated[AuthorizationContext, Depends(require("purchase_order.issue", po_target))]
 CloseContext = Annotated[AuthorizationContext, Depends(require("purchase_order.close", po_target))]
 EditContext = Annotated[AuthorizationContext, Depends(require("purchase_order.create", po_target))]
+AmendContext = Annotated[AuthorizationContext, Depends(require("purchase_order.amend", po_target))]
 ListScopes = Annotated[GrantedScopes, Depends(require_granted("purchase_order.view"))]
 
 
-def _etag(po: PoRead, response: Response) -> PoRead:
+def _etag[T: (PoRead, PoChangeRead)](po: T, response: Response) -> T:
     response.headers["ETag"] = f'"{po.version}"'
     return po
 
@@ -178,3 +183,88 @@ def issue_purchase_order(
     version: Annotated[str | None, Header(alias="If-Match")] = None,
 ) -> PoRead:
     return _etag(issue(connection, current_scope(), id, context.user_id, version), response)
+
+
+# -- change orders (E13-S06): an issued order changes only by a numbered change order ----------
+
+
+@router.post("/{id}/changes", status_code=201, response_model=PoChangeRead)
+def create_change(
+    id: UUID,
+    body: PoChangeCreate,
+    context: AmendContext,
+    connection: Connection,
+    response: Response,
+) -> PoChangeRead:
+    change = ChangeService(connection, current_scope(), context.user_id).create(id, body)
+    return _etag(change, response)
+
+
+@router.get("/{id}/changes", response_model=list[PoChangeRead])
+def list_changes(id: UUID, context: ViewContext, connection: Connection) -> list[PoChangeRead]:
+    return ChangeService(connection, current_scope(), context.user_id).list_changes(id)
+
+
+@router.get("/{id}/changes/{number}", response_model=PoChangeRead)
+def get_change(
+    id: UUID, number: int, context: ViewContext, connection: Connection, response: Response
+) -> PoChangeRead:
+    change = ChangeService(connection, current_scope(), context.user_id).get(id, number)
+    return _etag(change, response)
+
+
+@router.patch("/{id}/changes/{number}", response_model=PoChangeRead)
+def patch_change(
+    id: UUID,
+    number: int,
+    body: PoChangePatch,
+    context: AmendContext,
+    connection: Connection,
+    response: Response,
+    version: Annotated[str | None, Header(alias="If-Match")] = None,
+) -> PoChangeRead:
+    change = ChangeService(connection, current_scope(), context.user_id).update(
+        id, number, body, version
+    )
+    return _etag(change, response)
+
+
+@router.post("/{id}/changes/{number}/submit", response_model=PoChangeRead)
+def submit_change(
+    id: UUID,
+    number: int,
+    context: AmendContext,
+    connection: Connection,
+    response: Response,
+    version: Annotated[str | None, Header(alias="If-Match")] = None,
+) -> PoChangeRead:
+    change = ChangeService(connection, current_scope(), context.user_id).submit(id, number, version)
+    return _etag(change, response)
+
+
+@router.post("/{id}/changes/{number}/withdraw", response_model=PoChangeRead)
+def withdraw_change(
+    id: UUID,
+    number: int,
+    context: AmendContext,
+    connection: Connection,
+    response: Response,
+    version: Annotated[str | None, Header(alias="If-Match")] = None,
+) -> PoChangeRead:
+    change = ChangeService(connection, current_scope(), context.user_id).withdraw(
+        id, number, version
+    )
+    return _etag(change, response)
+
+
+@router.post("/{id}/changes/{number}/apply", response_model=PoChangeRead)
+def apply_change(
+    id: UUID,
+    number: int,
+    context: AmendContext,
+    connection: Connection,
+    response: Response,
+    version: Annotated[str | None, Header(alias="If-Match")] = None,
+) -> PoChangeRead:
+    change = ChangeService(connection, current_scope(), context.user_id).apply(id, number, version)
+    return _etag(change, response)

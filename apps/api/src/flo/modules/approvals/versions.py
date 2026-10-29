@@ -73,6 +73,7 @@ def enrich(repo: WorkflowRepository, row: WorkflowRead) -> WorkflowRead:
         "rfq": "RFQs",
         "award": "Awards",
         "po": "Purchase Orders",
+        "po_change": "Purchase Order Changes",
     }[row.document_type]
     row.applies_to = f"{label} · {name[0] if name else 'Organization'}"
     return row

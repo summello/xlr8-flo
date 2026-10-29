@@ -141,6 +141,47 @@ def test_delegation_covering_only_another_type_grants_no_power(setup, monkeypatc
     assert error.value.code == ErrorCode.FORBIDDEN
 
 
+@pytest.mark.parametrize(("types", "covered"), [(["po", "po_change"], True), (["po"], False)])
+def test_a_po_delegation_covers_change_orders_only_when_it_names_them(setup, types, covered):
+    """E13-S06: resolution needs an exact type match, so the PO-only picker stores both types."""
+    from flo.modules.approvals.engine import start
+
+    db, adapter, users, *_ = setup
+    owner, other = users[0], users[1]
+
+    class Change(Adapter):
+        document_type = "po_change"
+
+    class Po(Adapter):
+        document_type = "po"
+
+    change = Change(db)
+    conditions.register_document_type(change)
+    conditions.register_document_type(Po(db))
+    change.summaries = adapter.summaries = lambda conn, scope, ids: {
+        i: DocumentSummary("PO-1 change 1", "Change", None, db[3], "/purchase-orders/1", None)
+        for i in ids
+    }
+    row = definition(db, document_type="po_change")
+    draft(db, row, users_graph(owner))
+    svc(db).publish(row.id, 1, True)
+    instance = start(
+        db[0], Scope(db[1]), document_type="po_change", document_id=change.document,
+        actor_id=db[3], resolver=resolver(db),
+    )  # fmt: skip
+    delegate(setup, owner, other, types=types)
+    body = DecisionWrite(outcome="approve", document_version=change.value.version)
+    if covered:
+        result = decide(
+            db[0], Scope(db[1]), task_id=instance.tasks[-1].id, actor_id=other, body=body
+        )
+        assert result.decision.authority == "delegate"
+    else:
+        with pytest.raises(ProblemError) as error:
+            decide(db[0], Scope(db[1]), task_id=instance.tasks[-1].id, actor_id=other, body=body)
+        assert error.value.code == ErrorCode.FORBIDDEN
+
+
 def test_overlap_refused_back_to_back_allowed_and_no_redelegation(setup):
     db, adapter, users, *_ = setup
     owner, other, third = users

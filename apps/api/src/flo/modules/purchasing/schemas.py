@@ -132,6 +132,8 @@ class PoRead(BaseModel):
     needed_by: date | None
     status: PoStatus
     version: int
+    revision: int  # 0 = the original issue; each applied change order adds one
+    supersedes_id: UUID | None
     created_at: datetime
     freight_mode: Literal["line", "document"]
     document_freight: str | None
@@ -183,3 +185,83 @@ class AwardedLineRead(BaseModel):
 class AwardedLinesRead(BaseModel):
     award_id: UUID
     lines: list[AwardedLineRead]
+
+
+type ChangeStatus = Literal["draft", "approval_pending", "approved", "rejected", "withdrawn"]
+
+
+class PoChangeCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reason: str | None = Field(default=None, max_length=500)
+
+
+class PoChangeLineEdit(BaseModel):
+    """An existing line: `remove`, or a lower or higher `quantity`, a lower `unit_price`, `tax`,
+    `freight` (`line` mode only). A project, department or ledger account is accepted only to be
+    refused (422 `use_transfer`)."""
+
+    model_config = ConfigDict(extra="forbid")
+    line_no: int = Field(ge=1)
+    remove: bool = False
+    quantity: str | None = None
+    unit_price: str | None = None
+    tax: str | None = None
+    freight: str | None = None
+    project_id: UUID | None = None
+    department_code: str | None = None
+    ledger_account_code: str | None = None
+
+    _quantity = field_validator("quantity", mode="before", json_schema_input_type=str)(
+        lambda cls, v: v if v is None else _qty(v)
+    )
+    _amounts = field_validator(
+        "unit_price", "tax", "freight", mode="before", json_schema_input_type=str
+    )(lambda cls, v: v if v is None else _amount(v))
+
+
+class PoChangeAdd(BaseModel):
+    """A line from another awarded line of the PO's vendor, award and requisition."""
+
+    model_config = ConfigDict(extra="forbid")
+    rfq_line_id: UUID
+    quantity: str
+
+    _quantity = field_validator("quantity", mode="before", json_schema_input_type=str)(
+        lambda cls, v: _qty(v)
+    )
+
+
+class PoChangePatch(BaseModel):
+    """A field left out is unchanged; `lines` and `add` replace the draft's list; `terms` and
+    `needed_by` may be set to null."""
+
+    model_config = ConfigDict(extra="forbid")
+    reason: str | None = Field(default=None, max_length=500)
+    terms: str | None = Field(default=None, max_length=4000)
+    needed_by: date | None = None
+    document_freight: str | None = None  # `document` freight mode only
+    lines: list[PoChangeLineEdit] | None = Field(default=None, max_length=500)
+    add: list[PoChangeAdd] | None = Field(default=None, max_length=500)
+
+    _document_freight = field_validator(
+        "document_freight", mode="before", json_schema_input_type=str
+    )(lambda cls, v: v if v is None else _amount(v))
+
+
+class PoChangeRead(BaseModel):
+    id: UUID
+    po_id: UUID
+    number: int
+    version: int
+    from_version: int
+    status: ChangeStatus
+    material: bool
+    reason: str | None
+    created_by: UUID
+    created_at: datetime
+    draft: dict[str, Any]
+    diff: list[dict[str, Any]]  # field level: line_no, field, label, was, now (words for the UI)
+    budget_effect: list[dict[str, Any]]  # signed delta per sub-project and code group
+    result_po_id: UUID | None
+    total: str  # the order total if applied, in the PO currency, as last drafted
+    budget_total_project: str  # its budget total in the project currency

@@ -50,6 +50,8 @@ def one(db):
 
 def setstatus(db, po, status):
     with tenant_transaction(db[0], Scope(db[1])):
+        # force any status: the immutability trigger (E13-S06) would refuse a way out of issued
+        db[0].execute("SET LOCAL session_replication_role = replica")
         db[0].execute("UPDATE purchase_order SET status=%s WHERE id=%s", (status, po.id))
 
 
