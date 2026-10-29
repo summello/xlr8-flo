@@ -12,6 +12,7 @@ from flo.kernel.authz import GrantedScopes, permits, require, require_granted
 from flo.kernel.config import Settings
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
+from flo.modules.purchasing.issue import issue
 from flo.modules.purchasing.schemas import (
     AwardedLinesRead,
     PoCreate,
@@ -51,6 +52,7 @@ AwardViewContext = Annotated[
 CreateContext = Annotated[
     AuthorizationContext, Depends(require("purchase_order.create", create_target))
 ]
+IssueContext = Annotated[AuthorizationContext, Depends(require("purchase_order.issue", po_target))]
 CloseContext = Annotated[AuthorizationContext, Depends(require("purchase_order.close", po_target))]
 EditContext = Annotated[AuthorizationContext, Depends(require("purchase_order.create", po_target))]
 ListScopes = Annotated[GrantedScopes, Depends(require_granted("purchase_order.view"))]
@@ -165,3 +167,14 @@ def withdraw_purchase_order(
     return _etag(
         PurchaseOrderService(connection, current_scope(), context.user_id).withdraw(id), response
     )
+
+
+@router.post("/{id}/issue", response_model=PoRead)
+def issue_purchase_order(
+    id: UUID,
+    context: IssueContext,
+    connection: Connection,
+    response: Response,
+    version: Annotated[str | None, Header(alias="If-Match")] = None,
+) -> PoRead:
+    return _etag(issue(connection, current_scope(), id, context.user_id, version), response)

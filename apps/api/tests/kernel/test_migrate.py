@@ -182,6 +182,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261028_0080",
         "20261028_0081",
         "20261028_0082",
+        "20261029_0083",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -3334,3 +3335,32 @@ def test_bid_line_quoted_price_positive_refuses_zero_and_roundtrips(empty_databa
         put(Decimal("0.0000"))
         with tenant_transaction(conn, scope):
             assert conn.execute("SELECT count(*) FROM bid_line").fetchone() == (3,)
+
+
+def test_po_issue_migration_adds_issued_qty_and_roundtrips(empty_database):
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261028_0082"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261029_0083")
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        mig.upgrade(conn)
+        names = {
+            r[0]
+            for r in conn.execute(
+                "SELECT conname FROM pg_constraint WHERE conname LIKE 'line_issued_%'"
+            )
+        }
+        assert names == {"line_issued_nonneg", "line_issued_ceiling"}
+        columns = lambda t: {  # noqa: E731
+            r[0]
+            for r in conn.execute(
+                "SELECT column_name FROM information_schema.columns WHERE table_name=%s", (t,)
+            )
+        }
+        assert "issued_qty" in columns("requisition_line")
+        assert {"issued_at", "issued_by"} <= columns("purchase_order")
+        mig.downgrade(conn)
+        assert "issued_qty" not in columns("requisition_line")
+        assert not {"issued_at", "issued_by"} & columns("purchase_order")
+        mig.upgrade(conn)

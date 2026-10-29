@@ -2059,7 +2059,7 @@ epics:
           - E13-S04
           - E07-S05
           - E12-S23
-        st: in_progress
+        st: done
       - id: E13-S06
         t: Immutable issued PO; numbered, approved change orders with field-level diff
         k: engine

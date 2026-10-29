@@ -263,6 +263,84 @@ def order_lines(
             )
 
 
+def reservation_entry(
+    conn: Conn, scope: Scope, requisition_id: UUID, *, lock: bool = False
+) -> int | None:
+    """The live reservation entry id of a requisition (None when it holds none); `lock` takes the
+    requisition row."""
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        row = read_row(RequisitionRepository(conn, scope), requisition_id, lock=lock)
+        return cast(int | None, row["reservation_entry_id"])
+
+
+def issue_lines(
+    conn: Conn, scope: Scope, changes: Sequence[tuple[UUID, Decimal]], actor_id: UUID
+) -> None:
+    """`issued_qty += qty` for each (requisition line, quantity), all or nothing (E13-S05).
+
+    Issued quantity never exceeds the ordered quantity; the CHECK constraint stays as backstop.
+    The caller already holds the requisition lock."""
+    wanted: dict[UUID, Decimal] = defaultdict(Decimal)
+    for line_id, qty in changes:
+        wanted[line_id] += qty
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        repo = RequisitionRepository(conn, scope)
+        lines = {
+            cast(UUID, r[0]): r
+            for r in repo.execute(
+                "SELECT id, requisition_id, ordered_qty, issued_qty FROM requisition_line "
+                "WHERE org_id = %(org_id)s AND id = ANY(%(ids)s) ORDER BY id FOR UPDATE",
+                {"ids": sorted(wanted)},
+            ).fetchall()
+        }
+        if lines.keys() != wanted.keys():
+            raise ProblemError(ErrorCode.NOT_FOUND)
+        for line_id, qty in wanted.items():
+            ordered, issued = cast(Decimal, lines[line_id][2]), cast(Decimal, lines[line_id][3])
+            if issued + qty > ordered:
+                raise conflict(
+                    "over_issue", "More quantity was issued than was ordered on a requisition line."
+                )
+            repo.execute(
+                "UPDATE requisition_line SET issued_qty = issued_qty + %(qty)s, updated_at = now() "
+                "WHERE org_id = %(org_id)s AND id = %(id)s",
+                {"id": line_id, "qty": qty},
+            )
+            audit_event(
+                cast(AuditConnection, conn),
+                scope,
+                actor=AuditActor(ActorKind.USER, actor_id),
+                action="requisition.issue.update",
+                target_type="requisition",
+                target_id=cast(UUID, lines[line_id][1]),
+                outcome=Outcome.SUCCESS,
+                before={str(line_id): format(issued, "f")},
+                after={str(line_id): format(issued + qty, "f")},
+            )
+
+
+def mark_completed(conn: Conn, scope: Scope, requisition_id: UUID, actor_id: UUID) -> bool:
+    """`open_for_purchase` -> `completed` once every non-cancelled line is issued (decision 206).
+
+    Releases nothing: the award already returned the surplus reservation (E13-S05). Returns
+    whether the requisition moved. Call in a transaction.
+    """
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        repo = RequisitionRepository(conn, scope)
+        row = read_row(repo, requisition_id, lock=True)
+        if row["status"] != "open_for_purchase":
+            return False
+        open_lines = repo.execute(
+            "SELECT 1 FROM requisition_line WHERE org_id = %(org_id)s AND requisition_id = %(id)s "
+            "AND issued_qty <> quantity - cancelled_qty LIMIT 1",
+            {"id": requisition_id},
+        ).fetchone()
+        if open_lines:
+            return False
+        write_status(conn, scope, row, "completed", actor_id, None, None)
+        return True
+
+
 def mark_sourced(conn: Conn, scope: Scope, requisition_id: UUID, actor_id: UUID) -> bool:
     """`sourcing_in_progress` -> `sourced` once nothing is left to source (decision 206).
 

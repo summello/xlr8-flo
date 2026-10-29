@@ -6758,6 +6758,72 @@
         },
         "gate_s": 2
       }
+    },
+    {
+      "story": "E13-S05",
+      "kind": "ledger",
+      "size": "L",
+      "tags": [
+        "money",
+        "concurrency"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 3,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "2f1cf8bc-ecc5-431d-a3fe-05f4c423dbac",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S05",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a18504-c52c-7341-9901-d5e9628b7a65",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "POST /purchase-orders/{id}/issue freezes the budget amounts, converts the requisition reservation into one commitment per (requisition, sub-project, department, ledger account) under ordered locks, bumps requisition_line.issued_qty, transitions the PO to issued and completes the requisition when every line is issued. Retries and races return the same issued PO and commit once.",
+      "title": "Issue converts reservation to commitment atomically; partial POs reduce open quantity only",
+      "durations": {
+        "wall_s": 15476,
+        "author_s": 4038,
+        "review_s": {
+          "codex": 131,
+          "opus": 305
+        },
+        "gate_s": 1
+      }
     }
   ]
 }

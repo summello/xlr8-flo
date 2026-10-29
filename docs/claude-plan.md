@@ -561,7 +561,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E10-S12** Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11) | E10 | ui | L | APR-011, APR-021, ACC-007 | ~~E10-S11~~, ~~E10-S05~~ |
 | ✅ | **E10-S13** Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes | E10 | engine | M | APR-003, PROJ-002, VEN-005, BUD-007 | ~~E10-S07~~ |
 
-#### M3 — First sellable release · 59/76 done
+#### M3 — First sellable release · 60/76 done
 
 > Vendors, RFQs, awards and purchase orders by email. Closes the money loop end to end.
 
@@ -613,17 +613,17 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E13-S02** Tax and freight per BU/OU policy, separately visible on line and document | E13 | ledger | M | FIN-008, FIN-009, PO-016 | ~~E13-S01~~ |
 | ✅ | **E13-S03** PO lifecycle state machine | E13 | engine | M | PO-007, WF-002 | ~~E13-S01~~, ~~E11-S09~~ |
 | ✅ | **E13-S04** PO approval workflow before issue | E13 | engine | M | PO-003, APR-003 | ~~E13-S03~~, ~~E10-S13~~, ~~E13-S02~~ |
-| 🔨 | **E13-S05** Issue converts reservation to commitment atomically; partial POs reduce open quantity only | E13 | ledger | L | PO-008, PO-009, WF-003, ACC-002 | ~~E13-S04~~, ~~E07-S05~~, ~~E12-S23~~ |
-| ⬜ | **E13-S06** Immutable issued PO; numbered, approved change orders with field-level diff | E13 | engine | L | PO-010, PO-011, DATA-005, ACC-005 | E13-S05 |
+| ✅ | **E13-S05** Issue converts reservation to commitment atomically; partial POs reduce open quantity only | E13 | ledger | L | PO-008, PO-009, WF-003, ACC-002 | ~~E13-S04~~, ~~E07-S05~~, ~~E12-S23~~ |
+| ⬜ | **E13-S06** Immutable issued PO; numbered, approved change orders with field-level diff | E13 | engine | L | PO-010, PO-011, DATA-005, ACC-005 | ~~E13-S05~~ |
 | ⬜ | **E13-S07** Cancel or reduce releases unused commitment exactly once, history preserved | E13 | ledger | M | PO-013, FIN-011, ACC-006, WF-005 | E13-S06 |
 | ⬜ | **E13-S08** PO PDF reproducible from stored snapshot and template version | E13 | engine | L | PO-014, DATA-005 | E13-S06 |
 | ⬜ | **E13-S09** Email transmission via outbox, recipient/time/result/version recorded, retry without duplication | E13 | engine | L | PO-004, PO-012, PO-015, ARCH-006, ACC-002 | E13-S08, ~~E03-S06~~ |
 | ⬜ | **E13-S10** Deliverability: SPF/DKIM/DMARC verification, bounce and complaint handling, suppression list | E13 | engine | M | EML-001, EML-002, EML-003, EML-006 | E13-S09 |
 | ⬜ | **E13-S11** Internal vs vendor-facing notes and attachments, enforced by test | E13 | security | M | PO-017, EML-005, COL-002 | E13-S09, ~~E09-S10~~ |
-| ⬜ | **E13-S12** PO list and PO detail screens | E13 | ui | L | PO-007, PO-013, UX-004 | ~~E13-S03~~, E13-S05, ~~E11-S09~~ |
+| ⬜ | **E13-S12** PO list and PO detail screens | E13 | ui | L | PO-007, PO-013, UX-004 | ~~E13-S03~~, ~~E13-S05~~, ~~E11-S09~~ |
 | ⬜ | **E13-S13** Create POs from awarded lines | E13 | ui | M | PO-001, PO-009, SRC-018 | ~~E13-S01~~, E13-S12 |
 | ⬜ | **E13-S14** PO editor: header, lines with tax and freight apart, budget preview, vendor eligibility | E13 | ui | L | PO-002, PO-016, PO-017, VEN-012 | ~~E13-S01~~, ~~E13-S02~~, ~~E13-S04~~, E13-S11, E13-S12, ~~E11-S11~~ |
-| ⬜ | **E13-S15** Issue: confirmation and signature moment 5 | E13 | ui | M | PO-008, PO-012, A11Y-009 | E13-S05, E13-S09, E13-S12 |
+| ⬜ | **E13-S15** Issue: confirmation and signature moment 5 | E13 | ui | M | PO-008, PO-012, A11Y-009 | ~~E13-S05~~, E13-S09, E13-S12 |
 | ⬜ | **E13-S16** Transmission log, change recipient and resend | E13 | ui | M | PO-004, PO-015, EML-002, EML-003 | E13-S09, E13-S10, E13-S12 |
 | ⬜ | **E13-S17** Vendor copy preview: email and PDF as the supplier sees them | E13 | ui | M | PO-014, PO-017, EML-005 | E13-S08, E13-S11, E13-S12 |
 | ⬜ | **E13-S18** Change order screen: field diff, signed budget effect, reapproval line | E13 | ui | M | PO-010, PO-011, ACC-005 | E13-S06, E13-S12 |
@@ -655,7 +655,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E14-S03** FIFO physical assignment with audited exception override | E14 | engine | M | AST-004 | E14-S02 |
 | ⬜ | **E14-S04** Weighted-average valuation, negative-stock prevention | E14 | ledger | M | AST-005, AST-007 | E14-S02 |
 | ⬜ | **E14-S05** Fixed-asset register with full attribute set and BU/OU linkage | E14 | crud | M | AST-008, ORG-006 | E14-S01 |
-| ⬜ | **E14-S06** Asset creation from PO with lineage to the originating purchase | E14 | engine | M | AST-009, AUD-007 | E14-S05, E13-S05 |
+| ⬜ | **E14-S06** Asset creation from PO with lineage to the originating purchase | E14 | engine | M | AST-009, AUD-007 | E14-S05, ~~E13-S05~~ |
 | ⬜ | **E14-S07** Stock-count adjustment with reason and configurable approval; manual actual posting | E14 | ledger | M | AST-010, BUD-007 | E14-S04, ~~E07-S05~~ |
 | ⬜ | **E15-S01** Governed KPI registry: definition, source, calculation, time basis, currency, refresh | E15 | engine | M | RPT-001, RPT-006 | ~~E07-S06~~ |
 | ⬜ | **E15-S02** Read models and materialized summaries with as-of time and refresh status | E15 | engine | L | ARCH-004, RPT-014, PERF-003 | E15-S01 |
