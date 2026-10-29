@@ -614,7 +614,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E13-S03** PO lifecycle state machine | E13 | engine | M | PO-007, WF-002 | ~~E13-S01~~, ~~E11-S09~~ |
 | ✅ | **E13-S04** PO approval workflow before issue | E13 | engine | M | PO-003, APR-003 | ~~E13-S03~~, ~~E10-S13~~, ~~E13-S02~~ |
 | ✅ | **E13-S05** Issue converts reservation to commitment atomically; partial POs reduce open quantity only | E13 | ledger | L | PO-008, PO-009, WF-003, ACC-002 | ~~E13-S04~~, ~~E07-S05~~, ~~E12-S23~~ |
-| ⬜ | **E13-S06** Immutable issued PO; numbered, approved change orders with field-level diff | E13 | engine | L | PO-010, PO-011, DATA-005, ACC-005 | ~~E13-S05~~ |
+| 🔨 | **E13-S06** Immutable issued PO; numbered, approved change orders with field-level diff | E13 | engine | L | PO-010, PO-011, DATA-005, ACC-005 | ~~E13-S05~~ |
 | ⬜ | **E13-S07** Cancel or reduce releases unused commitment exactly once, history preserved | E13 | ledger | M | PO-013, FIN-011, ACC-006, WF-005 | E13-S06 |
 | ⬜ | **E13-S08** PO PDF reproducible from stored snapshot and template version | E13 | engine | L | PO-014, DATA-005 | E13-S06 |
 | ⬜ | **E13-S09** Email transmission via outbox, recipient/time/result/version recorded, retry without duplication | E13 | engine | L | PO-004, PO-012, PO-015, ARCH-006, ACC-002 | E13-S08, ~~E03-S06~~ |
