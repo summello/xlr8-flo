@@ -2305,6 +2305,17 @@ epics:
           - PO-007
         dep: []
         st: done
+      - id: E13-S23
+        t: PO approval withdrawal locks the approval instance before the PO (deadlock with a concurrent decision)
+        k: concurrency
+        s: S
+        tags:
+          - concurrency
+        reqs:
+          - PO-007
+        dep:
+          - E13-S07
+        st: todo
 
   - id: E22
     name: Budget governance follow-ups
