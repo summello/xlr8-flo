@@ -6889,6 +6889,72 @@
         },
         "gate_s": 2
       }
+    },
+    {
+      "story": "E13-S07",
+      "kind": "ledger",
+      "size": "M",
+      "tags": [
+        "money"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "a3bcbc94-86c2-446a-ab2e-53491f656131",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S07",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "launch-model",
+          "model": "gpt-5.6-sol"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Added POST /purchase-orders/{id}/cancel and /reduce: cancel releases each open commitment once, re-reserves it (decision 209), optionally returns funds to main and blocks the quantity via requisition_line.cancelled_qty. issue now takes the award lock first (planner ruling) so cancel vs issue cannot deadlock.",
+      "title": "Cancel or reduce releases unused commitment exactly once, history preserved",
+      "durations": {
+        "wall_s": 36316,
+        "author_s": 29659,
+        "review_s": {
+          "codex": 829,
+          "opus": 294
+        },
+        "gate_s": 1860
+      }
     }
   ]
 }

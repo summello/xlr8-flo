@@ -288,9 +288,11 @@ class ChangeService:
             k["rfq_line_id"]: k["quantity"] - gone.get(k["rfq_line_id"], Decimal(0)) for k in keep
         }
         over = {
-            key: (have[key].quantity - have[key].ordered_qty, delta)
+            key: (min(have[key].quantity - have[key].ordered_qty, have[key].orderable), delta)
             for key, delta in grew.items()
-            if delta > 0 and key in have and delta > have[key].quantity - have[key].ordered_qty
+            if delta > 0
+            and key in have
+            and delta > min(have[key].quantity - have[key].ordered_qty, have[key].orderable)
         }
         if over:
             checks = {"problem": "over_open_quantity"}
@@ -625,18 +627,7 @@ class ChangeService:
         self.po._row(po_id, lock=True)
 
     def _root(self, po_id: UUID) -> UUID:
-        """The first revision: every commitment of the PO's life is sourced to it."""
-        row = self.repo.execute(
-            "WITH RECURSIVE chain AS (SELECT id, supersedes_id FROM purchase_order "
-            "WHERE org_id = %(org_id)s AND id = %(id)s UNION ALL SELECT p.id, p.supersedes_id "
-            "FROM purchase_order p JOIN chain c "
-            "ON p.org_id = %(org_id)s AND p.id = c.supersedes_id) "
-            "SELECT id FROM chain WHERE supersedes_id IS NULL",
-            {"id": po_id},
-        ).fetchone()
-        if row is None:
-            raise ProblemError(ErrorCode.NOT_FOUND)
-        return cast(UUID, row[0])
+        return self.po._root(po_id)
 
     def _apply(self, ch: PoChangeRead, actor: UUID) -> None:
         """Under `_lock` and the change's row lock: move the quantities, post the budget effect,

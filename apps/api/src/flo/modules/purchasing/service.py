@@ -28,6 +28,7 @@ from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.approvals.schemas import Outcome as ApprovalOutcome
 from flo.modules.approvals.schemas import OutcomeContext
 from flo.modules.approvals.service import require_workflow_for, start, withdraw
+from flo.modules.budget.service import CONSUMED_BY_ACTUAL
 from flo.modules.identity.service import AuthorizationConnection, AuthorizationResolver
 from flo.modules.org.service import NumberingService, OrgService, today
 from flo.modules.projects.service import ProjectService, generated_for
@@ -139,6 +140,20 @@ class PurchaseOrderService:
                 raise ProblemError(ErrorCode.NOT_FOUND)
             return dict(zip((d.name for d in cur.description or []), row, strict=True))
 
+    def _root(self, po_id: UUID) -> UUID:
+        """The first revision: every commitment of the PO's life is sourced to it."""
+        row = self.repo.execute(
+            "WITH RECURSIVE chain AS (SELECT id, supersedes_id FROM purchase_order "
+            "WHERE org_id = %(org_id)s AND id = %(id)s UNION ALL SELECT p.id, p.supersedes_id "
+            "FROM purchase_order p JOIN chain c "
+            "ON p.org_id = %(org_id)s AND p.id = c.supersedes_id) "
+            "SELECT id FROM chain WHERE supersedes_id IS NULL",
+            {"id": po_id},
+        ).fetchone()
+        if row is None:
+            raise ProblemError(ErrorCode.NOT_FOUND)
+        return cast(UUID, row[0])
+
     def unit_of(self, id: UUID) -> UUID:
         """The PO's unit, 404 for an unknown, deleted or foreign id."""
         return cast(UUID, self._row(id)["unit_id"])
@@ -172,6 +187,14 @@ class PurchaseOrderService:
                 {"id": id},
             ).fetchall()
             flags = self._flags(cast(UUID, h["unit_id"]))
+            released = self.repo.execute(
+                "SELECT -sum(amount), min(currency) FROM ledger_entry "
+                "WHERE org_id = %(org_id)s AND entry_type = 'release' AND bucket = 'committed' "
+                "AND source_type = 'purchase_order' AND source_id = %(root)s "
+                "AND reason IS DISTINCT FROM %(actual)s",
+                {"root": self._root(id), "actual": CONSUMED_BY_ACTUAL},
+            ).fetchone()
+            assert released is not None  # an aggregate always returns a row
         currency = cast(str, h["currency"]).strip()
         rate = cast(dict[str, str], h["rate"])
         to, factor = rate["to"], Decimal(rate["rate"])
@@ -234,6 +257,8 @@ class PurchaseOrderService:
             budget_total=_fmt(sums["budget"]),
             budget_total_project=_fmt(sums["project"]),
             total_converted=_fmt(sums["conv"]),
+            released_amount=None if released[0] is None else _fmt(cast(Decimal, released[0])),
+            released_currency=None if released[0] is None else str(released[1]).strip(),
         )
 
     def awarded(self, award_id: UUID, vendor_id: UUID | None) -> AwardedLinesRead:
@@ -264,7 +289,7 @@ class PurchaseOrderService:
                     unit_price=_fmt(x.unit_price),
                     awarded_qty=_fmt(x.quantity),
                     ordered_qty=_fmt(x.ordered_qty),
-                    open_qty=_fmt(x.quantity - x.ordered_qty),
+                    open_qty=_fmt(min(x.quantity - x.ordered_qty, x.orderable)),
                     ordered_value=_fmt(
                         ordered.get((x.rfq_line_id, x.vendor_id), quantize(Decimal(0), x.currency))
                     ),

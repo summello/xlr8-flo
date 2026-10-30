@@ -849,6 +849,12 @@ class AwardService(ComparisonService):
             self._rfq(rfq_id)
             live = self._award(rfq_id)
             id = cast(UUID, live["id"])
+            # unlocked probe first: a PO cancel holds the award and then waits on balances, the
+            # reverse of the locks below, so a PO already there refuses here holding nothing
+            if any(probe(self.connection, self.scope, id) for probe in SUPERSEDE_GUARDS):
+                raise conflict(
+                    "po_exists", "A purchase order was created from this award. It stays."
+                )
             rows = self._rows(id)
             requisitions = sorted({r.requisition_id for r in rows})
             award_funding(self.connection, self.scope, requisitions, lock=True)
@@ -856,7 +862,9 @@ class AwardService(ComparisonService):
             if award["status"] != "approved":
                 raise conflict("invalid_transition", "Only an approved award can be superseded.")
             self._rfq(rfq_id, lock=True)
-            if any(probe(self.connection, self.scope, id) for probe in SUPERSEDE_GUARDS):
+            if any(
+                probe(self.connection, self.scope, id) for probe in SUPERSEDE_GUARDS
+            ):  # re-check under the lock
                 raise conflict(
                     "po_exists", "A purchase order was created from this award. It stays."
                 )

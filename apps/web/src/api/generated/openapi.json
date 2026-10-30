@@ -10436,6 +10436,286 @@
         "title": "PickerRow",
         "type": "object"
       },
+      "PoCancelCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "cancel_requisition_lines": {
+            "default": false,
+            "title": "Cancel Requisition Lines",
+            "type": "boolean"
+          },
+          "notify_vendor": {
+            "default": true,
+            "title": "Notify Vendor",
+            "type": "boolean"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "PoCancelCreate",
+        "type": "object"
+      },
+      "PoCancelRead": {
+        "properties": {
+          "award_id": {
+            "format": "uuid",
+            "title": "Award Id",
+            "type": "string"
+          },
+          "bill_to": {
+            "additionalProperties": true,
+            "title": "Bill To",
+            "type": "object"
+          },
+          "budget_total": {
+            "title": "Budget Total",
+            "type": "string"
+          },
+          "budget_total_project": {
+            "title": "Budget Total Project",
+            "type": "string"
+          },
+          "converted_currency": {
+            "title": "Converted Currency",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "document_freight": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Freight"
+          },
+          "freight_mode": {
+            "enum": [
+              "line",
+              "document"
+            ],
+            "title": "Freight Mode",
+            "type": "string"
+          },
+          "freight_total": {
+            "title": "Freight Total",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/PoLineRead"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "needed_by": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Needed By"
+          },
+          "notice": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notice"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "price_total": {
+            "title": "Price Total",
+            "type": "string"
+          },
+          "rate": {
+            "additionalProperties": true,
+            "title": "Rate",
+            "type": "object"
+          },
+          "recipients": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Recipients",
+            "type": "array"
+          },
+          "released_amount": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Released Amount"
+          },
+          "released_currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Released Currency"
+          },
+          "requester_id": {
+            "format": "uuid",
+            "title": "Requester Id",
+            "type": "string"
+          },
+          "requisition_id": {
+            "format": "uuid",
+            "title": "Requisition Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "ship_to_address_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ship To Address Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PoStatus"
+          },
+          "supersedes_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supersedes Id"
+          },
+          "tax_total": {
+            "title": "Tax Total",
+            "type": "string"
+          },
+          "terms": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terms"
+          },
+          "total": {
+            "title": "Total",
+            "type": "string"
+          },
+          "total_converted": {
+            "title": "Total Converted",
+            "type": "string"
+          },
+          "unit_id": {
+            "format": "uuid",
+            "title": "Unit Id",
+            "type": "string"
+          },
+          "vendor_id": {
+            "format": "uuid",
+            "title": "Vendor Id",
+            "type": "string"
+          },
+          "vendor_snapshot": {
+            "additionalProperties": true,
+            "title": "Vendor Snapshot",
+            "type": "object"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "unit_id",
+          "vendor_id",
+          "vendor_snapshot",
+          "requisition_id",
+          "award_id",
+          "currency",
+          "converted_currency",
+          "rate",
+          "bill_to",
+          "ship_to_address_id",
+          "recipients",
+          "requester_id",
+          "terms",
+          "needed_by",
+          "status",
+          "version",
+          "revision",
+          "supersedes_id",
+          "created_at",
+          "freight_mode",
+          "document_freight",
+          "lines",
+          "price_total",
+          "tax_total",
+          "freight_total",
+          "total",
+          "budget_total",
+          "budget_total_project",
+          "total_converted"
+        ],
+        "title": "PoCancelRead",
+        "type": "object"
+      },
       "PoChangeAdd": {
         "additionalProperties": false,
         "description": "A line from another awarded line of the PO's vendor, award and requisition.",
@@ -11222,6 +11502,28 @@
             "title": "Recipients",
             "type": "array"
           },
+          "released_amount": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Released Amount"
+          },
+          "released_currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Released Currency"
+          },
           "requester_id": {
             "format": "uuid",
             "title": "Requester Id",
@@ -11340,6 +11642,33 @@
           "total_converted"
         ],
         "title": "PoRead",
+        "type": "object"
+      },
+      "PoReduceCreate": {
+        "additionalProperties": false,
+        "description": "Quantity reductions only; `cancel` has the rest (E13-S07).",
+        "properties": {
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/PoChangeLineEdit"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Lines",
+            "type": "array"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason",
+          "lines"
+        ],
+        "title": "PoReduceCreate",
         "type": "object"
       },
       "PoStatus": {
@@ -29747,6 +30076,101 @@
         ]
       }
     },
+    "/api/v1/purchase-orders/{id}/cancel": {
+      "post": {
+        "operationId": "cancel_purchase_order_api_v1_purchase_orders__id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PoCancelCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoCancelRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Cancel Purchase Order",
+        "tags": [
+          "purchasing"
+        ]
+      }
+    },
     "/api/v1/purchase-orders/{id}/changes": {
       "get": {
         "operationId": "list_changes_api_v1_purchase_orders__id__changes_get",
@@ -30439,6 +30863,101 @@
           }
         },
         "summary": "Issue Purchase Order",
+        "tags": [
+          "purchasing"
+        ]
+      }
+    },
+    "/api/v1/purchase-orders/{id}/reduce": {
+      "post": {
+        "operationId": "reduce_purchase_order_api_v1_purchase_orders__id__reduce_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PoReduceCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoChangeRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Reduce Purchase Order",
         "tags": [
           "purchasing"
         ]

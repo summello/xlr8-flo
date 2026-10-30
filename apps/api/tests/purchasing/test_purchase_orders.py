@@ -595,6 +595,8 @@ def test_purchase_order_routes_conceal_foreign_tenants(lifecycle_db):
                     ("POST", f"/{id}/submit", None),
                     ("POST", f"/{id}/withdraw", None),
                     ("POST", f"/{id}/issue", None),
+                    ("POST", f"/{id}/cancel", {"reason": "x"}),
+                    ("POST", f"/{id}/reduce", {"reason": "x", "lines": []}),
                     ("POST", f"/{id}/changes", {}),
                     ("GET", f"/{id}/changes", None),
                     ("GET", f"/{id}/changes/1", None),

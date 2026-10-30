@@ -205,7 +205,8 @@ def order_lines(
         lines = {
             cast(UUID, r[0]): r
             for r in repo.execute(
-                "SELECT id, requisition_id, awarded_qty, ordered_qty FROM requisition_line "
+                "SELECT id, requisition_id, awarded_qty, ordered_qty, quantity, cancelled_qty "
+                "FROM requisition_line "
                 "WHERE org_id = %(org_id)s AND id = ANY(%(ids)s) ORDER BY id FOR UPDATE",
                 {"ids": sorted(deltas)},
             ).fetchall()
@@ -240,6 +241,22 @@ def order_lines(
                     for line_id, open_qty, requested in over
                 ),
                 checks=checks,
+            )
+        # a line the requisition cancelled is not orderable (E13-S07); the CHECK stays the backstop
+        gone = [
+            line_id
+            for line_id, delta in deltas.items()
+            if delta > 0
+            and delta
+            > cast(Decimal, lines[line_id][4])
+            - cast(Decimal, lines[line_id][5])
+            - cast(Decimal, lines[line_id][3])
+        ]
+        if gone:
+            raise conflict(
+                "quantity_cancelled",
+                "The quantity asked for was cancelled on the requisition. Lower it to the "
+                "quantity still orderable.",
             )
         for line_id, delta in deltas.items():
             ordered = cast(Decimal, lines[line_id][3])
@@ -316,6 +333,74 @@ def issue_lines(
                 outcome=Outcome.SUCCESS,
                 before={str(line_id): format(issued, "f")},
                 after={str(line_id): format(issued + qty, "f")},
+            )
+
+
+def cancel_lines(
+    conn: Conn, scope: Scope, changes: Sequence[tuple[UUID, Decimal]], actor_id: UUID
+) -> None:
+    """`cancelled_qty += qty` for each (requisition line, quantity), all or nothing (E13-S07).
+
+    A PO cancel returns quantity here so it cannot be ordered again. The requisition must be
+    `open_for_purchase` or `completed`; the caller's raise rolls the whole cancel back.
+    """
+    wanted: dict[UUID, Decimal] = defaultdict(Decimal)
+    for line_id, qty in changes:
+        wanted[line_id] += qty
+    if not wanted:
+        return
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        repo = RequisitionRepository(conn, scope)
+        lines = {
+            cast(UUID, r[0]): r
+            for r in repo.execute(
+                "SELECT id, requisition_id FROM requisition_line "
+                "WHERE org_id = %(org_id)s AND id = ANY(%(ids)s)",
+                {"ids": sorted(wanted)},
+            ).fetchall()
+        }
+        if lines.keys() != wanted.keys():
+            raise ProblemError(ErrorCode.NOT_FOUND)
+        for requisition_id in sorted({cast(UUID, r[1]) for r in lines.values()}):
+            row = read_row(repo, requisition_id, lock=True)
+            if row["status"] not in ("open_for_purchase", "completed"):
+                raise conflict(
+                    "requisition_not_cancellable",
+                    "Lines can be cancelled only on a requisition open for purchase or completed.",
+                )
+        rows = repo.execute(
+            "SELECT id, requisition_id, quantity, cancelled_qty, ordered_qty FROM requisition_line "
+            "WHERE org_id = %(org_id)s AND id = ANY(%(ids)s) ORDER BY id FOR UPDATE",
+            {"ids": sorted(wanted)},
+        ).fetchall()
+        for row_id, owner, quantity_, cancelled_, ordered_ in rows:
+            line_id = cast(UUID, row_id)
+            quantity, cancelled, ordered = (
+                cast(Decimal, quantity_),
+                cast(Decimal, cancelled_),
+                cast(Decimal, ordered_),
+            )
+            if ordered + cancelled + wanted[line_id] > quantity:
+                raise conflict(
+                    "over_cancel",
+                    f"Line {line_id} has {quantity - cancelled - ordered:f} left to cancel, "
+                    f"{wanted[line_id]:f} was asked for.",
+                )
+            repo.execute(
+                "UPDATE requisition_line SET cancelled_qty = cancelled_qty + %(qty)s, "
+                "updated_at = now() WHERE org_id = %(org_id)s AND id = %(id)s",
+                {"id": line_id, "qty": wanted[line_id]},
+            )
+            audit_event(
+                cast(AuditConnection, conn),
+                scope,
+                actor=AuditActor(ActorKind.USER, actor_id),
+                action="requisition.cancel_lines.update",
+                target_type="requisition",
+                target_id=cast(UUID, owner),
+                outcome=Outcome.SUCCESS,
+                before={str(line_id): format(cancelled, "f")},
+                after={str(line_id): format(cancelled + wanted[line_id], "f")},
             )
 
 
@@ -471,16 +556,24 @@ def release_unawarded(
     scope: Scope,
     requisition_id: UUID,
     unused: Decimal,
-    award_id: UUID,
+    award_id: UUID | None,
     actor_id: UUID,
     *,
     version: int,
+    source: str | None = None,
+    key: str | None = None,
+    reason: str | None = None,
 ) -> None:
     """Release `unused` from the live reservation and return it sub-project -> main (decision 205).
 
-    The caller holds the project_balance locks. Both postings carry the award in their key, so a
-    retry posts nothing new (FIN-011). `version` is the award's, bumped on every submit.
+    The caller holds the project_balance locks. Both postings carry their source in the key, so a
+    retry posts nothing new (FIN-011). `version` is the award's, bumped on every submit; a caller
+    without an award (a PO cancel, E13-S07) names `source` and `key` itself.
     """
+    if award_id is None and (source is None or key is None):
+        raise ValueError("release_unawarded needs source and key when there is no award")
+    source = source or f"award:{award_id}"
+    key = key or f"award:{award_id}:return:{requisition_id}"
     with tenant_transaction(cast(RlsSession, conn), scope):
         row = read_row(RequisitionRepository(conn, scope), requisition_id)
         if row["reservation_entry_id"] is None:
@@ -493,7 +586,7 @@ def release_unawarded(
             new_amount=held.remaining - unused,
             version=version,
             actor_id=actor_id,
-            source=f"award:{award_id}",
+            source=source,
         )
         main_id = cast(UUID, row["project_id"])
         if held.project_id != main_id:
@@ -504,8 +597,8 @@ def release_unawarded(
                 source_id=held.project_id,
                 target_id=main_id,
                 amount=unused,
-                key=f"award:{award_id}:return:{requisition_id}",
-                reason=f"Award released unused funds of requisition {row['number']}",
+                key=key,
+                reason=reason or f"Award released unused funds of requisition {row['number']}",
                 actor_id=actor_id,
             )
 

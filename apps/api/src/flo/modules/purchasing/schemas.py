@@ -145,6 +145,12 @@ class PoRead(BaseModel):
     budget_total: str
     budget_total_project: str
     total_converted: str
+    released_amount: str | None = None  # released commitment over the PO's life, never actuals
+    released_currency: str | None = None
+
+
+class PoCancelRead(PoRead):
+    notice: str | None = None
 
 
 class PoListRow(BaseModel):
@@ -217,6 +223,21 @@ class PoChangeLineEdit(BaseModel):
     _amounts = field_validator(
         "unit_price", "tax", "freight", mode="before", json_schema_input_type=str
     )(lambda cls, v: v if v is None else _amount(v))
+
+
+class PoCancelCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reason: str = Field(min_length=1, max_length=500)
+    cancel_requisition_lines: bool = False
+    notify_vendor: bool = True
+
+
+class PoReduceCreate(BaseModel):
+    """Quantity reductions only; `cancel` has the rest (E13-S07)."""
+
+    model_config = ConfigDict(extra="forbid")
+    reason: str = Field(min_length=1, max_length=500)
+    lines: list[PoChangeLineEdit] = Field(min_length=1, max_length=500)
 
 
 class PoChangeAdd(BaseModel):

@@ -1953,6 +1953,23 @@ export interface paths {
         patch: operations["patch_purchase_order_api_v1_purchase_orders__id__patch"];
         trace?: never;
     };
+    "/api/v1/purchase-orders/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Purchase Order */
+        post: operations["cancel_purchase_order_api_v1_purchase_orders__id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/purchase-orders/{id}/changes": {
         parameters: {
             query?: never;
@@ -2051,6 +2068,23 @@ export interface paths {
         put?: never;
         /** Issue Purchase Order */
         post: operations["issue_purchase_order_api_v1_purchase_orders__id__issue_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/purchase-orders/{id}/reduce": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reduce Purchase Order */
+        post: operations["reduce_purchase_order_api_v1_purchase_orders__id__reduce_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7383,6 +7417,123 @@ export interface components {
              */
             user_id: string;
         };
+        /** PoCancelCreate */
+        PoCancelCreate: {
+            /**
+             * Cancel Requisition Lines
+             * @default false
+             */
+            cancel_requisition_lines?: boolean;
+            /**
+             * Notify Vendor
+             * @default true
+             */
+            notify_vendor?: boolean;
+            /** Reason */
+            reason: string;
+        };
+        /** PoCancelRead */
+        PoCancelRead: {
+            /**
+             * Award Id
+             * Format: uuid
+             */
+            award_id: string;
+            /** Bill To */
+            bill_to: {
+                [key: string]: unknown;
+            };
+            /** Budget Total */
+            budget_total: string;
+            /** Budget Total Project */
+            budget_total_project: string;
+            /** Converted Currency */
+            converted_currency: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Currency */
+            currency: string;
+            /** Document Freight */
+            document_freight: string | null;
+            /**
+             * Freight Mode
+             * @enum {string}
+             */
+            freight_mode: "line" | "document";
+            /** Freight Total */
+            freight_total: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Lines */
+            lines: components["schemas"]["PoLineRead"][];
+            /** Needed By */
+            needed_by: string | null;
+            /** Notice */
+            notice?: string | null;
+            /** Number */
+            number: string;
+            /** Price Total */
+            price_total: string;
+            /** Rate */
+            rate: {
+                [key: string]: unknown;
+            };
+            /** Recipients */
+            recipients: {
+                [key: string]: unknown;
+            }[];
+            /** Released Amount */
+            released_amount?: string | null;
+            /** Released Currency */
+            released_currency?: string | null;
+            /**
+             * Requester Id
+             * Format: uuid
+             */
+            requester_id: string;
+            /**
+             * Requisition Id
+             * Format: uuid
+             */
+            requisition_id: string;
+            /** Revision */
+            revision: number;
+            /** Ship To Address Id */
+            ship_to_address_id: string | null;
+            status: components["schemas"]["PoStatus"];
+            /** Supersedes Id */
+            supersedes_id: string | null;
+            /** Tax Total */
+            tax_total: string;
+            /** Terms */
+            terms: string | null;
+            /** Total */
+            total: string;
+            /** Total Converted */
+            total_converted: string;
+            /**
+             * Unit Id
+             * Format: uuid
+             */
+            unit_id: string;
+            /**
+             * Vendor Id
+             * Format: uuid
+             */
+            vendor_id: string;
+            /** Vendor Snapshot */
+            vendor_snapshot: {
+                [key: string]: unknown;
+            };
+            /** Version */
+            version: number;
+        };
         /**
          * PoChangeAdd
          * @description A line from another awarded line of the PO's vendor, award and requisition.
@@ -7708,6 +7859,10 @@ export interface components {
             recipients: {
                 [key: string]: unknown;
             }[];
+            /** Released Amount */
+            released_amount?: string | null;
+            /** Released Currency */
+            released_currency?: string | null;
             /**
              * Requester Id
              * Format: uuid
@@ -7749,6 +7904,16 @@ export interface components {
             };
             /** Version */
             version: number;
+        };
+        /**
+         * PoReduceCreate
+         * @description Quantity reductions only; `cancel` has the rest (E13-S07).
+         */
+        PoReduceCreate: {
+            /** Lines */
+            lines: components["schemas"]["PoChangeLineEdit"][];
+            /** Reason */
+            reason: string;
         };
         /** @enum {string} */
         PoStatus: "draft" | "approval_pending" | "approved" | "issued" | "partially_delivered" | "delivered" | "accepted" | "closed" | "cancelled" | "superseded" | "deleted";
@@ -16064,6 +16229,53 @@ export interface operations {
             };
         };
     };
+    cancel_purchase_order_api_v1_purchase_orders__id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PoCancelCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoCancelRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     list_changes_api_v1_purchase_orders__id__changes_get: {
         parameters: {
             query?: never;
@@ -16396,6 +16608,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PoRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    reduce_purchase_order_api_v1_purchase_orders__id__reduce_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PoReduceCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoChangeRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

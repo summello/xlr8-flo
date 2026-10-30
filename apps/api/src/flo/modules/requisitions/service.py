@@ -63,6 +63,7 @@ from flo.modules.requisitions.schemas import (
 from flo.modules.requisitions.schemas import SubmissionInvalid as SubmissionInvalid
 from flo.modules.requisitions.sourcing import award_funding as award_funding
 from flo.modules.requisitions.sourcing import award_lines as award_lines
+from flo.modules.requisitions.sourcing import cancel_lines as cancel_lines
 from flo.modules.requisitions.sourcing import issue_lines as issue_lines
 from flo.modules.requisitions.sourcing import mark_awarded as mark_awarded
 from flo.modules.requisitions.sourcing import mark_completed as mark_completed
@@ -97,6 +98,7 @@ __all__ = [
     "rereserve",
     "award_funding",
     "award_lines",
+    "cancel_lines",
     "order_lines",
     "issue_lines",
     "mark_completed",

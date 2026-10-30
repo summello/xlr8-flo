@@ -1302,9 +1302,12 @@ def awarded_lines(
             .execute(
                 "SELECT al.rfq_line_id, al.vendor_id, rl.line_no, rl.description, rl.uom_code, "
                 "al.quantity, al.ordered_qty, al.unit_price, al.currency, rl.requisition_id, "
-                "rl.requisition_line_id, q.version FROM award_line al "
+                "rl.requisition_line_id, q.version, "
+                "ql.quantity - ql.cancelled_qty - ql.ordered_qty FROM award_line al "
                 "JOIN rfq_line rl ON rl.org_id = al.org_id AND rl.id = al.rfq_line_id "
                 "JOIN requisition q ON q.org_id = rl.org_id AND q.id = rl.requisition_id "
+                "JOIN requisition_line ql ON ql.org_id = rl.org_id "
+                "AND ql.id = rl.requisition_line_id "
                 "WHERE al.org_id = %(org_id)s AND al.award_id = %(id)s "
                 "AND (%(vendor)s::uuid IS NULL OR al.vendor_id = %(vendor)s) "
                 "ORDER BY rl.line_no, al.vendor_id",
@@ -1326,6 +1329,7 @@ def awarded_lines(
             cast(UUID, r[9]),
             cast(UUID, r[10]),
             cast(int, r[11]),
+            cast(Decimal, r[12]),
         )  # fmt: skip
         for r in rows
     ]

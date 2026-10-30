@@ -593,6 +593,7 @@ class AwardedLine:
     requisition_id: UUID
     requisition_line_id: UUID
     requisition_version: int
+    orderable: Decimal  # requisition line: quantity - cancelled_qty - ordered_qty (E13-S07)
 
 
 class AwardLineQuote(BaseModel):

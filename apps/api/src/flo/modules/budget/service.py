@@ -30,6 +30,7 @@ from flo.modules.budget.ledger import (
     post_entry as post_entry,
 )
 from flo.modules.budget.models import LedgerType
+from flo.modules.budget.postings import CONSUMED_BY_ACTUAL as CONSUMED_BY_ACTUAL
 from flo.modules.budget.postings import commit as commit
 from flo.modules.budget.postings import record_actual as record_actual
 from flo.modules.budget.postings import release_commitment as release_commitment
@@ -81,6 +82,7 @@ __all__ = [
     "post_legs",
     "record_actual",
     "release_commitment",
+    "CONSUMED_BY_ACTUAL",
     "release_reservation",
     "reserve",
     "reverse_entry",

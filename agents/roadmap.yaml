@@ -2087,7 +2087,7 @@ epics:
           - WF-005
         dep:
           - E13-S06
-        st: review
+        st: done
       - id: E13-S08
         t: PO PDF reproducible from stored snapshot and template version
         k: engine

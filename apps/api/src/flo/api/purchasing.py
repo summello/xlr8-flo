@@ -12,10 +12,13 @@ from flo.kernel.authz import GrantedScopes, permits, require, require_granted
 from flo.kernel.config import Settings
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
+from flo.modules.purchasing.cancel import cancel, reduce
 from flo.modules.purchasing.changes import ChangeService
 from flo.modules.purchasing.issue import issue
 from flo.modules.purchasing.schemas import (
     AwardedLinesRead,
+    PoCancelCreate,
+    PoCancelRead,
     PoChangeCreate,
     PoChangePatch,
     PoChangeRead,
@@ -23,6 +26,7 @@ from flo.modules.purchasing.schemas import (
     PoPage,
     PoPatch,
     PoRead,
+    PoReduceCreate,
     PoTab,
     PurchaseOrderTransitionCreate,
 )
@@ -63,7 +67,7 @@ AmendContext = Annotated[AuthorizationContext, Depends(require("purchase_order.a
 ListScopes = Annotated[GrantedScopes, Depends(require_granted("purchase_order.view"))]
 
 
-def _etag[T: (PoRead, PoChangeRead)](po: T, response: Response) -> T:
+def _etag[T: (PoRead, PoCancelRead, PoChangeRead)](po: T, response: Response) -> T:
     response.headers["ETag"] = f'"{po.version}"'
     return po
 
@@ -183,6 +187,30 @@ def issue_purchase_order(
     version: Annotated[str | None, Header(alias="If-Match")] = None,
 ) -> PoRead:
     return _etag(issue(connection, current_scope(), id, context.user_id, version), response)
+
+
+@router.post("/{id}/cancel", response_model=PoCancelRead)
+def cancel_purchase_order(
+    id: UUID,
+    body: PoCancelCreate,
+    context: AmendContext,
+    connection: Connection,
+    response: Response,
+    version: Annotated[str | None, Header(alias="If-Match")] = None,
+) -> PoCancelRead:
+    return _etag(cancel(connection, current_scope(), id, context.user_id, version, body), response)
+
+
+@router.post("/{id}/reduce", status_code=201, response_model=PoChangeRead)
+def reduce_purchase_order(
+    id: UUID,
+    body: PoReduceCreate,
+    context: AmendContext,
+    connection: Connection,
+    response: Response,
+    version: Annotated[str | None, Header(alias="If-Match")] = None,
+) -> PoChangeRead:
+    return _etag(reduce(connection, current_scope(), id, context.user_id, version, body), response)
 
 
 # -- change orders (E13-S06): an issued order changes only by a numbered change order ----------

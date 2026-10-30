@@ -70,6 +70,8 @@ COVERED = {
     ("POST", "/api/v1/purchase-orders/{id}/submit"): PO_ROUTES,
     ("POST", "/api/v1/purchase-orders/{id}/withdraw"): PO_ROUTES,
     ("POST", "/api/v1/purchase-orders/{id}/issue"): PO_ROUTES,
+    ("POST", "/api/v1/purchase-orders/{id}/cancel"): PO_ROUTES,
+    ("POST", "/api/v1/purchase-orders/{id}/reduce"): PO_ROUTES,
     ("POST", "/api/v1/purchase-orders/{id}/changes"): PO_ROUTES,
     ("GET", "/api/v1/purchase-orders/{id}/changes"): PO_ROUTES,
     ("GET", "/api/v1/purchase-orders/{id}/changes/{number}"): PO_ROUTES,

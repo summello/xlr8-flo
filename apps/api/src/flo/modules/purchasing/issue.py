@@ -1,7 +1,8 @@
 """Issue: freeze the budget amounts and convert the reservation into a commitment, once (E13-S05).
 
-One transaction. Lock order: project balances (id order), the requisition, then the PO row. Approval
-posts nothing; this is the only place a PO touches the ledger (claude-plan section 14 #5).
+One transaction. Lock order: the award, project balances (id order), the requisition, then the PO
+row. Approval posts nothing; this is the only place a PO touches the ledger (claude-plan
+section 14 #5).
 """
 
 from collections import defaultdict
@@ -27,6 +28,7 @@ from flo.modules.requisitions.service import (
     mark_completed,
     reservation_entry,
 )
+from flo.modules.sourcing.service import lock_award
 
 type Conn = psycopg.Connection[tuple[object, ...]]
 
@@ -43,7 +45,9 @@ def issue(conn: Conn, scope: Scope, po_id: UUID, actor_id: UUID, if_match: str |
     service = PurchaseOrderService(conn, scope, actor_id)
     expected = parse_if_match(if_match)
     with tenant_transaction(cast(RlsSession, conn), scope):
-        service._row(po_id)  # 404 before any lock or version talk
+        # 404 before any lock or version talk; the award first, as ChangeService._lock and cancel
+        # do (E13-S07: issue's `UPDATE purchase_order` key-shares the award row)
+        lock_award(conn, scope, cast(UUID, service._row(po_id)["award_id"]))
         lines = service.repo.execute(
             "SELECT line_no, requisition_id, requisition_line_id, quantity, project_id, "
             "department_code, ledger_account_code, price, tax, freight FROM po_line "
