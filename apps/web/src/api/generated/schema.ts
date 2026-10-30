@@ -2074,6 +2074,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/purchase-orders/{id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Po Pdf */
+        get: operations["po_pdf_api_v1_purchase_orders__id__pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/purchase-orders/{id}/reduce": {
         parameters: {
             query?: never;
@@ -2119,6 +2136,23 @@ export interface paths {
         put?: never;
         /** Transition Purchase Order */
         post: operations["transition_purchase_order_api_v1_purchase_orders__id__transitions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/purchase-orders/{id}/vendor-copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Po Vendor Copy */
+        get: operations["po_vendor_copy_api_v1_purchase_orders__id__vendor_copy_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -9779,6 +9813,102 @@ export interface components {
             /** Warnings */
             warnings?: components["schemas"]["Issue"][];
         };
+        /** VendorCopy */
+        VendorCopy: {
+            bill_to: components["schemas"]["VendorCopyAddress"];
+            /** Currency */
+            currency: string;
+            /** Freight Total */
+            freight_total: string;
+            /** Issued On */
+            issued_on: string | null;
+            /** Letterhead Address */
+            letterhead_address: string | null;
+            /** Lines */
+            lines: components["schemas"]["VendorCopyLine"][];
+            /** Needed By */
+            needed_by: string | null;
+            /**
+             * Notes
+             * @default []
+             */
+            notes?: components["schemas"]["VendorCopyNote"][];
+            /** Number */
+            number: string;
+            /** Price Total */
+            price_total: string;
+            /** Revision */
+            revision: number;
+            ship_to: components["schemas"]["VendorCopyAddress"] | null;
+            /** Standard Terms */
+            standard_terms: string | null;
+            /** Tax Total */
+            tax_total: string;
+            /** Terms */
+            terms: string | null;
+            /** Total */
+            total: string;
+            /** Vendor Legal Name */
+            vendor_legal_name: string;
+            /** Vendor Trading Name */
+            vendor_trading_name: string;
+        };
+        /** VendorCopyAddress */
+        VendorCopyAddress: {
+            /** City */
+            city?: string | null;
+            /** Country */
+            country?: string | null;
+            /** Line1 */
+            line1?: string | null;
+            /** Line2 */
+            line2?: string | null;
+            /** Postal Code */
+            postal_code?: string | null;
+            /** Region */
+            region?: string | null;
+        };
+        /** VendorCopyLine */
+        VendorCopyLine: {
+            /** Description */
+            description: string;
+            /** Freight */
+            freight: string;
+            /** Line No */
+            line_no: number;
+            /** Line Total */
+            line_total: string;
+            /** Price */
+            price: string;
+            /** Quantity */
+            quantity: string;
+            /** Tax */
+            tax: string;
+            /** Unit Price */
+            unit_price: string;
+            /** Uom Code */
+            uom_code: string;
+        };
+        /** VendorCopyNote */
+        VendorCopyNote: {
+            /** Body */
+            body: string;
+            /**
+             * Created On
+             * Format: date
+             */
+            created_on: string;
+        };
+        /** VendorCopyRead */
+        VendorCopyRead: {
+            /** Email Summary */
+            email_summary: string;
+            /** Issued */
+            issued: boolean;
+            /** Template Version */
+            template_version: string;
+            vendor_copy: components["schemas"]["VendorCopy"];
+        };
         /**
          * VendorCounts
          * @description One server count per list tab (PERF-005: never worked out from a fetched page).
@@ -16630,6 +16760,48 @@ export interface operations {
             };
         };
     };
+    po_pdf_api_v1_purchase_orders__id__pdf_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": unknown;
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     reduce_purchase_order_api_v1_purchase_orders__id__reduce_post: {
         parameters: {
             query?: never;
@@ -16744,6 +16916,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PoRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    po_vendor_copy_api_v1_purchase_orders__id__vendor_copy_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorCopyRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

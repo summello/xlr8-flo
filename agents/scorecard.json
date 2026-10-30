@@ -6955,6 +6955,71 @@
         },
         "gate_s": 1860
       }
+    },
+    {
+      "story": "E13-S08",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "security"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "d7e1bdb1-6d27-4823-9eae-5a92757eb41f",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S08",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a18f2e-ea89-7330-b8d0-5988f9e28fb3",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Each issued PO row now stores a whitelisted VendorCopy snapshot, template version and PDF hash (po_version, append-only), written in the issue and change-apply transactions; GET /pdf re-renders from the snapshot with fpdf2 and refuses bytes whose hash differs. Letterhead and standard terms are two org-only settings copied into each snapshot.",
+      "title": "PO PDF reproducible from stored snapshot and template version",
+      "durations": {
+        "wall_s": 30762,
+        "author_s": 29565,
+        "review_s": {
+          "codex": 170,
+          "opus": 255
+        },
+        "gate_s": 1
+      }
     }
   ]
 }

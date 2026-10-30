@@ -2099,7 +2099,7 @@ epics:
           - DATA-005
         dep:
           - E13-S06
-        st: in_progress
+        st: done
       - id: E13-S09
         t: Email transmission via outbox, recipient/time/result/version recorded, retry
           without duplication
@@ -2315,7 +2315,7 @@ epics:
           - PO-007
         dep:
           - E13-S07
-        st: in_progress
+        st: review
       - id: E13-S24
         t: Vendor cancellation email for a cancelled issued PO, through the outbox
         k: engine

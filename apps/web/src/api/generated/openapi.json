@@ -17389,6 +17389,327 @@
         "title": "ValidationReport",
         "type": "object"
       },
+      "VendorCopy": {
+        "additionalProperties": false,
+        "properties": {
+          "bill_to": {
+            "$ref": "#/components/schemas/VendorCopyAddress"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "freight_total": {
+            "title": "Freight Total",
+            "type": "string"
+          },
+          "issued_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issued On"
+          },
+          "letterhead_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Letterhead Address"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/VendorCopyLine"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "needed_by": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Needed By"
+          },
+          "notes": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/VendorCopyNote"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "price_total": {
+            "title": "Price Total",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "ship_to": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VendorCopyAddress"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "standard_terms": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Standard Terms"
+          },
+          "tax_total": {
+            "title": "Tax Total",
+            "type": "string"
+          },
+          "terms": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terms"
+          },
+          "total": {
+            "title": "Total",
+            "type": "string"
+          },
+          "vendor_legal_name": {
+            "title": "Vendor Legal Name",
+            "type": "string"
+          },
+          "vendor_trading_name": {
+            "title": "Vendor Trading Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "number",
+          "revision",
+          "issued_on",
+          "needed_by",
+          "currency",
+          "vendor_trading_name",
+          "vendor_legal_name",
+          "bill_to",
+          "ship_to",
+          "terms",
+          "letterhead_address",
+          "standard_terms",
+          "lines",
+          "price_total",
+          "tax_total",
+          "freight_total",
+          "total"
+        ],
+        "title": "VendorCopy",
+        "type": "object"
+      },
+      "VendorCopyAddress": {
+        "additionalProperties": false,
+        "properties": {
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "line1": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line1"
+          },
+          "line2": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line2"
+          },
+          "postal_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Postal Code"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          }
+        },
+        "title": "VendorCopyAddress",
+        "type": "object"
+      },
+      "VendorCopyLine": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "freight": {
+            "title": "Freight",
+            "type": "string"
+          },
+          "line_no": {
+            "title": "Line No",
+            "type": "integer"
+          },
+          "line_total": {
+            "title": "Line Total",
+            "type": "string"
+          },
+          "price": {
+            "title": "Price",
+            "type": "string"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "string"
+          },
+          "tax": {
+            "title": "Tax",
+            "type": "string"
+          },
+          "unit_price": {
+            "title": "Unit Price",
+            "type": "string"
+          },
+          "uom_code": {
+            "title": "Uom Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "line_no",
+          "description",
+          "quantity",
+          "uom_code",
+          "unit_price",
+          "price",
+          "tax",
+          "freight",
+          "line_total"
+        ],
+        "title": "VendorCopyLine",
+        "type": "object"
+      },
+      "VendorCopyNote": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "created_on": {
+            "format": "date",
+            "title": "Created On",
+            "type": "string"
+          }
+        },
+        "required": [
+          "body",
+          "created_on"
+        ],
+        "title": "VendorCopyNote",
+        "type": "object"
+      },
+      "VendorCopyRead": {
+        "properties": {
+          "email_summary": {
+            "title": "Email Summary",
+            "type": "string"
+          },
+          "issued": {
+            "title": "Issued",
+            "type": "boolean"
+          },
+          "template_version": {
+            "title": "Template Version",
+            "type": "string"
+          },
+          "vendor_copy": {
+            "$ref": "#/components/schemas/VendorCopy"
+          }
+        },
+        "required": [
+          "vendor_copy",
+          "email_summary",
+          "template_version",
+          "issued"
+        ],
+        "title": "VendorCopyRead",
+        "type": "object"
+      },
       "VendorCounts": {
         "description": "One server count per list tab (PERF-005: never worked out from a fetched page).",
         "properties": {
@@ -30868,6 +31189,71 @@
         ]
       }
     },
+    "/api/v1/purchase-orders/{id}/pdf": {
+      "get": {
+        "operationId": "po_pdf_api_v1_purchase_orders__id__pdf_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/pdf": {}
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Po Pdf",
+        "tags": [
+          "purchasing"
+        ]
+      }
+    },
     "/api/v1/purchase-orders/{id}/reduce": {
       "post": {
         "operationId": "reduce_purchase_order_api_v1_purchase_orders__id__reduce_post",
@@ -31122,6 +31508,75 @@
           }
         },
         "summary": "Transition Purchase Order",
+        "tags": [
+          "purchasing"
+        ]
+      }
+    },
+    "/api/v1/purchase-orders/{id}/vendor-copy": {
+      "get": {
+        "operationId": "po_vendor_copy_api_v1_purchase_orders__id__vendor_copy_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendorCopyRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Po Vendor Copy",
         "tags": [
           "purchasing"
         ]

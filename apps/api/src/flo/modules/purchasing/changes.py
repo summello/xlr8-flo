@@ -35,6 +35,7 @@ from flo.modules.identity.service import AuthorizationConnection, AuthorizationR
 from flo.modules.org.service import today
 from flo.modules.purchasing.issue import enqueue_transmission
 from flo.modules.purchasing.lifecycle import parse_if_match, transition
+from flo.modules.purchasing.pdf import freeze
 from flo.modules.purchasing.pricing import Figures, landed, spread
 from flo.modules.purchasing.schemas import PoChangeCreate, PoChangePatch, PoChangeRead
 from flo.modules.purchasing.service import PurchaseOrderService, _fmt, _invalid
@@ -820,4 +821,5 @@ class ChangeService:
             "WHERE org_id = %(org_id)s AND id = %(id)s",
             {"id": new_id, "actor": actor},
         )
+        freeze(self.connection, self.scope, new_id)  # E13-S08: before the send reads the snapshot
         return new_id

@@ -19,6 +19,7 @@ from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.budget.service import commit, lock_balance, reservation_remaining
 from flo.modules.org.service import today
 from flo.modules.purchasing.lifecycle import parse_if_match, transition
+from flo.modules.purchasing.pdf import freeze
 from flo.modules.purchasing.pricing import Figures
 from flo.modules.purchasing.schemas import PoRead
 from flo.modules.purchasing.service import PurchaseOrderService
@@ -152,6 +153,7 @@ def issue(conn: Conn, scope: Scope, po_id: UUID, actor_id: UUID, if_match: str |
             "WHERE org_id = %(org_id)s AND id = %(id)s",
             {"id": po_id, "actor": actor_id},
         )
+        freeze(conn, scope, po_id)  # E13-S08: before the send reads the snapshot
         for requisition_id in requisitions:
             mark_completed(conn, scope, requisition_id, actor_id)
         enqueue_transmission(conn, scope, po_id, version + 1)

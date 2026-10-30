@@ -1,6 +1,7 @@
 """Parse and authorize purchase order drafts built from awarded lines (E13-S01)."""
 
 from typing import Annotated, cast
+from urllib.parse import quote
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Query, Request, Response
@@ -15,6 +16,7 @@ from flo.modules.identity.models import AuthorizationContext, AuthorizationTarge
 from flo.modules.purchasing.cancel import cancel, reduce
 from flo.modules.purchasing.changes import ChangeService
 from flo.modules.purchasing.issue import issue
+from flo.modules.purchasing.pdf import VendorCopyRead, filename, frozen, pdf_for, vendor_copy_read
 from flo.modules.purchasing.schemas import (
     AwardedLinesRead,
     PoCancelCreate,
@@ -296,3 +298,28 @@ def apply_change(
 ) -> PoChangeRead:
     change = ChangeService(connection, current_scope(), context.user_id).apply(id, number, version)
     return _etag(change, response)
+
+
+@router.get(
+    "/{id}/pdf",
+    response_class=Response,
+    responses={200: {"content": {"application/pdf": {}}}},
+)
+def po_pdf(id: UUID, context: ViewContext, connection: Connection) -> Response:
+    scope = current_scope()
+    data = pdf_for(connection, scope, id)
+    return Response(
+        data,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": "inline; filename*=UTF-8''"
+            + quote(filename(frozen(connection, scope, id).copy), safe=""),
+            "X-Content-Type-Options": "nosniff",
+            "Cache-Control": "private, no-store",
+        },
+    )
+
+
+@router.get("/{id}/vendor-copy", response_model=VendorCopyRead)
+def po_vendor_copy(id: UUID, context: ViewContext, connection: Connection) -> VendorCopyRead:
+    return vendor_copy_read(connection, current_scope(), id)

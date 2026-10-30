@@ -16,11 +16,15 @@ SETTING_DEFAULTS: dict[str, JsonValue] = {
     "sourcing.require_non_lowest_justification": True,
     "tax.consumes_budget": True,
     "freight.consumes_budget": True,
+    "po.letterhead_address": None,
+    "po.standard_terms": None,
 }
 
 
 # A value validator never sees the scope, so the service refuses these keys with a unit.
-ORG_ONLY_SETTINGS = frozenset({"sourcing.default_criteria"})
+ORG_ONLY_SETTINGS = frozenset(
+    {"sourcing.default_criteria", "po.letterhead_address", "po.standard_terms"}
+)
 
 
 def _is_bool(value: JsonValue) -> bool:
@@ -45,6 +49,19 @@ def valid_default_criteria(value: JsonValue) -> bool:
     return total == 100
 
 
+def _text(limit: int, lines: int | None = None) -> Callable[[JsonValue], bool]:
+    """`None`, or a non-blank string of at most `limit` characters (and `lines` lines)."""
+
+    def valid(value: JsonValue) -> bool:
+        if value is None:
+            return True
+        if not isinstance(value, str) or not value.strip() or len(value) > limit:
+            return False
+        return lines is None or len(value.splitlines()) <= lines
+
+    return valid
+
+
 # Money policy reads these values, so a truthy string such as "false" must never be storable.
 SETTING_VALIDATORS: dict[str, Callable[[JsonValue], bool]] = {
     "approval.max_depth": lambda value: type(value) is int and 1 <= value <= 50,
@@ -59,5 +76,7 @@ SETTING_VALIDATORS: dict[str, Callable[[JsonValue], bool]] = {
     "sourcing.require_non_lowest_justification": _is_bool,
     "tax.consumes_budget": _is_bool,
     "freight.consumes_budget": _is_bool,
+    "po.letterhead_address": _text(600, 8),
+    "po.standard_terms": _text(4000),
     "funding_mode": lambda value: value in ("roll_down", "roll_up"),
 }

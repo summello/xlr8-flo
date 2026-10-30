@@ -48,6 +48,9 @@ PICKER_ROUTE = (
 EVALUATION_ROUTES = "sourcing/test_evaluation.py::test_evaluation_routes_conceal_foreign_tenants"
 AWARD_ROUTES = "sourcing/test_award.py::test_award_routes_conceal_foreign_tenants"
 PO_ROUTES = "purchasing/test_purchase_orders.py::test_purchase_order_routes_conceal_foreign_tenants"
+VENDOR_COPY_ROUTES = (
+    "purchasing/test_vendor_copy.py::test_vendor_copy_routes_conceal_foreign_tenants"
+)
 QROUTES = "vendors/test_questionnaire.py::test_questionnaire_routes_conceal_foreign_tenants"
 OROUTES = (
     "vendors/test_questionnaire.py::"
@@ -79,6 +82,8 @@ COVERED = {
     ("POST", "/api/v1/purchase-orders/{id}/changes/{number}/submit"): PO_ROUTES,
     ("POST", "/api/v1/purchase-orders/{id}/changes/{number}/withdraw"): PO_ROUTES,
     ("POST", "/api/v1/purchase-orders/{id}/changes/{number}/apply"): PO_ROUTES,
+    ("GET", "/api/v1/purchase-orders/{id}/pdf"): VENDOR_COPY_ROUTES,
+    ("GET", "/api/v1/purchase-orders/{id}/vendor-copy"): VENDOR_COPY_ROUTES,
     ("GET", "/api/v1/vendors/counts"): LISTDOCS,
     ("GET", "/api/v1/vendors/duplicate-check"): CROUTES,
     ("POST", "/api/v1/vendors/{id}/submit"): CROUTES,
