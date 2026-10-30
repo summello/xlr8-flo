@@ -631,7 +631,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E13-S20** PO decision panel: Purchase Order Evidence block | E13 | ui | M | PO-003, APR-020 | ~~E13-S04~~, ~~E11-S10~~ |
 | ⬜ | **E13-S21** Sending domain status and suppression list (Administration) | E13 | ui | M | EML-001, EML-003 | E13-S10 |
 | ✅ | **E13-S22** Purchase-order open questions for the operator (parking story) | E13 | docs | S | PO-007 | — |
-| ⬜ | **E13-S23** PO approval withdrawal locks the approval instance before the PO (deadlock with a concurrent decision) | E13 | concurrency | S | PO-007 | E13-S07 |
+| ⬜ | **E13-S23** PO lock order: withdrawal takes the approval instance before the PO; change-order submit takes the award first | E13 | concurrency | S | PO-007 | E13-S07 |
 | ✅ | **E22-S01** Create Project with budget: form and Excel, sponsors, through the project approval workflow | E22 | engine | L | PROJ-003 | ~~E09-S17~~ |
 | ✅ | **E22-S02** Soft delete for every draft document | E22 | crud | M | DATA-002 | ~~E09-S15~~ |
 | ✅ | **E22-S03** One audit helper instead of twelve, behaviour-preserving | E22 | chore | M | AUD-001 | — |
