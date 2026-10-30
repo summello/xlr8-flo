@@ -2087,7 +2087,7 @@ epics:
           - WF-005
         dep:
           - E13-S06
-        st: in_progress
+        st: review
       - id: E13-S08
         t: PO PDF reproducible from stored snapshot and template version
         k: engine
@@ -2315,6 +2315,31 @@ epics:
           - PO-007
         dep:
           - E13-S07
+        st: todo
+      - id: E13-S24
+        t: Vendor cancellation email for a cancelled issued PO, through the outbox
+        k: engine
+        s: M
+        tags:
+          - security
+        reqs:
+          - PO-013
+          - PO-015
+          - ARCH-006
+        dep:
+          - E13-S07
+          - E13-S09
+        st: todo
+      - id: E13-S25
+        t: Per-file vendor-facing mark on PO attachments (records intent, sends nothing until E19-S04)
+        k: security
+        s: M
+        tags:
+          - security
+        reqs:
+          - PO-017
+        dep:
+          - E13-S11
         st: todo
 
   - id: E22
