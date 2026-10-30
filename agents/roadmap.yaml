@@ -2306,7 +2306,7 @@ epics:
         dep: []
         st: done
       - id: E13-S23
-        t: PO approval withdrawal locks the approval instance before the PO (deadlock with a concurrent decision)
+        t: 'PO lock order: withdrawal takes the approval instance before the PO; change-order submit takes the award first'
         k: concurrency
         s: S
         tags:
