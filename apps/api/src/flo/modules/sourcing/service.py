@@ -107,12 +107,35 @@ def _encode(row: SourcingBasis) -> str:
     ).decode()
 
 
-# Current bids: submitted and not replaced by a submitted bid (the rule behind `BidRead.current`).
-CURRENT_BIDS = (
-    "(SELECT count(*) FROM bid {a} WHERE {a}.org_id = {r}.org_id AND {a}.rfq_id = {r}.id "
-    "AND {a}.status = 'submitted' AND NOT EXISTS (SELECT 1 FROM bid n WHERE "
-    "n.org_id = {a}.org_id AND n.replaces_bid_id = {a}.id AND n.status = 'submitted'))"
+# The current bid: submitted and not replaced by a submitted bid (behind `BidRead.current`).
+# The one copy; every "current bid" query formats `{a}` into it.
+CURRENT_BID = (
+    "{a}.status = 'submitted' AND NOT EXISTS (SELECT 1 FROM bid n WHERE "
+    "n.org_id = {a}.org_id AND n.replaces_bid_id = {a}.id AND n.status = 'submitted')"
 )
+CURRENT_BIDS = (
+    "(SELECT count(*) FROM bid {a} WHERE {a}.org_id = {r}.org_id AND {a}.rfq_id = {r}.id AND "
+    + CURRENT_BID
+    + ")"
+)
+
+
+def no_priced_quote(conn: Conn, scope: Scope, rfq_id: UUID) -> set[UUID]:
+    """RFQ lines no current submitted bid quoted (E12-S24). A quoted line always has a price above
+    zero (E12-S23), so "nobody quoted it" and "refused as a zero price" are one condition."""
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        rows = (
+            RfqRepository(conn, scope)
+            .execute(
+                "SELECT l.id FROM rfq_line l WHERE l.org_id = %(org_id)s AND l.rfq_id = %(rfq)s "
+                "AND NOT EXISTS (SELECT 1 FROM bid b JOIN bid_line q ON q.org_id = b.org_id "
+                "AND q.bid_id = b.id WHERE b.org_id = l.org_id AND b.rfq_id = l.rfq_id "
+                "AND q.rfq_line_id = l.id AND q.quoted AND " + CURRENT_BID.format(a="b") + ")",
+                {"rfq": rfq_id},
+            )
+            .fetchall()
+        )
+    return {cast(UUID, r[0]) for r in rows}
 
 
 class RfqService:

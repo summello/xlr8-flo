@@ -10,6 +10,7 @@ type Json = Record<string, unknown>;
 type Vendor = { vendor_id: string; vendor_name: string; budget_total: string; total: string };
 type Requisition = { requisition_id: string; requisition: string; scope: string; award: string; over_scope_by: string; release: string; return_project: string };
 type Line = { line_no: number; vendor_name: string; justification?: string | null; tie_override_reason?: string | null };
+type Unpriced = { line_no: number; description: string; quantity: string; requisition: string };
 type Exception = { vendor_id: string; exceptions: string };
 type Check = components["schemas"]["RequisitionCheck"];
 type Evaluators = components["schemas"]["EvaluationRead"]["evaluators"];
@@ -27,6 +28,7 @@ export default function AwardEvidence({ evidence }: { evidence: Json }) {
   const notLowest = arr<Line>(evidence.not_lowest);
   const ties = arr<Line>(evidence.tie_overrides);
   const exceptions = arr<Exception>(evidence.exceptions);
+  const unpriced = arr<Unpriced>(evidence.unpriced_lines);
   const weighted = ((evidence.evaluator_results as Json | null)?.weighted ?? null) as Record<string, string | null> | null;
   const rationale = (evidence.rationale as string | null) || undefined;
   const names = (evidence.vendor_names ?? {}) as Record<string, string>;
@@ -100,6 +102,12 @@ export default function AwardEvidence({ evidence }: { evidence: Json }) {
         </tbody>
       </table>
       </div>
+
+      {unpriced.length > 0 && (
+        <p className="appr-meta" role="status">
+          {unpriced.length === 1 ? "1 line has" : `${unpriced.length} lines have`} no priced quote and will be cancelled on approval: {unpriced.map((u) => `line ${u.line_no}, ${u.description}, quantity ${u.quantity} (${u.requisition})`).join("; ")}.
+        </p>
+      )}
 
       {(notLowest.length > 0 || ties.length > 0) && (
         <section aria-labelledby="appr-award-notlowest">

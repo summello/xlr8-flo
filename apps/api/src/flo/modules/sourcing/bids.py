@@ -105,10 +105,19 @@ class BidService(RfqService):
             checks={"problem": problem},
         )
 
-    def _assert_not_awarded(self, rfq_row: tuple[object, ...]) -> None:
-        # E12-S08 adds its award-record check here.
+    def _assert_not_awarded(self, rfq_row: tuple[object, ...], rfq_id: UUID) -> None:
         if rfq_row[0] == "awarded":
             raise conflict("rfq_awarded", "This RFQ is awarded. Its bids can no longer change.")
+        # the RFQ row is locked, and award submit takes that lock first, so this cannot race it
+        if self.repo.execute(
+            "SELECT 1 FROM award WHERE org_id = %(org_id)s AND rfq_id = %(rfq)s "
+            "AND status = 'approval_pending'",
+            {"rfq": rfq_id},
+        ).fetchone():
+            raise conflict(
+                "award_pending",
+                "This RFQ's award is awaiting approval. Bids can no longer change.",
+            )
 
     def _before_submit(
         self,
@@ -533,7 +542,7 @@ class BidService(RfqService):
     ) -> BidRead | SealedBidRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             rfq = self._lock_rfq(rfq_id)
-            self._assert_not_awarded(rfq)
+            self._assert_not_awarded(rfq, rfq_id)
             if rfq[0] == "cancelled":
                 raise conflict(
                     "rfq_cancelled", "This RFQ is cancelled. Its bids can no longer change."
@@ -616,7 +625,7 @@ class BidService(RfqService):
             original = self._lock_bid(rfq_id, bid_id)
             if not rfq[1]:  # now() < deadline_at, strictly
                 raise conflict("deadline_passed", "The bidding stop time has passed.")
-            self._assert_not_awarded(rfq)
+            self._assert_not_awarded(rfq, rfq_id)
             if original[15] != "submitted":
                 raise conflict("not_submitted", "Only a submitted bid can be replaced.")
             if self.repo.execute(

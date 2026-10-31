@@ -64,17 +64,23 @@ from flo.modules.requisitions.schemas import SubmissionInvalid as SubmissionInva
 from flo.modules.requisitions.sourcing import award_funding as award_funding
 from flo.modules.requisitions.sourcing import award_lines as award_lines
 from flo.modules.requisitions.sourcing import cancel_lines as cancel_lines
+from flo.modules.requisitions.sourcing import cancel_unpriced as cancel_unpriced
 from flo.modules.requisitions.sourcing import issue_lines as issue_lines
+from flo.modules.requisitions.sourcing import lock_lines as lock_lines
 from flo.modules.requisitions.sourcing import mark_awarded as mark_awarded
 from flo.modules.requisitions.sourcing import mark_completed as mark_completed
 from flo.modules.requisitions.sourcing import mark_sourced as mark_sourced
 from flo.modules.requisitions.sourcing import mark_unawarded as mark_unawarded
 from flo.modules.requisitions.sourcing import mark_unsourced as mark_unsourced
 from flo.modules.requisitions.sourcing import order_lines as order_lines
+from flo.modules.requisitions.sourcing import (
+    register_unpriced_cancellations as register_unpriced_cancellations,
+)
 from flo.modules.requisitions.sourcing import release_unawarded as release_unawarded
 from flo.modules.requisitions.sourcing import reopen_for_purchase as reopen_for_purchase
 from flo.modules.requisitions.sourcing import reservation_entry as reservation_entry
 from flo.modules.requisitions.sourcing import restore_unawarded as restore_unawarded
+from flo.modules.requisitions.sourcing import restore_unpriced as restore_unpriced
 from flo.modules.requisitions.sourcing import source_lines as source_lines
 from flo.modules.requisitions.sourcing import sourceable_lines as sourceable_lines
 from flo.modules.requisitions.sourcing import sourcing_basis as sourcing_basis
@@ -99,6 +105,10 @@ __all__ = [
     "award_funding",
     "award_lines",
     "cancel_lines",
+    "cancel_unpriced",
+    "lock_lines",
+    "restore_unpriced",
+    "register_unpriced_cancellations",
     "order_lines",
     "issue_lines",
     "mark_completed",

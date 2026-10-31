@@ -1,6 +1,7 @@
 import { CheckCircle, Circle, Info, Warning, XCircle } from "@phosphor-icons/react";
 import Money from "../ui/Money";
 import Person from "../ui/Person";
+import Signal from "../ui/Signal";
 import { qty } from "./model";
 import { formatDate, formatDateTime, label, type Decision, type Linked, type Requisition, type RequisitionLine, type StatusEvent } from "./api";
 
@@ -80,9 +81,9 @@ export function LinesCard({ lines }: { lines: RequisitionLine[] }) {
   return <section className="req-card req-wide req-table-card" aria-labelledby="detail-lines-title">
     <header className="req-card-head"><h2 id="detail-lines-title">Lines</h2><span className="req-count">{lines.length} {lines.length === 1 ? "line" : "lines"}</span></header>
     {lines.length === 0 ? <div className="req-empty"><h3>No Lines</h3></div> :
-      <table className="req-lines-table req-rollup"><thead><tr><th scope="col">Line</th><th scope="col" data-numeric>Requested</th><th scope="col" data-numeric data-extra>Sourced</th><th scope="col" data-numeric>Awarded</th><th scope="col" data-numeric data-extra>Ordered</th><th scope="col" data-numeric data-extra>Cancelled</th><th scope="col" data-numeric>Remaining</th></tr></thead>
+      <table className="req-lines-table req-rollup"><thead><tr><th scope="col">Line</th><th scope="col" data-numeric>Requested</th><th scope="col" data-numeric data-extra>Sourced</th><th scope="col" data-numeric>Awarded</th><th scope="col" data-numeric data-extra>Ordered</th><th scope="col" data-numeric data-extra title="Quantity cancelled on the requisition. A slice that no vendor priced is cancelled when its award is approved and cannot be ordered again.">Cancelled</th><th scope="col" data-numeric>Remaining</th></tr></thead>
         <tbody>{lines.map(l => <tr key={l.id}>
-          <td data-label="Line"><strong>{l.line_no}. {l.description}</strong><span className="req-sub">{label(l.line_type)} · {l.uom_code}</span></td>
+          <td data-label="Line"><strong>{l.line_no}. {l.description}</strong><span className="req-sub">{label(l.line_type)} · {l.uom_code}</span>{l.unpriced_cancellations && l.unpriced_cancellations.length > 0 && <Signal tone="warning" label={`Cancelled: no vendor priced this line (${l.unpriced_cancellations.map(u => `${u.rfq_number}: ${qty(u.quantity)}`).join(", ")})`} />}</td>
           <td data-label="Requested" data-numeric className="numeric">{qty(l.requested_qty)}</td>
           <td data-label="Sourced" data-numeric data-extra className="numeric">{qty(l.sourced_qty)}</td>
           <td data-label="Awarded" data-numeric className="numeric">{qty(l.awarded_qty)}</td>

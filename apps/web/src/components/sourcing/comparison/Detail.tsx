@@ -2,6 +2,7 @@ import { CheckCircle, Tag } from "@phosphor-icons/react";
 import { useState } from "react";
 import { apiClient } from "../../../api/client";
 import Money from "../../ui/Money";
+import Signal from "../../ui/Signal";
 import { failure } from "../../requisitions/api";
 import { useLoad } from "../../requisitions/useLoad";
 import Tabs from "./Tabs";
@@ -13,7 +14,7 @@ export function ByLine({ c, basis }: { c: Comparison; basis: BasisName }) {
   return <div className="cmp-scroll"><table className="cmp-table">
     <caption className="visually-hidden">Each line by vendor, landed and unit cost in {c.currency}</caption>
     <thead><tr><th scope="col">Line</th>{c.vendors.map(v => <th key={v.vendor_id} scope="col">{v.vendor_name}</th>)}</tr></thead>
-    <tbody>{c.lines.map(l => <tr key={l.rfq_line_id}><th scope="row">{l.line_no}. {l.description}<span className="req-sub">Quantity {l.quantity}</span></th>
+    <tbody>{c.lines.map(l => <tr key={l.rfq_line_id}><th scope="row">{l.line_no}. {l.description}<span className="req-sub">Quantity {l.quantity}</span>{l.no_priced_quote && <Signal tone="warning" label="No vendor priced this line" />}</th>
       {c.vendors.map(v => {
         const cell = l.cells.find(x => x.vendor_id === v.vendor_id);
         const lowest = l.lowest?.vendor_id === v.vendor_id, picked = vendorsOf(chosen).some(b => b.vendor_id === v.vendor_id && b.lines.includes(l.rfq_line_id));

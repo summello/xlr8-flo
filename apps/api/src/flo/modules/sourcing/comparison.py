@@ -22,7 +22,7 @@ from flo.modules.org.service import rate_for, today
 from flo.modules.sourcing.evaluation import assert_may_see_bids, weighted
 from flo.modules.sourcing.schemas import BidLate
 from flo.modules.sourcing.sealing import visible
-from flo.modules.sourcing.service import RfqService
+from flo.modules.sourcing.service import CURRENT_BID, RfqService
 
 IDENTICAL_MEASURES = (
     "landed_total", "difference_from_lowest", "price", "tax", "freight", "lead_time_days",
@@ -103,6 +103,7 @@ class LineRow(BaseModel):
     identical: bool
     lowest: Marker | None
     cells: list[Cell]
+    no_priced_quote: bool = False
 
 
 class BasisVendor(BaseModel):
@@ -241,11 +242,7 @@ def _price(bid: BidIn, lines: list[LineIn], currency: str, rate: Rate) -> _Price
     prices = {k: q.unit_price * q.quantity for k, q in bid.quotes.items()}
     fq = quantize(bid.freight, bid.currency)
     ratios = [int(prices.get(line.id, Decimal(0)).scaleb(8)) for line in lines]
-    shares = (
-        [m.amount for m in Money(fq, bid.currency).allocate(ratios)]
-        if any(ratios)
-        else [Decimal(0)] * len(lines)
-    )
+    shares = [m.amount for m in Money(fq, bid.currency).allocate(ratios)]
     for line, share in zip(lines, shares, strict=True):
         if line.id in bid.quotes:
             priced.cells[line.id] = (
@@ -371,6 +368,7 @@ def compute(
                 identical=len({(c.not_quoted, c.landed) for c in cells}) <= 1,
                 lowest=lowest,
                 cells=cells,
+                no_priced_quote=line.id not in cheapest,  # same set as `uncovered_lines`
             )
         )
 
@@ -510,9 +508,9 @@ class ComparisonService(RfqService):
             "b.late_accepted_at, b.late_reason, p.display_name, p.email FROM bid b "
             "LEFT JOIN identity p ON p.id = b.late_accepted_by "
             "JOIN rfq_invitee i ON i.rfq_id = b.rfq_id AND i.vendor_id = b.vendor_id "
-            "WHERE b.org_id = %(org_id)s AND b.rfq_id = %(rfq)s AND b.status = 'submitted' "
-            "AND NOT EXISTS (SELECT 1 FROM bid r WHERE r.org_id = b.org_id "
-            "AND r.replaces_bid_id = b.id AND r.status = 'submitted') ORDER BY b.sent_at, b.id",
+            "WHERE b.org_id = %(org_id)s AND b.rfq_id = %(rfq)s AND "
+            + CURRENT_BID.format(a="b")
+            + " ORDER BY b.sent_at, b.id",
             {"rfq": rfq_id},
         ).fetchall()
 

@@ -65,6 +65,13 @@ def quantize(amount: Decimal, currency: str) -> Decimal:
     return decimal_amount.quantize(quantum, rounding=ROUND_HALF_UP)
 
 
+def quantize_down(amount: Decimal, currency: str) -> Decimal:
+    """Round a non-negative amount down to its ISO 4217 exponent (never over-releases a split)."""
+
+    quantum = Decimal(1).scaleb(-currency_exponent(currency))
+    return _require_decimal(amount).quantize(quantum, rounding=ROUND_DOWN)
+
+
 @dataclass(frozen=True)
 class Money:
     """An immutable decimal amount inseparably paired with an ISO 4217 currency."""

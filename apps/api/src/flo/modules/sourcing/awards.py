@@ -22,7 +22,7 @@ from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.config import Settings
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError, conflict
-from flo.kernel.money import Money, quantize
+from flo.kernel.money import Money, quantize, quantize_down
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.approvals.schemas import OutcomeContext
@@ -35,17 +35,23 @@ from flo.modules.requisitions.service import (
     assert_current_upstream,
     award_funding,
     award_lines,
+    cancel_unpriced,
+    lock_lines,
     mark_awarded,
+    mark_completed,
     mark_unawarded,
     register_link_provider,
+    register_unpriced_cancellations,
     release_unawarded,
+    reopen_for_purchase,
     restore_unawarded,
+    restore_unpriced,
     sourcing_basis,
 )
 from flo.modules.sourcing.comparison import ComparisonRead, ComparisonService, SealedComparisonRead
 from flo.modules.sourcing.evaluation import weighted
 from flo.modules.sourcing.schemas import ReasonBody
-from flo.modules.sourcing.service import SUPERSEDE_GUARDS
+from flo.modules.sourcing.service import CURRENT_BID, SUPERSEDE_GUARDS, no_priced_quote
 
 type Conn = psycopg.Connection[tuple[object, ...]]
 type Basis = Literal["lowest_cost_supplier", "best_average_cost", "manual"]
@@ -124,8 +130,19 @@ class RequisitionCheck(BaseModel):
     award: str
     over_scope_by: str
     over_funds_by: str
-    release: str  # scope - award when positive, else 0: what approval returns to main_project
+    release: str  # (scope - award when positive) + unpriced: what approval returns to main_project
     main_project: str  # number of the requisition's project; '' when it has none
+    unpriced: str = "0"  # the share of RFQ lines no vendor priced, cancelled on approval
+
+
+class UnpricedLine(BaseModel):
+    """An RFQ line no vendor priced: cancelled when the award is approved (E12-S24)."""
+
+    rfq_line_id: UUID
+    line_no: int
+    description: str
+    quantity: str
+    requisition: str
 
 
 class AwardRead(BaseModel):
@@ -148,6 +165,7 @@ class AwardRead(BaseModel):
     budget_total: str
     lines: list[AwardLineRead]
     checks: list[RequisitionCheck]
+    unpriced_lines: list[UnpricedLine] = []
     justification_required: bool = False
 
 
@@ -160,6 +178,21 @@ class Quote:
     unit_price: Decimal
     tax: Decimal
     freight_share: Decimal
+
+
+@dataclass(frozen=True)
+class Slice:
+    """An RFQ line with no priced quote, and what cancelling it returns (rounded down)."""
+
+    rfq_line_id: UUID
+    line_no: int
+    description: str
+    quantity: Decimal
+    requisition_id: UUID
+    requisition_line_id: UUID
+    requisition: str
+    main_project: str
+    share: Decimal
 
 
 @dataclass(frozen=True)
@@ -282,6 +315,46 @@ class AwardService(ComparisonService):
         ).fetchall()
         return [Row(*r) for r in rows]
 
+    def _slices(self, rfq_id: UUID, ccy: str) -> list[Slice]:
+        """The RFQ's no-priced-quote lines, each with its rounded-down share of the requisition
+        line's amount (A * q / Q, never more than A in total)."""
+        ids = no_priced_quote(self.connection, self.scope, rfq_id)
+        found: list[tuple[Any, ...]] = self.repo.execute(
+            "SELECT rl.id, rl.line_no, rl.description, rl.quantity, rl.requisition_id, "
+            "rl.requisition_line_id, q.number, coalesce(p.number, ''), ql.amount, ql.quantity "
+            "FROM rfq_line rl JOIN requisition q ON q.org_id = rl.org_id "
+            "AND q.id = rl.requisition_id "
+            "JOIN requisition_line ql ON ql.id = rl.requisition_line_id "
+            "LEFT JOIN project p ON p.org_id = q.org_id AND p.id = q.project_id "
+            "WHERE rl.org_id = %(org_id)s AND rl.id = ANY(%(ids)s) ORDER BY rl.line_no",
+            {"ids": sorted(ids)},
+        ).fetchall()
+        return [
+            Slice(
+                r[0],
+                r[1],
+                r[2],
+                r[3],
+                r[4],
+                r[5],
+                r[6],
+                r[7],
+                quantize_down(r[8] * r[3] / r[9], ccy),
+            )
+            for r in found
+        ]
+
+    def _current_bid_ids(self, rfq_id: UUID) -> dict[UUID, UUID]:
+        """vendor id -> the id of the vendor's current bid."""
+        return {
+            cast(UUID, r[0]): cast(UUID, r[1])
+            for r in self.repo.execute(
+                "SELECT b.vendor_id, b.id FROM bid b WHERE b.org_id = %(org_id)s "
+                "AND b.rfq_id = %(rfq)s AND " + CURRENT_BID.format(a="b"),
+                {"rfq": rfq_id},
+            ).fetchall()
+        }
+
     def _quotes(self, bid_ids: list[UUID]) -> dict[tuple[UUID, UUID], Quote]:
         """Each quoted bid line with its freight share: the bid freight is split in the bid
         currency, pro rata by exact line price, in whole minor units (as the comparison does)."""
@@ -350,10 +423,16 @@ class AwardService(ComparisonService):
         by_requisition: dict[UUID, Decimal] = defaultdict(Decimal)
         for r, b in zip(rows, budgets, strict=True):
             by_requisition[r.requisition_id] += b
-        funds = award_funding(self.connection, self.scope, list(by_requisition), lock=lock)
-        scope: dict[UUID, Decimal] = defaultdict(Decimal)
+        # the unpriced share never enters `scope`, so it cannot cover an over-scope priced award
+        unpriced: dict[UUID, Decimal] = defaultdict(Decimal)
         numbers: dict[UUID, str] = {}
         mains: dict[UUID, str] = {}
+        for sl in self._slices(award["rfq_id"], rfq_ccy):
+            unpriced[sl.requisition_id] += sl.share
+            by_requisition[sl.requisition_id] += 0  # in the funding set and the checks
+            numbers[sl.requisition_id], mains[sl.requisition_id] = sl.requisition, sl.main_project
+        funds = award_funding(self.connection, self.scope, list(by_requisition), lock=lock)
+        scope: dict[UUID, Decimal] = defaultdict(Decimal)
         awarded: list[tuple[Any, ...]] = self.repo.execute(
             "SELECT rl.requisition_id, q.number, ql.amount, ql.quantity, sum(al.quantity), "
             "coalesce(p.number, '') "
@@ -382,8 +461,9 @@ class AwardService(ComparisonService):
                 over_funds_by=format(
                     max(zero, quantize(by_requisition[i] - funds[i], rfq_ccy)), "f"
                 ),
-                release=format(max(zero, scope[i] - by_requisition[i]), "f"),
+                release=format(max(zero, scope[i] - by_requisition[i]) + unpriced[i], "f"),
                 main_project=mains[i],
+                unpriced=format(unpriced[i] + zero, "f"),
             )
             for i in sorted(by_requisition, key=lambda i: numbers[i])
         ]
@@ -425,6 +505,18 @@ class AwardService(ComparisonService):
                 )
         return cmp, out
 
+    def _unpriced_lines(self, rfq_id: UUID, ccy: str) -> list[UnpricedLine]:
+        return [
+            UnpricedLine(
+                rfq_line_id=s.rfq_line_id,
+                line_no=s.line_no,
+                description=s.description,
+                quantity=format(s.quantity, "f"),
+                requisition=s.requisition,
+            )
+            for s in self._slices(rfq_id, ccy)
+        ]
+
     # -- the read --------------------------------------------------------------------------
 
     def read(self, rfq_id: UUID) -> AwardRead:
@@ -461,6 +553,7 @@ class AwardService(ComparisonService):
                 for r, b in zip(rows, budgets, strict=True)
             ],
             checks=checks,
+            unpriced_lines=self._unpriced_lines(award["rfq_id"], ccy),
             justification_required=OrgService(self.connection, self.scope)
             .effective_setting(unit_id, "sourcing.require_non_lowest_justification")
             .value
@@ -551,16 +644,7 @@ class AwardService(ComparisonService):
                 {"rfq": rfq_id},
             ).fetchall()
         }
-        bids = {
-            cast(UUID, r[0]): cast(UUID, r[1])
-            for r in self.repo.execute(
-                "SELECT b.vendor_id, b.id FROM bid b WHERE b.org_id = %(org_id)s "
-                "AND b.rfq_id = %(rfq)s AND b.status = 'submitted' AND NOT EXISTS ("
-                "SELECT 1 FROM bid r WHERE r.org_id = b.org_id AND r.replaces_bid_id = b.id "
-                "AND r.status = 'submitted')",
-                {"rfq": rfq_id},
-            ).fetchall()
-        }
+        bids = self._current_bid_ids(rfq_id)
         quotes = self._quotes(sorted(bids.values()))
         tax_on, freight_on = self._flags(unit_id)
         problems: list[ProblemFieldError] = []
@@ -697,8 +781,24 @@ class AwardService(ComparisonService):
                 problems.append(
                     ProblemFieldError(field="lines", message="Award at least one line.")
                 )
+            current = self._current_bid_ids(rfq_id)
+            quotes = self._quotes(sorted(current.values()))
             for r in rows:
                 field = f"lines/{r.rfq_line_id}/{r.vendor_id}"
+                quote = quotes.get((r.bid_id, r.rfq_line_id))
+                if (
+                    current.get(r.vendor_id) != r.bid_id
+                    or quote is None
+                    or r.quantity > quote.quantity
+                ):
+                    problems.append(
+                        ProblemFieldError(
+                            field=field,
+                            message="The vendor revised this bid since the line was chosen. "
+                            "Choose it again.",
+                        )
+                    )
+                    continue
                 if r.not_lowest and setting.value is True and not r.justification:
                     problems.append(
                         ProblemFieldError(
@@ -717,7 +817,12 @@ class AwardService(ComparisonService):
             basis = sourcing_basis(
                 self.connection, self.scope, sorted({r.requisition_line_id for r in rows})
             )
-            for b in basis:
+            # every requisition the award touches, the all-unpriced ones included (Q6)
+            touched = sorted(
+                {r.requisition_line_id for r in rows}
+                | {s.requisition_line_id for s in self._slices(rfq_id, ccy)}
+            )
+            for b in sourcing_basis(self.connection, self.scope, touched):
                 if generated_for(self.connection, self.scope, b.requisition_id) is None:
                     raise ProblemError(
                         ErrorCode.VALIDATION_FAILED,
@@ -856,7 +961,11 @@ class AwardService(ComparisonService):
                     "po_exists", "A purchase order was created from this award. It stays."
                 )
             rows = self._rows(id)
-            requisitions = sorted({r.requisition_id for r in rows})
+            _, _, ccy, _ = self._rfq(rfq_id)
+            slices = self._slices(rfq_id, ccy)
+            requisitions = sorted(
+                {r.requisition_id for r in rows} | {s.requisition_id for s in slices}
+            )
             award_funding(self.connection, self.scope, requisitions, lock=True)
             award = self.award_by_id(id, lock=True)
             if award["status"] != "approved":
@@ -868,14 +977,30 @@ class AwardService(ComparisonService):
                 raise conflict(
                     "po_exists", "A purchase order was created from this award. It stays."
                 )
+            lock_lines(
+                self.connection,
+                self.scope,
+                [r.requisition_line_id for r in rows] + [s.requisition_line_id for s in slices],
+            )
             award_lines(
                 self.connection,
                 self.scope,
                 [(r.requisition_line_id, -r.quantity) for r in rows],
                 actor,
             )
+            restore_unpriced(
+                self.connection,
+                self.scope,
+                id,
+                [(s.requisition_line_id, s.rfq_line_id, s.quantity) for s in slices],
+                actor,
+            )
             for requisition_id in requisitions:
                 restore_unawarded(self.connection, self.scope, requisition_id, id, actor)
+                # approval may have completed an all-cancelled requisition; reopen it first
+                reopen_for_purchase(
+                    self.connection, self.scope, requisition_id, actor, "Award superseded"
+                )
                 mark_unawarded(self.connection, self.scope, requisition_id, actor)
             self.repo.execute(
                 "UPDATE award SET status = 'superseded', version = version + 1 "
@@ -928,10 +1053,17 @@ class AwardService(ComparisonService):
         id, rfq_id = cast(UUID, award["id"]), cast(UUID, award["rfq_id"])
         _, unit_id, ccy, _ = self._rfq(rfq_id)
         rows = self._rows(id)
+        slices = self._slices(rfq_id, ccy)
         _, checks = self.figures(award, rows, ccy, unit_id, lock=True)
         if award["status"] != "approval_pending":
             raise conflict("invalid_transition", "This award is no longer pending approval.")
         self.assert_within(checks)
+        # one id-ordered pass over every requisition and line the award touches
+        lock_lines(
+            self.connection,
+            self.scope,
+            [r.requisition_line_id for r in rows] + [s.requisition_line_id for s in slices],
+        )
         award_lines(
             self.connection,
             self.scope,
@@ -944,8 +1076,15 @@ class AwardService(ComparisonService):
         status, *_ = self._rfq(rfq_id, lock=True)
         if status != "under_evaluation":
             raise conflict("invalid_transition", "This RFQ is no longer under evaluation.")
+        cancel_unpriced(
+            self.connection,
+            self.scope,
+            id,
+            [(s.requisition_line_id, s.rfq_line_id, s.quantity) for s in slices],
+            context.actor_id,
+        )
         for c in checks:
-            unused = Decimal(c.scope) - Decimal(c.award)
+            unused = Decimal(c.release)
             if unused > 0:
                 release_unawarded(
                     self.connection, self.scope, c.requisition_id, unused, id, context.actor_id,
@@ -963,6 +1102,7 @@ class AwardService(ComparisonService):
         )
         for c in checks:
             mark_awarded(self.connection, self.scope, c.requisition_id, context.actor_id)
+            mark_completed(self.connection, self.scope, c.requisition_id, context.actor_id)
         self._audit_award(
             "award.approve", id, {"status": "approval_pending"}, {"status": "approved"}
         )
@@ -1033,9 +1173,13 @@ class AwardService(ComparisonService):
                     "award": c.award,
                     "over_scope_by": c.over_scope_by,
                     "release": c.release,
+                    "unpriced": c.unpriced,
                     "return_project": c.main_project,
                 }
                 for c in checks
+            ],
+            "unpriced_lines": [
+                u.model_dump(mode="json") for u in self._unpriced_lines(rfq_id, ccy)
             ],
             "not_lowest": [
                 {
@@ -1105,3 +1249,27 @@ def _award_links(
 
 
 register_link_provider("award", _award_links)
+
+
+def _unpriced_cancellations(
+    conn: Conn, scope: Scope, line_ids: list[UUID]
+) -> list[tuple[UUID, UUID, str, Decimal]]:
+    """Slices an approved award cancelled: its RFQ lines with no priced quote (Q5, derived)."""
+    out = []
+    svc = AwardService(conn, scope)
+    for rfq_id, number, ccy in svc.repo.execute(
+        "SELECT DISTINCT r.id, r.number, r.currency FROM rfq r JOIN award a ON a.org_id = r.org_id "
+        "AND a.rfq_id = r.id AND a.status = 'approved' JOIN rfq_line l ON l.org_id = r.org_id "
+        "AND l.rfq_id = r.id WHERE r.org_id = %(org_id)s AND l.requisition_line_id = ANY(%(ids)s) "
+        "ORDER BY r.number",
+        {"ids": line_ids},
+    ).fetchall():
+        out += [
+            (s.requisition_line_id, cast(UUID, rfq_id), cast(str, number), s.quantity)
+            for s in svc._slices(cast(UUID, rfq_id), cast(str, ccy).strip())
+            if s.requisition_line_id in line_ids
+        ]
+    return out
+
+
+register_unpriced_cancellations(_unpriced_cancellations)
