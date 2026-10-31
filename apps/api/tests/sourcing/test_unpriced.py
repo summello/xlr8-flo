@@ -532,7 +532,7 @@ def test_three_awards_cancel_slices_of_one_line_and_never_release_more_than_the_
         )
 
     def returned():
-        """What the requisition has given back so far: the line's amount less what it still holds."""
+        """What has been given back: the line's amount less what the reservation still holds."""
         return Decimal(100) - Decimal(state(db, r0.id).reservation.remaining)
 
     def approve(rfq, vids):
