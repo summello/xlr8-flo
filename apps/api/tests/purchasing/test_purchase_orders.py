@@ -185,7 +185,7 @@ def test_numbers_are_per_unit_and_a_replay_never_reuses_one(lifecycle_db):
 
 def test_ordered_value_is_derived_from_the_award_rate(lifecycle_db, monkeypatch):
     from tests.sourcing import test_award
-    from tests.sourcing.test_comparison import fx, rate_date_of
+    from tests.sourcing.test_comparison import deadline_ago, fx, rate_date_of
 
     db, _ = lifecycle_db
     real = test_award.quoted
@@ -193,6 +193,9 @@ def test_ordered_value_is_derived_from_the_award_rate(lifecycle_db, monkeypatch)
         test_award, "quoted", lambda db, rfq, vid, currency, **kw: real(db, rfq, vid, "EUR", **kw)
     )
     rfq, _, _, [a, _b] = scene(db, prices=("7.5", "9"))  # bids in EUR
+    # five days back, so the award's rate day is always earlier than today's: one day back is the
+    # same business day as today on a weekend, and the two rates collided on fx_rate_pkey
+    deadline_ago(db, rfq, 5)
     fx(db, rate_date_of(db, rfq), USD="1.1")  # 1 EUR = 1.1 USD, frozen on the award
     award_id = approved_award(db, rfq, a, "5").id
     fx(db, datetime.now(UTC).date(), USD="1.2")  # today's rate moves on; the award's must not
