@@ -2146,7 +2146,7 @@ epics:
         dep:
           - E13-S09
           - E09-S10
-        st: todo
+        st: in_progress
       - id: E13-S12
         t: 'PO list and PO detail screens'
         k: ui
