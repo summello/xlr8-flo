@@ -11,6 +11,7 @@ from typing import cast
 from uuid import UUID
 
 import psycopg
+from psycopg.types.json import Jsonb
 
 from flo.kernel.errors import ErrorCode, ProblemError, conflict
 from flo.kernel.money import quantize
@@ -18,6 +19,7 @@ from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.budget.service import commit, lock_balance, reservation_remaining
 from flo.modules.org.service import today
+from flo.modules.purchasing import transmission
 from flo.modules.purchasing.lifecycle import parse_if_match, transition
 from flo.modules.purchasing.pdf import freeze
 from flo.modules.purchasing.pricing import Figures
@@ -30,12 +32,14 @@ from flo.modules.requisitions.service import (
     reservation_entry,
 )
 from flo.modules.sourcing.service import lock_award
+from flo.modules.vendors.service import VendorService
 
 type Conn = psycopg.Connection[tuple[object, ...]]
 
 
 def enqueue_transmission(conn: Conn, scope: Scope, po_id: UUID, version: int) -> None:
-    """E13-S09 wires the send into the outbox here, in the issue transaction."""
+    """The send goes into the outbox in the issue transaction (E13-S09)."""
+    transmission.enqueue(conn, scope, po_id, version)
 
 
 def notify_requester_issued(conn: Conn, scope: Scope, po_id: UUID) -> None:
@@ -67,6 +71,20 @@ def issue(conn: Conn, scope: Scope, po_id: UUID, actor_id: UUID, if_match: str |
             raise conflict("invalid_transition", "Only an approved purchase order can be issued.")
         if expected != version:
             raise conflict("stale_version", "The purchase order changed. Reload it and retry.")
+        recipients = h["recipients"] or [
+            r.model_dump()
+            for r in VendorService(conn, scope, actor_id).document_recipients(
+                cast(UUID, h["vendor_id"])
+            )
+        ]
+        if not recipients:
+            raise conflict(*transmission.NO_RECIPIENTS)
+        if not h["recipients"]:
+            service.repo.execute(
+                "UPDATE purchase_order SET recipients = %(r)s "
+                "WHERE org_id = %(org_id)s AND id = %(id)s",
+                {"id": po_id, "r": Jsonb(recipients)},
+            )
         required = cast(
             int,
             service.repo.execute(

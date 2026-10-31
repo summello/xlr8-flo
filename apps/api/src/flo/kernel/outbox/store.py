@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -14,6 +15,7 @@ from psycopg.types.json import Jsonb
 from flo.kernel.audit.writer import CorrelationMissing
 from flo.kernel.db.repo import ScopedRepo
 from flo.kernel.logging import current_correlation_id
+from flo.kernel.ports.email import EmailAttachment
 from flo.kernel.tenancy.context import Scope
 
 type DatabaseRow = Sequence[object] | Mapping[str, object]
@@ -151,12 +153,19 @@ class OutboxStore(ScopedRepo[OutboxRecord]):
         template: str,
         context: Mapping[str, object],
         idempotency_key: str,
+        attachments: Sequence[EmailAttachment] = (),
     ) -> OutboxRecord:
-        return self.add(
-            "email",
-            {"to": to, "template": template, "context": dict(context)},
-            idempotency_key=idempotency_key,
-        )
+        payload: JsonObject = {"to": to, "template": template, "context": dict(context)}
+        if attachments:
+            payload["attachments"] = [
+                {
+                    "filename": a.filename,
+                    "content_type": a.content_type,
+                    "content_b64": base64.b64encode(a.content).decode("ascii"),
+                }
+                for a in attachments
+            ]
+        return self.add("email", payload, idempotency_key=idempotency_key)
 
     def discard_email(self, idempotency_key: str) -> int:
         """Remove undelivered bearer-link payloads without deleting sent evidence."""

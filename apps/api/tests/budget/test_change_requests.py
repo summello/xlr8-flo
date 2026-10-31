@@ -657,7 +657,7 @@ def test_budget_change_request_is_never_deletable(wiring):
     assert get_request(db[0], scope, request.id).status == "pending"
     assert instances_for(db[0], scope, "budget_change", request.id)[-1].status == "running"
     assert get_request(db[0], scope, decided.id).status == "approved"
-    actions = db[0].execute(
-        "SELECT action FROM audit_log WHERE target_id=%s", (request.id,)
-    ).fetchall()
+    actions = (
+        db[0].execute("SELECT action FROM audit_log WHERE target_id=%s", (request.id,)).fetchall()
+    )
     assert ("budget_change_request.delete",) not in actions

@@ -30,9 +30,12 @@ from flo.modules.purchasing.schemas import (
     PoRead,
     PoReduceCreate,
     PoTab,
+    PoTransmissionRead,
     PurchaseOrderTransitionCreate,
+    TransmissionResend,
 )
 from flo.modules.purchasing.service import PurchaseOrderService
+from flo.modules.purchasing.transmission import list_transmissions, resend
 
 router = APIRouter(prefix="/api/v1/purchase-orders", tags=["purchasing"])
 
@@ -323,3 +326,17 @@ def po_pdf(id: UUID, context: ViewContext, connection: Connection) -> Response:
 @router.get("/{id}/vendor-copy", response_model=VendorCopyRead)
 def po_vendor_copy(id: UUID, context: ViewContext, connection: Connection) -> VendorCopyRead:
     return vendor_copy_read(connection, current_scope(), id)
+
+
+@router.get("/{id}/transmissions", response_model=list[PoTransmissionRead])
+def po_transmissions(
+    id: UUID, context: ViewContext, connection: Connection
+) -> list[PoTransmissionRead]:
+    return list_transmissions(connection, current_scope(), id)
+
+
+@router.post("/{id}/transmissions/resend", response_model=list[PoTransmissionRead])
+def resend_po_transmission(
+    id: UUID, body: TransmissionResend, context: IssueContext, connection: Connection
+) -> list[PoTransmissionRead]:
+    return resend(connection, current_scope(), context.user_id, id, body.contact_ids)

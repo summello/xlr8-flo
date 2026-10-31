@@ -2117,7 +2117,7 @@ epics:
         dep:
           - E13-S08
           - E03-S06
-        st: in_progress
+        st: done
       - id: E13-S10
         t: 'Deliverability: SPF/DKIM/DMARC verification, bounce and complaint handling,
           suppression list'

@@ -31,7 +31,14 @@ from flo.kernel.tenancy.context import Scope
 from flo.modules.org.schemas import CodesRead
 
 DocumentType = Literal[
-    "project", "requisition", "project_request", "budget_change", "vendor", "rfq", "award", "po",
+    "project",
+    "requisition",
+    "project_request",
+    "budget_change",
+    "vendor",
+    "rfq",
+    "award",
+    "po",
     "po_change",
 ]
 VersionStatus = Literal["draft", "published", "superseded", "deleted"]

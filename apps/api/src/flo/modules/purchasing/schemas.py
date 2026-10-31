@@ -286,3 +286,25 @@ class PoChangeRead(BaseModel):
     result_po_id: UUID | None
     total: str  # the order total if applied, in the PO currency, as last drafted
     budget_total_project: str  # its budget total in the project currency
+
+
+class TransmissionResend(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    contact_ids: list[UUID] | None = Field(default=None, min_length=1, max_length=20)
+
+
+class PoTransmissionRead(BaseModel):
+    id: UUID
+    po_id: UUID
+    revision: int
+    version: int
+    attempt: int
+    recipient_name: str
+    recipient_email: str
+    template_version: str
+    provider_message_id: str | None
+    result: Literal[
+        "queued", "sent", "failed", "address_suppressed", "delivered", "bounced", "complained"
+    ]
+    created_at: datetime
+    result_at: datetime | None

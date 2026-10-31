@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import base64
+import binascii
 import time
 from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
@@ -16,6 +18,7 @@ from flo.kernel.jobs.backoff import RandomFraction, backoff_seconds
 from flo.kernel.logging import correlation_context
 from flo.kernel.outbox.store import OutboxConnection, OutboxRecord, WorkerOutboxStore
 from flo.kernel.ports.email import (
+    EmailAttachment,
     EmailSender,
     PermanentEmailError,
     TransientEmailError,
@@ -66,6 +69,25 @@ class OutboxSummary:
     dead: int = 0
 
 
+def _attachments(raw: object) -> list[EmailAttachment]:
+    if not isinstance(raw, list):
+        raise PermanentOutboxError("outbox email attachments are invalid")
+    out: list[EmailAttachment] = []
+    for item in raw:
+        if not (
+            isinstance(item, dict)
+            and set(item) == {"filename", "content_type", "content_b64"}
+            and all(isinstance(v, str) for v in item.values())
+        ):
+            raise PermanentOutboxError("outbox email attachments are invalid")
+        try:
+            content = base64.b64decode(item["content_b64"], validate=True)
+        except (binascii.Error, ValueError):
+            raise PermanentOutboxError("outbox email attachment is not valid base64") from None
+        out.append(EmailAttachment(item["filename"], item["content_type"], content))
+    return out
+
+
 def email_handler(sender: EmailSender) -> OutboxHandler:
     """Map the closed email payload contract onto the provider-neutral port."""
 
@@ -85,12 +107,16 @@ def email_handler(sender: EmailSender) -> OutboxHandler:
             or not isinstance(context, Mapping)
         ):
             raise PermanentOutboxError("outbox email payload has invalid field types")
+        extra: dict[str, object] = {}
+        if "attachments" in row.payload:  # absent: call send exactly as before
+            extra["attachments"] = _attachments(row.payload["attachments"])
         try:
             return sender.send(
                 to,
                 template,
                 cast(Mapping[str, object], context),
                 row.idempotency_key,
+                **extra,  # type: ignore[arg-type]
             )
         except TransientEmailError as error:
             raise TransientOutboxError(str(error)) from None

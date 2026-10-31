@@ -117,9 +117,14 @@ def test_deleting_a_returned_draft_releases_its_reservation_once(header_db):
     assert reservation_remaining(db[0], Scope(db[1]), entry.id).remaining == 0
     with pytest.raises(ProblemError):
         svc(db).delete(row.id)
-    releases = db[0].execute(
-        "SELECT count(*) FROM ledger_entry WHERE entry_type='release' AND source_id=%s", (row.id,)
-    ).fetchone()
+    releases = (
+        db[0]
+        .execute(
+            "SELECT count(*) FROM ledger_entry WHERE entry_type='release' AND source_id=%s",
+            (row.id,),
+        )
+        .fetchone()
+    )
     assert releases == (1,)
 
 

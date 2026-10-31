@@ -2142,6 +2142,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/purchase-orders/{id}/transmissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Po Transmissions */
+        get: operations["po_transmissions_api_v1_purchase_orders__id__transmissions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/purchase-orders/{id}/transmissions/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resend Po Transmission */
+        post: operations["resend_po_transmission_api_v1_purchase_orders__id__transmissions_resend_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/purchase-orders/{id}/vendor-copy": {
         parameters: {
             query?: never;
@@ -7951,6 +7985,45 @@ export interface components {
         };
         /** @enum {string} */
         PoStatus: "draft" | "approval_pending" | "approved" | "issued" | "partially_delivered" | "delivered" | "accepted" | "closed" | "cancelled" | "superseded" | "deleted";
+        /** PoTransmissionRead */
+        PoTransmissionRead: {
+            /** Attempt */
+            attempt: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Po Id
+             * Format: uuid
+             */
+            po_id: string;
+            /** Provider Message Id */
+            provider_message_id: string | null;
+            /** Recipient Email */
+            recipient_email: string;
+            /** Recipient Name */
+            recipient_name: string;
+            /**
+             * Result
+             * @enum {string}
+             */
+            result: "queued" | "sent" | "failed" | "address_suppressed" | "delivered" | "bounced" | "complained";
+            /** Result At */
+            result_at: string | null;
+            /** Revision */
+            revision: number;
+            /** Template Version */
+            template_version: string;
+            /** Version */
+            version: number;
+        };
         /** Position */
         Position: {
             /** X */
@@ -9739,6 +9812,11 @@ export interface components {
             /** Reason */
             reason?: string | null;
             to: components["schemas"]["ProjectStatus"];
+        };
+        /** TransmissionResend */
+        TransmissionResend: {
+            /** Contact Ids */
+            contact_ids?: string[] | null;
         };
         /** TreeBalance */
         TreeBalance: {
@@ -16916,6 +16994,94 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PoRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    po_transmissions_api_v1_purchase_orders__id__transmissions_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoTransmissionRead"][];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    resend_po_transmission_api_v1_purchase_orders__id__transmissions_resend_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransmissionResend"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoTransmissionRead"][];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

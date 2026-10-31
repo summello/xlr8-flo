@@ -1497,7 +1497,10 @@ def test_ci_watch_marks_red_once_and_reaps_green_merged_stories(
 def _git(repo: Path, *args: str) -> str:
     return subprocess.run(
         ["git", "-c", "user.name=t", "-c", "user.email=t@t", *args],
-        cwd=repo, check=True, capture_output=True, text=True,
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
     ).stdout.strip()
 
 

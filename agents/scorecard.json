@@ -7136,6 +7136,72 @@
         },
         "gate_s": 2
       }
+    },
+    {
+      "story": "E13-S09",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "money",
+        "security"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "e2ec4064-fefe-4086-bb4d-6158e7bef3b5",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S09",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1913c-0072-7e42-8ac6-70148dca193b",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Issue and change-order apply now put one outbox email (PDF attached) and one po_transmission row per distinct recipient in their own transaction; issue refuses a PO with no recipients, and a locked resend route plus a log route cover retries. Outbox/Resend/SMTP carry attachments only when given, and the 100/day email allowance joins the quota report.",
+      "title": "Email transmission via outbox, recipient/time/result/version recorded, retry without duplication",
+      "durations": {
+        "wall_s": 4148,
+        "author_s": 2793,
+        "review_s": {
+          "codex": 19,
+          "opus": 304
+        },
+        "gate_s": 2
+      }
     }
   ]
 }

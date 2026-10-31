@@ -153,9 +153,7 @@ def test_combined_checks_require_successful_detect_even_when_area_is_untouched(n
     assert "DETECT_RESULT: ${{ needs.detect.result }}" in step
     command = step.split("\n        run: ", 1)[1].split("\n", 1)[0]
     for result in ("success", "failure", "cancelled", "skipped", ""):
-        run = subprocess.run(
-            ["sh", "-c", command], cwd=tmp_path, env={"DETECT_RESULT": result}
-        )
+        run = subprocess.run(["sh", "-c", command], cwd=tmp_path, env={"DETECT_RESULT": result})
         assert (run.returncode == 0) == (result == "success")
     area = "api" if name == "backend" else "web"
     checks = next(s for s in steps if "STATIC_RESULT:" in s)

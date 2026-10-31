@@ -398,8 +398,8 @@ curl --fail --silent --show-error \
   https://xlr8flo.summello.com/api/internal/health/quota
 ```
 
-The document must contain exactly `neon_storage`, `cloud_run_requests`, `r2_storage`, and
-`artifact_registry`, each with `current`, `limit`, `unit`, and `percentage`. A crossed policy also
+The document must contain exactly `neon_storage`, `cloud_run_requests`, `r2_storage`,
+`artifact_registry`, and `email_sends`, each with `current`, `limit`, `unit`, and `percentage`. A crossed policy also
 appears in `alerts` and emits a structured warning containing its pre-agreed action and cost:
 
 | Metric | Alerts | Action | Cost |
@@ -408,6 +408,7 @@ appears in `alerts` and emits a structured warning containing its pre-agreed act
 | Cloud Run, 2M requests/month | 60 / 80 / 90 % | Still free; set `min-instances=1` for latency | ~$8–15/mo |
 | R2 storage, 10 GB | 60 / 80 / 90 % | Pay-as-you-go | ~$0.15/mo per 10 GB |
 | Artifact Registry, 0.5 GB | 80 % | Prune to 3 images (automate first) | ~$0 |
+| Email sends, 100/day | 80 % | Transactional sends continue and digests wait; move to Resend's paid tier | $20/mo |
 
 The Cloudflare Cron Trigger calls this endpoint every minute through the scheduled Worker handler.
 The edge Worker adds the same encrypted header for manual and scheduled calls; the value never

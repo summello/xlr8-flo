@@ -185,6 +185,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261029_0083",
         "20261029_0084",
         "20261030_0085",
+        "20261031_0086",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -3504,4 +3505,23 @@ def test_po_version_migration_is_append_only_and_roundtrips(empty_database):
         assert conn.execute("SELECT to_regclass('po_version')").fetchone() == (None,)
         with tenant_transaction(conn, scope):
             assert conn.execute("SELECT count(*) FROM purchase_order").fetchone() == (1,)
+        mig.upgrade(conn)
+
+
+def test_po_transmission_migration_roundtrips_and_checks(empty_database):
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261030_0085"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261031_0086")
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        mig.upgrade(conn)
+        for statement in (  # plant: without the CHECK and the unique index these succeed
+            "SELECT 1 FROM pg_indexes WHERE indexname = 'po_transmission_once'",
+            "SELECT 1 FROM pg_constraint WHERE conrelid = 'po_transmission'::regclass "
+            "AND contype = 'c' AND pg_get_constraintdef(oid) LIKE '%outbox_id IS NULL%'",
+        ):
+            assert conn.execute(statement).fetchone() == (1,)
+        mig.downgrade(conn)
+        assert conn.execute("SELECT to_regclass('po_transmission')").fetchone() == (None,)
         mig.upgrade(conn)

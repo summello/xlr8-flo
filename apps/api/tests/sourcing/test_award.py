@@ -365,8 +365,11 @@ def test_the_draft_release_is_what_approval_posts_and_a_full_award_releases_noth
     rfq, row, _, [a, _b] = scene(db, amount="100", qty="1", prices=("80", "90"))
     draft = prepare(db, rfq, pick(db, rfq, a, "1"))  # scope 100, award 80
     [check] = draft.checks
-    main = sql(db, "SELECT p.number FROM project p JOIN requisition r ON r.project_id=p.id "
-               "WHERE r.id=%s", (row.id,))[0][0]
+    main = sql(
+        db,
+        "SELECT p.number FROM project p JOIN requisition r ON r.project_id=p.id WHERE r.id=%s",
+        (row.id,),
+    )[0][0]
     assert (check.release, check.main_project) == ("20.00", main)
     assert draft.justification_required in (True, False)
     base = ledger(db)
