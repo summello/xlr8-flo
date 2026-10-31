@@ -16,6 +16,9 @@ from flo.modules.budget.models import LedgerBucket, LedgerEntry, LedgerType
 from flo.modules.budget.reservations import release_reservation
 from flo.modules.org.service import assert_usable
 
+# the reason of the release an actual posts against its commitment: spend, not a release (PO-013)
+CONSUMED_BY_ACTUAL = "Consumed by actual"
+
 
 def original_entry(repo: LedgerRepository, entry_id: int) -> LedgerEntry:
     entry = repo.entry("id = %(id)s", {"id": entry_id})
@@ -201,7 +204,7 @@ def _consume(
                         commitment_entry_id=original.id,
                         amount=released,
                         actor_id=actor_id,
-                        reason="Consumed by actual",
+                        reason=CONSUMED_BY_ACTUAL,
                         idempotency_key=f"{idempotency_key}:release",
                         effective_date=effective_date,
                     )

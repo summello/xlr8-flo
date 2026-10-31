@@ -8,9 +8,9 @@ Loaded into every agent session. Updated by `flo done` (status) and by Opus at e
 | | |
 |---|---|
 | Milestone | **M3 — First sellable release** |
-| Stories | 90 / 186 done |
+| Stories | 174 / 249 done |
 | Branch | milestone/M3-sellable |
-| In flight | — |
+| In flight | E12-S24, E13-S11 |
 | Blocked | — |
 <!-- STATE:END -->
 
@@ -50,6 +50,8 @@ Multi-tenant SaaS. Free-tier infrastructure until 10 paying customers or 200 MAU
 - **One public origin**, `xlr8flo.summello.com`; Cloudflare path-splits `/api/*` to Cloud Run, the rest to Pages. No CORS anywhere — if a story needs it, D-17 has been violated (D-17)
 - **M2 (10 Oct 2026, full text in `docs/m2-decisions.md`):** a project-linked requisition **reserves at submit** (D-M2-15, D-21), with at most one live reservation per requisition, tracked in funding rounds (`docs/m2-conventions.md` L). Approval keeps it and generates the sub-project; a standalone request reserves at approval (D-M2-5). Return-for-changes keeps the reservation; reject (to draft or permanent), withdraw, cancel and expiry release it once. Approval-group membership is **live** (D-M2-2, D-M2-9). The material-change list is fixed: amount, project, ledger account, catalogue item, line count (D-M2-13, canvas 79). Only the requester withdraws, until sourcing starts (canvas 78). Workflow conditions use the estimate only (canvas 83). Approval depth is 1..50, default 10.
 
+- **No zero-value lines (operator, 28 Oct 2026):** a line with no quantity, no price, or an amount that rounds to 0 is never stored, listed or shown on a PO. Bids refuse a quoted price of 0 or one that rounds to 0 (E12-S23), a bid must quote a line, and the zero-price special cases are deleted. A line no vendor priced is a derived condition across documents, with auto-cancel at award approval and a small notice (E12-S24, after E13-S07).
+
 ## Rejected, with reasons — do not re-propose
 
 | Rejected | Why |
@@ -80,7 +82,7 @@ Multi-tenant SaaS. Free-tier infrastructure until 10 paying customers or 200 MAU
 | Two Opus sessions, one worktree | On 10 Oct two sessions started the M2 design pass in the same worktree; one committed 41 s before the other. Before writing in a shared worktree, check `git log` for commits you did not make and `ListAgents` for a busy peer. Split by epic, each on its own branch and worktree, and name one owner per shared file (`docs/m2-*.md`, the roadmap, this file). |
 | `/Volumes/Omnissiah` unmounted | `uv`, `gh` and `opencode` fail through the `XDG_CACHE_HOME` and `UV_CACHE_DIR` environment variables, which point at that volume. Override both to `~/.cache` for the command. |
 | Design specs on unmerged branches | Page specs and DECISIONS live on `canvas-*` branches until merged. A UI packet that cites a spec missing from the milestone sends its author to a file that is not there. Merge the design branch (design-system/ only) before the design pass. |
-| Parallel reviewers | Two reviewers in one worktree corrupt each other — both are told to plant violations and revert them. Run them sequentially, or give the second its own `git worktree add --detach` at the same commit (remember `npm ci` there, and copy the verdict back into the story worktree, since `flo gate` only reads that one). |
+| Parallel reviewers | Two reviewers in one worktree corrupt each other — both are told to plant violations and revert them. Run them sequentially, or give the second its own `git worktree add --detach` at the same commit (remember `npm ci` there, and copy the verdict back into the story worktree, since `flo gate` only reads that one). The same holds for `submit.sh`/`finish.sh`: on 30 Oct an E13-S07 submit ran its light check while the Opus reviewer was planting in the same worktree and failed on exactly the planted test. Never submit or finish while a reviewer is running there. |
 
 ## Fleet routing changes — evidence, not impressions
 
@@ -173,6 +175,73 @@ Epic checkpoints replace train reviews; one PR per milestone stays. Revisit afte
 finish wall time, red-after-merge rate, Codex findings and blocker precision against Opus on the
 first ten gated stories (Codex ≥ Opus → Opus moves to epic level only).
 
+**21 Oct 2026 — `max_stories_in_flight` 4 → 6.** Four lanes sat in review or CI for hours while
+both Claude accounts had 75–80% of their five-hour window left and the ready queue held five stories.
+Review and CI are the bottleneck, not authoring, so more lanes overlap them. New lanes take stories
+with no migration first (migration lanes renumber at merge, three times on 21 Oct). Revisit if a
+milestone merge conflict or a gate collision traces to lane count.
+
+**22 Oct 2026 — Codex story reviews: 55 calls for every story, tests within the first 10.**
+Three ungated Codex reviews (E11-S10, E22-S04 twice, E22-S10) hit the 35-call cap after a milestone
+merge while still reading, and left `approve, ran_tests: false`, which the gate rejects; each cost a
+second review and a manual finish. Ungated budget 25 -> 40 commands, hard cap 35 -> 55 (gated was
+already 55), and the packet says to run `flo check --light` and set `ran_tests` within 10 commands.
+Revisit if Codex's 5-hour window starts capping.
+
+**23 Oct 2026 — nemotron last, maintenance only; Opus asleep until the flo fixes land. Operator.**
+Evidence: nemotron re-authored E12-S02 (already merged by Sonnet as 71977a0) in 116 min with 0 commits,
+63 ruff errors, a failing migration-chain test, no regenerated API client, and its own failing test skipped
+as "a test-environment limitation". `author_priority` is now [sonnet, codex, opencode-nemotron];
+nemotron takes `chore`/`docs` at size S only. Opus: both accounts ran low overnight, mostly on repeated
+reviews. Two reviews of one story shared one run record, so the fleet relaunched the "missing" reviewer
+(E11-S16 had four Opus reviews, two per round). And every CI-fix commit marked verdicts stale, so a red
+milestone (E12-S03's stale API client) set off a full Codex and Opus re-review on three stories.
+`fleet.toml` `accounts = []` stops Opus reviews; Codex plans and reviews E23-S14..S18
+(`.scratch/codex-planner-handoff-2026-10-23.md`). Restore `["A", "B"]` when those are on the milestone PR
+and its CI is green. Gated M3 stories wait for their Opus final until then.
+
+**23 Oct 2026 — Sonnet-only story authorship; E23-S14..S18 first. Operator.** The E12-S02
+comparison and the live routing evidence closed the overflow experiment: no new story goes to
+nemotron or Codex. Sonnet on account A or B authors every non-overridden story; when both accounts
+have no worker slot, the story waits. Codex remains the story reviewer, and M0's explicit
+`sole_author: codex` override remains intact. Finish the five P0 flo fixes before resuming the M3
+product queue. Codex is the only reviewer for E23-S14..S18. If an assigned Sonnet exhausts its
+capacity on one of those five stories, the Codex planner takes over that story and records the
+substitution; this is not a general Codex author lane.
+
+**25 Oct 2026 — Beam Free (opencode/beam-free) capability test, rejected as an author.**
+Same comparison method as the E12-S02 nemotron test: re-ran the already-merged E22-S03
+packet ("one audit helper instead of twelve") from its pre-story commit, in an isolated
+detached worktree, and diffed the result against the real merge (`741099a3`). Beam Free
+(`opencode run --model opencode/beam-free --variant xhigh`) finished in ~2.5 min, `flo
+check --light` green (ruff, mypy --strict, import-linter, boundaries), pre-existing tests
+still passing. But it failed the story on substance: (1) missed one of the twelve wrappers
+the packet names explicitly — `requisitions/amendments.py:88` still delegates through the
+old `_audit`; (2) wrote **zero** new tests, against the packet's own #1 acceptance
+criterion (a parametrized before/after byte-identical audit-row test per module) — Sonnet's
+real diff added `test_audit_event.py`, `test_audit_golden.py`, `audit_golden.json`,
+`audit_shapes.py` for exactly this; (3) its closing report claimed a plant ("dropping a
+field in `audit()` breaks audit-row equality") that the log shows it never ran — it drafted
+a throwaway `/tmp/plant_test.py` stub and then `echo skip`ped past it, so the claim is
+fabricated, not verified; (4) added six unused aliases (`audit_write`, `write_audit`,
+`record_audit`, `log_audit`, `append_audit`, `audit_event`) for the one new helper, each
+pointing at the same function, with the comment "callers/tests that name the helper
+differently" — guessed at the call-site name instead of reading it, pure dead code. A green
+`flo check --light` on this diff would have been a false confidence signal at the gate; a
+real reviewer rejects it on (1) and (2) alone. Beam Free is **not** added to
+`author_priority` or any `allowed_kinds` in `agents/agents.yaml` — it stays unevaluated
+there by default, and this entry is the standing reason not to add it without a second,
+independent sample. Scratch worktree (`xlr8flo-m3run-beamtest`, commit `13ea0722`) was
+removed after review; nothing from the run was merged or pushed.
+
+**25 Oct 2026 — deepseek replaces qwen as the story-review fallback; Codex stays first. Operator.**
+qwen stopped at its call cap with no verdict on four packet pre-flights (three on 23 Oct, E12-S13
+on 25 Oct) and approved E12-S06 (money, L) with 0 findings. `ungated_reviewers` is now
+`[codex, deepseek]`; qwen stays a release reviewer. A comparison of three OpenCode Zen free models
+(beam, deepseek-v4.1-flash, glm-5.3-flash) as pre-flight reviewers was dropped: the free tier's
+limit is shared across all its free models and ran out after three runs, none reaching a verdict.
+Pre-flights stay on Codex; `FLO_PREFLIGHT_DRAFT=1 preflight.sh` runs one early without filing a record.
+
 **Merge authority:** the operator has delegated GitHub merges for M0 to Opus, with the
 instruction to space them out so the repository does not read as bot-driven. Outside M0 the
 standing rule holds: push, never merge.
@@ -198,13 +267,14 @@ M1 handoff: `docs/handoff-2026-10-09.md` (9 Oct 2026): where M1 stands, the E05-
 
 ## Open questions for the human
 
-Raised by the M2 design pass (details in `docs/m2-decisions.md` Follow-ups). Each packet implements the conservative reading meanwhile; do not block on them.
-- **Decision 99 vs D-M2-5:** should a standalone request's approval draw on the organization's available budget instead of creating new budget? (E09-S06)
-- **Who may assign a standalone request to an existing project?** The packet's reading: the final approver holds `requisition.approve` there. (E09-S06)
-- **MASTER §2.3** has no requisition tones for `rejected`, `withdrawn` and `expired`. E09-S11 uses danger, neutral and danger. (MASTER amendment)
-- **M1 permissions gap:** no baseline role holds `project.read` or `master.read`. (E09-S03 works around it with requisition lookups.)
-- **No UI story** owns the delegation screen (STORY-NOTES §3). The resubmit and amendment screens are E09-S12.
-- Whether a PO commits against the parent project or the requisition-generated sub-project (M3).
+**Closed 21 Oct 2026** (operator, in batches; canvas DECISIONS 214 to 232): every question parked in
+E11-S08, E12-S19 and E13-S22 and the M2 follow-ups. Decision 99 became E30-S01 (organisation pool);
+standalone-to-project assignment stays with the final approver (216); baseline read grants are
+E22-S06 (217); requisition tones are in MASTER §2.3 and E22-S08 (231); people by name are E22-S07 and
+E22-S09 (232); a PO commits against the requisition's sub-project (209).
+The delegation screen is E22-S10 (233).
+
+_(none open)_
 
 ## Session handoff — 25 Aug 2026
 

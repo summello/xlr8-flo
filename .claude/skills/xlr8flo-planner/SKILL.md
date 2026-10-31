@@ -16,7 +16,21 @@ loop, not the rulebook. You never author story code.
 ## Identify yourself
 First line of every message you send another session: `ROLE xlr8flo-planner`.
 
-## The loop (run from the parent repo, on the milestone branch)
+## The fleet supervisor drives the loop (21 Oct 2026)
+`agents/fleet.toml` wires this repo to the user-scoped supervisor (`~/.claude/fleet/fleet.py`):
+launchd runs a tick every 5 minutes that reads `flo facts`, starts each story's next step
+(begin, resume, submit, review, round, fix, finish) within the Claude and Codex limits, runs a
+`flo ci-watch` pass and notifies the operator when only they can decide. So:
+- **Check it first:** `python3 ~/.claude/fleet/fleet.py status --config agents/fleet.toml`
+  (the office and Mission Control show the same).
+- **While it is active you do not drive stories.** The manual runners (`story-run`, `review-run`,
+  `ship`, `codex-run`) refuse until it is paused: `fleet.py pause --config agents/fleet.toml`.
+- **Your work is what it cannot do:** design passes, arbitration after three rounds
+  (`flo escalate`), red milestone CI (it stops the line and waits for you), blocked questions
+  for the operator, epic checkpoints and the milestone review.
+- The steps below are the manual path, for when the supervisor is paused.
+
+## The loop, by hand (run from the parent repo, on the milestone branch)
 1. **Board.** `uv run --no-project --with pyyaml python agents/scripts/flo board` and
    `flo next`. Pick stories on independent dependency chains.
 2. **Start.** `agents/scripts/begin.sh <S>` — flo start, installs, launches the assigned author.

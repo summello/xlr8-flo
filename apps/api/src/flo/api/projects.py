@@ -3,13 +3,13 @@
 from typing import Annotated, Literal, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, Query, Request
+from fastapi import APIRouter, Depends, Header, Query, Request, Response
 
-from flo.api.admin_users import organization_target
+from flo.api.admin_users import deleted_visible, organization_target
 from flo.api.auth import get_auth_settings
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
-from flo.kernel.authz import permits, require
+from flo.kernel.authz import GrantedScopes, permits, require, require_granted
 from flo.kernel.config import Settings
 from flo.kernel.tenancy.context import current_scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
@@ -28,6 +28,7 @@ from flo.modules.projects.schemas import (
     PhaseRead,
     ProjectCreate,
     ProjectGroup,
+    ProjectLookupRows,
     ProjectPage,
     ProjectPatch,
     ProjectRead,
@@ -55,8 +56,15 @@ def create_target(body: ProjectCreate, connection: Connection) -> TargetProtocol
     return cast(TargetProtocol, AuthorizationTarget(ScopeType.BU, unit.id))
 
 
-def project_target(id: UUID, connection: Connection) -> TargetProtocol:
-    project = ProjectService(connection, current_scope()).get(id)
+def lookup_target(bu_id: UUID, connection: Connection) -> TargetProtocol:
+    unit = OrgService(connection, current_scope()).get_unit(bu_id)  # 404 for a foreign unit
+    return cast(TargetProtocol, AuthorizationTarget(ScopeType.BU, unit.id))
+
+
+def project_target(
+    id: UUID, connection: Connection, *, include_deleted: bool = False
+) -> TargetProtocol:
+    project = ProjectService(connection, current_scope()).get(id, include_deleted=include_deleted)
     return cast(
         TargetProtocol, AuthorizationTarget(ScopeType.PROJECT, project.id, "project", project.id)
     )
@@ -82,11 +90,56 @@ def parent_read(
 
 CreateContext = Annotated[AuthorizationContext, Depends(require("project.create", create_target))]
 ReadContext = Annotated[AuthorizationContext, Depends(require("project.read", project_target))]
+
+
+def project_bin_target(
+    id: UUID, connection: Connection, include_deleted: bool = False
+) -> TargetProtocol:
+    return project_target(id, connection, include_deleted=include_deleted)
+
+
+BinReadContext = Annotated[
+    AuthorizationContext, Depends(require("project.read", project_bin_target))
+]
 UpdateContext = Annotated[AuthorizationContext, Depends(require("project.update", project_target))]
 SubstituteContext = Annotated[
     AuthorizationContext, Depends(require("master_code.substitute", project_target))
 ]
-ListContext = Annotated[AuthorizationContext, Depends(require("project.read", organization_target))]
+ListScopes = Annotated[GrantedScopes, Depends(require_granted("project.read"))]
+
+
+LookupContext = Annotated[AuthorizationContext, Depends(require("project.create", lookup_target))]
+
+
+# Registered before "/{id}" so "lookups" is never parsed as a project id.
+@router.get("/lookups/{kind}", response_model=ProjectLookupRows)
+def lookups(
+    kind: Literal["main_projects", "people"],
+    bu_id: UUID,
+    context: LookupContext,
+    connection: Connection,
+    request: Request,
+    q: str = "",
+    limit: Annotated[int, Query(ge=1, le=50)] = 20,
+) -> ProjectLookupRows:
+    """Options for the Create Project pickers; gated on project.create in the chosen unit."""
+    service = ProjectService(connection, current_scope(), context.user_id)
+    if kind == "people":
+        return ProjectLookupRows(rows=service.lookup_people(q, limit))
+    return ProjectLookupRows(
+        rows=service.lookup_projects(
+            q,
+            limit,
+            lambda id: permits(
+                request,
+                "project.read",
+                cast(
+                    TargetProtocol,
+                    AuthorizationTarget(ScopeType.PROJECT, id, "project", id),
+                ),
+            ),
+        )
+    )
 
 
 @router.post("", status_code=201, response_model=ProjectRead, dependencies=[Depends(parent_read)])
@@ -102,7 +155,7 @@ def create_project(
 @router.get("", response_model=ProjectPage)
 def list_projects(
     request: Request,
-    context: ListContext,
+    granted: ListScopes,
     connection: Connection,
     group_by: ProjectGroup | None = None,
     q: str = "",
@@ -113,7 +166,8 @@ def list_projects(
     cursor: str | None = None,
     page_size: Annotated[int, Query(ge=1, le=50)] = 50,
 ) -> ProjectPage:
-    return ProjectService(connection, current_scope(), context.user_id).list(
+    return ProjectService(connection, current_scope(), granted.user_id).list(
+        granted=granted,
         group_by=group_by,
         balances=permits(request, "ledger.read", organization_target()),
         q=q,
@@ -128,17 +182,25 @@ def list_projects(
 
 @router.get("/{id}", response_model=ProjectRead)
 def get_project(
-    id: UUID, context: ReadContext, connection: Connection, request: Request
+    id: UUID,
+    context: BinReadContext,
+    connection: Connection,
+    request: Request,
+    include_deleted: bool = False,
 ) -> ProjectRead:
     service = ProjectService(connection, current_scope(), context.user_id)
-    project = service.get(id)
-    project.sponsor_ids = service.sponsors(id)
+    visible = deleted_visible(request, include_deleted)
+    project = service.get(id, include_deleted=visible)
+    project.sponsor_ids = service.sponsors(id, include_deleted=visible)
     allowed = project.codes_expired and permits(
         request, "master_code.substitute", project_target(id, connection)
     )
     if allowed:
         allowed = codes.can_substitute_project(connection, current_scope(), id)
     project.can_substitute_codes = bool(allowed)
+    project.can_edit = permits(
+        request, "project.update", project_target(id, connection, include_deleted=visible)
+    )
     return project
 
 
@@ -151,6 +213,12 @@ def patch_project(
     version: Annotated[str | None, Header(alias="If-Match")] = None,
 ) -> ProjectRead:
     return ProjectService(connection, current_scope(), context.user_id).update(id, body, version)
+
+
+@router.delete("/{id}", status_code=204)
+def delete_project(id: UUID, context: UpdateContext, connection: Connection) -> Response:
+    ProjectService(connection, current_scope(), context.user_id).delete(id)
+    return Response(status_code=204)
 
 
 @router.post("/{id}/codes", response_model=ProjectRead)

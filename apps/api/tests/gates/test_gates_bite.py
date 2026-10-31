@@ -78,9 +78,7 @@ def assert_release_workflow_policy(source: str) -> None:
     assert "ignore-unfixed: true" in image_scan
     assert "format: sarif" in image_scan
     assert "continue-on-error" not in image_scan
-    assert source.index("- name: Scan built API image") < source.index(
-        'docker push "$IMAGE_TAG"'
-    )
+    assert source.index("- name: Scan built API image") < source.index('docker push "$IMAGE_TAG"')
     assert source.index("- name: Generate deployed-image SBOM") < source.index(
         'docker push "$IMAGE_TAG"'
     )
@@ -104,7 +102,7 @@ SPA_SECRET_MARKER = r"(^|[^A-Za-z0-9])sk-[A-Za-z0-9_-]{20,}|-----BEGIN"
 @pytest.mark.parametrize(
     ("bundle", "flagged"),
     [
-        ('fetch(`/api/v1/projects/${id}/risk-indicators`)', False),
+        ("fetch(`/api/v1/projects/${id}/risk-indicators`)", False),
         ("task-list-item-with-a-very-long-class-name-here", False),
         ('const key="sk-proj-abcdefghijklmnopqrstuvwx"', True),
         ("sk-abcdefghijklmnopqrstuvwxyz0123", True),
@@ -226,9 +224,7 @@ def copy_import_linter_project(tmp_path: Path) -> Path:
         project / "flo" / "kernel" / "identity",
     ):
         make_package(package)
-    (project / "flo" / "modules" / "b" / "values.py").write_text(
-        "VALUE = 1\n", encoding="utf-8"
-    )
+    (project / "flo" / "modules" / "b" / "values.py").write_text("VALUE = 1\n", encoding="utf-8")
     (project / "flo" / "modules" / "b" / "__init__.py").write_text(
         "from .values import VALUE\n", encoding="utf-8"
     )
@@ -462,13 +458,13 @@ def test_postgres_pooling_guard_rejects_missing_roots_and_session_set_then_passe
     source.mkdir()
     migrations.mkdir()
     (source / "safe.py").write_text(
-        'LOCAL = "SET LOCAL app.org_id = \'safe\'"\n'
+        "LOCAL = \"SET LOCAL app.org_id = 'safe'\"\n"
         'UPDATE = """UPDATE job\nSET state = \'done\'"""\n',
         encoding="utf-8",
     )
     violation = migrations / "planted.py"
     violation.write_text(
-        'STATEMENT = "SET app.org_id = \'leaks-across-clients\'"\n',
+        "STATEMENT = \"SET app.org_id = 'leaks-across-clients'\"\n",
         encoding="utf-8",
     )
 
@@ -796,9 +792,7 @@ def test_single_origin_release_policy_rejects_d17_violations_and_then_passes(
     violation: str,
 ) -> None:
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
-    production_environment = (ROOT / "apps" / "web" / ".env.production").read_text(
-        encoding="utf-8"
-    )
+    production_environment = (ROOT / "apps" / "web" / ".env.production").read_text(encoding="utf-8")
     worker_configuration = (ROOT / "infra" / "cloudflare" / "wrangler.toml").read_text(
         encoding="utf-8"
     )
@@ -1139,8 +1133,17 @@ def test_assignment_routes_authors_by_priority_and_free_slots(
             "codex": {
                 "metered": "rate",
                 "roles": ["author", "review"],
-                "allowed_kinds": ["ledger", "concurrency", "migration", "security", "engine",
-                                  "api", "chore", "ui", "crud"],
+                "allowed_kinds": [
+                    "ledger",
+                    "concurrency",
+                    "migration",
+                    "security",
+                    "engine",
+                    "api",
+                    "chore",
+                    "ui",
+                    "crud",
+                ],
                 "prefer_tags": ["money", "concurrency", "migration", "security"],
             },
             "opencode-nemotron": {
@@ -1149,8 +1152,12 @@ def test_assignment_routes_authors_by_priority_and_free_slots(
                 "allowed_kinds": ["crud", "ui", "api", "chore", "docs", "test"],
                 "avoid_tags": gated,
             },
-            "qwen": {"metered": "spend", "roles": ["author", "review"], "allowed_kinds": [],
-                     "monthly_budget_usd": 20},
+            "qwen": {
+                "metered": "spend",
+                "roles": ["author", "review"],
+                "allowed_kinds": [],
+                "monthly_budget_usd": 20,
+            },
         },
     }
     monkeypatch.setattr(flo, "load_yaml", lambda path: fleet)
@@ -1159,6 +1166,25 @@ def test_assignment_routes_authors_by_priority_and_free_slots(
 
     assert (out["author"], out["reviewers"]) == (author, reviewers)
     assert out["opus_final"] is bool(tags)
+
+
+def test_worker_load_counts_only_stories_whose_author_is_working(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    flo = load_flo()
+    rows = {"E99-S01": "in_progress", "E99-S02": "review", "E99-S03": "done", "E99-S04": "design"}
+    for sid in rows:
+        (tmp_path / sid).mkdir()
+        (tmp_path / sid / "task.json").write_text(
+            json.dumps({"author": "sonnet", "sessions": {"sonnet": {"account": "B"}}})
+        )
+    monkeypatch.setattr(
+        flo,
+        "roadmap",
+        lambda: {"epics": [{"stories": [{"id": sid, "st": st} for sid, st in rows.items()]}]},
+    )
+    monkeypatch.setattr(flo, "worktree_path", lambda sid: tmp_path / sid)
+    assert flo.worker_load("sonnet") == {"B": 2}  # in_progress and design; review holds no session
 
 
 def test_account_picker_balances_load_and_resumes_a_recorded_session(
@@ -1175,6 +1201,7 @@ def test_account_picker_balances_load_and_resumes_a_recorded_session(
     monkeypatch.setattr(flo, "worker_load", lambda name: load)
     monkeypatch.setattr(flo, "state", lambda: saved)
     monkeypatch.setattr(flo, "save_state", saved.update)
+    monkeypatch.delenv("FLO_ACCOUNT", raising=False)  # a worker session pins its own account
 
     flo.cmd_account(["E99-S01"])
     kind, config_dir, session, account = capsys.readouterr().out.split()
@@ -1185,7 +1212,11 @@ def test_account_picker_balances_load_and_resumes_a_recorded_session(
 
     flo.cmd_account(["E99-S01"])  # a second launch of the same story resumes, never forks
     assert capsys.readouterr().out.split() == [
-        "resume", str(Path("~/b").expanduser()), session, "B"]
+        "resume",
+        str(Path("~/b").expanduser()),
+        session,
+        "B",
+    ]
 
     task.write_text(json.dumps({"author": "sonnet"}))
     load.update({"B": 2})
@@ -1219,9 +1250,12 @@ def test_run_check_leaves_a_configured_database_alone(
 
 def story_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """A git repo with a milestone branch and a story branch checked out, like a worktree."""
-    for key, value in {"GIT_AUTHOR_NAME": "gate", "GIT_COMMITTER_NAME": "gate",
-                       "GIT_AUTHOR_EMAIL": "gate@example.invalid",
-                       "GIT_COMMITTER_EMAIL": "gate@example.invalid"}.items():
+    for key, value in {
+        "GIT_AUTHOR_NAME": "gate",
+        "GIT_COMMITTER_NAME": "gate",
+        "GIT_AUTHOR_EMAIL": "gate@example.invalid",
+        "GIT_COMMITTER_EMAIL": "gate@example.invalid",
+    }.items():
         monkeypatch.setenv(key, value)
     repo = tmp_path / "wt"
     repo.mkdir()
@@ -1235,8 +1269,9 @@ def story_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     sh("add", ".")
     sh("commit", "--quiet", "-m", "base")
     sh("checkout", "--quiet", "-b", "story/E99-S01")
-    (repo / "task.json").write_text(json.dumps(
-        {"milestone_branch": "milestone/M9", "branch": "story/E99-S01"}))
+    (repo / "task.json").write_text(
+        json.dumps({"milestone_branch": "milestone/M9", "branch": "story/E99-S01"})
+    )
     return repo
 
 
@@ -1244,10 +1279,12 @@ def commit(repo: Path, path: str, text: str = "x\n") -> str:
     (repo / path).parent.mkdir(parents=True, exist_ok=True)
     (repo / path).write_text(text)
     subprocess.run(["git", "add", path], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "--quiet", "-m", path], cwd=repo, check=True,
-                   capture_output=True)
-    return subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo, check=True,
-                          capture_output=True, text=True).stdout.strip()
+    subprocess.run(
+        ["git", "commit", "--quiet", "-m", path], cwd=repo, check=True, capture_output=True
+    )
+    return subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=repo, check=True, capture_output=True, text=True
+    ).stdout.strip()
 
 
 def test_gate_reuses_a_green_tree_and_reruns_when_it_changes(
@@ -1302,8 +1339,12 @@ def test_gated_story_needs_green_ci_on_the_commit_it_submitted(
     subprocess.run(["git", "checkout", "--quiet", "milestone/M9"], cwd=repo, check=True)
     commit(repo, "apps/api/src/other_story.py")
     subprocess.run(["git", "checkout", "--quiet", "story/E99-S01"], cwd=repo, check=True)
-    subprocess.run(["git", "merge", "--quiet", "--no-edit", "milestone/M9"], cwd=repo, check=True,
-                   capture_output=True)
+    subprocess.run(
+        ["git", "merge", "--quiet", "--no-edit", "milestone/M9"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
     assert flo.story_ci_failure(pkt, repo) is None
 
     commit(repo, "apps/api/src/after_review.py")
@@ -1317,21 +1358,39 @@ def test_light_profile_skips_full_suites_and_runs_the_story_tests(
     repo = story_repo(tmp_path, monkeypatch)
     commit(repo, "apps/api/tests/budget/test_story.py")
     commit(repo, "apps/api/tests/budget/helpers.py")
-    commit(repo, "apps/api/migrations/20991231_0099_story.py")
+    commit(repo, "migrations/20991231_0099_story.py")  # the repo-root path real migrations use
     commit(repo, "apps/web/tests/e2e/story.spec.ts")
     commit(repo, "apps/web/src/Story.tsx")
+    (repo / "apps/api/tests/org").mkdir(parents=True)  # the module's suite, untouched by the story
+    commit(repo, "apps/api/src/flo/modules/org/master_kinds.py")  # module source, suite untouched
+    commit(repo, "apps/api/src/flo/modules/ghost/service.py")  # no tests/ghost: nothing to add
+    commit(repo, "apps/api/src/flo/modules/budget/service.py")  # tests/budget edited: no dir
 
     assert flo.story_checks(repo) == [
-        ("story pytest", ["pytest", "-q", "apps/api/tests/budget/test_story.py",
-                          "apps/api/tests/kernel/test_migrate.py"]),
-        ("story e2e", ["npm", "--prefix", "apps/web", "run", "test:e2e", "--",
-                       "tests/e2e/story.spec.ts"]),
+        (
+            "story pytest",
+            [
+                "pytest",
+                "-q",
+                "apps/api/tests/authz/test_baseline_grants.py",
+                "apps/api/tests/budget/test_story.py",
+                "apps/api/tests/gates/test_gates_bite.py",
+                "apps/api/tests/isolation/test_ci_guards.py",
+                "apps/api/tests/kernel/test_migrate.py",
+                "apps/api/tests/org",
+            ],
+        ),
+        (
+            "story e2e",
+            ["npm", "--prefix", "apps/web", "run", "test:e2e", "--", "tests/e2e/story.spec.ts"],
+        ),
     ]
 
     ran: list[str] = []
     monkeypatch.setenv("DATABASE_URL", "postgresql://ci/flo_test")
-    monkeypatch.setattr(flo, "CHECKS", [("ruff", ["ruff"]), ("pytest", ["pytest"]),
-                                        ("e2e+axe", ["e2e"])])
+    monkeypatch.setattr(
+        flo, "CHECKS", [("ruff", ["ruff"]), ("pytest", ["pytest"]), ("e2e+axe", ["e2e"])]
+    )
 
     real_run = subprocess.run
 
@@ -1344,7 +1403,8 @@ def test_light_profile_skips_full_suites_and_runs_the_story_tests(
     monkeypatch.setattr(flo.subprocess, "run", record)
     assert flo.run_check(repo, "light") is True
     assert ran[0] == "ruff" and "pytest" not in ran and "e2e" not in ran
-    assert any(r.startswith("pytest -q apps/api/tests/budget/test_story.py") for r in ran)
+    story = "apps/api/tests/budget/test_story.py"
+    assert any(r.startswith("pytest -q") and story in r for r in ran)
 
 
 def test_ci_watch_marks_red_once_and_reaps_green_merged_stories(
@@ -1353,17 +1413,33 @@ def test_ci_watch_marks_red_once_and_reaps_green_merged_stories(
     """The monitor is what turns 'merge without waiting for CI' into a safe rule: a red run must
     reach the planner, and a worktree must never be dropped before its CI is green."""
     flo = load_flo()
-    stories = [{"id": "E99-S01", "st": "done"}, {"id": "E99-S02", "st": "review"},
-               {"id": "E99-S03", "st": "done"}]
+    stories = [
+        {"id": "E99-S01", "st": "done"},
+        {"id": "E99-S02", "st": "review"},
+        {"id": "E99-S03", "st": "done"},
+        {"id": "E99-S04", "st": "done"},  # merged; its branch run red, fixed on the milestone
+    ]
     monkeypatch.setattr(flo, "ROOT", tmp_path)
-    monkeypatch.setattr(flo, "roadmap", lambda: {
-        "milestones": [{"id": "M9", "branch": "milestone/M9"}],
-        "epics": [{"id": "E99", "milestone": "M9", "stories": stories}]})
+    monkeypatch.setattr(
+        flo,
+        "roadmap",
+        lambda: {
+            "milestones": [{"id": "M9", "branch": "milestone/M9"}],
+            "epics": [{"id": "E99", "milestone": "M9", "stories": stories}],
+        },
+    )
     monkeypatch.setattr(flo, "worktree_path", lambda sid: tmp_path / sid)
     for s in stories:
         (tmp_path / s["id"]).mkdir()
-        (tmp_path / s["id"] / "task.json").write_text(json.dumps(
-            {"branch": f"story/{s['id']}", "submitted_sha": f"sha-{s['id']}"}))
+        (tmp_path / s["id"] / "task.json").write_text(
+            json.dumps(
+                {
+                    "branch": f"story/{s['id']}",
+                    "submitted_sha": f"sha-{s['id']}",
+                    "milestone_branch": "milestone/M9",
+                }
+            )
+        )
 
     def run(sha: str, conclusion: str, status: str = "completed") -> dict[str, object]:
         return {"headSha": sha, "status": status, "conclusion": conclusion, "databaseId": 1}
@@ -1372,6 +1448,7 @@ def test_ci_watch_marks_red_once_and_reaps_green_merged_stories(
         "story/E99-S01": [run("sha-E99-S01", "success")],
         "story/E99-S02": [run("sha-E99-S02", "failure")],
         "story/E99-S03": [run("sha-E99-S03", "", "in_progress")],
+        "story/E99-S04": [run("sha-E99-S04", "failure")],
         "milestone/M9": [run("m-head", "failure"), run("m-old", "success")],
     }
     monkeypatch.setattr(flo, "gh_runs", lambda branch: runs[branch])
@@ -1379,7 +1456,7 @@ def test_ci_watch_marks_red_once_and_reaps_green_merged_stories(
 
     def gh_view(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
         views.append(cmd[3])
-        return subprocess.CompletedProcess(cmd, 0, "FAILED test_story\n", "")
+        return subprocess.CompletedProcess(cmd, 0, "backend\tpytest\tFAILED test_story\n", "")
 
     monkeypatch.setattr(flo.subprocess, "run", gh_view)
     reaped: list[str] = []
@@ -1389,21 +1466,150 @@ def test_ci_watch_marks_red_once_and_reaps_green_merged_stories(
         shutil.rmtree(tmp_path / argv[0])  # as flo reap removes the worktree
 
     monkeypatch.setattr(flo, "cmd_reap", reap)
+    holds: set[tuple[str, str]] = set()  # (story, milestone sha) pairs whose squash is in the sha
+    monkeypatch.setattr(flo, "merged_in", lambda sid, sha: (sid, sha) in holds)
 
     flo.cmd_ci_watch([])
     red = tmp_path / ".scratch" / "E99-S02.ci-red"
     assert "FAILED test_story" in red.read_text()
+    assert "\njobs: backend\n" in red.read_text()  # E23-S16: the job name survives the log tail
     assert (tmp_path / ".scratch" / "M9.ci-red").exists()
     assert reaped == ["E99-S01"]  # S03 is merged but its CI has not finished: keep the worktree
 
     flo.cmd_ci_watch([])
-    assert len(views) == 2  # the same red run is not fetched and reported again
+    assert len(views) == 3  # the same red runs are not fetched and reported again
 
     runs["story/E99-S02"] = [run("sha-E99-S02", "success")]
     runs["milestone/M9"] = [run("m-fix", "success")]
     flo.cmd_ci_watch([])
     assert not red.exists() and not (tmp_path / ".scratch" / "M9.ci-red").exists()
     assert reaped == ["E99-S01"]  # S02 is green but not merged: nothing to reap
+    s04 = tmp_path / ".scratch" / "E99-S04.ci-red"
+    assert s04.exists()  # the green milestone head does not hold S04's squash yet
+
+    holds.add(("E99-S04", "m-fix"))
+    flo.cmd_ci_watch([])
+    # S04's own run stays red, but a green milestone holding its squash supersedes it (E22-S12,
+    # 22 Oct: the marker resumed its author for a fix on every tick).
+    assert not s04.exists() and reaped == ["E99-S01", "E99-S04"]
+
+
+def _git(repo: Path, *args: str) -> str:
+    return subprocess.run(
+        ["git", "-c", "user.name=t", "-c", "user.email=t@t", *args],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+
+def _carry_repo(tmp_path: Path, story_file: str) -> tuple[Any, Path, dict[str, Any], str, str]:
+    """reviewed commit, then a milestone merge, then one story commit touching `story_file`."""
+    flo = load_flo()
+    repo = tmp_path / "wt"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "story")
+    (repo / "a.txt").write_text("a")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "base")
+    reviewed = _git(repo, "rev-parse", "HEAD")
+    _git(repo, "checkout", "-qb", "ms")
+    (repo / "m.txt").write_text("m")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "milestone work")
+    _git(repo, "update-ref", "refs/remotes/origin/ms", "HEAD")
+    _git(repo, "checkout", "-q", "story")
+    _git(repo, "merge", "-q", "--no-ff", "-m", "merge milestone", "ms")
+    target = repo / story_file
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("x")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "story change")
+    sub = _git(repo, "rev-parse", "HEAD")
+    (repo / "task.json").write_text("{}")
+    sc = tmp_path / "scratch"
+    sc.mkdir()
+    return flo, sc, {"milestone_branch": "ms"}, reviewed, sub
+
+
+def test_carry_forward_moves_the_baseline_only_for_a_generated_client_delta(tmp_path: Path) -> None:
+    flo, sc, pkt, reviewed, sub = _carry_repo(tmp_path, "apps/web/src/api/generated/types.ts")
+    wt = tmp_path / "wt"
+    assert flo._carry(sc, wt, pkt, "S1", "codex", reviewed, sub) == sub
+    side = json.loads((sc / "S1.codex.carried.json").read_text())
+    assert side["carried_from"] == reviewed and side["carried_to"] == sub
+    assert side["paths"] == ["apps/web/src/api/generated/types.ts"]  # the milestone merge adds none
+    carried = json.loads((wt / "task.json").read_text())["carried_reviews"]
+    assert carried[0]["carried_from"] == reviewed
+    assert (sc / "S1.codex.launched").read_text().strip() == sub
+
+
+def test_carry_forward_refuses_a_delta_with_one_non_generated_path(tmp_path: Path) -> None:
+    flo, sc, pkt, reviewed, sub = _carry_repo(tmp_path, "apps/api/src/flo/service.py")
+    assert flo._carry(sc, tmp_path / "wt", pkt, "S1", "codex", reviewed, sub) is None
+    assert not (sc / "S1.codex.carried.json").exists()
+    assert not (sc / "S1.codex.launched").exists()
+
+
+def test_carry_forward_carries_a_milestone_only_merge(tmp_path: Path) -> None:
+    flo, sc, pkt, reviewed, sub = _carry_repo(tmp_path, "apps/web/src/api/generated/x.ts")
+    wt = tmp_path / "wt"
+    merge = _git(wt, "rev-parse", "HEAD~1")  # the commit before the story change: a bare merge
+    assert flo._carry(sc, wt, pkt, "S1", "codex", reviewed, merge) == merge
+    assert json.loads((sc / "S1.codex.carried.json").read_text())["paths"] == []
+
+
+def test_carry_forward_refuses_an_application_edit_made_inside_a_milestone_merge(
+    tmp_path: Path,
+) -> None:
+    flo = load_flo()
+    repo = tmp_path / "wt"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "story")
+    (repo / "a.py").write_text("a")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "base")
+    reviewed = _git(repo, "rev-parse", "HEAD")
+    _git(repo, "checkout", "-qb", "ms")
+    (repo / "m.txt").write_text("m")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "milestone work")
+    _git(repo, "update-ref", "refs/remotes/origin/ms", "HEAD")
+    _git(repo, "checkout", "-q", "story")
+    _git(repo, "merge", "--no-commit", "--no-ff", "ms")
+    (repo / "a.py").write_text("edited while resolving the merge")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "merge milestone")
+    sub = _git(repo, "rev-parse", "HEAD")
+    sc = tmp_path / "scratch"
+    sc.mkdir()
+    assert flo._carry(sc, repo, {"milestone_branch": "ms"}, "S1", "codex", reviewed, sub) is None
+    assert not (sc / "S1.codex.carried.json").exists()
+
+
+def test_facts_counts_launches_on_the_submitted_sha_so_a_void_verdict_retries_once(
+    tmp_path: Path,
+) -> None:
+    flo = load_flo()
+    void = {"verdict": "changes_requested", "findings": []}
+
+    def state(sha: str = "s1") -> str:
+        return str(flo._verdict(tmp_path, "S1", "codex", void, sha, sha))
+
+    att = tmp_path / "S1.codex.attempts"
+    att.write_text("s1\n")
+    assert state() == "missing"  # first void: relaunch
+    att.write_text("s1\ns1\n")
+    assert state() == "malformed"  # second void on the same sha: ask the operator
+    assert state("s2") == "missing"  # a new sha counts from one again
+    (tmp_path / "S1.codex.log").write_text("stopped at the time cap\n")
+    assert str(flo._verdict(tmp_path, "S1", "codex", None, "s1", "s1")) == "malformed"
+
+
+def test_review_sh_records_one_attempt_line_per_launch() -> None:
+    script = (Path(__file__).resolve().parents[4] / "agents/scripts/review.sh").read_text()
+    assert 'cat "$SHA.new" >> "$D/$S.$A.attempts"' in script
 
 
 @pytest.mark.parametrize(
@@ -1477,3 +1683,154 @@ def test_commit_shape_gate_accepts_story_and_maintenance_commits_and_rejects_the
     assert _commit_shape_exit_code(accepted) == 0
     for rejected in ("update stuff", "feat(web): add a thing", "Fixed the bug", "wip"):
         assert _commit_shape_exit_code([*accepted, rejected]) == 1, rejected
+
+
+def _git(cwd: Path, *args: str) -> str:
+    who = {"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t"}
+    env = {**os.environ, **who, "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t"}
+    r = subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, check=True, env=env)
+    return r.stdout.strip()
+
+
+def test_reconcile_proves_a_submit_or_finish_already_happened_and_exits_1_when_unproven(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    flo = load_flo()
+    remote, root, wt = tmp_path / "remote.git", tmp_path / "root", tmp_path / "root-S1"
+    _git(tmp_path, "init", "--bare", str(remote))
+    _git(tmp_path, "clone", str(remote), str(wt))
+    (wt / "a").write_text("1")
+    _git(wt, "add", "a")
+    _git(wt, "commit", "-m", "work")
+    _git(tmp_path, "init", str(root))
+    _git(root, "commit", "--allow-empty", "-m", "E01-S02: other")
+    (wt / "task.json").write_text(json.dumps({"branch": "story/S1", "submitted_sha": None}))
+    monkeypatch.setattr(flo, "ROOT", root)
+
+    def run(step: str) -> int:
+        with pytest.raises(SystemExit) as e:
+            flo.cmd_reconcile([step, "S1"])
+        return int(e.value.code or 0)
+
+    _git(wt, "checkout", "-b", "story/S1")
+    assert run("submit") == 1  # nothing pushed: unproven
+    _git(wt, "push", "origin", "story/S1")
+    assert run("submit") == 0  # origin equals HEAD
+    recorded = json.loads((wt / "task.json").read_text())["submitted_sha"]
+    assert recorded == _git(wt, "rev-parse", "HEAD")
+    (wt / "a").write_text("2")
+    _git(wt, "commit", "-am", "newer")
+    assert run("submit") == 1  # HEAD moved past origin
+    assert run("finish") == 1  # milestone lacks the squash commit
+    _git(root, "commit", "--allow-empty", "-m", "E99-S01: not it")
+    assert run("finish") == 1
+    _git(root, "commit", "--allow-empty", "-m", "S1: squash")
+    assert run("finish") == 0
+
+
+def _pw_failures(*bodies: str) -> str:
+    """Playwright list-reporter failure output: one numbered block per failed test."""
+    blocks = [
+        f"  {i}) [main] › tests/e2e/s{i}.spec.ts:12:5 › case {i} ──────\n\n    {body}\n"
+        for i, body in enumerate(bodies, 1)
+    ]
+    return "\n".join(blocks) + f"\n  {len(bodies)} failed\n"
+
+
+_TIMEOUT = "Test timeout of 60000ms exceeded."
+_ACTION = "TimeoutError: page.goto: Timeout 30000ms exceeded."
+_ASSERT = "Error: expect(locator).toHaveText(expected) failed\n    Timeout: 5000ms"
+
+
+def _light_e2e_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, outputs: list[tuple[int, str]]
+) -> tuple[ModuleType, bool, list[list[str]], str]:
+    """run_check light with only `story e2e`; each Playwright call returns the next output."""
+    flo = load_flo()
+    repo = story_repo(tmp_path, monkeypatch)
+    commit(repo, "apps/web/tests/e2e/story.spec.ts")
+    monkeypatch.setattr(flo, "CHECKS", [])
+    flo.LAST_STEPS.clear()
+    calls: list[list[str]] = []
+    real_run = subprocess.run
+
+    def fake(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        if cmd[0] == "git":
+            return real_run(cmd, **kwargs)
+        calls.append(cmd)
+        code, out = outputs[min(len(calls), len(outputs)) - 1]
+        return subprocess.CompletedProcess(cmd, code, out, "")
+
+    monkeypatch.setattr(flo.subprocess, "run", fake)
+    return flo, flo.run_check(repo, "light"), calls, ""
+
+
+def test_story_e2e_timeout_retries_failed_specs_once_and_records_the_flake(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    flo, ok, calls, _ = _light_e2e_run(
+        tmp_path, monkeypatch, [(1, _pw_failures(_TIMEOUT, _ACTION)), (0, "2 passed")]
+    )
+    assert ok is True
+    assert len(calls) == 2 and calls[1][-2:] == ["--last-failed", "--workers=1"]
+    assert calls[1][:-2] == calls[0]
+    assert "flaky under load: tests/e2e/s1.spec.ts tests/e2e/s2.spec.ts" in capsys.readouterr().out
+    assert flo.LAST_STEPS == [
+        {
+            "name": "story e2e",
+            "ok": True,
+            "flaky": True,
+            "specs": ["tests/e2e/s1.spec.ts", "tests/e2e/s2.spec.ts"],
+            "attempts": 2,
+        }
+    ]
+
+
+def test_story_e2e_second_timeout_stays_red_with_no_third_command(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _, ok, calls, _ = _light_e2e_run(
+        tmp_path, monkeypatch, [(1, _pw_failures(_TIMEOUT)), (1, _pw_failures(_TIMEOUT))]
+    )
+    assert ok is False
+    assert len(calls) == 2
+    out = capsys.readouterr().out
+    assert "first run:" in out and "retry (--last-failed --workers=1):" in out
+
+
+@pytest.mark.parametrize(
+    "output",
+    [
+        _pw_failures(_ASSERT),
+        _pw_failures("Error: " + _TIMEOUT + "\n      at story.spec.ts:9:11"),  # thrown by the test
+        _pw_failures("Error: page.goto: Timeout 30000ms exceeded."),  # not a TimeoutError
+        _pw_failures(_TIMEOUT, _ASSERT),
+        _pw_failures(_TIMEOUT + "\n    axe violations: 1"),
+        _pw_failures(_TIMEOUT) + "\n  expected no axe violations\n",
+        "Error: Cannot find module './x'\n",  # compile/setup error: nothing parseable
+        _pw_failures(_TIMEOUT).replace("1 failed", "2 failed"),  # a failure we could not parse
+    ],
+)
+def test_story_e2e_non_timeout_failure_never_retries(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, output: str
+) -> None:
+    _, ok, calls, _ = _light_e2e_run(tmp_path, monkeypatch, [(1, output), (0, "ok")])
+    assert ok is False
+    assert len(calls) == 1
+
+
+def test_full_profile_e2e_axe_is_single_attempt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    flo = load_flo()
+    repo = story_repo(tmp_path, monkeypatch)
+    monkeypatch.setattr(flo, "CHECKS", [("e2e+axe", ["e2e"])])
+    calls: list[list[str]] = []
+
+    def fake(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        calls.append(cmd)
+        return subprocess.CompletedProcess(cmd, 1, _pw_failures(_TIMEOUT), "")
+
+    monkeypatch.setattr(flo.subprocess, "run", fake)
+    assert flo.run_check(repo, "full") is False
+    assert calls == [["e2e"]]

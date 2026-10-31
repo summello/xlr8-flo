@@ -49,11 +49,17 @@ def project_db(org_database) -> Iterator:
             "20261009_0051_project_event_system_actor.py",
             "20261014_0054_project_requests.py",
             "20261014_0055_budget_change_allocation_kind.py",
+            "20261015_0063_project_requested_budget.py",
         ]
     ]
     with db.connection.transaction():
         for migration in migrations:
             migration.upgrade(db.connection)
+        # E22-S07 columns only; migration 0066 itself needs tables this fixture never builds.
+        db.connection.execute(
+            "ALTER TABLE identity ADD COLUMN IF NOT EXISTS display_name text, "
+            "ADD COLUMN IF NOT EXISTS row_version integer NOT NULL DEFAULT 1"
+        )
     try:
         for org in (db.org_a, db.org_b):
             svc = OrgService(db.connection, Scope(org), db.actor_id)

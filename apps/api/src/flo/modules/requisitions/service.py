@@ -10,10 +10,10 @@ from uuid import UUID, uuid4
 
 import psycopg
 
-from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
+from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.config import Settings
-from flo.kernel.errors import ErrorCode, ProblemError
+from flo.kernel.errors import ErrorCode, ProblemError, conflict
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.org.service import (
@@ -40,12 +40,14 @@ from flo.modules.requisitions.lifecycle import (
 from flo.modules.requisitions.lifecycle import (
     register_sourcing_probe as register_sourcing_probe,
 )
+from flo.modules.requisitions.lifecycle import rereserve as rereserve
 from flo.modules.requisitions.lifecycle import routing_check as routing_check
 from flo.modules.requisitions.lifecycle import transition as transition
 from flo.modules.requisitions.links import assert_current_upstream as assert_current_upstream
 from flo.modules.requisitions.links import links as links
 from flo.modules.requisitions.links import register_link_provider as register_link_provider
 from flo.modules.requisitions.models import READ_FIELDS, READ_SQL, RequisitionRepository
+from flo.modules.requisitions.revisions import latest_instance
 from flo.modules.requisitions.schemas import (
     AmountTotal,
     Direction,
@@ -59,6 +61,23 @@ from flo.modules.requisitions.schemas import (
     invalid,
 )
 from flo.modules.requisitions.schemas import SubmissionInvalid as SubmissionInvalid
+from flo.modules.requisitions.sourcing import award_funding as award_funding
+from flo.modules.requisitions.sourcing import award_lines as award_lines
+from flo.modules.requisitions.sourcing import cancel_lines as cancel_lines
+from flo.modules.requisitions.sourcing import issue_lines as issue_lines
+from flo.modules.requisitions.sourcing import mark_awarded as mark_awarded
+from flo.modules.requisitions.sourcing import mark_completed as mark_completed
+from flo.modules.requisitions.sourcing import mark_sourced as mark_sourced
+from flo.modules.requisitions.sourcing import mark_unawarded as mark_unawarded
+from flo.modules.requisitions.sourcing import mark_unsourced as mark_unsourced
+from flo.modules.requisitions.sourcing import order_lines as order_lines
+from flo.modules.requisitions.sourcing import release_unawarded as release_unawarded
+from flo.modules.requisitions.sourcing import reopen_for_purchase as reopen_for_purchase
+from flo.modules.requisitions.sourcing import reservation_entry as reservation_entry
+from flo.modules.requisitions.sourcing import restore_unawarded as restore_unawarded
+from flo.modules.requisitions.sourcing import source_lines as source_lines
+from flo.modules.requisitions.sourcing import sourceable_lines as sourceable_lines
+from flo.modules.requisitions.sourcing import sourcing_basis as sourcing_basis
 from flo.modules.requisitions.validation import check_submission as check_submission
 
 __all__ = [
@@ -71,6 +90,24 @@ __all__ = [
     "routing_check",
     "assert_completable",
     "assert_current_upstream",
+    "source_lines",
+    "mark_sourced",
+    "mark_unsourced",
+    "mark_unawarded",
+    "restore_unawarded",
+    "rereserve",
+    "award_funding",
+    "award_lines",
+    "cancel_lines",
+    "order_lines",
+    "issue_lines",
+    "mark_completed",
+    "reopen_for_purchase",
+    "reservation_entry",
+    "release_unawarded",
+    "mark_awarded",
+    "sourceable_lines",
+    "sourcing_basis",
     "links",
     "register_link_provider",
     "register_downstream_counter",
@@ -110,10 +147,13 @@ class RequisitionService:
         )
         self.repo = RequisitionRepository(connection, scope)
 
-    def _get(self, id: UUID, *, lock: bool = False) -> RequisitionRead:
+    def _get(
+        self, id: UUID, *, lock: bool = False, include_deleted: bool = False
+    ) -> RequisitionRead:
         row = self.repo.execute(
             READ_SQL
             + " WHERE r.org_id=%(org_id)s AND r.id=%(id)s"
+            + ("" if include_deleted else " AND r.status<>'deleted'")
             + (" FOR UPDATE OF r" if lock else ""),
             {"id": id},
         ).fetchone()
@@ -129,6 +169,56 @@ class RequisitionService:
         )
         read.codes_expired = read.codes.expired
         return read
+
+    def delete(self, id: UUID) -> None:
+        """Soft-delete a draft: the row and its number are kept, hidden everywhere (D-M2-27).
+
+        A returned draft still holds its reservation; it is released exactly once, with the
+        funding lock taken before the document lock, as a withdrawal does.
+        """
+        from flo.modules.budget.service import lock_balance, reservation_remaining
+        from flo.modules.requisitions.funding import release_live
+
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            probe = self.repo.execute(
+                "SELECT reservation_entry_id FROM requisition "
+                "WHERE org_id=%(org_id)s AND id=%(id)s AND status<>'deleted'",
+                {"id": id},
+            ).fetchone()
+            if probe is None:
+                raise ProblemError(ErrorCode.NOT_FOUND)
+            if probe[0] is not None:
+                held = reservation_remaining(self.connection, self.scope, cast(int, probe[0]))
+                lock_balance(self.connection, self.scope, held.project_id)
+            row = self.repo.execute(
+                "SELECT id,status,standalone,reservation_entry_id,funding_round FROM requisition "
+                "WHERE org_id=%(org_id)s AND id=%(id)s AND status<>'deleted' FOR UPDATE",
+                {"id": id},
+            ).fetchone()
+            if row is None:
+                raise ProblemError(ErrorCode.NOT_FOUND)
+            if row[1] != "draft":
+                raise conflict("not_draft", "Only a draft can be deleted.")
+            if row[3] != probe[0]:
+                raise conflict("stale_version", "The reservation changed. Retry.")
+            release_live(
+                self.connection,
+                self.scope,
+                {"id": row[0], "reservation_entry_id": row[3], "funding_round": row[4]},
+                "deleted",
+                actor_id=cast(UUID, self.actor_id),
+            )
+            self.repo.execute(
+                "UPDATE requisition SET status='deleted',version=version+1,updated_at=now() "
+                "WHERE org_id=%(org_id)s AND id=%(id)s",
+                {"id": id},
+            )
+            self._audit(
+                "project_request.delete" if row[2] else "requisition.delete",
+                id,
+                {"status": "draft"},
+                {"status": "deleted", "reservation_released": row[3] is not None},
+            )
 
     def _sponsors(self, id: UUID) -> list[UUID]:
         return [
@@ -167,6 +257,7 @@ class RequisitionService:
         id: UUID,
         can_view_budget: Callable[[UUID], bool],
         can_edit: Callable[[], bool] | None = None,
+        include_deleted: bool = False,
     ) -> RequisitionRead:
         from flo.modules.budget.service import get_balance, reservation_remaining
         from flo.modules.requisitions.lifecycle import read_row
@@ -174,9 +265,9 @@ class RequisitionService:
         from flo.modules.requisitions.schemas import AmendmentRef, ApprovalRead, ReservationRead
 
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
-            result = self._get(id)
+            result = self._get(id, include_deleted=include_deleted)
             result.sponsor_ids = self._sponsors(id)
-            row = read_row(self.repo, id)
+            row = read_row(self.repo, id, include_deleted=include_deleted)
             if row["reservation_entry_id"] is not None:
                 held = reservation_remaining(
                     self.connection, self.scope, cast(int, row["reservation_entry_id"])
@@ -194,16 +285,9 @@ class RequisitionService:
                     if can_view_budget(held.project_id)
                     else None,
                 )
-            instance = self.repo.execute(
-                "SELECT id,status FROM approval_instance WHERE org_id=%(org_id)s AND "
-                "document_type IN ('requisition','project_request') AND document_id=%(id)s"
-                " ORDER BY started_at DESC,id DESC LIMIT 1",
-                {"id": id},
-            ).fetchone()
+            instance = latest_instance(self.connection, self.scope, id)
             if instance:
-                result.approval = ApprovalRead(
-                    instance_id=cast(UUID, instance[0]), status=str(instance[1])
-                )
+                result.approval = ApprovalRead(instance_id=instance[0], status=instance[1])
             amendment = open_amendment(self.repo, id)
             if amendment and row["status"] == "sourcing_in_progress":
                 result.amendment = AmendmentRef(
@@ -231,9 +315,9 @@ class RequisitionService:
             )
             return self.detail(id, can_view_budget, can_edit)
 
-    def get(self, id: UUID) -> RequisitionRead:
+    def get(self, id: UUID, *, include_deleted: bool = False) -> RequisitionRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
-            return self._get(id)
+            return self._get(id, include_deleted=include_deleted)
 
     def _project(
         self, id: UUID, permitted: Callable[[UUID], bool] | None = None
@@ -289,7 +373,9 @@ class RequisitionService:
     def _audit(
         self, action: str, id: UUID, before: dict[str, object] | None, after: dict[str, object]
     ) -> None:
-        AuditWriter(cast(AuditConnection, self.connection), self.scope).write(
+        audit_event(
+            cast(AuditConnection, self.connection),
+            self.scope,
             actor=AuditActor(ActorKind.USER, self.actor_id)
             if self.actor_id != SYSTEM_ACTOR_ID
             else AuditActor(ActorKind.JOB, None),
@@ -297,10 +383,8 @@ class RequisitionService:
             target_type="requisition",
             target_id=id,
             outcome=Outcome.SUCCESS,
-            before_source=before,
-            before_fields=tuple(before or ()),
-            after_source=after,
-            after_fields=tuple(after),
+            before=before,
+            after=after,
         )
 
     @staticmethod
@@ -500,7 +584,9 @@ class RequisitionService:
         direction: Direction = "asc",
         cursor: str | None = None,
         page_size: int = 50,
+        visible: tuple[list[UUID], list[UUID]] | None = None,
     ) -> RequisitionPage:
+        """`visible` is (business units, projects) the caller may view; None means everything."""
         if not 1 <= page_size <= 50:
             raise invalid("page_size", "Choose a page size from 1 to 50.")
         # Only these constant strings ever reach the SQL text; the request values pick one.
@@ -519,12 +605,18 @@ class RequisitionService:
         }
         escaped = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         params.update(prefix=escaped + "%", substring="%" + escaped + "%")
-        filters = """r.org_id=%(org_id)s AND (%(status)s::text IS NULL OR r.status=%(status)s)
+        filters = """r.org_id=%(org_id)s AND r.status<>'deleted'
+          AND (%(status)s::text IS NULL OR r.status=%(status)s)
           AND (%(project_id)s::uuid IS NULL OR r.project_id=%(project_id)s)
           AND (%(bu_id)s::uuid IS NULL OR r.bu_id=%(bu_id)s)
           AND (%(standalone)s::boolean IS NULL OR r.standalone=%(standalone)s)
           AND (%(requester_id)s::uuid IS NULL OR r.requester_id=%(requester_id)s)
           AND (r.number ILIKE %(prefix)s OR r.title ILIKE %(substring)s)"""
+        if visible is not None:
+            params.update(visible_units=visible[0], visible_projects=visible[1])
+            filters += """
+          AND ((r.standalone AND r.bu_id = ANY(%(visible_units)s::uuid[]))
+            OR (NOT r.standalone AND r.project_id = ANY(%(visible_projects)s::uuid[])))"""
         boundary = ""
         if cursor is not None:
             try:

@@ -12,7 +12,7 @@ import psycopg
 from psycopg.types.json import Jsonb
 from pydantic import TypeAdapter
 
-from flo.kernel.audit import ActorKind, AuditActor, AuditWriter
+from flo.kernel.audit import ActorKind, AuditActor, audit_event
 from flo.kernel.audit import Outcome as AuditOutcome
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
@@ -41,6 +41,7 @@ from flo.modules.identity.service import (
     AuthorizationTarget,
     IdentityAuthorizationConnection,
     emails_by_id,
+    names_by_id,
 )
 
 Connection = psycopg.Connection[tuple[object, ...]]
@@ -165,6 +166,7 @@ def _read(
 ) -> list[DelegationRead]:
     ids = [v for row in rows for v in (row[1], row[2], row[9]) if isinstance(v, UUID)]
     emails = emails_by_id(cast(IdentityAuthorizationConnection, conn), ids)
+    names = names_by_id(cast(IdentityAuthorizationConnection, conn), ids)
     out = []
     for row in rows:
         data = dict(zip(DELEGATION_FIELDS, row, strict=True))
@@ -181,7 +183,9 @@ def _read(
             DelegationRead(
                 id=cast(UUID, data["id"]),
                 delegator_email=emails.get(cast(UUID, data["delegator_id"]), "(removed user)"),
+                delegator_name=names.get(cast(UUID, data["delegator_id"])),
                 delegate_email=emails.get(cast(UUID, data["delegate_id"]), "(removed user)"),
+                delegate_name=names.get(cast(UUID, data["delegate_id"])),
                 starts_at=cast(datetime, data["starts_at"]),
                 ends_at=cast(datetime, data["ends_at"]),
                 document_types=cast(list[str] | None, data["document_types"]),
@@ -237,14 +241,20 @@ def eligible_delegates(
         rows = (
             WorkflowRepository(conn, scope)
             .execute(
-                "SELECT i.id,i.email FROM identity i WHERE i.status='active' AND i.id=ANY(%(ids)s) "
+                "SELECT i.id,i.email,i.display_name FROM identity i WHERE i.status='active' "
+                "AND i.id=ANY(%(ids)s) "
                 "AND EXISTS (SELECT 1 FROM user_role u WHERE u.org_id=%(org_id)s "
                 "AND u.user_id=i.id) ORDER BY i.email,i.id LIMIT 50",
                 {"ids": sorted(ids)},
             )
             .fetchall()
         )
-        return PickerPage(rows=[PickerRow(user_id=cast(UUID, r[0]), email=str(r[1])) for r in rows])
+        return PickerPage(
+            rows=[
+                PickerRow(user_id=cast(UUID, r[0]), email=str(r[1]), name=cast(str | None, r[2]))
+                for r in rows
+            ]
+        )
 
 
 def _audit(
@@ -255,7 +265,9 @@ def _audit(
     before: dict[str, object] | None,
     after: dict[str, object],
 ) -> None:
-    AuditWriter(cast(AuditConnection, repo.connection), repo.scope).write(
+    audit_event(
+        cast(AuditConnection, repo.connection),
+        repo.scope,
         actor=AuditActor(ActorKind.USER, actor_id),
         action=action,
         target_type="approval_delegation"
@@ -263,10 +275,8 @@ def _audit(
         else "approval_task",
         target_id=target_id,
         outcome=AuditOutcome.SUCCESS,
-        before_source=before,
-        before_fields=tuple(before or ()),
-        after_source=after,
-        after_fields=tuple(after),
+        before=before,
+        after=after,
     )
 
 

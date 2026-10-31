@@ -4,10 +4,10 @@ from datetime import date
 from typing import Annotated, Literal, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, Query, Request
+from fastapi import APIRouter, Depends, Header, Query, Request, Response
 from pydantic import AfterValidator
 
-from flo.api.admin_users import organization_target
+from flo.api.admin_users import deleted_visible, organization_target
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
 from flo.kernel.authz import permits, require
@@ -34,6 +34,7 @@ from flo.modules.budget.service import (
     aggregate_balance,
     balance_query,
     budget_summary,
+    delete_request,
     get_request,
     ledger_query,
     request_change,
@@ -272,8 +273,10 @@ def read_budget_summary(
     return budget_summary(connection, current_scope(), unit_id)
 
 
-def change_request_target(id: UUID, connection: Connection) -> TargetProtocol:
-    row = get_request(connection, current_scope(), id)
+def change_request_target(
+    id: UUID, connection: Connection, include_deleted: bool = False
+) -> TargetProtocol:
+    row = get_request(connection, current_scope(), id, include_deleted=include_deleted)
     return project_target(row.project_id, connection)
 
 
@@ -284,5 +287,24 @@ def read_change_request(
     context: Annotated[
         AuthorizationContext, Depends(require("ledger.read", change_request_target))
     ],
+    request: Request,
+    include_deleted: bool = False,
 ) -> BudgetChangeRequestRead:
-    return get_request(connection, current_scope(), id)
+    return get_request(
+        connection,
+        current_scope(),
+        id,
+        include_deleted=deleted_visible(request, include_deleted),
+    )
+
+
+@router.delete("/api/v1/budget/change-requests/{id}", status_code=204)
+def delete_change_request(
+    id: UUID,
+    connection: Connection,
+    context: Annotated[
+        AuthorizationContext, Depends(require("budget.adjust", change_request_target))
+    ],
+) -> Response:
+    delete_request(connection, current_scope(), id)
+    return Response(status_code=204)

@@ -196,7 +196,9 @@ it.each([
   [18, 30, "/internal/jobs/fx-ingest"],
   [2, 30, "/internal/jobs/budget-reconcile"],
   [3, 30, "/internal/jobs/requisition-expiry"],
+  [4, 30, "/internal/jobs/vendor-document-expiry"],
   [7, 30, "/internal/jobs/approval-reminders"],
+  [4, 0, null],
   [3, 0, null],
   [3, 31, null],
   [7, 0, null],
@@ -224,6 +226,21 @@ it.each([
   }
   if (path) expect(requests[2]?.url).toContain(path);
 });
+
+it.each([[12, 0], [12, 1], [12, 29], [12, 45], [23, 59]])(
+  "runs the job tick, which closes RFQs past their deadline, at UTC %i:%i",
+  async (hour, minute) => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    let work: Promise<unknown> | undefined;
+    apiProxy.scheduled({ scheduledTime: Date.UTC(2026, 9, 2, hour, minute) }, environment, {
+      waitUntil(promise) { work = promise; },
+    });
+    await work;
+    const urls = fetchMock.mock.calls.map(call => (call[0] as Request).url);
+    expect(urls.some(url => url.endsWith("/internal/jobs/tick"))).toBe(true);
+  },
+);
 
 it("a failed FX call leaves the independent tick and quota running", async () => {
   const fetchMock = vi.fn().mockImplementation((request: Request) =>

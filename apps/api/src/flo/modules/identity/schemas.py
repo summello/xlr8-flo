@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from flo.modules.identity.models import ScopeType
 
@@ -64,3 +64,26 @@ class InvitationAccept(BaseModel):
 
 class InvitationAccepted(BaseModel):
     next: Literal["enroll", "home"]
+
+
+class ProfileUpdate(BaseModel):
+    """PATCH /me: the caller's own display name, trimmed; null clears it."""
+
+    model_config = ConfigDict(extra="forbid")
+    display_name: str | None
+
+    @field_validator("display_name")
+    @classmethod
+    def trimmed(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        if not 1 <= len(value) <= 200:
+            raise ValueError("Use 1 to 200 characters, or clear the name.")
+        return value
+
+
+class Profile(BaseModel):
+    email: str
+    display_name: str | None
+    version: int

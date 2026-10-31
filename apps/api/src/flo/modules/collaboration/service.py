@@ -8,7 +8,7 @@ from uuid import UUID, uuid4
 import psycopg
 from starlette.requests import Request
 
-from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
+from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.authz import AuthorizationTarget, permits
 from flo.kernel.errors import ErrorCode, ProblemError
@@ -36,6 +36,18 @@ class DocumentAccess:
     read_permission: str
     write_permission: str
     target: Callable[[psycopg.Connection[tuple[object, ...]], Scope, UUID], AuthorizationTarget]
+    # Raises when the document no longer accepts attachment changes (an RFQ past draft).
+    write_guard: Callable[[psycopg.Connection[tuple[object, ...]], Scope, UUID], None] | None = None
+    # Replaces the write_permission check when the document decides who may write per record
+    # (a vendor requester on their own draft); it raises to refuse.
+    write_authorize: (
+        Callable[[psycopg.Connection[tuple[object, ...]], Scope, UUID, UUID | None], None] | None
+    ) = None
+    # Runs after the read permission passes and raises when the document is sealed to this actor
+    # (a bid's evidence before its deadline); it never runs for writes.
+    read_guard: (
+        Callable[[psycopg.Connection[tuple[object, ...]], Scope, UUID, UUID | None], None] | None
+    ) = None
 
 
 _ACCESS: dict[str, DocumentAccess] = {}
@@ -46,13 +58,13 @@ def register_document_access(access: DocumentAccess) -> None:
 
 
 NOTE_FIELDS = tuple(NoteRead.model_fields)
-NOTE_SQL = """SELECT n.id,n.author_id,i.email,n.body,n.visibility,n.locked,n.created_at,
- n.edited_at,n.version FROM note n JOIN identity i ON i.id=n.author_id"""
+NOTE_SQL = """SELECT n.id,n.author_id,i.email,i.display_name,n.body,n.visibility,n.locked,
+ n.created_at,n.edited_at,n.version FROM note n JOIN identity i ON i.id=n.author_id"""
 ATT_FIELDS = tuple(AttachmentRead.model_fields)
 ATT_SQL = """SELECT a.id,a.document_type,a.document_id,v.version,
  (SELECT count(*) FROM attachment_version c WHERE c.org_id=a.org_id AND c.attachment_id=a.id),
  v.original_filename,v.display_name,v.media_type,v.size_bytes,v.sha256,v.scan_status,
- v.uploaded_by,i.email,v.uploaded_at,a.deleted_at FROM attachment a
+ v.uploaded_by,i.email,i.display_name,v.uploaded_at,a.deleted_at FROM attachment a
  JOIN attachment_version v ON v.org_id=a.org_id AND v.attachment_id=a.id
  JOIN identity i ON i.id=v.uploaded_by"""
 
@@ -82,10 +94,16 @@ class CollaborationService:
     ) -> None:
         target = self.document_target(document_type, document_id)
         access = _ACCESS[document_type]
-        if not permits(
+        if write and access.write_authorize is not None:
+            access.write_authorize(self.connection, self.scope, document_id, self.actor_id)
+        elif not permits(
             request, access.write_permission if write else access.read_permission, target
         ):
             raise ProblemError(ErrorCode.FORBIDDEN)
+        if write and access.write_guard is not None:
+            access.write_guard(self.connection, self.scope, document_id)
+        if not write and access.read_guard is not None:
+            access.read_guard(self.connection, self.scope, document_id, self.actor_id)
 
     def linked_document(self, kind: str, id: UUID) -> tuple[str, UUID]:
         assert kind in {"note", "attachment"}
@@ -102,14 +120,15 @@ class CollaborationService:
     def _audit(
         self, action: str, kind: str, id: UUID, values: dict[str, object], *, refused: bool = False
     ) -> None:
-        AuditWriter(cast(AuditConnection, self.connection), self.scope).write(
+        audit_event(
+            cast(AuditConnection, self.connection),
+            self.scope,
             actor=AuditActor(ActorKind.USER, self.actor_id),
             action=action,
             target_type=kind,
             target_id=id,
             outcome=Outcome.DENIED if refused else Outcome.SUCCESS,
-            after_source=values,
-            after_fields=tuple(values),
+            after=values,
         )
 
     def _note(self, id: UUID, *, lock: bool = False) -> NoteRead:
@@ -125,10 +144,10 @@ class CollaborationService:
 
     def notes(self, request: Request, document_type: str, document_id: UUID) -> list[NoteRead]:
         self.authorize(request, document_type, document_id)
-        return self.notes_for(document_type, document_id)
+        return self.notes_unchecked(document_type, document_id)
 
-    def notes_for(self, document_type: str, document_id: UUID) -> list[NoteRead]:
-        """Unauthorized list; the caller has already checked read access to the document."""
+    def notes_unchecked(self, document_type: str, document_id: UUID) -> list[NoteRead]:
+        """Internal, no authorization: the caller must already have checked read access."""
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             rows = self.repo.execute(
                 NOTE_SQL + " WHERE n.org_id=%(org_id)s AND "
@@ -241,10 +260,10 @@ class CollaborationService:
         self, request: Request, document_type: str, document_id: UUID
     ) -> list[AttachmentRead]:
         self.authorize(request, document_type, document_id)
-        return self.attachments_for(document_type, document_id)
+        return self.attachments_unchecked(document_type, document_id)
 
-    def attachments_for(self, document_type: str, document_id: UUID) -> list[AttachmentRead]:
-        """Unauthorized list; the caller has already checked read access to the document."""
+    def attachments_unchecked(self, document_type: str, document_id: UUID) -> list[AttachmentRead]:
+        """Internal, no authorization: the caller must already have checked read access."""
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             rows = self.repo.execute(
                 "SELECT id FROM attachment WHERE org_id=%(org_id)s "

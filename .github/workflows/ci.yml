@@ -141,7 +141,26 @@ jobs:
           print(f'{len(done)} done stories all have commits')
           PY
 
-  backend:
+      # The gate self-tests plant a real secret and need the gitleaks binary. Pinned and
+      # checksum-verified; the security job's action does not put it on PATH.
+      - name: Install gitleaks for the gate self-tests
+        run: |
+          set -euo pipefail
+          version=8.30.1
+          curl -fsSL -o gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${version}/gitleaks_${version}_linux_x64.tar.gz"
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tar.gz" \
+            | sha256sum -c -
+          tar -xzf gitleaks.tar.gz gitleaks
+          sudo install -m 0755 gitleaks /usr/local/bin/gitleaks
+          rm gitleaks.tar.gz gitleaks
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gitleaks-binary
+          path: /usr/local/bin/gitleaks
+
+  backend-static:
     runs-on: ubuntu-latest
     needs: [detect, governance]
     if: needs.detect.outputs.api == 'true'
@@ -156,6 +175,7 @@ jobs:
           --health-cmd pg_isready --health-interval 10s
           --health-timeout 5s --health-retries 5
     env:
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flo_test
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flo_test
     steps:
       - uses: actions/checkout@v5
@@ -176,24 +196,6 @@ jobs:
 
       - name: No float in money modules (AGENTS.md 3.1)
         run: python apps/api/scripts/check_money_floats.py
-
-      # The gate self-tests plant a real secret and need the gitleaks binary. Pinned and
-      # checksum-verified; the security job's action does not put it on PATH.
-      - name: Install gitleaks for the gate self-tests
-        run: |
-          set -euo pipefail
-          version=8.30.1
-          curl -fsSL -o gitleaks.tar.gz \
-            "https://github.com/gitleaks/gitleaks/releases/download/v${version}/gitleaks_${version}_linux_x64.tar.gz"
-          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tar.gz" \
-            | sha256sum -c -
-          tar -xzf gitleaks.tar.gz gitleaks
-          sudo install -m 0755 gitleaks /usr/local/bin/gitleaks
-          rm gitleaks.tar.gz gitleaks
-
-      # --durations: the 25-minute suite is fixture-bound (migrations per test); this is the evidence
-      # for the template-database fix (pipeline plan step 6, 13 Oct 2026).
-      - run: pytest -q apps/api --cov=flo --cov-report=term-missing --durations=40
 
       - name: Cross-tenant isolation suite (TEN-010)
         run: |
@@ -220,7 +222,90 @@ jobs:
           upload-artifact-retention: 14
           upload-release-assets: false
 
-  frontend:
+  backend-shard:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    runs-on: ubuntu-latest
+    needs: [detect, governance]
+    if: needs.detect.outputs.api == 'true'
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: flo_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flo_test
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flo_test
+      COVERAGE_FILE: .coverage.${{ matrix.shard }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Install API dependencies
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install -e 'apps/api[dev]'
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: gitleaks-binary
+          path: .tools
+      - run: |
+          chmod +x .tools/gitleaks
+          echo "$PWD/.tools" >> "$GITHUB_PATH"
+      # File shards use migrated template clones; the combined backend job owns the 80% floor.
+      - run: pytest -q $(python apps/api/scripts/test_shard.py ${{ matrix.shard }} 4) --cov=flo --cov-report= --durations=40
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: coverage-${{ matrix.shard }}
+          path: .coverage.${{ matrix.shard }}
+          include-hidden-files: true
+          if-no-files-found: error
+
+  backend:
+    runs-on: ubuntu-latest
+    needs: [detect, backend-static, backend-shard]
+    if: always()
+    steps:
+      - name: Detection succeeded
+        env:
+          DETECT_RESULT: ${{ needs.detect.result }}
+        run: test "$DETECT_RESULT" = success
+      - name: Every backend shard and static checks succeeded
+        if: needs.detect.outputs.api == 'true'
+        env:
+          RESULT: ${{ needs.backend-shard.result }}
+          STATIC_RESULT: ${{ needs.backend-static.result }}
+        run: test "$RESULT" = success && test "$STATIC_RESULT" = success
+      - uses: actions/checkout@v5
+        if: needs.backend-shard.result == 'success'
+      - uses: actions/setup-python@v6
+        if: needs.backend-shard.result == 'success'
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - if: needs.backend-shard.result == 'success'
+        run: pip install -e 'apps/api[dev]'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        if: needs.backend-shard.result == 'success'
+        with:
+          pattern: coverage-*
+          merge-multiple: true
+      - name: Combined coverage enforces the existing floor
+        if: needs.backend-shard.result == 'success'
+        run: |
+          coverage combine
+          coverage report --fail-under=80
+
+  frontend-static:
     runs-on: ubuntu-latest
     needs: [detect, governance]
     if: needs.detect.outputs.web == 'true'
@@ -263,12 +348,6 @@ jobs:
 
       - run: npm --prefix apps/web run test
 
-      - name: Install the Playwright browser
-        run: npm --prefix apps/web exec -- playwright install --with-deps chromium
-
-      - name: E2E and accessibility (A11Y-001)
-        run: npm --prefix apps/web run test:e2e
-
       - name: Node dependency SBOM
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610  # v0.24.0
         env:
@@ -280,6 +359,44 @@ jobs:
           output-file: sbom-node.cyclonedx.json
           upload-artifact-retention: 14
           upload-release-assets: false
+
+  frontend-e2e:
+    runs-on: ubuntu-latest
+    needs: [detect, governance]
+    if: needs.detect.outputs.web == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: npm --prefix apps/web ci
+      - name: Install the Playwright browser
+        run: npm --prefix apps/web exec -- playwright install --with-deps chromium
+
+      - name: E2E and accessibility (A11Y-001)
+        run: npm --prefix apps/web run test:e2e -- --shard=${{ matrix.shard }}/3
+
+  frontend:
+    runs-on: ubuntu-latest
+    needs: [detect, frontend-static, frontend-e2e]
+    if: always()
+    steps:
+      - name: Detection succeeded
+        env:
+          DETECT_RESULT: ${{ needs.detect.result }}
+        run: test "$DETECT_RESULT" = success
+      - name: Static checks and every E2E shard succeeded
+        if: needs.detect.outputs.web == 'true'
+        env:
+          STATIC_RESULT: ${{ needs.frontend-static.result }}
+          E2E_RESULT: ${{ needs.frontend-e2e.result }}
+        run: test "$STATIC_RESULT" = success && test "$E2E_RESULT" = success
 
   security:
     runs-on: ubuntu-latest
@@ -325,12 +442,53 @@ jobs:
           sarif_file: trivy-results.sarif
           category: trivy-dependency-scan
 
+  frontend-build:
+    # Built once here, deployed from the artifact: deploy runs the bundle guards but no npm ci / vite build.
+    runs-on: ubuntu-latest
+    needs: [detect]
+    if: |
+      needs.detect.outputs.web == 'true'
+      && (
+        (github.ref == 'refs/heads/main' && github.event_name == 'push')
+        || (
+          github.event_name == 'workflow_dispatch'
+          && (
+            github.ref == 'refs/heads/main'
+            || startsWith(github.ref, 'refs/heads/milestone/')
+          )
+        )
+      )
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: VITE_API_BASE_URL is the relative /api path
+        run: |
+          test "$(sed -n 's/^VITE_API_BASE_URL=//p' apps/web/.env.production)" = "/api" \
+            || { echo "::error::VITE_API_BASE_URL must be the relative path /api"; exit 1; }
+      - run: npm --prefix apps/web ci
+      - run: npm --prefix apps/web run build
+      - name: Manifest of the built bundle
+        working-directory: apps/web
+        run: find dist -type f -print0 | sort -z | xargs -0 sha256sum > dist.sha256
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: web-dist
+          path: |
+            apps/web/dist
+            apps/web/dist.sha256
+          if-no-files-found: error
+          retention-days: 1
+
   deploy:
     # Main pushes deploy automatically. Manual milestone dispatches support release rehearsal.
     # `always() && !failure() && !cancelled()` so a legitimately skipped
     # backend/frontend job does not also skip the deploy.
     runs-on: ubuntu-latest
-    needs: [detect, backend, frontend, security]
+    needs: [detect, backend, frontend, frontend-build, security]
     if: |
       always() && !failure() && !cancelled()
       && needs.detect.outputs.api == 'true'
@@ -476,6 +634,13 @@ jobs:
           --image "us-central1-docker.pkg.dev/${GCP_PROJECT}/flo/flo-api"
           --current-image "${{ steps.push.outputs.digest }}"
 
+      - name: Download the SPA bundle built by frontend-build
+        if: needs.detect.outputs.web == 'true'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
+        with:
+          name: web-dist
+          path: apps/web
+
       - name: Deploy single-origin Worker route and SPA
         if: needs.detect.outputs.web == 'true'
         run: |
@@ -486,10 +651,8 @@ jobs:
             https://*.run.app) ;;
             *) echo "::error::CLOUD_RUN_ORIGIN must be an HTTPS run.app origin"; exit 1 ;;
           esac
-          test "$(sed -n 's/^VITE_API_BASE_URL=//p' apps/web/.env.production)" = "/api" \
-            || { echo "::error::VITE_API_BASE_URL must be the relative path /api"; exit 1; }
-          npm --prefix apps/web ci
-          npm --prefix apps/web run build
+          (cd apps/web && sha256sum --check --quiet dist.sha256) \
+            || { echo "::error::downloaded SPA bundle does not match its build manifest"; exit 1; }
           # A key is `sk-` at a word start followed by 20+ key characters; the bare
           # substring also matches `risk-indicators`.
           if grep -RIlE -- '(^|[^A-Za-z0-9])sk-[A-Za-z0-9_-]{20,}|-----BEGIN' apps/web/dist; then

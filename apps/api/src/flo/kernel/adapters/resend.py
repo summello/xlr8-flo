@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
+import base64
 import json
 import urllib.error
 import urllib.request
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from typing import cast
 
 from flo.kernel.config import Settings
 from flo.kernel.ports.email import (
+    EmailAttachment,
     EmailSender,
     PermanentEmailError,
     TransientEmailError,
@@ -59,20 +61,28 @@ class ResendEmailSender(EmailSender):
         template: str,
         context: Mapping[str, object],
         idempotency_key: str,
+        attachments: Sequence[EmailAttachment] = (),
     ) -> str:
         _require_header_safe("recipient", to)
         _require_header_safe("idempotency key", idempotency_key)
         if not template:
             raise PermanentEmailError("email template must be non-empty")
-        try:
-            body = json.dumps(
+        request_body: dict[str, object] = {
+            "from": self._from_address,
+            "to": [to],
+            "template": {"id": template, "variables": dict(context)},
+        }
+        if attachments:
+            request_body["attachments"] = [
                 {
-                    "from": self._from_address,
-                    "to": [to],
-                    "template": {"id": template, "variables": dict(context)},
-                },
-                separators=(",", ":"),
-            ).encode()
+                    "filename": a.filename,
+                    "content": base64.b64encode(a.content).decode("ascii"),
+                    "content_type": a.content_type,
+                }
+                for a in attachments
+            ]
+        try:
+            body = json.dumps(request_body, separators=(",", ":")).encode()
         except (TypeError, ValueError):
             raise PermanentEmailError("email template context is not JSON serializable") from None
 

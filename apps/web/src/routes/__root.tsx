@@ -15,6 +15,7 @@ import ProjectList from "./projects/list";
 import NewProject from "./projects/new";
 import WorkflowList from "./admin/approval-workflows/list";
 import WorkflowBuilder from "./admin/approval-workflows/[id]";
+import VendorQuestionnaires from "./admin/vendor-questionnaires";
 import ProjectDetail from "./projects/detail";
 import Dashboard from "./projects/dashboard";
 import BudgetOverview from "./budget";
@@ -27,6 +28,18 @@ import ResubmitRequisition from "./requisitions/resubmit";
 import AmendRequisition from "./requisitions/amend";
 import AmendReview from "./requisitions/amend-review";
 import RequisitionDetail from "./requisitions/detail";
+import VendorList from "./vendors/list";
+import VendorDetail from "./vendors/detail";
+import NewVendor from "./vendors/new";
+import EditVendor from "./vendors/edit";
+import RfqList from "./sourcing/rfqs/list";
+import RfqDetail from "./sourcing/rfqs/detail";
+import RfqComparison from "./sourcing/rfqs/comparison";
+import NewRfq from "./sourcing/rfqs/new";
+import EditRfq from "./sourcing/rfqs/$id.edit";
+import AmendRfq from "./sourcing/rfqs/$id.amend";
+import RfqAward from "./sourcing/rfqs/$id.award";
+import RfqEvaluation from "./sourcing/rfqs/$id.evaluation";
 import { confirmLeave, consumeRestoring, installHistoryIndex, settlePop } from "../lib/navigation-guard";
 import type { Project } from "../components/projects/api";
 import type { RoutePath } from "./route-paths";
@@ -53,6 +66,14 @@ const REQUISITION_EDIT_PATH = /^\/requisitions\/([0-9a-f-]{36})\/edit$/;
 const REQUISITION_RESUBMIT_PATH = /^\/requisitions\/([0-9a-f-]{36})\/resubmit$/;
 const REQUISITION_AMEND_PATH = /^\/requisitions\/([0-9a-f-]{36})\/amend$/;
 const REQUISITION_AMEND_REVIEW_PATH = /^\/requisitions\/([0-9a-f-]{36})\/amend\/review$/;
+const VENDOR_PATH = /^\/vendors\/([0-9a-f-]{36})$/;
+const VENDOR_EDIT_PATH = /^\/vendors\/([0-9a-f-]{36})\/edit$/;
+const RFQ_PATH = /^\/sourcing\/rfqs\/([0-9a-f-]{36})$/;
+const RFQ_COMPARISON_PATH = /^\/sourcing\/rfqs\/([0-9a-f-]{36})\/comparison$/;
+const RFQ_AWARD_PATH = /^\/sourcing\/rfqs\/([0-9a-f-]{36})\/award$/;
+const RFQ_EVALUATION_PATH = /^\/sourcing\/rfqs\/([0-9a-f-]{36})\/evaluation$/;
+const RFQ_EDIT_PATH = /^\/sourcing\/rfqs\/([0-9a-f-]{36})\/edit$/;
+const RFQ_AMEND_PATH = /^\/sourcing\/rfqs\/([0-9a-f-]{36})\/amend$/;
 const ADMIN_USER_PATH = /^\/admin\/users\/([^/]+)$/;
 
 const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
@@ -71,6 +92,7 @@ const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
     title: "Organization",
   },
   "/admin/approval-workflows": { activeHref: "/administration", description: "Versioned approval workflows", hierarchy: [ORGANIZATION, ["/admin/approval-workflows", "Approval Workflows"]], phase: "foundation", title: "Approval Workflows" },
+  "/admin/vendor-questionnaires": { activeHref: "/administration", description: "Versioned onboarding questionnaires for new vendors", hierarchy: [ORGANIZATION, ["/administration", "Administration"], ["/admin/vendor-questionnaires", "Vendor Questionnaires"]], phase: "foundation", title: "Vendor Questionnaires" },
   "/administration": {
     activeHref: "/administration",
     description: "Administration screens arrive with the foundation milestone.",
@@ -136,17 +158,38 @@ const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
   },
   "/vendors": {
     activeHref: "/vendors",
-    description: "Vendor screens arrive with the commitment milestone.",
+    description: "Find vendors, check who may be used here, and keep their documents current.",
     hierarchy: [ORGANIZATION, ["/vendors", "Vendors"]],
     phase: "commit",
     title: "Vendors",
   },
+  "/vendors/new": {
+    activeHref: "/vendors",
+    description: "Ask for a new vendor to be approved.",
+    hierarchy: [ORGANIZATION, ["/vendors", "Vendors"], ["/vendors/new", "Request Vendor"]],
+    phase: "commit",
+    title: "Request Vendor",
+  },
   "/sourcing": {
     activeHref: "/sourcing",
-    description: "Sourcing screens arrive with the commitment milestone.",
+    description: "What is open, what is due, and what needs you.",
     hierarchy: [ORGANIZATION, BUSINESS_UNIT, PROJECT, ["/sourcing", "Sourcing"]],
     phase: "commit",
     title: "Sourcing",
+  },
+  "/sourcing/rfqs": {
+    activeHref: "/sourcing",
+    description: "What is open, what is due, and what needs you.",
+    hierarchy: [ORGANIZATION, ["/sourcing/rfqs", "RFQs"]],
+    phase: "commit",
+    title: "RFQs",
+  },
+  "/sourcing/rfqs/new": {
+    activeHref: "/sourcing",
+    description: "Choose approved requisition lines and the quantity of each to source.",
+    hierarchy: [ORGANIZATION, ["/sourcing/rfqs", "RFQs"], ["/sourcing/rfqs/new", "New RFQ"]],
+    phase: "commit",
+    title: "New RFQ",
   },
   "/purchase-orders": {
     activeHref: "/purchase-orders",
@@ -214,6 +257,37 @@ function routeFor(path: string): ShellRoute {
     activeHref: "/requisitions", path, phase: "demand", title: REQUISITION_EDIT_PATH.test(path) ? "Edit Requisition" : "Requisition", description: "Requisition details and actions.",
     breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/requisitions", label: "Requisitions" }, { href: path, label: REQUISITION_EDIT_PATH.test(path) ? "Edit" : "Requisition" }],
   };
+  if (VENDOR_PATH.test(path)) return {
+    activeHref: "/vendors", path, phase: "commit", title: "Vendor", description: "Vendor profile, documents and history.",
+    breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/vendors", label: "Vendors" }, { href: path, label: "Vendor" }],
+  };
+  if (VENDOR_EDIT_PATH.test(path)) return {
+    activeHref: "/vendors", path, phase: "commit", title: "Request Vendor", description: "Ask for a new vendor to be approved.",
+    breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/vendors", label: "Vendors" }, { href: path, label: "Request Vendor" }],
+  };
+  if (RFQ_PATH.test(path)) return {
+    activeHref: "/sourcing", path, phase: "commit", title: "RFQ", description: "Where this RFQ is, and who has what.",
+    breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/sourcing/rfqs", label: "RFQs" }, { href: path, label: "RFQ" }],
+  };
+  if (RFQ_COMPARISON_PATH.test(path)) return {
+    activeHref: "/sourcing", path, phase: "commit", title: "Bid Comparison", description: "Bids side by side, once the bidding stop time has passed.",
+    breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/sourcing/rfqs", label: "RFQs" }, { href: path.replace(/\/comparison$/, ""), label: "RFQ" }, { href: path, label: "Bid Comparison" }],
+  };
+  if (RFQ_AWARD_PATH.test(path)) return {
+    activeHref: "/sourcing", path, phase: "commit", title: "Award", description: "A draft that must pass three checks before it goes for approval.",
+    breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/sourcing/rfqs", label: "RFQs" }, { href: path.replace(/\/award$/, ""), label: "RFQ" }, { href: path, label: "Award" }],
+  };
+  if (RFQ_EVALUATION_PATH.test(path)) return {
+    activeHref: "/sourcing", path, phase: "commit", title: "Evaluation", description: "Declare any conflict first, then score each vendor.",
+    breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/sourcing/rfqs", label: "RFQs" }, { href: path.replace(/\/evaluation$/, ""), label: "RFQ" }, { href: path, label: "Evaluation" }],
+  };
+  if (RFQ_EDIT_PATH.test(path) || RFQ_AMEND_PATH.test(path)) {
+    const editing = RFQ_EDIT_PATH.test(path), detail = path.replace(/\/(edit|amend)$/, "");
+    return {
+      activeHref: "/sourcing", path, phase: "commit", title: editing ? "Edit RFQ" : "Amend RFQ", description: editing ? "What exactly am I asking for, and from whom?" : "What changed, why, and who will be told?",
+      breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/sourcing/rfqs", label: "RFQs" }, { href: detail, label: "RFQ" }, { href: path, label: editing ? "Edit" : "Amend" }],
+    };
+  }
   const adminUser = path.match(ADMIN_USER_PATH)?.[1];
   if (adminUser !== undefined) {
     return {
@@ -344,12 +418,32 @@ export default function RootRoute() {
   const amendReviewId = shellRoute.path.match(REQUISITION_AMEND_REVIEW_PATH)?.[1];
   const titledRoute = requisitionHeading?.path === shellRoute.path ? { ...displayedRoute, title: requisitionHeading.title, breadcrumbs: displayedRoute.breadcrumbs.map((item, i, all) => i === all.length - 1 ? { ...item, label: requisitionHeading.title } : item) } : displayedRoute;
   const adminUserId = shellRoute.path.match(ADMIN_USER_PATH)?.[1];
+  const vendorId = shellRoute.path.match(VENDOR_PATH)?.[1];
+  const vendorEditId = shellRoute.path.match(VENDOR_EDIT_PATH)?.[1];
+  const rfqId = shellRoute.path.match(RFQ_PATH)?.[1];
+  const comparisonRfqId = shellRoute.path.match(RFQ_COMPARISON_PATH)?.[1];
+  const awardRfqId = shellRoute.path.match(RFQ_AWARD_PATH)?.[1];
+  const editRfqId = shellRoute.path.match(RFQ_EDIT_PATH)?.[1];
+  const evaluationRfqId = shellRoute.path.match(RFQ_EVALUATION_PATH)?.[1];
+  const amendRfqId = shellRoute.path.match(RFQ_AMEND_PATH)?.[1];
 
   return (
     <AppShell navigate={navigate} route={{ ...titledRoute, breadcrumbs: titledRoute.breadcrumbs.map(item => ({ ...item, label: item.href === "/organization" && tenantName ? tenantName : item.label })) }}>
       {shellRoute.path === "/projects" ? <ProjectList navigate={navigate} /> : undefined}
+      {shellRoute.path === "/vendors" ? <VendorList key={window.location.search} navigate={navigate} /> : undefined}
+      {shellRoute.path === "/vendors/new" ? <NewVendor navigate={navigate} /> : undefined}
+      {vendorEditId ? <EditVendor key={vendorEditId} id={vendorEditId} navigate={navigate} /> : undefined}
+      {shellRoute.path === "/sourcing" || shellRoute.path === "/sourcing/rfqs" ? <RfqList key={window.location.search} navigate={navigate} /> : undefined}
+      {rfqId ? <RfqDetail key={rfqId} id={rfqId} navigate={navigate} /> : undefined}
+      {editRfqId ? <EditRfq key={editRfqId} id={editRfqId} navigate={navigate} /> : undefined}
+      {amendRfqId ? <AmendRfq key={amendRfqId} id={amendRfqId} navigate={navigate} /> : undefined}
+      {awardRfqId ? <RfqAward key={awardRfqId} id={awardRfqId} navigate={navigate} /> : undefined}
+      {evaluationRfqId ? <RfqEvaluation key={evaluationRfqId} id={evaluationRfqId} navigate={navigate} /> : undefined}
+      {comparisonRfqId ? <RfqComparison key={comparisonRfqId} id={comparisonRfqId} navigate={navigate} /> : undefined}
+      {vendorId ? <VendorDetail key={vendorId} id={vendorId} navigate={navigate} /> : undefined}
       {shellRoute.path === "/requisitions" ? <RequisitionList key={window.location.search} navigate={navigate} /> : undefined}
       {shellRoute.path === "/requisitions/new" ? <NewRequisition navigate={navigate} /> : undefined}
+      {shellRoute.path === "/sourcing/rfqs/new" ? <NewRfq key={window.location.search} navigate={navigate} /> : undefined}
       {requisitionId ? <RequisitionDetail key={requisitionId} id={requisitionId} navigate={navigate} onLoaded={onRequisitionLoaded} /> : undefined}
       {requisitionEditId ? <EditRequisition key={requisitionEditId} id={requisitionEditId} navigate={navigate} onLoaded={onRequisitionLoaded} /> : undefined}
       {resubmitId ? <ResubmitRequisition key={resubmitId} id={resubmitId} navigate={navigate} /> : undefined}
@@ -361,8 +455,9 @@ export default function RootRoute() {
       {shellRoute.path === "/approvals/availability" ? <ApprovalAvailability navigate={navigate} /> : undefined}
       {shellRoute.path === "/budget" ? <BudgetOverview key={window.location.search} navigate={navigate} /> : undefined}
       {shellRoute.path === "/admin/approval-workflows" ? <WorkflowList navigate={navigate} /> : undefined}
-      {workflowId ? <WorkflowBuilder key={workflowId} id={workflowId} /> : undefined}
-      {projectId ? <ProjectDetail key={projectId} id={projectId} onLoaded={onProjectLoaded} /> : undefined}
+      {shellRoute.path === "/admin/vendor-questionnaires" ? <VendorQuestionnaires /> : undefined}
+      {workflowId ? <WorkflowBuilder key={workflowId} id={workflowId} navigate={navigate} /> : undefined}
+      {projectId ? <ProjectDetail key={projectId} id={projectId} navigate={navigate} onLoaded={onProjectLoaded} /> : undefined}
       {shellRoute.path === "/_dev/status-gallery" ? <StatusGallery /> : undefined}
       {shellRoute.path === "/_dev/grid" ? <GridGallery /> : undefined}
       {shellRoute.path === "/_dev/forms" ? <FormGallery /> : undefined}

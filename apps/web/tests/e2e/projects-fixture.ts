@@ -8,12 +8,12 @@ export const project: components["schemas"]["ProjectRead"] = {
   id: projectId, generated_by_requisition_id: null, external_ref: null, number: "PRJ-0001", name: "Plant renewal", status: "draft", bu_id: unitId, bu_name: "Infrastructure",
   parent_id: null, owner_id: firstActor, sponsor_id: null, description: "Renew the plant", department_code: "D", ledger_account_code: "L", currency: "USD",
   planned_start: "2026-10-01", planned_end: "2026-12-31", health: "unknown", percent_complete: 0, actual_start: null, actual_end: null, schedule_variance_days: null,
-  version: 1, created_at: "2026-10-01T00:00:00Z", allocated: "1234.5000", available: "-0.0050",
+  version: 1, created_at: "2026-10-01T00:00:00Z", allocated: "1234.5000", available: "-0.0050", can_edit: true,
 };
 export type Fixture = Awaited<ReturnType<typeof stubProjects>>;
 export async function stubProjects(page: Page, settings: { total?: number; rows?: components["schemas"]["ProjectRead"][]; transitions?: components["schemas"]["TransitionAvailable"][] } = {}) {
   const state = {
-    actor: firstActor, row: { ...project }, created: false, failCreate: false, stale: false, overrideDenied: false,
+    actor: firstActor, row: { ...project }, created: false, failCreate: false, failDelete: false, stale: false, overrideDenied: false,
     requests: [] as { path: string; method: string; query: URLSearchParams; body: Record<string, unknown> | null; headers: Record<string, string> }[],
     phases: [] as components["schemas"]["PhaseRead"][], milestones: [] as components["schemas"]["MilestoneRead"][], risks: [] as components["schemas"]["RiskRead"][],
     fail: new Set<string>(),
@@ -39,6 +39,12 @@ export async function stubProjects(page: Page, settings: { total?: number; rows?
     if (path === `/api/v1/org/units/${unitId}`) return send(unit);
     if (path === "/api/v1/master/currency") return send([{ code: "USD", exponent: 2 }, { code: "JPY", exponent: 0 }]);
     if (path.startsWith("/api/v1/master/")) return send({ rows: [{ id: unitId, code: path.endsWith("department") ? "D" : "L", name: "Master code", active: true }], next_cursor: null });
+    if (path === "/api/v1/projects/lookups/people") {
+      const people = [{ value: firstActor, label: "Maker Person" }, { value: secondActor, label: "Approver Person", note: "approver@example.test" }, ...Array.from({ length: 10 }, (_, i) => ({ value: `00000000-0000-4000-8000-0000000001${String(i).padStart(2, "0")}`, label: `Extra Person ${i}` }))];
+      const q = (url.searchParams.get("q") ?? "").toLowerCase();
+      return send({ rows: people.filter(p => p.label.toLowerCase().includes(q)) });
+    }
+    if (path === "/api/v1/projects/lookups/main_projects") return send({ rows: [{ value: projectId, label: "PRJ-00001 Existing main project" }].filter(p => p.label.toLowerCase().includes((url.searchParams.get("q") ?? "").toLowerCase())) });
     if (path === "/api/v1/projects" && method === "POST") {
       if (state.failCreate) return send({ status: 422, detail: "Unknown or inactive department code. Choose an active code.", errors: [{ field: "department_code", message: "Unknown or inactive department code." }] }, 422);
       state.row = { ...state.row, ...body } as typeof state.row; state.created = true;
@@ -53,6 +59,7 @@ export async function stubProjects(page: Page, settings: { total?: number; rows?
       if (url.searchParams.get("group_by") === "status") rows = [...rows].sort((a, b) => a.status.localeCompare(b.status) || a.number.localeCompare(b.number));
       return send({ rows, total: settings.total ? total : rows.length, next_cursor: settings.total && offset + 50 < total ? String(offset + 50) : null });
     }
+    if (path === `/api/v1/projects/${projectId}` && method === "DELETE") return state.failDelete ? problem("Only a draft can be deleted.", 409, { problem: "not_draft" }) : route.fulfill({ status: 204 });
     if (path === `/api/v1/projects/${projectId}`) return send(state.row);
     if (path.endsWith("/transitions/available")) {
       if (settings.transitions) return send(settings.transitions);

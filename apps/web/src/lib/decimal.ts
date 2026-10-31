@@ -43,3 +43,25 @@ export function multiplyQuantize(quantity: string, unitPrice: string, exponent: 
 export function isPositiveDecimal(value: string): boolean {
   return /^[0-9]{1,14}(?:\.[0-9]{1,4})?$/.test(value) && /[1-9]/.test(value);
 }
+
+export const separators = (locale?: string) => {
+  const parts = new Intl.NumberFormat(locale).formatToParts(12345.6);
+  return { group: parts.find(p => p.type === "group")?.value ?? "", decimal: parts.find(p => p.type === "decimal")?.value ?? "." };
+};
+
+/** UX-007: a canonical quantity in the viewer's locale. Digits stay strings; a JS Number would lose them. */
+export function formatQuantity(canonical: string, locale?: string): string {
+  const [whole = "0", fraction = ""] = canonical.split(".");
+  const grouped = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(BigInt(whole));
+  const kept = fraction.replace(/0+$/, "");
+  return kept ? grouped + separators(locale).decimal + kept : grouped;
+}
+
+/** A typed quantity in the viewer's locale to the canonical string the API takes, or null when it is not a positive quantity. */
+export function parseQuantity(input: string, locale?: string): string | null {
+  const { group, decimal } = separators(locale);
+  let text = input.trim().replace(/\s/gu, "");
+  if (group) text = text.split(group.replace(/\s/gu, "")).join("");
+  const canonical = text.replace(decimal, ".");
+  return isPositiveDecimal(canonical) ? canonical : null;
+}

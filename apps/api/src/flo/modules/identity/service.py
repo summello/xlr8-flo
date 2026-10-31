@@ -10,7 +10,7 @@ from uuid import UUID, uuid4
 from psycopg import sql
 from pydantic import BaseModel
 
-from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
+from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.db.repo import ScopedRepo
 from flo.kernel.errors import ErrorCode, ProblemError
@@ -43,6 +43,7 @@ from flo.modules.identity.resolver import (
 from flo.modules.identity.resolver import (
     AuthorizationResolver as AuthorizationResolver,
 )
+from flo.modules.identity.schemas import Profile
 
 type DatabaseRow = Sequence[object] | Mapping[str, object]
 
@@ -436,9 +437,6 @@ class IdentityAuthorizationService:
     def _repository(self) -> RoleRepository:
         return RoleRepository(self._connection, self._scope)
 
-    def _audit(self) -> AuditWriter:
-        return AuditWriter(self._connection, self._scope)
-
     def create_role(self, code: str, name: str, *, is_system: bool = False) -> Role:
         """Create an empty role; no permission is inherited or implied."""
 
@@ -450,13 +448,15 @@ class IdentityAuthorizationService:
                 checked_code, name.strip(), is_system=is_system
             )
             if created:
-                self._audit().write(
+                audit_event(
+                    self._connection,
+                    self._scope,
                     actor=self._actor,
                     action="role.create",
                     target_type="role",
                     target_id=role.id,
                     outcome=Outcome.SUCCESS,
-                    after_source=role,
+                    after=role,
                     after_fields=("id", "code", "name", "is_system"),
                 )
             return role
@@ -479,15 +479,17 @@ class IdentityAuthorizationService:
         with tenant_transaction(self._connection, self._scope):
             attached = self._repository().attach_permission(role_id, checked_permission)
             if attached:
-                self._audit().write(
+                audit_event(
+                    self._connection,
+                    self._scope,
                     actor=self._actor,
                     action="role.permission.grant",
                     target_type="role",
                     target_id=role_id,
                     outcome=Outcome.SUCCESS,
-                    before_source={"permission": None},
+                    before={"permission": None},
                     before_fields=("permission",),
-                    after_source={"permission": checked_permission},
+                    after={"permission": checked_permission},
                     after_fields=("permission",),
                 )
             return attached
@@ -499,15 +501,17 @@ class IdentityAuthorizationService:
         with tenant_transaction(self._connection, self._scope):
             detached = self._repository().detach_permission(role_id, checked_permission)
             if detached:
-                self._audit().write(
+                audit_event(
+                    self._connection,
+                    self._scope,
                     actor=self._actor,
                     action="role.permission.revoke",
                     target_type="role",
                     target_id=role_id,
                     outcome=Outcome.SUCCESS,
-                    before_source={"permission": checked_permission},
+                    before={"permission": checked_permission},
                     before_fields=("permission",),
-                    after_source={"permission": None},
+                    after={"permission": None},
                     after_fields=("permission",),
                 )
             return detached
@@ -553,13 +557,15 @@ class IdentityAuthorizationService:
             if created:
                 if granted_role_code in MFA_REQUIRED_ROLE_CODES:
                     self._repository().adjust_privileged_role_grants(user_id, 1)
-                self._audit().write(
+                audit_event(
+                    self._connection,
+                    self._scope,
                     actor=self._actor,
                     action="user_role.grant",
                     target_type="user_role",
                     target_id=assignment.id,
                     outcome=Outcome.SUCCESS,
-                    after_source=assignment,
+                    after=assignment,
                     after_fields=(
                         "id",
                         "user_id",
@@ -583,13 +589,15 @@ class IdentityAuthorizationService:
             assignment, revoked_role_code = revoked
             if revoked_role_code in MFA_REQUIRED_ROLE_CODES:
                 self._repository().adjust_privileged_role_grants(assignment.user_id, -1)
-            self._audit().write(
+            audit_event(
+                self._connection,
+                self._scope,
                 actor=self._actor,
                 action="user_role.revoke",
                 target_type="user_role",
                 target_id=assignment.id,
                 outcome=Outcome.SUCCESS,
-                before_source=assignment,
+                before=assignment,
                 before_fields=(
                     "id",
                     "user_id",
@@ -613,13 +621,15 @@ class IdentityAuthorizationService:
             assignment, revoked_role_code = revoked
             if revoked_role_code in MFA_REQUIRED_ROLE_CODES:
                 self._repository().adjust_privileged_role_grants(assignment.user_id, -1)
-            self._audit().write(
+            audit_event(
+                self._connection,
+                self._scope,
                 actor=self._actor,
                 action="user_role.revoke",
                 target_type="user_role",
                 target_id=assignment.id,
                 outcome=Outcome.SUCCESS,
-                before_source=assignment,
+                before=assignment,
                 before_fields=(
                     "id",
                     "user_id",
@@ -654,15 +664,17 @@ class IdentityAuthorizationService:
                 user_id,
                 deactivated_at,
             )
-            self._audit().write(
+            audit_event(
+                self._connection,
+                self._scope,
                 actor=self._actor,
                 action="identity.deactivate",
                 target_type="identity",
                 target_id=user_id,
                 outcome=Outcome.SUCCESS,
-                before_source={"email": email, "status": "active"},
+                before={"email": email, "status": "active"},
                 before_fields=("email", "status"),
-                after_source={"email": email, "status": "deactivated"},
+                after={"email": email, "status": "deactivated"},
                 after_fields=("email", "status"),
             )
             return True
@@ -687,6 +699,56 @@ def register_project_scope(
     """Register containment in the existing project creation transaction."""
     RoleRepository(connection, scope).register_scope(
         ScopeType.PROJECT, project_id, ScopeType(parent_kind), parent_id, roll_down=True
+    )
+
+
+def granted_scopes(
+    connection: IdentityAuthorizationConnection,
+    scope: Scope,
+    user_id: IdentityId,
+    permission: str,
+) -> tuple[bool, list[UUID], list[UUID]]:
+    """Where the user holds `permission`: (organization-wide, business units, projects).
+
+    Business-unit grants cover everything beneath them. A project grant covers its sub-projects
+    only across edges that roll down, as in the effective-access check. Organization-wide
+    returns empty lists: the caller needs no filter.
+    """
+    with tenant_transaction(connection, scope):
+        rows = connection.execute(
+            """
+        WITH RECURSIVE grants AS (
+            SELECT DISTINCT ur.scope_type, ur.scope_id
+              FROM user_role ur
+              JOIN role_permission rp ON rp.org_id = ur.org_id AND rp.role_id = ur.role_id
+             WHERE ur.org_id = %(org_id)s AND ur.user_id = %(user_id)s
+               AND rp.permission_code = %(permission)s
+               AND (ur.effective_from IS NULL OR ur.effective_from <= CURRENT_TIMESTAMP)
+        ), covered (scope_type, scope_id, unconditional) AS (
+            SELECT scope_type, scope_id, scope_type <> 'project' FROM grants
+             WHERE scope_type <> 'org'
+            UNION
+            SELECT h.scope_type, h.scope_id, c.unconditional
+              FROM authorization_scope h
+              JOIN covered c ON h.parent_scope_type = c.scope_type
+               AND h.parent_scope_id = c.scope_id
+             WHERE h.org_id = %(org_id)s AND (c.unconditional OR h.roll_down)
+        )
+        SELECT 'org' AS scope_type, NULL::uuid AS scope_id
+         WHERE EXISTS (SELECT 1 FROM grants WHERE scope_type = 'org')
+        UNION ALL SELECT DISTINCT scope_type, scope_id FROM covered
+        """,
+            RoleRepository(connection, scope).scoped_params(
+                {"user_id": user_id, "permission": permission}
+            ),
+        ).fetchall()
+    kinds = [(str(_value(r, 0, "scope_type")), _value(r, 1, "scope_id")) for r in rows]
+    if any(k == "org" for k, _ in kinds):
+        return True, [], []
+    return (
+        False,
+        [cast(UUID, i) for k, i in kinds if k == "bu"],
+        [cast(UUID, i) for k, i in kinds if k == "project"],
     )
 
 
@@ -827,3 +889,80 @@ def emails_by_id(
             "SELECT id,email FROM identity WHERE id=ANY(%(ids)s)", {"ids": list(ids)}
         ).fetchall()
     }
+
+
+def names_by_id(
+    connection: IdentityAuthorizationConnection, ids: Sequence[UUID]
+) -> dict[UUID, str | None]:
+    """The display name beside emails_by_id; None when the person has not set one."""
+    return {
+        cast(UUID, _value(row, 0, "id")): cast(str | None, _value(row, 1, "display_name"))
+        for row in connection.execute(
+            "SELECT id,display_name FROM identity WHERE id=ANY(%(ids)s)", {"ids": list(ids)}
+        ).fetchall()
+    }
+
+
+def read_profile(connection: IdentityAuthorizationConnection, identity_id: UUID) -> Profile:
+    row = connection.execute(
+        "SELECT email,display_name,row_version FROM identity WHERE id=%(id)s", {"id": identity_id}
+    ).fetchone()
+    if row is None:
+        raise ProblemError(ErrorCode.NOT_FOUND)
+    return Profile(
+        email=cast(str, _value(row, 0, "email")),
+        display_name=cast(str | None, _value(row, 1, "display_name")),
+        version=cast(int, _value(row, 2, "row_version")),
+    )
+
+
+def set_display_name(
+    connection: IdentityAuthorizationConnection,
+    scope: Scope,
+    identity_id: UUID,
+    display_name: str | None,
+    if_match: str | None,
+) -> Profile:
+    """Set the caller's own name (convention O). The identity is global, so the audit row is
+    written in the session's current organization."""
+    if if_match is None:
+        raise ProblemError(
+            ErrorCode.BAD_REQUEST,
+            detail="Supply If-Match with the profile version.",
+            checks={"problem": "if_match_required"},
+        )
+    try:
+        expected = int(if_match.strip('"'))
+    except ValueError as exc:
+        raise ProblemError(
+            ErrorCode.BAD_REQUEST, detail="If-Match must contain an integer version."
+        ) from exc
+    with tenant_transaction(connection, scope):
+        before = read_profile(connection, identity_id)
+        row = connection.execute(
+            "UPDATE identity SET display_name=%(name)s,row_version=row_version+1,"
+            "updated_at=now() WHERE id=%(id)s AND row_version=%(version)s "
+            "RETURNING email,display_name,row_version",
+            {"name": display_name, "id": identity_id, "version": expected},
+        ).fetchone()
+        if row is None:
+            raise ProblemError(
+                ErrorCode.CONFLICT,
+                detail="The profile changed. Reload it and retry your update.",
+                checks={"problem": "stale_version"},
+            )
+        after = read_profile(connection, identity_id)
+        audit_event(
+            connection,
+            scope,
+            actor=AuditActor(ActorKind.USER, IdentityId(identity_id)),
+            action="identity.display_name.set",
+            target_type="identity",
+            target_id=identity_id,
+            outcome=Outcome.SUCCESS,
+            before=before,
+            after=after,
+            before_fields=("display_name",),
+            after_fields=("display_name",),
+        )
+        return after

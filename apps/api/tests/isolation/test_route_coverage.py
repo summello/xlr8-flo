@@ -18,7 +18,11 @@ from flo.api.invitations import router as invitations_router
 from flo.api.master import router as master_router
 from flo.api.org import router as org_router
 from flo.api.projects import router as projects_router
+from flo.api.purchasing import router as purchasing_router
 from flo.api.requisitions import router as requisitions_router
+from flo.api.sourcing import router as sourcing_router
+from flo.api.vendor_questionnaires import router as vendor_questionnaires_router
+from flo.api.vendors import router as vendors_router
 from flo.api.workflows import router as workflows_router
 
 TESTS = Path(__file__).resolve().parents[1]
@@ -32,7 +36,205 @@ CODES_ROUTES = (
     "requisitions/test_expired_codes.py::"
     "test_codes_routes_conceal_foreign_tenants_and_need_the_permission"
 )
+SOURCING_ROUTES = "sourcing/test_rfq.py::test_rfq_routes_conceal_foreign_tenants"
+CONTENT_ROUTES = "sourcing/test_rfq_content.py::test_rfq_content_routes_conceal_foreign_tenants"
+SCREENS_ROUTES = "sourcing/test_rfq_screens.py::test_screens_routes_conceal_foreign_tenants"
+LIFECYCLE_ROUTES = "sourcing/test_rfq_lifecycle.py::test_lifecycle_routes_conceal_foreign_tenants"
+BID_ROUTES = "sourcing/test_bids.py::test_bid_routes_conceal_foreign_tenants"
+COMPARISON_ROUTES = "sourcing/test_comparison.py::test_comparison_routes_conceal_foreign_tenants"
+PICKER_ROUTE = (
+    "sourcing/test_evaluator_picker.py::test_the_picker_conceals_a_foreign_or_unknown_rfq"
+)
+EVALUATION_ROUTES = "sourcing/test_evaluation.py::test_evaluation_routes_conceal_foreign_tenants"
+AWARD_ROUTES = "sourcing/test_award.py::test_award_routes_conceal_foreign_tenants"
+PO_ROUTES = "purchasing/test_purchase_orders.py::test_purchase_order_routes_conceal_foreign_tenants"
+VENDOR_COPY_ROUTES = (
+    "purchasing/test_vendor_copy.py::test_vendor_copy_routes_conceal_foreign_tenants"
+)
+TRANSMISSION_ROUTES = (
+    "purchasing/test_transmission.py::test_transmission_routes_conceal_foreign_tenants"
+)
+QROUTES = "vendors/test_questionnaire.py::test_questionnaire_routes_conceal_foreign_tenants"
+OROUTES = (
+    "vendors/test_questionnaire.py::"
+    "test_onboarding_routes_conceal_foreign_tenants_and_other_requesters"
+)
+PROUTES = "vendors/test_performance.py::test_score_routes_conceal_foreign_tenants"
+CROUTES = "vendors/test_changes.py::test_vendor_change_routes_conceal_foreign_tenants"
+LISTDOCS = (
+    "vendors/test_list_documents.py::"
+    "test_counts_and_documents_filter_routes_conceal_foreign_tenants"
+)
 COVERED = {
+    ("GET", "/api/v1/purchase-orders"): PO_ROUTES,
+    ("GET", "/api/v1/purchase-orders/awarded-lines"): PO_ROUTES,
+    ("POST", "/api/v1/purchase-orders"): PO_ROUTES,
+    ("GET", "/api/v1/purchase-orders/{id}"): PO_ROUTES,
+    ("PATCH", "/api/v1/purchase-orders/{id}"): PO_ROUTES,
+    ("DELETE", "/api/v1/purchase-orders/{id}"): PO_ROUTES,
+    ("POST", "/api/v1/purchase-orders/{id}/transitions"): PO_ROUTES,
+    ("POST", "/api/v1/purchase-orders/{id}/submit"): PO_ROUTES,
+    ("POST", "/api/v1/purchase-orders/{id}/withdraw"): PO_ROUTES,
+    ("POST", "/api/v1/purchase-orders/{id}/issue"): PO_ROUTES,
+    ("POST", "/api/v1/purchase-orders/{id}/cancel"): PO_ROUTES,
+    ("POST", "/api/v1/purchase-orders/{id}/reduce"): PO_ROUTES,
+    ("POST", "/api/v1/purchase-orders/{id}/changes"): PO_ROUTES,
+    ("GET", "/api/v1/purchase-orders/{id}/changes"): PO_ROUTES,
+    ("GET", "/api/v1/purchase-orders/{id}/changes/{number}"): PO_ROUTES,
+    ("PATCH", "/api/v1/purchase-orders/{id}/changes/{number}"): PO_ROUTES,
+    ("POST", "/api/v1/purchase-orders/{id}/changes/{number}/submit"): PO_ROUTES,
+    ("POST", "/api/v1/purchase-orders/{id}/changes/{number}/withdraw"): PO_ROUTES,
+    ("POST", "/api/v1/purchase-orders/{id}/changes/{number}/apply"): PO_ROUTES,
+    ("GET", "/api/v1/purchase-orders/{id}/transmissions"): TRANSMISSION_ROUTES,
+    ("POST", "/api/v1/purchase-orders/{id}/transmissions/resend"): TRANSMISSION_ROUTES,
+    ("GET", "/api/v1/purchase-orders/{id}/pdf"): VENDOR_COPY_ROUTES,
+    ("GET", "/api/v1/purchase-orders/{id}/vendor-copy"): VENDOR_COPY_ROUTES,
+    ("GET", "/api/v1/vendors/counts"): LISTDOCS,
+    ("GET", "/api/v1/vendors/duplicate-check"): CROUTES,
+    ("POST", "/api/v1/vendors/{id}/submit"): CROUTES,
+    ("POST", "/api/v1/vendors/{id}/revise"): CROUTES,
+    ("POST", "/api/v1/vendors/{id}/changes"): CROUTES,
+    ("GET", "/api/v1/vendors/{id}/changes"): CROUTES,
+    ("POST", "/api/v1/vendors/{id}/changes/{cid}/withdraw"): CROUTES,
+    ("POST", "/api/v1/vendors/{id}/inactivate"): CROUTES,
+    ("GET", "/api/v1/vendors/{id}/scores"): PROUTES,
+    ("POST", "/api/v1/vendors/{id}/scores"): PROUTES,
+    ("POST", "/api/v1/vendors/{id}/scores/{sid}/disputes"): PROUTES,
+    ("POST", "/api/v1/vendors/{id}/scores/{sid}/disputes/{did}/resolve"): PROUTES,
+    ("GET", "/api/v1/vendors/{id}/performance"): PROUTES,
+    ("GET", "/api/v1/admin/vendor-questionnaires/{vid}"): QROUTES,
+    ("PATCH", "/api/v1/admin/vendor-questionnaires/{vid}"): QROUTES,
+    ("POST", "/api/v1/admin/vendor-questionnaires/{vid}/questions"): QROUTES,
+    ("PATCH", "/api/v1/admin/vendor-questionnaires/{vid}/questions/{key}"): QROUTES,
+    ("DELETE", "/api/v1/admin/vendor-questionnaires/{vid}/questions/{key}"): QROUTES,
+    ("POST", "/api/v1/admin/vendor-questionnaires/{vid}/questions/{key}/move"): QROUTES,
+    ("POST", "/api/v1/admin/vendor-questionnaires/{vid}/publish"): QROUTES,
+    ("POST", "/api/v1/admin/vendor-questionnaires/{vid}/copy"): QROUTES,
+    ("GET", "/api/v1/vendors/{id}/onboarding"): OROUTES,
+    ("PUT", "/api/v1/vendors/{id}/onboarding/answers"): OROUTES,
+    ("GET", "/api/v1/sourcing/requisition-lines"): SOURCING_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs"): SOURCING_ROUTES,
+    ("PATCH", "/api/v1/sourcing/rfqs/{id}/lines"): SOURCING_ROUTES,
+    ("GET", "/api/v1/sourcing/rfqs/{id}"): SOURCING_ROUTES,
+    ("PATCH", "/api/v1/sourcing/rfqs/{id}"): CONTENT_ROUTES,
+    ("PUT", "/api/v1/sourcing/rfqs/{id}/requirements"): CONTENT_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/requirements/from-template"): CONTENT_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/requirements/{rid}/waive"): CONTENT_ROUTES,
+    ("PUT", "/api/v1/sourcing/rfqs/{id}/attachments/{aid}/visibility"): CONTENT_ROUTES,
+    ("GET", "/api/v1/sourcing/rfqs/{id}/invitee-candidates"): CONTENT_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/invitees"): CONTENT_ROUTES,
+    ("DELETE", "/api/v1/sourcing/rfqs/{id}/invitees/{vendor_id}"): CONTENT_ROUTES,
+    ("PATCH", "/api/v1/sourcing/rfqs/{id}/invitees/{vendor_id}"): CONTENT_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/publish"): LIFECYCLE_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/cancel"): LIFECYCLE_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/amend"): LIFECYCLE_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/extend-deadline"): LIFECYCLE_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/start-evaluation"): LIFECYCLE_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/invitees/{vendor_id}/resend"): LIFECYCLE_ROUTES,
+    ("GET", "/api/v1/sourcing/rfqs/{id}/versions"): LIFECYCLE_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/bids"): BID_ROUTES,
+    ("GET", "/api/v1/sourcing/rfqs/{id}/bids"): BID_ROUTES,
+    ("GET", "/api/v1/sourcing/rfqs/{id}/bids/{bid_id}"): BID_ROUTES,
+    ("PATCH", "/api/v1/sourcing/rfqs/{id}/bids/{bid_id}"): BID_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/bids/{bid_id}/submit"): BID_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/bids/{bid_id}/replace"): BID_ROUTES,
+    ("GET", "/api/v1/sourcing/rfqs/{id}/comparison"): COMPARISON_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/comparison/refresh-rate"): COMPARISON_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/award"): AWARD_ROUTES,
+    ("GET", "/api/v1/sourcing/rfqs/{id}/award"): AWARD_ROUTES,
+    ("PUT", "/api/v1/sourcing/rfqs/{id}/award/lines"): AWARD_ROUTES,
+    ("PATCH", "/api/v1/sourcing/rfqs/{id}/award"): AWARD_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/award/submit"): AWARD_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/award/withdraw"): AWARD_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/award/cancel"): AWARD_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/award/supersede"): AWARD_ROUTES,
+    ("GET", "/api/v1/sourcing/rfqs/{id}/awards"): AWARD_ROUTES,
+    ("GET", "/api/v1/sourcing/rfqs/{id}/evaluation"): EVALUATION_ROUTES,
+    ("PUT", "/api/v1/sourcing/rfqs/{id}/evaluation/criteria"): EVALUATION_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/evaluation/evaluators"): EVALUATION_ROUTES,
+    ("GET", "/api/v1/sourcing/rfqs/{id}/evaluation/evaluators/eligible"): PICKER_ROUTE,
+    ("DELETE", "/api/v1/sourcing/rfqs/{id}/evaluation/evaluators/{identity_id}"): EVALUATION_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/evaluation/declaration"): EVALUATION_ROUTES,
+    ("PUT", "/api/v1/sourcing/rfqs/{id}/evaluation/scores"): EVALUATION_ROUTES,
+    ("POST", "/api/v1/sourcing/rfqs/{id}/evaluation/scores/submit"): EVALUATION_ROUTES,
+    ("GET", "/api/v1/sourcing/rfqs"): SCREENS_ROUTES,
+    ("GET", "/api/v1/sourcing/rfqs/{id}/history"): SCREENS_ROUTES,
+    (
+        "GET",
+        "/api/v1/vendors/{id}/eligibility",
+    ): "vendors/test_eligibility.py::test_vendor_eligibility_route_conceals_foreign_tenants",
+    (
+        "GET",
+        "/api/v1/vendors/{id}/documents",
+    ): "vendors/test_documents.py::test_vendor_document_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/api/v1/vendors/{id}/documents",
+    ): "vendors/test_documents.py::test_vendor_document_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/api/v1/vendors/{id}/documents/{did}/replace",
+    ): "vendors/test_documents.py::test_vendor_document_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/api/v1/vendors/{id}/documents/{did}/verify",
+    ): "vendors/test_documents.py::test_vendor_document_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/api/v1/vendors/{id}/documents/{did}/reject",
+    ): "vendors/test_documents.py::test_vendor_document_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/internal/jobs/vendor-document-expiry",
+    ): "vendors/test_documents.py::test_internal_expiry_trigger_origin_key_and_nonreplay",
+    (
+        "POST",
+        "/api/v1/vendors/{id}/sensitive/reveal",
+    ): "vendors/test_sensitive.py::test_sensitive_routes_conceal_foreign_tenants",
+    (
+        "PUT",
+        "/api/v1/vendors/{id}/sensitive",
+    ): "vendors/test_sensitive.py::test_sensitive_routes_conceal_foreign_tenants",
+    (
+        "GET",
+        "/api/v1/vendors/{id}/contacts",
+    ): "vendors/test_contacts.py::test_vendor_contact_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/api/v1/vendors/{id}/contacts",
+    ): "vendors/test_contacts.py::test_vendor_contact_routes_conceal_foreign_tenants",
+    (
+        "PATCH",
+        "/api/v1/vendors/{id}/contacts/{contact_id}",
+    ): "vendors/test_contacts.py::test_vendor_contact_routes_conceal_foreign_tenants",
+    (
+        "DELETE",
+        "/api/v1/vendors/{id}/contacts/{contact_id}",
+    ): "vendors/test_contacts.py::test_vendor_contact_routes_conceal_foreign_tenants",
+    (
+        "GET",
+        "/api/v1/vendors",
+    ): "vendors/test_vendors.py::test_vendor_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/api/v1/vendors",
+    ): "vendors/test_vendors.py::test_vendor_routes_conceal_foreign_tenants",
+    (
+        "GET",
+        "/api/v1/vendors/{id}",
+    ): "vendors/test_vendors.py::test_vendor_routes_conceal_foreign_tenants",
+    (
+        "PATCH",
+        "/api/v1/vendors/{id}",
+    ): "vendors/test_vendors.py::test_vendor_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/api/v1/vendors/{id}/units/{unit_id}/disable",
+    ): "vendors/test_vendors.py::test_vendor_routes_conceal_foreign_tenants",
+    (
+        "POST",
+        "/api/v1/vendors/{id}/units/{unit_id}/enable",
+    ): "vendors/test_vendors.py::test_vendor_routes_conceal_foreign_tenants",
     ("POST", "/api/v1/requisitions/{id}/codes"): CODES_ROUTES,
     ("POST", "/api/v1/projects/{id}/codes"): CODES_ROUTES,
     (
@@ -304,6 +506,12 @@ COVERED = {
         "/api/v1/auth/me",
     ): "projects/test_list_ui.py::test_auth_me_unauthenticated_and_session_identity_isolation",
     (
+        "PATCH",
+        "/api/v1/auth/me",
+    ): (
+        "identity/test_display_name.py::test_patch_me_for_another_org_member_only_touches_own_identity"
+    ),
+    (
         "GET",
         "/api/v1/projects/{id}/risks",
     ): "projects/test_risks.py::test_risk_foreign_tenant_routes",
@@ -441,7 +649,23 @@ COVERED = {
         "GET",
         "/api/v1/projects/{id}/tree",
     ): "projects/test_risk_indicators.py::test_foreign_dashboard_reads",
+    ("DELETE", "/api/v1/requisitions/{id}"): (
+        "requisitions/test_soft_delete.py::test_foreign_tenant_delete_routes_are_404"
+    ),
+    ("DELETE", "/api/v1/projects/{id}"): (
+        "requisitions/test_soft_delete.py::test_foreign_tenant_delete_routes_are_404"
+    ),
+    ("DELETE", "/api/v1/budget/change-requests/{id}"): (
+        "budget/test_change_requests.py::test_change_request_foreign_tenant"
+    ),
+    ("DELETE", "/api/v1/workflows/{id}/versions/{version}"): (
+        "requisitions/test_soft_delete.py::test_workflow_draft_delete_keeps_the_version_number"
+    ),
     ("POST", "/api/v1/projects"): "projects/test_projects.py::test_create_foreign_bu",
+    (
+        "GET",
+        "/api/v1/projects/lookups/{kind}",
+    ): "projects/test_project_budget.py::test_lookup_gated_scoped_searchable",
     ("GET", "/api/v1/projects"): "projects/test_projects.py::test_list_tenant_isolation",
     ("GET", "/api/v1/projects/{id}"): "projects/test_projects.py::test_get_foreign_project",
     ("PATCH", "/api/v1/projects/{id}"): "projects/test_projects.py::test_patch_foreign_project",
@@ -558,6 +782,10 @@ def test_every_id_route_has_a_named_foreign_tenant_case() -> None:
                 approvals_router,
                 workflows_router,
                 requisitions_router,
+                vendors_router,
+                vendor_questionnaires_router,
+                sourcing_router,
+                purchasing_router,
                 collaboration_router,
             ),
             COVERED,
@@ -584,6 +812,10 @@ def test_gate_fails_on_an_uncovered_route_and_on_a_dangling_reference() -> None:
             approvals_router,
             workflows_router,
             requisitions_router,
+            vendors_router,
+            vendor_questionnaires_router,
+            sourcing_router,
+            purchasing_router,
             collaboration_router,
         )
         | widget

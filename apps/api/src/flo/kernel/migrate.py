@@ -102,11 +102,7 @@ def _revision_from_module(path: Path, module: ModuleType) -> Revision:
 def discover_migrations(migrations_dir: Path) -> tuple[Revision, ...]:
     """Load and validate migrations, returning them in chain order."""
 
-    paths = sorted(
-        path
-        for path in migrations_dir.glob("*.py")
-        if not path.name.startswith("_")
-    )
+    paths = sorted(path for path in migrations_dir.glob("*.py") if not path.name.startswith("_"))
     if not paths:
         raise MigrationValidationError("no migration revisions found")
 
@@ -126,9 +122,7 @@ def discover_migrations(migrations_dir: Path) -> tuple[Revision, ...]:
             )
 
     referenced = {
-        item.down_revision
-        for item in by_revision.values()
-        if item.down_revision is not None
+        item.down_revision for item in by_revision.values() if item.down_revision is not None
     }
     heads = sorted(set(by_revision) - referenced)
     if len(heads) > 1:

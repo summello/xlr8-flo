@@ -100,9 +100,7 @@ def test_saturated_unknown_and_known_paths_remain_timing_equivalent() -> None:
             entered = threading.Event()
             release = threading.Event()
 
-            def verify(
-                _hasher: PasswordHasher, _password_hash: str, password: str
-            ) -> bool:
+            def verify(_hasher: PasswordHasher, _password_hash: str, password: str) -> bool:
                 if password == blocker_password:
                     entered.set()
                     release.wait(timeout=5)
@@ -136,9 +134,7 @@ def test_saturated_unknown_and_known_paths_remain_timing_equivalent() -> None:
 def test_saturated_rehash_is_skipped_without_rejecting_valid_credentials() -> None:
     async def scenario() -> tuple[bool, str, str]:
         connection = FakeIdentityConnection()
-        old_provider = await build_local_identity_provider(
-            connection, _settings(max_concurrency=1)
-        )
+        old_provider = await build_local_identity_provider(connection, _settings(max_concurrency=1))
         password = "the valid rehash passphrase"
         identity_id = await old_provider.create_identity("rehash@example.test", password)
         old_hash = connection.identities["rehash@example.test"][1]
@@ -157,9 +153,7 @@ def test_saturated_rehash_is_skipped_without_rejecting_valid_credentials() -> No
         release_blocker = threading.Event()
         original_verify = PasswordHasher.verify
 
-        def verify(
-            hasher: PasswordHasher, password_hash: str, candidate: str
-        ) -> bool:
+        def verify(hasher: PasswordHasher, password_hash: str, candidate: str) -> bool:
             if candidate == password:
                 target_entered.set()
                 release_target.wait(timeout=5)
@@ -210,9 +204,7 @@ def test_33rd_login_times_out_as_503_with_retry_after() -> None:
                     all_permits_taken.set()
             return result
 
-        def verify(
-            _hasher: PasswordHasher, _password_hash: str, _password: str
-        ) -> bool:
+        def verify(_hasher: PasswordHasher, _password_hash: str, _password: str) -> bool:
             release.wait(timeout=5)
             raise VerifyMismatchError
 
@@ -230,9 +222,7 @@ def test_33rd_login_times_out_as_503_with_retry_after() -> None:
         ):
             occupying = [
                 asyncio.create_task(
-                    provider.authenticate(
-                        f"request-{number}@example.test", "wrong safe passphrase"
-                    )
+                    provider.authenticate(f"request-{number}@example.test", "wrong safe passphrase")
                 )
                 for number in range(32)
             ]

@@ -1,23 +1,11 @@
 import type { components } from "../../api/generated/schema";
 
-export type DocumentType = components["schemas"]["DelegationCreate"]["document_types"] extends (infer T)[] | null | undefined ? T : never;
-export const DOCUMENT_TYPES: readonly [DocumentType, string][] = [
-  ["requisition", "Requisitions"],
-  ["project", "Projects"],
-  ["budget_change", "Budget changes"],
-  ["vendor", "Vendors"],
-  ["rfq", "RFQs"],
-  ["award", "Awards"],
-  ["po", "Purchase orders"],
-];
-
 export type AvailabilityForm = {
   starts: string;
   ends: string;
   delegate: string;
   reason: string;
-  covers: "all" | "some";
-  types: DocumentType[];
+  covers: "all" | "po";
 };
 
 export type Problem = {
@@ -45,7 +33,6 @@ export function validateAvailability(form: AvailabilityForm): Problem[] {
   if (form.starts !== "" && form.ends !== "" && form.ends < form.starts) problems.push({ category: "Dates", field: "ends", message: "The last day cannot be before the first day." });
   if (form.delegate === "") problems.push({ category: "Required field", field: "delegate", message: "Choose who receives your approvals." });
   if (form.reason.trim() === "") problems.push({ category: "Required field", field: "reason", message: "Say why you are away." });
-  if (form.covers === "some" && form.types.length === 0) problems.push({ category: "Required field", field: "delegate", message: "Choose at least one type to cover, or cover all approvals." });
   return problems;
 }
 
@@ -57,6 +44,6 @@ export function buildDelegation(form: AvailabilityForm): components["schemas"]["
     starts_at: period.startsAt,
     ends_at: period.endsAt,
     reason: form.reason.trim(),
-    ...(form.covers === "some" ? { document_types: form.types } : {}),
+    ...(form.covers === "po" ? { document_types: ["po" as const, "po_change" as const] } : {}),
   };
 }

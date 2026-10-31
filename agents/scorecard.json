@@ -3409,6 +3409,3799 @@
       },
       "recap": "With no published workflow, project submission and budget allocations, adjustments and transfers now refuse with 409 workflow_not_set_up. Allocations (API and import) became pending budget_change requests (202) that post on approval.",
       "title": "Block governed actions until their approval workflow is published"
+    },
+    {
+      "story": "E22-S05",
+      "kind": "chore",
+      "size": "S",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "9b3d64dc-3493-4fc1-b1c5-c13d9f2b15f1",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S05",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a142e1-902d-7492-bade-e5ebfc7d177e",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Replaced MinIO/mc with a single digest-pinned SeaweedFS service; bucket is created over the S3 API by `python -m flo.kernel.storage ensure-bucket` from `flo up`, and the object store is required again. Provider renamed to local / LocalS3Storage.",
+      "title": "Replace MinIO with SeaweedFS in the local stack; bucket via the S3 API"
+    },
+    {
+      "story": "E11-S01",
+      "kind": "crud",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "85761cf2-bad9-477c-9fd8-5fe97dd9f4fd",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S01",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a142e2-14fc-73a0-bdcf-6c8fe2735031",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds the vendors module: vendor, vendor_unit and vendor_local_disable tables (migration 0056), list/get/create/patch plus local disable and enable endpoints, and one available_in() availability rule that walks the unit ancestors. Adds the V- numbering type and the vendor.allow_local_disable setting.",
+      "title": "Vendor profile, searchable list, global and BU/OU scope, local disable"
+    },
+    {
+      "story": "E22-S03",
+      "kind": "chore",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "61edc6b0-4315-46ab-81f5-ef068c49ee58",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S03",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a142ea-f27b-7221-a2d5-5641ca48b161",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Added kernel.audit.audit_event and routed the module _audit wrappers, identity's call sites and the two direct project audit calls through it. A golden test runs real module commands and compares every audit row's shape (action, actor, outcome, reason, snapshot fields) with a baseline captured before the change.",
+      "title": "One audit helper instead of twelve, behaviour-preserving"
+    },
+    {
+      "story": "E11-S09",
+      "kind": "ui",
+      "size": "S",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "15177579-1013-4c05-b6c6-f219dadb4457",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S09",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a142f1-9050-7a00-9156-e1f4eca96070",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Status map and labels now match MASTER 2.3: PO delivered/accepted spellings, vendor draft/pending_approval/rejected, rfq.closed info, new award doc type. Vocabulary test updated; three planted regressions failed it.",
+      "title": "Status vocabulary aligned to MASTER 2.3: vendor, RFQ, award and purchase-order maps and labels"
+    },
+    {
+      "story": "E11-S02",
+      "kind": "crud",
+      "size": "S",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "51b512d4-5a2f-48cc-9d22-1634f4a0596d",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S02",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a142f3-b0a2-7d50-b27a-439305724114",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds vendor_contact (migration 0057) with billing/service_delivery uniqueness enforced by a partial unique index, CRUD routes, contacts_complete and document_recipients, and a vendor_contact_type master kind. Phone is kept out of audit rows.",
+      "title": "Typed contacts: billing, service/delivery, additional types"
+    },
+    {
+      "story": "E12-S01",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "money"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "09aefd4c-7097-496d-b49b-23a24bc6f8bb",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S01",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a14324-e52c-7482-a406-d46ab12bd6d4",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "78bb5a81-0cbb-4911-9231-4be810388692",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Adds the sourcing module: RFQ drafts built from approved requisition lines, with requisitions.service.source_lines as the only writer of sourced_qty (locks requisitions then lines, runs assert_current_upstream, refuses over-open quantity all-or-nothing) and four /api/v1/sourcing routes plus the rfq link provider. Drafts hold quantity from creation; removing or lowering a line returns it.",
+      "title": "RFQ from approved requisition lines, open-quantity guard"
+    },
+    {
+      "story": "E11-S03",
+      "kind": "crud",
+      "size": "M",
+      "tags": [
+        "security"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "788b761f-f978-43c8-81c3-db8248cdd647",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S03",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a143fc-b057-7782-be13-6f11620caa33",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "78bb5a81-0cbb-4911-9231-4be810388692",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Vendor documents are now stored as E09-S10 attachments with issue/expiry, verification, reviewer and separation of duty, and document_state gives the six-state rule E11-S11 will call. A daily vendor-document-expiry job queues one outbox digest per vendor manager per threshold crossing.",
+      "title": "Vendor documents with issue/expiry, verification status, expiry notification"
+    },
+    {
+      "story": "E11-S05",
+      "kind": "engine",
+      "size": "L",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "500920ce-5ba9-4dc4-b565-71c5909df602",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S05",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a14474-f664-76d2-b60c-0a2eca597087",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds versioned weighted vendor questionnaires (admin draft/edit/reorder/publish/copy, immutable once published by service and DB trigger) and the requester's onboarding request with typed answers pinned to the version at creation. VendorService.score and answers_complete are exposed for E11-S06; weights and points never reach the requester.",
+      "title": "Onboarding request, configurable questionnaire, weights and scoring"
+    },
+    {
+      "story": "E11-S07",
+      "kind": "crud",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "fcb2ac47-4e25-4d40-9c50-79e4db7062b8",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S07",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1455d-2a97-7101-840c-2e6b04f15e86",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Added append-only vendor_score and vendor_score_dispute tables (migration 0061), a vendors PerformanceMixin and five routes for scoring, listing, disputing, resolving and per-category averages over current rows. An upheld dispute writes a superseding adjustment in one transaction; the original stays.",
+      "title": "Performance scoring across quality, price, delivery, service, with dispute history"
+    },
+    {
+      "story": "E11-S17",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "aa1bb286-2f07-46b6-bf1e-01dcb491f0d1",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S17",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1457c-66dd-7f51-bd89-1763a3fbd635",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds /admin/vendor-questionnaires: versions list, draft editor with typed questions, points, Move Up/Down buttons that keep focus, a server-computed weights Signal, publish dialog with 409 weights_total summary, read-only published view with Copy to New Draft, and a closed request-form preview with no weights.",
+      "title": "Questionnaire administration screen"
+    },
+    {
+      "story": "E11-S04",
+      "kind": "security",
+      "size": "M",
+      "tags": [
+        "security",
+        "auth"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "b2bf6997-3bdf-4798-a7f2-2f8d1450ddc3",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S04",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1444d-8388-7223-a904-2cbb667cfa13",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Vendor tax and banking values live in vendor_sensitive behind vendors/repo.py: list and detail show last-four masks computed in SQL, POST /vendors/{id}/sensitive/reveal is audited (field names only) and no-store, PUT /vendors/{id}/sensitive needs vendor.edit plus the new vendor.sensitive.reveal grant (vendor-manager, finance, org admin; migration 0060).",
+      "title": "Field-level access control and masking for tax and banking data"
+    },
+    {
+      "story": "E22-S01",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "money",
+        "auth",
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "cc369c6f-9d48-4027-aaa1-94d78fb0869b",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S01",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a14577-bea0-7ef1-873e-e7f79b80758d",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "A project is now drafted with a requested budget, an optional main project and 1-10 sponsors (form, API and the Excel projects template), and cannot be submitted without a budget and sponsor. Final approval allocates the budget inside the decision transaction: directly for a standalone project, or as a locked two-leg transfer from the main project for a child, so a short main project fails the approval and writes nothing.",
+      "title": "Create Project with budget: form and Excel, sponsors, through the project approval workflow"
+    },
+    {
+      "story": "E22-S08",
+      "kind": "ui",
+      "size": "S",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "3bd90f61-6379-4eee-9fb7-305c0a69a657",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S08",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a15fa1-4ff9-7730-ac65-b193abb282b1",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Requisition expired now maps to the warning tone (Warning icon + Expired text); map test and a new icon assertion cover it.",
+      "title": "Expired requisitions use the warning tone"
+    },
+    {
+      "story": "E11-S10",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 1,
+          "blockers": 1,
+          "blockers_dismissed": 1
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "225c2611-95eb-4a11-9f79-171355f17ec6",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S10",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a15f00-dd30-7032-98f5-952f272a08ee",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Decision panel footer is a two-column grid below the sheet's content width of 560px (Approve spans row 3), DOM and tab order unchanged. The close button was already unobscured in the app; e2e and axe tests at 375/768 lock it in.",
+      "title": "Shared decision panel at phone width: footer reflow, close button never covered"
+    },
+    {
+      "story": "E22-S10",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 7,
+          "findings": 9,
+          "blockers": 7,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "0034377a-920b-473c-a89b-a2e859704270",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S10",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a15fea-552d-71b2-88fc-53be3dc37c12",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Approval Availability screen already existed; added the Account menu link, fixed focus return to the row's Revoke button after the dialog closes, and added eligibility, keyboard-only and forced-organization e2e tests.",
+      "title": "Approval Availability: set, list and revoke an out-of-office delegation"
+    },
+    {
+      "story": "E22-S11",
+      "kind": "chore",
+      "size": "M",
+      "tags": [],
+      "author": "codex",
+      "reviewers": [],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": null,
+          "source": "unavailable: no detector for sonnet"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a16030-d66b-7ce0-b6bc-24f5a2904acd",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "fb1c05b9-e423-4f89-824c-46c9b8381ef1",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Reused migrated database templates and sharded backend/E2E CI while preserving required check names and the 80% coverage floor. Local plants caught all three violations, traceability and timing evidence are recorded, and flo check --light is green.",
+      "title": "Faster checks: template test databases, sharded backend and E2E CI"
+    },
+    {
+      "story": "E22-S04",
+      "kind": "chore",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 6,
+          "findings": 5,
+          "blockers": 5,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "49450286-333a-4877-a5a0-6b6d877e607c",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S04",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a16163-b40b-7252-a77d-510de76f23e7",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Merged the two Money components into ui/Money with a zero prop, shared the requisition lookup helper and e2e keyboardFocus, renamed the collaboration readers *_unchecked, and read approval instances via approvals.service. Also: RLS on the 0053 tracking table (0060), If-Match/ETag on vendor and contact PATCH (0061), audit plus requester notice on zero-step auto-approval, and requisition list filtering by granted scopes.",
+      "title": "M2 milestone review follow-ups: Money zero prop, shared lookup helper, internal collaboration readers, approvals read via service, e2e focus helper"
+    },
+    {
+      "story": "E22-S12",
+      "kind": "chore",
+      "size": "M",
+      "tags": [],
+      "author": "codex",
+      "reviewers": [
+        "qwen"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "qwen": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 1,
+          "blockers": 1,
+          "blockers_dismissed": 1
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": null,
+          "source": "unavailable: no detector for sonnet"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a161dc-6414-7763-a545-5dcdac1b14b8",
+          "source": "codex rollout matched on cwd"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "unavailable: OpenRouter has no session concept - pass the generation id to `flo session qwen <id>`"
+        }
+      },
+      "recap": "CI serves a production build, splits E2E by test with two workers, separates backend static checks, and requires successful detection in both combined jobs. The full production suite passed 441 tests; final production-mode light check passed all static checks, 12 shard tests and 178 changed browser tests.",
+      "title": "Balanced E2E shards on a production build; backend static job; combined checks need detect"
+    },
+    {
+      "story": "E22-S06",
+      "kind": "security",
+      "size": "S",
+      "tags": [
+        "auth",
+        "security",
+        "migration"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 3,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "4f123d89-24b4-48fe-af76-a7a3410a0071",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S06",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1626d-38d1-7372-809b-69d3b0ef7034",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Gave requestor/approver master.read and sourcing-specialist/purchasing-user/vendor-manager project.read+master.read in BASELINE_ROLE_PERMISSIONS, plus migration 0066 backfilling system roles only (tracked, reversible, one audit row per org).",
+      "title": "Baseline roles read the projects and master data they work against"
+    },
+    {
+      "story": "E11-S06",
+      "kind": "engine",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 4,
+          "findings": 6,
+          "blockers": 6,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "58c375e4-c43d-4c85-9053-e3ba29e26991",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S06",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a162d0-0736-78b0-9800-2db3b30cf6d5",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Vendor create, availability, suspend and reactivate requests now go through the approval workflow as vendor_change documents, with a duplicate tax-id and unique-identifier check (override by vendor.approve) serialised by advisory locks. Migration 0064, routes, tests and generated client included.",
+      "title": "Duplicate identifier detection, approval on create/activate/suspend/reactivate"
+    },
+    {
+      "story": "E11-S11",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 4,
+          "blockers": 4,
+          "blockers_dismissed": 2
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "1cc256f5-340d-47ee-a4b4-ef743e5d0b62",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S11",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a16300-efc8-7d30-91e6-a52af8f1b56c",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Added vendors.service.eligibility (batched, 5 queries, status never changed) with GET /vendors/{id}/eligibility and an eligibility field on list rows that name available_in. Added the shared Signal primitive and the Eligibility component that renders the server's answer.",
+      "title": "Vendor eligibility: one server rule, one web component"
+    },
+    {
+      "story": "E11-S15",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "73407004-b79f-41c3-984d-3666186effb5",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S15",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1633d-cdc0-78e2-9fbd-be2d0dfa4d69",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "InstanceRead now carries the adapter snapshot's evidence (built in the approvals engine, existing read guard unchanged); the vendors module masks sensitive payload fields and adds duplicate matches and availability units. The decision panel renders a VendorEvidence block for vendor tasks from instance.evidence.",
+      "title": "Onboarding decision panel: vendor evidence block"
+    },
+    {
+      "story": "E11-S12",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "10963418-4272-48ef-96d5-818c8b7ae21a",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S12",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a163a6-075a-7e31-9879-6801dc948c8a",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds the /vendors list (tabs with server counts, search, documents and availability filters, server paging) and the /vendors/:id profile with Documents table and a focus-trapped document sheet to verify or reject. API gets a documents filter, a per-row document summary and GET /vendors/counts.",
+      "title": "Vendor list and profile screens, documents table and document sheet"
+    },
+    {
+      "story": "E12-S02",
+      "kind": "crud",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 6,
+          "blockers": 4,
+          "blockers_dismissed": 2
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "3f883d02-e853-4560-975a-4495dab6b4af",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S02",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a163a6-0dc9-7530-9c16-628564892af4",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds RFQ content, compliance requirements (template seed, waive), per-attachment vendor visibility and invitations with the five-vendor cap under the RFQ row lock, one eligibility rule, and a frozen vendor snapshot. Override needs a reason and rfq.approve on the unit, and is audited.",
+      "title": "RFQ content, invitations, deadline, terms, attachments, vendor eligibility check"
+    },
+    {
+      "story": "E11-S18",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "6842c4b8-f265-48fe-b724-a1a6c8df27f3",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S18",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a163d8-253c-75d3-8f0c-97867ad210c8",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Vendor profile gains a Performance card (server overall, per-category averages, counts) and a wide Scorecard side sheet with Add Score, Dispute and Resolve forms, a struck original conveyed in text plus its linked adjustment. Web only; the card re-reads the server after every write.",
+      "title": "Vendor Performance card and scorecard sheet"
+    },
+    {
+      "story": "E23-S09",
+      "kind": "chore",
+      "size": "S",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [
+        {
+          "from": "opencode-nemotron",
+          "to": "sonnet",
+          "reason": "operator, 23 Oct 2026: E23 complex stories to Sonnet worker B (CI deploy path)"
+        }
+      ],
+      "sessions": {
+        "opencode-nemotron": {
+          "agent": "opencode-nemotron",
+          "id": null,
+          "source": "unavailable: no opencode session with directory=/Users/sonammathuria/Workbench/xlr8flo-m3run-E23-S09 and model~nvidia/nemotron-3-ultra-550b-a55b:free"
+        },
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "440c5110-25f3-4e74-9f5f-862e9ef42508",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E23-S09",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1656b-4eab-7be1-8911-96ff91d61957",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "CI now builds the SPA once in a new frontend-build job (main push / main|milestone dispatch only) and deploy downloads that artifact, verifies a sha256 manifest and runs the unchanged bundle guards on it. No npm ci or vite build remains in deploy.",
+      "title": "Build the SPA bundle once in CI and deploy the same artifact",
+      "durations": {
+        "wall_s": 5360,
+        "author_s": 3648,
+        "review_s": {
+          "codex": 28
+        },
+        "gate_s": 0
+      }
+    },
+    {
+      "story": "E12-S03",
+      "kind": "engine",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 3,
+          "blockers": 3,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "71c01ad7-24d0-4b3f-a1f2-0a78b6c0494e",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S03",
+          "role": "xlr8flo-worker"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1658a-7926-7852-81ff-e2a7fccf1766",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "RFQs can now be published (no approval), amended or deadline-extended as immutable numbered versions with a was/now diff, and each version is queued through the outbox to every invitee contact, with resend for bounced contacts. A close job (queued each job tick per org with a due RFQ) closes RFQs past deadline, and publishing marks fully sourced requisitions sourced.",
+      "title": "RFQ lifecycle and post-publication versioning communicated to invitees",
+      "durations": {
+        "review_s": {
+          "codex": 17
+        },
+        "gate_s": 927
+      }
+    },
+    {
+      "story": "E23-S14",
+      "kind": "chore",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 1,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "f4f5014c-b44d-4520-9cff-8225d8b09263",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E23-S14",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a16687-0e04-75d3-be1a-1da78226ba6b",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Fleet review runs are now recorded per reviewer and only one reviewer runs per story at a time; review.sh holds a pid-checked per-story lock (exit 75) and restores moved-aside verdicts after a killed run. Housekeeping ruff findings in fleet.py are fixed.",
+      "title": "One run record per reviewer, one reviewer at a time per story",
+      "durations": {
+        "wall_s": 2964,
+        "author_s": 2795,
+        "review_s": {
+          "codex": 11
+        },
+        "gate_s": 0
+      }
+    },
+    {
+      "story": "E23-S15",
+      "kind": "chore",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 1,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "5dddf42f-71c1-4798-b1aa-3766c8208d58",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E23-S15",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a16695-cfb3-7d31-a466-c43fe11c8312",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Added flock-based `flo with-lock` (exit 75 on timeout, freed on SIGKILL); finish.sh, submit.sh (per-story lock plus shared finish lock) and author.sh (launch lock plus live-pid refusal) use it, and flo reassign shares the launch lock. Executable tests replace the text-only author.sh guard.",
+      "title": "Process-owned locks for finish, submit and launch; one live author and one submit per story",
+      "durations": {
+        "wall_s": 3874,
+        "author_s": 3187,
+        "review_s": {
+          "codex": 88
+        },
+        "gate_s": 0
+      }
+    },
+    {
+      "story": "E23-S18",
+      "kind": "chore",
+      "size": "S",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 1,
+          "blockers": 1,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "66d76ce2-ccaf-429f-aa2d-3d8d24c0ba45",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E23-S18",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1669f-9a8d-7423-8b4e-bdc35b49a5ed",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "flo check --light now retries a story e2e run once (--last-failed --workers=1) when every failure is a Playwright timeout, prints 'flaky under load: <specs>' and records the flake in task.json evidence. Assertion, axe, unparseable or mixed failures stay red with no retry.",
+      "title": "Light-check e2e retries failed specs once and reports load flakes apart from failures",
+      "durations": {
+        "wall_s": 9157,
+        "author_s": 3555,
+        "review_s": {
+          "codex": 24
+        },
+        "gate_s": 0
+      }
+    },
+    {
+      "story": "E23-S17",
+      "kind": "chore",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {},
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "codex",
+          "to": "opus",
+          "role": "reviewer",
+          "reason": "operator 23 Oct 2026: Codex 5-hour window exhausted; fresh Opus session reviews E23-S16/S17 instead"
+        }
+      ],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "54a6762d-98c7-480f-9801-204a05bf7b96",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E23-S17",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "2dcc39d7-6abb-4e28-8f4a-634af9e0d8cd",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "The supervisor now writes each run record atomically before launching, checks pid plus process start time for liveness, retries network failures at 1, 5 and 15 minutes then asks the operator, and runs `flo reconcile` on failed submit/finish records so an effect that already happened is recorded, not repeated.",
+      "title": "Recoverable execution records: write before launch, process identity, transient-error retries",
+      "durations": {
+        "wall_s": 23009,
+        "author_s": 22662,
+        "review_s": {
+          "opus": 105
+        },
+        "gate_s": 0
+      }
+    },
+    {
+      "story": "E23-S16",
+      "kind": "chore",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [],
+      "rounds": 5,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {},
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "codex",
+          "to": "opus",
+          "role": "reviewer",
+          "reason": "operator 23 Oct 2026: Codex 5-hour window exhausted; fresh Opus session reviews E23-S16/S17 instead"
+        }
+      ],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "1df13330-20d3-44f6-8ed7-f060215eda11",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E23-S16",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "2dcc39d7-6abb-4e28-8f4a-634af9e0d8cd",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "flo facts now carries a reviewer's verdict across milestone merges and generated-client-only commits (with sidecar and task.json evidence), retries a void verdict once per reviewer+sha, and exposes failing job names so the supervisor raises one 'milestone red' need instead of fixing each story. Docs in fleet-tooling.md.",
+      "title": "Re-review economy: CI-only commits keep verdicts, void verdicts retry once, milestone red is fixed once",
+      "durations": {
+        "wall_s": 24808,
+        "author_s": 384,
+        "review_s": {
+          "opus": 128
+        },
+        "gate_s": 0
+      }
+    },
+    {
+      "story": "E11-S13",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui",
+        "security"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 3,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "3cd4e116-d028-481d-bf21-132278ecd013",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S13",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a167f1-c6a1-7b03-9f7b-04bbeab547e0",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Vendor detail now carries sensitive_access {can_reveal, ask} from the reveal permission check, and the profile has a Tax and Banking card: masked by default, reveal behind a required reason, values dropped from state after 60 s or when focus or pointer leaves, Restricted text for non-revealers.",
+      "title": "Tax and Banking card: masked by default, audited reveal",
+      "durations": {
+        "review_s": {
+          "codex": 14,
+          "opus": 2270
+        },
+        "gate_s": 836
+      }
+    },
+    {
+      "story": "E12-S11",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 3,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 3
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 3,
+          "findings": 3,
+          "blockers": 3,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "2fab3564-1608-47b1-bc04-e3e5a8346b57",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S11",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a16879-48f1-7cf3-8027-9f2d0ec26fa9",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds GET /sourcing/rfqs (scoped by rfq.view, tabs, counts, cursor), GET /rfqs/{id}/history, can_edit/can_approve on RfqRead and the closed=info tone fix, plus the RFQ list and detail screens with the Extend Deadline and Change Contact dialogs.",
+      "title": "RFQ list and RFQ detail screens",
+      "durations": {
+        "wall_s": 7375,
+        "author_s": 807,
+        "review_s": {
+          "codex": 21
+        },
+        "gate_s": 0
+      }
+    },
+    {
+      "story": "E11-S16",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 4,
+      "void_rounds": 1,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 5
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 5,
+          "findings": 2,
+          "blockers": 2,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "8c3bf80b-5c5d-434e-8b1b-a7709bfec30f",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S16",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a16916-0f89-7800-8125-e00e6d6911e9",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Five vendor dialogs on the profile; VendorDetail.actions and local_disable_units (incl. the unit setting) are computed server-side, so controls render only for those allowed. Change history marks the caller's own requests ('requested by you').",
+      "title": "Vendor status, availability and local-disable dialogs",
+      "durations": {
+        "review_s": {
+          "codex": 23,
+          "opus": 430
+        },
+        "gate_s": 3
+      }
+    },
+    {
+      "story": "E11-S14",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [],
+      "rounds": 4,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {},
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "codex",
+          "to": "opus",
+          "role": "reviewer",
+          "reason": "operator 24 Oct 2026: Codex usage exhausted; Opus (A/B) reviews in its place"
+        }
+      ],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "a9045bac-8528-4bdd-833c-317ebb91f5e0",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S14",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Server: can_write_draft guards every write (including vendor attachment uploads); can_read_request lets the requester read their own vendor, contacts and documents in any status (masked); duplicate-check returns can_override; a vendor.request holder lists active units. Web: /vendors/new and /vendors/:id/edit request form using them, with API tests, TEN-010 cases, Playwright, axe and keyboard specs, and every named plant seen to fail.",
+      "title": "Request a vendor: form, live duplicate check, drafts, submit",
+      "durations": {
+        "review_s": {
+          "opus": 643
+        },
+        "gate_s": 2
+      }
+    },
+    {
+      "story": "E12-S04",
+      "kind": "crud",
+      "size": "M",
+      "tags": [
+        "money"
+      ],
+      "author": "sonnet",
+      "reviewers": [],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {},
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "codex",
+          "to": "opus",
+          "role": "reviewer",
+          "reason": "operator 24 Oct 2026: Codex usage exhausted; Opus (A/B) reviews in its place"
+        }
+      ],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "1adbfc36-c901-4e20-bd52-7109ce2beb68",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S04",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Adds buyer-keyed bids (bid, bid_line, bid_requirement; migration 0071) with create, patch, submit, replace and role-scoped reads under /sourcing/rfqs/{id}/bids. Figures stay in the vendor's currency, quantities come from the answered version's snapshot, and submitted rows are immutable by trigger.",
+      "title": "Bid capture: line prices, currency, tax, freight, lead time, validity, exceptions",
+      "durations": {
+        "wall_s": 22413,
+        "author_s": 2326,
+        "review_s": {
+          "opus": 552
+        },
+        "gate_s": 299
+      }
+    },
+    {
+      "story": "E22-S07",
+      "kind": "migration",
+      "size": "M",
+      "tags": [
+        "migration"
+      ],
+      "author": "sonnet",
+      "reviewers": [],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {},
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "codex",
+          "to": "opus",
+          "role": "reviewer",
+          "reason": "operator 24 Oct 2026: Codex usage exhausted; Opus (A/B) reviews in its place"
+        }
+      ],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "c9e11e09-f163-40a7-9b54-e38351c9304f",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S07",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Identity gains display_name (migration 0066, backfilled from the latest used invitation); acceptance copies it only when null, PATCH /auth/me edits it with If-Match and an audit row, and every person-email schema now returns a sibling name read in the same query, with name-prefix search.",
+      "title": "People have a display name, stored, copied at acceptance, returned beside every email",
+      "durations": {
+        "review_s": {
+          "opus": 153
+        },
+        "gate_s": 2
+      }
+    },
+    {
+      "story": "E12-S12",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "b9ecde7f-9be6-48ce-88e7-034271f7a0f5",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S12",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a16e30-d195-7833-a9a7-1d21aea8ead5",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Added /sourcing/rfqs/new: a business-unit-scoped line picker with locale quantities, an at-field open-quantity guard, 409 mapping, and a stable Idempotency-Key with one in-flight create. New RFQ and Start RFQ links added; no API change.",
+      "title": "New RFQ from approved lines: line picker with the open-quantity guard",
+      "durations": {
+        "wall_s": 5425,
+        "author_s": 4673,
+        "review_s": {
+          "codex": 20
+        },
+        "gate_s": 0
+      }
+    },
+    {
+      "story": "E12-S05",
+      "kind": "security",
+      "size": "M",
+      "tags": [
+        "security",
+        "auth"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 3
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 3,
+          "findings": 2,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "65ec4e41-2f29-4f33-9113-360edc457eb1",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S05",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a16e72-bd03-7520-86ec-335e8876c3b8",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Bids now leave the server only through BidService._present: sealed (SealedBidRead, no figures) until rfq.deadline_at, drafts visible to their keyer alone, and a bid's evidence/notes sealed by a new DocumentAccess.read_guard. Submit enforces live RFQ states, blocks late bids (vendor sent_at) unless rfq.approve gives a reason, stored in new late_* columns (migration 0073) and audited as bid.late_override; replace copies structure only.",
+      "title": "Bid confidentiality and late-bid block with audited override",
+      "durations": {
+        "wall_s": 11032,
+        "author_s": 4589,
+        "review_s": {
+          "codex": 30,
+          "opus": 500
+        },
+        "gate_s": 2
+      }
+    },
+    {
+      "story": "E22-S09",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "fd9605ce-e344-4413-ab8d-28dc6a0b96fc",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S09",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a16ecc-63f3-7850-83bc-f208ddf91742",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Added a Person component and personLabel helper, and moved every site in the packet's inventory from a bare email to name-with-email. A vitest adoption guard fails when a new email reference skips them; fixtures and e2e now cover named and unnamed people.",
+      "title": "Show people by name, with the email as secondary text",
+      "durations": {
+        "wall_s": 17557,
+        "author_s": 13715,
+        "review_s": {
+          "codex": 16
+        },
+        "gate_s": 0
+      }
+    },
+    {
+      "story": "E12-S06",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "money"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "qwen"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "qwen": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "qwen": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "6ae39a98-6dfa-45f6-a577-cbc6fdf1515f",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S06",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "launch-model",
+          "model": "qwen/qwen3.8-27b"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Adds the bid comparison engine (landed cost per converted component, freight pro rata in the bid currency, both award bases, scope figure), GET comparison and POST refresh-rate, and the rfq_comparison table that freezes rates at the deadline date. Every figure is checked against hand-computed Decimal literals.",
+      "title": "Comparison engine: normalized total and unit cost, tax, freight, lead time, vendor score",
+      "durations": {
+        "wall_s": 5366,
+        "author_s": 3586,
+        "review_s": {
+          "opus": 263,
+          "qwen": 575
+        },
+        "gate_s": 449
+      }
+    },
+    {
+      "story": "E22-S02",
+      "kind": "crud",
+      "size": "M",
+      "tags": [
+        "ui",
+        "migration"
+      ],
+      "author": "sonnet",
+      "reviewers": [],
+      "rounds": 4,
+      "void_rounds": 2,
+      "escalations": 1,
+      "rounds_basis": "round_files",
+      "review_runs": {},
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "codex",
+          "to": "opus",
+          "role": "reviewer",
+          "reason": "operator 24 Oct 2026: Codex usage exhausted; Opus (A/B) reviews in its place"
+        }
+      ],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "76f57306-f3ec-4056-9f6b-1647f9a3b321",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S02",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Drafts of requisitions/project requests, projects and workflow versions can be soft-deleted through keyed, replayable DELETEs (hidden from reads, audited, numbers kept, a returned draft's reservation released once; record.read include_deleted reads). Budget change requests are never deletable (409 not_draft) until a draft status exists, and the requisition Delete draft button follows the server's edit permission.",
+      "title": "Soft delete for every draft document",
+      "durations": {
+        "review_s": {
+          "opus": 339
+        },
+        "gate_s": 2
+      }
+    },
+    {
+      "story": "E12-S14",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui",
+        "auth"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 3,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 3
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 3,
+          "findings": 5,
+          "blockers": 4,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "451086ba-d96b-4cfc-bac3-90448c31ba1a",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S14",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "launch-model",
+          "model": "gpt-5.6-sol"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Bid sheet side sheet on the RFQ Invitees card: vendor-currency lines with required per-line tax, server totals, sent time entered in the RFQ's zone, late callout with a lead-only accept path (backend now lets a lead submit a late non-keyer draft), replace form, Bids card and list column from bids_received. instantIn now round-trips so a skipped clock-change time is refused.",
+      "title": "Record a bid: bid sheet, two times, vendor currency, late-bid override",
+      "durations": {
+        "wall_s": 16901,
+        "author_s": 3670,
+        "review_s": {
+          "codex": 15,
+          "opus": 389
+        },
+        "gate_s": 2
+      }
+    },
+    {
+      "story": "E12-S13",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui",
+        "auth"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "21ce951a-1755-4a05-9a03-a2533274c30c",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S13",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1745d-0497-7883-9acc-765f4b9fe22b",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Adds the SRC-002 four-text-field check to publish and amend, the unit-scoped invitee-candidates read and per-invitee contacts, and the /edit and /amend editor screens with the eligibility picker, publish dialog and What Changed. Edit and Amend header actions now show on the RFQ detail.",
+      "title": "RFQ editor, invitations with the eligibility picker, publish and amend",
+      "durations": {
+        "wall_s": 4130,
+        "author_s": 2846,
+        "review_s": {
+          "codex": 491,
+          "opus": 393
+        },
+        "gate_s": 2
+      }
+    },
+    {
+      "story": "E12-S07",
+      "kind": "crud",
+      "size": "M",
+      "tags": [
+        "auth"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "6f3ea6ef-2f2c-4f73-82ea-7182f6f37c01",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S07",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1765e-f107-77b1-a85d-697f5f2dbce5",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Adds RFQ evaluation (migration 0076, evaluation.py, seven routes): criteria with an org default, evaluators, append-only conflict declarations that gate all bid-content reads, and sealed per-evaluator scores whose weighted result feeds the comparison score. The weights-total publish check and the org-only default setting are in.",
+      "title": "Evaluation scoring with comments and conflict-of-interest declarations",
+      "durations": {
+        "wall_s": 43780,
+        "author_s": 2305,
+        "review_s": {
+          "codex": 48,
+          "opus": 406
+        },
+        "gate_s": 2
+      }
+    },
+    {
+      "story": "E12-S20",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 4,
+      "void_rounds": 0,
+      "escalations": 1,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 3
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 3,
+          "findings": 4,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "7501a8cc-b97c-4aae-965b-0900a0190c60",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S20",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "launch-model",
+          "model": "qwen/qwen3.8-27b"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a17b15-2afa-7600-b30f-d7e42cf981fb",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Added the Evaluation Criteria and Evaluators cards to the RFQ editor, with a new evaluator-picker route (GET .../evaluation/evaluators/eligible) and a refusal of inactive identities in add_evaluator. The criteria card hands the new edit_revision to the editor so a draft save after a criteria save is not a 409.",
+      "title": "RFQ editor: Evaluation Criteria and Evaluators cards (split from E12-S13)",
+      "durations": {
+        "wall_s": 20428,
+        "author_s": 3906,
+        "review_s": {
+          "codex": 793
+        },
+        "gate_s": 0
+      }
+    },
+    {
+      "story": "E12-S21",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "money"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "79ce9165-141a-4178-9159-e6c8488f3159",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S21",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "launch-model",
+          "model": "qwen/qwen3.8-27b"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a17af2-3bbe-7980-a9bc-6467eb7424dc",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Comparison engine now returns unmet, late, exceptions_count per vendor; to_spare, per-vendor selection totals and not-lowest lines per basis; and identical line/measure counts. Sealed response unchanged; client regenerated.",
+      "title": "Comparison engine follow-up: selection totals, amount to spare, late override, counts (for E12-S10)",
+      "durations": {
+        "wall_s": 21796,
+        "author_s": 3724,
+        "review_s": {
+          "codex": 27,
+          "opus": 290
+        },
+        "gate_s": 228
+      }
+    },
+    {
+      "story": "E12-S08",
+      "kind": "ledger",
+      "size": "L",
+      "tags": [
+        "money"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 3
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 3,
+          "findings": 2,
+          "blockers": 1,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "740cdf0b-bdc2-4f42-9e88-40ec2f4c34db",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S08",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a17bad-00e7-76a2-b822-101f1a911e94",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Awards split a line by quantity across vendors, price tax and freight pro rata, and are guarded against scope and reserved funds at submit and again at approval. Approval releases the unused reservation once, returns it from the sub-project to the main project, awards the quantities and opens a fully awarded requisition for purchase.",
+      "title": "Award: split by line/quantity, scope and reserved-funds guard, non-lowest justification",
+      "durations": {
+        "wall_s": 30699,
+        "author_s": 6548,
+        "review_s": {
+          "codex": 120,
+          "opus": 240
+        },
+        "gate_s": 2
+      }
+    },
+    {
+      "story": "E12-S22",
+      "kind": "engine",
+      "size": "S",
+      "tags": [
+        "money"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "9f0d4cfb-7746-4e41-80f7-937241a1ffb3",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S22",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a17c6e-6664-75f3-b37b-7191e9478dc6",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Each comparison Cell now carries unit_price_converted: the keyed unit price times the frozen rate, quantized to the RFQ currency's minor unit; null when not quoted. Display only, no existing figure changed; API client regenerated.",
+      "title": "Comparison engine: converted unit price on each cell (SRC-009 unit cost, for E12-S10)",
+      "durations": {
+        "wall_s": 2320,
+        "author_s": 900,
+        "review_s": {
+          "codex": 541,
+          "opus": 275
+        },
+        "gate_s": 286
+      }
+    },
+    {
+      "story": "E12-S09",
+      "kind": "ledger",
+      "size": "M",
+      "tags": [
+        "money"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 2,
+          "blockers": 1,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "de3c7c90-4ada-4fac-a45f-749c8e2d04bf",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S09",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a17d2d-3b3b-7e20-8ba4-b5fdfd2a6143",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Adds RFQ cancel (quantity back, no money, invitees emailed), award cancel, and supersede of an approved award that reverses the S08 release and return exactly under the same locks; approve now refuses an RFQ that left under_evaluation.",
+      "title": "Cancel or supersede RFQ/award, preserve history, reconcile budget effect",
+      "durations": {
+        "wall_s": 12831,
+        "author_s": 2157,
+        "review_s": {
+          "codex": 23,
+          "opus": 300
+        },
+        "gate_s": 2
+      }
+    },
+    {
+      "story": "E12-S10",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 4,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 4
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 4,
+          "findings": 6,
+          "blockers": 5,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [
+        {
+          "from": "codex",
+          "to": "opus",
+          "reason": "fleet ran Opus (flo-reviewer-claude) as code_reviewer at 8ec0f7c while the Codex slot was unavailable; Codex later reviewed the same commit too. Recorded by planner 27 Oct 2026 after finish gate failed on unassigned reviewer."
+        }
+      ],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "054a04b4-2282-488e-abdf-2761adedf34a",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S10",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a17cfb-b34c-7100-88ef-216b2a27ddd6",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Replaced the E12-S14 placeholder with the RFQ comparison dashboard: basis cards, verdict strip, matrix, By Line, Cost Breakdown (chart and table), Scoring, bid sheet and all states, rendering only server figures; added Open Comparison to the RFQ header. Start Award is deliberately absent until E12-S16.",
+      "title": "Comparison dashboard screen with accessible table equivalent",
+      "durations": {
+        "wall_s": 39378,
+        "author_s": 2632,
+        "review_s": {
+          "codex": 44,
+          "opus": 260
+        },
+        "gate_s": 265
+      }
+    },
+    {
+      "story": "E12-S15",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 4
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 4,
+          "findings": 2,
+          "blockers": 1,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "a918df27-c079-4423-babb-89bc79788fdc",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S15",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "qwen": {
+          "agent": "qwen",
+          "id": null,
+          "source": "launch-model",
+          "model": "qwen/qwen3.8-27b"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a17d9b-e20a-79c3-a868-47f2a3cbab05",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds the /sourcing/rfqs/:id/evaluation page (declaration first, recused, sealed, per-vendor scoring folds with Save for Later and Submit Scores) and an Evaluators card on the RFQ detail. Playwright covers every state, the request-log seal check, keyboard path and axe in both themes.",
+      "title": "Evaluation screen: declare first, then score",
+      "durations": {
+        "wall_s": 81125,
+        "author_s": 2134,
+        "review_s": {
+          "codex": 170
+        },
+        "gate_s": 0
+      }
+    },
+    {
+      "story": "E12-S16",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 2,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "65570d8e-981f-42a0-b0af-ed9f6b7e00d7",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S16",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a17ede-5f49-7900-aebf-cd6deeb7a794",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds the award draft screen (load-or-create, per-vendor quantities with split, justification/tie-override reasons, rationale, server-figure verdict beside the total and in the pinned bar, scope and funds check with release preview) plus Start Award on the comparison. Server: RequisitionCheck.release/main_project and AwardRead.justification_required, read-only.",
+      "title": "Award draft screen: lines, justification, scope and funds check",
+      "durations": {
+        "wall_s": 20819,
+        "author_s": 18249,
+        "review_s": {
+          "codex": 16
+        },
+        "gate_s": 0
+      }
+    },
+    {
+      "story": "E12-S18",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 3
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 3,
+          "findings": 2,
+          "blockers": 1,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "b85acf55-754a-4447-afe4-88bf526c8830",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S18",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a17ff0-cf00-7641-aef3-dafa5dafa991",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Cancel RFQ (published, rfq.approve) and Supersede Award (latest award approved) are destructive reason dialogs on the RFQ detail header, sharing one ReasonDialog shell; consequence rows come from RfqRead and the awards read, no API change. The detail route now loads the awards and refreshes them after either command.",
+      "title": "Cancel RFQ and supersede award dialogs",
+      "durations": {
+        "wall_s": 38822,
+        "author_s": 3321,
+        "review_s": {
+          "codex": 14,
+          "opus": 379
+        },
+        "gate_s": 0
+      }
+    },
+    {
+      "story": "E13-S01",
+      "kind": "crud",
+      "size": "L",
+      "tags": [
+        "money"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 3,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 4
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 4,
+          "findings": 2,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "c0f8cf71-edc4-43a9-bb4e-c4ad62aef1a2",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S01",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a18045-d54d-7742-b550-ba9fda67d5a7",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Adds the purchasing module: draft POs from an approved award, one per vendor and requisition, holding quantity through both ordered-quantity counters under the award-header lock, numbered per unit, with derived value and the supersede guard. New sourcing and requisitions service functions carry the counters; routes, migration 0078, client and tests included.",
+      "title": "PO from awarded requisition lines or authorized project items, scoped numbering",
+      "durations": {
+        "wall_s": 49513,
+        "author_s": 19876,
+        "review_s": {
+          "codex": 32,
+          "opus": 435
+        },
+        "gate_s": 1258
+      }
+    },
+    {
+      "story": "E12-S17",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui",
+        "auth"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 3,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 3
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 3,
+          "findings": 4,
+          "blockers": 1,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "3db4eec2-2bca-46e0-bd19-c4fb0121c0cb",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S17",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a180ee-58e9-77c0-af35-fe621c6cc79a",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Award tasks now carry frozen evidence (vendor totals, per-requisition release/return, not-lowest, tie overrides, exceptions, frozen scores) in the approval snapshot, and rfq.approve holders can read evaluator declarations. The decision panel renders an Award Evidence block with live funds/declarations that degrade on 403.",
+      "title": "Award decision panel: Award Evidence block",
+      "durations": {
+        "wall_s": 8182,
+        "author_s": 2582,
+        "review_s": {
+          "codex": 219,
+          "opus": 312
+        },
+        "gate_s": 1
+      }
+    },
+    {
+      "story": "E13-S03",
+      "kind": "engine",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 2,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "921ea784-ba7b-46d8-a575-a656aefc2a79",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S03",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a180fd-a990-7743-8b38-9c7753ed4879",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Added purchasing/lifecycle.py, the single status writer with a locked, version-checked, audited transition table; draft delete and a manual close route (POST /purchase-orders/{id}/transitions) now go through it. Migration 0079 widens the status CHECK.",
+      "title": "PO lifecycle state machine",
+      "durations": {
+        "wall_s": 5239,
+        "author_s": 2364,
+        "review_s": {
+          "codex": 20
+        },
+        "gate_s": 306
+      }
+    },
+    {
+      "story": "E13-S02",
+      "kind": "ledger",
+      "size": "M",
+      "tags": [
+        "money"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 1,
+          "blockers": 1,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "d1066a25-9023-4a6d-bcd6-a9fbcf231bab",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S02",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1815b-558d-7fc2-8b6b-f49840b00f34",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Every PO line now stores price, tax, freight, landed total and budget amount (quantized per line, freight taking the rounding residual), with a line or document freight mode and quantity edits rescaling from the award quote. The award engine and comparison split a zero-price bid's freight equally over its quoted lines.",
+      "title": "Tax and freight per BU/OU policy, separately visible on line and document",
+      "durations": {
+        "wall_s": 5801,
+        "author_s": 2312,
+        "review_s": {
+          "codex": 30,
+          "opus": 423
+        },
+        "gate_s": 2
+      }
+    },
+    {
+      "story": "E13-S04",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "migration"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "5fb5571d-10f0-4769-910c-79c81f882185",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S04",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a18219-ff7c-7a90-ad95-ef4f1a4b6443",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "PoAdapter registers document type po; POST /purchase-orders/{id}/submit and /withdraw (creator only) start and end the approval, approve moves to approved and reject or withdraw to draft, posting nothing. Migration 0081 stores the requisition version at create so submit can detect an amended requisition.",
+      "title": "PO approval workflow before issue",
+      "durations": {
+        "wall_s": 5814,
+        "author_s": 3378,
+        "review_s": {
+          "codex": 19,
+          "opus": 189
+        },
+        "gate_s": 2
+      }
+    },
+    {
+      "story": "E13-S20",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 1,
+          "blockers": 1,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "78c6af3f-978e-4ac5-85d8-44672e753a98",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S20",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a18314-1979-73b3-a85c-c4779176dd1a",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "PO evidence now returns project number/name per budget row and the full Eligibility shape; DecisionPanel mounts a new PurchaseOrderEvidence block for po tasks with a 'purchase order' link label.",
+      "title": "PO decision panel: Purchase Order Evidence block",
+      "durations": {
+        "wall_s": 2902,
+        "author_s": 1172,
+        "review_s": {
+          "codex": 23
+        },
+        "gate_s": 0
+      }
+    },
+    {
+      "story": "E12-S23",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "money",
+        "migration"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 2,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "61849f03-7eb2-472c-92a3-a6970bf253fb",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S23",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a183e2-7d7d-71c3-9ab1-f3dee493ed84",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Bid patch now refuses a quoted price of 0 or one that rounds to 0, submit refuses a bid with no quoted line, and migration 0082 adds a validated CHECK on bid_line; the zero-price allocation branches are deleted and PO creation/draft edits refuse a line that prices to 0.",
+      "title": "No zero-value lines: bids refuse a quoted price of 0 or one that rounds to 0, a bid must quote a line, and the zero-price special cases go",
+      "durations": {
+        "wall_s": 3547,
+        "author_s": 2339,
+        "review_s": {
+          "codex": 335,
+          "opus": 309
+        },
+        "gate_s": 2
+      }
+    },
+    {
+      "story": "E13-S05",
+      "kind": "ledger",
+      "size": "L",
+      "tags": [
+        "money",
+        "concurrency"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 3,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "2f1cf8bc-ecc5-431d-a3fe-05f4c423dbac",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S05",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a18504-c52c-7341-9901-d5e9628b7a65",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "POST /purchase-orders/{id}/issue freezes the budget amounts, converts the requisition reservation into one commitment per (requisition, sub-project, department, ledger account) under ordered locks, bumps requisition_line.issued_qty, transitions the PO to issued and completes the requisition when every line is issued. Retries and races return the same issued PO and commit once.",
+      "title": "Issue converts reservation to commitment atomically; partial POs reduce open quantity only",
+      "durations": {
+        "wall_s": 15476,
+        "author_s": 4038,
+        "review_s": {
+          "codex": 131,
+          "opus": 305
+        },
+        "gate_s": 1
+      }
+    },
+    {
+      "story": "E13-S06",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "money"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 3,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 5
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 5,
+          "findings": 5,
+          "blockers": 5,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "3ca60301-1543-4cbc-bf44-ae943a9af13b",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S06",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1895f-8ff1-78e2-b70a-30de520dcfa0",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "An issued PO is now frozen by service checks and database triggers; any change goes through a numbered change order (po_change) that stores a field diff, a signed budget effect and a server-computed materiality flag. Non-material changes apply at once, material ones go through a new po_change approval workflow, and applying writes a new revision row, supersedes the old one, moves award/requisition quantities and posts the commit or newest-first release plus re-reserve.",
+      "title": "Immutable issued PO; numbered, approved change orders with field-level diff",
+      "durations": {
+        "wall_s": 27759,
+        "author_s": 4756,
+        "review_s": {
+          "codex": 16,
+          "opus": 274
+        },
+        "gate_s": 2
+      }
+    },
+    {
+      "story": "E13-S07",
+      "kind": "ledger",
+      "size": "M",
+      "tags": [
+        "money"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "a3bcbc94-86c2-446a-ab2e-53491f656131",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S07",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "launch-model",
+          "model": "gpt-5.6-sol"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Added POST /purchase-orders/{id}/cancel and /reduce: cancel releases each open commitment once, re-reserves it (decision 209), optionally returns funds to main and blocks the quantity via requisition_line.cancelled_qty. issue now takes the award lock first (planner ruling) so cancel vs issue cannot deadlock.",
+      "title": "Cancel or reduce releases unused commitment exactly once, history preserved",
+      "durations": {
+        "wall_s": 36316,
+        "author_s": 29659,
+        "review_s": {
+          "codex": 829,
+          "opus": 294
+        },
+        "gate_s": 1860
+      }
+    },
+    {
+      "story": "E13-S08",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "security"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "d7e1bdb1-6d27-4823-9eae-5a92757eb41f",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S08",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a18f2e-ea89-7330-b8d0-5988f9e28fb3",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Each issued PO row now stores a whitelisted VendorCopy snapshot, template version and PDF hash (po_version, append-only), written in the issue and change-apply transactions; GET /pdf re-renders from the snapshot with fpdf2 and refuses bytes whose hash differs. Letterhead and standard terms are two org-only settings copied into each snapshot.",
+      "title": "PO PDF reproducible from stored snapshot and template version",
+      "durations": {
+        "wall_s": 30762,
+        "author_s": 29565,
+        "review_s": {
+          "codex": 170,
+          "opus": 255
+        },
+        "gate_s": 1
+      }
+    },
+    {
+      "story": "E23-S19",
+      "kind": "chore",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {},
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [
+        {
+          "from": "codex",
+          "to": "opus",
+          "reason": "operator, 31 Oct 2026: Opus A reviews E23-S19 instead of Codex, before CI and merge"
+        }
+      ],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "4e0edf25-d61c-4142-b696-9c34165f613a",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E23-S19",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "5253295c-b862-4b13-a1c8-acf5da2d18c9",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Added agents/scripts/flo_watch.py: three tick.log detectors, an idempotent daily digest and an append-only proposals log with stats. Documented in docs/ops/fleet-tooling.md and covered by 11 gate tests, each guard plant-verified.",
+      "title": "Fleet watch with deterministic detectors, a daily digest and an accept/reject log for supervisor proposals",
+      "durations": {
+        "wall_s": 4185,
+        "author_s": 1468,
+        "review_s": {
+          "opus": 80
+        },
+        "gate_s": 0
+      }
+    },
+    {
+      "story": "E13-S23",
+      "kind": "concurrency",
+      "size": "S",
+      "tags": [
+        "concurrency"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 3,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 4
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 4,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "ab927d31-714a-40a8-8dd0-62777f6ffe80",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S23",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a18fd9-a1b7-7922-8d89-db9c571ab8af",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "PurchaseOrderService.withdraw no longer locks the PO before the approval instance, and ChangeService.submit locks award-first through _lock, so every PO writer takes instance/award before the PO. Five real-Postgres tests cover the lock order and the withdraw/approve, withdraw/cancel and submit/cancel races.",
+      "title": "PO lock order: withdrawal takes the approval instance before the PO; change-order submit takes the award first",
+      "durations": {
+        "wall_s": 41624,
+        "author_s": 1151,
+        "review_s": {
+          "codex": 28,
+          "opus": 176
+        },
+        "gate_s": 2
+      }
+    },
+    {
+      "story": "E13-S09",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "money",
+        "security"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "e2ec4064-fefe-4086-bb4d-6158e7bef3b5",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S09",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1913c-0072-7e42-8ac6-70148dca193b",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Issue and change-order apply now put one outbox email (PDF attached) and one po_transmission row per distinct recipient in their own transaction; issue refuses a PO with no recipients, and a locked resend route plus a log route cover retries. Outbox/Resend/SMTP carry attachments only when given, and the 100/day email allowance joins the quota report.",
+      "title": "Email transmission via outbox, recipient/time/result/version recorded, retry without duplication",
+      "durations": {
+        "wall_s": 4148,
+        "author_s": 2793,
+        "review_s": {
+          "codex": 19,
+          "opus": 304
+        },
+        "gate_s": 2
+      }
     }
   ]
 }

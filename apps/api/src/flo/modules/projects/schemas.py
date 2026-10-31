@@ -1,6 +1,7 @@
 """Root-project request and response contracts."""
 
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Literal
 from uuid import UUID
 
@@ -28,6 +29,12 @@ class ExternalReference(BaseModel):
         return value.strip() if isinstance(value, str) else value
 
 
+class BudgetRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    amount: Decimal = Field(gt=0, max_digits=18, decimal_places=4)
+    currency: str
+
+
 class ProjectCreate(ExternalReference):
     model_config = ConfigDict(extra="forbid")
     bu_id: UUID
@@ -41,6 +48,16 @@ class ProjectCreate(ExternalReference):
     planned_end: date | None = None
     owner_id: UUID | None = None
     sponsor_id: UUID | None = None
+    # E22-S01: the budget asked for and its sponsors; both are required to submit.
+    budget: BudgetRequest | None = None
+    sponsor_ids: list[UUID] = Field(default_factory=list, max_length=10)
+
+    @field_validator("sponsor_ids")
+    @classmethod
+    def distinct_sponsors(cls, value: list[UUID]) -> list[UUID]:
+        if len(set(value)) != len(value):
+            raise ValueError("Name each sponsor once.")
+        return value
 
 
 class ProjectPatch(ExternalReference):
@@ -56,6 +73,16 @@ class ProjectPatch(ExternalReference):
     percent_complete: int | None = Field(default=None, ge=0, le=100)
     actual_start: date | None = None
     actual_end: date | None = None
+    # Draft only; `budget: null` clears the request, `sponsor_ids` replaces the list.
+    budget: BudgetRequest | None = None
+    sponsor_ids: list[UUID] | None = Field(default=None, max_length=10)
+
+    @field_validator("sponsor_ids")
+    @classmethod
+    def distinct_sponsors(cls, value: list[UUID] | None) -> list[UUID] | None:
+        if value is not None and len(set(value)) != len(value):
+            raise ValueError("Name each sponsor once.")
+        return value
 
     @model_validator(mode="before")
     @classmethod
@@ -88,12 +115,13 @@ class ProjectRead(BaseModel):
     number: str
     name: str
     description: str | None
-    status: ProjectStatus
+    status: ProjectStatus | Literal["deleted"]
     bu_id: UUID
     parent_id: UUID | None
     owner_id: UUID
     sponsor_id: UUID | None
     sponsor_ids: list[UUID] = Field(default_factory=list)
+    requested_budget: str | None = None
     department_code: str
     ledger_account_code: str
     currency: str
@@ -112,6 +140,24 @@ class ProjectRead(BaseModel):
     codes: CodesRead | None = None
     codes_expired: bool = False
     can_substitute_codes: bool = False
+    # Single-record read only: the caller holds project.update (what DELETE of a draft checks).
+    can_edit: bool = False
+
+    @field_validator("requested_budget", mode="before")
+    @classmethod
+    def budget_text(cls, value: object) -> object:
+        return format(value, "f") if isinstance(value, Decimal) else value
+
+
+class ProjectLookupOption(BaseModel):
+    value: str
+    label: str
+    disabled: bool = False
+    note: str | None = None
+
+
+class ProjectLookupRows(BaseModel):
+    rows: list[ProjectLookupOption]
 
 
 class ProjectPage(BaseModel):

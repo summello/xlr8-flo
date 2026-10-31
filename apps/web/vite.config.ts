@@ -1,7 +1,7 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import type { IncomingMessage } from "node:http";
-import type { Plugin } from "vite";
+import type { Plugin, PreviewServer, ViteDevServer } from "vite";
 import { defineConfig } from "vitest/config";
 
 import type { components } from "./src/api/generated/schema.ts";
@@ -57,8 +57,8 @@ function offsetFor(cursor: string | null): number | null {
 }
 
 function gridFixture(): Plugin {
-  return {
-    configureServer(server) {
+  const plugin = {
+    configureServer(server: ViteDevServer | PreviewServer) {
       server.middlewares.use("/api/_dev/grid", (request, response) => {
         const url = new URL(request.url ?? "/", "http://grid.local");
         if (url.searchParams.get("page_size") !== String(GRID_PAGE_SIZE)) {
@@ -120,6 +120,8 @@ function gridFixture(): Plugin {
     },
     name: "xlr8flo-grid-fixture",
   };
+  // The browser suite also exercises these HTTP fixtures against the production preview.
+  return { ...plugin, configurePreviewServer: plugin.configureServer };
 }
 
 async function requestBody(request: IncomingMessage): Promise<string> {
@@ -131,8 +133,8 @@ async function requestBody(request: IncomingMessage): Promise<string> {
 }
 
 function formFixture(): Plugin {
-  return {
-    configureServer(server) {
+  const plugin = {
+    configureServer(server: ViteDevServer | PreviewServer) {
       server.middlewares.use("/api/v1/auth/login", (request, response, next) => {
         if (request.method !== "POST") {
           next();
@@ -169,6 +171,8 @@ function formFixture(): Plugin {
     },
     name: "xlr8flo-form-fixture",
   };
+  // The browser suite also exercises these HTTP fixtures against the production preview.
+  return { ...plugin, configurePreviewServer: plugin.configureServer };
 }
 
 export default defineConfig({

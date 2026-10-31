@@ -56,7 +56,7 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="S3_SECRET_ACCESS_KEY",
     )
-    storage_provider: Literal["r2", "minio"] = Field(
+    storage_provider: Literal["r2", "local"] = Field(
         default="r2",
         validation_alias="STORAGE_PROVIDER",
     )

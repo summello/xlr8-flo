@@ -9,11 +9,10 @@ set -e
 S="$1"; A="${2:-codex}"; R="$(cd "$(dirname "$0")/../.." && pwd)"; W="$R-$S"; D="$R/.scratch"
 case "$A" in
   codex|opus) ;;
-  qwen) M=openrouter/qwen/qwen3.8-27b ;;
-  kimi) M=openrouter/moonshotai/kimi-k2.6 ;;
-  deepseek) M=openrouter/deepseek/deepseek-v4-pro-0813 ;;
+  qwen|kimi|deepseek) ;;   # their models come from agents.yaml via flo launch-model, below
   *) echo "review.sh: unknown reviewer $A" >&2; exit 1 ;;
 esac
+AS="$D/$S.aside.$A"   # per run: two reviewers never share one aside directory (E23-S14)
 P="$D/$S.$A.review.prompt"; X="$D/xdg-$A"; mkdir -p "$X"
 RELEASE=""
 case "$S" in M[0-9]*)
@@ -24,15 +23,56 @@ case "$S" in M[0-9]*)
   if [ -d "$W" ]; then git -C "$W" checkout -q --detach "origin/$BR"; else git -C "$R" worktree add -q --detach "$W" "origin/$BR"; fi
   mkdir -p "$W/reviews" ;;
 esac
+# One review of a story at a time (E23-S14): reviewers plant and revert violations in the one
+# worktree, and a second would move the first's verdicts aside. The lock's pid is the background
+# job started below; a dead holder is reclaimed, a live one is never (exit 75).
+# ponytail: no pid file means the launcher is mid-start and counts as held; a crash in that
+# window needs `rm -rf .scratch/<S>.review.lock` by hand (macOS has no flock(1)).
+mkdir -p "$D"
+LOCK="$D/$S.review.lock"; LAUNCHED=""
+if [ -z "$RELEASE" ]; then
+  if ! mkdir "$LOCK" 2>/dev/null; then
+    HP="$(cat "$LOCK/pid" 2>/dev/null || true)"
+    if [ -z "$HP" ] || kill -0 "$HP" 2>/dev/null; then
+      echo "review of $S already running (pid ${HP:-starting})" >&2; exit 75
+    fi
+    rm -rf "$LOCK"; mkdir "$LOCK"
+  fi
+  echo $$ > "$LOCK/pid"
+  trap '[ -n "$LAUNCHED" ] || rm -rf "$LOCK"' EXIT
+  # the holder is gone, so any aside directory is a killed run's: put its verdicts back
+  for AD in "$D/$S.aside" "$D/$S.aside".*; do
+    [ -d "$AD" ] || continue
+    mv -n "$AD"/*.json "$W/reviews/" 2>/dev/null || true; rm -rf "$AD"
+  done
+fi
+held() { echo $! > "$D/$S.$A.pid"; [ -z "$RELEASE" ] && echo $! > "$LOCK/pid"; LAUNCHED=1; }
 # A second review by the same reviewer gets its own previous findings and the changes since the
 # commit it reviewed, not the whole story again (13 Oct: a full re-review re-planted everything).
 SHA="$D/$S.$A.sha"; PRIOR="$D/$S.$A.prior.json"; ARGS=""
-if [ -f "$SHA" ] && [ -f "$W/reviews/$S.$A.json" ]; then
+# A void verdict (nothing itemised, E23-S16) is retried in full: there is nothing to re-review.
+if [ -f "$SHA" ] && [ -f "$W/reviews/$S.$A.json" ] && python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); sys.exit(0 if d.get("findings") or str(d.get("verdict","")).lower().startswith("approve") else 1)' "$W/reviews/$S.$A.json" 2>/dev/null; then
   cp "$W/reviews/$S.$A.json" "$PRIOR"; ARGS="--since $(cat "$SHA") --prior $PRIOR"
 fi
 if [ -n "$RELEASE" ]; then "$R/apps/api/.venv/bin/python" "$R/agents/scripts/flo" release-packet "$S" > "$P"
 else "$W/apps/api/.venv/bin/python" "$R/agents/scripts/flo" review "$S" $ARGS > "$P"; fi
 git -C "$W" rev-parse HEAD > "$SHA.new"  # becomes the baseline only if the run succeeds
+# what this run reviews, for the supervisor's freshness check (flo facts): a verdict counts only
+# for the commit it was launched on
+cp "$SHA.new" "$D/$S.$A.launched"
+# one line per launch on this commit: flo facts retries a void verdict once, then asks (E23-S16)
+cat "$SHA.new" >> "$D/$S.$A.attempts"
+# launch time of this round, epoch seconds: flo done derives review_s from it and the verdict mtime
+date +%s > "$D/$S.$A.started"
+# Keep every round's verdict: the scorecard counts findings across rounds (flo done), and the
+# file in reviews/ is overwritten by this run. An identical copy (a relaunch) is not a new round.
+if [ -f "$W/reviews/$S.$A.json" ]; then
+  mkdir -p "$D/reviews"; LAST="$(ls "$D/reviews/$S.$A".r*.json 2>/dev/null | sort -V | tail -1)"
+  if [ -z "$LAST" ] || ! cmp -s "$LAST" "$W/reviews/$S.$A.json"; then
+    N="$(ls "$D/reviews/$S.$A".r*.json 2>/dev/null | wc -l | tr -d ' ')"
+    cp "$W/reviews/$S.$A.json" "$D/reviews/$S.$A.r$((N + 1)).json"
+  fi
+fi
 printf '\nYour agent id is %s. Write reviews/%s.%s.json and stop.\n' "$A" "$S" "$A" >> "$P"
 cd "$W"
 # a waiter polls this log for "exit N": clear the previous run's now, not when the job starts
@@ -41,9 +81,10 @@ if [ "$A" = opus ]; then
   # A fresh session on the given account (never the planner's), with the reviewer skill.
   if [ "${3:-B}" = A ]; then ENV="env -u CLAUDE_CONFIG_DIR"; else ENV="env CLAUDE_CONFIG_DIR=$HOME/.claude-summello"; fi
   printf 'ROLE xlr8flo-reviewer %s account %s. Use the xlr8flo-reviewer skill.\n\n' "$S" "${3:-B}" | cat - "$P" > "$P.role"
-  nohup sh -c "mkdir -p '$D/$S.aside' && mv reviews/*.json '$D/$S.aside/' 2>/dev/null; \
+  nohup sh -c "mkdir -p '$AS' && mv reviews/*.json '$AS/' 2>/dev/null; \
     $ENV claude -p --model opus -n 'xlr8flo-reviewer $S' --permission-mode auto \"\$(cat '$P.role')\" > '$D/$S.$A.log' 2>&1; echo \"exit \$?\" >> '$D/$S.$A.log'; \
-    mv -n '$D/$S.aside/'*.json reviews/ 2>/dev/null; rmdir '$D/$S.aside'" > /dev/null 2>&1 &
+    mv -n '$AS/'*.json reviews/ 2>/dev/null; rmdir '$AS'; rm -rf '$LOCK'" > /dev/null 2>&1 &
+  held
   echo "review launched: $S by opus (account ${3:-B})"
   exit 0
 fi
@@ -52,26 +93,34 @@ if [ "$A" = codex ]; then
   # ~/.codex/config.toml silently ran reviews at `low` on 12 Oct.
   set -- $("$W/apps/api/.venv/bin/python" -c 'import sys,yaml; c=yaml.safe_load(open(sys.argv[1]))["agents"]["codex"]; print(c["model"], c["review_reasoning"])' "$R/agents/agents.yaml")
   T0="$(date +%Y-%m-%dT%H:%M:%S%z)"
-  # Hard stop: the packet's budget is advisory to the model, this is not. Gated 15 min, else 10;
+  # Hard stop: the packet's budget is advisory to the model, this is not. Gated 30 min, else 20
+  # (27 Oct 2026: doubled; Codex 0.164.0's code-mode host negotiation adds ~30-100 s to every shell
+  # command, so 10/15 min stopped S15, S20 and S08 reviews before a verdict. Halve again once fixed);
   # the reviewer keeps a draft verdict current, so a stopped run still leaves one.
-  CAP=$(python3 -c 'import json,sys; print(900 if json.load(open(sys.argv[1]))["opus_final"] else 600)' "$W/task.json")
+  CAP=$(python3 -c 'import json,sys; print(1800 if json.load(open(sys.argv[1]))["opus_final"] else 1200)' "$W/task.json")
   [ -n "$ARGS" ] && CAP=480
-  # calls: the packet's budget plus 10 (re-review 20, gated 45, ungated 25)
-  CALLS=$(python3 -c 'import json,sys; print(55 if json.load(open(sys.argv[1]))["opus_final"] else 35)' "$W/task.json")
+  # calls: the packet's budget plus 10-15 (re-review 20, gated 45, ungated 40; 22 Oct: 35 stopped
+  # three ungated Codex reviews before they reached the tests)
+  CALLS=55
   [ -n "$ARGS" ] && CALLS=30
-  # One Codex review at a time across every planner and checkout: two in parallel share the
-  # five-hour window and both die at the cap.
-  nohup sh -c "while pgrep -f '^codex exec' > /dev/null; do sleep 30; done; \
-    mkdir -p '$D/$S.aside' && mv reviews/*.json '$D/$S.aside/' 2>/dev/null; \
+  # At most FLO_CODEX_PARALLEL (default 2, operator 15 Oct) Codex reviews at once, and only on
+  # independent stories — the planner's call. Unbounded parallel shared the five-hour window and
+  # both died at the cap on 13 Oct.
+  nohup sh -c "while [ \$(pgrep -f '^codex exec' | wc -l) -ge ${FLO_CODEX_PARALLEL:-2} ]; do sleep 30; done; \
+    mkdir -p '$AS' && mv reviews/*.json '$AS/' 2>/dev/null; \
     codex exec -m $1 -c model_reasoning_effort=$2 -c project_doc_max_bytes=0 -s workspace-write --skip-git-repo-check \"\$(cat '$P')\" > '$D/$S.$A.log' 2>&1 & CP=\$!; \
     ( sleep $CAP; kill \$CP 2>/dev/null && echo 'stopped at the time cap' >> '$D/$S.$A.log' ) & KP=\$!; \
     '$W/apps/api/.venv/bin/python' '$R/agents/scripts/flo' codex-guard '$W' $CALLS \$CP $CAP >> '$D/$S.$A.log' 2>&1 & \
     wait \$CP; RC=\$?; echo \"exit \$RC\" >> '$D/$S.$A.log'; kill \$KP 2>/dev/null; { [ \$RC = 0 ] || grep -q '\"ran_tests\": *true' 'reviews/$S.$A.json' 2>/dev/null; } && mv '$SHA.new' '$SHA'; \
-    mv -n '$D/$S.aside/'*.json reviews/ 2>/dev/null; rmdir '$D/$S.aside'; \
+    mv -n '$AS/'*.json reviews/ 2>/dev/null; rmdir '$AS'; rm -rf '$LOCK'; \
     '$W/apps/api/.venv/bin/python' '$R/agents/scripts/flo' codex-usage '$S' '$T0' > /dev/null" > /dev/null 2>&1 &
+  held
   echo "review launched: $S by codex ($1, $2)${ARGS:+, re-review}"
   exit 0
 fi
+# the model comes from agents.yaml and is recorded in task.json by the same call (E23-S03)
+PY="$W/apps/api/.venv/bin/python"; [ -n "$RELEASE" ] && PY="$R/apps/api/.venv/bin/python"
+M="openrouter/$("$PY" "$R/agents/scripts/flo" launch-model "$S" --reviewer "$A")"
 # OpenRouter is metered: refuse to start below a floor rather than die halfway without a verdict.
 LEFT="$(K="$(security find-generic-password -a "$USER" -s OPENROUTER_API_KEY -w)"; curl -s --max-time 20 \
   -H "Authorization: Bearer $K" https://openrouter.ai/api/v1/credits \
@@ -81,11 +130,12 @@ python3 -c 'import sys; sys.exit(0 if float(sys.argv[1]) >= 3 else 1)' "${LEFT:-
 # Caps: release 50 calls / 25 min; release area pass 60 / 20 min; story 35 / 10 min; re-review 30 / 8 min.
 if [ -n "$RELEASE" ] && [ "$S" != "$MS" ]; then CALLS=60; CAP=1200; elif [ -n "$RELEASE" ]; then CALLS=50; CAP=1500; elif [ -n "$ARGS" ]; then CALLS=30; CAP=480; else CALLS=35; CAP=600; fi
 # another reviewer's verdict is not evidence: move existing verdicts out of reach for the run
-nohup sh -c "mkdir -p '$D/$S.aside' && mv reviews/*.json '$D/$S.aside/' 2>/dev/null; \
+nohup sh -c "mkdir -p '$AS' && mv reviews/*.json '$AS/' 2>/dev/null; \
   XDG_DATA_HOME='$X' OPENROUTER_API_KEY=\"\$(security find-generic-password -a \"\$USER\" -s OPENROUTER_API_KEY -w)\" \
   opencode run --auto -m $M \"\$(cat '$P')\" > '$D/$S.$A.log' 2>&1 & OP=\$!; \
   '$R/apps/api/.venv/bin/python' '$R/agents/scripts/flo' log-guard '$D/$S.$A.log' $CALLS \$OP $CAP & \
   wait \$OP; echo \"exit \$?\" >> '$D/$S.$A.log'; \
-  mv -n '$D/$S.aside/'*.json reviews/ 2>/dev/null; rmdir '$D/$S.aside'" > /dev/null 2>&1 &
+  mv -n '$AS/'*.json reviews/ 2>/dev/null; rmdir '$AS'; rm -rf '$LOCK'" > /dev/null 2>&1 &
+held
 echo "OpenRouter balance \$$LEFT; caps $CALLS calls, $CAP s"
 echo "review launched: $S by $A"
