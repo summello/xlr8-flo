@@ -334,3 +334,32 @@ names suppresses duplicate work; it never marks a story CI green.
   the story's squash commit (`merged_in`). Anything unproven exits 1 and stays a failure for the operator.
 - **Resume** never launches while the author is live (`running: ["author"]`, the E23-S15 pid guard).
 - Copy `agents/fleet/fleet.py` to `~/.claude/fleet/fleet.py` after the merge, as for every supervisor change.
+
+## Fleet watch: `flo_watch.py`
+
+`python3 agents/scripts/flo_watch.py <command>` counts repeat failure classes in the supervisor's
+`tick.log` and records whether each proposed fix was applied. Stdlib only, no model call. It reads
+the state dir (default `~/.claude/omnissiah/state/xlr8flo`, `--state DIR`) and never writes to it.
+It is run by hand; scheduling it is a follow-up.
+
+| Command | What it does |
+|---|---|
+| `digest [--state DIR] [--day YYYY-MM-DD] [--out DIR]` | Runs the detectors on that day's ticks (default today) and rewrites `<out>/<day>.md` (default `.scratch/watch`): tick and skipped-line totals, actions by step, one section per detector (`none` when clean). A day with no ticks says so. A line that does not parse counts as `skipped`. |
+| `propose "<text>" --detector ID [--story S]` | Appends a proposal (`P1`, `P2`, ...) to `<out>/proposals.jsonl`, status `open`. |
+| `resolve <id> accepted\|rejected [--reason "..."]` | Appends a resolution row; earlier rows are never edited. Unknown id or status exits 2 and writes nothing. |
+| `stats` | Per detector: proposals, accepted, rejected, open and acceptance rate. |
+
+Detectors (thresholds are constants in the script):
+
+| id | Flags | Rule |
+|---|---|---|
+| `dup_review` | A reviewer launched twice for one story with no author step between | same `(story, review, reviewer)` in two ticks and no `resume`, `round`, `fix` or `submit` for that story between |
+| `repeat_step` | One step relaunched tick after tick | same `(story, step)` in 3 or more consecutive ticks |
+| `repeat_note` | The same note on many ticks | note with digits collapsed to `#` in 5 or more ticks |
+
+Reading `stats`: a proposal's current status is its latest row. The rate is accepted divided by
+resolved (accepted + rejected); `n/a` means nothing is resolved yet, and open proposals do not
+count. A detector whose proposals are mostly rejected is noise: tighten or drop it.
+
+What it cannot tell you: `runs/` records are overwritten per step, so they are not read; only
+`tick.log` history is.

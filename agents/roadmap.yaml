@@ -3491,7 +3491,7 @@ epics:
         reqs:
           - SUP-005
         dep: []
-        st: review
+        st: done
   - id: E30
     name: Future roadmap
     milestone: M7
