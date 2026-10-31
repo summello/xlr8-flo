@@ -168,7 +168,7 @@ test("a line no vendor priced shows the Signal and the cancel-on-approval senten
   await page.goto(url);
   const lines = page.locator("#aw-lines fieldset").nth(1);
   await expect(lines.getByText("No vendor priced this line")).toBeVisible();
-  await expect(page.getByText(/1 line has no priced quote and will be cancelled on approval: line 2, Spare seal kit, quantity 2\.0000 \(REQ-2\)/)).toBeVisible();
+  await expect(page.getByText(/1 line has no priced quote and will be cancelled on approval: line 2, Spare seal kit, quantity 2 \(REQ-2\)/)).toBeVisible();
   await page.goto(`/sourcing/rfqs/${rfqId}/comparison`);
   const tab = page.getByRole("tab", { name: "By Line" });
   await keyboardFocus(page, page.getByRole("tab", { selected: true })); // keyboard only: the tab list, then the arrow

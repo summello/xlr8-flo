@@ -1,5 +1,6 @@
 """Lines with no priced quote: one derived rule, auto-cancel at award approval (E12-S24)."""
 
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -12,6 +13,7 @@ from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.logging import correlation_context
 from flo.kernel.money import quantize_down
 from flo.kernel.tenancy.context import Scope
+from flo.kernel.tenancy.rls import tenant_transaction
 from flo.modules.approvals.schemas import OutcomeContext
 from flo.modules.requisitions import sourcing as req_sourcing
 from flo.modules.requisitions.lines import LineService
@@ -71,12 +73,18 @@ def requisition_in(db, bu, amount, qty):
     """`requisition`, but in the given unit: one RFQ carries lines of one unit only."""
     # a unit allows one open ship-to address per period; end the earlier requisition's (it is
     # approved already, so nothing re-reads it)
-    sql(
-        db,
-        "UPDATE org_address SET effective_from=current_date-90, effective_to=current_date-31 "
-        "WHERE unit_id=%s RETURNING 1",
-        (bu.id,),
-    ) if sql(db, "SELECT 1 FROM org_address WHERE unit_id=%s", (bu.id,)) else None
+    # each earlier address moves to its own past period (they must not overlap each other)
+    for n, (address,) in enumerate(
+        sql(db, "SELECT id FROM org_address WHERE unit_id=%s AND effective_to IS NULL", (bu.id,))
+    ):
+        sql(
+            db,
+            "UPDATE org_address SET effective_from=current_date-100-%s, "
+            "effective_to=current_date-71-%s WHERE id=%s RETURNING 1",
+            (n * 40 + len(sql(db, "SELECT 1 FROM org_address WHERE unit_id=%s", (bu.id,))) * 40,)
+            * 2
+            + (address,),
+        )
     row = linked(db, project(db, bu), price=amount, available=str(int(amount) * 3))
     approve_requisition(db, row)
     line = sql(db, "SELECT id FROM requisition_line WHERE requisition_id=%s", (row.id,))[0][0]
@@ -432,3 +440,119 @@ def test_each_unpriced_share_rounds_down(lifecycle_db, amount, qty, slices, expe
     rfq, _ = rfq_over(db, [entry(row, line, slices[0])], names=("A",), quote_first=False)
     [share] = [s.share for s in awards(db)._slices(rfq.id, "USD")]
     assert share == Decimal(expected)
+
+
+# -- locks, partial slices, several awards ---------------------------------------------------
+
+
+def test_approval_and_an_award_lines_style_writer_on_the_unpriced_requisition_dont_deadlock(
+    lifecycle_db,
+):
+    """The writer takes the requisition row first and its lines after a pause (the order
+    `award_lines` and a PO cancel use). Approval must take the same order on the all-unpriced
+    requisition: without the single `lock_lines` pass it locks the line first and the two
+    deadlock."""
+    db, _ = lifecycle_db
+    rfq, r1, r2, l1, l2, [a, _b] = two_requisitions(db)
+    prepare(db, rfq, pick_one(db, rfq, a, "10"))
+    award = submit(db, rfq)
+    actor = reviewer(db)
+    holding = Barrier(2)
+
+    def writer():
+        with psycopg.connect(connection_url(db[0]), autocommit=True) as conn:
+            with tenant_transaction(conn, Scope(db[1])):
+                conn.execute("SELECT 1 FROM requisition WHERE id=%s FOR UPDATE", (r2.id,))
+                holding.wait(timeout=10)
+                time.sleep(3)  # approval is now at its own lock pass
+                conn.execute("SELECT 1 FROM requisition_line WHERE id=%s FOR UPDATE", (l2,))
+            return "ok"
+
+    def approve():
+        with psycopg.connect(connection_url(db[0]), autocommit=True) as conn:
+            holding.wait(timeout=10)
+            context = OutcomeContext(actor, None, None, lambda *_: True)
+            with correlation_context("race"):
+                AwardService(conn, Scope(db[1]), actor).settle(award.id, "approved", context)
+            return "ok"
+
+    def attempt(fn):
+        try:
+            return fn()
+        except psycopg.errors.DeadlockDetected:
+            return "deadlock"
+
+    with ThreadPoolExecutor(2) as pool:
+        outcomes = list(pool.map(attempt, [writer, approve]))
+    assert outcomes == ["ok", "ok"]
+    assert line_qty(db, l2) == (Decimal(0), Decimal(4), Decimal(0))
+    assert drift(db) == []
+
+
+def test_a_slice_of_a_partly_sourced_line_is_cancelled_alone_and_the_rest_is_untouched(
+    lifecycle_db,
+):
+    db, _ = lifecycle_db
+    publish_workflow(db)
+    bu = unit(db, "SRC")
+    r1, l1 = requisition_in(db, bu, "1000", "10")
+    r2, l2 = requisition_in(db, bu, "1000", "10")
+    rfq, [a, _b] = rfq_over(db, [entry(r1, l1, "10"), entry(r2, l2, "6")])
+    other = draft_rfq(db, entry(state(db, r2.id), l2, "4"))  # the other 4 sit on a second RFQ
+    assert line_qty(db, l2) == (Decimal(10), Decimal(0), Decimal(0))
+    prepare(db, rfq, pick_one(db, rfq, a, "10"))
+    award = submit(db, rfq)
+    checks = {c.requisition: c for c in awards(db).read(rfq.id).checks}
+    assert checks[r2.number].unpriced == "600.00"  # 6/10 of 1,000, rounded down
+    decide_award(db, award.id)
+    assert line_qty(db, l2) == (Decimal(4), Decimal(6), Decimal(0))  # sourced 4, cancelled 6
+    open_qty = "SELECT quantity-cancelled_qty-sourced_qty FROM requisition_line WHERE id=%s"
+    assert sql(db, open_qty, (l2,)) == [(Decimal(0),)]  # open quantity is unchanged
+    assert state(db, r2.id).status == "sourcing_in_progress"  # no status moved
+    assert state(db, r2.id).reservation.remaining == "400.0000"  # only 6/10 was released
+    assert sql(db, "SELECT status FROM rfq WHERE id=%s", (other.id,)) == [("draft",)]
+    assert drift(db) == []
+
+
+def test_three_awards_cancel_slices_of_one_line_and_never_release_more_than_the_line(
+    lifecycle_db,
+):
+    """A 100.00 line of 3 cut into three slices by three awards releases 33.33 each (99.99, never
+    more than 100); superseding the middle award and approving a fresh one keeps it so; the
+    requisition line then names all three RFQs in one Signal."""
+    db, _ = lifecycle_db
+    publish_workflow(db)
+    bu = unit(db, "SRC")
+    r0, l0 = requisition_in(db, bu, "100", "3")
+    rfqs = []
+    for _ in range(3):
+        priced, pl = requisition_in(db, bu, "1000", "10")
+        rfqs.append(
+            rfq_over(db, [entry(priced, pl, "10"), entry(state(db, r0.id), l0, "1")]),
+        )
+
+    def returned():
+        """What the requisition has given back so far: the line's amount less what it still holds."""
+        return Decimal(100) - Decimal(state(db, r0.id).reservation.remaining)
+
+    def approve(rfq, vids):
+        prepare(db, rfq, pick_one(db, rfq, vids[0], "10"))
+        decide_award(db, submit(db, rfq).id)
+
+    for rfq, vids in rfqs:
+        approve(rfq, vids)
+    assert line_qty(db, l0) == (Decimal(0), Decimal(3), Decimal(0))
+    assert returned() == Decimal("99.9900") and state(db, r0.id).status == "completed"
+    line = LineService(db[0], Scope(db[1])).list_lines(r0.id).rows[0]
+    assert sorted(c.rfq_number for c in line.unpriced_cancellations) == sorted(
+        sql(db, "SELECT number FROM rfq WHERE id=%s", (r.id,))[0][0] for r, _ in rfqs
+    )  # one Signal's worth: every RFQ and quantity on the one line
+    middle, vids = rfqs[1]
+    with correlation_context("supersede"):
+        awards(db).supersede(middle.id, ReasonBody(reason="Redo"))
+    assert returned() == Decimal("66.6600")  # the middle award's 33.33 is back, exactly
+    assert line_qty(db, l0) == (Decimal(1), Decimal(2), Decimal(0))
+    assert state(db, r0.id).status == "sourced"
+    approve(middle, vids)
+    assert line_qty(db, l0) == (Decimal(0), Decimal(3), Decimal(0))
+    assert returned() == Decimal("99.9900") and drift(db) == []  # never more than 100

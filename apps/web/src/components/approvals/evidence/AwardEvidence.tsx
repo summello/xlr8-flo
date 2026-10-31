@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import { apiClient } from "../../../api/client";
 import type { components } from "../../../api/generated/schema";
+import { qty } from "../../requisitions/model";
 import Money from "../../ui/Money";
 
 /** The server's evidence for an award (sourcing module, frozen figures only). Rendered as given; the browser computes nothing. */
@@ -105,7 +106,7 @@ export default function AwardEvidence({ evidence }: { evidence: Json }) {
 
       {unpriced.length > 0 && (
         <p className="appr-meta" role="status">
-          {unpriced.length === 1 ? "1 line has" : `${unpriced.length} lines have`} no priced quote and will be cancelled on approval: {unpriced.map((u) => `line ${u.line_no}, ${u.description}, quantity ${u.quantity} (${u.requisition})`).join("; ")}.
+          {unpriced.length === 1 ? "1 line has" : `${unpriced.length} lines have`} no priced quote and will be cancelled on approval: {unpriced.map((u) => `line ${u.line_no}, ${u.description}, quantity ${qty(u.quantity)} (${u.requisition})`).join("; ")}.
         </p>
       )}
 
