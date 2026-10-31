@@ -7071,6 +7071,71 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E13-S23",
+      "kind": "concurrency",
+      "size": "S",
+      "tags": [
+        "concurrency"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 3,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 4
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 4,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "ab927d31-714a-40a8-8dd0-62777f6ffe80",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S23",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a18fd9-a1b7-7922-8d89-db9c571ab8af",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "PurchaseOrderService.withdraw no longer locks the PO before the approval instance, and ChangeService.submit locks award-first through _lock, so every PO writer takes instance/award before the PO. Five real-Postgres tests cover the lock order and the withdraw/approve, withdraw/cancel and submit/cancel races.",
+      "title": "PO lock order: withdrawal takes the approval instance before the PO; change-order submit takes the award first",
+      "durations": {
+        "wall_s": 41624,
+        "author_s": 1151,
+        "review_s": {
+          "codex": 28,
+          "opus": 176
+        },
+        "gate_s": 2
+      }
     }
   ]
 }

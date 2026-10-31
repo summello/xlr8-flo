@@ -516,7 +516,7 @@ class ChangeService:
         """Material changes only (decision 208: a published `po_change` workflow, never auto)."""
         expected, actor = parse_if_match(if_match), cast(UUID, self.actor_id)
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
-            self.po._row(po_id, lock=True)
+            self._lock(po_id)  # award first, the PO last: the order of every writer
             ch = self._read(po_id=po_id, number=number, lock=True)
             if ch.status != "draft":
                 raise conflict("invalid_transition", "Only a draft change order can be submitted.")

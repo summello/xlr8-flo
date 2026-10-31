@@ -2315,7 +2315,7 @@ epics:
           - PO-007
         dep:
           - E13-S07
-        st: review
+        st: done
       - id: E13-S24
         t: Vendor cancellation email for a cancelled issued PO, through the outbox
         k: engine

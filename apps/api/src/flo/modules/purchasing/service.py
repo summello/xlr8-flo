@@ -882,9 +882,10 @@ class PurchaseOrderService:
         return self.get(id)
 
     def withdraw(self, id: UUID) -> PoRead:
-        """The approval ends WITHDRAWN and the adapter moves the PO back to draft."""
+        """The approval ends WITHDRAWN and the adapter moves the PO back to draft. No PO lock here:
+        the instance is locked first and the adapter takes the PO after it, as `decide` does."""
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
-            h = self._row(id, lock=True)
+            h = self._row(id)
             self._creator_only(id)
             if h["status"] != "approval_pending":
                 raise conflict(

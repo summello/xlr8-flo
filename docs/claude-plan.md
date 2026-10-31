@@ -562,7 +562,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E10-S12** Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11) | E10 | ui | L | APR-011, APR-021, ACC-007 | ~~E10-S11~~, ~~E10-S05~~ |
 | ✅ | **E10-S13** Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes | E10 | engine | M | APR-003, PROJ-002, VEN-005, BUD-007 | ~~E10-S07~~ |
 
-#### M3 — First sellable release · 63/79 done
+#### M3 — First sellable release · 64/79 done
 
 > Vendors, RFQs, awards and purchase orders by email. Closes the money loop end to end.
 
@@ -632,7 +632,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E13-S20** PO decision panel: Purchase Order Evidence block | E13 | ui | M | PO-003, APR-020 | ~~E13-S04~~, ~~E11-S10~~ |
 | ⬜ | **E13-S21** Sending domain status and suppression list (Administration) | E13 | ui | M | EML-001, EML-003 | E13-S10 |
 | ✅ | **E13-S22** Purchase-order open questions for the operator (parking story) | E13 | docs | S | PO-007 | — |
-| 👀 | **E13-S23** PO lock order: withdrawal takes the approval instance before the PO; change-order submit takes the award first | E13 | concurrency | S | PO-007 | ~~E13-S07~~ |
+| ✅ | **E13-S23** PO lock order: withdrawal takes the approval instance before the PO; change-order submit takes the award first | E13 | concurrency | S | PO-007 | ~~E13-S07~~ |
 | ⬜ | **E13-S24** Vendor cancellation email for a cancelled issued PO, through the outbox | E13 | engine | M | PO-013, PO-015, ARCH-006 | ~~E13-S07~~, E13-S09 |
 | ⬜ | **E13-S25** Per-file vendor-facing mark on PO attachments (records intent, sends nothing until E19-S04) | E13 | security | M | PO-017 | E13-S11 |
 | ✅ | **E22-S01** Create Project with budget: form and Excel, sponsors, through the project approval workflow | E22 | engine | L | PROJ-003 | ~~E09-S17~~ |
