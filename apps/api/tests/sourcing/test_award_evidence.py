@@ -74,6 +74,7 @@ def test_the_instance_carries_the_award_evidence_and_matches_the_award_read(life
             "award": c.award,
             "over_scope_by": c.over_scope_by,
             "release": c.release,
+            "unpriced": c.unpriced,
             "return_project": c.main_project,
         }
         for c in read.checks
