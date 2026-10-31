@@ -1982,7 +1982,7 @@ epics:
           - E12-S23
           - E12-S08
           - E13-S07
-        st: todo
+        st: in_progress
 
   - id: E13
     name: Purchase orders

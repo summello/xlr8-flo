@@ -609,7 +609,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E12-S21** Comparison engine follow-up: selection totals, amount to spare, late override, counts (for E12-S10) | E12 | engine | M | SRC-009, SRC-008, SRC-014, SRC-016 | ~~E12-S06~~ |
 | ✅ | **E12-S22** Comparison engine: converted unit price on each cell (SRC-009 unit cost, for E12-S10) | E12 | engine | S | SRC-009, SRC-010 | ~~E12-S06~~, ~~E12-S21~~ |
 | ✅ | **E12-S23** No zero-value lines: bids refuse a quoted price of 0 or one that rounds to 0, a bid must quote a line, and the zero-price special cases go | E12 | engine | M | SRC-006, FIN-009 | ~~E13-S02~~ |
-| ⬜ | **E12-S24** Lines with no priced quote: one derived rule across documents, auto-cancel at award approval, a small notice | E12 | engine | L | SRC-009, SRC-018 | ~~E12-S23~~, ~~E12-S08~~, ~~E13-S07~~ |
+| 🔨 | **E12-S24** Lines with no priced quote: one derived rule across documents, auto-cancel at award approval, a small notice | E12 | engine | L | SRC-009, SRC-018 | ~~E12-S23~~, ~~E12-S08~~, ~~E13-S07~~ |
 | ✅ | **E13-S01** PO from awarded requisition lines or authorized project items, scoped numbering | E13 | crud | L | PO-001, PO-002, PO-006, SEQ-001 | ~~E12-S08~~, ~~E12-S09~~ |
 | ✅ | **E13-S02** Tax and freight per BU/OU policy, separately visible on line and document | E13 | ledger | M | FIN-008, FIN-009, PO-016 | ~~E13-S01~~ |
 | ✅ | **E13-S03** PO lifecycle state machine | E13 | engine | M | PO-007, WF-002 | ~~E13-S01~~, ~~E11-S09~~ |
