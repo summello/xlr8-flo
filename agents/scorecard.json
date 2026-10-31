@@ -7202,6 +7202,53 @@
         },
         "gate_s": 2
       }
+    },
+    {
+      "story": "E13-S11",
+      "kind": "security",
+      "size": "M",
+      "tags": [
+        "security"
+      ],
+      "author": "sonnet",
+      "reviewers": [],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {},
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "e6ac55b2-75bc-4070-bedb-cf40bdd63e61",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S11",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "21f7a36e-5aad-4162-9f70-f47cc235f6f0",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Registered purchase_order for notes/attachments with a create-or-amend write rule and a share hook; vendor copy now carries shareable notes of the revision chain, read by one SQL-filtered function. Attachments still never reach the supplier.",
+      "title": "Internal vs vendor-facing notes and attachments, enforced by test",
+      "durations": {
+        "wall_s": 10769,
+        "author_s": 1655,
+        "review_s": {
+          "opus": 397
+        },
+        "gate_s": 80
+      }
     }
   ]
 }
