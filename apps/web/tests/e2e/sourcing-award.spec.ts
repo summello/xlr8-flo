@@ -151,3 +151,38 @@ for (const theme of ["light", "dark"] as const) {
     expect((await new AxeBuilder({ page }).analyze()).violations.map(v => `${v.id}: ${v.nodes.map(n => JSON.stringify(n.target)).join(" ")}`)).toEqual([]);
   });
 }
+
+/** Line 2 priced by nobody: the server says so (`no_priced_quote`) and lists it on the award. */
+const unpriced = () => {
+  const c = comparison();
+  const line = c.lines[1]! as Record<string, unknown>;
+  line.no_priced_quote = true;
+  line.lowest = null;
+  (line.cells as Record<string, unknown>[]).forEach(cell => Object.assign(cell, { not_quoted: true, landed: null, unit_price: null, unit_price_converted: null, quantity: null }));
+  return c;
+};
+const withUnpriced = () => award({ unpriced_lines: [{ rfq_line_id: "l2", line_no: 2, description: "Spare seal kit", quantity: "2.0000", requisition: "REQ-2" }] });
+
+test("a line no vendor priced shows the Signal and the cancel-on-approval sentence, before approval", async ({ page }) => {
+  await stubAward(page, { existing: withUnpriced(), comparisonBody: unpriced() });
+  await page.goto(url);
+  const lines = page.locator("#aw-lines fieldset").nth(1);
+  await expect(lines.getByText("No vendor priced this line")).toBeVisible();
+  await expect(page.getByText(/1 line has no priced quote and will be cancelled on approval: line 2, Spare seal kit, quantity 2\.0000 \(REQ-2\)/)).toBeVisible();
+  await page.goto(`/sourcing/rfqs/${rfqId}/comparison`);
+  const tab = page.getByRole("tab", { name: "By Line" });
+  await keyboardFocus(page, page.getByRole("tab", { selected: true })); // keyboard only: the tab list, then the arrow
+  await page.keyboard.press("ArrowRight"); await page.keyboard.press("Enter");
+  await tab.click();
+  await expect(page.locator("#cmp-panel").getByText("No vendor priced this line")).toBeVisible();
+});
+
+for (const theme of ["light", "dark"] as const) {
+  test(`axe: the award with an unpriced line in the ${theme} theme`, async ({ page }) => {
+    await page.addInitScript(t => localStorage.setItem("xlr8flo.theme", t), theme);
+    await stubAward(page, { existing: withUnpriced(), comparisonBody: unpriced() });
+    await page.goto(url);
+    await expect(page.getByText("No vendor priced this line")).toBeVisible();
+    expect((await new AxeBuilder({ page }).analyze()).violations.map(v => `${v.id}: ${v.nodes.map(n => JSON.stringify(n.target)).join(" ")}`)).toEqual([]);
+  });
+}
