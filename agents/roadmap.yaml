@@ -3483,6 +3483,15 @@ epics:
           - SUP-005
         dep: []
         st: done
+      - id: E23-S19
+        t: Fleet watch with deterministic detectors, a daily digest and an accept/reject log for supervisor proposals
+        k: chore
+        s: M
+        tags: []
+        reqs:
+          - SUP-005
+        dep: []
+        st: todo
   - id: E30
     name: Future roadmap
     milestone: M7
