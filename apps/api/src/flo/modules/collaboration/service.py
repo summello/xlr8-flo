@@ -1,6 +1,6 @@
 """Authorized, tenant-scoped notes and retained private attachment versions."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import cast
 from uuid import UUID, uuid4
@@ -27,7 +27,13 @@ from flo.modules.collaboration.schemas import (
     NoteRevisionRead,
 )
 
-__all__ = ["CollaborationService", "DocumentAccess", "register_document_access", "lock_note"]
+__all__ = [
+    "CollaborationService",
+    "DocumentAccess",
+    "external_notes_for",
+    "register_document_access",
+    "lock_note",
+]
 
 
 @dataclass(frozen=True)
@@ -46,6 +52,11 @@ class DocumentAccess:
     # Runs after the read permission passes and raises when the document is sealed to this actor
     # (a bid's evidence before its deadline); it never runs for writes.
     read_guard: (
+        Callable[[psycopg.Connection[tuple[object, ...]], Scope, UUID, UUID | None], None] | None
+    ) = None
+    # Runs, after the read check, when a note is created `shareable` or edited to a `shareable`
+    # result; it raises to refuse. None (every type but purchase_order) keeps the read rule.
+    share_authorize: (
         Callable[[psycopg.Connection[tuple[object, ...]], Scope, UUID, UUID | None], None] | None
     ) = None
 
@@ -67,6 +78,27 @@ ATT_SQL = """SELECT a.id,a.document_type,a.document_id,v.version,
  v.uploaded_by,i.email,i.display_name,v.uploaded_at,a.deleted_at FROM attachment a
  JOIN attachment_version v ON v.org_id=a.org_id AND v.attachment_id=a.id
  JOIN identity i ON i.id=v.uploaded_by"""
+
+
+def external_notes_for(
+    connection: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    document_type: str,
+    document_ids: Sequence[UUID],
+) -> list[NoteRead]:
+    """Internal, no authorization. Only `shareable` notes, filtered in SQL, oldest first."""
+    with tenant_transaction(cast(RlsSession, connection), scope):
+        rows = (
+            CollaborationRepository(connection, scope)
+            .execute(
+                NOTE_SQL + " WHERE n.org_id=%(org_id)s AND n.document_type=%(type)s "
+                "AND n.document_id = ANY(%(ids)s) AND n.visibility='shareable' "
+                "ORDER BY n.created_at, n.id",
+                {"type": document_type, "ids": list(document_ids)},
+            )
+            .fetchall()
+        )
+    return [NoteRead.model_validate(dict(zip(NOTE_FIELDS, row, strict=True))) for row in rows]
 
 
 class CollaborationService:
@@ -142,6 +174,11 @@ class CollaborationService:
             raise ProblemError(ErrorCode.NOT_FOUND)
         return NoteRead.model_validate(dict(zip(NOTE_FIELDS, row, strict=True)))
 
+    def _authorize_share(self, document_type: str, document_id: UUID) -> None:
+        hook = _ACCESS[document_type].share_authorize
+        if hook is not None:
+            hook(self.connection, self.scope, document_id, self.actor_id)
+
     def notes(self, request: Request, document_type: str, document_id: UUID) -> list[NoteRead]:
         self.authorize(request, document_type, document_id)
         return self.notes_unchecked(document_type, document_id)
@@ -164,6 +201,8 @@ class CollaborationService:
     ) -> NoteRead:
         self.authorize(request, document_type, document_id)
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            if body.visibility == "shareable":
+                self._authorize_share(document_type, document_id)
             id = uuid4()
             self.repo.execute(
                 "INSERT INTO note(id,org_id,document_type,document_id,author_id,body,visibility) "
@@ -177,7 +216,8 @@ class CollaborationService:
     def edit_note(
         self, request: Request, id: UUID, body: NotePatch, version: str | None
     ) -> NoteRead:
-        self.authorize(request, *self.linked_document("note", id))
+        document_type, document_id = self.linked_document("note", id)
+        self.authorize(request, document_type, document_id)
         if version is None:
             raise ProblemError(
                 ErrorCode.BAD_REQUEST, detail="Supply If-Match with the note version."
@@ -208,6 +248,8 @@ class CollaborationService:
                 raise ProblemError(
                     ErrorCode.VALIDATION_FAILED, detail="Body and visibility cannot be null."
                 )
+            if (body.visibility or before.visibility) == "shareable":
+                self._authorize_share(document_type, document_id)
             self.repo.execute(
                 "INSERT INTO note_revision(org_id,note_id,body,visibility,edited_by) "
                 "VALUES(%(org_id)s,%(id)s,%(body)s,%(visibility)s,%(actor)s)",

@@ -15,6 +15,7 @@ from pydantic import BaseModel, ConfigDict
 
 from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.tenancy.context import Scope
+from flo.modules.collaboration.service import external_notes_for
 from flo.modules.org.service import OrgService
 from flo.modules.purchasing.service import PurchaseOrderService
 
@@ -69,7 +70,7 @@ class VendorCopy(_Copy):
     tax_total: str
     freight_total: str
     total: str
-    notes: list[VendorCopyNote] = []  # E13-S11 fills it; always empty in E13-S08
+    notes: list[VendorCopyNote] = []  # shareable notes of this revision and its ancestors (E13-S11)
 
 
 def _address(source: dict[str, Any]) -> VendorCopyAddress:
@@ -104,6 +105,16 @@ def vendor_copy(conn: Conn, scope: Scope, po_id: UUID) -> VendorCopy:
     def setting(key: str) -> str | None:
         return cast(str | None, org.effective_setting(po.unit_id, key).value)
 
+    chain = [
+        cast(UUID, r[0])
+        for r in service.repo.execute(
+            "WITH RECURSIVE chain AS (SELECT id, supersedes_id FROM purchase_order "
+            "WHERE org_id = %(org_id)s AND id = %(id)s UNION ALL SELECT p.id, p.supersedes_id "
+            "FROM purchase_order p JOIN chain c "
+            "ON p.org_id = %(org_id)s AND p.id = c.supersedes_id) SELECT id FROM chain",
+            {"id": po_id},
+        ).fetchall()
+    ]
     return VendorCopy(
         number=po.number,
         revision=po.revision,
@@ -127,6 +138,10 @@ def vendor_copy(conn: Conn, scope: Scope, po_id: UUID) -> VendorCopy:
         tax_total=po.tax_total,
         freight_total=po.freight_total,
         total=po.total,
+        notes=[
+            VendorCopyNote(body=n.body, created_on=n.created_at.date())
+            for n in external_notes_for(conn, scope, "purchase_order", chain)
+        ],
     )
 
 
