@@ -1,7 +1,7 @@
 #!/bin/sh
 # Packet pre-flight (E23-S05): Codex (or an OpenRouter reviewer such as qwen) checks design/<S>.md
 # against the code before an author starts, then files the record `flo start` requires.
-# Usage: agents/scripts/preflight.sh <STORY_ID> [codex|qwen|...]   (default codex, operator 23 Oct 2026:
+# Usage: agents/scripts/preflight.sh <STORY_ID> [codex|opus [A|B]|qwen|...]   (default codex, operator 23 Oct 2026:
 # qwen hit its 40-call cap without a verdict three times that day)
 # FLO_PREFLIGHT_DRAFT=1: an early pass on a story not ready yet; logs to <S>.preflight-draft.log and
 # files no record, so `flo start` still needs a real pre-flight once its deps merge.
@@ -46,6 +46,11 @@ if [ "$A" = codex ]; then
   # effort pinned on the command line, as in review.sh: an inherited config.toml once ran `low`
   codex exec -m "$M" -c model_reasoning_effort=medium -c project_doc_max_bytes=0 -s read-only \
     --skip-git-repo-check "$(cat "$P")" < /dev/null > "$L" 2>&1 || true
+elif [ "$A" = opus ]; then
+  # roles.json preflight_reviewer = opus-<acct>: a fresh read-only session; $3 = account (default A)
+  if [ "${3:-A}" = A ]; then ENV="env -u CLAUDE_CONFIG_DIR"; else ENV="env CLAUDE_CONFIG_DIR=$HOME/.claude-summello"; fi
+  $ENV claude -p --model opus -n "packet-preflight $S" --permission-mode auto \
+    --disallowedTools=Edit,Write,NotebookEdit -- "$(cat "$P")" < /dev/null > "$L" 2>&1 || true
 else
   XDG_DATA_HOME="$D/xdg-preflight" OPENROUTER_API_KEY="$(security find-generic-password -a "$USER" -s OPENROUTER_API_KEY -w)" \
     opencode run --auto -m "openrouter/$M" "$(cat "$P")" > "$L" 2>&1 & OP=$!
