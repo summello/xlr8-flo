@@ -418,6 +418,8 @@ def register_unpriced_cancellations(fn: UnpricedSource) -> None:
 def unpriced_cancellations(
     conn: Conn, scope: Scope, line_ids: list[UUID]
 ) -> list[tuple[UUID, UUID, str, Decimal]]:
+    if not line_ids:  # a slice was cancelled only where cancelled quantity exists
+        return []
     return [row for fn in _unpriced_sources for row in fn(conn, scope, line_ids)]
 
 

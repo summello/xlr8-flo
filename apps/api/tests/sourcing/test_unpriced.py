@@ -21,7 +21,13 @@ from flo.modules.requisitions.schemas import LineSourcing
 from flo.modules.requisitions.service import source_lines
 from flo.modules.sourcing.awards import AwardCreate, AwardPatch, AwardService, RequisitionCheck
 from flo.modules.sourcing.comparison import ComparisonRead
-from flo.modules.sourcing.schemas import BidLineIn, BidSubmit, ReasonBody, RfqContentPatch
+from flo.modules.sourcing.schemas import (
+    BidLineIn,
+    BidReplace,
+    BidSubmit,
+    ReasonBody,
+    RfqContentPatch,
+)
 from flo.modules.sourcing.service import no_priced_quote
 from tests.requisitions.test_approval_effects import approve as approve_requisition
 from tests.requisitions.test_approval_effects import drift, linked, reviewer, state
@@ -46,6 +52,7 @@ from tests.sourcing.test_award import (
 from tests.sourcing.test_award import (
     pick as pick_one,
 )
+from tests.sourcing.test_bids import bids as bid_service
 from tests.sourcing.test_bids import complete, edit, evidence, key
 from tests.sourcing.test_bids import submit as submit_bid
 from tests.sourcing.test_comparison import deadline_ago, quoted
@@ -418,6 +425,22 @@ def test_bids_cannot_change_while_the_award_awaits_approval_and_can_again_after_
     # and a submitted bid is in the snapshot of the next submit: the unpriced set is re-read
     assert unpriced_ids(db, rfq) == set()
     assert BidSubmit().accept_late_reason is None
+
+
+def test_bid_replace_is_refused_while_the_award_awaits_approval(lifecycle_db):
+    """Replace needs a deadline still ahead, which a pending award never has in practice; the
+    deadline is moved forward here so the award check, not `deadline_passed`, is what answers."""
+    db, _ = lifecycle_db
+    publish_workflow(db)
+    row, line = requisition(db, "1000", "10")
+    rfq, [a, _b] = rfq_over(db, [entry(row, line, "10")])
+    prepare(db, rfq, pick_one(db, rfq, a, "10"))
+    assert submit(db, rfq).status == "approval_pending"
+    sql(db, "UPDATE rfq SET deadline_at=now()+interval '1 day' WHERE id=%s RETURNING 1", (rfq.id,))
+    bid = sql(db, "SELECT id FROM bid WHERE rfq_id=%s AND vendor_id=%s", (rfq.id, a))[0][0]
+    body = BidReplace(reason="fix", sent_at=datetime.now(UTC))
+    with correlation_context("bid"):
+        assert problem(lambda: bid_service(db).replace(rfq.id, bid, body)) == "award_pending"
 
 
 # -- rounding ---------------------------------------------------------------------------------
