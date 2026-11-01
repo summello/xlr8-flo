@@ -1291,6 +1291,14 @@
             "title": "Total",
             "type": "string"
           },
+          "unpriced_lines": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/UnpricedLine"
+            },
+            "title": "Unpriced Lines",
+            "type": "array"
+          },
           "version": {
             "title": "Version",
             "type": "integer"
@@ -8002,6 +8010,14 @@
             "title": "Unit Price",
             "type": "string"
           },
+          "unpriced_cancellations": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/UnpricedCancellation"
+            },
+            "title": "Unpriced Cancellations",
+            "type": "array"
+          },
           "uom_code": {
             "title": "Uom Code",
             "type": "string"
@@ -8070,6 +8086,11 @@
               }
             ],
             "title": "Needed By"
+          },
+          "no_priced_quote": {
+            "default": false,
+            "title": "No Priced Quote",
+            "type": "boolean"
           },
           "quantity": {
             "title": "Quantity",
@@ -13429,6 +13450,11 @@
           "scope": {
             "title": "Scope",
             "type": "string"
+          },
+          "unpriced": {
+            "default": "0",
+            "title": "Unpriced",
+            "type": "string"
           }
         },
         "required": [
@@ -17419,6 +17445,66 @@
           "truncated"
         ],
         "title": "TreeRead",
+        "type": "object"
+      },
+      "UnpricedCancellation": {
+        "description": "A slice an approved award cancelled because no vendor priced its RFQ line (E12-S24).",
+        "properties": {
+          "quantity": {
+            "title": "Quantity",
+            "type": "string"
+          },
+          "rfq_id": {
+            "format": "uuid",
+            "title": "Rfq Id",
+            "type": "string"
+          },
+          "rfq_number": {
+            "title": "Rfq Number",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rfq_id",
+          "rfq_number",
+          "quantity"
+        ],
+        "title": "UnpricedCancellation",
+        "type": "object"
+      },
+      "UnpricedLine": {
+        "description": "An RFQ line no vendor priced: cancelled when the award is approved (E12-S24).",
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "line_no": {
+            "title": "Line No",
+            "type": "integer"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "string"
+          },
+          "requisition": {
+            "title": "Requisition",
+            "type": "string"
+          },
+          "rfq_line_id": {
+            "format": "uuid",
+            "title": "Rfq Line Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rfq_line_id",
+          "line_no",
+          "description",
+          "quantity",
+          "requisition"
+        ],
+        "title": "UnpricedLine",
         "type": "object"
       },
       "UserApprovers": {

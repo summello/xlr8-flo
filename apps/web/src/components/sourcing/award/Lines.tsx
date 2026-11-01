@@ -1,4 +1,5 @@
 import Money from "../../ui/Money";
+import Signal from "../../ui/Signal";
 import type { Comparison } from "../comparison/api";
 import { fieldId, rowKey, standing, type Row } from "./api";
 
@@ -6,6 +7,7 @@ import { fieldId, rowKey, standing, type Row } from "./api";
 export default function Lines({ c, rows, setRow, required, locked }: { c: Comparison; rows: Record<string, Row>; setRow: (key: string, patch: Partial<Row>) => void; required: boolean; locked: boolean }) {
   return <div id="aw-lines" tabIndex={-1} className="aw-lines">{c.lines.map(line => <fieldset key={line.rfq_line_id} className="req-card aw-line" disabled={locked}>
     <legend>Line {line.line_no} · {line.description} · Quantity {line.quantity}</legend>
+    {line.no_priced_quote && <Signal tone="warning" label="No vendor priced this line" />}
     {line.cells.filter(cell => !cell.not_quoted).map(cell => {
       const key = rowKey(line.rfq_line_id, cell.vendor_id), row = rows[key] ?? { quantity: "", reason: "" }, kind = standing(line, cell.vendor_id);
       const name = c.vendors.find(v => v.vendor_id === cell.vendor_id)?.vendor_name ?? "Vendor", awarded = /[1-9]/.test(row.quantity);

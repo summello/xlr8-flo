@@ -4327,6 +4327,11 @@ export interface components {
             submitted_at: string | null;
             /** Total */
             total: string;
+            /**
+             * Unpriced Lines
+             * @default []
+             */
+            unpriced_lines?: components["schemas"]["UnpricedLine"][];
             /** Version */
             version: number;
         };
@@ -6642,6 +6647,11 @@ export interface components {
             sourced_qty: string;
             /** Unit Price */
             unit_price: string;
+            /**
+             * Unpriced Cancellations
+             * @default []
+             */
+            unpriced_cancellations?: components["schemas"]["UnpricedCancellation"][];
             /** Uom Code */
             uom_code: string;
         };
@@ -6658,6 +6668,11 @@ export interface components {
             lowest: components["schemas"]["Marker"] | null;
             /** Needed By */
             needed_by: string | null;
+            /**
+             * No Priced Quote
+             * @default false
+             */
+            no_priced_quote?: boolean;
             /** Quantity */
             quantity: string;
             /**
@@ -8539,6 +8554,11 @@ export interface components {
             requisition_id: string;
             /** Scope */
             scope: string;
+            /**
+             * Unpriced
+             * @default 0
+             */
+            unpriced?: string;
         };
         /** RequisitionCreate */
         RequisitionCreate: {
@@ -9860,6 +9880,40 @@ export interface components {
             tree: components["schemas"]["TreeNode"];
             /** Truncated */
             truncated: boolean;
+        };
+        /**
+         * UnpricedCancellation
+         * @description A slice an approved award cancelled because no vendor priced its RFQ line (E12-S24).
+         */
+        UnpricedCancellation: {
+            /** Quantity */
+            quantity: string;
+            /**
+             * Rfq Id
+             * Format: uuid
+             */
+            rfq_id: string;
+            /** Rfq Number */
+            rfq_number: string;
+        };
+        /**
+         * UnpricedLine
+         * @description An RFQ line no vendor priced: cancelled when the award is approved (E12-S24).
+         */
+        UnpricedLine: {
+            /** Description */
+            description: string;
+            /** Line No */
+            line_no: number;
+            /** Quantity */
+            quantity: string;
+            /** Requisition */
+            requisition: string;
+            /**
+             * Rfq Line Id
+             * Format: uuid
+             */
+            rfq_line_id: string;
         };
         /** UserApprovers */
         UserApprovers: {

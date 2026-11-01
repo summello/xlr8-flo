@@ -1,7 +1,7 @@
 """The open-quantity guard: the only writer of `requisition_line.sourced_qty` (SRC-003, REQ-014)."""
 
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from decimal import Decimal
 from typing import cast
 from uuid import UUID
@@ -404,6 +404,188 @@ def cancel_lines(
             )
 
 
+type UnpricedSource = Callable[[Conn, Scope, list[UUID]], list[tuple[UUID, UUID, str, Decimal]]]
+_unpriced_sources: list[UnpricedSource] = []
+
+
+def register_unpriced_cancellations(fn: UnpricedSource) -> None:
+    """Sourcing registers (requisition line ids) -> (line id, rfq id, rfq number, quantity) for
+    approved awards: the "no priced quote" rule lives there once (E12-S24)."""
+    if fn not in _unpriced_sources:
+        _unpriced_sources.append(fn)
+
+
+def unpriced_cancellations(
+    conn: Conn, scope: Scope, line_ids: list[UUID]
+) -> list[tuple[UUID, UUID, str, Decimal]]:
+    if not line_ids:  # a slice was cancelled only where cancelled quantity exists
+        return []
+    return [row for fn in _unpriced_sources for row in fn(conn, scope, line_ids)]
+
+
+def lock_lines(conn: Conn, scope: Scope, line_ids: Sequence[UUID]) -> None:
+    """Lock the owning requisitions in id order, then the lines in id order (E12-S24).
+
+    One pass for an award's whole footprint, so approval and supersede cannot deadlock on a
+    requisition they reach by different lines. `award_lines` and the cancels re-lock held rows.
+    """
+    if not line_ids:
+        return
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        repo = RequisitionRepository(conn, scope)
+        owners = {
+            cast(UUID, r[1])
+            for r in repo.execute(
+                "SELECT id, requisition_id FROM requisition_line "
+                "WHERE org_id = %(org_id)s AND id = ANY(%(ids)s)",
+                {"ids": sorted(set(line_ids))},
+            ).fetchall()
+        }
+        for requisition_id in sorted(owners):
+            read_row(repo, requisition_id, lock=True)
+        repo.execute(
+            "SELECT id FROM requisition_line WHERE org_id = %(org_id)s AND id = ANY(%(ids)s) "
+            "ORDER BY id FOR UPDATE",
+            {"ids": sorted(set(line_ids))},
+        ).fetchall()
+
+
+def notify_requester_lines_cancelled(
+    conn: Conn, scope: Scope, requisition_id: UUID, line_ids: Sequence[UUID]
+) -> None:
+    """E17-S02 wires the requester's notification here, in the award approval transaction."""
+
+
+def _move_unpriced(
+    conn: Conn,
+    scope: Scope,
+    award_id: UUID,
+    changes: Sequence[tuple[UUID, UUID, Decimal]],
+    actor_id: UUID,
+    *,
+    cancel: bool,
+) -> None:
+    """Move each (requisition line, RFQ line, qty) between `sourced_qty` and `cancelled_qty`.
+
+    `cancel` is sourced -> cancelled (award approval); otherwise the exact inverse (supersede).
+    Changes no status. The caller holds `lock_lines`; every move is validated before any write.
+    """
+    if not changes:
+        return
+    wanted: dict[UUID, Decimal] = defaultdict(Decimal)
+    for line_id, _, qty in changes:
+        wanted[line_id] += qty
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        repo = RequisitionRepository(conn, scope)
+        lines = {
+            cast(UUID, r[0]): r
+            for r in repo.execute(
+                "SELECT l.id, l.requisition_id, l.quantity, l.cancelled_qty, l.sourced_qty, "
+                "l.ordered_qty, r.status FROM requisition_line l JOIN requisition r "
+                "ON r.org_id = l.org_id AND r.id = l.requisition_id "
+                "WHERE l.org_id = %(org_id)s AND l.id = ANY(%(ids)s) "
+                "ORDER BY l.id FOR UPDATE OF l",
+                {"ids": sorted(wanted)},
+            ).fetchall()
+        }
+        if lines.keys() != wanted.keys():
+            raise ProblemError(ErrorCode.NOT_FOUND)
+        allowed = (
+            ("sourcing_in_progress", "sourced")
+            if cancel
+            else ("sourcing_in_progress", "sourced", "open_for_purchase", "completed")
+        )
+        for line_id, qty in wanted.items():
+            quantity, cancelled, sourced, ordered = (cast(Decimal, v) for v in lines[line_id][2:6])
+            status = cast(str, lines[line_id][6])
+            if status not in allowed:
+                raise conflict(
+                    "requisition_not_cancellable",
+                    "The requisition is not in a state where unpriced lines can move.",
+                )
+            if cancel:
+                bad = sourced - qty < 0 or ordered + cancelled + qty > quantity
+            else:
+                bad = cancelled < qty
+            if bad:
+                raise conflict(
+                    "over_cancel", f"Line {line_id} cannot move {qty:f} for an unpriced quote."
+                )
+        by_requisition: dict[UUID, list[UUID]] = defaultdict(list)
+        for line_id, rfq_line_id, qty in changes:
+            owner = cast(UUID, lines[line_id][1])
+            sign = qty if cancel else -qty
+            before_c, before_s = cast(Decimal, lines[line_id][3]), cast(Decimal, lines[line_id][4])
+            repo.execute(
+                "UPDATE requisition_line SET cancelled_qty = cancelled_qty + %(d)s, "
+                "sourced_qty = sourced_qty - %(d)s, updated_at = now() "
+                "WHERE org_id = %(org_id)s AND id = %(id)s",
+                {"id": line_id, "d": sign},
+            )
+            lines[line_id] = (
+                *lines[line_id][:3],
+                before_c + sign,
+                before_s - sign,
+                *lines[line_id][5:],
+            )
+            audit_event(
+                cast(AuditConnection, conn),
+                scope,
+                actor=AuditActor(ActorKind.USER, actor_id),
+                action=f"requisition.{'cancel' if cancel else 'restore'}_unpriced.update",
+                target_type="requisition",
+                target_id=owner,
+                outcome=Outcome.SUCCESS,
+                before={
+                    str(line_id): {
+                        "sourced_qty": format(before_s, "f"),
+                        "cancelled_qty": format(before_c, "f"),
+                    }
+                },
+                after={
+                    str(line_id): {
+                        "sourced_qty": format(before_s - sign, "f"),
+                        "cancelled_qty": format(before_c + sign, "f"),
+                        "award_id": str(award_id),
+                        "rfq_line_id": str(rfq_line_id),
+                        "reason": "no_priced_quote",
+                    }
+                },
+            )
+            by_requisition[owner].append(line_id)
+        if cancel:
+            for requisition_id, ids in sorted(by_requisition.items()):
+                notify_requester_lines_cancelled(conn, scope, requisition_id, ids)
+
+
+def cancel_unpriced(
+    conn: Conn,
+    scope: Scope,
+    award_id: UUID,
+    changes: Sequence[tuple[UUID, UUID, Decimal]],
+    actor_id: UUID,
+) -> None:
+    """Approval of an award cancels the RFQ slices no vendor priced (E12-S24).
+
+    `changes` is (requisition line, RFQ line, RFQ line quantity). `sourced_qty -= qty`,
+    `cancelled_qty += qty`: open quantity is unchanged and the rest of the line is untouched.
+    The requisition must be `sourcing_in_progress` or `sourced`; no status changes. A cancel is
+    final (it cannot be ordered again), as with `cancel_lines`.
+    """
+    _move_unpriced(conn, scope, award_id, changes, actor_id, cancel=True)
+
+
+def restore_unpriced(
+    conn: Conn,
+    scope: Scope,
+    award_id: UUID,
+    changes: Sequence[tuple[UUID, UUID, Decimal]],
+    actor_id: UUID,
+) -> None:
+    """The exact inverse of `cancel_unpriced`, for a superseded award (decision 213)."""
+    _move_unpriced(conn, scope, award_id, changes, actor_id, cancel=False)
+
+
 def mark_completed(conn: Conn, scope: Scope, requisition_id: UUID, actor_id: UUID) -> bool:
     """`open_for_purchase` -> `completed` once every non-cancelled line is issued (decision 206).
 
@@ -426,7 +608,13 @@ def mark_completed(conn: Conn, scope: Scope, requisition_id: UUID, actor_id: UUI
         return True
 
 
-def reopen_for_purchase(conn: Conn, scope: Scope, requisition_id: UUID, actor_id: UUID) -> bool:
+def reopen_for_purchase(
+    conn: Conn,
+    scope: Scope,
+    requisition_id: UUID,
+    actor_id: UUID,
+    reason: str = "Issued quantity reduced",
+) -> bool:
     """`completed` -> `open_for_purchase` when a change order left a line short of issued (E13-S06).
 
     Returns whether the requisition moved; `mark_completed` closes it again once the quantity is
@@ -450,7 +638,7 @@ def reopen_for_purchase(conn: Conn, scope: Scope, requisition_id: UUID, actor_id
             row,
             "open_for_purchase",
             actor_id,
-            "Issued quantity reduced",
+            reason,
             None,
             audit_action="requisition.reopen_for_purchase",
         )

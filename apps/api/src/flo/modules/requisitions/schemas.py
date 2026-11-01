@@ -230,6 +230,14 @@ class LinesReplace(BaseModel):
     lines: list[ReplacementLine] = Field(max_length=500)
 
 
+class UnpricedCancellation(BaseModel):
+    """A slice an approved award cancelled because no vendor priced its RFQ line (E12-S24)."""
+
+    rfq_id: UUID
+    rfq_number: str
+    quantity: str
+
+
 class LineRead(BaseModel):
     id: UUID
     line_no: int
@@ -248,6 +256,7 @@ class LineRead(BaseModel):
     ordered_qty: str
     cancelled_qty: str
     remaining_qty: str
+    unpriced_cancellations: list[UnpricedCancellation] = []
 
 
 class LinesRead(BaseModel):

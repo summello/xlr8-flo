@@ -18,7 +18,7 @@ from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.org.service import OrgService
 from flo.modules.sourcing.models import RfqRepository
 from flo.modules.sourcing.sealing import visible
-from flo.modules.sourcing.service import RfqService
+from flo.modules.sourcing.service import CURRENT_BID, RfqService
 
 TERMINAL = ("awarded", "cancelled")  # sourcing.md:54
 EVALUABLE = ("draft", "published", "closed", "under_evaluation")
@@ -209,9 +209,7 @@ def tally(repo: RfqRepository, rfq_id: UUID) -> Tally:
         for r in _all(
             repo,
             "SELECT b.vendor_id FROM bid b WHERE b.org_id = %(org_id)s AND b.rfq_id = %(rfq)s "
-            "AND b.status = 'submitted' AND NOT EXISTS (SELECT 1 FROM bid r "
-            "WHERE r.org_id = b.org_id AND r.replaces_bid_id = b.id AND r.status = 'submitted') "
-            "ORDER BY b.sent_at, b.id",
+            "AND " + CURRENT_BID.format(a="b") + " ORDER BY b.sent_at, b.id",
             key,
         )
     ]

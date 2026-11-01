@@ -1,3 +1,4 @@
+import { qty } from "../../requisitions/model";
 import Money from "../../ui/Money";
 import { nonZero, verdict, type Award } from "./api";
 
@@ -17,6 +18,7 @@ export default function Checks({ award }: { award: Award }) {
         <td>{verdict([c]).kind === "ok" ? "Within scope and funds" : nonZero(c.over_scope_by) ? "Over scope" : "Over reserved funds"}</td>
       </tr>)}</tbody>
     </table>}
+    {award.unpriced_lines && award.unpriced_lines.length > 0 && <p className="req-sub">{award.unpriced_lines.length === 1 ? "1 line has" : `${award.unpriced_lines.length} lines have`} no priced quote and will be cancelled on approval: {award.unpriced_lines.map(u => `line ${u.line_no}, ${u.description}, quantity ${qty(u.quantity)} (${u.requisition})`).join("; ")}.</p>}
     {award.checks.filter(c => nonZero(c.release)).map(c => <p key={c.requisition_id} className="req-sub">On approval, <Money value={c.release} currency={ccy} zero="value" /> will be released and returned to {c.main_project || "the main project"} ({c.requisition}).</p>)}
   </section>;
 }

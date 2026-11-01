@@ -1,6 +1,7 @@
 import { CheckCircle, Circle, Info, Warning, XCircle } from "@phosphor-icons/react";
 import Money from "../ui/Money";
 import Person from "../ui/Person";
+import Signal from "../ui/Signal";
 import { qty } from "./model";
 import { formatDate, formatDateTime, label, type Decision, type Linked, type Requisition, type RequisitionLine, type StatusEvent } from "./api";
 
@@ -82,12 +83,13 @@ export function LinesCard({ lines }: { lines: RequisitionLine[] }) {
     {lines.length === 0 ? <div className="req-empty"><h3>No Lines</h3></div> :
       <table className="req-lines-table req-rollup"><thead><tr><th scope="col">Line</th><th scope="col" data-numeric>Requested</th><th scope="col" data-numeric data-extra>Sourced</th><th scope="col" data-numeric>Awarded</th><th scope="col" data-numeric data-extra>Ordered</th><th scope="col" data-numeric data-extra>Cancelled</th><th scope="col" data-numeric>Remaining</th></tr></thead>
         <tbody>{lines.map(l => <tr key={l.id}>
-          <td data-label="Line"><strong>{l.line_no}. {l.description}</strong><span className="req-sub">{label(l.line_type)} · {l.uom_code}</span></td>
+          <td data-label="Line"><strong>{l.line_no}. {l.description}</strong><span className="req-sub">{label(l.line_type)} · {l.uom_code}</span>{l.unpriced_cancellations && l.unpriced_cancellations.length > 0 && <Signal tone="warning" label={`Cancelled: no vendor priced this line (${l.unpriced_cancellations.map(u => `${u.rfq_number}: ${qty(u.quantity)}`).join(", ")})`} />}</td>
           <td data-label="Requested" data-numeric className="numeric">{qty(l.requested_qty)}</td>
           <td data-label="Sourced" data-numeric data-extra className="numeric">{qty(l.sourced_qty)}</td>
           <td data-label="Awarded" data-numeric className="numeric">{qty(l.awarded_qty)}</td>
           <td data-label="Ordered" data-numeric data-extra className="numeric">{qty(l.ordered_qty)}</td>
           <td data-label="Cancelled" data-numeric data-extra className="numeric">{qty(l.cancelled_qty)}</td>
           <td data-label="Remaining" data-numeric className="numeric">{qty(l.remaining_qty)}</td></tr>)}</tbody></table>}
+    {lines.length > 0 && <p className="req-sub">Cancelled quantity cannot be ordered again. A slice no vendor priced is cancelled when its award is approved.</p>}
   </section>;
 }

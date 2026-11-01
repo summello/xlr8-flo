@@ -562,7 +562,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E10-S12** Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11) | E10 | ui | L | APR-011, APR-021, ACC-007 | ~~E10-S11~~, ~~E10-S05~~ |
 | ✅ | **E10-S13** Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes | E10 | engine | M | APR-003, PROJ-002, VEN-005, BUD-007 | ~~E10-S07~~ |
 
-#### M3 — First sellable release · 66/79 done
+#### M3 — First sellable release · 67/79 done
 
 > Vendors, RFQs, awards and purchase orders by email. Closes the money loop end to end.
 
@@ -609,7 +609,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E12-S21** Comparison engine follow-up: selection totals, amount to spare, late override, counts (for E12-S10) | E12 | engine | M | SRC-009, SRC-008, SRC-014, SRC-016 | ~~E12-S06~~ |
 | ✅ | **E12-S22** Comparison engine: converted unit price on each cell (SRC-009 unit cost, for E12-S10) | E12 | engine | S | SRC-009, SRC-010 | ~~E12-S06~~, ~~E12-S21~~ |
 | ✅ | **E12-S23** No zero-value lines: bids refuse a quoted price of 0 or one that rounds to 0, a bid must quote a line, and the zero-price special cases go | E12 | engine | M | SRC-006, FIN-009 | ~~E13-S02~~ |
-| 👀 | **E12-S24** Lines with no priced quote: one derived rule across documents, auto-cancel at award approval, a small notice | E12 | engine | L | SRC-009, SRC-018 | ~~E12-S23~~, ~~E12-S08~~, ~~E13-S07~~ |
+| ✅ | **E12-S24** Lines with no priced quote: one derived rule across documents, auto-cancel at award approval, a small notice | E12 | engine | L | SRC-009, SRC-018 | ~~E12-S23~~, ~~E12-S08~~, ~~E13-S07~~ |
 | ✅ | **E13-S01** PO from awarded requisition lines or authorized project items, scoped numbering | E13 | crud | L | PO-001, PO-002, PO-006, SEQ-001 | ~~E12-S08~~, ~~E12-S09~~ |
 | ✅ | **E13-S02** Tax and freight per BU/OU policy, separately visible on line and document | E13 | ledger | M | FIN-008, FIN-009, PO-016 | ~~E13-S01~~ |
 | ✅ | **E13-S03** PO lifecycle state machine | E13 | engine | M | PO-007, WF-002 | ~~E13-S01~~, ~~E11-S09~~ |
@@ -634,7 +634,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E13-S22** Purchase-order open questions for the operator (parking story) | E13 | docs | S | PO-007 | — |
 | ✅ | **E13-S23** PO lock order: withdrawal takes the approval instance before the PO; change-order submit takes the award first | E13 | concurrency | S | PO-007 | ~~E13-S07~~ |
 | ⬜ | **E13-S24** Vendor cancellation email for a cancelled issued PO, through the outbox | E13 | engine | M | PO-013, PO-015, ARCH-006 | ~~E13-S07~~, ~~E13-S09~~ |
-| 🔨 | **E13-S25** Per-file vendor-facing mark on PO attachments (records intent, sends nothing until E19-S04) | E13 | security | M | PO-017 | ~~E13-S11~~ |
+| 👀 | **E13-S25** Per-file vendor-facing mark on PO attachments (records intent, sends nothing until E19-S04) | E13 | security | M | PO-017 | ~~E13-S11~~ |
 | ✅ | **E22-S01** Create Project with budget: form and Excel, sponsors, through the project approval workflow | E22 | engine | L | PROJ-003 | ~~E09-S17~~ |
 | ✅ | **E22-S02** Soft delete for every draft document | E22 | crud | M | DATA-002 | ~~E09-S15~~ |
 | ✅ | **E22-S03** One audit helper instead of twelve, behaviour-preserving | E22 | chore | M | AUD-001 | — |

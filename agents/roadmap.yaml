@@ -1982,7 +1982,7 @@ epics:
           - E12-S23
           - E12-S08
           - E13-S07
-        st: review
+        st: done
 
   - id: E13
     name: Purchase orders
@@ -2340,7 +2340,7 @@ epics:
           - PO-017
         dep:
           - E13-S11
-        st: in_progress
+        st: review
 
   - id: E22
     name: Budget governance follow-ups

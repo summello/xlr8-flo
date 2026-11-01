@@ -7249,6 +7249,53 @@
         },
         "gate_s": 80
       }
+    },
+    {
+      "story": "E12-S24",
+      "kind": "engine",
+      "size": "L",
+      "tags": [
+        "money"
+      ],
+      "author": "sonnet",
+      "reviewers": [],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {},
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "7d03ab27-e945-4956-8807-03f436f36754",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S24",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "21f7a36e-5aad-4162-9f70-f47cc235f6f0",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Derived no-priced-quote rule (one current-bid predicate, one helper); award approval now cancels the unpriced RFQ slices (sourced to cancelled), releases their rounded-down share in the existing per-requisition posting, completes all-cancelled requisitions, and supersede restores it all; bids are frozen while an award awaits approval and award submit re-validates its saved rows. Comparison, award, approver evidence and requisition lines show a Signal/sentence.",
+      "title": "Lines with no priced quote: one derived rule across documents, auto-cancel at award approval, a small notice",
+      "durations": {
+        "wall_s": 82428,
+        "author_s": 5359,
+        "review_s": {
+          "opus": 258
+        },
+        "gate_s": 641
+      }
     }
   ]
 }
