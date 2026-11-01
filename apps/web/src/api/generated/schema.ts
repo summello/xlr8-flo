@@ -1953,6 +1953,47 @@ export interface paths {
         patch: operations["patch_purchase_order_api_v1_purchase_orders__id__patch"];
         trace?: never;
     };
+    "/api/v1/purchase-orders/{id}/attachments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Po Attachments */
+        get: operations["po_attachments_api_v1_purchase_orders__id__attachments_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/purchase-orders/{id}/attachments/{aid}/vendor-facing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Mark Po Attachment
+         * @description Mark a file vendor-facing (intent only: nothing is sent before E19-S04).
+         *
+         *     No `If-Match`: the mark is not PO content and `purchase_order.version` is untouched, last
+         *     write wins, every change audited (docs/m2-conventions.md O). No `Idempotency-Key`: the
+         *     middleware keys only POST and DELETE, and PUT of a value is idempotent.
+         */
+        put: operations["mark_po_attachment_api_v1_purchase_orders__id__attachments__aid__vendor_facing_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/purchase-orders/{id}/cancel": {
         parameters: {
             query?: never;
@@ -7499,6 +7540,37 @@ export interface components {
              * Format: uuid
              */
             user_id: string;
+        };
+        /** PoAttachmentRead */
+        PoAttachmentRead: {
+            /** Display Name */
+            display_name: string;
+            /**
+             * Document Id
+             * Format: uuid
+             */
+            document_id: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Scan Status */
+            scan_status: string;
+            /**
+             * Uploaded At
+             * Format: date-time
+             */
+            uploaded_at: string;
+            /** Vendor Facing */
+            vendor_facing: boolean;
+            /** Version */
+            version: number;
+        };
+        /** PoAttachmentVendorFacing */
+        PoAttachmentVendorFacing: {
+            /** Vendor Facing */
+            vendor_facing: boolean;
         };
         /** PoCancelCreate */
         PoCancelCreate: {
@@ -16469,6 +16541,95 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PoRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    po_attachments_api_v1_purchase_orders__id__attachments_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoAttachmentRead"][];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    mark_po_attachment_api_v1_purchase_orders__id__attachments__aid__vendor_facing_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+                aid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PoAttachmentVendorFacing"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoAttachmentRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

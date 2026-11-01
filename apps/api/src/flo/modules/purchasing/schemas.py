@@ -308,3 +308,18 @@ class PoTransmissionRead(BaseModel):
     ]
     created_at: datetime
     result_at: datetime | None
+
+
+class PoAttachmentVendorFacing(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    vendor_facing: bool
+
+
+class PoAttachmentRead(BaseModel):
+    id: UUID
+    display_name: str
+    version: int
+    scan_status: str
+    uploaded_at: datetime
+    document_id: UUID  # the revision the file sits on
+    vendor_facing: bool  # intent only: nothing is sent before E19-S04

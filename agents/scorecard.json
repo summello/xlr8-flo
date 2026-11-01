@@ -7296,6 +7296,53 @@
         },
         "gate_s": 641
       }
+    },
+    {
+      "story": "E13-S25",
+      "kind": "security",
+      "size": "M",
+      "tags": [
+        "security"
+      ],
+      "author": "sonnet",
+      "reviewers": [],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {},
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {},
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "f1e1bc29-9023-4ccb-9066-acadaf0020fb",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S25",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "21f7a36e-5aad-4162-9f70-f47cc235f6f0",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "Adds po_attachment_vendor_mark (migration 0087) plus GET /purchase-orders/{id}/attachments and PUT .../attachments/{aid}/vendor-facing; the mark is intent only, keyed to the file's latest version, and nothing is sent. Leak test extended to prove marked files never reach the email, PDF or storage.",
+      "title": "Per-file vendor-facing mark on PO attachments (records intent, sends nothing until E19-S04)",
+      "durations": {
+        "wall_s": 75848,
+        "author_s": 2064,
+        "review_s": {
+          "opus": 445
+        },
+        "gate_s": 165
+      }
     }
   ]
 }

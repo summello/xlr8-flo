@@ -84,7 +84,7 @@ async def patch_note(browser, id, **patch):
     )
 
 
-def test_nothing_internal_reaches_the_supplier_email_or_pdf(lifecycle_db):
+def test_nothing_internal_reaches_the_supplier_email_or_pdf(lifecycle_db, storage):
     db, _ = lifecycle_db
     rfq, _, a, _, award_id, _ = ready(db)
     po = create(db, rfq, a, award_id, "4")
@@ -104,8 +104,19 @@ def test_nothing_internal_reaches_the_supplier_email_or_pdf(lifecycle_db):
                 browser, docs(po.id, "attachments"), f"{INT_FILE}.txt", INT_BYTES.encode()
             )
             assert up.status_code == 201, up.text
+            # E13-S25: marking it vendor-facing records intent only; still nothing is sent
+            marked = await browser.put(
+                f"/api/v1/purchase-orders/{po.id}/attachments/{up.json()['id']}/vendor-facing",
+                json={"vendor_facing": True},
+                headers=headers(browser, uuid4().hex),
+            )
+            assert marked.status_code == 200 and marked.json()["vendor_facing"] is True
 
     asyncio.run(scenario())
+    [(file_key,)] = sql(db, "SELECT storage_key FROM attachment_version")
+    reads = []
+    real_get = storage.get
+    storage.get = lambda key: (reads.append(key), real_get(key))[1]
     approve(db, po)
     run(db, po)
     [(payload,)] = sql(
@@ -123,6 +134,7 @@ def test_nothing_internal_reaches_the_supplier_email_or_pdf(lifecycle_db):
             return "id"
 
     dispatch(db, Recorder())
+    assert file_key not in reads  # issue and dispatch never opened the marked file
     [(_, context, [attachment])] = seen
     [(sha,)] = sql(db, "SELECT pdf_sha256 FROM po_version")
     assert attachment.content_type == "application/pdf"

@@ -38,6 +38,7 @@ from flo.modules.purchasing.pricing import Figures, landed, spread
 from flo.modules.purchasing.schemas import (
     AwardedLineRead,
     AwardedLinesRead,
+    PoAttachmentRead,
     PoCreate,
     PoLineRead,
     PoListRow,
@@ -153,6 +154,84 @@ class PurchaseOrderService:
         if row is None:
             raise ProblemError(ErrorCode.NOT_FOUND)
         return cast(UUID, row[0])
+
+    def attachments(self, id: UUID, only: UUID | None = None) -> list[PoAttachmentRead]:
+        """Files on the PO's revision chain; `vendor_facing` holds only for the latest bytes."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self._row(id)
+            rows = self.repo.execute(
+                "WITH RECURSIVE chain AS (SELECT id, supersedes_id FROM purchase_order "
+                "WHERE org_id = %(org_id)s AND id = %(id)s UNION ALL SELECT p.id, p.supersedes_id "
+                "FROM purchase_order p JOIN chain c "
+                "ON p.org_id = %(org_id)s AND p.id = c.supersedes_id) "
+                "SELECT a.id, v.display_name, v.version, v.scan_status, v.uploaded_at, "
+                "a.document_id, "
+                "COALESCE(m.vendor_facing AND m.attachment_version_id = v.id, false) "
+                "FROM attachment a JOIN chain c ON a.document_id = c.id "
+                "JOIN LATERAL (SELECT * FROM attachment_version av WHERE av.org_id = a.org_id "
+                "AND av.attachment_id = a.id ORDER BY av.version DESC LIMIT 1) v ON true "
+                "LEFT JOIN po_attachment_vendor_mark m "
+                "ON m.org_id = a.org_id AND m.attachment_id = a.id "
+                "WHERE a.org_id = %(org_id)s AND a.document_type = 'purchase_order' "
+                "AND a.deleted_at IS NULL AND (%(only)s::uuid IS NULL OR a.id = %(only)s) "
+                "ORDER BY v.uploaded_at, a.id",
+                {"id": id, "only": only},
+            ).fetchall()
+            return [
+                PoAttachmentRead.model_validate(dict(zip(PoAttachmentRead.model_fields, r)))
+                for r in rows
+            ]
+
+    def mark_attachment(
+        self, id: UUID, attachment_id: UUID, vendor_facing: bool
+    ) -> PoAttachmentRead:
+        """Record intent to show a file to the supplier. Sends nothing; leaves `version` alone.
+
+        The caller has passed `po_write`. Last write wins, no `If-Match`; the PO row is locked
+        only so the status read and the write agree.
+        """
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            if self._row(id, lock=True)["status"] == "cancelled":
+                raise conflict(
+                    "po_cancelled", "A cancelled purchase order's files cannot be marked."
+                )
+            found = self.attachments(id, attachment_id)
+            if not found:
+                raise ProblemError(ErrorCode.NOT_FOUND)
+            current = found[0]
+            if current.vendor_facing == vendor_facing:
+                return current
+            version_id = self.repo.execute(
+                "SELECT id FROM attachment_version WHERE org_id = %(org_id)s "
+                "AND attachment_id = %(a)s ORDER BY version DESC LIMIT 1",
+                {"a": attachment_id},
+            ).fetchone()
+            self.repo.execute(
+                "INSERT INTO po_attachment_vendor_mark (org_id, attachment_id, po_id, "
+                "attachment_version_id, vendor_facing, marked_by) VALUES (%(org_id)s, %(a)s, "
+                "%(po)s, %(v)s, %(f)s, %(by)s) ON CONFLICT (attachment_id) DO UPDATE SET "
+                "po_id = EXCLUDED.po_id, attachment_version_id = EXCLUDED.attachment_version_id, "
+                "vendor_facing = EXCLUDED.vendor_facing, marked_by = EXCLUDED.marked_by, "
+                "marked_at = now()",
+                {
+                    "a": attachment_id,
+                    "po": current.document_id,
+                    "v": version_id[0] if version_id else None,
+                    "f": vendor_facing,
+                    "by": self.actor_id,
+                },
+            )
+            self._audit(
+                "purchase_order.attachment.vendor_facing",
+                id,
+                {"vendor_facing": current.vendor_facing},
+                {
+                    "attachment_id": str(attachment_id),
+                    "attachment_version_id": str(version_id[0]) if version_id else None,
+                    "vendor_facing": vendor_facing,
+                },
+            )
+            return current.model_copy(update={"vendor_facing": vendor_facing})
 
     def unit_of(self, id: UUID) -> UUID:
         """The PO's unit, 404 for an unknown, deleted or foreign id."""

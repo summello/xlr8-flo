@@ -7,6 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Header, Query, Request, Response
 
 from flo.api.auth import get_auth_settings
+from flo.api.document_types import po_write
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
 from flo.kernel.authz import GrantedScopes, permits, require, require_granted
@@ -19,6 +20,8 @@ from flo.modules.purchasing.issue import issue
 from flo.modules.purchasing.pdf import VendorCopyRead, filename, frozen, pdf_for, vendor_copy_read
 from flo.modules.purchasing.schemas import (
     AwardedLinesRead,
+    PoAttachmentRead,
+    PoAttachmentVendorFacing,
     PoCancelCreate,
     PoCancelRead,
     PoChangeCreate,
@@ -340,3 +343,31 @@ def resend_po_transmission(
     id: UUID, body: TransmissionResend, context: IssueContext, connection: Connection
 ) -> list[PoTransmissionRead]:
     return resend(connection, current_scope(), context.user_id, id, body.contact_ids)
+
+
+@router.get("/{id}/attachments", response_model=list[PoAttachmentRead])
+def po_attachments(
+    id: UUID, context: ViewContext, connection: Connection
+) -> list[PoAttachmentRead]:
+    return PurchaseOrderService(connection, current_scope(), context.user_id).attachments(id)
+
+
+@router.put("/{id}/attachments/{aid}/vendor-facing", response_model=PoAttachmentRead)
+def mark_po_attachment(
+    id: UUID,
+    aid: UUID,
+    body: PoAttachmentVendorFacing,
+    context: ViewContext,
+    connection: Connection,
+) -> PoAttachmentRead:
+    """Mark a file vendor-facing (intent only: nothing is sent before E19-S04).
+
+    No `If-Match`: the mark is not PO content and `purchase_order.version` is untouched, last
+    write wins, every change audited (docs/m2-conventions.md O). No `Idempotency-Key`: the
+    middleware keys only POST and DELETE, and PUT of a value is idempotent.
+    """
+    scope = current_scope()
+    po_write(connection, scope, id, context.user_id)
+    return PurchaseOrderService(connection, scope, context.user_id).mark_attachment(
+        id, aid, body.vendor_facing
+    )

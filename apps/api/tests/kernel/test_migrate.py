@@ -186,6 +186,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261029_0084",
         "20261030_0085",
         "20261031_0086",
+        "20261101_0087",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -3524,4 +3525,39 @@ def test_po_transmission_migration_roundtrips_and_checks(empty_database):
             assert conn.execute(statement).fetchone() == (1,)
         mig.downgrade(conn)
         assert conn.execute("SELECT to_regclass('po_transmission')").fetchone() == (None,)
+        mig.upgrade(conn)
+
+
+def test_po_attachment_vendor_mark_migration_roundtrips_and_guards(empty_database):
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261031_0086"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261101_0087")
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        mig.upgrade(conn)
+        # plant: dropping FORCE or a composite FK makes one of these fail
+        assert conn.execute(
+            "SELECT relrowsecurity, relforcerowsecurity FROM pg_class "
+            "WHERE oid = 'po_attachment_vendor_mark'::regclass"
+        ).fetchone() == (True, True)
+        assert conn.execute(
+            "SELECT count(*) FROM pg_policies WHERE tablename = 'po_attachment_vendor_mark' "
+            "AND policyname = 'tenant_isolation'"
+        ).fetchone() == (1,)
+        assert conn.execute(
+            "SELECT count(*) FROM pg_constraint WHERE conrelid = "
+            "'po_attachment_vendor_mark'::regclass AND contype = 'f'"
+        ).fetchone() == (5,)  # organization, identity, version and the two composites
+        assert conn.execute(
+            "SELECT count(*) FROM pg_constraint WHERE conrelid = "
+            "'po_attachment_vendor_mark'::regclass AND contype = 'f' "
+            "AND array_length(conkey, 1) = 2"
+        ).fetchone() == (2,)
+        assert conn.execute(  # plant: DEFAULT true makes an unmarked row vendor-facing
+            "SELECT column_default FROM information_schema.columns "
+            "WHERE table_name = 'po_attachment_vendor_mark' AND column_name = 'vendor_facing'"
+        ).fetchone() == ("false",)
+        mig.downgrade(conn)
+        assert conn.execute("SELECT to_regclass('po_attachment_vendor_mark')").fetchone() == (None,)
         mig.upgrade(conn)

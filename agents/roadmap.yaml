@@ -2340,7 +2340,7 @@ epics:
           - PO-017
         dep:
           - E13-S11
-        st: review
+        st: done
 
   - id: E22
     name: Budget governance follow-ups

@@ -54,6 +54,9 @@ VENDOR_COPY_ROUTES = (
 TRANSMISSION_ROUTES = (
     "purchasing/test_transmission.py::test_transmission_routes_conceal_foreign_tenants"
 )
+ATTACHMENT_MARK_ROUTES = (
+    "purchasing/test_attachment_vendor_mark.py::test_mark_routes_conceal_foreign_tenants"
+)
 QROUTES = "vendors/test_questionnaire.py::test_questionnaire_routes_conceal_foreign_tenants"
 OROUTES = (
     "vendors/test_questionnaire.py::"
@@ -87,6 +90,8 @@ COVERED = {
     ("POST", "/api/v1/purchase-orders/{id}/changes/{number}/apply"): PO_ROUTES,
     ("GET", "/api/v1/purchase-orders/{id}/transmissions"): TRANSMISSION_ROUTES,
     ("POST", "/api/v1/purchase-orders/{id}/transmissions/resend"): TRANSMISSION_ROUTES,
+    ("GET", "/api/v1/purchase-orders/{id}/attachments"): ATTACHMENT_MARK_ROUTES,
+    ("PUT", "/api/v1/purchase-orders/{id}/attachments/{aid}/vendor-facing"): ATTACHMENT_MARK_ROUTES,
     ("GET", "/api/v1/purchase-orders/{id}/pdf"): VENDOR_COPY_ROUTES,
     ("GET", "/api/v1/purchase-orders/{id}/vendor-copy"): VENDOR_COPY_ROUTES,
     ("GET", "/api/v1/vendors/counts"): LISTDOCS,
