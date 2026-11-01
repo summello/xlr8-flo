@@ -2163,7 +2163,7 @@ epics:
           - E11-S09
           - E13-S06
           - E13-S09
-        st: todo
+        st: in_progress
       - id: E13-S13
         t: 'Create POs from awarded lines'
         k: ui
