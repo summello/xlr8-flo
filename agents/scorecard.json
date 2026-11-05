@@ -7343,6 +7343,78 @@
         },
         "gate_s": 165
       }
+    },
+    {
+      "story": "E13-S12",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [
+        {
+          "from": null,
+          "to": "opus",
+          "role": "reviewer",
+          "reason": "additional reviewer: an Opus review (approve, ran_tests, 2 minors) was run on this ungated story beside codex; recorded so the gate counts it (planner B, 2026-11-04)"
+        }
+      ],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "8935e55a-3411-4599-8445-923034ae64ae",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S12",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1a5f2-d50f-79b1-9796-84d128b3593a",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Adds the PO list (six server-counted tabs, version, project, Sent and total columns) and PO detail (stepper, swimlanes, lines, notes and files, transmissions, server-computed Budget Summary, linked records, history, version control) over new read-only routes for versions, history and budget summary, plus live vendor status and permitted actions on the detail read. purchasing-user gains vendor.view and ledger.read by migration 0088.",
+      "title": "PO list and PO detail screens",
+      "durations": {
+        "wall_s": 282498,
+        "author_s": 5781,
+        "review_s": {
+          "codex": 23,
+          "opus": 11958
+        },
+        "gate_s": 0
+      }
     }
   ]
 }

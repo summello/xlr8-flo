@@ -8,7 +8,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-type PoTab = Literal["all", "draft"]
+type PoTab = Literal["all", "draft", "awaiting", "ready", "issued", "attention"]
 type PoStatus = Literal[
     "draft", "approval_pending", "approved", "issued", "partially_delivered", "delivered",
     "accepted", "closed", "cancelled", "superseded", "deleted",
@@ -147,10 +147,29 @@ class PoRead(BaseModel):
     total_converted: str
     released_amount: str | None = None  # released commitment over the PO's life, never actuals
     released_currency: str | None = None
+    # the GET route fills these in for the caller; every other route returns the defaults
+    vendor_status: str | None = None  # the vendor's status now; None without `vendor.view`
+    actions: list[str] = []  # lifecycle and command names the caller may run on this PO now
 
 
 class PoCancelRead(PoRead):
     notice: str | None = None
+
+
+class PoProjectRef(BaseModel):
+    id: UUID
+    code: str
+    name: str
+
+
+type SentResult = Literal[
+    "queued", "sent", "failed", "address_suppressed", "delivered", "bounced", "complained"
+]
+
+
+class PoSentRead(BaseModel):
+    result: SentResult  # the worst row of the latest attempt
+    result_at: datetime | None
 
 
 class PoListRow(BaseModel):
@@ -164,6 +183,48 @@ class PoListRow(BaseModel):
     total: str
     status: PoStatus
     created_at: datetime
+    revision: int
+    projects: list[PoProjectRef]  # at most 3, by code
+    project_count: int
+    sent: PoSentRead | None
+
+
+class PoVersionRead(BaseModel):
+    revision: int
+    po_id: UUID
+    status: PoStatus
+    total: str
+    currency: str
+    issued_at: datetime | None
+    is_current: bool
+
+
+class PoHistoryEntry(BaseModel):
+    occurred_at: datetime
+    actor: str | None
+    action: str
+    detail: str | None
+
+
+class PoHistoryRead(BaseModel):
+    entries: list[PoHistoryEntry]  # oldest first
+    truncated: bool
+
+
+class PoBudgetProjectRead(BaseModel):
+    project_id: UUID
+    project_code: str
+    project_name: str
+    currency: str
+    committed: str  # other purchase orders' commitments; this PO's share is never in it
+    this_po: str
+    this_po_state: Literal["reserved", "committed", "released"]
+    available_after_issue: str  # the project's `available` now: the reservation is already out
+    actual: str
+
+
+class PoBudgetSummaryRead(BaseModel):
+    projects: list[PoBudgetProjectRead]
 
 
 class PoPage(BaseModel):

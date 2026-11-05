@@ -1994,6 +1994,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/purchase-orders/{id}/budget-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Po Budget Summary
+         * @description Budget figures need `ledger.read` on every project of the lines: all or a 403.
+         */
+        get: operations["po_budget_summary_api_v1_purchase_orders__id__budget_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/purchase-orders/{id}/cancel": {
         parameters: {
             query?: never;
@@ -2092,6 +2112,23 @@ export interface paths {
         put?: never;
         /** Withdraw Change */
         post: operations["withdraw_change_api_v1_purchase_orders__id__changes__number__withdraw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/purchase-orders/{id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Po History */
+        get: operations["po_history_api_v1_purchase_orders__id__history_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2226,6 +2263,23 @@ export interface paths {
         };
         /** Po Vendor Copy */
         get: operations["po_vendor_copy_api_v1_purchase_orders__id__vendor_copy_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/purchase-orders/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Po Versions */
+        get: operations["po_versions_api_v1_purchase_orders__id__versions_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -7572,6 +7626,38 @@ export interface components {
             /** Vendor Facing */
             vendor_facing: boolean;
         };
+        /** PoBudgetProjectRead */
+        PoBudgetProjectRead: {
+            /** Actual */
+            actual: string;
+            /** Available After Issue */
+            available_after_issue: string;
+            /** Committed */
+            committed: string;
+            /** Currency */
+            currency: string;
+            /** Project Code */
+            project_code: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Project Name */
+            project_name: string;
+            /** This Po */
+            this_po: string;
+            /**
+             * This Po State
+             * @enum {string}
+             */
+            this_po_state: "reserved" | "committed" | "released";
+        };
+        /** PoBudgetSummaryRead */
+        PoBudgetSummaryRead: {
+            /** Projects */
+            projects: components["schemas"]["PoBudgetProjectRead"][];
+        };
         /** PoCancelCreate */
         PoCancelCreate: {
             /**
@@ -7589,6 +7675,11 @@ export interface components {
         };
         /** PoCancelRead */
         PoCancelRead: {
+            /**
+             * Actions
+             * @default []
+             */
+            actions?: string[];
             /**
              * Award Id
              * Format: uuid
@@ -7686,6 +7777,8 @@ export interface components {
             vendor_snapshot: {
                 [key: string]: unknown;
             };
+            /** Vendor Status */
+            vendor_status?: string | null;
             /** Version */
             version: number;
         };
@@ -7824,6 +7917,27 @@ export interface components {
              */
             vendor_id: string;
         };
+        /** PoHistoryEntry */
+        PoHistoryEntry: {
+            /** Action */
+            action: string;
+            /** Actor */
+            actor: string | null;
+            /** Detail */
+            detail: string | null;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+        };
+        /** PoHistoryRead */
+        PoHistoryRead: {
+            /** Entries */
+            entries: components["schemas"]["PoHistoryEntry"][];
+            /** Truncated */
+            truncated: boolean;
+        };
         /** PoLineIn */
         PoLineIn: {
             /** Quantity */
@@ -7909,11 +8023,18 @@ export interface components {
             id: string;
             /** Number */
             number: string;
+            /** Project Count */
+            project_count: number;
+            /** Projects */
+            projects: components["schemas"]["PoProjectRef"][];
             /**
              * Requisition Id
              * Format: uuid
              */
             requisition_id: string;
+            /** Revision */
+            revision: number;
+            sent: components["schemas"]["PoSentRead"] | null;
             status: components["schemas"]["PoStatus"];
             /** Total */
             total: string;
@@ -7960,8 +8081,25 @@ export interface components {
             /** Terms */
             terms?: string | null;
         };
+        /** PoProjectRef */
+        PoProjectRef: {
+            /** Code */
+            code: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
         /** PoRead */
         PoRead: {
+            /**
+             * Actions
+             * @default []
+             */
+            actions?: string[];
             /**
              * Award Id
              * Format: uuid
@@ -8057,6 +8195,8 @@ export interface components {
             vendor_snapshot: {
                 [key: string]: unknown;
             };
+            /** Vendor Status */
+            vendor_status?: string | null;
             /** Version */
             version: number;
         };
@@ -8069,6 +8209,12 @@ export interface components {
             lines: components["schemas"]["PoChangeLineEdit"][];
             /** Reason */
             reason: string;
+        };
+        /** PoSentRead */
+        PoSentRead: {
+            result: components["schemas"]["SentResult"];
+            /** Result At */
+            result_at: string | null;
         };
         /** @enum {string} */
         PoStatus: "draft" | "approval_pending" | "approved" | "issued" | "partially_delivered" | "delivered" | "accepted" | "closed" | "cancelled" | "superseded" | "deleted";
@@ -8110,6 +8256,25 @@ export interface components {
             template_version: string;
             /** Version */
             version: number;
+        };
+        /** PoVersionRead */
+        PoVersionRead: {
+            /** Currency */
+            currency: string;
+            /** Is Current */
+            is_current: boolean;
+            /** Issued At */
+            issued_at: string | null;
+            /**
+             * Po Id
+             * Format: uuid
+             */
+            po_id: string;
+            /** Revision */
+            revision: number;
+            status: components["schemas"]["PoStatus"];
+            /** Total */
+            total: string;
         };
         /** Position */
         Position: {
@@ -9620,6 +9785,8 @@ export interface components {
             /** Version */
             version: number;
         };
+        /** @enum {string} */
+        SentResult: "queued" | "sent" | "failed" | "address_suppressed" | "delivered" | "bounced" | "complained";
         /**
          * SessionResponse
          * @description Privacy-minimized active-session representation.
@@ -16306,8 +16473,9 @@ export interface operations {
     list_purchase_orders_api_v1_purchase_orders_get: {
         parameters: {
             query?: {
-                tab?: "all" | "draft";
+                tab?: "all" | "draft" | "awaiting" | "ready" | "issued" | "attention";
                 cursor?: string | null;
+                q?: string | null;
             };
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
@@ -16630,6 +16798,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PoAttachmentRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    po_budget_summary_api_v1_purchase_orders__id__budget_summary_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoBudgetSummaryRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */
@@ -17010,6 +17220,48 @@ export interface operations {
             };
         };
     };
+    po_history_api_v1_purchase_orders__id__history_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoHistoryRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     issue_purchase_order_api_v1_purchase_orders__id__issue_post: {
         parameters: {
             query?: never;
@@ -17339,6 +17591,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VendorCopyRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    po_versions_api_v1_purchase_orders__id__versions_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoVersionRead"][];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

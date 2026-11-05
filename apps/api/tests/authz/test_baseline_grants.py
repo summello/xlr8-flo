@@ -44,7 +44,7 @@ ALLOWED = {
     "requestor": set(),
     "approver": set(),
     "sourcing-specialist": set(),
-    "purchasing-user": set(),
+    "purchasing-user": {"ledger.read"},  # E13-S12
     "vendor-manager": set(),
     "warehouse-asset-user": set(),
     "executive-viewer": set(),
@@ -146,6 +146,8 @@ def test_upgrade_gives_every_system_role_exactly_the_baseline(pre_0053):
     load_migration(ROOT / "migrations/20261022_0066_baseline_role_reads.py", "reads").upgrade(conn)
     # E11-S13's 0070 gives the finance role vendor.view.
     load_migration(ROOT / "migrations/20261022_0070_finance_vendor_view.py", "fin").upgrade(conn)
+    # E13-S12's 0088 gives purchasing-user vendor.view and ledger.read.
+    load_migration(ROOT / "migrations/20261102_0088_purchasing_reads_grant.py", "po").upgrade(conn)
     # Later migrations add catalogue codes (vendor.request, ...); 0053 can only grant codes that
     # exist once it has run, so compare against the baseline restricted to those codes.
     known = {row[0] for row in conn.execute("SELECT code FROM permission").fetchall()}

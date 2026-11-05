@@ -10517,6 +10517,81 @@
         "title": "PoAttachmentVendorFacing",
         "type": "object"
       },
+      "PoBudgetProjectRead": {
+        "properties": {
+          "actual": {
+            "title": "Actual",
+            "type": "string"
+          },
+          "available_after_issue": {
+            "title": "Available After Issue",
+            "type": "string"
+          },
+          "committed": {
+            "title": "Committed",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "project_code": {
+            "title": "Project Code",
+            "type": "string"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "project_name": {
+            "title": "Project Name",
+            "type": "string"
+          },
+          "this_po": {
+            "title": "This Po",
+            "type": "string"
+          },
+          "this_po_state": {
+            "enum": [
+              "reserved",
+              "committed",
+              "released"
+            ],
+            "title": "This Po State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "project_code",
+          "project_name",
+          "currency",
+          "committed",
+          "this_po",
+          "this_po_state",
+          "available_after_issue",
+          "actual"
+        ],
+        "title": "PoBudgetProjectRead",
+        "type": "object"
+      },
+      "PoBudgetSummaryRead": {
+        "properties": {
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/PoBudgetProjectRead"
+            },
+            "title": "Projects",
+            "type": "array"
+          }
+        },
+        "required": [
+          "projects"
+        ],
+        "title": "PoBudgetSummaryRead",
+        "type": "object"
+      },
       "PoCancelCreate": {
         "additionalProperties": false,
         "properties": {
@@ -10545,6 +10620,14 @@
       },
       "PoCancelRead": {
         "properties": {
+          "actions": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
           "award_id": {
             "format": "uuid",
             "title": "Award Id",
@@ -10755,6 +10838,17 @@
             "additionalProperties": true,
             "title": "Vendor Snapshot",
             "type": "object"
+          },
+          "vendor_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor Status"
           },
           "version": {
             "title": "Version",
@@ -11144,6 +11238,70 @@
         "title": "PoCreate",
         "type": "object"
       },
+      "PoHistoryEntry": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "title": "Occurred At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "occurred_at",
+          "actor",
+          "action",
+          "detail"
+        ],
+        "title": "PoHistoryEntry",
+        "type": "object"
+      },
+      "PoHistoryRead": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/PoHistoryEntry"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "truncated": {
+            "title": "Truncated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "entries",
+          "truncated"
+        ],
+        "title": "PoHistoryRead",
+        "type": "object"
+      },
       "PoLineIn": {
         "additionalProperties": false,
         "properties": {
@@ -11326,10 +11484,35 @@
             "title": "Number",
             "type": "string"
           },
+          "project_count": {
+            "title": "Project Count",
+            "type": "integer"
+          },
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/PoProjectRef"
+            },
+            "title": "Projects",
+            "type": "array"
+          },
           "requisition_id": {
             "format": "uuid",
             "title": "Requisition Id",
             "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "sent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PoSentRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "status": {
             "$ref": "#/components/schemas/PoStatus"
@@ -11363,7 +11546,11 @@
           "currency",
           "total",
           "status",
-          "created_at"
+          "created_at",
+          "revision",
+          "projects",
+          "project_count",
+          "sent"
         ],
         "title": "PoListRow",
         "type": "object"
@@ -11482,8 +11669,40 @@
         "title": "PoPatch",
         "type": "object"
       },
+      "PoProjectRef": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name"
+        ],
+        "title": "PoProjectRef",
+        "type": "object"
+      },
       "PoRead": {
         "properties": {
+          "actions": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
           "award_id": {
             "format": "uuid",
             "title": "Award Id",
@@ -11684,6 +11903,17 @@
             "title": "Vendor Snapshot",
             "type": "object"
           },
+          "vendor_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor Status"
+          },
           "version": {
             "title": "Version",
             "type": "integer"
@@ -11750,6 +11980,31 @@
           "lines"
         ],
         "title": "PoReduceCreate",
+        "type": "object"
+      },
+      "PoSentRead": {
+        "properties": {
+          "result": {
+            "$ref": "#/components/schemas/SentResult"
+          },
+          "result_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result At"
+          }
+        },
+        "required": [
+          "result",
+          "result_at"
+        ],
+        "title": "PoSentRead",
         "type": "object"
       },
       "PoStatus": {
@@ -11861,6 +12116,57 @@
           "result_at"
         ],
         "title": "PoTransmissionRead",
+        "type": "object"
+      },
+      "PoVersionRead": {
+        "properties": {
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "is_current": {
+            "title": "Is Current",
+            "type": "boolean"
+          },
+          "issued_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issued At"
+          },
+          "po_id": {
+            "format": "uuid",
+            "title": "Po Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PoStatus"
+          },
+          "total": {
+            "title": "Total",
+            "type": "string"
+          }
+        },
+        "required": [
+          "revision",
+          "po_id",
+          "status",
+          "total",
+          "currency",
+          "issued_at",
+          "is_current"
+        ],
+        "title": "PoVersionRead",
         "type": "object"
       },
       "Position": {
@@ -16530,6 +16836,18 @@
         ],
         "title": "SensitiveWritten",
         "type": "object"
+      },
+      "SentResult": {
+        "enum": [
+          "queued",
+          "sent",
+          "failed",
+          "address_suppressed",
+          "delivered",
+          "bounced",
+          "complained"
+        ],
+        "type": "string"
       },
       "SessionResponse": {
         "description": "Privacy-minimized active-session representation.",
@@ -30194,7 +30512,11 @@
               "default": "all",
               "enum": [
                 "all",
-                "draft"
+                "draft",
+                "awaiting",
+                "ready",
+                "issued",
+                "attention"
               ],
               "title": "Tab",
               "type": "string"
@@ -30214,6 +30536,23 @@
                 }
               ],
               "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
             }
           },
           {
@@ -30820,6 +31159,76 @@
           }
         },
         "summary": "Mark Po Attachment",
+        "tags": [
+          "purchasing"
+        ]
+      }
+    },
+    "/api/v1/purchase-orders/{id}/budget-summary": {
+      "get": {
+        "description": "Budget figures need `ledger.read` on every project of the lines: all or a 403.",
+        "operationId": "po_budget_summary_api_v1_purchase_orders__id__budget_summary_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoBudgetSummaryRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Po Budget Summary",
         "tags": [
           "purchasing"
         ]
@@ -31532,6 +31941,75 @@
         ]
       }
     },
+    "/api/v1/purchase-orders/{id}/history": {
+      "get": {
+        "operationId": "po_history_api_v1_purchase_orders__id__history_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoHistoryRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Po History",
+        "tags": [
+          "purchasing"
+        ]
+      }
+    },
     "/api/v1/purchase-orders/{id}/issue": {
       "post": {
         "operationId": "issue_purchase_order_api_v1_purchase_orders__id__issue_post",
@@ -32161,6 +32639,79 @@
           }
         },
         "summary": "Po Vendor Copy",
+        "tags": [
+          "purchasing"
+        ]
+      }
+    },
+    "/api/v1/purchase-orders/{id}/versions": {
+      "get": {
+        "operationId": "po_versions_api_v1_purchase_orders__id__versions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PoVersionRead"
+                  },
+                  "title": "Response Po Versions Api V1 Purchase Orders  Id  Versions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Po Versions",
         "tags": [
           "purchasing"
         ]

@@ -6,12 +6,14 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Query, Request, Response
 
+from flo.api.admin_users import organization_target
 from flo.api.auth import get_auth_settings
 from flo.api.document_types import po_write
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
 from flo.kernel.authz import GrantedScopes, permits, require, require_granted
 from flo.kernel.config import Settings
+from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.purchasing.cancel import cancel, reduce
@@ -22,18 +24,21 @@ from flo.modules.purchasing.schemas import (
     AwardedLinesRead,
     PoAttachmentRead,
     PoAttachmentVendorFacing,
+    PoBudgetSummaryRead,
     PoCancelCreate,
     PoCancelRead,
     PoChangeCreate,
     PoChangePatch,
     PoChangeRead,
     PoCreate,
+    PoHistoryRead,
     PoPage,
     PoPatch,
     PoRead,
     PoReduceCreate,
     PoTab,
     PoTransmissionRead,
+    PoVersionRead,
     PurchaseOrderTransitionCreate,
     TransmissionResend,
 )
@@ -86,9 +91,10 @@ def list_purchase_orders(
     connection: Connection,
     tab: PoTab = "all",
     cursor: str | None = None,
+    q: Annotated[str | None, Query(max_length=100)] = None,
 ) -> PoPage:
     return PurchaseOrderService(connection, current_scope(), granted.user_id).list_orders(
-        granted, tab, cursor
+        granted, tab, cursor, q=q
     )
 
 
@@ -122,11 +128,43 @@ def create_purchase_order(
 
 @router.get("/{id}", response_model=PoRead)
 def get_purchase_order(
-    id: UUID, context: ViewContext, connection: Connection, response: Response
+    id: UUID, context: ViewContext, connection: Connection, request: Request, response: Response
 ) -> PoRead:
-    return _etag(
-        PurchaseOrderService(connection, current_scope(), context.user_id).get(id), response
-    )
+    service = PurchaseOrderService(connection, current_scope(), context.user_id)
+    unit = po_target(id, connection)
+    held = {
+        f"purchase_order.{p}"
+        for p in ("create", "amend", "issue", "close")
+        if permits(request, f"purchase_order.{p}", unit)
+    }
+    vendor = permits(request, "vendor.view", organization_target())
+    return _etag(service.with_access(service.get(id), held, vendor), response)
+
+
+@router.get("/{id}/versions", response_model=list[PoVersionRead])
+def po_versions(id: UUID, context: ViewContext, connection: Connection) -> list[PoVersionRead]:
+    return PurchaseOrderService(connection, current_scope(), context.user_id).versions(id)
+
+
+@router.get("/{id}/history", response_model=PoHistoryRead)
+def po_history(id: UUID, context: ViewContext, connection: Connection) -> PoHistoryRead:
+    return PurchaseOrderService(connection, current_scope(), context.user_id).history(id)
+
+
+@router.get("/{id}/budget-summary", response_model=PoBudgetSummaryRead)
+def po_budget_summary(
+    id: UUID, context: ViewContext, connection: Connection, request: Request
+) -> PoBudgetSummaryRead:
+    """Budget figures need `ledger.read` on every project of the lines: all or a 403."""
+    service = PurchaseOrderService(connection, current_scope(), context.user_id)
+    for project_id in service.budget_projects(id):  # 409 `superseded` before any figure
+        target = cast(
+            TargetProtocol,
+            AuthorizationTarget(ScopeType.PROJECT, project_id, "project", project_id),
+        )
+        if not permits(request, "ledger.read", target):
+            raise ProblemError(ErrorCode.FORBIDDEN)
+    return service.budget_summary(id)
 
 
 @router.patch("/{id}", response_model=PoRead)

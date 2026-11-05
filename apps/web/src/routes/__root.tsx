@@ -32,6 +32,8 @@ import VendorList from "./vendors/list";
 import VendorDetail from "./vendors/detail";
 import NewVendor from "./vendors/new";
 import EditVendor from "./vendors/edit";
+import PurchaseOrderList from "./purchase-orders/list";
+import PurchaseOrderDetail from "./purchase-orders/detail";
 import RfqList from "./sourcing/rfqs/list";
 import RfqDetail from "./sourcing/rfqs/detail";
 import RfqComparison from "./sourcing/rfqs/comparison";
@@ -68,6 +70,7 @@ const REQUISITION_AMEND_PATH = /^\/requisitions\/([0-9a-f-]{36})\/amend$/;
 const REQUISITION_AMEND_REVIEW_PATH = /^\/requisitions\/([0-9a-f-]{36})\/amend\/review$/;
 const VENDOR_PATH = /^\/vendors\/([0-9a-f-]{36})$/;
 const VENDOR_EDIT_PATH = /^\/vendors\/([0-9a-f-]{36})\/edit$/;
+const PO_PATH = /^\/purchase-orders\/([0-9a-f-]{36})$/;
 const RFQ_PATH = /^\/sourcing\/rfqs\/([0-9a-f-]{36})$/;
 const RFQ_COMPARISON_PATH = /^\/sourcing\/rfqs\/([0-9a-f-]{36})\/comparison$/;
 const RFQ_AWARD_PATH = /^\/sourcing\/rfqs\/([0-9a-f-]{36})\/award$/;
@@ -193,7 +196,7 @@ const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
   },
   "/purchase-orders": {
     activeHref: "/purchase-orders",
-    description: "Purchase order screens arrive with the commitment milestone.",
+    description: "Orders drawn against awards, from draft to issue.",
     hierarchy: [ORGANIZATION, BUSINESS_UNIT, PROJECT, SUB_PROJECT, ["/purchase-orders", "Purchase orders"]],
     phase: "commit",
     title: "Purchase orders",
@@ -264,6 +267,10 @@ function routeFor(path: string): ShellRoute {
   if (VENDOR_EDIT_PATH.test(path)) return {
     activeHref: "/vendors", path, phase: "commit", title: "Request Vendor", description: "Ask for a new vendor to be approved.",
     breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/vendors", label: "Vendors" }, { href: path, label: "Request Vendor" }],
+  };
+  if (PO_PATH.test(path)) return {
+    activeHref: "/purchase-orders", path, phase: "commit", title: "Purchase Order", description: "Where this order is, what it holds and who has it.",
+    breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/purchase-orders", label: "Purchase Orders" }, { href: path, label: "Purchase Order" }],
   };
   if (RFQ_PATH.test(path)) return {
     activeHref: "/sourcing", path, phase: "commit", title: "RFQ", description: "Where this RFQ is, and who has what.",
@@ -420,6 +427,7 @@ export default function RootRoute() {
   const adminUserId = shellRoute.path.match(ADMIN_USER_PATH)?.[1];
   const vendorId = shellRoute.path.match(VENDOR_PATH)?.[1];
   const vendorEditId = shellRoute.path.match(VENDOR_EDIT_PATH)?.[1];
+  const poId = shellRoute.path.match(PO_PATH)?.[1];
   const rfqId = shellRoute.path.match(RFQ_PATH)?.[1];
   const comparisonRfqId = shellRoute.path.match(RFQ_COMPARISON_PATH)?.[1];
   const awardRfqId = shellRoute.path.match(RFQ_AWARD_PATH)?.[1];
@@ -434,6 +442,8 @@ export default function RootRoute() {
       {shellRoute.path === "/vendors/new" ? <NewVendor navigate={navigate} /> : undefined}
       {vendorEditId ? <EditVendor key={vendorEditId} id={vendorEditId} navigate={navigate} /> : undefined}
       {shellRoute.path === "/sourcing" || shellRoute.path === "/sourcing/rfqs" ? <RfqList key={window.location.search} navigate={navigate} /> : undefined}
+      {shellRoute.path === "/purchase-orders" ? <PurchaseOrderList key={window.location.search} navigate={navigate} /> : undefined}
+      {poId ? <PurchaseOrderDetail key={poId} id={poId} navigate={navigate} /> : undefined}
       {rfqId ? <RfqDetail key={rfqId} id={rfqId} navigate={navigate} /> : undefined}
       {editRfqId ? <EditRfq key={editRfqId} id={editRfqId} navigate={navigate} /> : undefined}
       {amendRfqId ? <AmendRfq key={amendRfqId} id={amendRfqId} navigate={navigate} /> : undefined}

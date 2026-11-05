@@ -14,10 +14,10 @@ const SCAN = {
   rejected: { word: "Quarantined", Icon: Prohibit, why: "It was rejected by the scan and cannot be opened." },
 } as const;
 
-export default function Attachments({ id }: { id: string | null }) {
+export default function Attachments({ id, documentType = "requisition" }: { id: string | null; documentType?: "requisition" | "purchase_order" }) {
   const list = useLoad<Attachment[]>(async () => {
     if (!id) return [];
-    const { data, error } = await apiClient.GET("/api/v1/documents/{document_type}/{document_id}/attachments", { params: { path: { document_type: "requisition", document_id: id } } });
+    const { data, error } = await apiClient.GET("/api/v1/documents/{document_type}/{document_id}/attachments", { params: { path: { document_type: documentType, document_id: id } } });
     if (!data) throw new Error(failure(error, "Loading attachments"));
     return data;
   }, [id]);
@@ -30,7 +30,7 @@ export default function Attachments({ id }: { id: string | null }) {
     try {
       const body = new FormData(); body.set("file", file);
       // No Content-Type: the browser sets the multipart boundary.
-      const response = await fetch(`/api/v1/documents/requisition/${id}/attachments`, { method: "POST", credentials: "same-origin", headers: writeHeaders(), body });
+      const response = await fetch(`/api/v1/documents/${documentType}/${id}/attachments`, { method: "POST", credentials: "same-origin", headers: writeHeaders(), body });
       if (!response.ok) { const error = await response.json().catch(() => undefined) as { detail?: string } | undefined; setProblem(failure(error, "Uploading the file")); }
       else list.reload();
     } catch { setProblem(failure(undefined, "Uploading the file")); }

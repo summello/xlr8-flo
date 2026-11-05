@@ -9,9 +9,10 @@ Value is derived from the lines, never stored; nothing is posted to the ledger h
 import base64
 import json
 from collections import defaultdict
+from collections.abc import Collection
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, cast
+from typing import Any, Literal, cast
 from uuid import UUID, uuid4
 
 import psycopg
@@ -28,26 +29,34 @@ from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.approvals.schemas import Outcome as ApprovalOutcome
 from flo.modules.approvals.schemas import OutcomeContext
 from flo.modules.approvals.service import require_workflow_for, start, withdraw
-from flo.modules.budget.service import CONSUMED_BY_ACTUAL
+from flo.modules.budget.service import CONSUMED_BY_ACTUAL, get_balance
 from flo.modules.identity.service import AuthorizationConnection, AuthorizationResolver
 from flo.modules.org.service import NumberingService, OrgService, today
 from flo.modules.projects.service import ProjectService, generated_for
 from flo.modules.purchasing.lifecycle import parse_if_match, transition
-from flo.modules.purchasing.models import PurchaseOrderRepository
+from flo.modules.purchasing.models import ATTENTION_SQL, WORST_SENT_SQL, PurchaseOrderRepository
 from flo.modules.purchasing.pricing import Figures, landed, spread
 from flo.modules.purchasing.schemas import (
     AwardedLineRead,
     AwardedLinesRead,
     PoAttachmentRead,
+    PoBudgetProjectRead,
+    PoBudgetSummaryRead,
     PoCreate,
+    PoHistoryEntry,
+    PoHistoryRead,
     PoLineRead,
     PoListRow,
     PoPage,
     PoPatch,
+    PoProjectRef,
     PoRead,
+    PoSentRead,
     PoStatus,
     PoTab,
+    PoVersionRead,
     PurchaseOrderTransitionCreate,
+    SentResult,
 )
 from flo.modules.requisitions.schemas import LineSourcing, LinkAccess, LinkedNode
 from flo.modules.requisitions.service import (
@@ -71,6 +80,15 @@ from flo.modules.vendors.service import VendorService
 type Conn = psycopg.Connection[tuple[object, ...]]
 
 PAGE = 50
+HISTORY_CAP = 200
+# the budget meaning of a status (DECISIONS 210); `superseded` has none: the next revision holds it
+BUDGET_STATE: dict[str, Literal["reserved", "committed", "released"]] = {
+    **dict.fromkeys(("draft", "approval_pending", "approved"), "reserved"),
+    **dict.fromkeys(
+        ("issued", "partially_delivered", "delivered", "accepted", "closed"), "committed"
+    ),
+    "cancelled": "released",
+}
 HEADER = (
     "id, number, unit_id, vendor_id, vendor_snapshot, requisition_id, award_id, currency, rate, "
     "bill_to, ship_to_address_id, recipients, requester_id, terms, needed_by, status, version, "
@@ -98,6 +116,14 @@ def _not_eligible(result: Eligibility) -> ProblemError:
 
 def _fmt(value: Decimal) -> str:
     return format(value, "f")
+
+
+def _detail(reason: str | None, after: dict[str, Any] | None) -> str | None:
+    """A short line for the History card: the stated reason, else the status it moved to."""
+    if reason:
+        return reason[:200]
+    status = (after or {}).get("status")
+    return f"Status: {status}" if isinstance(status, str) else None
 
 
 class PurchaseOrderService:
@@ -377,14 +403,34 @@ class PurchaseOrderService:
             ],
         )
 
+    def _totals(self, rows: list[tuple[UUID, str]]) -> dict[UUID, Decimal]:
+        """The sum of each PO's rounded landed lines, as `get`; rows are (id, currency)."""
+        totals: dict[UUID, Decimal] = defaultdict(Decimal)
+        currencies = dict(rows)
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            priced = self.repo.execute(
+                "SELECT po_id, line_total FROM po_line "
+                "WHERE org_id = %(org_id)s AND po_id = ANY(%(ids)s)",
+                {"ids": list(currencies)},
+            ).fetchall()
+        for po_id, line_total in priced:
+            totals[cast(UUID, po_id)] += quantize(
+                cast(Decimal, line_total), currencies[cast(UUID, po_id)]
+            )
+        return totals
+
     def list_orders(
-        self, granted: GrantedScopes, tab: PoTab, cursor: str | None, page_size: int = PAGE
+        self,
+        granted: GrantedScopes,
+        tab: PoTab,
+        cursor: str | None,
+        page_size: int = PAGE,
+        q: str | None = None,
     ) -> PoPage:
         """POs on the units where the caller holds `purchase_order.view`, newest first."""
         params: dict[str, object] = {
             "org_wide": granted.org_wide,
             "bu_ids": list(granted.bu_ids),
-            "tab": None if tab == "all" else tab,
             "limit": page_size + 1,
         }
         where = (
@@ -392,6 +438,17 @@ class PurchaseOrderService:
             "AND (%(org_wide)s OR p.unit_id = ANY(%(bu_ids)s::uuid[]))"
         )
         after = ""
+        needle = (q or "").strip()
+        if needle:  # number, vendor name or a project code of its lines; `%` and `_` are literal
+            params["q"] = (
+                "%" + needle.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+            )
+            after += (
+                " AND (p.number ILIKE %(q)s OR p.vendor_snapshot->>'trading_name' ILIKE %(q)s "
+                "OR EXISTS (SELECT 1 FROM po_line l JOIN project pr ON pr.org_id = l.org_id "
+                "AND pr.id = l.project_id WHERE l.org_id = p.org_id AND l.po_id = p.id "
+                "AND pr.number ILIKE %(q)s))"
+            )
         if cursor is not None:
             try:
                 at, last = json.loads(base64.urlsafe_b64decode(cursor.encode()))
@@ -400,37 +457,61 @@ class PurchaseOrderService:
                 raise _invalid(
                     "cursor", "The page cursor is not valid.", "invalid_cursor"
                 ) from None
-            after = " AND (p.created_at, p.id) < (%(c_at)s, %(c_id)s)"
+            after += " AND (p.created_at, p.id) < (%(c_at)s, %(c_id)s)"
+        tabs = {
+            "all": "true",
+            "draft": "p.status = 'draft'",
+            "awaiting": "p.status = 'approval_pending'",
+            "ready": "p.status = 'approved'",
+            "issued": f"p.status = 'issued' AND NOT {ATTENTION_SQL}",
+            "attention": f"p.status = 'issued' AND {ATTENTION_SQL}",
+        }
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
-            counts = {
-                str(r[0]): cast(int, r[1])
-                for r in self.repo.execute(
-                    f"SELECT p.status, count(*) FROM purchase_order p WHERE {where} "
-                    "GROUP BY p.status",
-                    params,
-                ).fetchall()
-            }
+            # one pass, six keys; `issued` is the clean ones, `attention` the rest of them
+            counts = dict(
+                zip(
+                    tabs,
+                    cast(
+                        tuple[int, ...],
+                        self.repo.execute(
+                            "SELECT "
+                            + ", ".join(f"count(*) FILTER (WHERE {c})" for c in tabs.values())
+                            + f" FROM purchase_order p WHERE {where}",
+                            params,
+                        ).fetchone(),
+                    ),
+                    strict=True,
+                )
+            )
             rows = self.repo.execute(
                 "SELECT p.id, p.number, p.unit_id, p.vendor_id, "
                 "p.vendor_snapshot->>'trading_name', p.requisition_id, p.currency, p.status, "
-                "p.created_at FROM purchase_order p "
-                f"WHERE {where} AND (%(tab)s::text IS NULL OR p.status = %(tab)s){after} "
+                "p.created_at, p.revision FROM purchase_order p "
+                f"WHERE {where} AND {tabs[tab]}{after} "
                 "ORDER BY p.created_at DESC, p.id DESC LIMIT %(limit)s",
                 params,
             ).fetchall()
-        page = rows[:page_size]
-        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
-            priced = self.repo.execute(
-                "SELECT po_id, line_total FROM po_line "
-                "WHERE org_id = %(org_id)s AND po_id = ANY(%(ids)s)",
-                {"ids": [r[0] for r in page]},
-            ).fetchall()
-        totals: dict[UUID, Decimal] = defaultdict(Decimal)
-        currencies = {cast(UUID, r[0]): cast(str, r[6]).strip() for r in page}
-        for po_id, line_total in priced:  # the sum of the rounded landed lines, as `get`
-            totals[cast(UUID, po_id)] += quantize(
-                cast(Decimal, line_total), currencies[cast(UUID, po_id)]
-            )
+            page = rows[:page_size]
+            ids = [r[0] for r in page]
+            sent = {
+                cast(UUID, r[0]): PoSentRead(
+                    result=cast(SentResult, r[1]), result_at=cast(datetime | None, r[2])
+                )
+                for r in self.repo.execute(WORST_SENT_SQL, {"ids": ids}).fetchall()
+            }
+            projects: dict[UUID, list[PoProjectRef]] = defaultdict(list)
+            for r in self.repo.execute(
+                "SELECT l.po_id, pr.id, pr.number, pr.name FROM "
+                "(SELECT DISTINCT po_id, project_id FROM po_line "
+                "WHERE org_id = %(org_id)s AND po_id = ANY(%(ids)s)) l "
+                "JOIN project pr ON pr.org_id = %(org_id)s AND pr.id = l.project_id "
+                "ORDER BY l.po_id, pr.number, pr.id",
+                {"ids": ids},
+            ).fetchall():
+                projects[cast(UUID, r[0])].append(
+                    PoProjectRef(id=cast(UUID, r[1]), code=cast(str, r[2]), name=cast(str, r[3]))
+                )
+        totals = self._totals([(cast(UUID, r[0]), cast(str, r[6]).strip()) for r in page])
         return PoPage(
             rows=[
                 PoListRow(
@@ -443,11 +524,15 @@ class PurchaseOrderService:
                     currency=cast(str, r[6]).strip(),
                     status=cast(PoStatus, r[7]),
                     created_at=cast(datetime, r[8]),
+                    revision=cast(int, r[9]),
+                    projects=projects[cast(UUID, r[0])][:3],
+                    project_count=len(projects[cast(UUID, r[0])]),
+                    sent=sent.get(cast(UUID, r[0])),
                     total=_fmt(totals.get(cast(UUID, r[0]), Decimal(0))),
                 )
                 for r in page
             ],
-            counts={"all": sum(counts.values()), "draft": counts.get("draft", 0)},
+            counts=counts,
             next_cursor=(
                 base64.urlsafe_b64encode(
                     json.dumps([cast(datetime, page[-1][8]).isoformat(), str(page[-1][0])]).encode()
@@ -455,6 +540,151 @@ class PurchaseOrderService:
                 if len(rows) > page_size
                 else None
             ),
+        )
+
+    def versions(self, id: UUID) -> list[PoVersionRead]:
+        """The PO's whole revision chain, back to the first issue and forward to the latest."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self._row(id)  # 404 for a foreign or unknown id
+            rows = self.repo.execute(
+                "WITH RECURSIVE up AS (SELECT id, supersedes_id FROM purchase_order "
+                "WHERE org_id = %(org_id)s AND id = %(id)s UNION ALL SELECT p.id, p.supersedes_id "
+                "FROM purchase_order p JOIN up c "
+                "ON p.org_id = %(org_id)s AND p.id = c.supersedes_id), "
+                "down AS (SELECT id FROM purchase_order WHERE org_id = %(org_id)s AND id = %(id)s "
+                "UNION ALL SELECT p.id FROM purchase_order p JOIN down d "
+                "ON p.org_id = %(org_id)s AND p.supersedes_id = d.id) "
+                "SELECT id, revision, status, currency, issued_at FROM purchase_order "
+                "WHERE org_id = %(org_id)s AND status <> 'deleted' "
+                "AND id IN (SELECT id FROM up UNION SELECT id FROM down) ORDER BY revision",
+                {"id": id},
+            ).fetchall()
+        totals = self._totals([(cast(UUID, r[0]), cast(str, r[3]).strip()) for r in rows])
+        return [
+            PoVersionRead(
+                revision=cast(int, r[1]),
+                po_id=cast(UUID, r[0]),
+                status=cast(PoStatus, r[2]),
+                total=_fmt(totals.get(cast(UUID, r[0]), Decimal(0))),
+                currency=cast(str, r[3]).strip(),
+                issued_at=cast(datetime | None, r[4]),
+                is_current=r is rows[-1],
+            )
+            for r in rows
+        ]
+
+    def history(self, id: UUID) -> PoHistoryRead:
+        """What was done to the PO and its earlier revisions: cancel and reduce included."""
+        chain = [v.po_id for v in self.versions(id)]
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            rows = self.repo.execute(
+                "SELECT a.occurred_at, i.email, a.action, a.reason, a.after "
+                "FROM audit_log a LEFT JOIN identity i ON i.id = a.actor_id "
+                "WHERE a.org_id = %(org_id)s AND a.target_type = 'purchase_order' "
+                "AND a.target_id = ANY(%(ids)s) ORDER BY a.occurred_at, a.id LIMIT %(limit)s",
+                {"ids": chain, "limit": HISTORY_CAP + 1},
+            ).fetchall()
+        return PoHistoryRead(
+            entries=[
+                PoHistoryEntry(
+                    occurred_at=cast(datetime, r[0]),
+                    actor=cast(str | None, r[1]),
+                    action=cast(str, r[2]),
+                    detail=_detail(cast(str | None, r[3]), cast(dict[str, Any] | None, r[4])),
+                )
+                for r in rows[:HISTORY_CAP]
+            ],
+            truncated=len(rows) > HISTORY_CAP,
+        )
+
+    def budget_projects(self, id: UUID) -> list[UUID]:
+        """The projects of the PO's lines, for the caller's `ledger.read` check; 409 if replaced."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            h = self._row(id)
+            if h["status"] == "superseded":
+                current = self.versions(id)[-1].po_id
+                raise ProblemError(
+                    ErrorCode.CONFLICT,
+                    detail="This revision was replaced; its figures are on the current one.",
+                    checks={"problem": "superseded", "current_id": str(current)},
+                )
+            return [
+                cast(UUID, r[0])
+                for r in self.repo.execute(
+                    "SELECT DISTINCT project_id FROM po_line "
+                    "WHERE org_id = %(org_id)s AND po_id = %(id)s ORDER BY project_id",
+                    {"id": id},
+                ).fetchall()
+            ]
+
+    def budget_summary(self, id: UUID) -> PoBudgetSummaryRead:
+        """Per project, in Decimal on the server. The caller has `ledger.read` on each."""
+        project_ids = self.budget_projects(id)  # 409 `superseded` before any figure
+        po = self.get(id)
+        state = BUDGET_STATE[po.status]
+        mine: dict[UUID, Decimal] = defaultdict(Decimal)
+        for line in po.lines:
+            mine[line.project_id] += Decimal(line.budget_amount_project)
+        projects = ProjectService(self.connection, self.scope)
+        out: list[PoBudgetProjectRead] = []
+        for project_id in project_ids:
+            balance = get_balance(self.connection, self.scope, project_id)
+            project = projects.get(project_id)
+            share = mine[project_id]
+            out.append(
+                PoBudgetProjectRead(
+                    project_id=project_id,
+                    project_code=project.number,
+                    project_name=project.name,
+                    currency=balance.currency,
+                    # the project's committed total holds this PO's share once it is committed
+                    committed=_fmt(balance.committed - (share if state == "committed" else 0)),
+                    this_po=_fmt(share),
+                    this_po_state=state,
+                    available_after_issue=_fmt(balance.available),
+                    actual=_fmt(balance.actual),
+                )
+            )
+        return PoBudgetSummaryRead(projects=out)
+
+    def with_access(self, po: PoRead, held: Collection[str], vendor_visible: bool) -> PoRead:
+        """Add what the caller may see and do: the vendor's status now, and the commands open.
+
+        `held` is the `purchase_order.*` permissions the caller has on the PO's unit. Submit and
+        withdraw are the drafting buyer's alone, as the commands themselves enforce.
+        """
+        mine = self.creator(po.id) == self.actor_id
+        offered = {
+            "draft": [
+                ("submit", "create", True),
+                ("edit", "create", False),
+                ("delete", "create", False),
+                ("cancel", "amend", False),
+            ],
+            "approval_pending": [("withdraw", "create", True), ("cancel", "amend", False)],
+            "approved": [("issue", "issue", False), ("cancel", "amend", False)],
+            "issued": [
+                ("change_order", "amend", False),
+                ("reduce", "amend", False),
+                ("cancel", "amend", False),
+                ("close", "close", False),
+            ],
+        }.get(po.status, [])
+        return po.model_copy(
+            update={
+                "vendor_status": (
+                    VendorService(self.connection, self.scope, self.actor_id)
+                    .get(po.vendor_id)
+                    .status
+                    if vendor_visible
+                    else None
+                ),
+                "actions": [
+                    name
+                    for name, perm, creator_only in offered
+                    if f"purchase_order.{perm}" in held and (mine or not creator_only)
+                ],
+            }
         )
 
     # -- writes ----------------------------------------------------------------------------
@@ -1066,7 +1296,7 @@ def _po_links(
             label=f"PO {r[1]}",
             state=str(r[2]).capitalize(),
             state_tone="neutral",
-            href=f"/purchasing/orders/{r[0]}",
+            href=f"/purchase-orders/{r[0]}",
             at=cast(datetime, r[4]),
             relation="ordered_by",
             access=LinkAccess(

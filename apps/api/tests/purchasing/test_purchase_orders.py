@@ -535,7 +535,7 @@ def test_the_list_shows_only_permitted_units_and_a_unit_scoped_viewer_gets_200(l
             regrant(db, ["purchase_order.view"], AuthorizationTarget(ScopeType.BU, other.id))
             mine = await send(browser, "GET")
             assert mine.status_code == 200 and mine.json()["rows"] == []  # unit B only: not unit A
-            assert mine.json()["counts"] == {"all": 0, "draft": 0}
+            assert set(mine.json()["counts"].values()) == {0}  # all six keys (E13-S12)
             regrant(db, ["purchase_order.view"], AuthorizationTarget(ScopeType.BU, unit_id))
             seen = await send(browser, "GET", "?tab=draft")
             assert [r["id"] for r in seen.json()["rows"]] == [str(po.id)]

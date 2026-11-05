@@ -18,6 +18,7 @@ from flo.kernel.outbox.store import OutboxStore
 from flo.kernel.ports.email import EmailAttachment
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
+from flo.modules.purchasing.models import READ_STATE, TRANSMISSION_FROM
 from flo.modules.purchasing.pdf import filename, frozen, pdf_for
 from flo.modules.purchasing.schemas import PoTransmissionRead
 from flo.modules.purchasing.service import PurchaseOrderService, _invalid
@@ -27,13 +28,7 @@ from flo.modules.vendors.service import VendorService
 type Conn = psycopg.Connection[tuple[object, ...]]
 
 TEMPLATE = "po-issued-v1"
-# The outbox owns the state until a provider event (E13-S10) writes `result`. A dead outbox row is
-# `failed`, never `bounced`: a bounce is a provider event.
-READ_STATE = (
-    "COALESCE(t.result, CASE o.state WHEN 'sent' THEN 'sent' WHEN 'dead' THEN 'failed' "
-    "ELSE 'queued' END)"
-)
-_FROM = "FROM po_transmission t LEFT JOIN outbox o ON o.org_id = t.org_id AND o.id = t.outbox_id"
+_FROM = TRANSMISSION_FROM
 NO_RECIPIENTS = (
     "no_recipients",
     "The vendor has no contact that receives documents. Add one, then issue.",

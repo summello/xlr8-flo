@@ -187,6 +187,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261030_0085",
         "20261031_0086",
         "20261101_0087",
+        "20261102_0088",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -3560,4 +3561,48 @@ def test_po_attachment_vendor_mark_migration_roundtrips_and_guards(empty_databas
         ).fetchone() == ("false",)
         mig.downgrade(conn)
         assert conn.execute("SELECT to_regclass('po_attachment_vendor_mark')").fetchone() == (None,)
+        mig.upgrade(conn)
+
+
+def test_purchasing_reads_grant_roundtrips_and_keeps_a_grant_already_held(empty_database):
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from tests.org.test_bootstrap import create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261101_0087"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261102_0088")
+    with psycopg.connect(empty_database, autocommit=True) as conn:
+        scope = Scope(create(conn).org_id)
+
+        def held():
+            with tenant_transaction(conn, scope):
+                return conn.execute(
+                    "SELECT r.code, p.permission_code FROM role_permission p "
+                    "JOIN role r ON r.id = p.role_id WHERE p.permission_code IN "
+                    "('vendor.view', 'ledger.read') AND r.code = 'purchasing-user' ORDER BY 2"
+                ).fetchall()
+
+        with tenant_transaction(conn, scope):  # a tenant that predates the story, with one held
+            conn.execute(
+                "DELETE FROM role_permission USING role r WHERE r.id = role_id "
+                "AND r.code = 'purchasing-user' AND permission_code IN ('vendor.view', "
+                "'ledger.read')"
+            )
+            conn.execute(
+                "INSERT INTO role_permission(org_id, role_id, permission_code) "
+                "SELECT org_id, id, 'ledger.read' FROM role WHERE code = 'purchasing-user'"
+            )
+        before = held()
+        assert before == [("purchasing-user", "ledger.read")]
+        mig.upgrade(conn)
+        assert held() == [("purchasing-user", "ledger.read"), ("purchasing-user", "vendor.view")]
+        with tenant_transaction(conn, scope):
+            assert conn.execute(
+                "SELECT count(*) FROM audit_log WHERE correlation_id = 'migration-20261102_0088'"
+            ).fetchone() == (1,)
+        mig.downgrade(conn)
+        assert held() == before  # only the grant the migration inserted goes
         mig.upgrade(conn)

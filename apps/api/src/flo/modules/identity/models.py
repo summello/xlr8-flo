@@ -328,6 +328,8 @@ BASELINE_ROLE_PERMISSIONS: dict[RoleCode, frozenset[PermissionCode]] = {
             "master.read",
             "requisition.view",
             "rfq.view",
+            "vendor.view",
+            "ledger.read",
         )
     ),
     role_code("vendor-manager"): frozenset(
