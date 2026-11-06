@@ -2196,7 +2196,7 @@ epics:
           - E13-S11
           - E13-S12
           - E11-S11
-        st: todo
+        st: in_progress
       - id: E13-S15
         t: 'Issue: confirmation and signature moment 5'
         k: ui
