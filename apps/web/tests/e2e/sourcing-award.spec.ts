@@ -186,3 +186,13 @@ for (const theme of ["light", "dark"] as const) {
     expect((await new AxeBuilder({ page }).analyze()).violations.map(v => `${v.id}: ${v.nodes.map(n => JSON.stringify(n.target)).join(" ")}`)).toEqual([]);
   });
 }
+
+test("Create PO appears on an approved award only", async ({ page }) => {
+  await stubAward(page, { existing: award({ status: "approved" }) });
+  await page.goto(url);
+  await expect(page.getByRole("link", { name: "Create PO" })).toHaveAttribute("href", "/purchase-orders/new?award=aw1");
+  await stubAward(page, { existing: award({ status: "draft" }) });
+  await page.goto(url);
+  await expect(page.getByRole("heading", { name: "Award AWD-0001" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Create PO" })).toHaveCount(0);
+});
