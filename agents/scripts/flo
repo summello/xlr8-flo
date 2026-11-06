@@ -2723,7 +2723,10 @@ def cmd_facts(argv):
                                         "jobs": F.red_jobs(_read(sc / f"{m['id']}.ci-red"))}
                               for m in rm["milestones"] if (sc / f"{m['id']}.ci-red").exists()},
         "next": [i for i in ready if preflight_state(i)[0]][:5],
-        "needs_preflight": [i for i in ready if not preflight_state(i)[0]],
+        # packets waiting on an operator answer go last: the supervisor's need names the first entry,
+        # and naming a ## Blocked one idled the fleet two days with six pre-flight-ready packets behind it
+        "needs_preflight": sorted((i for i in ready if not preflight_state(i)[0]),
+                                  key=lambda i: "\n## Blocked" in (ROOT / "design" / f"{i}.md").read_text()),
         "free_accounts": free_accounts("sonnet", sonnet) if sonnet.get("accounts") else [],
         "stories": out,
     }, indent=1))

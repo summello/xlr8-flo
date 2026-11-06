@@ -125,6 +125,15 @@ def test_facts_offers_only_stories_with_a_valid_record(runner, capsys):
     assert facts["needs_preflight"] == []
 
 
+def test_a_blocked_packet_is_named_after_an_actionable_one(runner, monkeypatch, capsys):
+    blocked = dict(F.roadmap()["epics"][0]["stories"][0], id="E00-S00")
+    rm = F.roadmap()
+    rm["epics"][0]["stories"].insert(0, blocked)
+    (runner / "design" / "E00-S00.md").write_text("packet\n\n## Blocked (operator decides)\n")
+    F.cmd_facts([])
+    assert json.loads(capsys.readouterr().out)["needs_preflight"] == [SID, "E00-S00"]
+
+
 def test_scratch_is_ignored_by_git():
     assert ".scratch/" in (REPO / ".gitignore").read_text().splitlines()
 
