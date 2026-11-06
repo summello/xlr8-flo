@@ -622,7 +622,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E13-S10** Deliverability: SPF/DKIM/DMARC verification, bounce and complaint handling, suppression list | E13 | engine | M | EML-001, EML-002, EML-003, EML-006 | ~~E13-S09~~ |
 | ✅ | **E13-S11** Internal vs vendor-facing notes and attachments, enforced by test | E13 | security | M | PO-017, EML-005, COL-002 | ~~E13-S09~~, ~~E09-S10~~ |
 | ✅ | **E13-S12** PO list and PO detail screens | E13 | ui | L | PO-007, PO-013, UX-004 | ~~E13-S03~~, ~~E13-S05~~, ~~E11-S09~~, ~~E13-S06~~, ~~E13-S09~~ |
-| ⬜ | **E13-S13** Create POs from awarded lines | E13 | ui | M | PO-001, PO-009, SRC-018 | ~~E13-S01~~, ~~E13-S12~~ |
+| 🔨 | **E13-S13** Create POs from awarded lines | E13 | ui | M | PO-001, PO-009, SRC-018 | ~~E13-S01~~, ~~E13-S12~~ |
 | ⬜ | **E13-S14** PO editor: header, lines with tax and freight apart, budget preview, vendor eligibility | E13 | ui | L | PO-002, PO-016, PO-017, VEN-012 | ~~E13-S01~~, ~~E13-S02~~, ~~E13-S04~~, ~~E13-S11~~, ~~E13-S12~~, ~~E11-S11~~ |
 | ⬜ | **E13-S15** Issue: confirmation and signature moment 5 | E13 | ui | M | PO-008, PO-012, A11Y-009 | ~~E13-S05~~, ~~E13-S09~~, ~~E13-S12~~ |
 | ⬜ | **E13-S16** Transmission log, change recipient and resend | E13 | ui | M | PO-004, PO-015, EML-002, EML-003 | ~~E13-S09~~, E13-S10, ~~E13-S12~~ |

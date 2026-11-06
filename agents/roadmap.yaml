@@ -2177,7 +2177,7 @@ epics:
         dep:
           - E13-S01
           - E13-S12
-        st: todo
+        st: in_progress
       - id: E13-S14
         t: 'PO editor: header, lines with tax and freight apart, budget preview, vendor eligibility'
         k: ui
