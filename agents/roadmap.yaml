@@ -2270,7 +2270,7 @@ epics:
         dep:
           - E13-S07
           - E13-S12
-        st: todo
+        st: in_progress
       - id: E13-S20
         t: 'PO decision panel: Purchase Order Evidence block'
         k: ui
