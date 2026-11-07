@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/api/v1/admin/email-suppressions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Email Suppressions */
+        get: operations["get_email_suppressions_api_v1_admin_email_suppressions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/email-suppressions/{id}": {
         parameters: {
             query?: never;
@@ -16,6 +33,40 @@ export interface paths {
         post?: never;
         /** Delete Email Suppression */
         delete: operations["delete_email_suppression_api_v1_admin_email_suppressions__id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/sending-domain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Sending Domain */
+        get: operations["get_sending_domain_api_v1_admin_sending_domain_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/sending-domain/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check Sending Domain */
+        post: operations["check_sending_domain_api_v1_admin_sending_domain_check_post"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -5701,6 +5752,8 @@ export interface components {
             /** Issue Date */
             issue_date?: string | null;
         };
+        /** @enum {string} */
+        DomainResult: "pass" | "fail" | "unknown";
         /** DriftPage */
         DriftPage: {
             /** Entries */
@@ -9800,6 +9853,19 @@ export interface components {
              */
             sealed?: true;
         };
+        /** SendingDomainRead */
+        SendingDomainRead: {
+            /** Check Pending */
+            check_pending: boolean;
+            /** Checked At */
+            checked_at: string | null;
+            /** Detail */
+            detail: string;
+            dkim: components["schemas"]["DomainResult"] | null;
+            /** Po Email Allowed */
+            po_email_allowed: boolean;
+            spf: components["schemas"]["DomainResult"] | null;
+        };
         /**
          * SensitiveAccess
          * @description Whether the caller may reveal tax and banking values, and who to ask when not (VEN-014).
@@ -10071,6 +10137,33 @@ export interface components {
         SuppressionDelete: {
             /** Reason */
             reason: string;
+        };
+        /** SuppressionPage */
+        SuppressionPage: {
+            /** Next Cursor */
+            next_cursor: string | null;
+            /** Rows */
+            rows: components["schemas"]["SuppressionRead"][];
+        };
+        /** SuppressionRead */
+        SuppressionRead: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Email */
+            email: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "bounced" | "complained";
         };
         /** TaskRead */
         TaskRead: {
@@ -10960,6 +11053,49 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    get_email_suppressions_api_v1_admin_email_suppressions_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                cursor?: string | null;
+            };
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuppressionPage"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     delete_email_suppression_api_v1_admin_email_suppressions__id__delete: {
         parameters: {
             query?: never;
@@ -10983,6 +11119,86 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    get_sending_domain_api_v1_admin_sending_domain_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendingDomainRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    check_sending_domain_api_v1_admin_sending_domain_check_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendingDomainRead"];
+                };
             };
             /** @description Client error expressed as RFC 9457 problem details. */
             "4XX": {

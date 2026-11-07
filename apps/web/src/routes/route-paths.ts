@@ -4,6 +4,7 @@ export const ROUTE_PATHS = [
   "/administration",
   "/admin/approval-workflows",
   "/admin/vendor-questionnaires",
+  "/admin/sending-domain",
   "/projects",
   "/projects/new",
   "/budget",
