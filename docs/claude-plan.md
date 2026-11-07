@@ -630,7 +630,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E13-S18** Change order screen: field diff, signed budget effect, reapproval line | E13 | ui | M | PO-010, PO-011, ACC-005 | ~~E13-S06~~, ~~E13-S12~~ |
 | ✅ | **E13-S19** Cancel or reduce dialog | E13 | ui | M | PO-013, ACC-006 | ~~E13-S07~~, ~~E13-S12~~ |
 | ✅ | **E13-S20** PO decision panel: Purchase Order Evidence block | E13 | ui | M | PO-003, APR-020 | ~~E13-S04~~, ~~E11-S10~~ |
-| ⬜ | **E13-S21** Sending domain status and suppression list (Administration) | E13 | ui | M | EML-001, EML-003 | ~~E13-S10~~ |
+| 🔨 | **E13-S21** Sending domain status and suppression list (Administration) | E13 | ui | M | EML-001, EML-003 | ~~E13-S10~~ |
 | ✅ | **E13-S22** Purchase-order open questions for the operator (parking story) | E13 | docs | S | PO-007 | — |
 | ✅ | **E13-S23** PO lock order: withdrawal takes the approval instance before the PO; change-order submit takes the award first | E13 | concurrency | S | PO-007 | ~~E13-S07~~ |
 | ✅ | **E13-S24** Vendor cancellation email for a cancelled issued PO, through the outbox | E13 | engine | M | PO-013, PO-015, ARCH-006 | ~~E13-S07~~, ~~E13-S09~~ |

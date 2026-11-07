@@ -2295,7 +2295,7 @@ epics:
           - EML-003
         dep:
           - E13-S10
-        st: todo
+        st: in_progress
       - id: E13-S22
         t: Purchase-order open questions for the operator (parking story)
         k: docs
