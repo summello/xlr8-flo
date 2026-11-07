@@ -254,7 +254,8 @@ def test_codex_b_author_runs_under_its_own_codex_home(root, tmp_path):
     bin_.mkdir()
     (bin_ / "codex").write_text("#!/bin/sh\necho \"$CODEX_HOME\" > '%s'\n" % (tmp_path / "home"))
     (bin_ / "codex").chmod(0o755)
-    p = sh(root, "author.sh", "E00-S01", env={"PATH": f"{bin_}:{os.environ['PATH']}", "HOME": str(tmp_path)})
+    env = {"PATH": f"{bin_}:{os.environ['PATH']}", "HOME": str(tmp_path)}
+    p = sh(root, "author.sh", "E00-S01", env=env)
     assert p.wait(timeout=60) == 0
     for _ in range(50):
         if (tmp_path / "home").exists():
