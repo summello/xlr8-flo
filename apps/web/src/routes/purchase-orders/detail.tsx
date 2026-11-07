@@ -4,6 +4,7 @@ import { apiClient } from "../../api/client";
 import { writeHeaders } from "../../features/auth/api";
 import StatusPill from "../../components/status/StatusPill";
 import { BudgetCard, HistoryCard, LinesCard, LinkedCard, NotesAndFiles, PoStepper, Swimlanes, TransmissionsCard } from "../../components/purchasing/PoCards";
+import IssueDialog from "../../components/purchasing/issue/IssueDialog";
 import CancelOrReduce from "../../components/purchasing/dialogs/CancelOrReduce";
 import VendorCopySheet from "../../components/purchasing/vendor-copy/VendorCopySheet";
 import VersionControl from "../../components/purchasing/VersionControl";
@@ -55,7 +56,7 @@ export default function PurchaseOrderDetail({ id, navigate }: { id: string; navi
         <p className="req-sub"><a href={`/vendors/${p.vendor_id}`}>{typeof p.vendor_snapshot.trading_name === "string" ? p.vendor_snapshot.trading_name : "Vendor"}</a>{p.vendor_status && <> · Vendor {p.vendor_status.replaceAll("_", " ")}</>} · <a href={`/requisitions/${p.requisition_id}`}>Requisition</a></p></div>
       <VersionControl key={p.id} po={p} navigate={navigate} />
       <StatusPill docType="purchase_order" status={p.status as "draft"} />
-      <div className="vendor-head-actions"><CancelOrReduce po={p} onDone={po.reload} />{p.actions?.includes("change_order") && <button type="button" className="req-link-button" onClick={() => void startChange()}>Start Change Order</button>}{(p.actions ?? []).includes("edit") && <a className="req-link-button" href={`/purchase-orders/${p.id}/edit`} onClick={e => { e.preventDefault(); navigate(`/purchase-orders/${p.id}/edit`); }}>Edit</a>}{HAS_PDF.includes(p.status) && <a className="req-link-button" href={`/api/v1/purchase-orders/${p.id}/pdf`} target="_blank" rel="noreferrer"><FilePdf aria-hidden="true" weight="regular" />View PDF</a>}<button type="button" className="req-link-button" onClick={e => { setSheetOpener(e.currentTarget); setSheetOpen(true); }}><Envelope aria-hidden="true" weight="regular" />Vendor Copy</button></div>
+      <div className="vendor-head-actions">{p.actions?.includes("issue") && <IssueDialog po={p} navigate={navigate} onReload={po.reload} />}<CancelOrReduce po={p} onDone={po.reload} />{p.actions?.includes("change_order") && <button type="button" className="req-link-button" onClick={() => void startChange()}>Start Change Order</button>}{(p.actions ?? []).includes("edit") && <a className="req-link-button" href={`/purchase-orders/${p.id}/edit`} onClick={e => { e.preventDefault(); navigate(`/purchase-orders/${p.id}/edit`); }}>Edit</a>}{HAS_PDF.includes(p.status) && <a className="req-link-button" href={`/api/v1/purchase-orders/${p.id}/pdf`} target="_blank" rel="noreferrer"><FilePdf aria-hidden="true" weight="regular" />View PDF</a>}<button type="button" className="req-link-button" onClick={e => { setSheetOpener(e.currentTarget); setSheetOpen(true); }}><Envelope aria-hidden="true" weight="regular" />Vendor Copy</button></div>
     </header>
     {sheetOpen && <VendorCopySheet id={id} opener={sheetOpener} navigate={navigate} onClose={() => setSheetOpen(false)} />}
     {startError && <p role="alert">{startError}</p>}

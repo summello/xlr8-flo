@@ -29,10 +29,11 @@ export const LIFECYCLE = [
 ] as const;
 export const FUTURE_STATES: readonly string[] = ["partially_delivered", "delivered", "accepted"];
 
+/** MASTER 2.3 po_transmission: the closed set of words and tones. */
 const SENT: Record<Sent["result"], [StatusTone, string]> = {
-  queued: ["info", "Queued"], sent: ["neutral", "Sent"], delivered: ["success", "Delivered"],
-  failed: ["danger", "Failed"], bounced: ["danger", "Bounced"], complained: ["danger", "Complained"],
-  address_suppressed: ["warning", "Address suppressed"],
+  queued: ["info", "Email Queued"], sent: ["info", "Email Sent"], delivered: ["success", "Email Delivered"],
+  failed: ["danger", "Email Failed"], bounced: ["danger", "Email Bounced"], complained: ["danger", "Email Complaint"],
+  address_suppressed: ["danger", "Address Suppressed"],
 };
 
 /** The words of a transmission result with its date (`Delivered 12 Oct`); colour and icon only repeat them. */

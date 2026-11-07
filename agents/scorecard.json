@@ -7782,6 +7782,65 @@
         },
         "gate_s": 247
       }
+    },
+    {
+      "story": "E13-S15",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 2,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "b106fedc-b4a9-49b8-9524-933f7c7b91e0",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S15",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S15"
+        }
+      },
+      "recap": "Adds the Issue confirmation dialog on the PO detail page and the /purchase-orders/:id/issue moment (stage, Frames table, polling, Resend and Change Recipient recovery), and corrects the transmission words to MASTER 2.3. No server change.",
+      "title": "Issue: confirmation and signature moment 5",
+      "durations": {
+        "wall_s": 51464,
+        "author_s": 44954,
+        "review_s": {
+          "codex": 17
+        },
+        "gate_s": 0
+      }
     }
   ]
 }
