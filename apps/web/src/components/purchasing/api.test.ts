@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import { cancelConsequence, HOLDS, LIFECYCLE, FUTURE_STATES, TABS, sentSignal } from "./api";
 
 describe("sentSignal", () => {
-  it("says the result in words with its date, and a trouble result is a danger or warning tone", () => {
-    expect(sentSignal({ result: "delivered", result_at: "2026-10-12T10:00:00Z" })).toEqual({ tone: "success", label: expect.stringMatching(/^Delivered .*12/) });
-    expect(sentSignal({ result: "bounced", result_at: null })).toEqual({ tone: "danger", label: "Bounced" });
-    expect(sentSignal({ result: "address_suppressed", result_at: null }).tone).toBe("warning");
-    expect(sentSignal({ result: "queued", result_at: null })).toEqual({ tone: "info", label: "Queued" });
+  it("maps each of the seven results to MASTER 2.3's word and tone, the date after the word", () => {
+    const words = { queued: ["info", "Email Queued"], sent: ["info", "Email Sent"], delivered: ["success", "Email Delivered"], failed: ["danger", "Email Failed"],
+      bounced: ["danger", "Email Bounced"], complained: ["danger", "Email Complaint"], address_suppressed: ["danger", "Address Suppressed"] } as const;
+    for (const [result, [tone, label]] of Object.entries(words) as [keyof typeof words, readonly [string, string]][]) {
+      expect(sentSignal({ result, result_at: null })).toEqual({ tone, label });
+    }
+    expect(sentSignal({ result: "delivered", result_at: "2026-10-12T10:00:00Z" })).toEqual({ tone: "success", label: expect.stringMatching(/^Email Delivered .*12/) });
   });
 });
 
