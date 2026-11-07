@@ -1,5 +1,5 @@
 import { CheckCircle, Circle, Prohibit, Target, Warning } from "@phosphor-icons/react";
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { apiClient } from "../../api/client";
 import { writeHeaders } from "../../features/auth/api";
 import Attachments from "../requisitions/Attachments";
@@ -17,7 +17,7 @@ async function unwrap<T>(result: Promise<{ data?: T; error?: unknown }>, action:
   return data;
 }
 
-const address = (a: Po["bill_to"]) => ["line1", "line2", "city", "region", "postal_code", "country"].map(k => a[k]).filter(v => typeof v === "string" && v).join(", ") || "Not set";
+export const address = (a: Po["bill_to"]) => ["line1", "line2", "city", "region", "postal_code", "country"].map(k => a[k]).filter(v => typeof v === "string" && v).join(", ") || "Not set";
 
 /** The lifecycle as a connected stepper; the M4 states are drawn as future. Cancelled and Superseded are banners, never steps. */
 export function PoStepper({ po }: { po: Po }) {
@@ -144,30 +144,36 @@ export function LinkedCard({ po }: { po: Po }) {
   </Card>;
 }
 
-export function NotesAndFiles({ id }: { id: string }) {
+export function NotesAndFiles({ id, onUploaded, children }: { id: string; onUploaded?: () => void; children?: ReactNode }) {
   const load = useLoad(() => unwrap(apiClient.GET("/api/v1/documents/{document_type}/{document_id}/notes", { params: { path: { document_type: "purchase_order", document_id: id } } }), "Loading notes"), [id]);
   const [body, setBody] = useState("");
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [visibility, setVisibility] = useState<"internal" | "shareable">("internal");
   const add = async (e: FormEvent) => {
     e.preventDefault();
     if (!body.trim()) { setProblem("Write a note before adding it."); return; }
     setBusy(true); setProblem(null);
-    const { error, response } = await apiClient.POST("/api/v1/documents/{document_type}/{document_id}/notes", { params: { path: { document_type: "purchase_order", document_id: id } }, headers: writeHeaders(), body: { body, visibility: "internal" } });
+    const { error, response } = await apiClient.POST("/api/v1/documents/{document_type}/{document_id}/notes", { params: { path: { document_type: "purchase_order", document_id: id } }, headers: writeHeaders(), body: { body, visibility } });
     setBusy(false);
     if (!response.ok) { setProblem(failure(error as Problem | undefined, "Adding the note")); return; }
     setBody(""); load.reload();
   };
   return <>
     <Card title="Notes and Files" load={load}>
-      {(load.data ?? []).length === 0 ? <p>No notes yet. A note here stays internal; it is never sent to the vendor.</p> : <ul className="vendor-list-plain">{(load.data ?? []).map(n => <li key={n.id}><span>{n.body}</span><span className="req-sub"><Person name={n.author_name} email={n.author_email} />, {formatDateTime(n.created_at)} · Internal</span></li>)}</ul>}
+      {(load.data ?? []).length === 0 ? <p>No notes yet. Notes are internal unless you choose Sent to Vendor.</p> : <ul className="vendor-list-plain">{(load.data ?? []).map(n => <li key={n.id}><span>{n.body}</span><span className="req-sub"><Person name={n.author_name} email={n.author_email} />, {formatDateTime(n.created_at)} · {n.visibility === "shareable" ? "Sent to Vendor" : "Internal"}</span></li>)}</ul>}
       <form onSubmit={e => void add(e)} className="po-note">
         <label htmlFor="po-note-body">Add a note</label>
         <textarea id="po-note-body" rows={2} value={body} onChange={e => setBody(e.target.value)} aria-invalid={problem ? true : undefined} aria-describedby={problem ? "po-note-error" : undefined} />
+        <fieldset className="po-note-visibility"><legend>Who sees this note</legend>
+          <label><input type="radio" name="po-note-visibility" checked={visibility === "internal"} onChange={() => setVisibility("internal")} />Internal</label>
+          <label><input type="radio" name="po-note-visibility" checked={visibility === "shareable"} onChange={() => setVisibility("shareable")} />Sent to Vendor</label>
+          <p className="req-sub">A Sent to Vendor note is printed on the PDF.</p></fieldset>
         {problem && <p id="po-note-error" role="alert" className="field-error">{problem}</p>}
         <button type="submit" aria-busy={busy || undefined}>Add note</button>
       </form>
     </Card>
-    <Attachments id={id} documentType="purchase_order" />
+    <Attachments id={id} documentType="purchase_order" onUploaded={onUploaded} />
+    {children}
   </>;
 }

@@ -31,6 +31,7 @@ from flo.modules.approvals.schemas import OutcomeContext
 from flo.modules.approvals.service import require_workflow_for, start, withdraw
 from flo.modules.budget.service import CONSUMED_BY_ACTUAL, get_balance
 from flo.modules.identity.service import AuthorizationConnection, AuthorizationResolver
+from flo.modules.org.schemas import OrgAddressRead
 from flo.modules.org.service import NumberingService, OrgService, today
 from flo.modules.projects.service import ProjectService, generated_for
 from flo.modules.purchasing.lifecycle import parse_if_match, transition
@@ -366,6 +367,8 @@ class PurchaseOrderService:
             total_converted=_fmt(sums["conv"]),
             released_amount=None if released[0] is None else _fmt(cast(Decimal, released[0])),
             released_currency=None if released[0] is None else str(released[1]).strip(),
+            tax_consumes_budget=flags[0] if live else None,
+            freight_consumes_budget=flags[1] if live else None,
         )
 
     def awarded(
@@ -726,13 +729,19 @@ class PurchaseOrderService:
                 return found[0].model_dump(mode="json")
         raise conflict("bill_to_missing", "No Bill To address is set on this unit or above it.")
 
-    def _ship_to_allowed(self, unit_id: UUID, address_id: UUID) -> bool:
+    def _ship_to_for(self, unit_id: UUID) -> list[OrgAddressRead]:
         org = OrgService(self.connection, self.scope)
-        return any(
-            a.id == address_id
-            for unit in org.unit_chain(unit_id)
-            for a in org.list_addresses(unit, "ship_to", None)
-        )
+        return [
+            a for unit in org.unit_chain(unit_id) for a in org.list_addresses(unit, "ship_to", None)
+        ]
+
+    def _ship_to_allowed(self, unit_id: UUID, address_id: UUID) -> bool:
+        return any(a.id == address_id for a in self._ship_to_for(unit_id))
+
+    def ship_to_options(self, id: UUID) -> list[OrgAddressRead]:
+        """The active Ship To addresses `update` accepts: the PO's unit, then its ancestors."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            return self._ship_to_for(self.unit_of(id))
 
     def _eligibility(
         self, vendors: VendorService, vendor_id: UUID, unit_id: UUID, body: PoCreate,

@@ -2203,6 +2203,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/purchase-orders/{id}/ship-to-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Po Ship To Options */
+        get: operations["po_ship_to_options_api_v1_purchase_orders__id__ship_to_options_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/purchase-orders/{id}/submit": {
         parameters: {
             query?: never;
@@ -7770,6 +7787,8 @@ export interface components {
             currency: string;
             /** Document Freight */
             document_freight: string | null;
+            /** Freight Consumes Budget */
+            freight_consumes_budget?: boolean | null;
             /**
              * Freight Mode
              * @enum {string}
@@ -7821,6 +7840,8 @@ export interface components {
             status: components["schemas"]["PoStatus"];
             /** Supersedes Id */
             supersedes_id: string | null;
+            /** Tax Consumes Budget */
+            tax_consumes_budget?: boolean | null;
             /** Tax Total */
             tax_total: string;
             /** Terms */
@@ -8190,6 +8211,8 @@ export interface components {
             currency: string;
             /** Document Freight */
             document_freight: string | null;
+            /** Freight Consumes Budget */
+            freight_consumes_budget?: boolean | null;
             /**
              * Freight Mode
              * @enum {string}
@@ -8239,6 +8262,8 @@ export interface components {
             status: components["schemas"]["PoStatus"];
             /** Supersedes Id */
             supersedes_id: string | null;
+            /** Tax Consumes Budget */
+            tax_consumes_budget?: boolean | null;
             /** Tax Total */
             tax_total: string;
             /** Terms */
@@ -17480,6 +17505,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PoChangeRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    po_ship_to_options_api_v1_purchase_orders__id__ship_to_options_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgAddressRead"][];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

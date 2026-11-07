@@ -2,7 +2,7 @@
 
 import asyncio
 from decimal import Decimal
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -13,9 +13,11 @@ from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import tenant_transaction
 from flo.modules.budget.service import get_balance
 from flo.modules.identity.models import BASELINE_ROLE_PERMISSIONS, permission_code, role_code
+from flo.modules.org.schemas import SettingPut
+from flo.modules.org.service import OrgService
 from flo.modules.purchasing.cancel import cancel
 from flo.modules.purchasing.models import PurchaseOrderRepository
-from flo.modules.purchasing.schemas import PoCancelCreate
+from flo.modules.purchasing.schemas import PoCancelCreate, PoPatch
 from flo.modules.purchasing.service import _po_links
 from tests.isolation.test_real_sessions import client, login
 from tests.purchasing.test_changes import decide_change, line, open_change, publish_change, submit
@@ -249,7 +251,7 @@ def test_po_read_routes_conceal_foreign_tenants_and_check_permissions(lifecycle_
     db, _ = lifecycle_db
     po = issued_po(db)
     other = foreign_po(db)
-    tails = ("", "/versions", "/history", "/budget-summary")
+    tails = ("", "/versions", "/history", "/budget-summary", "/ship-to-options")
 
     async def scenario():
         async with client(app) as browser:
@@ -261,6 +263,8 @@ def test_po_read_routes_conceal_foreign_tenants_and_check_permissions(lifecycle_
             for tail in tails:
                 assert (await send(browser, "GET", f"/{po.id}{tail}")).status_code == 403
             regrant(db, ["purchase_order.view"])  # no ledger.read: all or nothing
+            # the Ship To choices need the editor's permission, not the read one
+            assert (await send(browser, "GET", f"/{po.id}/ship-to-options")).status_code == 403
             assert (await send(browser, "GET", f"/{po.id}/versions")).status_code == 200
             assert (await send(browser, "GET", f"/{po.id}/history")).status_code == 200
             denied = await send(browser, "GET", f"/{po.id}/budget-summary")
@@ -270,6 +274,43 @@ def test_po_read_routes_conceal_foreign_tenants_and_check_permissions(lifecycle_
             assert got.status_code == 200 and got.json()["projects"]
 
     asyncio.run(scenario())
+
+
+def test_the_draft_carries_the_budget_treatment_flags_and_an_issued_po_does_not(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, _, a, _, award_id, unit_id = ready(db)
+    draft = create(db, rfq, a, award_id, "2")
+    assert (draft.tax_consumes_budget, draft.freight_consumes_budget) == (True, True)
+    OrgService(db[0], Scope(db[1]), db[3]).set_setting(
+        "tax.consumes_budget", SettingPut(value=False, unit_id=unit_id)
+    )
+    read = pos(db).get(draft.id)
+    assert (read.tax_consumes_budget, read.freight_consumes_budget) == (False, True)
+    sql(db, "UPDATE purchase_order SET status='approved' RETURNING 1")
+    run(db, read)  # issue: the amounts are frozen, today's setting says nothing about them
+    issued = pos(db).get(draft.id)
+    assert issued.status == "issued"  # plant: fill the flags for an issued PO and this fails
+    assert (issued.tax_consumes_budget, issued.freight_consumes_budget) == (None, None)
+
+
+def test_ship_to_options_are_what_patch_accepts(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, _, a, _, award_id, unit_id = ready(db)
+    po = create(db, rfq, a, award_id, "2")
+    bill = pos(db).get(po.id).bill_to
+    options = pos(db).ship_to_options(po.id)
+    ship = next(o for o in options if o.id == po.ship_to_address_id)  # the requisition's own
+    # plant: also return bill-to addresses and this fails
+    assert {o.kind for o in options} == {"ship_to"}
+    assert UUID(bill["id"]) not in [o.id for o in options]
+
+    def patch(version, **fields):
+        with correlation_context("po"):
+            return pos(db).update(po.id, PoPatch(**fields), version)
+
+    assert patch('"1"', ship_to_address_id=ship.id).ship_to_address_id == ship.id
+    refused_ = pytest.raises(ProblemError, patch, '"2"', ship_to_address_id=UUID(bill["id"]))
+    assert refused_.value.checks["problem"] == "ship_to_invalid"
 
 
 def test_the_detail_route_offers_only_what_the_caller_may_run(lifecycle_db):

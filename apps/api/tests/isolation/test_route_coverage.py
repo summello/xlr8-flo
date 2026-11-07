@@ -98,6 +98,7 @@ COVERED = {
     ("GET", "/api/v1/purchase-orders/{id}/versions"): PO_READ_ROUTES,
     ("GET", "/api/v1/purchase-orders/{id}/history"): PO_READ_ROUTES,
     ("GET", "/api/v1/purchase-orders/{id}/budget-summary"): PO_READ_ROUTES,
+    ("GET", "/api/v1/purchase-orders/{id}/ship-to-options"): PO_READ_ROUTES,
     ("GET", "/api/v1/purchase-orders/{id}/transmissions"): TRANSMISSION_ROUTES,
     ("POST", "/api/v1/purchase-orders/{id}/transmissions/resend"): TRANSMISSION_ROUTES,
     ("GET", "/api/v1/purchase-orders/{id}/attachments"): ATTACHMENT_MARK_ROUTES,

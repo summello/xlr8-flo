@@ -14,7 +14,7 @@ const SCAN = {
   rejected: { word: "Quarantined", Icon: Prohibit, why: "It was rejected by the scan and cannot be opened." },
 } as const;
 
-export default function Attachments({ id, documentType = "requisition" }: { id: string | null; documentType?: "requisition" | "purchase_order" }) {
+export default function Attachments({ id, documentType = "requisition", onUploaded }: { id: string | null; documentType?: "requisition" | "purchase_order"; onUploaded?: () => void }) {
   const list = useLoad<Attachment[]>(async () => {
     if (!id) return [];
     const { data, error } = await apiClient.GET("/api/v1/documents/{document_type}/{document_id}/attachments", { params: { path: { document_type: documentType, document_id: id } } });
@@ -32,7 +32,7 @@ export default function Attachments({ id, documentType = "requisition" }: { id: 
       // No Content-Type: the browser sets the multipart boundary.
       const response = await fetch(`/api/v1/documents/${documentType}/${id}/attachments`, { method: "POST", credentials: "same-origin", headers: writeHeaders(), body });
       if (!response.ok) { const error = await response.json().catch(() => undefined) as { detail?: string } | undefined; setProblem(failure(error, "Uploading the file")); }
-      else list.reload();
+      else { list.reload(); onUploaded?.(); }
     } catch { setProblem(failure(undefined, "Uploading the file")); }
     setBusy(false);
   };

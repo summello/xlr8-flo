@@ -16,6 +16,7 @@ from flo.kernel.config import Settings
 from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
+from flo.modules.org.schemas import OrgAddressRead
 from flo.modules.purchasing.cancel import cancel, cancel_preview, reduce
 from flo.modules.purchasing.changes import ChangeService
 from flo.modules.purchasing.issue import issue
@@ -168,6 +169,13 @@ def po_budget_summary(
         if not permits(request, "ledger.read", target):
             raise ProblemError(ErrorCode.FORBIDDEN)
     return service.budget_summary(id)
+
+
+@router.get("/{id}/ship-to-options", response_model=list[OrgAddressRead])
+def po_ship_to_options(
+    id: UUID, context: EditContext, connection: Connection
+) -> list[OrgAddressRead]:
+    return PurchaseOrderService(connection, current_scope(), context.user_id).ship_to_options(id)
 
 
 @router.patch("/{id}", response_model=PoRead)

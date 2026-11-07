@@ -32,7 +32,7 @@ export default function PurchaseOrderDetail({ id, navigate }: { id: string; navi
         <p className="req-sub"><a href={`/vendors/${p.vendor_id}`}>{typeof p.vendor_snapshot.trading_name === "string" ? p.vendor_snapshot.trading_name : "Vendor"}</a>{p.vendor_status && <> · Vendor {p.vendor_status.replaceAll("_", " ")}</>} · <a href={`/requisitions/${p.requisition_id}`}>Requisition</a></p></div>
       <VersionControl key={p.id} po={p} navigate={navigate} />
       <StatusPill docType="purchase_order" status={p.status as "draft"} />
-      <div className="vendor-head-actions"><CancelOrReduce po={p} onDone={po.reload} />{HAS_PDF.includes(p.status) && <a className="req-link-button" href={`/api/v1/purchase-orders/${p.id}/pdf`} target="_blank" rel="noreferrer"><FilePdf aria-hidden="true" weight="regular" />View PDF</a>}</div>
+      <div className="vendor-head-actions"><CancelOrReduce po={p} onDone={po.reload} />{(p.actions ?? []).includes("edit") && <a className="req-link-button" href={`/purchase-orders/${p.id}/edit`} onClick={e => { e.preventDefault(); navigate(`/purchase-orders/${p.id}/edit`); }}>Edit</a>}{HAS_PDF.includes(p.status) && <a className="req-link-button" href={`/api/v1/purchase-orders/${p.id}/pdf`} target="_blank" rel="noreferrer"><FilePdf aria-hidden="true" weight="regular" />View PDF</a>}</div>
     </header>
     <div className="po-bar"><PoStepper po={p} /><Swimlanes po={p} /></div>
     <div className="po-body">

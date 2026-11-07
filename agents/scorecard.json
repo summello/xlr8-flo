@@ -7533,6 +7533,65 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E13-S14",
+      "kind": "ui",
+      "size": "L",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 1,
+          "blockers": 1,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "32de955e-62c2-4d14-af59-7d3b712e029d",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S14",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1b3b4-14f9-7851-b9db-8da1e9a0fe4a",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Added the draft PO editor at /purchase-orders/:id/edit (header, lines with tax and freight, freight mode, budget preview, notes and vendor file marks; Submit saves first) plus the tax/freight budget flags on PoRead and the ship-to-options route.",
+      "title": "PO editor: header, lines with tax and freight apart, budget preview, vendor eligibility",
+      "durations": {
+        "wall_s": 20765,
+        "author_s": 17522,
+        "review_s": {
+          "codex": 16
+        },
+        "gate_s": 0
+      }
     }
   ]
 }

@@ -562,7 +562,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E10-S12** Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11) | E10 | ui | L | APR-011, APR-021, ACC-007 | ~~E10-S11~~, ~~E10-S05~~ |
 | ✅ | **E10-S13** Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes | E10 | engine | M | APR-003, PROJ-002, VEN-005, BUD-007 | ~~E10-S07~~ |
 
-#### M3 — First sellable release · 71/79 done
+#### M3 — First sellable release · 72/79 done
 
 > Vendors, RFQs, awards and purchase orders by email. Closes the money loop end to end.
 
@@ -623,7 +623,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E13-S11** Internal vs vendor-facing notes and attachments, enforced by test | E13 | security | M | PO-017, EML-005, COL-002 | ~~E13-S09~~, ~~E09-S10~~ |
 | ✅ | **E13-S12** PO list and PO detail screens | E13 | ui | L | PO-007, PO-013, UX-004 | ~~E13-S03~~, ~~E13-S05~~, ~~E11-S09~~, ~~E13-S06~~, ~~E13-S09~~ |
 | ✅ | **E13-S13** Create POs from awarded lines | E13 | ui | M | PO-001, PO-009, SRC-018 | ~~E13-S01~~, ~~E13-S12~~ |
-| 👀 | **E13-S14** PO editor: header, lines with tax and freight apart, budget preview, vendor eligibility | E13 | ui | L | PO-002, PO-016, PO-017, VEN-012 | ~~E13-S01~~, ~~E13-S02~~, ~~E13-S04~~, ~~E13-S11~~, ~~E13-S12~~, ~~E11-S11~~ |
+| ✅ | **E13-S14** PO editor: header, lines with tax and freight apart, budget preview, vendor eligibility | E13 | ui | L | PO-002, PO-016, PO-017, VEN-012 | ~~E13-S01~~, ~~E13-S02~~, ~~E13-S04~~, ~~E13-S11~~, ~~E13-S12~~, ~~E11-S11~~ |
 | ⬜ | **E13-S15** Issue: confirmation and signature moment 5 | E13 | ui | M | PO-008, PO-012, A11Y-009 | ~~E13-S05~~, ~~E13-S09~~, ~~E13-S12~~ |
 | ⬜ | **E13-S16** Transmission log, change recipient and resend | E13 | ui | M | PO-004, PO-015, EML-002, EML-003 | ~~E13-S09~~, E13-S10, ~~E13-S12~~ |
 | ⬜ | **E13-S17** Vendor copy preview: email and PDF as the supplier sees them | E13 | ui | M | PO-014, PO-017, EML-005 | ~~E13-S08~~, ~~E13-S11~~, ~~E13-S12~~ |

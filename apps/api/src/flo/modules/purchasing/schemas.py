@@ -147,6 +147,9 @@ class PoRead(BaseModel):
     total_converted: str
     released_amount: str | None = None  # released commitment over the PO's life, never actuals
     released_currency: str | None = None
+    # the unit's budget treatment while the PO is live; None once issued (amounts were frozen)
+    tax_consumes_budget: bool | None = None
+    freight_consumes_budget: bool | None = None
     # the GET route fills these in for the caller; every other route returns the defaults
     vendor_status: str | None = None  # the vendor's status now; None without `vendor.view`
     actions: list[str] = []  # lifecycle and command names the caller may run on this PO now
