@@ -3575,9 +3575,9 @@ def test_email_deliverability_migration_roundtrips_and_keeps_transmissions(empty
             )
             conn.execute(
                 "INSERT INTO po_transmission(org_id,id,po_id,version,attempt,recipient_name,"
-                "recipient_email,template_version,created_by)"
-                " VALUES(%s,%s,%s,1,1,'N','n@example.com','po-issued-v1',%s)",
-                (tenant.org_id, row, po, actor),
+                "recipient_email,template_version,outbox_id,created_by)"
+                " VALUES(%s,%s,%s,1,1,'N','n@example.com','po-issued-v1',%s,%s)",
+                (tenant.org_id, row, po, uuid4(), actor),
             )
         mig.upgrade(conn)
         for table in ("email_message_route", "email_event", "email_suppression"):
