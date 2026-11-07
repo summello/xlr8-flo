@@ -142,6 +142,9 @@ def _models():
 NOT_A_PERSON = {
     "flo.modules.identity.schemas.InvitationRecord.email",
     "flo.modules.identity.schemas.InvitationValid.email",
+    # a suppressed mailbox has no person behind it; po_email_allowed is a boolean, not an address
+    "flo.modules.purchasing.schemas.SuppressionRead.email",
+    "flo.modules.purchasing.schemas.SendingDomainRead.po_email_allowed",
 }
 
 
