@@ -7912,6 +7912,65 @@
         },
         "gate_s": 1037
       }
+    },
+    {
+      "story": "E13-S21",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 1
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "a9855a50-ffd3-4d5d-b693-234f9b443a52",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S21",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a1b836-b0cd-7a71-9087-dbd99184e154",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Administrators get /admin/sending-domain showing SPF/DKIM status with a rate-limited Check Now (queued as a job, one provider call a minute), plus a searchable, pageable suppression list with reasoned removal. Back end adds the status/check/list routes and a job handler; no migration or new dependency.",
+      "title": "Sending domain status and suppression list (Administration)",
+      "durations": {
+        "wall_s": 7152,
+        "author_s": 6545,
+        "review_s": {
+          "codex-a": 19
+        },
+        "gate_s": 0
+      }
     }
   ]
 }

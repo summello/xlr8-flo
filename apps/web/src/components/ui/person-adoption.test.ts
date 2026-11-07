@@ -15,6 +15,8 @@ const ALLOWED: Record<string, string> = {
   "components/vendors/request/VendorRequestForm.tsx|.email": "vendor request form: contact email being typed",
   "components/vendors/request/VendorRequestForm.tsx|\"email\"": "vendor request form: input attributes",
   "components/requisitions/changes/ReviewScreen.tsx|.requester_email": "hands the requester to Versions, which renders it through Person",
+  "routes/admin/sending-domain.tsx|.email": "suppressed address: a bare mailbox with no person or name behind it",
+  "components/admin/email/RemoveSuppressionDialog.tsx|.email": "suppressed address: a bare mailbox with no person or name behind it",
   "routes/_dev/form-gallery.tsx|.email": "dev gallery: form validation demo",
   "routes/_dev/form-gallery.tsx|\"email\"": "dev gallery: input attributes",
 };

@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 import { stubWorkflows } from "../e2e/workflow-list-fixture";
+import { stubSendingDomain } from "../e2e/sending-domain-fixture";
 import { stubVendors } from "../e2e/vendors-fixture";
 import { stubQuestionnaires } from "../e2e/vendor-questionnaires-fixture";
 import { stubApprovals } from "../e2e/approvals-fixture";
@@ -26,6 +27,7 @@ for (const theme of ["light", "dark"] as const) {
       }, theme);
       if (route === "/admin/approval-workflows") await stubWorkflows(page);
       if (route === "/admin/vendor-questionnaires") await stubQuestionnaires(page);
+      if (route === "/admin/sending-domain") await stubSendingDomain(page);
       if (route === "/vendors") await stubVendors(page);
       if (route.startsWith("/approvals")) await stubApprovals(page);
       if (route.startsWith("/requisitions")) await stubRequisitions(page);

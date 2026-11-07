@@ -62,6 +62,12 @@ TRANSMISSION_ROUTES = (
 SUPPRESSION_ROUTES = (
     "purchasing/test_deliverability.py::test_suppression_delete_foreign_tenant_is_concealed"
 )
+SENDING_DOMAIN_ROUTES = (
+    "purchasing/test_sending_domain_admin.py::test_sending_domain_foreign_tenant_is_concealed"
+)
+SUPPRESSION_LIST_ROUTES = (
+    "purchasing/test_sending_domain_admin.py::test_suppression_list_hides_other_tenants"
+)
 ATTACHMENT_MARK_ROUTES = (
     "purchasing/test_attachment_vendor_mark.py::test_mark_routes_conceal_foreign_tenants"
 )
@@ -106,6 +112,9 @@ COVERED = {
     ("GET", "/api/v1/purchase-orders/{id}/transmissions"): TRANSMISSION_ROUTES,
     ("POST", "/api/v1/purchase-orders/{id}/transmissions/resend"): TRANSMISSION_ROUTES,
     ("DELETE", "/api/v1/admin/email-suppressions/{id}"): SUPPRESSION_ROUTES,
+    ("GET", "/api/v1/admin/email-suppressions"): SUPPRESSION_LIST_ROUTES,
+    ("GET", "/api/v1/admin/sending-domain"): SENDING_DOMAIN_ROUTES,
+    ("POST", "/api/v1/admin/sending-domain/check"): SENDING_DOMAIN_ROUTES,
     ("GET", "/api/v1/purchase-orders/{id}/attachments"): ATTACHMENT_MARK_ROUTES,
     ("PUT", "/api/v1/purchase-orders/{id}/attachments/{aid}/vendor-facing"): ATTACHMENT_MARK_ROUTES,
     ("GET", "/api/v1/purchase-orders/{id}/pdf"): VENDOR_COPY_ROUTES,

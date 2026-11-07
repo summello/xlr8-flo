@@ -5,7 +5,10 @@
 starts a transaction of its own, under the PO row lock.
 """
 
+import base64
+import json
 from collections.abc import Mapping, Sequence
+from datetime import datetime
 from typing import Any, cast
 from uuid import UUID, uuid4
 
@@ -13,16 +16,29 @@ import psycopg
 
 from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
-from flo.kernel.email import DOMAIN_NOT_VERIFIED
+from flo.kernel.config import Settings
+from flo.kernel.email import (
+    DOMAIN_CHECK_JOB,
+    DOMAIN_NOT_VERIFIED,
+    latest_domain_check,
+    po_domain_gate,
+)
 from flo.kernel.errors import ErrorCode, ProblemError, conflict
+from flo.kernel.jobs import JobQueue
+from flo.kernel.jobs.queue import JobConnection
 from flo.kernel.outbox.store import OutboxStore
 from flo.kernel.ports.email import EmailAttachment
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.purchasing.models import READ_STATE, TRANSMISSION_FROM
 from flo.modules.purchasing.pdf import filename, frozen, pdf_for
-from flo.modules.purchasing.schemas import PoTransmissionRead
-from flo.modules.purchasing.service import PurchaseOrderService, _invalid
+from flo.modules.purchasing.schemas import (
+    PoTransmissionRead,
+    SendingDomainRead,
+    SuppressionPage,
+    SuppressionRead,
+)
+from flo.modules.purchasing.service import PAGE, PurchaseOrderService, _invalid
 from flo.modules.purchasing.vendor_copy import email_summary
 from flo.modules.vendors.service import VendorService
 
@@ -442,3 +458,84 @@ def remove_suppression(
             reason=reason,
             before={"email": row[0], "reason": row[1]},
         )
+
+
+def _domain_job_open(conn: Conn, scope: Scope) -> bool:
+    return bool(
+        PurchaseOrderService(conn, scope)
+        .repo.execute(
+            "SELECT EXISTS (SELECT 1 FROM job WHERE org_id = %(org_id)s AND kind = %(kind)s "
+            "AND state IN ('queued', 'running'))",
+            {"kind": DOMAIN_CHECK_JOB},
+        )
+        .fetchone()[0]  # type: ignore[index]
+    )
+
+
+def sending_domain(conn: Conn, scope: Scope, settings: Settings) -> SendingDomainRead:
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        check = latest_domain_check(conn)
+        pending = _domain_job_open(conn, scope)
+    status = None if check is None else check.status
+    return SendingDomainRead(
+        spf=None if status is None else status.spf,
+        dkim=None if status is None else status.dkim,
+        detail="" if status is None else status.detail,
+        checked_at=None if check is None else check.checked_at,
+        check_pending=pending,
+        po_email_allowed=po_domain_gate(settings, status)(TEMPLATE) is None,
+    )
+
+
+def request_domain_check(conn: Conn, scope: Scope, settings: Settings) -> SendingDomainRead:
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        check = latest_domain_check(conn)
+        if check is not None and check.recent:
+            raise ProblemError(
+                ErrorCode.TOO_MANY_REQUESTS,
+                detail="The sending domain was checked less than a minute ago.",
+                checks={"problem": "domain_check_recent"},
+            )
+        if not _domain_job_open(conn, scope):
+            JobQueue(cast(JobConnection, conn), scope).enqueue(DOMAIN_CHECK_JOB, {}, max_attempts=1)
+    return sending_domain(conn, scope, settings)
+
+
+def list_suppressions(
+    conn: Conn, scope: Scope, q: str | None, cursor: str | None, page_size: int = PAGE
+) -> SuppressionPage:
+    params: dict[str, object] = {"limit": page_size + 1}
+    where = "org_id = %(org_id)s"
+    needle = (q or "").strip().lower()
+    if needle:  # a prefix match; `%`, `_` and `\` are literal
+        params["q"] = needle.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+        where += " AND email_normalised LIKE %(q)s"
+    if cursor is not None:
+        try:
+            at, last = json.loads(base64.urlsafe_b64decode(cursor.encode()))
+            params.update(c_at=datetime.fromisoformat(at), c_id=UUID(last))
+        except (ValueError, TypeError):
+            raise _invalid("cursor", "The page cursor is not valid.", "invalid_cursor") from None
+        where += " AND (created_at, id) < (%(c_at)s, %(c_id)s)"
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        found = (
+            PurchaseOrderService(conn, scope)
+            .repo.execute(
+                "SELECT id, email_normalised, reason, created_at FROM email_suppression "
+                f"WHERE {where} ORDER BY created_at DESC, id DESC LIMIT %(limit)s",
+                params,
+            )
+            .fetchall()
+        )
+    rows = [
+        SuppressionRead(id=r[0], email=r[1], reason=r[2], created_at=r[3])  # type: ignore[arg-type]
+        for r in found[:page_size]
+    ]
+    more = len(found) > page_size
+    token = None
+    if more:
+        last_row = rows[-1]
+        token = base64.urlsafe_b64encode(
+            json.dumps([last_row.created_at.isoformat(), str(last_row.id)]).encode()
+        ).decode()
+    return SuppressionPage(rows=rows, next_cursor=token)

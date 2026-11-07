@@ -16,6 +16,7 @@ import NewProject from "./projects/new";
 import WorkflowList from "./admin/approval-workflows/list";
 import WorkflowBuilder from "./admin/approval-workflows/[id]";
 import VendorQuestionnaires from "./admin/vendor-questionnaires";
+import SendingDomain from "./admin/sending-domain";
 import ProjectDetail from "./projects/detail";
 import Dashboard from "./projects/dashboard";
 import BudgetOverview from "./budget";
@@ -105,6 +106,7 @@ const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
   },
   "/admin/approval-workflows": { activeHref: "/administration", description: "Versioned approval workflows", hierarchy: [ORGANIZATION, ["/admin/approval-workflows", "Approval Workflows"]], phase: "foundation", title: "Approval Workflows" },
   "/admin/vendor-questionnaires": { activeHref: "/administration", description: "Versioned onboarding questionnaires for new vendors", hierarchy: [ORGANIZATION, ["/administration", "Administration"], ["/admin/vendor-questionnaires", "Vendor Questionnaires"]], phase: "foundation", title: "Vendor Questionnaires" },
+ "/admin/sending-domain": { activeHref: "/administration", description: "Can purchase orders be delivered?", hierarchy: [ORGANIZATION, ["/administration", "Administration"], ["/admin/sending-domain", "Sending Domain"]], phase: "foundation", title: "Sending Domain" },
   "/administration": {
     activeHref: "/administration",
     description: "Administration screens arrive with the foundation milestone.",
@@ -509,6 +511,7 @@ export default function RootRoute() {
       {shellRoute.path === "/budget" ? <BudgetOverview key={window.location.search} navigate={navigate} /> : undefined}
       {shellRoute.path === "/admin/approval-workflows" ? <WorkflowList navigate={navigate} /> : undefined}
       {shellRoute.path === "/admin/vendor-questionnaires" ? <VendorQuestionnaires /> : undefined}
+ {shellRoute.path === "/admin/sending-domain" ? <SendingDomain /> : undefined}
       {workflowId ? <WorkflowBuilder key={workflowId} id={workflowId} navigate={navigate} /> : undefined}
       {projectId ? <ProjectDetail key={projectId} id={projectId} navigate={navigate} onLoaded={onProjectLoaded} /> : undefined}
       {shellRoute.path === "/_dev/status-gallery" ? <StatusGallery /> : undefined}

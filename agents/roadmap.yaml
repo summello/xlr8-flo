@@ -2227,7 +2227,7 @@ epics:
           - E13-S09
           - E13-S10
           - E13-S12
-        st: in_progress
+        st: review
       - id: E13-S17
         t: 'Vendor copy preview: email and PDF as the supplier sees them'
         k: ui
@@ -2295,7 +2295,7 @@ epics:
           - EML-003
         dep:
           - E13-S10
-        st: in_progress
+        st: done
       - id: E13-S22
         t: Purchase-order open questions for the operator (parking story)
         k: docs

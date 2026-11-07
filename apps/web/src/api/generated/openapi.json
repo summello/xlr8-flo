@@ -4943,6 +4943,14 @@
         "title": "DocumentReplace",
         "type": "object"
       },
+      "DomainResult": {
+        "enum": [
+          "pass",
+          "fail",
+          "unknown"
+        ],
+        "type": "string"
+      },
       "DriftPage": {
         "properties": {
           "entries": {
@@ -16730,6 +16738,64 @@
         "title": "SealedComparisonRead",
         "type": "object"
       },
+      "SendingDomainRead": {
+        "properties": {
+          "check_pending": {
+            "title": "Check Pending",
+            "type": "boolean"
+          },
+          "checked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked At"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "dkim": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DomainResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "po_email_allowed": {
+            "title": "Po Email Allowed",
+            "type": "boolean"
+          },
+          "spf": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DomainResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "spf",
+          "dkim",
+          "detail",
+          "checked_at",
+          "check_pending",
+          "po_email_allowed"
+        ],
+        "title": "SendingDomainRead",
+        "type": "object"
+      },
       "SensitiveAccess": {
         "description": "Whether the caller may reveal tax and banking values, and who to ask when not (VEN-014).",
         "properties": {
@@ -17535,6 +17601,68 @@
           "reason"
         ],
         "title": "SuppressionDelete",
+        "type": "object"
+      },
+      "SuppressionPage": {
+        "properties": {
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/SuppressionRead"
+            },
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rows",
+          "next_cursor"
+        ],
+        "title": "SuppressionPage",
+        "type": "object"
+      },
+      "SuppressionRead": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "bounced",
+              "complained"
+            ],
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "reason",
+          "created_at"
+        ],
+        "title": "SuppressionRead",
         "type": "object"
       },
       "TaskRead": {
@@ -19993,6 +20121,99 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/admin/email-suppressions": {
+      "get": {
+        "operationId": "get_email_suppressions_api_v1_admin_email_suppressions_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 254,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuppressionPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Get Email Suppressions",
+        "tags": [
+          "administration"
+        ]
+      }
+    },
     "/api/v1/admin/email-suppressions/{id}": {
       "delete": {
         "operationId": "delete_email_suppression_api_v1_admin_email_suppressions__id__delete",
@@ -20060,6 +20281,124 @@
           }
         },
         "summary": "Delete Email Suppression",
+        "tags": [
+          "administration"
+        ]
+      }
+    },
+    "/api/v1/admin/sending-domain": {
+      "get": {
+        "operationId": "get_sending_domain_api_v1_admin_sending_domain_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendingDomainRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Get Sending Domain",
+        "tags": [
+          "administration"
+        ]
+      }
+    },
+    "/api/v1/admin/sending-domain/check": {
+      "post": {
+        "operationId": "check_sending_domain_api_v1_admin_sending_domain_check_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendingDomainRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Check Sending Domain",
         "tags": [
           "administration"
         ]

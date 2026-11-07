@@ -207,7 +207,8 @@ security add-generic-password -U -a "$USER" -s FLO_PROD_RESEND_WEBHOOK_SECRET -w
    (domain `mail.summello.com`), set by the deploy. The automated check covers SPF and DKIM only.
    **DMARC is a manual step:** publish a `_dmarc` TXT record for the sending domain, then verify it
    by hand (`dig +short TXT _dmarc.<domain>`). Until SPF and DKIM both read `pass`, purchase order
-   email is refused.
+   email is refused. Administrators see SPF and DKIM at `/admin/sending-domain` and can queue a check
+   there at most once a minute.
 
 ## 6. Create one Secret Manager secret per value
 
