@@ -7716,6 +7716,72 @@
         },
         "gate_s": 2
       }
+    },
+    {
+      "story": "E13-S17",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui",
+        "security"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "89da881f-b5e5-410a-b8e1-94b44cf2ae7d",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S17",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1b45a-f079-7531-b695-2c4d37039cc5",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Added /purchase-orders/:id/vendor-copy and a Vendor Copy sheet on the PO detail that draw the supplier's email and PDF from VendorCopyRead only, with a leak test (planted NotesAndFiles fails it).",
+      "title": "Vendor copy preview: email and PDF as the supplier sees them",
+      "durations": {
+        "wall_s": 2871,
+        "author_s": 1265,
+        "review_s": {
+          "codex": 327,
+          "opus": 300
+        },
+        "gate_s": 247
+      }
     }
   ]
 }

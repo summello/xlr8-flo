@@ -34,6 +34,7 @@ import NewVendor from "./vendors/new";
 import EditVendor from "./vendors/edit";
 import PurchaseOrderList from "./purchase-orders/list";
 import PurchaseOrderDetail from "./purchase-orders/detail";
+import PurchaseOrderVendorCopy from "./purchase-orders/vendor-copy";
 import PurchaseOrderChange from "./purchase-orders/changes";
 import PurchaseOrderIssued from "./purchase-orders/issue";
 import EditPurchaseOrder from "./purchase-orders/edit";
@@ -76,6 +77,7 @@ const VENDOR_PATH = /^\/vendors\/([0-9a-f-]{36})$/;
 const VENDOR_EDIT_PATH = /^\/vendors\/([0-9a-f-]{36})\/edit$/;
 const PO_PATH = /^\/purchase-orders\/([0-9a-f-]{36})$/;
 const PO_ISSUE_PATH = /^\/purchase-orders\/([0-9a-f-]{36})\/issue$/;
+const PO_VENDOR_COPY_PATH = /^\/purchase-orders\/([0-9a-f-]{36})\/vendor-copy$/;
 const PO_CHANGE_PATH = /^\/purchase-orders\/([0-9a-f-]{36})\/changes\/([1-9][0-9]*)$/;
 const PO_EDIT_PATH = /^\/purchase-orders\/([0-9a-f-]{36})\/edit$/;
 const RFQ_PATH = /^\/sourcing\/rfqs\/([0-9a-f-]{36})$/;
@@ -295,6 +297,10 @@ function routeFor(path: string): ShellRoute {
     activeHref: "/purchase-orders", path, phase: "commit", title: "Purchase Order", description: "Where this order is, what it holds and who has it.",
     breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/purchase-orders", label: "Purchase Orders" }, { href: path, label: "Purchase Order" }],
   };
+  if (PO_VENDOR_COPY_PATH.test(path)) return {
+    activeHref: "/purchase-orders", path, phase: "commit", title: "Vendor Copy", description: "What the supplier receives: one email and one PDF.",
+    breadcrumbs: [{ href: "/organization", label: "Organization" }, { href: "/purchase-orders", label: "Purchase Orders" }, { href: path.replace(/\/vendor-copy$/, ""), label: "Purchase Order" }, { href: path, label: "Vendor Copy" }],
+  };
   const change = PO_CHANGE_PATH.exec(path);
   if (change) return {
     activeHref: "/purchase-orders", path, phase: "commit", title: "Change Order", description: "What changes in the next version, and what it does to the budget.",
@@ -457,6 +463,7 @@ export default function RootRoute() {
   const vendorEditId = shellRoute.path.match(VENDOR_EDIT_PATH)?.[1];
   const poId = shellRoute.path.match(PO_PATH)?.[1];
   const poIssuedId = shellRoute.path.match(PO_ISSUE_PATH)?.[1];
+  const poVendorCopyId = shellRoute.path.match(PO_VENDOR_COPY_PATH)?.[1];
   const poChange = shellRoute.path.match(PO_CHANGE_PATH);
   const poEditId = shellRoute.path.match(PO_EDIT_PATH)?.[1];
   const rfqId = shellRoute.path.match(RFQ_PATH)?.[1];
@@ -477,6 +484,7 @@ export default function RootRoute() {
       {shellRoute.path === "/purchase-orders/new" ? <NewPurchaseOrders key={window.location.search} navigate={navigate} /> : undefined}
       {poId ? <PurchaseOrderDetail key={poId} id={poId} navigate={navigate} /> : undefined}
       {poIssuedId ? <PurchaseOrderIssued key={poIssuedId} id={poIssuedId} navigate={navigate} /> : undefined}
+      {poVendorCopyId ? <PurchaseOrderVendorCopy key={poVendorCopyId} id={poVendorCopyId} navigate={navigate} /> : undefined}
       {poChange ? <PurchaseOrderChange key={poChange[0]} id={poChange[1]!} number={Number(poChange[2])} navigate={navigate} /> : undefined}
       {poEditId ? <EditPurchaseOrder key={poEditId} id={poEditId} navigate={navigate} /> : undefined}
       {rfqId ? <RfqDetail key={rfqId} id={rfqId} navigate={navigate} /> : undefined}

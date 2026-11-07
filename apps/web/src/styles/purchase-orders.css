@@ -49,3 +49,10 @@
 .po-result, .po-recovery { display: grid; gap: var(--space-3); margin-block-start: var(--space-4); }
 .po-recovery :focus-visible, .po-recovery [tabindex="-1"]:focus { outline: 2px solid var(--ring); outline-offset: var(--space-1); }
 @container (max-width: 760px) { .po-stage { grid-template-columns: minmax(0, 1fr); } .po-trace { display: none; } }
+
+/* Vendor copy preview (E13-S17): the supplier's PDF drawn on the page (MASTER 7.16 item 4). 1px is MASTER's hairline. */
+.pdf-page { background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-card); padding: var(--space-6); display: grid; gap: var(--space-4); }
+.po-email { white-space: pre-line; padding: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-card); }
+.po-pre { white-space: pre-line; }
+.po-vendor-copy { display: grid; gap: var(--space-4); }
+.po-vc-scroll { overflow-x: auto; max-inline-size: 100%; }

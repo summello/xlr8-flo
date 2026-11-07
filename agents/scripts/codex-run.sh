@@ -1,21 +1,21 @@
 #!/bin/sh
 # usage: agents/scripts/codex-run.sh STORY [round-file]   (manual)
 # Codex authors STORY (operator, 19 Oct: Codex is underused; the planner reviews its work).
-# Without a round file: flo start, installs, author=codex, in-flight commit, then the author.
+# Without a round file: flo start, installs, author=codex-b, in-flight commit, then the author.
 # Waits for the author and submits. Review is the planner's, not this script's.
 . "$(dirname "$0")/env.sh"
 flo_manual_guard
 S="$1"; ROUND="$2"; R="$(cd "$(dirname "$0")/../.." && pwd)"; cd "$R" || exit 1; W="$R-$S"
 log() { echo "$(date +%T) $*"; }
 if [ -z "$ROUND" ]; then
-  log "start $S for codex"
+  log "start $S for codex-b"
   uv run -q --no-project --with pyyaml python agents/scripts/flo start "$S" > /dev/null || exit 1
   ( cd "$W/apps/api" && uv sync --frozen --extra dev -q && uv pip install --python .venv/bin/python pyyaml -q )
   ( cd "$W/apps/web" && npm ci --silent )
   python3 - "$W/task.json" <<'EOF'
 import json, sys
 p = sys.argv[1]; t = json.load(open(p))
-t["author"] = "codex"
+t["author"] = "codex-b"
 t.setdefault("notes", {})["routing"] = "operator 19 Oct: codex authors, planner (Opus) reviews"
 json.dump(t, open(p, "w"), indent=2)
 EOF

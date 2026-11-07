@@ -55,8 +55,11 @@ def capacity(snapshot: dict | None, lim: dict) -> dict:
     agents' own limit errors are still caught (author_result "limit" waits for the reset)."""
     start5, startw = lim.get("claude_start", [25, 15])
     cont5, contw = lim.get("claude_continue", [10, 5])
-    codex5, codexw = lim.get("codex", [20, 10])
-    out = {"known": snapshot is not None, "start": {}, "continue": {}, "codex": True, "left": {}}
+    # two Codex profiles (7 Nov 2026): codex-a reviews, codex-b authors, each gated by its own windows.
+    # A bare `codex` limit is the fallback for both; "codex" stays as an alias of codex-a.
+    cxlim = {n: lim.get(n) or lim.get("codex", [20, 10]) for n in ("codex-a", "codex-b")}
+    out = {"known": snapshot is not None, "start": {}, "continue": {}, "codex": True,
+           "codex-a": True, "codex-b": True, "left": {}}
     if snapshot is None:
         if lim.get("disabled_accounts"):
             snapshot = {}
@@ -74,10 +77,14 @@ def capacity(snapshot: dict | None, lim: dict) -> dict:
         out["left"][a] = (f, w)
         out["start"][a] = f >= start5 and w >= startw
         out["continue"][a] = f >= cont5 and w >= contw
-    cx = snapshot.get("codex")
-    if cx:
-        out["codex"] = cx["five"]["leftPct"] >= codex5 and cx["week"]["leftPct"] >= codexw
-        out["left"]["codex"] = (cx["five"]["leftPct"], cx["week"]["leftPct"])
+    cx = snapshot.get("codex") or {}
+    if "five" in cx:                    # legacy single reading: codex-a
+        cx = {"codex-a": cx}
+    for n, r in cx.items():
+        if n in cxlim and r and r.get("five") and r.get("week"):
+            out[n] = r["five"]["leftPct"] >= cxlim[n][0] and r["week"]["leftPct"] >= cxlim[n][1]
+            out["left"][n] = (r["five"]["leftPct"], r["week"]["leftPct"])
+    out["codex"] = out["codex-a"]
     return out
 
 
@@ -88,8 +95,8 @@ def can(cap: dict, mode: str, account: str | None) -> bool:
 
 def author_can(story: dict, cap: dict, mode: str = "continue") -> bool:
     """Claude authors are gated per account; Codex authors by Codex's windows; others are free."""
-    if story["author"] == "codex":
-        return cap["codex"]
+    if story["author"].startswith("codex"):
+        return cap.get(story["author"] if story["author"] != "codex" else "codex-a", True)
     return can(cap, mode, story.get("account"))
 
 
@@ -175,13 +182,13 @@ def decide(s: dict, ctx: dict) -> list[dict]:
     if todo:
         acts = []
         for r in todo:
-            if r == "codex" and cap["codex"]:
+            if r in ("codex", "codex-a") and cap["codex-a"]:
                 acts += step("review", reviewer=r, account="")
             elif r == "opus":
                 acct = opus_account(cap, ctx["accounts"])
                 if acct:
                     acts += step("review", reviewer=r, account=acct)
-            elif r not in ("codex", "opus"):
+            elif r not in ("codex", "codex-a", "codex-b", "opus"):
                 acts += step("review", reviewer=r, account="")   # metered: the script keeps its own floor
         return acts
     if "changes" in verdicts.values():
@@ -210,7 +217,7 @@ def plan(facts: dict, ctx: dict) -> list[dict]:
         # (E23-S14). Codex first; the next reviewer starts on a later tick, once this one exits.
         revs = [a for a in got if a.get("step") == "review"]
         if len(revs) > 1:
-            keep = min(revs, key=lambda a: a.get("reviewer") != "codex")
+            keep = min(revs, key=lambda a: not a.get("reviewer", "").startswith("codex"))
             got = [a for a in got if a.get("step") != "review"] + [keep]
         acts += got
     if not ctx.get("allow_start", True):        # the operator's switch: finish what is in flight, start nothing
@@ -457,7 +464,8 @@ def tick(cfg: dict, dry: bool = False) -> dict:
                 status["actions"].append(a)
                 if not dry:
                     launch(cfg, d, a, heads.get(a["story"]))
-        status["capacity"] = {"known": cap["known"], "left": cap["left"], "codex": cap["codex"]}
+        status["capacity"] = {"known": cap["known"], "left": cap["left"], "codex": cap["codex"],
+                              "codex-a": cap["codex-a"], "codex-b": cap["codex-b"]}
         status["in_flight"] = facts.get("in_flight")
         status["line_stopped"] = facts.get("line_stopped")
         if "planner" in cfg["steps"]:

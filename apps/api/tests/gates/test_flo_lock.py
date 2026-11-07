@@ -226,7 +226,7 @@ def test_author_ignores_a_malformed_pid_file(root, text):
 
 
 def test_simultaneous_launches_start_one_author(root, tmp_path):
-    story(root, "E00-S01", author="codex")
+    story(root, "E00-S01", author="codex-b")
     bin_ = tmp_path / "bin"
     bin_.mkdir()
     (bin_ / "codex").write_text("#!/bin/sh\necho x >> '%s'\nsleep 5\n" % (tmp_path / "launches"))
@@ -245,3 +245,19 @@ def test_simultaneous_launches_start_one_author(root, tmp_path):
         pid = (root / ".scratch" / "E00-S01.author.pid").read_text().strip()
         subprocess.run(["pkill", "-P", pid])
         subprocess.run(["kill", pid])
+
+
+def test_codex_b_author_runs_under_its_own_codex_home(root, tmp_path):
+    # 7 Nov 2026: codex-b authors on its own login, so its usage cap is not codex-a's (the reviewer)
+    story(root, "E00-S01", author="codex-b")
+    bin_ = tmp_path / "bin"
+    bin_.mkdir()
+    (bin_ / "codex").write_text("#!/bin/sh\necho \"$CODEX_HOME\" > '%s'\n" % (tmp_path / "home"))
+    (bin_ / "codex").chmod(0o755)
+    p = sh(root, "author.sh", "E00-S01", env={"PATH": f"{bin_}:{os.environ['PATH']}", "HOME": str(tmp_path)})
+    assert p.wait(timeout=60) == 0
+    for _ in range(50):
+        if (tmp_path / "home").exists():
+            break
+        time.sleep(0.1)
+    assert (tmp_path / "home").read_text().strip() == f"{tmp_path}/.codex-b"

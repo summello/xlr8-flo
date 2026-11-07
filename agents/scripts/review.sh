@@ -1,14 +1,15 @@
 #!/bin/sh
-# usage: agents/scripts/review.sh STORY|MILESTONE [codex|qwen|kimi|deepseek|opus] [A|B]
+# usage: agents/scripts/review.sh STORY|MILESTONE [codex-a|qwen|kimi|deepseek|opus] [A|B]
 #   (opus: fresh session on that account, default B; a milestone id such as M2 runs a release
 #   review from `flo release-packet` in a read-only checkout of the milestone head)
 # Runs the reviewer on the flo review packet in the story worktree, in the background.
 # Log: .scratch/STORY.REVIEWER.log ending in "exit N"; verdict: <worktree>/reviews/STORY.REVIEWER.json
 set -e
 . "$(dirname "$0")/env.sh"
-S="$1"; A="${2:-codex}"; R="$(cd "$(dirname "$0")/../.." && pwd)"; W="$R-$S"; D="$R/.scratch"
+S="$1"; A="${2:-codex-a}";   # a bare `codex` (stories assigned before 7 Nov) keeps its file names and runs as codex-a
+ R="$(cd "$(dirname "$0")/../.." && pwd)"; W="$R-$S"; D="$R/.scratch"
 case "$A" in
-  codex|opus) ;;
+  codex|codex-a|opus) ;;
   qwen|kimi|deepseek) ;;   # their models come from agents.yaml via flo launch-model, below
   *) echo "review.sh: unknown reviewer $A" >&2; exit 1 ;;
 esac
@@ -88,10 +89,11 @@ if [ "$A" = opus ]; then
   echo "review launched: $S by opus (account ${3:-B})"
   exit 0
 fi
-if [ "$A" = codex ]; then
+case "$A" in codex|codex-a)
+  P_="$(codex_agent "$A")"; CH="$(codex_home "$P_")"
   # Model and effort come from agents.yaml and are pinned on the command line: an inherited
   # ~/.codex/config.toml silently ran reviews at `low` on 12 Oct.
-  set -- $("$W/apps/api/.venv/bin/python" -c 'import sys,yaml; c=yaml.safe_load(open(sys.argv[1]))["agents"]["codex"]; print(c["model"], c["review_reasoning"])' "$R/agents/agents.yaml")
+  set -- $("$W/apps/api/.venv/bin/python" -c 'import sys,yaml; c=yaml.safe_load(open(sys.argv[1]))["agents"][sys.argv[2]]; print(c["model"], c["review_reasoning"])' "$R/agents/agents.yaml" "$P_")
   T0="$(date +%Y-%m-%dT%H:%M:%S%z)"
   # Hard stop: the packet's budget is advisory to the model, this is not. Gated 30 min, else 20
   # (27 Oct 2026: doubled; Codex 0.164.0's code-mode host negotiation adds ~30-100 s to every shell
@@ -108,16 +110,17 @@ if [ "$A" = codex ]; then
   # both died at the cap on 13 Oct.
   nohup sh -c "while [ \$(pgrep -f '^codex exec' | wc -l) -ge ${FLO_CODEX_PARALLEL:-2} ]; do sleep 30; done; \
     mkdir -p '$AS' && mv reviews/*.json '$AS/' 2>/dev/null; \
-    codex exec -m $1 -c model_reasoning_effort=$2 -c project_doc_max_bytes=0 -s workspace-write --skip-git-repo-check \"\$(cat '$P')\" > '$D/$S.$A.log' 2>&1 & CP=\$!; \
+    CODEX_HOME='$CH' codex exec -m $1 -c model_reasoning_effort=$2 -c project_doc_max_bytes=0 -s workspace-write --skip-git-repo-check \"\$(cat '$P')\" > '$D/$S.$A.log' 2>&1 & CP=\$!; \
     ( sleep $CAP; kill \$CP 2>/dev/null && echo 'stopped at the time cap' >> '$D/$S.$A.log' ) & KP=\$!; \
-    '$W/apps/api/.venv/bin/python' '$R/agents/scripts/flo' codex-guard '$W' $CALLS \$CP $CAP >> '$D/$S.$A.log' 2>&1 & \
+    CODEX_HOME='$CH' '$W/apps/api/.venv/bin/python' '$R/agents/scripts/flo' codex-guard '$W' $CALLS \$CP $CAP >> '$D/$S.$A.log' 2>&1 & \
     wait \$CP; RC=\$?; echo \"exit \$RC\" >> '$D/$S.$A.log'; kill \$KP 2>/dev/null; { [ \$RC = 0 ] || grep -q '\"ran_tests\": *true' 'reviews/$S.$A.json' 2>/dev/null; } && mv '$SHA.new' '$SHA'; \
     mv -n '$AS/'*.json reviews/ 2>/dev/null; rmdir '$AS'; rm -rf '$LOCK'; \
-    '$W/apps/api/.venv/bin/python' '$R/agents/scripts/flo' codex-usage '$S' '$T0' > /dev/null" > /dev/null 2>&1 &
+    CODEX_HOME='$CH' '$W/apps/api/.venv/bin/python' '$R/agents/scripts/flo' codex-usage '$S' '$T0' '$P_' '$A' > /dev/null" > /dev/null 2>&1 &
   held
-  echo "review launched: $S by codex ($1, $2)${ARGS:+, re-review}"
+  echo "review launched: $S by $A ($1, $2)${ARGS:+, re-review}"
   exit 0
-fi
+  ;;
+esac
 # the model comes from agents.yaml and is recorded in task.json by the same call (E23-S03)
 PY="$W/apps/api/.venv/bin/python"; [ -n "$RELEASE" ] && PY="$R/apps/api/.venv/bin/python"
 M="openrouter/$("$PY" "$R/agents/scripts/flo" launch-model "$S" --reviewer "$A")"
