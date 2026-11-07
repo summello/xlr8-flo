@@ -236,6 +236,19 @@ class WorkerOutboxStore:
             "provider_message_id = %(message_id)s, sent_at = CURRENT_TIMESTAMP",
             {"message_id": provider_message_id},
         )
+        # E13-S10: a provider event names only the message id; this row says whose it is. Only
+        # PO emails are routed (their transmission row is written with the outbox row).
+        if (
+            row.org_id is not None
+            and row.topic == "email"
+            and str(row.payload.get("template", "")).startswith("po-")
+        ):
+            self._connection.execute(
+                "INSERT INTO email_message_route (provider_message_id, org_id, outbox_id) "
+                "VALUES (%(message_id)s, %(org_id)s, %(id)s) "
+                "ON CONFLICT (provider_message_id) DO NOTHING",
+                {"message_id": provider_message_id, "org_id": row.org_id, "id": row.id},
+            )
 
     def retry(self, row: OutboxRecord, *, delay_seconds: float, last_error: str) -> None:
         self._transition(
@@ -353,3 +366,21 @@ class IdentityOutboxStore:
             {"identity_id": self._identity_id, "template": template},
         )
         return result.rowcount
+
+
+def email_route(connection: OutboxConnection, provider_message_id: str) -> tuple[UUID, UUID] | None:
+    """(org, outbox id) of a sent PO email, for the unauthenticated webhook. Own transaction:
+    the `webhook` flag grants SELECT on the route table only and dies with it."""
+    with connection.transaction():  # type: ignore[attr-defined]
+        connection.execute("SET LOCAL app.org_id = '00000000-0000-0000-0000-000000000000'")
+        connection.execute("SET LOCAL app.worker = 'webhook'")
+        row = connection.execute(
+            "SELECT org_id, outbox_id FROM email_message_route "
+            "WHERE provider_message_id = %(message_id)s",
+            {"message_id": provider_message_id},
+        ).fetchone()
+    return (
+        None
+        if row is None
+        else (cast(UUID, _value(row, 0, "org_id")), cast(UUID, _value(row, 1, "outbox_id")))
+    )

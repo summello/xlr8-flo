@@ -13,7 +13,8 @@ import psycopg
 
 from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
-from flo.kernel.errors import conflict
+from flo.kernel.email import DOMAIN_NOT_VERIFIED
+from flo.kernel.errors import ErrorCode, ProblemError, conflict
 from flo.kernel.outbox.store import OutboxStore
 from flo.kernel.ports.email import EmailAttachment
 from flo.kernel.tenancy.context import Scope
@@ -31,24 +32,40 @@ TEMPLATE = "po-issued-v1"
 # keep the `po-` prefix: E13-S10's domain gate recognises a PO email by it
 CANCEL_TEMPLATE = "po-cancelled-v1"
 _FROM = TRANSMISSION_FROM
+BOUNCED_REASON = "Hard bounce: the address does not accept mail"
+COMPLAINED_REASON = "The recipient marked the email as spam"
+FAILED_REASON = "The email provider could not deliver the email"
+SUPPRESSED_REASON = "Address is on the suppression list"
 NO_RECIPIENTS = (
     "no_recipients",
     "The vendor has no contact that receives documents. Add one, then issue.",
 )
 
 
+def normalise_email(email: str) -> str:
+    return email.strip().lower()
+
+
 def _suppressed(conn: Conn, scope: Scope, email: str) -> bool:
-    """E13-S10 fills the suppression list in."""
-    return False
+    repo = PurchaseOrderService(conn, scope).repo
+    return (
+        repo.execute(
+            "SELECT 1 FROM email_suppression WHERE org_id = %(org_id)s "
+            "AND email_normalised = %(email)s",
+            {"email": normalise_email(email)},
+        ).fetchone()
+        is not None
+    )
 
 
 def _dedupe(recipients: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
     seen: set[str] = set()
     out: list[dict[str, Any]] = []
     for r in recipients:
-        if (key := str(r["email"]).lower()) not in seen:
+        if (key := normalise_email(str(r["email"]))) not in seen:
             seen.add(key)
-            out.append({"name": r["name"], "email": r["email"]})
+            # old purchase_order.recipients rows carry no contact id
+            out.append({"name": r["name"], "email": r["email"], "contact_id": r.get("contact_id")})
     return out
 
 
@@ -104,9 +121,12 @@ def _send(
             ).id
         repo.execute(
             "INSERT INTO po_transmission (org_id, id, po_id, version, attempt, recipient_name, "
-            "recipient_email, template_version, outbox_id, result, created_by) VALUES "
+            "recipient_email, template_version, outbox_id, result, result_reason, created_by, "
+            "vendor_contact_id) VALUES "
             "(%(org_id)s, %(row)s, %(po)s, %(version)s, %(attempt)s, %(name)s, %(email)s, "
-            "%(template)s, %(outbox)s, %(result)s, %(by)s)",
+            "%(template)s, %(outbox)s, %(result)s, %(reason)s, %(by)s, "
+            # a contact deleted since the recipients were stored becomes NULL, not an FK error
+            "(SELECT id FROM vendor_contact WHERE org_id = %(org_id)s AND id = %(contact)s::uuid))",
             {
                 "row": row_id,
                 "po": po_id,
@@ -117,7 +137,9 @@ def _send(
                 "template": template,
                 "outbox": outbox_id,
                 "result": result,
+                "reason": SUPPRESSED_REASON if result else None,
                 "by": created_by,
+                "contact": r.get("contact_id"),
             },
         )
 
@@ -126,14 +148,14 @@ def _latest_recipients(repo: Any, po_id: UUID, template: str | None = None) -> l
     """The rows of the highest attempt on `po_id`, of one template when given."""
     only = "AND template_version = %(template)s " if template else ""
     rows = repo.execute(
-        "SELECT recipient_name, recipient_email FROM po_transmission "
+        "SELECT recipient_name, recipient_email, vendor_contact_id FROM po_transmission "
         f"WHERE org_id = %(org_id)s AND po_id = %(po)s {only}AND attempt = "
         "(SELECT max(attempt) FROM po_transmission "
         f"WHERE org_id = %(org_id)s AND po_id = %(po)s {only}) "
         "ORDER BY created_at, lower(recipient_email)",
         {"po": po_id, "template": template},
     ).fetchall()
-    return [{"name": r[0], "email": r[1]} for r in rows]
+    return [{"name": r[0], "email": r[1], "contact_id": r[2]} for r in rows]
 
 
 def enqueue(conn: Conn, scope: Scope, po_id: UUID, version: int) -> None:
@@ -214,12 +236,14 @@ def list_transmissions(conn: Conn, scope: Scope, po_id: UUID) -> list[PoTransmis
         rows = service.repo.execute(
             "SELECT t.id, t.po_id, p.revision, t.version, t.attempt, t.recipient_name, "
             f"t.recipient_email, t.template_version, o.provider_message_id, {READ_STATE}, "
-            "t.created_at, COALESCE(t.result_at, o.sent_at) "
+            "t.created_at, COALESCE(t.result_at, o.sent_at), "
+            "COALESCE(t.result_reason, CASE WHEN o.state = 'dead' THEN CASE "
+            "WHEN o.last_error = %(gate)s THEN o.last_error ELSE %(failed)s END END) "
             f"{_FROM} JOIN purchase_order p ON p.org_id = t.org_id AND p.id = t.po_id "
             "JOIN purchase_order b ON b.org_id = p.org_id AND b.unit_id = p.unit_id "
             "AND b.number = p.number AND b.id = %(id)s "
             "WHERE t.org_id = %(org_id)s ORDER BY t.created_at DESC, t.attempt DESC, t.id",
-            {"id": po_id},
+            {"id": po_id, "gate": DOMAIN_NOT_VERIFIED, "failed": FAILED_REASON},
         ).fetchall()
     keys = list(PoTransmissionRead.model_fields)
     return [PoTransmissionRead.model_validate(dict(zip(keys, r, strict=True))) for r in rows]
@@ -279,7 +303,7 @@ def resend(
             recipients = _latest_recipients(repo, po_id, template)
         else:
             known = {
-                c.id: {"name": c.name, "email": c.email}
+                c.id: {"name": c.name, "email": c.email, "contact_id": c.id}
                 for c in VendorService(conn, scope, actor_id).list_contacts(
                     cast(UUID, h["vendor_id"])
                 )
@@ -310,3 +334,111 @@ def resend(
             },
         )
     return list_transmissions(conn, scope, po_id)
+
+
+# -- provider events (E13-S10) ------------------------------------------------------------
+
+_EVENT_RESULT = {
+    "email.delivered": ("delivered", None),
+    "email.bounced": ("bounced", BOUNCED_REASON),
+    "email.complained": ("complained", COMPLAINED_REASON),
+    "email.failed": ("failed", FAILED_REASON),
+    "email.suppressed": ("failed", FAILED_REASON),
+}
+
+
+def apply_email_event(
+    conn: Conn, scope: Scope, outbox_id: UUID, *, event_id: str, type: str, hard: bool
+) -> None:
+    """Store one provider event and move `po_transmission.result` by the transition rule.
+
+    A soft bounce stores the event and changes nothing; a repeated `event_id` is a no-op."""
+    if type not in _EVENT_RESULT:
+        return  # an event we do not track is stored nowhere
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        repo = PurchaseOrderService(conn, scope).repo
+        found = repo.execute(
+            "SELECT id, vendor_contact_id, recipient_email FROM po_transmission "
+            "WHERE org_id = %(org_id)s AND outbox_id = %(o)s",
+            {"o": outbox_id},
+        ).fetchone()
+        if found is None:
+            return
+        transmission_id, contact_id, email = found
+        event_row = uuid4()
+        if not repo.execute(
+            "INSERT INTO email_event (id, org_id, provider_event_id, type, transmission_id, "
+            "vendor_contact_id) VALUES (%(id)s, %(org_id)s, %(event)s, %(type)s, %(t)s, %(c)s) "
+            "ON CONFLICT (provider_event_id) DO NOTHING",
+            {
+                "id": event_row,
+                "event": event_id,
+                "type": type,
+                "t": transmission_id,
+                "c": contact_id,
+            },
+        ).rowcount:
+            return  # a duplicate delivery
+        if type == "email.bounced" and not hard:
+            return
+        result, reason = _EVENT_RESULT[type]
+        # delivered is the only result that moves: a bounce or complaint can follow it, and
+        # nothing may hide a bounced, complained or failed send (EML-003)
+        repo.execute(
+            "UPDATE po_transmission SET result = %(new)s, result_at = now(), "
+            "result_reason = %(reason)s WHERE org_id = %(org_id)s AND id = %(t)s "
+            "AND (result IS NULL OR "
+            "(result = 'delivered' AND %(new)s IN ('bounced','complained')))",
+            {"new": result, "reason": reason, "t": transmission_id},
+        )
+        if result in ("bounced", "complained"):
+            suppression_id = uuid4()
+            if repo.execute(
+                "INSERT INTO email_suppression (id, org_id, email_normalised, reason, "
+                "source_event_id) VALUES (%(id)s, %(org_id)s, %(email)s, %(reason)s, %(event)s) "
+                "ON CONFLICT (org_id, email_normalised) DO NOTHING",
+                {
+                    "id": suppression_id,
+                    "email": normalise_email(str(email)),
+                    "reason": result,
+                    "event": event_row,
+                },
+            ).rowcount:
+                audit_event(
+                    cast(AuditConnection, conn),
+                    scope,
+                    actor=AuditActor(ActorKind.SYSTEM),
+                    action="email.suppression.add",
+                    target_type="email_suppression",
+                    target_id=suppression_id,
+                    outcome=Outcome.SUCCESS,
+                    after={"email": normalise_email(str(email)), "reason": result},
+                )
+
+
+def remove_suppression(
+    conn: Conn, scope: Scope, actor_id: UUID, suppression_id: UUID, reason: str
+) -> None:
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        row = (
+            PurchaseOrderService(conn, scope)
+            .repo.execute(
+                "DELETE FROM email_suppression WHERE org_id = %(org_id)s AND id = %(id)s "
+                "RETURNING email_normalised, reason",
+                {"id": suppression_id},
+            )
+            .fetchone()
+        )
+        if row is None:
+            raise ProblemError(ErrorCode.NOT_FOUND)
+        audit_event(
+            cast(AuditConnection, conn),
+            scope,
+            actor=AuditActor(ActorKind.USER, actor_id),
+            action="email.suppression.remove",
+            target_type="email_suppression",
+            target_id=suppression_id,
+            outcome=Outcome.SUCCESS,
+            reason=reason,
+            before={"email": row[0], "reason": row[1]},
+        )

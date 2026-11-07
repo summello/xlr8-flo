@@ -188,9 +188,30 @@ security add-generic-password -U -a "$USER" -s FLO_PROD_ORIGIN_SHARED_SECRET -w
 security add-generic-password -U -a "$USER" -s FLO_PROD_RESEND_API_KEY -w
 ```
 
+   The send key stays send-only. The sending-domain check (E13-S10) uses a second, **full-access**
+   Resend key that only that check reads (already created):
+
+```bash
+security add-generic-password -U -a "$USER" -s FLO_PROD_RESEND_DOMAIN_API_KEY -w
+```
+
+   Create a Resend webhook to `https://xlr8flo.summello.com/api/v1/webhooks/email` for
+   `email.delivered`, `email.bounced`, `email.complained`, `email.failed` and `email.suppressed`,
+   and store the signing secret Resend shows:
+
+```bash
+security add-generic-password -U -a "$USER" -s FLO_PROD_RESEND_WEBHOOK_SECRET -w
+```
+
+   The domain id is not secret: `RESEND_DOMAIN_ID` is `f71820d9-2fda-486d-8bcd-48c1390a009e`
+   (domain `mail.summello.com`), set by the deploy. The automated check covers SPF and DKIM only.
+   **DMARC is a manual step:** publish a `_dmarc` TXT record for the sending domain, then verify it
+   by hand (`dig +short TXT _dmarc.<domain>`). Until SPF and DKIM both read `pass`, purchase order
+   email is refused.
+
 ## 6. Create one Secret Manager secret per value
 
-Create six secret resources. Pipe each keychain value directly into a new version, and generate
+Create eight secret resources. Pipe each keychain value directly into a new version, and generate
 the 32-byte urlsafe-base64 MFA encryption key directly into Secret Manager:
 
 ```bash
@@ -199,6 +220,8 @@ gcloud secrets create flo-origin-shared-secret --replication-policy=automatic
 gcloud secrets create flo-r2-access-key-id --replication-policy=automatic
 gcloud secrets create flo-r2-secret-access-key --replication-policy=automatic
 gcloud secrets create flo-resend-api-key --replication-policy=automatic
+gcloud secrets create flo-resend-domain-api-key --replication-policy=automatic
+gcloud secrets create flo-resend-webhook-secret --replication-policy=automatic
 python3 -c "import os,base64;print(base64.urlsafe_b64encode(os.urandom(32)).decode().rstrip('='))" \
   | gcloud secrets create flo-mfa-encryption-key --replication-policy=automatic --data-file=-
 
@@ -212,12 +235,16 @@ security find-generic-password -a "$USER" -s FLO_PROD_R2_SECRET_ACCESS_KEY -w \
   | gcloud secrets versions add flo-r2-secret-access-key --data-file=-
 security find-generic-password -a "$USER" -s FLO_PROD_RESEND_API_KEY -w \
   | gcloud secrets versions add flo-resend-api-key --data-file=-
+security find-generic-password -a "$USER" -s FLO_PROD_RESEND_DOMAIN_API_KEY -w \
+  | gcloud secrets versions add flo-resend-domain-api-key --data-file=-
+security find-generic-password -a "$USER" -s FLO_PROD_RESEND_WEBHOOK_SECRET -w \
+  | gcloud secrets versions add flo-resend-webhook-secret --data-file=-
 ```
 
 Grant `flo-runtime` access on each secret resource, not all secrets in the project:
 
 ```bash
-for secret_name in flo-database-url flo-origin-shared-secret flo-r2-access-key-id flo-r2-secret-access-key flo-resend-api-key flo-mfa-encryption-key; do
+for secret_name in flo-database-url flo-origin-shared-secret flo-r2-access-key-id flo-r2-secret-access-key flo-resend-api-key flo-resend-domain-api-key flo-resend-webhook-secret flo-mfa-encryption-key; do
   gcloud secrets add-iam-policy-binding "$secret_name" \
     --member='serviceAccount:flo-runtime@GCP_PROJECT_ID.iam.gserviceaccount.com' \
     --role='roles/secretmanager.secretAccessor'
@@ -325,8 +352,9 @@ deploys `flo-api` with:
 
 - 1 GiB memory, 2 CPUs, concurrency 80, minimum instances 0
 - runtime identity `flo-runtime`
-- six Secret Manager references: `flo-database-url`, `flo-origin-shared-secret`,
-  `flo-r2-access-key-id`, `flo-r2-secret-access-key`, `flo-resend-api-key`, and
+- eight Secret Manager references: `flo-database-url`, `flo-origin-shared-secret`,
+  `flo-r2-access-key-id`, `flo-r2-secret-access-key`, `flo-resend-api-key`,
+  `flo-resend-domain-api-key`, `flo-resend-webhook-secret`, and
   `flo-mfa-encryption-key`, never literal secret environment values
 - R2 endpoint/bucket/region and GCP resource identifiers as ordinary non-secret variables
 - immutable `@sha256:` image reference

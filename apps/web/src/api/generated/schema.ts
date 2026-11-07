@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/api/v1/admin/email-suppressions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Email Suppression */
+        delete: operations["delete_email_suppression_api_v1_admin_email_suppressions__id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/users/{user_id}/deactivate": {
         parameters: {
             query?: never;
@@ -5277,6 +5294,8 @@ export interface components {
             phone: string | null;
             /** Receives Documents */
             receives_documents: boolean;
+            /** Suppressed */
+            suppressed: boolean;
             /** Type */
             type: string;
             /**
@@ -8341,6 +8360,8 @@ export interface components {
             result: "queued" | "sent" | "failed" | "address_suppressed" | "delivered" | "bounced" | "complained";
             /** Result At */
             result_at: string | null;
+            /** Result Reason */
+            result_reason: string | null;
             /** Revision */
             revision: number;
             /** Template Version */
@@ -10046,6 +10067,11 @@ export interface components {
             /** Reserved */
             reserved: string;
         };
+        /** SuppressionDelete */
+        SuppressionDelete: {
+            /** Reason */
+            reason: string;
+        };
         /** TaskRead */
         TaskRead: {
             /** Approver Emails */
@@ -10934,6 +10960,50 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    delete_email_suppression_api_v1_admin_email_suppressions__id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuppressionDelete"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     deactivate_user_api_v1_admin_users__user_id__deactivate_post: {
         parameters: {
             query?: never;

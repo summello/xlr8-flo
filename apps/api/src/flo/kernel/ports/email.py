@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Literal, Protocol
 
 
 class TransientEmailError(RuntimeError):
@@ -34,3 +34,20 @@ class EmailSender(Protocol):
         attachments: Sequence[EmailAttachment] = (),
     ) -> str:
         """Return the provider's stable message identifier."""
+
+
+type DomainResult = Literal["pass", "fail", "unknown"]
+
+
+@dataclass(frozen=True)
+class DomainStatus:
+    spf: DomainResult
+    dkim: DomainResult
+    detail: str
+
+
+class DomainChecker(Protocol):
+    """Read the sending domain's SPF and DKIM state; holds a different key from the sender."""
+
+    def domain_status(self) -> DomainStatus:
+        """Raise TransientEmailError or PermanentEmailError when the provider cannot answer."""

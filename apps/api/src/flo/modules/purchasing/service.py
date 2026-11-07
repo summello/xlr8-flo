@@ -794,7 +794,9 @@ class PurchaseOrderService:
             if sub is None:
                 raise conflict("no_project", "The requisition has no project to draw from.")
             bill_to = self._bill_to(header.unit_id)
-            recipients = [r.model_dump() for r in vendors.document_recipients(body.vendor_id)]
+            recipients = [
+                r.model_dump(mode="json") for r in vendors.document_recipients(body.vendor_id)
+            ]
             currency = chosen[0].currency
             if currency not in header.rates:
                 raise conflict("rate_missing", f"The award holds no rate for {currency}.")

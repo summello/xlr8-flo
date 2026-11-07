@@ -19,6 +19,7 @@ from flo.api.master import router as master_router
 from flo.api.org import router as org_router
 from flo.api.projects import router as projects_router
 from flo.api.purchasing import router as purchasing_router
+from flo.api.purchasing import suppressions_router
 from flo.api.requisitions import router as requisitions_router
 from flo.api.sourcing import router as sourcing_router
 from flo.api.vendor_questionnaires import router as vendor_questionnaires_router
@@ -57,6 +58,9 @@ VENDOR_COPY_ROUTES = (
 )
 TRANSMISSION_ROUTES = (
     "purchasing/test_transmission.py::test_transmission_routes_conceal_foreign_tenants"
+)
+SUPPRESSION_ROUTES = (
+    "purchasing/test_deliverability.py::test_suppression_delete_foreign_tenant_is_concealed"
 )
 ATTACHMENT_MARK_ROUTES = (
     "purchasing/test_attachment_vendor_mark.py::test_mark_routes_conceal_foreign_tenants"
@@ -101,6 +105,7 @@ COVERED = {
     ("GET", "/api/v1/purchase-orders/{id}/ship-to-options"): PO_READ_ROUTES,
     ("GET", "/api/v1/purchase-orders/{id}/transmissions"): TRANSMISSION_ROUTES,
     ("POST", "/api/v1/purchase-orders/{id}/transmissions/resend"): TRANSMISSION_ROUTES,
+    ("DELETE", "/api/v1/admin/email-suppressions/{id}"): SUPPRESSION_ROUTES,
     ("GET", "/api/v1/purchase-orders/{id}/attachments"): ATTACHMENT_MARK_ROUTES,
     ("PUT", "/api/v1/purchase-orders/{id}/attachments/{aid}/vendor-facing"): ATTACHMENT_MARK_ROUTES,
     ("GET", "/api/v1/purchase-orders/{id}/pdf"): VENDOR_COPY_ROUTES,
@@ -802,6 +807,7 @@ def test_every_id_route_has_a_named_foreign_tenant_case() -> None:
                 vendor_questionnaires_router,
                 sourcing_router,
                 purchasing_router,
+                suppressions_router,
                 collaboration_router,
             ),
             COVERED,
@@ -832,6 +838,7 @@ def test_gate_fails_on_an_uncovered_route_and_on_a_dangling_reference() -> None:
             vendor_questionnaires_router,
             sourcing_router,
             purchasing_router,
+            suppressions_router,
             collaboration_router,
         )
         | widget

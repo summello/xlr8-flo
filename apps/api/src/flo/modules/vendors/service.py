@@ -78,6 +78,11 @@ CONTACT_COLUMNS = (
     "id, type, name, email, phone, receives_documents, created_at, updated_at, version"
 )
 CONTACT_FIELDS = tuple(CONTACT_COLUMNS.replace(" ", "").split(","))
+# E13-S10: SQL only, so vendors imports nothing from purchasing
+_SUPPRESSED = (
+    "EXISTS (SELECT 1 FROM email_suppression s WHERE s.org_id = vendor_contact.org_id "
+    "AND s.email_normalised = lower(trim(vendor_contact.email)))"
+)
 
 # the order the list shows them: look ahead before looking back (VEN-011)
 ATTENTION: tuple[AttentionState, ...] = ("expiring", "expired", "missing", "rejected")
@@ -665,13 +670,16 @@ class VendorService(
 
     def _contact(self, vendor_id: UUID, contact_id: UUID, lock: bool = False) -> ContactRead:
         row = self.repo.execute(
-            f"SELECT {CONTACT_COLUMNS} FROM vendor_contact WHERE org_id = %(org_id)s "
+            f"SELECT {CONTACT_COLUMNS}, {_SUPPRESSED} FROM vendor_contact "
+            "WHERE org_id = %(org_id)s "
             f"AND vendor_id = %(vendor_id)s AND id = %(id)s{' FOR UPDATE' if lock else ''}",
             {"vendor_id": vendor_id, "id": contact_id},
         ).fetchone()
         if row is None:
             raise ProblemError(ErrorCode.NOT_FOUND)
-        return ContactRead.model_validate(dict(zip(CONTACT_FIELDS, row, strict=True)))
+        return ContactRead.model_validate(
+            dict(zip((*CONTACT_FIELDS, "suppressed"), row, strict=True))
+        )
 
     def _contact_audit(
         self, action: str, vendor_id: UUID, before: ContactRead | None, after: ContactRead
@@ -689,13 +697,17 @@ class VendorService(
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             self._row(vendor_id)
             rows = self.repo.execute(
-                f"SELECT {CONTACT_COLUMNS} FROM vendor_contact WHERE org_id = %(org_id)s "
+                f"SELECT {CONTACT_COLUMNS}, {_SUPPRESSED} FROM vendor_contact "
+                "WHERE org_id = %(org_id)s "
                 "AND vendor_id = %(vendor_id)s ORDER BY "
                 "CASE type WHEN 'billing' THEN 0 WHEN 'service_delivery' THEN 1 ELSE 2 END, "
                 "lower(name), id",
                 {"vendor_id": vendor_id},
             ).fetchall()
-        return [ContactRead.model_validate(dict(zip(CONTACT_FIELDS, r, strict=True))) for r in rows]
+        return [
+            ContactRead.model_validate(dict(zip((*CONTACT_FIELDS, "suppressed"), r, strict=True)))
+            for r in rows
+        ]
 
     def _contact_type(self, value: str) -> str:
         value = value.strip()
@@ -812,9 +824,11 @@ class VendorService(
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             self._row(vendor_id)
             rows = self.repo.execute(
-                "SELECT name, email FROM vendor_contact WHERE org_id = %(org_id)s "
+                "SELECT name, email, id FROM vendor_contact WHERE org_id = %(org_id)s "
                 "AND vendor_id = %(vendor_id)s AND receives_documents "
                 "ORDER BY (type = 'service_delivery') DESC, lower(name), id",
                 {"vendor_id": vendor_id},
             ).fetchall()
-        return [Recipient(name=str(r[0]), email=str(r[1])) for r in rows]
+        return [
+            Recipient(name=str(r[0]), email=str(r[1]), contact_id=cast(UUID, r[2])) for r in rows
+        ]

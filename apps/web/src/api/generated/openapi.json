@@ -3638,6 +3638,10 @@
             "title": "Receives Documents",
             "type": "boolean"
           },
+          "suppressed": {
+            "title": "Suppressed",
+            "type": "boolean"
+          },
           "type": {
             "title": "Type",
             "type": "string"
@@ -3661,7 +3665,8 @@
           "receives_documents",
           "created_at",
           "updated_at",
-          "version"
+          "version",
+          "suppressed"
         ],
         "title": "ContactRead",
         "type": "object"
@@ -12259,6 +12264,17 @@
             ],
             "title": "Result At"
           },
+          "result_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Reason"
+          },
           "revision": {
             "title": "Revision",
             "type": "integer"
@@ -12284,7 +12300,8 @@
           "provider_message_id",
           "result",
           "created_at",
-          "result_at"
+          "result_at",
+          "result_reason"
         ],
         "title": "PoTransmissionRead",
         "type": "object"
@@ -17504,6 +17521,22 @@
         "title": "SummaryCurrency",
         "type": "object"
       },
+      "SuppressionDelete": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "SuppressionDelete",
+        "type": "object"
+      },
       "TaskRead": {
         "additionalProperties": false,
         "properties": {
@@ -19960,6 +19993,78 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/admin/email-suppressions/{id}": {
+      "delete": {
+        "operationId": "delete_email_suppression_api_v1_admin_email_suppressions__id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuppressionDelete"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Delete Email Suppression",
+        "tags": [
+          "administration"
+        ]
+      }
+    },
     "/api/v1/admin/users/{user_id}/deactivate": {
       "post": {
         "description": "Deactivate a tenant user and atomically revoke every browser session.",

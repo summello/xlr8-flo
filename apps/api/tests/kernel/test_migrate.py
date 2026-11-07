@@ -188,6 +188,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261031_0086",
         "20261101_0087",
         "20261102_0088",
+        "20261102_0089",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -3527,6 +3528,87 @@ def test_po_transmission_migration_roundtrips_and_checks(empty_database):
         mig.downgrade(conn)
         assert conn.execute("SELECT to_regclass('po_transmission')").fetchone() == (None,)
         mig.upgrade(conn)
+
+
+def test_email_deliverability_migration_roundtrips_and_keeps_transmissions(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.org.schemas import OrgUnitCreate
+    from flo.modules.org.service import OrgService
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261102_0088"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261102_0089")
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("email-deliverability-migration"),
+    ):
+        tenant = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(tenant.org_id)
+        bu = OrgService(conn, scope, actor).create_unit(
+            OrgUnitCreate(code="BU", name="BU", kind="bu")
+        )
+        rfq, award, po, row = uuid4(), uuid4(), uuid4(), uuid4()
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO rfq(id,org_id,number,title,unit_id,currency,owner_id)"
+                " VALUES(%s,%s,'RFQ-00001','T',%s,'KWD',%s)",
+                (rfq, tenant.org_id, bu.id, actor),
+            )
+            conn.execute(
+                "INSERT INTO award(id,org_id,number,rfq_id,basis,status,rates,created_by)"
+                " VALUES(%s,%s,'AWD-00001',%s,'manual','approved','{}',%s)",
+                (award, tenant.org_id, rfq, actor),
+            )
+            conn.execute("SET LOCAL session_replication_role = replica")  # requisition absent
+            conn.execute(
+                "INSERT INTO purchase_order(id,org_id,number,unit_id,vendor_id,requisition_id,"
+                "vendor_snapshot,award_id,currency,rate,bill_to,recipients,requester_id,"
+                "created_by,requisition_version)"
+                " VALUES(%s,%s,'PO-1',%s,%s,%s,'{}',%s,'KWD','{}','{}','[]',%s,%s,1)",
+                (po, tenant.org_id, bu.id, uuid4(), uuid4(), award, actor, actor),
+            )
+            conn.execute(
+                "INSERT INTO po_transmission(org_id,id,po_id,version,attempt,recipient_name,"
+                "recipient_email,template_version,created_by)"
+                " VALUES(%s,%s,%s,1,1,'N','n@example.com','po-issued-v1',%s)",
+                (tenant.org_id, row, po, actor),
+            )
+        mig.upgrade(conn)
+        for table in ("email_message_route", "email_event", "email_suppression"):
+            # plant: without ENABLE and FORCE ROW LEVEL SECURITY this reads (False,)
+            assert conn.execute(
+                "SELECT relrowsecurity AND relforcerowsecurity FROM pg_class WHERE relname = %s",
+                (table,),
+            ).fetchone() == (True,)
+        assert conn.execute(
+            "SELECT count(*) FROM information_schema.columns WHERE table_name = 'po_transmission'"
+            " AND column_name IN ('result_reason', 'vendor_contact_id')"
+        ).fetchone() == (2,)
+        assert conn.execute(
+            "SELECT 1 FROM information_schema.columns WHERE table_name = 'email_domain_status'"
+            " AND column_name = 'org_id'"
+        ).fetchone() is None  # global: no tenant column
+        mig.downgrade(conn)
+        for table in (
+            "email_message_route",
+            "email_event",
+            "email_suppression",
+            "email_domain_status",
+        ):
+            assert conn.execute("SELECT to_regclass(%s)", (table,)).fetchone() == (None,)
+        mig.upgrade(conn)
+        with tenant_transaction(conn, scope):
+            assert conn.execute(
+                "SELECT recipient_email, vendor_contact_id, result_reason FROM po_transmission"
+                " WHERE id = %s",
+                (row,),
+            ).fetchone() == ("n@example.com", None, None)
 
 
 def test_po_attachment_vendor_mark_migration_roundtrips_and_guards(empty_database):
