@@ -217,6 +217,8 @@ test("motion on: each frame animates from its old look to its new one, the frame
   await page.evaluate(() => {
     const w = window as unknown as { __frames: string[]; __keyframes: number[] };
     w.__frames = []; w.__keyframes = [];
+    // Three frames at 260ms finish before the URL wait and poll below; slow them so "not before the last frame" is observable.
+    document.documentElement.style.setProperty("--dur-slow", "2000ms");
     const note = () => {
       const row = document.querySelector(".po-frames tr[aria-current='step'] td");
       if (row && w.__frames.at(-1) !== row.textContent) w.__frames.push(row.textContent ?? "");
