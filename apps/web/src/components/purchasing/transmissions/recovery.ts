@@ -19,3 +19,12 @@ export function recovery(rows: readonly Pick<PoTransmission, "result">[], canCha
   if (has("bounced") || has("address_suppressed")) return canChangeRecipient ? { actions: ["change_recipient", "resend"], focus: "change_recipient" } : { actions: ["resend"], focus: "resend" };
   return { actions: canChangeRecipient ? ["resend", "change_recipient"] : ["resend"], focus: "resend" };
 }
+
+const ISSUE_EMAIL = "po-issued-v1";
+/** The rows of the current send: this revision's issue email, the greatest attempt. */
+export function currentSend(rows: readonly PoTransmission[], id: string): PoTransmission[] {
+  const mine = rows.filter(r => r.po_id === id && r.template_version === ISSUE_EMAIL);
+  const attempt = Math.max(0, ...mine.map(r => r.attempt));
+  return mine.filter(r => r.attempt === attempt);
+}
+
