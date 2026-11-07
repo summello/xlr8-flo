@@ -84,6 +84,9 @@ COVERED = {
     ("POST", "/api/v1/purchase-orders/{id}/withdraw"): PO_ROUTES,
     ("POST", "/api/v1/purchase-orders/{id}/issue"): PO_ROUTES,
     ("POST", "/api/v1/purchase-orders/{id}/cancel"): PO_ROUTES,
+    ("GET", "/api/v1/purchase-orders/{id}/cancel-preview"): (
+        "purchasing/test_cancel_preview.py::test_cancel_preview_conceals_foreign_tenants_and_needs_amend"
+    ),
     ("POST", "/api/v1/purchase-orders/{id}/reduce"): PO_ROUTES,
     ("POST", "/api/v1/purchase-orders/{id}/changes"): PO_ROUTES,
     ("GET", "/api/v1/purchase-orders/{id}/changes"): PO_ROUTES,

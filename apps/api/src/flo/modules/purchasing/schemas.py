@@ -162,6 +162,16 @@ class PoProjectRef(BaseModel):
     name: str
 
 
+class PoCancelPreviewRead(BaseModel):
+    status: PoStatus
+    released: str  # the open commitment cancel would release; "0.0000" before issue
+    released_currency: str | None  # None when released is 0
+    rereserved: bool  # issued, a live reservation, and released > 0
+    requisition_number: str
+    reservation_project: PoProjectRef | None  # the live reservation's project when rereserved
+    main_project: PoProjectRef  # where "Also cancel" returns the money
+
+
 type SentResult = Literal[
     "queued", "sent", "failed", "address_suppressed", "delivered", "bounced", "complained"
 ]

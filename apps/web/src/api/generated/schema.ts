@@ -2031,6 +2031,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/purchase-orders/{id}/cancel-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cancel Preview Route */
+        get: operations["cancel_preview_route_api_v1_purchase_orders__id__cancel_preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/purchase-orders/{id}/changes": {
         parameters: {
             query?: never;
@@ -7707,6 +7724,20 @@ export interface components {
             notify_vendor?: boolean;
             /** Reason */
             reason: string;
+        };
+        /** PoCancelPreviewRead */
+        PoCancelPreviewRead: {
+            main_project: components["schemas"]["PoProjectRef"];
+            /** Released */
+            released: string;
+            /** Released Currency */
+            released_currency: string | null;
+            /** Requisition Number */
+            requisition_number: string;
+            /** Rereserved */
+            rereserved: boolean;
+            reservation_project: components["schemas"]["PoProjectRef"] | null;
+            status: components["schemas"]["PoStatus"];
         };
         /** PoCancelRead */
         PoCancelRead: {
@@ -16922,6 +16953,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PoCancelRead"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    cancel_preview_route_api_v1_purchase_orders__id__cancel_preview_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoCancelPreviewRead"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

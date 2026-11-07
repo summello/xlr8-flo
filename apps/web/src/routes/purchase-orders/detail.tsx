@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { apiClient } from "../../api/client";
 import StatusPill from "../../components/status/StatusPill";
 import { BudgetCard, HistoryCard, LinesCard, LinkedCard, NotesAndFiles, PoStepper, Swimlanes, TransmissionsCard } from "../../components/purchasing/PoCards";
+import CancelOrReduce from "../../components/purchasing/dialogs/CancelOrReduce";
 import VersionControl from "../../components/purchasing/VersionControl";
 import { failure, type Problem } from "../../components/requisitions/api";
 import { useLoad } from "../../components/requisitions/useLoad";
@@ -31,12 +32,12 @@ export default function PurchaseOrderDetail({ id, navigate }: { id: string; navi
         <p className="req-sub"><a href={`/vendors/${p.vendor_id}`}>{typeof p.vendor_snapshot.trading_name === "string" ? p.vendor_snapshot.trading_name : "Vendor"}</a>{p.vendor_status && <> · Vendor {p.vendor_status.replaceAll("_", " ")}</>} · <a href={`/requisitions/${p.requisition_id}`}>Requisition</a></p></div>
       <VersionControl key={p.id} po={p} navigate={navigate} />
       <StatusPill docType="purchase_order" status={p.status as "draft"} />
-      <div className="vendor-head-actions">{HAS_PDF.includes(p.status) && <a className="req-link-button" href={`/api/v1/purchase-orders/${p.id}/pdf`} target="_blank" rel="noreferrer"><FilePdf aria-hidden="true" weight="regular" />View PDF</a>}</div>
+      <div className="vendor-head-actions"><CancelOrReduce po={p} onDone={po.reload} />{HAS_PDF.includes(p.status) && <a className="req-link-button" href={`/api/v1/purchase-orders/${p.id}/pdf`} target="_blank" rel="noreferrer"><FilePdf aria-hidden="true" weight="regular" />View PDF</a>}</div>
     </header>
     <div className="po-bar"><PoStepper po={p} /><Swimlanes po={p} /></div>
     <div className="po-body">
       <div className="po-col"><LinesCard po={p} /><NotesAndFiles id={id} /><TransmissionsCard id={id} /></div>
-      <div className="po-col"><BudgetCard id={id} navigate={navigate} /><LinkedCard po={p} /><HistoryCard id={id} /></div>
+      <div className="po-col"><BudgetCard key={`budget-${p.version}`} id={id} navigate={navigate} /><LinkedCard po={p} /><HistoryCard key={`history-${p.version}`} id={id} /></div>
     </div>
   </section>;
 }

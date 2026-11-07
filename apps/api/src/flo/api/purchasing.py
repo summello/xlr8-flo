@@ -16,7 +16,7 @@ from flo.kernel.config import Settings
 from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
-from flo.modules.purchasing.cancel import cancel, reduce
+from flo.modules.purchasing.cancel import cancel, cancel_preview, reduce
 from flo.modules.purchasing.changes import ChangeService
 from flo.modules.purchasing.issue import issue
 from flo.modules.purchasing.pdf import VendorCopyRead, filename, frozen, pdf_for, vendor_copy_read
@@ -26,6 +26,7 @@ from flo.modules.purchasing.schemas import (
     PoAttachmentVendorFacing,
     PoBudgetSummaryRead,
     PoCancelCreate,
+    PoCancelPreviewRead,
     PoCancelRead,
     PoChangeCreate,
     PoChangePatch,
@@ -247,6 +248,13 @@ def cancel_purchase_order(
     version: Annotated[str | None, Header(alias="If-Match")] = None,
 ) -> PoCancelRead:
     return _etag(cancel(connection, current_scope(), id, context.user_id, version, body), response)
+
+
+@router.get("/{id}/cancel-preview", response_model=PoCancelPreviewRead)
+def cancel_preview_route(
+    id: UUID, context: AmendContext, connection: Connection
+) -> PoCancelPreviewRead:
+    return cancel_preview(connection, current_scope(), id, context.user_id)
 
 
 @router.post("/{id}/reduce", status_code=201, response_model=PoChangeRead)

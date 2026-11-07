@@ -2196,7 +2196,7 @@ epics:
           - E13-S11
           - E13-S12
           - E11-S11
-        st: in_progress
+        st: review
       - id: E13-S15
         t: 'Issue: confirmation and signature moment 5'
         k: ui
@@ -2257,7 +2257,7 @@ epics:
         dep:
           - E13-S06
           - E13-S12
-        st: in_progress
+        st: review
       - id: E13-S19
         t: 'Cancel or reduce dialog'
         k: ui
@@ -2270,7 +2270,7 @@ epics:
         dep:
           - E13-S07
           - E13-S12
-        st: review
+        st: done
       - id: E13-S20
         t: 'PO decision panel: Purchase Order Evidence block'
         k: ui

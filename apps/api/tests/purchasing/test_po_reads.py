@@ -217,6 +217,16 @@ def test_actions_follow_status_permissions_and_who_drafted(lifecycle_db):
     assert pos(db).with_access(read, set(), False).actions == []
 
 
+def test_cancel_on_an_approval_pending_po_is_the_drafting_buyers_alone(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, _, a, _, award_id, _ = ready(db)
+    read = pos(db).get(create(db, rfq, a, award_id, "2").id)
+    pending = read.model_copy(update={"status": "approval_pending"})
+    amend = {"purchase_order.amend"}
+    assert pos(db).with_access(pending, amend, False).actions == ["cancel"]
+    assert pos(db, actor=uuid4()).with_access(pending, amend, False).actions == []
+
+
 def test_a_po_link_opens_the_purchase_order_route(lifecycle_db):
     db, _ = lifecycle_db
     po = new_po(db)

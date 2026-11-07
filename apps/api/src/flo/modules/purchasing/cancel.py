@@ -17,17 +17,21 @@ from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.approvals.service import withdraw
 from flo.modules.budget.service import lock_balance, release_commitment, reservation_remaining
+from flo.modules.projects.service import ProjectService
 from flo.modules.purchasing.changes import ChangeService
 from flo.modules.purchasing.lifecycle import parse_if_match, transition
 from flo.modules.purchasing.schemas import (
     PoCancelCreate,
+    PoCancelPreviewRead,
     PoCancelRead,
     PoChangeCreate,
     PoChangePatch,
     PoChangeRead,
+    PoProjectRef,
     PoReduceCreate,
+    PoStatus,
 )
-from flo.modules.purchasing.service import PurchaseOrderService, _invalid
+from flo.modules.purchasing.service import PurchaseOrderService, _fmt, _invalid
 from flo.modules.requisitions.schemas import LineSourcing
 from flo.modules.requisitions.service import (
     cancel_lines,
@@ -119,6 +123,62 @@ def cancel(
         return PoCancelRead(**service.get(po_id).model_dump(), notice=notice)
 
 
+def _open_commitments(service: PurchaseOrderService, root: UUID) -> list[tuple[int, Decimal, str]]:
+    """Open commitment entries of a PO's root: (entry id, remaining, currency), by id."""
+    # ponytail: reads the budget module's commitment view directly, as ChangeService._post does;
+    # route through a budget service probe if a second module needs open commitments by source.
+    return [
+        (cast(int, r[0]), cast(Decimal, r[1]), str(r[2]))
+        for r in service.repo.execute(
+            "SELECT e.id, r.remaining, e.currency FROM ledger_entry e JOIN commitment_remaining r "
+            "ON r.org_id = e.org_id AND r.commitment_entry_id = e.id "
+            "WHERE e.org_id = %(org_id)s AND e.source_type = 'purchase_order' "
+            "AND e.source_id = %(root)s AND e.entry_type = 'commitment' AND r.remaining > 0 "
+            "ORDER BY e.id",
+            {"root": root},
+        ).fetchall()
+    ]
+
+
+def cancel_preview(conn: Conn, scope: Scope, po_id: UUID, actor_id: UUID) -> PoCancelPreviewRead:
+    """What `cancel` would release now, read only (E13-S19). The figure is `cancel`'s own."""
+    service = PurchaseOrderService(conn, scope, actor_id)
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        h = service._row(po_id)  # 404 before anything else
+        status = cast(PoStatus, h["status"])
+        if status not in ("draft", "approval_pending", "approved", "issued"):
+            raise conflict("invalid_transition", "That purchase order cannot be cancelled.")
+        requisition_id = cast(UUID, h["requisition_id"])
+        req = service.repo.execute(
+            "SELECT project_id, number FROM requisition WHERE org_id = %(org_id)s AND id = %(id)s",
+            {"id": requisition_id},
+        ).fetchone()
+        assert req is not None
+        open_ = _open_commitments(service, service._root(po_id)) if status == "issued" else []
+        released = sum((r for _, r, _ in open_), Decimal("0.0000"))
+        entry = reservation_entry(conn, scope, requisition_id)
+        projects = ProjectService(conn, scope)
+
+        def ref(project_id: UUID) -> PoProjectRef:
+            project = projects.get(project_id)
+            return PoProjectRef(id=project_id, code=project.number, name=project.name)
+
+        rereserved = entry is not None and released > 0
+        return PoCancelPreviewRead(
+            status=status,
+            released=_fmt(released),
+            released_currency=open_[0][2] if open_ else None,
+            rereserved=rereserved,
+            requisition_number=cast(str, req[1]),
+            reservation_project=(
+                ref(reservation_remaining(conn, scope, entry).project_id)
+                if rereserved and entry is not None
+                else None
+            ),
+            main_project=ref(cast(UUID, req[0])),
+        )
+
+
 def _cancel_issued(
     conn: Conn,
     scope: Scope,
@@ -142,21 +202,12 @@ def _cancel_issued(
             "change_in_progress", "This purchase order has an open change order. Withdraw it first."
         )
     released = Decimal(0)
-    # ponytail: reads the budget module's commitment view directly, as ChangeService._post does;
-    # route through a budget service probe if a second module needs open commitments by source.
-    for entry_id, remaining in service.repo.execute(
-        "SELECT e.id, r.remaining FROM ledger_entry e JOIN commitment_remaining r "
-        "ON r.org_id = e.org_id AND r.commitment_entry_id = e.id "
-        "WHERE e.org_id = %(org_id)s AND e.source_type = 'purchase_order' "
-        "AND e.source_id = %(root)s AND e.entry_type = 'commitment' AND r.remaining > 0 "
-        "ORDER BY e.id",
-        {"root": root},
-    ).fetchall():
+    for entry_id, remaining, _currency in _open_commitments(service, root):
         release_commitment(
-            conn, scope, commitment_entry_id=cast(int, entry_id), amount=None, actor_id=actor,
+            conn, scope, commitment_entry_id=entry_id, amount=None, actor_id=actor,
             reason="Purchase order cancelled", idempotency_key=f"po:{po_id}:cancel:{entry_id}",
         )  # fmt: skip
-        released += cast(Decimal, remaining)
+        released += remaining
     if entry is not None and released > 0:
         rereserve(
             conn, scope, requisition_id, amount=released, key=f"po_cancel_{po_id}", actor_id=actor

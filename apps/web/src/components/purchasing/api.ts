@@ -1,5 +1,6 @@
 import type { components } from "../../api/generated/schema";
 import type { StatusTone } from "../status/tones";
+import { formatMoney } from "../../lib/money";
 import { formatDate } from "../requisitions/api";
 
 export type Po = components["schemas"]["PoRead"];
@@ -10,6 +11,7 @@ export type PoHistory = components["schemas"]["PoHistoryRead"];
 export type PoBudget = components["schemas"]["PoBudgetSummaryRead"];
 export type PoTransmission = components["schemas"]["PoTransmissionRead"];
 export type PoChange = components["schemas"]["PoChangeRead"];
+export type PoCancelPreview = components["schemas"]["PoCancelPreviewRead"];
 export type AwardedLines = components["schemas"]["AwardedLinesRead"];
 export type AwardedLine = components["schemas"]["AwardedLineRead"];
 export type AwardedVendor = components["schemas"]["AwardedVendorRead"];
@@ -44,3 +46,20 @@ export const HOLDS: Record<"reserved" | "committed" | "released", string> = {
   committed: "This PO holds a commitment.",
   released: "This PO released its commitment.",
 };
+
+const ref = (p: { code: string; name: string }) => `${p.code} ${p.name}`;
+
+/** The money sentence of the cancel dialog (pages/purchase-orders.md 2), from the server's preview; the browser adds nothing up. */
+export function cancelConsequence(p: PoCancelPreview, alsoCancelLines: boolean): string {
+  if (p.status !== "issued") {
+    return `Nothing was issued, so nothing is committed or released. The requisition keeps its reservation.${p.status === "approval_pending" ? " The approval request is withdrawn." : ""}`;
+  }
+  if (!p.released_currency || /^0(?:\.0*)?$/.test(p.released)) return "Nothing is left to release: the commitment is used.";
+  const amount = `${formatMoney(p.released, p.released_currency)} ${p.released_currency}`;
+  if (p.rereserved && p.reservation_project) {
+    return alsoCancelLines
+      ? `Releases ${amount} once and returns it to ${ref(p.main_project)}. The requisition lines are cancelled.`
+      : `Releases ${amount} once and re-reserves it for requisition ${p.requisition_number} on ${ref(p.reservation_project)}, so another PO can order the reopened quantity without new approval.`;
+  }
+  return `Releases ${amount} once. The requisition holds no reservation, so the money is available again on the project it was committed to.${alsoCancelLines ? " The requisition lines are cancelled." : ""}`;
+}

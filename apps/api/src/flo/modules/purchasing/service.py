@@ -689,7 +689,7 @@ class PurchaseOrderService:
                 ("delete", "create", False),
                 ("cancel", "amend", False),
             ],
-            "approval_pending": [("withdraw", "create", True), ("cancel", "amend", False)],
+            "approval_pending": [("withdraw", "create", True), ("cancel", "amend", True)],
             "approved": [("issue", "issue", False), ("cancel", "amend", False)],
             "issued": [
                 ("change_order", "amend", False),

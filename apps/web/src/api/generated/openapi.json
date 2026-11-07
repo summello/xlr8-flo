@@ -10691,6 +10691,60 @@
         "title": "PoCancelCreate",
         "type": "object"
       },
+      "PoCancelPreviewRead": {
+        "properties": {
+          "main_project": {
+            "$ref": "#/components/schemas/PoProjectRef"
+          },
+          "released": {
+            "title": "Released",
+            "type": "string"
+          },
+          "released_currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Released Currency"
+          },
+          "requisition_number": {
+            "title": "Requisition Number",
+            "type": "string"
+          },
+          "rereserved": {
+            "title": "Rereserved",
+            "type": "boolean"
+          },
+          "reservation_project": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PoProjectRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/PoStatus"
+          }
+        },
+        "required": [
+          "status",
+          "released",
+          "released_currency",
+          "rereserved",
+          "requisition_number",
+          "reservation_project",
+          "main_project"
+        ],
+        "title": "PoCancelPreviewRead",
+        "type": "object"
+      },
       "PoCancelRead": {
         "properties": {
           "actions": {
@@ -31397,6 +31451,75 @@
           }
         },
         "summary": "Cancel Purchase Order",
+        "tags": [
+          "purchasing"
+        ]
+      }
+    },
+    "/api/v1/purchase-orders/{id}/cancel-preview": {
+      "get": {
+        "operationId": "cancel_preview_route_api_v1_purchase_orders__id__cancel_preview_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoCancelPreviewRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "Cancel Preview Route",
         "tags": [
           "purchasing"
         ]

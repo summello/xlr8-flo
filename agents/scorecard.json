@@ -7474,6 +7474,65 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E13-S19",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 2,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "6c1d5c9b-801c-49c6-bcd6-969146399950",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S19",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1b392-286f-73d0-a2e8-232bf176f288",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds a read-only cancel-preview route (same open-commitment query as cancel) and a Cancel or Reduce dialog on the PO detail page; cancel on approval_pending is now offered to the drafting buyer only. History and budget cards refetch after a change via a version key.",
+      "title": "Cancel or reduce dialog",
+      "durations": {
+        "wall_s": 16234,
+        "author_s": 10349,
+        "review_s": {
+          "codex": 56
+        },
+        "gate_s": 0
+      }
     }
   ]
 }
