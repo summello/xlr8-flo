@@ -188,7 +188,9 @@ test("reduced motion: no animation is created, the finished picture, its note an
   await reduce(page);
   await stubIssue(page);
   await issueNow(page, baseURL);
-  expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
+  // Polled: a shell transition from the route change may still be settling; the stage creates none.
+  await expect.poll(() => page.evaluate(() => document.getAnimations().length)).toBe(0);
+  await expect(page.locator(".po-stage").evaluate(el => el.getAnimations({ subtree: true }).length)).resolves.toBe(0);
   await expect(page.getByText("Animation is off: this is the finished picture.")).toBeVisible();
   await expect(page.locator(".po-frames tr[aria-current='step']")).toHaveCount(1);
   await expect(page.locator(".po-frames tbody tr")).toHaveCount(3);
