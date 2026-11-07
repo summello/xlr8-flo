@@ -24,13 +24,15 @@ from flo.api.origin_auth import require_origin_secret
 from flo.kernel.authz import PermissionResolverFactory, public_route
 from flo.kernel.config import Settings
 from flo.kernel.email import (
+    DOMAIN_CHECK_JOB,
     create_domain_checker,
     create_email_sender,
+    latest_domain_check,
     latest_domain_status,
     po_domain_gate,
 )
 from flo.kernel.errors import ErrorCode, ProblemError
-from flo.kernel.jobs import JobRunner
+from flo.kernel.jobs import Job, JobRunner, PermanentJobError
 from flo.kernel.jobs.runner import RunnerConnection
 from flo.kernel.logging import correlation_context
 from flo.kernel.outbox import OutboxDispatcher, email_handler
@@ -361,6 +363,7 @@ def _run_jobs_tick(settings: Settings) -> TickReport:
             {
                 "budget-reconcile": job_handler(lambda: psycopg.connect(database_url)),
                 "approval.reminders": reminders_job_handler(lambda: psycopg.connect(database_url)),
+                DOMAIN_CHECK_JOB: _domain_check_job(settings),
                 rfq_lifecycle.JOB_KIND: rfq_lifecycle.job_handler(
                     lambda: psycopg.connect(database_url)
                 ),
@@ -696,6 +699,24 @@ def _run_email_domain_check(settings: Settings) -> EmailDomainCheckReport:
             (status.spf, status.dkim, status.detail),
         )
     return EmailDomainCheckReport(spf=status.spf, dkim=status.dkim)
+
+
+def _domain_check_job(settings: Settings) -> Callable[[Job], None]:
+    """A tenant-requested check (E13-S21): one provider call per minute across organizations."""
+
+    def handle(job: Job) -> None:
+        if settings.database_url is None:
+            raise RuntimeError("DATABASE_URL is not configured")
+        with psycopg.connect(settings.database_url.get_secret_value()) as connection:
+            check = latest_domain_check(connection)
+        if check is not None and check.recent:
+            return
+        try:
+            _run_email_domain_check(settings)
+        except ProblemError:
+            raise PermanentJobError("email domain check unavailable") from None
+
+    return handle
 
 
 @router.post(

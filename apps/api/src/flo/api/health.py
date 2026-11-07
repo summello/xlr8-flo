@@ -37,7 +37,7 @@ from flo.api.org import router as org_router
 from flo.api.origin_auth import require_origin_secret
 from flo.api.projects import router as projects_router
 from flo.api.purchasing import router as purchasing_router
-from flo.api.purchasing import suppressions_router
+from flo.api.purchasing import sending_domain_router, suppressions_router
 from flo.api.requisitions import router as requisitions_router
 from flo.api.sourcing import router as sourcing_router
 from flo.api.vendor_questionnaires import router as vendor_questionnaires_router
@@ -124,6 +124,7 @@ app.include_router(vendor_questionnaires_router)
 app.include_router(sourcing_router)
 app.include_router(purchasing_router)
 app.include_router(suppressions_router)
+app.include_router(sending_domain_router)
 app.include_router(webhooks_router)
 app.include_router(catalogue_router)
 app.include_router(budget_router)

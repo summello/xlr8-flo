@@ -42,14 +42,24 @@ from flo.modules.purchasing.schemas import (
     PoTransmissionRead,
     PoVersionRead,
     PurchaseOrderTransitionCreate,
+    SendingDomainRead,
     SuppressionDelete,
+    SuppressionPage,
     TransmissionResend,
 )
 from flo.modules.purchasing.service import PurchaseOrderService
-from flo.modules.purchasing.transmission import list_transmissions, remove_suppression, resend
+from flo.modules.purchasing.transmission import (
+    list_suppressions,
+    list_transmissions,
+    remove_suppression,
+    request_domain_check,
+    resend,
+    sending_domain,
+)
 
 router = APIRouter(prefix="/api/v1/purchase-orders", tags=["purchasing"])
 suppressions_router = APIRouter(prefix="/api/v1/admin/email-suppressions", tags=["administration"])
+sending_domain_router = APIRouter(prefix="/api/v1/admin/sending-domain", tags=["administration"])
 
 
 def _unit(unit_id: UUID) -> TargetProtocol:
@@ -442,3 +452,37 @@ def delete_email_suppression(
 ) -> Response:
     remove_suppression(connection, current_scope(), context.user_id, id, body.reason)
     return Response(status_code=204)
+
+
+@suppressions_router.get("", response_model=SuppressionPage)
+def get_email_suppressions(
+    context: Annotated[
+        AuthorizationContext, Depends(require("org.setting.manage", organization_target))
+    ],
+    connection: Connection,
+    q: Annotated[str | None, Query(max_length=254)] = None,
+    cursor: Annotated[str | None, Query(max_length=200)] = None,
+) -> SuppressionPage:
+    return list_suppressions(connection, current_scope(), q, cursor)
+
+
+@sending_domain_router.get("", response_model=SendingDomainRead)
+def get_sending_domain(
+    context: Annotated[
+        AuthorizationContext, Depends(require("org.setting.manage", organization_target))
+    ],
+    connection: Connection,
+    settings: Annotated[Settings, Depends(get_auth_settings)],
+) -> SendingDomainRead:
+    return sending_domain(connection, current_scope(), settings)
+
+
+@sending_domain_router.post("/check", status_code=202, response_model=SendingDomainRead)
+def check_sending_domain(
+    context: Annotated[
+        AuthorizationContext, Depends(require("org.setting.manage", organization_target))
+    ],
+    connection: Connection,
+    settings: Annotated[Settings, Depends(get_auth_settings)],
+) -> SendingDomainRead:
+    return request_domain_check(connection, current_scope(), settings)

@@ -408,6 +408,30 @@ class SuppressionDelete(BaseModel):
         return value.strip() if isinstance(value, str) else value
 
 
+type DomainResult = Literal["pass", "fail", "unknown"]
+
+
+class SendingDomainRead(BaseModel):
+    spf: DomainResult | None
+    dkim: DomainResult | None
+    detail: str
+    checked_at: datetime | None
+    check_pending: bool
+    po_email_allowed: bool
+
+
+class SuppressionRead(BaseModel):
+    id: UUID
+    email: str
+    reason: Literal["bounced", "complained"]
+    created_at: datetime
+
+
+class SuppressionPage(BaseModel):
+    rows: list[SuppressionRead]
+    next_cursor: str | None
+
+
 class PoAttachmentVendorFacing(BaseModel):
     model_config = ConfigDict(extra="forbid")
     vendor_facing: bool
