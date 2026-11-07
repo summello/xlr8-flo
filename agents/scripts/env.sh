@@ -27,3 +27,8 @@ flo_manual_guard() {
     exit 3
   fi
 }
+
+# Codex profiles (7 Nov 2026, operator): codex-a reviews, codex-b authors. Each is its own login in
+# its own CODEX_HOME, so usage caps and rollouts never mix. A bare `codex` means codex-a.
+codex_agent() { case "$1" in codex|codex-a) echo codex-a ;; codex-b) echo codex-b ;; *) return 1 ;; esac; }
+codex_home() { echo "$HOME/.$1"; }

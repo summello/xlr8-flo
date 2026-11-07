@@ -16,7 +16,9 @@ agent:
 limits:                          # percent left (5-hour, week)
   claude_start: [25, 0]    # weekly ignored (operator, 28 Oct 2026): the operator overrides by hand if A and B drift
   claude_continue: [10, 0]
-  codex: [20, 10]
+  codex: [20, 10]          # fallback for both profiles
+  codex-a: [20, 10]        # reviewer (~/.codex-a)
+  codex-b: [20, 10]        # author (~/.codex-b)
 budget:
   milestone_reviewer_usd_month: 20
   monitor_paid_fallback_usd_day: 0.5

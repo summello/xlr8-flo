@@ -1,13 +1,13 @@
 #!/bin/sh
 # Packet pre-flight (E23-S05): Codex (or an OpenRouter reviewer such as qwen) checks design/<S>.md
 # against the code before an author starts, then files the record `flo start` requires.
-# Usage: agents/scripts/preflight.sh <STORY_ID> [codex|opus [A|B]|qwen|...]   (default codex, operator 23 Oct 2026:
+# Usage: agents/scripts/preflight.sh <STORY_ID> [codex-a|opus [A|B]|qwen|...]   (default codex-a, operator 23 Oct 2026:
 # qwen hit its 40-call cap without a verdict three times that day)
 # FLO_PREFLIGHT_DRAFT=1: an early pass on a story not ready yet; logs to <S>.preflight-draft.log and
 # files no record, so `flo start` still needs a real pre-flight once its deps merge.
 # Runs in a detached checkout of the milestone under .scratch, so a stray write cannot reach the runner.
 set -eu
-S="$1"; A="${2:-codex}"
+S="$1"; A="${2:-codex-a}"; [ "$A" = codex ] && A=codex-a
 R="$(cd "$(dirname "$0")/../.." && pwd)"; D="$R/.scratch"
 # same invocation as agents/fleet.toml: the venv has no PyYAML after a uv sync
 export XDG_CACHE_HOME="$HOME/.cache" UV_CACHE_DIR="$HOME/.cache/uv"
@@ -42,9 +42,9 @@ End with exactly one line: \`PREFLIGHT: pass <N>\` or \`PREFLIGHT: fail <N>\`, N
 Pass when nothing found would make an author block or build the wrong thing; minor naming slips are pass.
 EOF
 cd "$W"
-if [ "$A" = codex ]; then
+if [ "$A" = codex-a ]; then
   # effort pinned on the command line, as in review.sh: an inherited config.toml once ran `low`
-  codex exec -m "$M" -c model_reasoning_effort=medium -c project_doc_max_bytes=0 -s read-only \
+  CODEX_HOME="$HOME/.$A" codex exec -m "$M" -c model_reasoning_effort=medium -c project_doc_max_bytes=0 -s read-only \
     --skip-git-repo-check "$(cat "$P")" < /dev/null > "$L" 2>&1 || true
 elif [ "$A" = opus ]; then
   # roles.json preflight_reviewer = opus-<acct>: a fresh read-only session; $3 = account (default A)

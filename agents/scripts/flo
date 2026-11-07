@@ -310,6 +310,11 @@ def assignment_for(epic, st, fleet, sp, exclude=()):
         cap = cfg.get("max_author_size")
         if cap and size_rank[st["s"]] > size_rank[cap]:
             return False
+        if cfg.get("max_workers") and sum(1 for _, o in stories(roadmap()) if o["st"] in {"design", "in_progress"}
+                                          and (worktree_path(o["id"]) / "task.json").exists()
+                                          and json.loads((worktree_path(o["id"]) / "task.json").read_text()).get("author") == name
+                                          ) >= cfg["max_workers"]:
+            return False  # Codex has no resume: its single worker slot is busy
         if cfg.get("accounts") and not free_accounts(name, cfg):
             return False  # every worker slot on every account is busy: overflow to the next author
         if cfg.get("monthly_budget_usd"):
@@ -558,6 +563,7 @@ def cmd_launch_model(argv):
     # a release review (a milestone id) has no story packet: the value is printed, not recorded
     pkt = json.loads(task.read_text()) if task.exists() else None
     agent = reviewer or (pkt or {}).get("author")
+    agent = "codex-a" if agent == "codex" else agent        # legacy name: the reviewer profile
     if not agent:
         die(f"no task packet for {args[0]} and no --reviewer given")
     cfg = (load_yaml(FLEET).get("agents") or {}).get(agent)
@@ -575,13 +581,20 @@ def cmd_launch_model(argv):
     print(value)
 
 
+def codex_sessions_root():
+    """Sessions dir of the Codex profile this process runs under (CODEX_HOME), default ~/.codex."""
+    return Path(os.environ.get("CODEX_HOME") or Path.home() / ".codex") / "sessions"
+
+
 def cmd_codex_usage(argv):
     """Append Codex's cap reading after a review to .scratch/codex-usage.jsonl, so the pilot can
     say what one review costs and how soon four lanes reach the cap. Source: the rate_limits
     lines Codex writes into its own session logs (what its /status shows)."""
     if len(argv) < 2:
-        die("usage: flo codex-usage <STORY_ID> <started-iso>")
-    root = Path.home() / ".codex" / "sessions"
+        die("usage: flo codex-usage <STORY_ID> <started-iso> [codex-a|codex-b]")
+    profile = argv[2] if len(argv) > 2 else "codex-a"
+    logname = argv[3] if len(argv) > 3 else profile        # a legacy `codex` review logs as <story>.codex.log
+    root = codex_sessions_root()
     files = sorted(root.glob("*/*/*/rollout-*.jsonl"), key=lambda f: f.stat().st_mtime)[-8:]
     lines = [ln for f in files for ln in f.read_text().splitlines()[-300:] if '"rate_limits"' in ln]
     # Codex also logs a per-model "premium" limit with null windows; only the account's
@@ -592,12 +605,12 @@ def cmd_codex_usage(argv):
     limits = (latest.get("payload") or {}).get("rate_limits") or {}
     # The model and effort the review ran, from its own log header (`model:`, `reasoning effort:`),
     # not from the rollouts: Codex's internal codex-auto-review session writes those too.
-    log = ROOT / ".scratch" / f"{argv[0]}.codex.log"
+    log = ROOT / ".scratch" / f"{argv[0]}.{logname}.log"
     head = log.read_text(errors="replace").splitlines()[:40] if log.exists() else []
     ran = {k: v.strip() for k, _, v in (ln.partition(":") for ln in head)
            if k in ("model", "reasoning effort")}
     ran["effort"] = ran.pop("reasoning effort", None)
-    rec = {"story": argv[0], "start": argv[1], "end": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+    rec = {"story": argv[0], "profile": profile, "start": argv[1], "end": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
            "model": ran.get("model"), "effort": ran.get("effort"),
            "five_hour": limits.get("primary"), "weekly": limits.get("secondary")}
     out = ROOT / ".scratch" / "codex-usage.jsonl"
@@ -793,7 +806,7 @@ def cmd_codex_guard(argv):
     guard started whose session ran in that worktree."""
     wt, cap, pid = argv[0], int(argv[1]), int(argv[2])
     deadline = time.time() + (int(argv[3]) if len(argv) > 3 else 900)
-    root, t0, mine = Path.home() / ".codex" / "sessions", time.time(), None
+    root, t0, mine = codex_sessions_root(), time.time(), None
     while True:
         try:
             os.kill(pid, 0)
@@ -1343,10 +1356,10 @@ def _claude_session():
     return None, "unavailable: not running inside Claude Code"
 
 
-def _codex_session(cwd):
-    root = Path.home() / ".codex" / "sessions"
+def _codex_session(cwd, home=None):
+    root = Path(home) / "sessions" if home else codex_sessions_root()
     if not root.exists():
-        return None, "unavailable: ~/.codex/sessions missing"
+        return None, f"unavailable: {root} missing"
     best = None
     for f in root.rglob("rollout-*.jsonl"):
         try:
@@ -1395,8 +1408,8 @@ def detect_session(agent, cwd):
     extra = {}
     if agent == "opus":
         sid, src = _claude_session()
-    elif agent == "codex":
-        sid, src = _codex_session(cwd)
+    elif agent in ("codex", "codex-a", "codex-b"):
+        sid, src = _codex_session(cwd, None if agent == "codex" else Path.home() / f".{agent}")
     elif agent.startswith("opencode"):
         cfg = load_yaml(FLEET)["agents"].get(agent, {})
         sid, src, extra = _opencode_session(cwd, cfg.get("model"))

@@ -242,6 +242,8 @@ on 25 Oct) and approved E12-S06 (money, L) with 0 findings. `ungated_reviewers` 
 limit is shared across all its free models and ran out after three runs, none reaching a verdict.
 Pre-flights stay on Codex; `FLO_PREFLIGHT_DRAFT=1 preflight.sh` runs one early without filing a record.
 
+**7 Nov 2026 — two Codex logins. Operator.** `~/.codex-a` = **codex-a**, reviewer for every story; `~/.codex-b` = **codex-b**, overflow author (Sonnet first; codex-b only when no Sonnet worker slot is free, one at a time, no gated tags). Each launch sets `CODEX_HOME`, so usage caps, rollouts, logs (`.scratch/<S>.codex-a.log`) and verdicts (`reviews/<S>.codex-a.json`) never mix. Office and Mission Control show "Codex A · reviewer" and "Codex B · author" with separate limit meters. A bare `codex` in an older task.json (E13-S10, E13-S15 reviewers) still works: it runs as codex-a under the old file names. Supervisor reads `codex-a`/`codex-b` limits from `fleet.toml` (`codex` is the fallback). Capped Claude accounts do not trigger overflow; only a full slot count does.
+
 **Merge authority:** the operator has delegated GitHub merges for M0 to Opus, with the
 instruction to space them out so the repository does not read as bot-driven. Outside M0 the
 standing rule holds: push, never merge.
