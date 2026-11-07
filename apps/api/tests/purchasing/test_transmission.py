@@ -168,7 +168,7 @@ def test_issue_refuses_a_po_with_no_recipient_until_a_contact_receives_documents
     added = contact(db, "Dock", "dock@example.com")
     assert run(db, po).status == "issued"  # plant: no refresh of the empty list -> 409 again
     assert sql(db, "SELECT recipients FROM purchase_order") == [
-        ([{"name": "Dock", "email": "dock@example.com"}],)
+        ([{"name": "Dock", "email": "dock@example.com", "contact_id": str(added.id)}],)
     ]
     assert [r[1] for r in rows(db, po)] == [added.email]
 

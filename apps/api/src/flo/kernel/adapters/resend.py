@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import base64
+import binascii
+import hashlib
+import hmac
 import json
 import urllib.error
 import urllib.request
@@ -11,6 +14,9 @@ from typing import cast
 
 from flo.kernel.config import Settings
 from flo.kernel.ports.email import (
+    DomainChecker,
+    DomainResult,
+    DomainStatus,
     EmailAttachment,
     EmailSender,
     PermanentEmailError,
@@ -18,7 +24,9 @@ from flo.kernel.ports.email import (
 )
 
 _RESEND_EMAILS_URL = "https://api.resend.com/emails"
+_RESEND_DOMAINS_URL = "https://api.resend.com/domains"
 type HttpRequester = Callable[[str, Mapping[str, str], bytes, float], tuple[int, bytes]]
+type GetRequester = Callable[[str, Mapping[str, str], float], tuple[int, bytes]]
 
 
 def _request(
@@ -28,6 +36,15 @@ def _request(
     timeout_seconds: float,
 ) -> tuple[int, bytes]:
     request = urllib.request.Request(url, data=body, headers=dict(headers), method="POST")
+    try:
+        with urllib.request.urlopen(request, timeout=timeout_seconds) as response:  # noqa: S310
+            return response.status, response.read()
+    except urllib.error.HTTPError as error:
+        return error.code, error.read()
+
+
+def _get_request(url: str, headers: Mapping[str, str], timeout_seconds: float) -> tuple[int, bytes]:
+    request = urllib.request.Request(url, headers=dict(headers), method="GET")
     try:
         with urllib.request.urlopen(request, timeout=timeout_seconds) as response:  # noqa: S310
             return response.status, response.read()
@@ -143,4 +160,104 @@ def create_resend_sender(settings: Settings) -> ResendEmailSender:
         settings.resend_api_key.get_secret_value(),
         settings.email_from,
         timeout_seconds=settings.email_timeout_seconds,
+    )
+
+
+def _record_result(records: list[dict[str, object]], kind: str) -> DomainResult:
+    states = [r.get("status") for r in records if r.get("record") == kind]
+    if "failed" in states:
+        return "fail"
+    return "pass" if states and all(x == "verified" for x in states) else "unknown"
+
+
+class ResendDomainChecker(DomainChecker):
+    """Read SPF and DKIM state of one Resend domain with the full-access domain key."""
+
+    def __init__(
+        self,
+        api_key: str,
+        domain_id: str,
+        from_address: str,
+        *,
+        timeout_seconds: float = 10.0,
+        requester: GetRequester = _get_request,
+    ) -> None:
+        if not api_key or not domain_id:
+            raise ValueError("Resend domain check is not configured")
+        self._api_key = api_key
+        self._domain_id = domain_id
+        self._from_domain = from_address.rpartition("@")[2].lower()
+        self._timeout_seconds = timeout_seconds
+        self._requester = requester
+
+    def domain_status(self) -> DomainStatus:
+        try:
+            status, body = self._requester(
+                f"{_RESEND_DOMAINS_URL}/{self._domain_id}",
+                {"Authorization": f"Bearer {self._api_key}"},
+                self._timeout_seconds,
+            )
+        except (TimeoutError, urllib.error.URLError, OSError):
+            raise TransientEmailError("email provider request did not complete") from None
+        if status in {408, 425, 429} or status >= 500:
+            raise TransientEmailError("email provider is temporarily unavailable")
+        if status < 200 or status >= 300:
+            raise PermanentEmailError("email provider rejected the request")
+        try:
+            document = json.loads(body)
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            raise PermanentEmailError("email provider returned an invalid response") from None
+        if not isinstance(document, dict):
+            raise PermanentEmailError("email provider returned an invalid response")
+        raw = cast(object, document.get("records"))
+        records = [r for r in raw if isinstance(r, dict)] if isinstance(raw, list) else []
+        spf, dkim = _record_result(records, "SPF"), _record_result(records, "DKIM")
+        name = str(document.get("name", ""))
+        notes = [
+            f"{r.get('record')} {r.get('type')} {r.get('name')}: {r.get('status')}"
+            for r in records
+            if r.get("record") in ("SPF", "DKIM") and r.get("status") != "verified"
+        ]
+        if name.lower() != self._from_domain:
+            spf = dkim = "fail"
+            notes.append(f"EMAIL_FROM is not on {name}")
+        return DomainStatus(spf, dkim, "; ".join(notes)[:500])
+
+
+def create_resend_domain_checker(settings: Settings) -> ResendDomainChecker:
+    if settings.resend_domain_api_key is None or settings.resend_domain_id is None:
+        raise RuntimeError("Resend domain check is not configured")
+    return ResendDomainChecker(
+        settings.resend_domain_api_key.get_secret_value(),
+        settings.resend_domain_id,
+        settings.email_from,
+        timeout_seconds=settings.email_timeout_seconds,
+    )
+
+
+def verify_svix(
+    secret: str,
+    svix_id: str | None,
+    svix_timestamp: str | None,
+    svix_signature: str | None,
+    body: bytes,
+    now: float,
+    tolerance_seconds: int = 300,
+) -> bool:
+    """Svix webhook signature: HMAC-SHA256 over `id.timestamp.body`, any `v1,` entry may match."""
+    if not (svix_id and svix_timestamp and svix_signature):
+        return False
+    try:
+        issued = int(svix_timestamp)
+        key = base64.b64decode(secret.removeprefix("whsec_"), validate=True)
+    except (ValueError, binascii.Error):
+        return False
+    if abs(now - issued) > tolerance_seconds:
+        return False
+    signed = f"{svix_id}.{svix_timestamp}.".encode() + body
+    expected = base64.b64encode(hmac.new(key, signed, hashlib.sha256).digest()).decode()
+    return any(
+        hmac.compare_digest(expected, entry[3:])
+        for entry in svix_signature.split()
+        if entry.startswith("v1,")
     )

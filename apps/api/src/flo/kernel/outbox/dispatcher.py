@@ -88,8 +88,12 @@ def _attachments(raw: object) -> list[EmailAttachment]:
     return out
 
 
-def email_handler(sender: EmailSender) -> OutboxHandler:
-    """Map the closed email payload contract onto the provider-neutral port."""
+def email_handler(
+    sender: EmailSender, *, domain_gate: Callable[[str], str | None] | None = None
+) -> OutboxHandler:
+    """Map the closed email payload contract onto the provider-neutral port.
+
+    `domain_gate(template)` returns a refusal reason or None; it never touches the database."""
 
     def deliver(row: OutboxRecord) -> str:
         required = {"to", "template", "context"}
@@ -107,6 +111,8 @@ def email_handler(sender: EmailSender) -> OutboxHandler:
             or not isinstance(context, Mapping)
         ):
             raise PermanentOutboxError("outbox email payload has invalid field types")
+        if domain_gate is not None and (reason := domain_gate(template)) is not None:
+            raise PermanentOutboxError(reason)
         extra: dict[str, object] = {}
         if "attachments" in row.payload:  # absent: call send exactly as before
             extra["attachments"] = _attachments(row.payload["attachments"])

@@ -72,7 +72,7 @@ def issue(conn: Conn, scope: Scope, po_id: UUID, actor_id: UUID, if_match: str |
         if expected != version:
             raise conflict("stale_version", "The purchase order changed. Reload it and retry.")
         recipients = h["recipients"] or [
-            r.model_dump()
+            r.model_dump(mode="json")
             for r in VendorService(conn, scope, actor_id).document_recipients(
                 cast(UUID, h["vendor_id"])
             )

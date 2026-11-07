@@ -42,12 +42,14 @@ from flo.modules.purchasing.schemas import (
     PoTransmissionRead,
     PoVersionRead,
     PurchaseOrderTransitionCreate,
+    SuppressionDelete,
     TransmissionResend,
 )
 from flo.modules.purchasing.service import PurchaseOrderService
-from flo.modules.purchasing.transmission import list_transmissions, resend
+from flo.modules.purchasing.transmission import list_transmissions, remove_suppression, resend
 
 router = APIRouter(prefix="/api/v1/purchase-orders", tags=["purchasing"])
+suppressions_router = APIRouter(prefix="/api/v1/admin/email-suppressions", tags=["administration"])
 
 
 def _unit(unit_id: UUID) -> TargetProtocol:
@@ -427,3 +429,16 @@ def mark_po_attachment(
     return PurchaseOrderService(connection, scope, context.user_id).mark_attachment(
         id, aid, body.vendor_facing
     )
+
+
+@suppressions_router.delete("/{id}", status_code=204)
+def delete_email_suppression(
+    id: UUID,
+    body: SuppressionDelete,
+    context: Annotated[
+        AuthorizationContext, Depends(require("org.setting.manage", organization_target))
+    ],
+    connection: Connection,
+) -> Response:
+    remove_suppression(connection, current_scope(), context.user_id, id, body.reason)
+    return Response(status_code=204)

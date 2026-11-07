@@ -37,10 +37,12 @@ from flo.api.org import router as org_router
 from flo.api.origin_auth import require_origin_secret
 from flo.api.projects import router as projects_router
 from flo.api.purchasing import router as purchasing_router
+from flo.api.purchasing import suppressions_router
 from flo.api.requisitions import router as requisitions_router
 from flo.api.sourcing import router as sourcing_router
 from flo.api.vendor_questionnaires import router as vendor_questionnaires_router
 from flo.api.vendors import router as vendors_router
+from flo.api.webhooks import router as webhooks_router
 from flo.api.workflows import router as workflows_router
 from flo.kernel.authz import PermissionResolverFactory, install_authorization, public_route
 from flo.kernel.config import Settings, enforce_argon2_memory_limit
@@ -121,6 +123,8 @@ app.include_router(vendors_router)
 app.include_router(vendor_questionnaires_router)
 app.include_router(sourcing_router)
 app.include_router(purchasing_router)
+app.include_router(suppressions_router)
+app.include_router(webhooks_router)
 app.include_router(catalogue_router)
 app.include_router(budget_router)
 app.include_router(imports_router)

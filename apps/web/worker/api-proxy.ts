@@ -2,6 +2,7 @@ import { internalJobRequest, tickJobs } from "../../../infra/cron-worker/jobs-ti
 
 const API_PREFIX = "/api";
 const ORIGIN_SECRET_HEADER = "X-FLO-Origin-Secret";
+const EMAIL_WEBHOOK_PATH = "/api/v1/webhooks/email";
 
 export interface WorkerEnvironment {
   CLOUD_RUN_ORIGIN: string;
@@ -42,6 +43,7 @@ export function cloudRunRequest(request: Request, environment: WorkerEnvironment
   }
 
   const origin = parseCloudRunOrigin(environment.CLOUD_RUN_ORIGIN);
+  const isEmailWebhook = request.method === "POST" && incoming.pathname === EMAIL_WEBHOOK_PATH;
   incoming.protocol = origin.protocol;
   incoming.host = origin.host;
   incoming.pathname = incoming.pathname.slice(API_PREFIX.length) || "/";
@@ -56,6 +58,19 @@ export function cloudRunRequest(request: Request, environment: WorkerEnvironment
   const visitor = request.headers.get("CF-Connecting-IP");
   if (visitor) upstream.headers.set("X-FLO-Client-IP", visitor);
   upstream.headers.set(ORIGIN_SECRET_HEADER, originSharedSecret(environment));
+  if (isEmailWebhook) {
+    // Resend is not a browser: it takes part in the CSRF and idempotency protocol through this
+    // proxy (as the cron does) instead of the API exempting the route. The whole Cookie header
+    // is replaced, so no browser session cookie can ride along. The Svix headers and the body
+    // pass through unchanged; the delivery's own svix-id is the idempotency key.
+    const csrf = crypto.randomUUID();
+    upstream.headers.set("Cookie", `flo_csrf=${csrf}`);
+    upstream.headers.set("X-CSRF-Token", csrf);
+    // a caller-supplied key must never survive: without svix-id the API answers 400
+    upstream.headers.delete("Idempotency-Key");
+    const svixId = request.headers.get("svix-id");
+    if (svixId) upstream.headers.set("Idempotency-Key", svixId);
+  }
   return upstream;
 }
 
@@ -84,6 +99,7 @@ async function runScheduledWork(environment: WorkerEnvironment, scheduledTime: n
       : hour === 2 ? "/internal/jobs/budget-reconcile"
       : hour === 3 ? "/internal/jobs/requisition-expiry"
       : hour === 4 ? "/internal/jobs/vendor-document-expiry"
+      : hour === 5 ? "/internal/jobs/email-domain-check"
       : hour === 7 ? "/internal/jobs/approval-reminders" : null;
     if (path) {
       work.push(fetch(internalJobRequest(path, origin, environment)).then(response => {

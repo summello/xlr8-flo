@@ -633,6 +633,36 @@ def test_deploy_resource_check_rejects_a_missing_resend_secret_and_then_passes(
     assert_accepts(run_gate(command, cwd=project))
 
 
+@pytest.mark.parametrize(
+    "reference",
+    [
+        "RESEND_DOMAIN_API_KEY=flo-resend-domain-api-key:latest",
+        "RESEND_WEBHOOK_SECRET=flo-resend-webhook-secret:latest",
+    ],
+)
+def test_deploy_resource_check_rejects_a_missing_email_deliverability_secret(
+    tmp_path: Path, reference: str
+) -> None:
+    project = tmp_path / "repo"
+    workflow = project / ".github" / "workflows" / "ci.yml"
+    config = project / "apps" / "api" / "src" / "flo" / "kernel" / "config.py"
+    script = project / "apps" / "api" / "scripts" / "check_deploy_resources.py"
+    for path in (workflow, config, script):
+        path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(ROOT / ".github" / "workflows" / "ci.yml", workflow)
+    shutil.copy2(ROOT / "apps" / "api" / "src" / "flo" / "kernel" / "config.py", config)
+    shutil.copy2(ROOT / "apps" / "api" / "scripts" / "check_deploy_resources.py", script)
+    clean_workflow = workflow.read_bytes()
+    source = workflow.read_text(encoding="utf-8")
+    planted = source.replace("," + reference, "", 1)
+    assert planted != source, "the deploy step must map the secret"
+    workflow.write_text(planted, encoding="utf-8")
+    command = [sys.executable, str(script), "--workflow", str(workflow), "--config", str(config)]
+    assert_rejects(run_gate(command, cwd=project), "MISSING", reference)
+    workflow.write_bytes(clean_workflow)
+    assert_accepts(run_gate(command, cwd=project))
+
+
 def test_deploy_resource_check_rejects_a_missing_mfa_secret_and_then_passes(
     tmp_path: Path,
 ) -> None:

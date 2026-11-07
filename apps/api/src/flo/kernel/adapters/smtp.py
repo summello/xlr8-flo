@@ -10,6 +10,8 @@ from email.message import EmailMessage
 
 from flo.kernel.config import Settings
 from flo.kernel.ports.email import (
+    DomainChecker,
+    DomainStatus,
     EmailAttachment,
     EmailSender,
     PermanentEmailError,
@@ -99,3 +101,10 @@ def create_smtp_sender(settings: Settings) -> SmtpEmailSender:
         settings.email_from,
         timeout_seconds=settings.email_timeout_seconds,
     )
+
+
+class SmtpDomainChecker(DomainChecker):
+    """Local mail catcher: nothing to verify."""
+
+    def domain_status(self) -> DomainStatus:
+        return DomainStatus("unknown", "unknown", "Local mail catcher")

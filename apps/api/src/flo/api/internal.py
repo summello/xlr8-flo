@@ -23,13 +23,19 @@ from flo.api.authz_factory import production_authorization_resolver
 from flo.api.origin_auth import require_origin_secret
 from flo.kernel.authz import PermissionResolverFactory, public_route
 from flo.kernel.config import Settings
-from flo.kernel.email import create_email_sender
+from flo.kernel.email import (
+    create_domain_checker,
+    create_email_sender,
+    latest_domain_status,
+    po_domain_gate,
+)
 from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.jobs import JobRunner
 from flo.kernel.jobs.runner import RunnerConnection
 from flo.kernel.logging import correlation_context
 from flo.kernel.outbox import OutboxDispatcher, email_handler
 from flo.kernel.outbox.dispatcher import DispatcherConnection
+from flo.kernel.ports.email import PermanentEmailError, TransientEmailError
 from flo.kernel.storage import create_storage
 from flo.kernel.tenancy.context import Scope
 from flo.modules.approvals.reminders import job_handler as reminders_job_handler
@@ -368,9 +374,18 @@ def _run_jobs_tick(settings: Settings) -> TickReport:
             },
             random_fraction=random.random,
         ).run(25.0)
+        # read once, in its own transaction: a bare SELECT here would open an implicit one and
+        # `connection.close()` would roll back every `sent` the dispatcher commits as savepoints
+        with connection.transaction():
+            domain_status = latest_domain_status(connection)
         outbox = OutboxDispatcher(
             cast(DispatcherConnection, connection),
-            {"email": email_handler(create_email_sender(settings))},
+            {
+                "email": email_handler(
+                    create_email_sender(settings),
+                    domain_gate=po_domain_gate(settings, domain_status),
+                )
+            },
             random_fraction=random.random,
         ).run(25.0)
     finally:
@@ -658,3 +673,42 @@ async def fx_ingest(
 ) -> FxIngestReport:
     """Require origin secret and Idempotency-Key, no replay; repeats retain existing rates."""
     return await asyncio.to_thread(_run_fx_ingest, settings, fetcher)
+
+
+class EmailDomainCheckReport(BaseModel):
+    spf: Literal["pass", "fail", "unknown"]
+    dkim: Literal["pass", "fail", "unknown"]
+
+
+def _run_email_domain_check(settings: Settings) -> EmailDomainCheckReport:
+    if settings.database_url is None:
+        raise RuntimeError("DATABASE_URL is not configured")
+    try:
+        status = create_domain_checker(settings).domain_status()
+    except (TransientEmailError, PermanentEmailError):
+        # no row: the last stored status stays in force, so a provider blip stops nothing
+        raise ProblemError(
+            ErrorCode.SERVICE_UNAVAILABLE, checks={"problem": "email_domain_check_unavailable"}
+        ) from None
+    with psycopg.connect(settings.database_url.get_secret_value()) as connection:
+        connection.execute(
+            "INSERT INTO email_domain_status (spf, dkim, detail) VALUES (%s, %s, %s)",
+            (status.spf, status.dkim, status.detail),
+        )
+    return EmailDomainCheckReport(spf=status.spf, dkim=status.dkim)
+
+
+@router.post(
+    "/internal/jobs/email-domain-check",
+    response_model=EmailDomainCheckReport,
+    include_in_schema=False,
+)
+@public_route
+async def email_domain_check(
+    settings: Annotated[Settings, Depends(get_internal_settings)],
+) -> EmailDomainCheckReport:
+    """Require origin secret and Idempotency-Key; never replayed.
+
+    A repeat appends another status row.
+    """
+    return await asyncio.to_thread(_run_email_domain_check, settings)

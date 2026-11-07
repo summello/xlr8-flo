@@ -7841,6 +7841,77 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E13-S10",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "security"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 2
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "e02ae174-7739-4592-a5d4-47e994d691b6",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S10",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": null,
+          "source": "launch-model",
+          "model": "gpt-5.6-sol"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": null,
+          "source": "unavailable: no codex rollout with cwd=/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S10"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Added SPF/DKIM domain check and a production gate on po- emails, a signed Resend webhook that routes events to the tenant through email_message_route, a transition-guarded transmission result with fixed reasons, and an org-scoped suppression list with an admin delete. Migration 0089, proxy CSRF/idempotency shim, hour-5 job, deploy and SETUP wiring included.",
+      "title": "Deliverability: SPF/DKIM/DMARC verification, bounce and complaint handling, suppression list",
+      "durations": {
+        "wall_s": 57681,
+        "author_s": 42241,
+        "review_s": {
+          "codex": 22,
+          "opus": 387
+        },
+        "gate_s": 1037
+      }
     }
   ]
 }

@@ -215,11 +215,13 @@ class ContactRead(BaseModel):
     created_at: datetime
     updated_at: datetime
     version: int
+    suppressed: bool  # E13-S10: the address is on the email suppression list
 
 
 class Recipient(BaseModel):
     name: str
     email: str
+    contact_id: UUID | None = None  # E13-S10: attributes a bounce to the contact
 
 
 type DocStateName = Literal["missing", "rejected", "expired", "expiring", "unverified", "ok"]

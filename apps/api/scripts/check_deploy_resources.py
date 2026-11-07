@@ -21,6 +21,8 @@ REQUIRED_SECRET_REFERENCES = {
     "S3_SECRET_ACCESS_KEY": "flo-r2-secret-access-key:latest",
     "RESEND_API_KEY": "flo-resend-api-key:latest",
     "MFA_ENCRYPTION_KEY": "flo-mfa-encryption-key:latest",
+    "RESEND_WEBHOOK_SECRET": "flo-resend-webhook-secret:latest",
+    "RESEND_DOMAIN_API_KEY": "flo-resend-domain-api-key:latest",
 }
 REQUIRED_RUNTIME_CONFIGURATION = {
     "STORAGE_PROVIDER": "r2",
@@ -31,6 +33,7 @@ REQUIRED_RUNTIME_CONFIGURATION = {
     "ARTIFACT_REGISTRY_REPOSITORY": "flo",
     "EMAIL_PROVIDER": "resend",
     "EMAIL_FROM": "notifications@mail.summello.com",
+    "RESEND_DOMAIN_ID": "f71820d9-2fda-486d-8bcd-48c1390a009e",
 }
 
 

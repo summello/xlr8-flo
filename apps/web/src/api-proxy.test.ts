@@ -41,6 +41,51 @@ describe("Cloudflare API proxy", () => {
     await expect(upstream.text()).resolves.toBe("probe");
   });
 
+  it("makes the email webhook take part in CSRF and idempotency, and nothing else", async () => {
+    const webhook = cloudRunRequest(
+      new Request("https://xlr8flo.summello.com/api/v1/webhooks/email", {
+        method: "POST",
+        headers: {
+          Cookie: "flo_session=browser-session; flo_csrf=forged",
+          "svix-id": "msg_abc",
+          "svix-timestamp": "1",
+          "svix-signature": "v1,x",
+        },
+        body: "{}",
+      }),
+      environment,
+    );
+    const csrf = webhook.headers.get("x-csrf-token");
+    expect(csrf).toBeTruthy();
+    expect(webhook.headers.get("cookie")).toBe(`flo_csrf=${csrf}`);
+    expect(webhook.headers.get("idempotency-key")).toBe("msg_abc");
+    expect(webhook.headers.get("svix-signature")).toBe("v1,x");
+    await expect(webhook.text()).resolves.toBe("{}");
+    const keyed = cloudRunRequest(
+      new Request("https://xlr8flo.summello.com/api/v1/webhooks/email", {
+        method: "POST",
+        headers: { "Idempotency-Key": "caller-chosen" },
+        body: "{}",
+      }),
+      environment,
+    );
+    // plant: drop the delete -> the caller's key survives without svix-id
+    expect(keyed.headers.get("idempotency-key")).toBeNull();
+    // plant: drop the path or method check and these other requests get a synthesized pair
+    for (const [method, path] of [["POST", "/api/v1/webhooks/other"], ["GET", "/api/v1/webhooks/email"]]) {
+      const other = cloudRunRequest(
+        new Request(`https://xlr8flo.summello.com${path}`, {
+          method,
+          headers: { Cookie: "flo_session=browser-session", "svix-id": "msg_abc" },
+        }),
+        environment,
+      );
+      expect(other.headers.get("x-csrf-token")).toBeNull();
+      expect(other.headers.get("idempotency-key")).toBeNull();
+      expect(other.headers.get("cookie")).toBe("flo_session=browser-session");
+    }
+  });
+
   it("overwrites a caller-supplied origin secret", () => {
     const upstream = cloudRunRequest(
       new Request("https://xlr8flo.summello.com/api/healthz", {
@@ -197,6 +242,8 @@ it.each([
   [2, 30, "/internal/jobs/budget-reconcile"],
   [3, 30, "/internal/jobs/requisition-expiry"],
   [4, 30, "/internal/jobs/vendor-document-expiry"],
+  [5, 30, "/internal/jobs/email-domain-check"],
+  [5, 0, null],
   [7, 30, "/internal/jobs/approval-reminders"],
   [4, 0, null],
   [3, 0, null],
