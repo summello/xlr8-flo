@@ -2132,7 +2132,7 @@ epics:
           - EML-006
         dep:
           - E13-S09
-        st: todo
+        st: in_progress
       - id: E13-S11
         t: Internal vs vendor-facing notes and attachments, enforced by test
         k: security
