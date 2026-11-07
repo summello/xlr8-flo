@@ -2329,7 +2329,7 @@ epics:
         dep:
           - E13-S07
           - E13-S09
-        st: todo
+        st: in_progress
       - id: E13-S25
         t: Per-file vendor-facing mark on PO attachments (records intent, sends nothing until E19-S04)
         k: security
