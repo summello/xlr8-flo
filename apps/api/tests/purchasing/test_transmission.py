@@ -404,6 +404,7 @@ def test_transmission_routes_conceal_foreign_tenants(lifecycle_db):
     db, _ = lifecycle_db
     po = issued_po(db)
     other = foreign_po(db)
+    sql(db, "UPDATE purchase_order SET status = 'cancelled' WHERE id = %s RETURNING 1", (other,))
 
     async def scenario():
         async with client(app) as browser:

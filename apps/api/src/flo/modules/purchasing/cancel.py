@@ -3,7 +3,8 @@
 Cancel lock order, one transaction: the PO read unlocked, the award, project balances (id order),
 the requisition, the approval instance (only for a PO pending approval), the PO row. That is
 `ChangeService._lock`'s order with the main project and the instance added. Reduce is a
-quantities-only change order through E13-S06, so there is one release path.
+quantities-only change order through E13-S06, so there is one release path. The vendor's
+cancellation notice is E13-S24's: `transmission.enqueue_cancellation`, in the cancel transaction.
 """
 
 from decimal import Decimal
@@ -18,6 +19,7 @@ from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.approvals.service import withdraw
 from flo.modules.budget.service import lock_balance, release_commitment, reservation_remaining
 from flo.modules.projects.service import ProjectService
+from flo.modules.purchasing import transmission
 from flo.modules.purchasing.changes import ChangeService
 from flo.modules.purchasing.lifecycle import parse_if_match, transition
 from flo.modules.purchasing.schemas import (
@@ -50,11 +52,6 @@ type Conn = psycopg.Connection[tuple[object, ...]]
 NOT_ISSUED_NOTICE = (
     "Requisition lines were not cancelled: the PO was never issued. Cancel them on the requisition."
 )
-
-
-def notify_vendor_cancelled(conn: Conn, scope: Scope, po_id: UUID) -> None:
-    """E13-S09 wires the vendor's cancellation email into the outbox here, in the cancel
-    transaction."""
 
 
 def cancel(
@@ -117,9 +114,14 @@ def cancel(
             _cancel_issued(conn, scope, service, h, lines, entry, cast(str, req[1]), actor_id, body)
         else:
             raise conflict("invalid_transition", "That purchase order cannot be cancelled.")
-        transition(conn, scope, po_id, "cancel", actor_id, version, body.reason)
-        if status == "issued" and body.notify_vendor:
-            notify_vendor_cancelled(conn, scope, po_id)
+        notify = status == "issued" and body.notify_vendor
+        recipients = transmission.cancellation_recipients(conn, scope, po_id) if notify else []
+        transition(
+            conn, scope, po_id, "cancel", actor_id, version, body.reason,
+            after={"vendor_notified": False} if notify and not recipients else None,
+        )  # fmt: skip
+        if recipients:
+            transmission.enqueue_cancellation(conn, scope, po_id, actor_id, recipients)
         return PoCancelRead(**service.get(po_id).model_dump(), notice=notice)
 
 

@@ -7651,6 +7651,71 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E13-S24",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "security"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "e1941f77-1bb7-41e8-b27d-7c7940610c80",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S24",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1b433-7709-7530-aa7c-bf758218ba3d",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "A notified cancel of an issued PO now writes po_transmission rows and outbox emails (template po-cancelled-v1, no reason, no PDF) in the cancel transaction, and resend works on a cancelled PO. A cancel with no recipient proceeds and records vendor_notified=false in its audit.",
+      "title": "Vendor cancellation email for a cancelled issued PO, through the outbox",
+      "durations": {
+        "wall_s": 2866,
+        "author_s": 1524,
+        "review_s": {
+          "codex": 18,
+          "opus": 351
+        },
+        "gate_s": 2
+      }
     }
   ]
 }

@@ -5,6 +5,7 @@ the version they read. `partially_delivered`, `delivered` and `accepted` have no
 goods receipt (M4).
 """
 
+from collections.abc import Mapping
 from typing import cast
 from uuid import UUID
 
@@ -60,6 +61,7 @@ def transition(
     actor_id: UUID | None,
     expected_version: int,
     reason: str | None = None,
+    after: Mapping[str, object] | None = None,
 ) -> str:
     """Lock the PO, check expected_version then the table, write status + version, audit.
 
@@ -96,6 +98,6 @@ def transition(
         outcome=Outcome.SUCCESS,
         reason=reason,
         before={"status": status},
-        after={"status": target},
+        after={"status": target, **(after or {})},
     )
     return target
