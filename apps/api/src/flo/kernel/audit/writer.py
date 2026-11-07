@@ -162,9 +162,7 @@ class AuditWriter(ScopedRepo[AuditRecord]):
             else None
         )
         after = (
-            allowlisted_snapshot(after_source, after_fields)
-            if after_source is not None
-            else None
+            allowlisted_snapshot(after_source, after_fields) if after_source is not None else None
         )
         occurred = self._connection.execute("SELECT clock_timestamp()").fetchone()
         if occurred is None:
@@ -209,6 +207,46 @@ class AuditWriter(ScopedRepo[AuditRecord]):
         if stored is None:
             raise RuntimeError("audit insert did not return its stored row")
         return _record(stored)
+
+
+def audit_event(
+    connection: AuditConnection,
+    scope: Scope,
+    *,
+    actor: AuditActor,
+    action: str,
+    target_type: str,
+    target_id: UUID | None = None,
+    outcome: Outcome = Outcome.SUCCESS,
+    reason: str | None = None,
+    before: object | None = None,
+    after: object | None = None,
+    before_fields: Sequence[str] | None = None,
+    after_fields: Sequence[str] | None = None,
+    ip_address_value: str | None = None,
+    user_agent: str | None = None,
+) -> AuditRecord:
+    """The one way a module writes an audit row; a mapping snapshot allow-lists all its keys."""
+
+    def fields(source: object | None, given: Sequence[str] | None) -> Sequence[str]:
+        if given is not None:
+            return given
+        return tuple(source) if isinstance(source, Mapping) else ()
+
+    return AuditWriter(connection, scope).write(
+        actor=actor,
+        action=action,
+        target_type=target_type,
+        target_id=target_id,
+        outcome=outcome,
+        reason=reason,
+        before_source=before,
+        before_fields=fields(before, before_fields),
+        after_source=after,
+        after_fields=fields(after, after_fields),
+        ip_address_value=ip_address_value,
+        user_agent=user_agent,
+    )
 
 
 class AuditReader(ScopedRepo[AuditRecord]):

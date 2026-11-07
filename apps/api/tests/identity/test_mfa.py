@@ -506,7 +506,8 @@ def build_app(
 
     database.connection.execute("DROP TABLE IF EXISTS login_attempt")
     next(
-        revision for revision in discover_migrations(ROOT / "migrations")
+        revision
+        for revision in discover_migrations(ROOT / "migrations")
         if revision.revision == "20261009_0029"
     ).upgrade(database.connection)
     app.dependency_overrides[get_login_throttle] = lambda: LoginThrottle(

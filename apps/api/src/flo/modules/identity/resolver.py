@@ -10,6 +10,7 @@ from psycopg import sql
 
 from flo.kernel.authz import AuthorizationDecision as DecisionProtocol
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
+from flo.kernel.authz import GrantedScopes
 from flo.kernel.db.repo import ScopedRepo
 from flo.kernel.identity import IdentityId
 from flo.kernel.tenancy.context import Scope
@@ -46,6 +47,9 @@ def _value(row: DatabaseRow, index: int, name: str) -> object:
     if isinstance(row, Mapping):
         return row[name]
     return row[index]
+
+
+HOLDER_CAP = 1000
 
 
 def _scope_cte() -> str:
@@ -164,14 +168,50 @@ class AuthorizationResolver(ScopedRepo[AuthorizationDecision]):
             ),
         )
 
-    def holders(self, permission: str, target: TargetProtocol) -> list[IdentityId]:
-        return self._holders(target, permission=permission_code(permission))
+    def granted_scopes(self, user_id: IdentityId, permission: str) -> GrantedScopes:
+        """Scopes where the user's current assignments carry the permission."""
+
+        rows = self._connection.execute(
+            """
+            SELECT DISTINCT assignment.scope_type, assignment.scope_id
+              FROM user_role AS assignment
+              JOIN role_permission
+                ON role_permission.org_id = assignment.org_id
+               AND role_permission.role_id = assignment.role_id
+             WHERE assignment.org_id = %(org_id)s
+               AND assignment.user_id = %(user_id)s
+               AND role_permission.permission_code = %(permission)s
+               AND (assignment.effective_from IS NULL
+                    OR assignment.effective_from <= CURRENT_TIMESTAMP)
+            """,
+            self.scoped_params({"user_id": user_id, "permission": permission_code(permission)}),
+        ).fetchall()
+        found = [
+            (str(_value(r, 0, "scope_type")), cast(UUID, _value(r, 1, "scope_id"))) for r in rows
+        ]
+        return GrantedScopes(
+            user_id=user_id,
+            org_wide=any(kind == ScopeType.ORG.value for kind, _ in found),
+            bu_ids=frozenset(i for kind, i in found if kind == ScopeType.BU.value),
+            project_ids=frozenset(i for kind, i in found if kind == ScopeType.PROJECT.value),
+        )
+
+    def holders(
+        self, permission: str, target: TargetProtocol, *, limit: int | None = None
+    ) -> list[IdentityId]:
+        """Active holders; `limit=None` is the approvals default cap, `0` lifts it."""
+        return self._holders(target, permission=permission_code(permission), limit=limit)
 
     def role_holders(self, role_code: str, target: TargetProtocol) -> list[IdentityId]:
         return self._holders(target, role_code=role_code)
 
     def _holders(
-        self, target: TargetProtocol, *, permission: str | None = None, role_code: str | None = None
+        self,
+        target: TargetProtocol,
+        *,
+        permission: str | None = None,
+        role_code: str | None = None,
+        limit: int | None = None,
     ) -> list[IdentityId]:
         if target.scope_type is ScopeType.ORG and target.scope_id != self.scope.org_id:
             return []
@@ -188,12 +228,13 @@ class AuthorizationResolver(ScopedRepo[AuthorizationDecision]):
                   WHERE role_permission.org_id = %(org_id)s
                     AND role_permission.role_id = eligible_grants.role_id
                     AND role_permission.permission_code = %(permission)s))
-            ORDER BY identity.id LIMIT 1000
+            ORDER BY identity.id LIMIT %(limit)s
             """,
             self.scoped_params(
                 {
                     "permission": permission,
                     "role_code": role_code,
+                    "limit": (limit or HOLDER_CAP) if limit != 0 else None,
                     "user_id": None,
                     "target_scope_type": cast(ScopeType, target.scope_type).value,
                     "target_scope_id": target.scope_id,

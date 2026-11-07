@@ -43,3 +43,5 @@
 .project-skeleton { display: block; width: var(--space-8); height: var(--leading-body); border-radius: var(--radius-control); background: var(--sunken); }
 .project-loading .project-record-heading { min-height: var(--pill-h); }
 .project-loading .project-tabs { min-height: var(--row-h); }
+.picker { display: grid; gap: var(--space-2); }
+.picker-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }

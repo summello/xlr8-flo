@@ -7,13 +7,12 @@ from uuid import UUID, uuid4
 import psycopg
 from psycopg.types.json import Jsonb
 
-from flo.kernel.audit import ActorKind, AuditActor, AuditWriter
+from flo.kernel.audit import ActorKind, AuditActor, audit_event
 from flo.kernel.audit import Outcome as AuditOutcome
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.authz import PermissionHoldersResolver
 from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.identity import IdentityId
-from flo.kernel.outbox.store import OutboxConnection, OutboxStore
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.approvals import delegation, engine
@@ -32,6 +31,7 @@ from flo.modules.identity.service import (
     AuthorizationResolver,
     IdentityAuthorizationConnection,
     emails_by_id,
+    names_by_id,
 )
 
 DECISION_FIELDS = (
@@ -74,12 +74,16 @@ def _decision_reads(
         cast(IdentityAuthorizationConnection, conn),
         [cast(UUID, id) for row in rows for id in (row[3], row[4]) if id is not None],
     )
+    names = names_by_id(cast(IdentityAuthorizationConnection, conn), list(emails))
     result = []
     for row in rows:
         data = dict(zip((*DECISION_FIELDS, "node_id", "step_label"), row, strict=True))
-        data["actor_email"] = emails.get(cast(UUID, data.pop("actor_id")), "(removed user)")
+        actor = cast(UUID, data.pop("actor_id"))
+        data["actor_email"] = emails.get(actor, "(removed user)")
+        data["actor_name"] = names.get(actor)
         behalf = cast(UUID | None, data.pop("on_behalf_of"))
         data["on_behalf_of_email"] = emails.get(behalf, "(removed user)") if behalf else None
+        data["on_behalf_of_name"] = names.get(behalf) if behalf else None
         result.append(DecisionRead.model_validate(data))
     return result
 
@@ -166,39 +170,20 @@ def _insert(
 def _audit(
     repo: WorkflowRepository, instance: dict[str, object], actor: UUID, id: UUID, before_status: str
 ) -> None:
-    AuditWriter(cast(AuditConnection, repo.connection), repo.scope).write(
+    audit_event(
+        cast(AuditConnection, repo.connection),
+        repo.scope,
         actor=AuditActor(ActorKind.USER, actor),
         action="approval.decision",
         target_type="approval_instance",
         target_id=cast(UUID, instance["id"]),
         outcome=AuditOutcome.SUCCESS,
-        before_source={"status": before_status},
+        before={"status": before_status},
         before_fields=("status",),
-        after_source={"decision_id": id, "status": instance["status"]},
+        after={"decision_id": id, "status": instance["status"]},
         after_fields=("decision_id", "status"),
     )
-    if instance["status"] in {"approved", "rejected", "returned"}:
-        adapter = engine.adapter_for(str(instance["document_type"]))
-        summary = adapter.summaries(
-            repo.connection, repo.scope, [cast(UUID, instance["document_id"])]
-        )[cast(UUID, instance["document_id"])]
-        emails = emails_by_id(
-            cast(IdentityAuthorizationConnection, repo.connection),
-            [cast(UUID, instance["requester_id"])],
-        )
-        recipient = emails.get(cast(UUID, instance["requester_id"]))
-        if recipient is not None:
-            OutboxStore(cast(OutboxConnection, repo.connection), repo.scope).add_email(
-                to=recipient,
-                template="approval-outcome-v1",
-                context={
-                    "document_type": instance["document_type"],
-                    "number": summary.number,
-                    "outcome": instance["status"],
-                    "link": summary.href,
-                },
-                idempotency_key=f"approval:{instance['id']}:{instance['status']}",
-            )
+    engine.notify_outcome(repo, instance)
 
 
 def _end(

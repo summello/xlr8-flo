@@ -2,6 +2,8 @@
 
 > *Amended 9 Oct 2026: sections 7.11 to 7.13 added (links, folds, required fields, ancestry trace, buttons); 7.13 was approved on 10 Oct 2026.*
 >
+> *Amended 21 Oct 2026 (canvas decision 231): the requisition map gains `rejected` danger, `withdrawn` neutral and `expired` warning.*
+>
 > *Amended 13 Oct 2026 (M3 design pass round 1: Vendors, Sourcing, Purchase Orders; transcribed from `canvas/DECISIONS.md` 6h, 6i, 6j): §2.3 gains the `vendor`, `rfq`, `award` and `po_transmission` maps and the purchase-order map takes the operator's nomenclature (`Partially Delivered`, `Delivered`, `Accepted`; decision 169); sections 7.14 to 7.16 added (signal and eligibility, masked value, purchase order issue moment); 7.13's dark-mode values are measured. `tokens.css`, `status/map.ts` and component code follow this text, never the reverse.*
 >
 > **Binding on every UI story.** Page-specific deviations live in `design-system/pages/<page>.md` and override this file only where they say so explicitly.
@@ -132,7 +134,8 @@ export const STATUS: Record<DocType, Record<string, StatusTone>> = {
                  deferred:'warning', completed:'neutral', abandoned:'danger' },
   requisition: { draft:'neutral', approval_pending:'info', sourcing_in_progress:'info',
                  sourced:'info', awarded:'success', open_for_purchase:'info',
-                 completed:'success', cancelled:'danger' },
+                 completed:'success', rejected:'danger', withdrawn:'neutral',
+                 cancelled:'danger', expired:'warning' },
   purchase_order: { draft:'neutral', approval_pending:'info', approved:'info',
                  issued:'success', partially_delivered:'info', delivered:'success',
                  accepted:'success', closed:'neutral', cancelled:'danger',

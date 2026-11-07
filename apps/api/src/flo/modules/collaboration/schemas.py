@@ -26,6 +26,7 @@ class NoteRead(BaseModel):
     id: UUID
     author_id: UUID
     author_email: str
+    author_name: str | None
     body: str
     visibility: Visibility
     locked: bool
@@ -56,5 +57,6 @@ class AttachmentRead(BaseModel):
     scan_status: ScanStatus
     uploaded_by: UUID
     uploaded_by_email: str
+    uploaded_by_name: str | None
     uploaded_at: datetime
     deleted_at: datetime | None

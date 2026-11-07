@@ -112,12 +112,17 @@ class LookupService:
         """Active members of the organization, for naming sponsors."""
         escaped = needle.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         found = self.repo.execute(
-            "SELECT i.id,i.email FROM identity i WHERE i.status='active' AND EXISTS ("
+            "SELECT i.id,i.email,i.display_name FROM identity i "
+            "WHERE i.status='active' AND EXISTS ("
             "SELECT 1 FROM user_role r WHERE r.org_id=%(org_id)s AND r.user_id=i.id) "
-            "AND lower(i.email) LIKE %(like)s ORDER BY lower(i.email) LIMIT %(limit)s",
+            "AND (lower(i.email) LIKE %(like)s OR lower(i.display_name) LIKE %(like)s) "
+            "ORDER BY lower(i.email) LIMIT %(limit)s",
             {"like": "%" + escaped + "%", "limit": limit},
         ).fetchall()
-        return [LookupOption(value=str(r[0]), label=str(r[1])) for r in found]
+        return [
+            LookupOption(value=str(r[0]), label=str(r[2] or r[1]), note=str(r[1]) if r[2] else None)
+            for r in found
+        ]
 
     def _addresses(self, needle: str, bu_id: UUID | None, limit: int) -> list[LookupOption]:
         if bu_id is None:

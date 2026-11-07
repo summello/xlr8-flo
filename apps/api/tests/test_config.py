@@ -135,9 +135,7 @@ def test_startup_refuses_a_cgroup_below_the_argon2_requirement(tmp_path: Path) -
 
 
 @pytest.mark.parametrize("limit", (None, "max"))
-def test_startup_skips_an_unreadable_or_unbounded_cgroup(
-    tmp_path: Path, limit: str | None
-) -> None:
+def test_startup_skips_an_unreadable_or_unbounded_cgroup(tmp_path: Path, limit: str | None) -> None:
     memory_limit = tmp_path / "memory.max"
     if limit is not None:
         memory_limit.write_text(limit, encoding="ascii")

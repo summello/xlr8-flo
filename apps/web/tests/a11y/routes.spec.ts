@@ -2,6 +2,8 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 import { stubWorkflows } from "../e2e/workflow-list-fixture";
+import { stubVendors } from "../e2e/vendors-fixture";
+import { stubQuestionnaires } from "../e2e/vendor-questionnaires-fixture";
 import { stubApprovals } from "../e2e/approvals-fixture";
 import { instanceId, requisition, reqId, reservation, stubRequisitions } from "../e2e/requisitions-fixture";
 import { amendmentRead, quantityChange, stubChanges } from "../e2e/requisition-changes-fixture";
@@ -23,6 +25,8 @@ for (const theme of ["light", "dark"] as const) {
         localStorage.setItem("xlr8flo.theme", selectedTheme);
       }, theme);
       if (route === "/admin/approval-workflows") await stubWorkflows(page);
+      if (route === "/admin/vendor-questionnaires") await stubQuestionnaires(page);
+      if (route === "/vendors") await stubVendors(page);
       if (route.startsWith("/approvals")) await stubApprovals(page);
       if (route.startsWith("/requisitions")) await stubRequisitions(page);
       await page.goto(route);
@@ -134,6 +138,16 @@ for (const theme of ["light", "dark"] as const) {
       expect(summarize((await new AxeBuilder({ page }).analyze()).violations)).toEqual([]);
     });
   }
+
+  test(`approval decision panel at 375 passes axe in ${theme}`, async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.addInitScript(t => localStorage.setItem("xlr8flo.theme", t), theme);
+    await stubApprovals(page);
+    await page.goto("/approvals?tab=pending");
+    await page.locator(".appr-doc").first().click();
+    await expect(page.getByText("Why It Reached You")).toBeVisible();
+    expect(summarize((await new AxeBuilder({ page }).analyze()).violations)).toEqual([]);
+  });
 
   test(`approval availability with errors and the revoke dialog passes axe in ${theme}`, async ({ page }) => {
     await page.addInitScript(t => localStorage.setItem("xlr8flo.theme", t), theme);

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "preview": "vite preview",
     "build": "tsc --noEmit && vite build",
     "generate:api": "python ../api/scripts/export_openapi.py --output src/api/generated/openapi.json && openapi-typescript src/api/generated/openapi.json --default-non-nullable false --output src/api/generated/schema.ts",
     "lint": "eslint src",
@@ -22,7 +23,7 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-hook-form": "^7.86.0",
-    "zod": "^4.4.3"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

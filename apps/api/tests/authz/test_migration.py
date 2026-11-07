@@ -54,8 +54,7 @@ def test_migration_downgrade_preserves_identity_and_audit_data(
     identity_before = database.connection.execute("SELECT count(*) FROM identity").fetchone()
     database.migration.downgrade(database.connection)
     assert (
-        database.connection.execute("SELECT count(*) FROM identity").fetchone()
-        == identity_before
+        database.connection.execute("SELECT count(*) FROM identity").fetchone() == identity_before
     )
     assert database.connection.execute("SELECT to_regclass('public.audit_log')").fetchone() == (
         "audit_log",

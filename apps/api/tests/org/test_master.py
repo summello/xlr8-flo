@@ -66,6 +66,11 @@ GOOD = {
     "payment_term": {"net_days": 30, "discount_percent": "2", "discount_days": 10},
     "item_category": {},
     "service_category": {},
+    "vendor_contact_type": {},
+    "vendor_document_type": {"required": True},
+    "vendor_score_category": {},
+    "vendor_identifier_type": {"unique": True},
+    "rfq_requirement_template": {"requirements": ["Insurance"]},
 }
 
 
@@ -443,3 +448,21 @@ def test_patch_attributes_rejects_bad_values(master_db):
     assert response.status_code == 422
     assert response.json()["checks"]["problem"] == "invalid_attributes"
     assert svc(db).get_master("tax_code", row.id).attributes == {"rate": "20"}
+
+
+@pytest.mark.parametrize("zone", ["Etc/GMT-14", "Etc/GMT+12"])
+def test_master_create_defaults_to_the_utc_date_lookups_use(zone, monkeypatch):
+    # Between them the two zones disagree with UTC's date at every hour of the day, so a default
+    # taken from the local date fails here whenever the suite runs (22 Oct 2026: IST before 05:30).
+    import time
+
+    from flo.modules.org.schemas import MasterCreate
+    from flo.modules.org.service import today
+
+    monkeypatch.setenv("TZ", zone)
+    time.tzset()
+    try:
+        assert MasterCreate(code="X1", name="x").effective_from == today()
+    finally:
+        monkeypatch.undo()
+        time.tzset()

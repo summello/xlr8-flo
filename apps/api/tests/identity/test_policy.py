@@ -18,9 +18,7 @@ def test_compromised_password_is_rejected_regardless_of_length() -> None:
         PolicyViolation.TOO_SHORT,
         PolicyViolation.COMPROMISED,
     )
-    assert policy.verify("passwordpassword").violations == (
-        PolicyViolation.COMPROMISED,
-    )
+    assert policy.verify("passwordpassword").violations == (PolicyViolation.COMPROMISED,)
 
 
 def test_policy_has_no_composition_rule() -> None:
@@ -50,11 +48,7 @@ def test_maximum_is_a_256_character_dos_bound() -> None:
 
 def test_bundled_blocklist_contains_exactly_one_hundred_thousand_hashes() -> None:
     resource = files("flo.kernel.identity.data").joinpath("blocklist.txt")
-    entries = [
-        line
-        for line in resource.read_text(encoding="ascii").splitlines()
-        if line[0] != "#"
-    ]
+    entries = [line for line in resource.read_text(encoding="ascii").splitlines() if line[0] != "#"]
 
     assert len(entries) == 100_000
     assert len(set(entries)) == 100_000

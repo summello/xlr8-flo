@@ -143,7 +143,8 @@ def test_schedule_happy_path_project_patch_variance_and_audit(schedule_db, monke
             )
             assert result.status_code == 200, result.text
             assert result.json()["schedule_variance_days"] == 3
-            assert (await send(browser, "GET", path)).json() == result.json()
+            fetched = await send(browser, "GET", path)
+            assert fetched.json() == result.json() | {"can_edit": True}
 
     asyncio.run(scenario())
     with tenant_transaction(conn, Scope(org)):

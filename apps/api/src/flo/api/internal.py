@@ -40,6 +40,8 @@ from flo.modules.imports.jobs import handlers as import_handlers
 from flo.modules.org.fx import MAX_BYTES, FeedFailure, Fetcher, ingest
 from flo.modules.org.schemas import FxIngestReport
 from flo.modules.requisitions.service import expire_org
+from flo.modules.sourcing import lifecycle as rfq_lifecycle
+from flo.modules.vendors import expiry as vendor_expiry
 
 _logger = logging.getLogger(__name__)
 _METADATA_TOKEN_URL = (
@@ -58,7 +60,7 @@ TickProcessor = Callable[[], Awaitable["TickReport"]]
 @dataclass(frozen=True, slots=True)
 class QuotaPolicy:
     limit: int
-    unit: Literal["bytes", "requests"]
+    unit: Literal["bytes", "requests", "emails"]
     thresholds: tuple[int, ...]
     action: str
     cost: str
@@ -86,6 +88,13 @@ QUOTA_POLICIES: dict[str, QuotaPolicy] = {
         action="Pay-as-you-go",
         cost="~$0.15/mo per 10 GB",
     ),
+    "email_sends": QuotaPolicy(
+        limit=100,
+        unit="emails",
+        thresholds=(80,),
+        action="Transactional sends continue and digests wait; move to Resend's paid tier",
+        cost="$20/mo",
+    ),
     "artifact_registry": QuotaPolicy(
         limit=_DECIMAL_GB // 2,
         unit="bytes",
@@ -110,7 +119,7 @@ class QuotaMetric(BaseModel):
 
     current: int = Field(ge=0)
     limit: int = Field(gt=0)
-    unit: Literal["bytes", "requests"]
+    unit: Literal["bytes", "requests", "emails"]
     percentage: float = Field(ge=0)
     alert: QuotaAlert | None = None
 
@@ -279,6 +288,29 @@ async def _neon_storage_bytes(settings: Settings) -> int:
     return row[0]
 
 
+async def _email_sends_24h(settings: Settings) -> int:
+    if settings.database_url is None:
+        raise RuntimeError("DATABASE_URL is not configured")
+    connection = await psycopg.AsyncConnection.connect(settings.database_url.get_secret_value())
+    try:
+        # psycopg opens the transaction on the first statement and closing rolls it back; the
+        # SET LOCALs are the worker marker of WorkerOutboxStore.claim. The cap is the platform
+        # account's, so tenant and identity rows both count.
+        await connection.execute("SET LOCAL app.org_id = '00000000-0000-0000-0000-000000000000'")
+        await connection.execute("SET LOCAL app.worker = 'jobs'")
+        # ponytail: no index on sent_at; add a partial one if the scan shows
+        cursor = await connection.execute(
+            "SELECT count(*) FROM outbox WHERE topic = 'email' "
+            "AND sent_at > now() - interval '24 hours'"
+        )
+        row = await cursor.fetchone()
+    finally:
+        await connection.close()
+    if row is None or not isinstance(row[0], int) or row[0] < 0:
+        raise RuntimeError("PostgreSQL returned an invalid email count")
+    return row[0]
+
+
 def get_internal_settings() -> Settings:
     return Settings()
 
@@ -301,6 +333,7 @@ def get_quota_collectors(
     return {
         "neon_storage": lambda: _neon_storage_bytes(settings),
         "cloud_run_requests": cloud_run_requests,
+        "email_sends": lambda: _email_sends_24h(settings),
         "r2_storage": r2_storage_bytes,
         "artifact_registry": artifact_registry_bytes,
     }
@@ -315,11 +348,19 @@ def _run_jobs_tick(settings: Settings) -> TickReport:
     database_url = settings.database_url.get_secret_value()
     connection = psycopg.connect(database_url)
     try:
+        with psycopg.connect(database_url) as due:
+            rfq_lifecycle.enqueue_due(due)  # each tick: RFQs past their deadline close this minute
         jobs = JobRunner(
             cast(RunnerConnection, connection),
             {
                 "budget-reconcile": job_handler(lambda: psycopg.connect(database_url)),
                 "approval.reminders": reminders_job_handler(lambda: psycopg.connect(database_url)),
+                rfq_lifecycle.JOB_KIND: rfq_lifecycle.job_handler(
+                    lambda: psycopg.connect(database_url)
+                ),
+                vendor_expiry.JOB_KIND: vendor_expiry.job_handler(
+                    lambda: psycopg.connect(database_url)
+                ),
                 **import_handlers(
                     lambda: psycopg.connect(database_url),
                     cast(PermissionResolverFactory, production_authorization_resolver),
@@ -542,6 +583,34 @@ async def approval_reminders(
 ) -> ReminderReport:
     """Require origin secret and Idempotency-Key; one digest per person per day, never replayed."""
     return await asyncio.to_thread(_run_approval_reminders, settings)
+
+
+class VendorExpiryTriggerReport(BaseModel):
+    organizations: int
+
+
+def _run_vendor_document_expiry(settings: Settings) -> VendorExpiryTriggerReport:
+    if settings.database_url is None:
+        raise RuntimeError("DATABASE_URL is not configured")
+    with psycopg.connect(settings.database_url.get_secret_value()) as connection:
+        return VendorExpiryTriggerReport(organizations=vendor_expiry.enqueue_all(connection))
+
+
+@router.post(
+    "/internal/jobs/vendor-document-expiry",
+    response_model=VendorExpiryTriggerReport,
+    include_in_schema=False,
+)
+@public_route
+async def vendor_document_expiry(
+    settings: Annotated[Settings, Depends(get_internal_settings)],
+) -> VendorExpiryTriggerReport:
+    """Require origin secret and Idempotency-Key; never replayed. Only queues tenant jobs.
+
+    A repeat queues another job per organization; a document is notified once per threshold
+    (stamped on the row), so extra runs send nothing.
+    """
+    return await asyncio.to_thread(_run_vendor_document_expiry, settings)
 
 
 def fetch_fx(url: str) -> bytes:

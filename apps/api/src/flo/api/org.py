@@ -5,12 +5,12 @@ from typing import Annotated, Literal, cast
 from uuid import UUID
 
 import psycopg
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import BaseModel, ConfigDict
 
 from flo.api.admin_users import get_admin_connection, organization_target
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
-from flo.kernel.authz import require
+from flo.kernel.authz import permits, require, require_resolved
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.org.schemas import (
@@ -64,17 +64,26 @@ def create_unit(body: OrgUnitCreate, context: CreateContext, connection: Connect
     return OrgService(connection, current_scope(), context.user_id).create_unit(body)
 
 
+def unit_permission(
+    request: Request, target: Annotated[TargetProtocol, Depends(organization_target)]
+) -> tuple[str, TargetProtocol]:
+    """DECISIONS 241: `org.unit.read` if held, else `vendor.request` (the service narrows it)."""
+    return (
+        "org.unit.read" if permits(request, "org.unit.read", target) else "vendor.request",
+        target,
+    )
+
+
 @router.get("/units", response_model=OrgUnitPage)
 def list_units(
-    context: Annotated[
-        AuthorizationContext, Depends(require("org.unit.read", organization_target))
-    ],
+    context: Annotated[AuthorizationContext, Depends(require_resolved(unit_permission))],
     connection: Connection,
     kind: Literal["bu", "ou"] | None = None,
     active: bool | None = None,
     cursor: UUID | None = None,
     page_size: Annotated[int, Query(ge=1, le=100)] = 50,
 ) -> OrgUnitPage:
+    # A member: the service admits org.unit.read, or vendor.request for active units only.
     return OrgService(connection, current_scope(), context.user_id).list_units(
         kind=kind, active=active, cursor=cursor, page_size=page_size
     )

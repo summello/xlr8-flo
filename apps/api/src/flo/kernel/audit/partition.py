@@ -48,9 +48,7 @@ def monthly_partition(value: datetime) -> AuditPartition:
     return AuditPartition(f"audit_log_{start:%Y_%m}", start, end)
 
 
-def ensure_monthly_partition(
-    connection: PartitionConnection, value: datetime
-) -> AuditPartition:
+def ensure_monthly_partition(connection: PartitionConnection, value: datetime) -> AuditPartition:
     """Create and tenant-protect the target month before an audit insert."""
 
     partition = monthly_partition(value)
@@ -85,8 +83,7 @@ def ensure_monthly_partition(
 
     connection.execute(
         sql.SQL(
-            "CREATE TABLE IF NOT EXISTS {} PARTITION OF audit_log "
-            "FOR VALUES FROM ({}) TO ({})"
+            "CREATE TABLE IF NOT EXISTS {} PARTITION OF audit_log FOR VALUES FROM ({}) TO ({})"
         ).format(identifier, sql.Literal(partition.start), sql.Literal(partition.end))
     )
     connection.execute(sql.SQL("ALTER TABLE {} ENABLE ROW LEVEL SECURITY").format(identifier))
@@ -104,27 +101,17 @@ def ensure_monthly_partition(
             "END IF; END $audit_policy$"
         ).format(sql.Literal(f"public.{partition.name}"), identifier)
     )
-    connection.execute(
-        sql.SQL("REVOKE UPDATE, DELETE ON TABLE {} FROM PUBLIC").format(identifier)
-    )
+    connection.execute(sql.SQL("REVOKE UPDATE, DELETE ON TABLE {} FROM PUBLIC").format(identifier))
     return partition
 
 
-def detach_monthly_partition(
-    connection: PartitionConnection, value: datetime
-) -> AuditPartition:
+def detach_monthly_partition(connection: PartitionConnection, value: datetime) -> AuditPartition:
     """Detach an already archived month without dropping its audit rows."""
 
     partition = monthly_partition(value)
     identifier = sql.Identifier(partition.name)
     # A detached archive is read-only and must not retain a dependency on the
     # live parent's id sequence, or the parent cannot be cleanly downgraded.
-    connection.execute(
-        sql.SQL("ALTER TABLE {} ALTER COLUMN id DROP DEFAULT").format(identifier)
-    )
-    connection.execute(
-        sql.SQL("ALTER TABLE audit_log DETACH PARTITION {}").format(
-            identifier
-        )
-    )
+    connection.execute(sql.SQL("ALTER TABLE {} ALTER COLUMN id DROP DEFAULT").format(identifier))
+    connection.execute(sql.SQL("ALTER TABLE audit_log DETACH PARTITION {}").format(identifier))
     return partition

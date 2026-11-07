@@ -12,9 +12,13 @@ import psycopg
 from psycopg.types.json import Jsonb
 from pydantic import TypeAdapter
 
+from flo.kernel.audit import ActorKind, AuditActor, audit_event
+from flo.kernel.audit import Outcome as AuditOutcome
+from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.authz import AuthorizationTarget, PermissionHoldersResolver
 from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.identity import IdentityId
+from flo.kernel.outbox.store import OutboxConnection, OutboxStore
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.approvals import conditions
@@ -40,7 +44,12 @@ from flo.modules.approvals.schemas import (
     WorkflowGraph,
     WorkflowVersionRead,
 )
-from flo.modules.identity.service import AuthorizationConnection, AuthorizationResolver
+from flo.modules.identity.service import (
+    AuthorizationConnection,
+    AuthorizationResolver,
+    IdentityAuthorizationConnection,
+    emails_by_id,
+)
 from flo.modules.identity.service import AuthorizationTarget as IdentityTarget
 
 INSTANCE_FIELDS = (
@@ -288,11 +297,11 @@ def current_members(
     return result
 
 
-def _emails(repo: WorkflowRepository, ids: Sequence[UUID]) -> dict[UUID, str]:
+def _people(repo: WorkflowRepository, ids: Sequence[UUID]) -> dict[UUID, tuple[str, str | None]]:
     return {
-        cast(UUID, row[0]): str(row[1])
+        cast(UUID, row[0]): (str(row[1]), cast(str | None, row[2]))
         for row in repo.execute(
-            "SELECT i.id,i.email FROM identity i WHERE i.id=ANY(%(ids)s) AND EXISTS "
+            "SELECT i.id,i.email,i.display_name FROM identity i WHERE i.id=ANY(%(ids)s) AND EXISTS "
             "(SELECT 1 FROM identity_membership m WHERE m.org_id=%(org_id)s "
             "AND m.identity_id=i.id)",
             {"ids": list(ids)},
@@ -315,7 +324,7 @@ def _step(
         : next((i for i, e in enumerate(recorded) if e.get("node_id") == node.id), len(recorded))
     ]
     eligible = current_members(repo.connection, repo.scope, instance, node, snapshot, resolver)
-    emails = _emails(
+    people = _people(
         repo, [m.user_id for m in eligible.members] + [e.user_id for e in eligible.excluded]
     )
     rule = node.approvers
@@ -328,18 +337,24 @@ def _step(
             else f"permission {adapter_for(str(instance['document_type'])).approve_permission}"
         )
     )
+    ordered = sorted(people[m.user_id] for m in eligible.members)
     return RouteStep(
         node_id=node.id,
         label=node.name or node.id,
         mode="quorum" if isinstance(node.mode, Quorum) else node.mode,
         quorum=node.mode.quorum if isinstance(node.mode, Quorum) else None,
         rule=words,
-        approver_emails=sorted(emails[m.user_id] for m in eligible.members),
+        approver_emails=[p[0] for p in ordered],
+        approver_names=[p[1] for p in ordered],
         excluded=sorted(
             [
-                ExcludedApprover(email=emails[e.user_id], reason=e.reason)
+                ExcludedApprover(
+                    email=people[e.user_id][0],
+                    name=people[e.user_id][1],
+                    reason=e.reason,
+                )
                 for e in eligible.excluded
-                if e.user_id in emails
+                if e.user_id in people
             ],
             key=lambda e: e.email,
         ),
@@ -416,6 +431,33 @@ def _save(repo: WorkflowRepository, instance: Mapping[str, object]) -> None:
             "approved_digest": instance["approved_material_digest"],
         },
     )
+
+
+def notify_outcome(repo: WorkflowRepository, instance: Mapping[str, object]) -> None:
+    """Email the requester the outcome (outbox); shared by decisions and the zero-step path."""
+    if instance["status"] not in {"approved", "rejected", "returned"}:
+        return
+    adapter = adapter_for(str(instance["document_type"]))
+    summary = adapter.summaries(repo.connection, repo.scope, [cast(UUID, instance["document_id"])])[
+        cast(UUID, instance["document_id"])
+    ]
+    emails = emails_by_id(
+        cast(IdentityAuthorizationConnection, repo.connection),
+        [cast(UUID, instance["requester_id"])],
+    )
+    recipient = emails.get(cast(UUID, instance["requester_id"]))
+    if recipient is not None:
+        OutboxStore(cast(OutboxConnection, repo.connection), repo.scope).add_email(
+            to=recipient,
+            template="approval-outcome-v1",
+            context={
+                "document_type": instance["document_type"],
+                "number": summary.number,
+                "outcome": instance["status"],
+                "link": summary.href,
+            },
+            idempotency_key=f"approval:{instance['id']}:{instance['status']}",
+        )
 
 
 def _outcome(
@@ -680,6 +722,22 @@ def start(
                     ),
                 ),
             )
+            # No task or decision row exists on this path, so write the decision audit and the
+            # requester notice here, as an interactive approval does (M2 release review).
+            audit_event(
+                cast(AuditConnection, conn),
+                scope,
+                actor=AuditActor(ActorKind.SYSTEM),
+                action="approval.decision",
+                target_type="approval_instance",
+                target_id=id,
+                outcome=AuditOutcome.SUCCESS,
+                before={"status": "running"},
+                before_fields=("status",),
+                after={"status": "approved", "auto": True},
+                after_fields=("status", "auto"),
+            )
+            notify_outcome(repo, instance)
         else:
             _open(repo, instance, node, snapshot, resolver)
             _save(repo, instance)
@@ -794,11 +852,14 @@ def get_instance(
                             "status": t["status"],
                             "outcome": t["outcome"],
                             "approver_emails": step.approver_emails,
+                            "approver_names": step.approver_names,
                             "due_at": t["due_at"],
                             "completed_at": t["completed_at"],
                         }
                     )
                 )
+        rid = cast(UUID, instance["requester_id"])
+        requester = _people(repo, [rid])[rid]
         return InstanceRead.model_validate(
             {
                 k: v
@@ -814,11 +875,13 @@ def get_instance(
             }
             | {
                 "workflow_version": version.version,
-                "requester_email": _emails(repo, [cast(UUID, instance["requester_id"])])[
-                    cast(UUID, instance["requester_id"])
-                ],
+                "requester_email": requester[0],
+                "requester_name": requester[1],
                 "route": route,
                 "tasks": read_tasks,
+                "evidence": json.loads(snapshot.material["evidence"])
+                if "evidence" in snapshot.material
+                else None,
             }
         )
 

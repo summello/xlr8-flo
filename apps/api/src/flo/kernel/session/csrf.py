@@ -69,8 +69,10 @@ class CsrfMiddleware:
             if cookie_header is not None and message["type"] == "http.response.start":
                 headers = list(message.get("headers", []))
                 # Preserve a rotation or deletion supplied by authentication routes.
-                if not any(key.lower() == b"set-cookie" and value.startswith(b"flo_csrf=")
-                           for key, value in headers):
+                if not any(
+                    key.lower() == b"set-cookie" and value.startswith(b"flo_csrf=")
+                    for key, value in headers
+                ):
                     headers.append(cookie_header)
                 message = {**message, "headers": headers}
             await send(message)

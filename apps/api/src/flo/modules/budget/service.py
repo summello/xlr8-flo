@@ -15,6 +15,7 @@ from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.budget import funding_policy
 from flo.modules.budget.aggregate import aggregate_balance as aggregate_balance
+from flo.modules.budget.change_requests import delete_request as delete_request
 from flo.modules.budget.change_requests import get_request as get_request
 from flo.modules.budget.change_requests import request_by_key as request_by_key
 from flo.modules.budget.change_requests import request_change as request_change
@@ -29,6 +30,7 @@ from flo.modules.budget.ledger import (
     post_entry as post_entry,
 )
 from flo.modules.budget.models import LedgerType
+from flo.modules.budget.postings import CONSUMED_BY_ACTUAL as CONSUMED_BY_ACTUAL
 from flo.modules.budget.postings import commit as commit
 from flo.modules.budget.postings import record_actual as record_actual
 from flo.modules.budget.postings import release_commitment as release_commitment
@@ -58,6 +60,7 @@ from flo.modules.org.service import OrgService
 from flo.modules.projects.service import ProjectService
 
 __all__ = [
+    "delete_request",
     "get_request",
     "request_by_key",
     "request_change",
@@ -79,6 +82,7 @@ __all__ = [
     "post_legs",
     "record_actual",
     "release_commitment",
+    "CONSUMED_BY_ACTUAL",
     "release_reservation",
     "reserve",
     "reverse_entry",

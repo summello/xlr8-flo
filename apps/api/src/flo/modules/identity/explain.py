@@ -47,6 +47,7 @@ class AccessUser:
     id: IdentityId
     email: str
     status: str
+    name: str | None = None
 
     @property
     def attribution(self) -> str:
@@ -175,7 +176,7 @@ class EffectiveAccessRepository(ScopedRepo[EffectiveAccess]):
 
         row = self._connection.execute(
             """
-            SELECT identity.id, identity.email, identity.status
+            SELECT identity.id, identity.email, identity.status, identity.display_name
               FROM identity
              WHERE identity.id = %(user_id)s
                AND EXISTS (
@@ -193,6 +194,7 @@ class EffectiveAccessRepository(ScopedRepo[EffectiveAccess]):
             id=IdentityId(cast(UUID, _value(row, 0, "id"))),
             email=cast(str, _value(row, 1, "email")),
             status=cast(str, _value(row, 2, "status")),
+            name=cast(str | None, _value(row, 3, "display_name")),
         )
 
     def grants(

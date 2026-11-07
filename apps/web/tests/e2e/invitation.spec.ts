@@ -111,20 +111,31 @@ test('plants: organization leakage, URL retention and editable email fail privac
 });
 
 test('plant: hardcoded expired lifetime fails server-driven copy assertion', async ({ page }) => {
-    await page.route('**/src/features/invitation/Screen.tsx*', async route => {
+    await page.route(process.env.CI ? '**/assets/*.js' : '**/src/features/invitation/Screen.tsx*', async route => {
         const response = await route.fetch(); const source = await response.text();
-        expect(source).toContain('expired.lifetime_days');
-        await route.fulfill({ response, body: source.replaceAll('expired.lifetime_days', '7') });
+        if (process.env.CI) {
+            expect(source).toMatch(/\b\w+\.lifetime_days/);
+            await route.fulfill({ response, body: source.replaceAll(/\b\w+\.lifetime_days/g, '7') });
+        } else {
+            expect(source).toContain('expired.lifetime_days');
+            await route.fulfill({ response, body: source.replaceAll('expired.lifetime_days', '7') });
+        }
     });
     await stubInvitation(page, { expired: 3 }); await page.goto(`/invite/${bearer}`);
     await expect(page.locator('main')).toContainText('Invitations last 7 days.');
     await expect(expect(page.locator('main')).toContainText('Invitations last 3 days.', { timeout: 100 })).rejects.toThrow();
 });
 test('plant: hard chooser return loses the in-memory invitation', async ({ page }) => {
-    await page.route('**/src/features/auth/OrganizationChooser.tsx*', async route => {
+    await page.route(process.env.CI ? '**/assets/*.js' : '**/src/features/auth/OrganizationChooser.tsx*', async route => {
         const response = await route.fetch(); const source = await response.text();
-        expect(source).toContain('navigate(back)');
-        await route.fulfill({ response, body: source.replace('navigate(back)', 'window.location.assign(back)') });
+        if (process.env.CI) {
+            const softReturn = /(\w+)===`\/invite`\?\w+\(\1\):window\.location\.assign\(\1\)/;
+            expect(source).toMatch(softReturn);
+            await route.fulfill({ response, body: source.replace(softReturn, 'window.location.assign($1)') });
+        } else {
+            expect(source).toContain('navigate(back)');
+            await route.fulfill({ response, body: source.replace('navigate(back)', 'window.location.assign(back)') });
+        }
     });
     await stubInvitation(page, { loginAccess: 'choose' }); await openInvitation(page);
     await page.getByRole('button', { name: 'Sign in to accept' }).click();
@@ -174,10 +185,17 @@ async function checkingToFormShift(page: Page, width: number, removePlaceholder 
             }
         }).observe({ type: 'layout-shift', buffered: true });
     });
-    if (removePlaceholder) await page.route('**/src/features/invitation/Screen.tsx*', async route => {
+    if (removePlaceholder) await page.route(process.env.CI ? '**/assets/*.js' : '**/src/features/invitation/Screen.tsx*', async route => {
         const response = await route.fetch(); const source = await response.text();
-        expect(source).toContain('jsxDEV(PlaceholderAside,');
-        await route.fulfill({ response, body: source.replaceAll('jsxDEV(PlaceholderAside,', 'jsxDEV(() => null,') });
+        if (process.env.CI) {
+            const placeholder = source.match(/function (\w+)\(\)\{return\(0,\w+\.jsxs\)\(`aside`,\{className:`auth-aside invite-aside invite-placeholder`/);
+            expect(placeholder).not.toBeNull();
+            const start = `function ${placeholder![1]}(){return`;
+            await route.fulfill({ response, body: source.replace(start, `${start} null;`) });
+        } else {
+            expect(source).toContain('jsxDEV(PlaceholderAside,');
+            await route.fulfill({ response, body: source.replaceAll('jsxDEV(PlaceholderAside,', 'jsxDEV(() => null,') });
+        }
     });
     const stub = await stubInvitation(page, { held: true });
     await page.goto(`/invite/${bearer}`);

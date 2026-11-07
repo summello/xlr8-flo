@@ -7,12 +7,13 @@ set -e
 . "$(dirname "$0")/env.sh"
 S="$1"; R="$(cd "$(dirname "$0")/../.." && pwd)"; W="$R-$S"; L="$R/.scratch/$S.finish.log"
 cd "$R"
+# flo done checks out and commits on the milestone branch in this repo: one finish at a time.
+# The kernel drops a flock when its holder dies, so a SIGKILL cannot strand it (E23-S15).
+if [ -z "${FLO_FINISH_LOCKED:-}" ]; then
+  exec python3 "$R/agents/scripts/flo" with-lock finish --wait 1800 -- env FLO_FINISH_LOCKED=1 sh "$R/agents/scripts/finish.sh" "$@"
+fi
 export PATH="$W/apps/api/.venv/bin:$PATH"
 FLO="$W/apps/api/.venv/bin/python $R/agents/scripts/flo"
-# flo done checks out and commits on the milestone branch in this repo: one finish at a time.
-# ponytail: mkdir lock serialises merges; a merge queue when trains outgrow it
-until mkdir "$R/.scratch/finish.lock" 2>/dev/null; do sleep 20; done
-trap 'rmdir "$R/.scratch/finish.lock"' EXIT
 # Gate the merged result, not the story's stale base: two lanes that each passed alone broke
 # M1 together on 10 Oct (E06-S07 + E08-S04). Merge the milestone in first, under the lock.
 # When the milestone has not moved since submit the tree is unchanged and the gate's check is

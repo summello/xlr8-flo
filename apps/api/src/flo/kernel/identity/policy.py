@@ -51,12 +51,8 @@ class BreachBlocklist:
     def contains(self, password: str) -> bool:
         """Check a password by matching its SHA-256 suffix within its prefix bucket."""
 
-        digest = hashlib.sha256(
-            password.encode("utf-8"), usedforsecurity=False
-        ).hexdigest().upper()
-        return digest[_HASH_PREFIX_LENGTH:] in self._entries.get(
-            digest[:_HASH_PREFIX_LENGTH], ()
-        )
+        digest = hashlib.sha256(password.encode("utf-8"), usedforsecurity=False).hexdigest().upper()
+        return digest[_HASH_PREFIX_LENGTH:] in self._entries.get(digest[:_HASH_PREFIX_LENGTH], ())
 
 
 @lru_cache(maxsize=1)

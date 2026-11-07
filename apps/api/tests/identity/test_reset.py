@@ -154,9 +154,7 @@ def reset_database() -> Iterator[ResetDatabase]:
         migration for migration in migrations if migration.revision == RESET_REVISION
     )
     settings = _settings()
-    provider = run(
-        build_local_identity_provider(cast(IdentityConnection, connection), settings)
-    )
+    provider = run(build_local_identity_provider(cast(IdentityConnection, connection), settings))
     identity_id = run(provider.create_identity("person@example.test", PASSWORD))
     clock = MutableClock(START)
     sessions = SessionStore(
@@ -323,8 +321,7 @@ def test_two_concurrent_consumers_allow_exactly_one_password_reset(
 
     assert outcomes == ["invalid_or_expired", "success"]
     assert reset_database.connection.execute(
-        "SELECT count(*) FROM session_security_event "
-        "WHERE event_type = 'password_reset_completed'"
+        "SELECT count(*) FROM session_security_event WHERE event_type = 'password_reset_completed'"
     ).fetchone() == (1,)
 
 
@@ -417,9 +414,7 @@ def test_email_rate_limit_bites_even_when_ip_limit_has_capacity(
 def test_ip_rate_limit_bites_across_two_existing_email_addresses(
     reset_database: ResetDatabase,
 ) -> None:
-    second_identity = run(
-        reset_database.provider.create_identity("second@example.test", PASSWORD)
-    )
+    second_identity = run(reset_database.provider.create_identity("second@example.test", PASSWORD))
     limited = PasswordResetService(
         cast(ResetConnection, reset_database.connection),
         _settings(password_reset_email_limit=100, password_reset_ip_limit=1),
@@ -486,8 +481,9 @@ def test_identity_outbox_database_failure_suppresses_secret_error_context(
 ) -> None:
     plaintext = "planted-token-that-a-check-violation-must-not-log"
     with pytest.raises(RuntimeError, match="identity-scoped outbox write failed") as failure:
-        with correlation_context("planted-secret-write-failure"), (
-            reset_database.connection.transaction()
+        with (
+            correlation_context("planted-secret-write-failure"),
+            reset_database.connection.transaction(),
         ):
             IdentityOutboxStore(
                 cast(OutboxConnection, reset_database.connection),
@@ -565,11 +561,7 @@ async def _csrf(client: httpx.AsyncClient) -> dict[str, str]:
 
 
 def _observable_headers(response: httpx.Response) -> dict[str, str]:
-    return {
-        name: value
-        for name, value in response.headers.items()
-        if name != "x-correlation-id"
-    }
+    return {name: value for name, value in response.headers.items() if name != "x-correlation-id"}
 
 
 def test_existing_and_unknown_accounts_have_identical_http_contract_and_timing(
@@ -831,9 +823,9 @@ def test_migration_contracts_are_present_bite_and_downgrade_preserves_seeded_row
         assert connection.execute(
             "SELECT id, org_id FROM outbox WHERE id = %s", (existing_id,)
         ).fetchone() == (existing_id, org_id)
-        assert connection.execute(
-            "SELECT to_regclass('public.password_reset')"
-        ).fetchone() == (None,)
+        assert connection.execute("SELECT to_regclass('public.password_reset')").fetchone() == (
+            None,
+        )
         restored = connection.execute(
             "SELECT is_nullable FROM information_schema.columns "
             "WHERE table_name = 'session_security_event' AND column_name = 'session_id'"

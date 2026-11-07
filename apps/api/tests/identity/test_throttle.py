@@ -7,7 +7,6 @@ from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import patch
-from uuid import uuid4
 
 import httpx
 import psycopg
@@ -26,31 +25,9 @@ ROOT = Path(__file__).resolve().parents[4]
 
 
 @pytest.fixture
-def db():
-    import os
-
-    from psycopg import sql
-    from psycopg.conninfo import conninfo_to_dict, make_conninfo
-
-    from flo.kernel.migrate import apply_migrations
-
-    url = (
-        os.environ.get("TEST_DATABASE_URL")
-        or os.environ.get("DATABASE_URL")
-        or "postgresql://flo:flo-local@127.0.0.1:5432/flo_test"
-    )
-    url = url.replace("postgresql+psycopg://", "postgresql://", 1)
-    name = f"throttle_{uuid4().hex}"
-    with psycopg.connect(url, autocommit=True) as admin:
-        admin.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(name)))
-    params = conninfo_to_dict(url)
-    params["dbname"] = name
-    isolated = make_conninfo(**params)
-    apply_migrations(discover_migrations(ROOT / "migrations"), isolated)
-    with psycopg.connect(isolated, autocommit=True) as connection:
-        yield connection, isolated
-    with psycopg.connect(url, autocommit=True) as admin:
-        admin.execute(sql.SQL("DROP DATABASE {} WITH (FORCE)").format(sql.Identifier(name)))
+def db(migrated_database):
+    with psycopg.connect(migrated_database, autocommit=True) as connection:
+        yield connection, migrated_database
 
 
 @pytest.fixture
@@ -265,7 +242,8 @@ def test_jitter_order():
 def test_migration_reverses_and_preserves_existing_data(db):
     connection, _ = db
     revision = next(
-        item for item in discover_migrations(ROOT / "migrations")
+        item
+        for item in discover_migrations(ROOT / "migrations")
         if item.revision == "20261009_0029"
     )
     connection.execute("CREATE TABLE preserved (value text)")

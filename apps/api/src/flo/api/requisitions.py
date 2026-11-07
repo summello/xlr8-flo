@@ -6,14 +6,16 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Query, Request, Response
 
-from flo.api.admin_users import organization_target
+from flo.api.admin_users import deleted_visible, organization_target
 from flo.api.auth import get_auth_settings
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
-from flo.kernel.authz import permits, require, require_resolved
+from flo.kernel.authz import permits, require, require_member, require_resolved
 from flo.kernel.config import Settings
+from flo.kernel.identity import IdentityId
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
+from flo.modules.identity.service import IdentityAuthorizationConnection, granted_scopes
 from flo.modules.org.service import OrgService
 from flo.modules.projects.service import ProjectService
 from flo.modules.requisitions import amendments, codes, revisions
@@ -69,8 +71,10 @@ def create_target(body: RequisitionCreate, connection: Connection) -> tuple[str,
     )
 
 
-def requisition_target(id: UUID, connection: Connection) -> TargetProtocol:
-    row = RequisitionService(connection, current_scope()).get(id)
+def requisition_target(
+    id: UUID, connection: Connection, *, include_deleted: bool = False
+) -> TargetProtocol:
+    row = RequisitionService(connection, current_scope()).get(id, include_deleted=include_deleted)
     return cast(
         TargetProtocol,
         AuthorizationTarget(
@@ -86,6 +90,17 @@ CreateContext = Annotated[AuthorizationContext, Depends(require_resolved(create_
 ReadContext = Annotated[
     AuthorizationContext, Depends(require("requisition.view", requisition_target))
 ]
+
+
+def requisition_bin_target(
+    id: UUID, connection: Connection, include_deleted: bool = False
+) -> TargetProtocol:
+    return requisition_target(id, connection, include_deleted=include_deleted)
+
+
+BinReadContext = Annotated[
+    AuthorizationContext, Depends(require("requisition.view", requisition_bin_target))
+]
 EditContext = Annotated[
     AuthorizationContext, Depends(require("requisition.edit", requisition_target))
 ]
@@ -98,9 +113,8 @@ SubmitContext = Annotated[
 WithdrawContext = Annotated[
     AuthorizationContext, Depends(require("requisition.withdraw", requisition_target))
 ]
-ListContext = Annotated[
-    AuthorizationContext, Depends(require("requisition.view", organization_target))
-]
+# A self-scoped list: rows are filtered to the scopes where the caller holds requisition.view.
+ListUser = Annotated[IdentityId, Depends(require_member())]
 
 
 @router.post("", status_code=201, response_model=RequisitionRead)
@@ -118,7 +132,7 @@ def create_requisition(
 
 @router.get("", response_model=RequisitionPage)
 def list_requisitions(
-    context: ListContext,
+    user_id: ListUser,
     connection: Connection,
     status: RequisitionStatus | None = None,
     project_id: UUID | None = None,
@@ -131,9 +145,14 @@ def list_requisitions(
     cursor: str | None = None,
     page_size: Annotated[int, Query(ge=1, le=50)] = 50,
 ) -> RequisitionPage:
-    # ponytail: BU-only grants cannot list; add granted_scopes filtering
-    # when a tenant uses BU-only grants.
-    return RequisitionService(connection, current_scope(), context.user_id).list(
+    org_wide, units, projects = granted_scopes(
+        cast(IdentityAuthorizationConnection, connection),
+        current_scope(),
+        user_id,
+        "requisition.view",
+    )
+    return RequisitionService(connection, current_scope(), user_id).list(
+        visible=None if org_wide else (units, projects),
         status=status,
         project_id=project_id,
         bu_id=bu_id,
@@ -181,8 +200,14 @@ def lookups(
 
 @router.get("/{id}", response_model=RequisitionRead)
 def get_requisition(
-    id: UUID, context: ReadContext, connection: Connection, response: Response, request: Request
+    id: UUID,
+    context: BinReadContext,
+    connection: Connection,
+    response: Response,
+    request: Request,
+    include_deleted: bool = False,
 ) -> RequisitionRead:
+    visible = deleted_visible(request, include_deleted)
     row = RequisitionService(connection, current_scope(), context.user_id).detail(
         id,
         lambda project_id: permits(
@@ -191,6 +216,10 @@ def get_requisition(
             cast(TargetProtocol, AuthorizationTarget(ScopeType.PROJECT, project_id)),
         ),
         lambda: permits(request, "requisition.edit", requisition_target(id, connection)),
+        visible,
+    )
+    row.can_edit = permits(
+        request, "requisition.edit", requisition_target(id, connection, include_deleted=visible)
     )
     row.can_substitute_codes = (
         row.codes_expired
@@ -511,6 +540,12 @@ def withdraw_amendment(
     )
     response.headers["ETag"] = f'"{row.version}"'
     return row
+
+
+@router.delete("/{id}", status_code=204)
+def delete_requisition(id: UUID, context: EditContext, connection: Connection) -> Response:
+    RequisitionService(connection, current_scope(), context.user_id).delete(id)
+    return Response(status_code=204)
 
 
 @router.post("/{id}/codes", response_model=RequisitionRead)

@@ -42,8 +42,7 @@ class TenantRecordRepo(ScopedRepo[TenantRecord]):
         with tenant_transaction(self._connection, self.scope):
             row = self._connection.execute(
                 sql.SQL(
-                    "SELECT id, name FROM public.{} "
-                    "WHERE id = %(id)s AND org_id = %(org_id)s"
+                    "SELECT id, name FROM public.{} WHERE id = %(id)s AND org_id = %(org_id)s"
                 ).format(sql.Identifier(self._table)),
                 self.scoped_params({"id": record_id}),
             ).fetchone()
@@ -84,8 +83,7 @@ class TenantRecordRepo(ScopedRepo[TenantRecord]):
         with tenant_transaction(self._connection, self.scope):
             row = self._connection.execute(
                 sql.SQL(
-                    "DELETE FROM public.{} "
-                    "WHERE id = %(id)s AND org_id = %(org_id)s RETURNING id"
+                    "DELETE FROM public.{} WHERE id = %(id)s AND org_id = %(org_id)s RETURNING id"
                 ).format(sql.Identifier(self._table)),
                 self.scoped_params({"id": record_id}),
             ).fetchone()
@@ -164,9 +162,10 @@ def test_foreign_ids_are_404_and_all_collection_and_write_paths_are_scoped(
     tenant_b_cookie = {"flo_session": "tenant-b-session"}
 
     with TestClient(app) as client:
-        assert client.get(
-            f"/records/{tenant_database.record_b}", cookies=tenant_a_cookie
-        ).status_code == 404
+        assert (
+            client.get(f"/records/{tenant_database.record_b}", cookies=tenant_a_cookie).status_code
+            == 404
+        )
         assert client.get("/records", cookies=tenant_a_cookie).json() == [
             {"id": str(tenant_database.record_a), "name": "Tenant A record"}
         ]
@@ -184,9 +183,7 @@ def test_foreign_ids_are_404_and_all_collection_and_write_paths_are_scoped(
             cookies=tenant_a_cookie,
         )
         assert tampered.status_code == 404
-        deleted = client.delete(
-            f"/records/{tenant_database.record_b}", cookies=tenant_a_cookie
-        )
+        deleted = client.delete(f"/records/{tenant_database.record_b}", cookies=tenant_a_cookie)
         assert deleted.status_code == 404
         assert client.get(
             f"/records/{tenant_database.record_b}", cookies=tenant_b_cookie

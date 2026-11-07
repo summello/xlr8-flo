@@ -33,6 +33,7 @@ R = load("flo_release")
 
 # ── pure rules ────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.parametrize(
     ("facts", "state"),
     [
@@ -82,8 +83,10 @@ def test_ci_is_judged_on_the_newest_push_only() -> None:
     assert D.ci_from_runs(runs, "b") == "success"
     assert D.ci_from_runs(runs, "c") == "pending"  # the branch moved; nothing ran for it yet
     assert D.ci_from_runs([{"headSha": "b", "status": "in_progress"}], "b") == "pending"
-    assert D.ci_from_runs([{"headSha": "b", "status": "completed", "conclusion": "failure"}],
-                          "b") == "failure"
+    assert (
+        D.ci_from_runs([{"headSha": "b", "status": "completed", "conclusion": "failure"}], "b")
+        == "failure"
+    )
 
 
 def test_approvals_need_a_test_running_reviewer_and_the_opus_final_when_required() -> None:
@@ -92,11 +95,13 @@ def test_approvals_need_a_test_running_reviewer_and_the_opus_final_when_required
     assert not D.approvals_ok([{**qwen, "ran_tests": False}], {})
     assert not D.approvals_ok([{**qwen, "verdict": "changes_requested"}], {})
     assert not D.approvals_ok([qwen], {"opus_final": True})
-    assert D.approvals_ok([qwen, {**qwen, "reviewer": "opus", "verdict": "approved"}],
-                          {"opus_final": True})
+    assert D.approvals_ok(
+        [qwen, {**qwen, "reviewer": "opus", "verdict": "approved"}], {"opus_final": True}
+    )
 
 
 # ── a real repository ─────────────────────────────────────────────────────────
+
 
 def git(cwd: Path, *args: str) -> str:
     r = subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, check=True)
@@ -118,11 +123,21 @@ ROADMAP = {
         {"id": "M1", "name": "Spine", "branch": "milestone/M1-spine"},
     ],
     "epics": [
-        {"id": "E01", "name": "Platform", "milestone": "M0", "stories": [
-            {"id": "E01-S01", "t": "Rails", "k": "chore", "s": "S", "st": "done"}]},
-        {"id": "E02", "name": "Budget", "milestone": "M1", "stories": [
-            {"id": f"E02-S0{i}", "t": f"Story {i}", "k": "crud", "s": "M", "st": "todo"}
-            for i in range(1, 7)]},
+        {
+            "id": "E01",
+            "name": "Platform",
+            "milestone": "M0",
+            "stories": [{"id": "E01-S01", "t": "Rails", "k": "chore", "s": "S", "st": "done"}],
+        },
+        {
+            "id": "E02",
+            "name": "Budget",
+            "milestone": "M1",
+            "stories": [
+                {"id": f"E02-S0{i}", "t": f"Story {i}", "k": "crud", "s": "M", "st": "todo"}
+                for i in range(1, 7)
+            ],
+        },
     ],
 }
 
@@ -143,19 +158,33 @@ def repo(tmp_path: Path) -> Path:
     git(root, "switch", "-q", "main")
     # E02-S02: commits ahead and an approving review; E02-S03: just started;
     # E02-S06: commits ahead but no review yet.
-    for sid, ahead, approved in (("E02-S02", True, True), ("E02-S03", False, False),
-                                 ("E02-S06", True, False)):
+    for sid, ahead, approved in (
+        ("E02-S02", True, True),
+        ("E02-S03", False, False),
+        ("E02-S06", True, False),
+    ):
         wt = tmp_path / f"wt-{sid}"
         git(root, "worktree", "add", "-q", "-b", f"story/{sid}-x", str(wt), "milestone/M1-spine")
-        (wt / "task.json").write_text(json.dumps(
-            {"story": sid, "milestone_branch": "milestone/M1-spine", "opus_final": False,
-             "author": "codex", "reviewers": ["qwen"], "rounds": 1, "notes": {"blocked": None}}))
+        (wt / "task.json").write_text(
+            json.dumps(
+                {
+                    "story": sid,
+                    "milestone_branch": "milestone/M1-spine",
+                    "opus_final": False,
+                    "author": "codex",
+                    "reviewers": ["qwen"],
+                    "rounds": 1,
+                    "notes": {"blocked": None},
+                }
+            )
+        )
         if ahead:
             commit(wt, f"wip {sid}", **{f"src__{sid}.py": "x = 1\n"})
         if approved:
             (wt / "reviews").mkdir()
-            (wt / "reviews" / f"{sid}.qwen.json").write_text(json.dumps(
-                {"reviewer": "qwen", "verdict": "approve", "ran_tests": True}))
+            (wt / "reviews" / f"{sid}.qwen.json").write_text(
+                json.dumps({"reviewer": "qwen", "verdict": "approve", "ran_tests": True})
+            )
     return root
 
 
@@ -164,10 +193,10 @@ def test_each_state_is_derived_from_git(repo: Path) -> None:
     got = {sid: v["state"] for sid, v in doc["stories"].items()}
     assert got == {
         "E01-S01": "deployed",
-        "E02-S01": "merged",       # on the milestone branch, not on main
-        "E02-S02": "committed",    # commits ahead and an approving review
+        "E02-S01": "merged",  # on the milestone branch, not on main
+        "E02-S02": "committed",  # commits ahead and an approving review
         "E02-S03": "in_progress",  # a worktree and nothing else
-        "E02-S04": "ready",        # a packet and nothing started
+        "E02-S04": "ready",  # a packet and nothing started
         "E02-S05": "todo",
         "E02-S06": "in_progress",  # commits ahead but no review: not committed
     }
@@ -205,12 +234,25 @@ def test_status_is_written_atomically_and_only_where_the_repo_ignores_it(repo: P
 
 # ── the release runbook ───────────────────────────────────────────────────────
 
+
 def doc_with(state: str, pr: dict | None) -> dict:
-    return {"milestones": {
-        "M1": {"name": "Spine", "branch": "milestone/M1-spine", "state": "deployed", "pr": None},
-        "M2": {"name": "Demand", "branch": "milestone/M2-demand", "state": state, "pr": pr,
-               "note": None},
-    }}
+    return {
+        "milestones": {
+            "M1": {
+                "name": "Spine",
+                "branch": "milestone/M1-spine",
+                "state": "deployed",
+                "pr": None,
+            },
+            "M2": {
+                "name": "Demand",
+                "branch": "milestone/M2-demand",
+                "state": state,
+                "pr": pr,
+                "note": None,
+            },
+        }
+    }
 
 
 def test_runbook_fills_the_pull_request_and_offers_copy_buttons() -> None:

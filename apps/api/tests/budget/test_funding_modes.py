@@ -324,9 +324,12 @@ def test_first_allocation_serializes_with_funding_mode_change(allocation_db):
         org(db).set_setting("funding_mode", SettingPut(unit_id=bu.id, value="roll_up"))
         root = service(db).create(body(bu))
         child = service(db).create(body(bu, parent_id=root.id))
-        with psycopg.connect(
-            settings(db).database_url.get_secret_value(), autocommit=True
-        ) as allocation_conn, ThreadPoolExecutor(max_workers=1) as pool:
+        with (
+            psycopg.connect(
+                settings(db).database_url.get_secret_value(), autocommit=True
+            ) as allocation_conn,
+            ThreadPoolExecutor(max_workers=1) as pool,
+        ):
             allocation_conn.execute("SET lock_timeout='5s'")
 
             def fund():
@@ -339,9 +342,7 @@ def test_first_allocation_serializes_with_funding_mode_change(allocation_db):
             with db.connection.transaction():
                 # The guard accepted the change, but its organization lock and
                 # setting write remain uncommitted while the first funding starts.
-                org(db).set_setting(
-                    "funding_mode", SettingPut(unit_id=bu.id, value="roll_down")
-                )
+                org(db).set_setting("funding_mode", SettingPut(unit_id=bu.id, value="roll_down"))
                 pending = pool.submit(fund)
                 deadline = monotonic() + 3
                 blocked = False

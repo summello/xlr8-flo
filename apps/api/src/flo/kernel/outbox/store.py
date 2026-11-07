@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -14,6 +15,7 @@ from psycopg.types.json import Jsonb
 from flo.kernel.audit.writer import CorrelationMissing
 from flo.kernel.db.repo import ScopedRepo
 from flo.kernel.logging import current_correlation_id
+from flo.kernel.ports.email import EmailAttachment
 from flo.kernel.tenancy.context import Scope
 
 type DatabaseRow = Sequence[object] | Mapping[str, object]
@@ -151,12 +153,19 @@ class OutboxStore(ScopedRepo[OutboxRecord]):
         template: str,
         context: Mapping[str, object],
         idempotency_key: str,
+        attachments: Sequence[EmailAttachment] = (),
     ) -> OutboxRecord:
-        return self.add(
-            "email",
-            {"to": to, "template": template, "context": dict(context)},
-            idempotency_key=idempotency_key,
-        )
+        payload: JsonObject = {"to": to, "template": template, "context": dict(context)}
+        if attachments:
+            payload["attachments"] = [
+                {
+                    "filename": a.filename,
+                    "content_type": a.content_type,
+                    "content_b64": base64.b64encode(a.content).decode("ascii"),
+                }
+                for a in attachments
+            ]
+        return self.add("email", payload, idempotency_key=idempotency_key)
 
     def discard_email(self, idempotency_key: str) -> int:
         """Remove undelivered bearer-link payloads without deleting sent evidence."""
@@ -191,13 +200,10 @@ class WorkerOutboxStore:
     def claim(self) -> OutboxRecord | None:
         # See WorkerJobQueue: the marker is local to this authenticated cron
         # transaction and grants only SELECT/UPDATE on durable work tables.
-        self._connection.execute(
-            "SET LOCAL app.org_id = '00000000-0000-0000-0000-000000000000'"
-        )
+        self._connection.execute("SET LOCAL app.org_id = '00000000-0000-0000-0000-000000000000'")
         self._connection.execute("SET LOCAL app.worker = 'jobs'")
         self._connection.execute(
-            "DELETE FROM outbox "
-            "WHERE identity_id IS NOT NULL AND expires_at <= CURRENT_TIMESTAMP"
+            "DELETE FROM outbox WHERE identity_id IS NOT NULL AND expires_at <= CURRENT_TIMESTAMP"
         )
         row = self._connection.execute(
             f"""
@@ -292,9 +298,7 @@ class IdentityOutboxStore:
             raise CorrelationMissing("outbox writes require a correlation id")
         if not idempotency_key:
             raise ValueError("outbox idempotency key must be non-empty")
-        self._connection.execute(
-            "SET LOCAL app.org_id = '00000000-0000-0000-0000-000000000000'"
-        )
+        self._connection.execute("SET LOCAL app.org_id = '00000000-0000-0000-0000-000000000000'")
         self._connection.execute(
             "SELECT set_config('app.identity_id', %(identity_id)s::text, true)",
             {"identity_id": self._identity_id},
@@ -315,9 +319,7 @@ class IdentityOutboxStore:
                 {
                     "id": uuid4(),
                     "identity_id": self._identity_id,
-                    "payload": Jsonb(
-                        {"to": to, "template": template, "context": dict(context)}
-                    ),
+                    "payload": Jsonb({"to": to, "template": template, "context": dict(context)}),
                     "idempotency_key": idempotency_key,
                     "correlation_id": correlation_id,
                     "created_at": created_at,
@@ -335,9 +337,7 @@ class IdentityOutboxStore:
     def discard_pending_email(self, template: str) -> int:
         """Remove obsolete, unsent reset links before issuing a replacement."""
 
-        self._connection.execute(
-            "SET LOCAL app.org_id = '00000000-0000-0000-0000-000000000000'"
-        )
+        self._connection.execute("SET LOCAL app.org_id = '00000000-0000-0000-0000-000000000000'")
         self._connection.execute(
             "SELECT set_config('app.identity_id', %(identity_id)s::text, true)",
             {"identity_id": self._identity_id},

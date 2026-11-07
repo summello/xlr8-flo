@@ -106,6 +106,25 @@ def test_list_missing_balance_and_search_count(project_db):
     assert request(db, "GET", "?q=missing").json()["total"] == 0
 
 
+def test_people_search_matches_display_name_prefix_and_email(project_db):
+
+    db = project_db
+    alice = insert_identity(db, "zz")
+    other = insert_identity(db, "ali")
+    for who in (alice, other):
+        grant_permissions(db, who, "project.read")
+    db.connection.execute("UPDATE identity SET display_name='Alice Ng' WHERE id=%s", (alice,))
+    found = {o.value: o for o in service(db).lookup_people("ali", 10)}
+    assert str(alice) in found and str(other) in found  # name prefix and email
+    # the row shows why it matched: the name leads, the email follows
+    assert (found[str(alice)].label, found[str(alice)].note) == (
+        "Alice Ng",
+        found[str(alice)].note,
+    ) and "@" in str(found[str(alice)].note)
+    assert found[str(other)].note is None and "@" in found[str(other)].label
+    assert str(alice) not in {o.value for o in service(db).lookup_people("nobody", 10)}
+
+
 def test_auth_me_unauthenticated_and_session_identity_isolation(multi):
     conn, a, b, outsider, identity = multi
 
@@ -124,9 +143,13 @@ def test_auth_me_unauthenticated_and_session_identity_isolation(multi):
                 headers={"Org-Id": str(b.org_id)},
             )
             assert response.status_code == 200, response.text
-            assert response.json() == {"identity_id": str(identity)}
+            assert response.json() == {
+                "identity_id": str(identity),
+                "email": "admin@example.test",
+                "display_name": None,
+            }
             await select(browser, b.org_id)
-            assert (await browser.get("/api/v1/auth/me")).json() == {"identity_id": str(identity)}
+            assert (await browser.get("/api/v1/auth/me")).json()["identity_id"] == str(identity)
 
     asyncio.run(scenario())
 
