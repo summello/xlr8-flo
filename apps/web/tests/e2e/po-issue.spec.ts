@@ -21,8 +21,9 @@ const openDialog = async (page: Page, baseURL: string | undefined) => {
 const issueNow = async (page: Page, baseURL: string | undefined) => {
   const { dialog } = await openDialog(page, baseURL);
   await dialog.getByRole("button", { name: "Issue", exact: true }).click();
-  await expect(page).toHaveURL(new RegExp(`/purchase-orders/${poId}/issue$`));
-  await expect(page.getByRole("heading", { name: "Result" })).toBeVisible();
+  // The dev server transforms the moment's modules on first visit; allow for a loaded host.
+  await expect(page).toHaveURL(new RegExp(`/purchase-orders/${poId}/issue$`), { timeout: 20_000 });
+  await expect(page.getByRole("heading", { name: "Result" })).toBeVisible({ timeout: 20_000 });
 };
 
 test("the dialog lists recipients, version, templates, the vendor copy, what stays here and the commitment; Escape returns focus", async ({ page, baseURL }) => {
