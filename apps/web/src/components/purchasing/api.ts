@@ -10,6 +10,7 @@ export type PoVersion = components["schemas"]["PoVersionRead"];
 export type PoHistory = components["schemas"]["PoHistoryRead"];
 export type PoBudget = components["schemas"]["PoBudgetSummaryRead"];
 export type PoTransmission = components["schemas"]["PoTransmissionRead"];
+export type VendorCopyRead = components["schemas"]["VendorCopyRead"];
 export type PoChange = components["schemas"]["PoChangeRead"];
 export type PoCancelPreview = components["schemas"]["PoCancelPreviewRead"];
 export type AwardedLines = components["schemas"]["AwardedLinesRead"];

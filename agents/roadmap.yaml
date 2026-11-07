@@ -2132,7 +2132,7 @@ epics:
           - EML-006
         dep:
           - E13-S09
-        st: todo
+        st: in_progress
       - id: E13-S11
         t: Internal vs vendor-facing notes and attachments, enforced by test
         k: security
@@ -2211,7 +2211,7 @@ epics:
           - E13-S05
           - E13-S09
           - E13-S12
-        st: todo
+        st: in_progress
       - id: E13-S16
         t: 'Transmission log, change recipient and resend'
         k: ui
@@ -2243,7 +2243,7 @@ epics:
           - E13-S08
           - E13-S11
           - E13-S12
-        st: in_progress
+        st: done
       - id: E13-S18
         t: 'Change order screen: field diff, signed budget effect, reapproval line'
         k: ui

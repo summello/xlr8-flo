@@ -33,7 +33,7 @@ Your packet is in your worktree at `design/<STORY_ID>.md` — packets are tracke
 |---|---|---|---|
 | **Opus** (`claude-opus-5`, Claude Pro, account A) | The planner (one session, skill `xlr8flo-planner`): design packets, assignment, dispatch, arbitration patches, fixes for red milestone CI | **Gated stories**, in a fresh session (skill `xlr8flo-reviewer`); every epic checkpoint; whole-milestone diff before PR | Routine authoring — it is the scarcest capacity in the fleet |
 | **Sonnet** (Claude Pro, accounts A and B) | Every story by default, one session per story (skill `xlr8flo-worker`), resumed for review rounds and red story CI | — | Submitting, merging or pushing — the planner does |
-| **Codex** (ChatGPT Plus) | M0 sole-author override; E23-S14..S18 takeover only after the assigned Sonnet exhausts capacity | **Every story** (`gpt-5.6-sol`, medium effort, pinned on the command line) | Other non-overridden story authoring |
+| **Codex** (two ChatGPT logins, 7 Nov 2026) | **codex-b** (`~/.codex-b`): overflow author, only when no Sonnet worker slot is free; M0 sole-author override; E23-S14..S18 takeover | **codex-a** (`~/.codex-a`): **every story** (`gpt-5.6-sol`, medium effort, pinned on the command line) | Other non-overridden story authoring; codex-a never authors, so a codex-b story is reviewed from a different login |
 | **OpenCode-nemotron** (OpenRouter, free) | — | — (0.0 findings per review) | Story authoring (operator, 23 Oct 2026) |
 | **OpenCode-ox** (OpenRouter) | Fallback only; its endpoint has been withdrawn before | — | — |
 | **Qwen** (OpenRouter, <$20/mo) | — | **Ungated stories**; release review of the milestone diff | Exceeding the monthly cap in `agents/agents.yaml` |
@@ -41,12 +41,12 @@ Your packet is in your worktree at `design/<STORY_ID>.md` — packets are tracke
 
 **Sonnet authors, Codex reviews (13 Oct 2026, operator-approved).** `flo assign` computes it:
 
-- Sonnet authors every non-overridden story. It runs on two Claude accounts, at most
-  `max_workers_per_account` live workers each; when both are full the story waits. There is no
-  automatic overflow author. M0's explicit `sole_author: codex` milestone override remains
+- Sonnet authors every non-overridden story; **codex-b** takes a story only as overflow (operator, 7 Nov 2026: when every Sonnet worker slot is busy; one live codex-b author at a time, never a gated tag). Sonnet runs on two Claude accounts, at most
+  `max_workers_per_account` live workers each; when both are full a non-gated story overflows to
+  codex-b, and a gated one waits. M0's explicit `sole_author: codex-b` milestone override remains
   authoritative. For E23-S14..S18 only, the Codex planner may take over after the assigned
   Sonnet actually exhausts capacity; record the substitution before authoring.
-- Every story is reviewed by the first of `policy.ungated_reviewers` (codex, qwen, deepseek) that
+- Every story is reviewed by the first of `policy.ungated_reviewers` (codex-a, qwen, deepseek) that
   is not its author.
 - A story tagged `money`, `auth`, `security`, `migration` or `concurrency`
   (`policy.opus_final_required_tags`) is **also** reviewed by Opus, in a fresh session that has

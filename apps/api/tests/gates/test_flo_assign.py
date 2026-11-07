@@ -127,9 +127,10 @@ def test_no_independent_reviewer_stops_the_assignment(assign):
         assign("engine", "M", config=fleet(reviewers=["codex"]), sonnet_free=False)
 
 
-def test_the_committed_config_has_sonnet_only_authoring():
+def test_the_committed_config_has_sonnet_first_and_codex_b_overflow_authoring():
     text = (REPO / "agents" / "agents.yaml").read_text()
-    assert re.search(r"^  author_priority: \[sonnet\]$", text, re.M)
+    # 7 Nov 2026, operator: Sonnet first; codex-b (own login) only when no Sonnet slot is free
+    assert re.search(r"^  author_priority: \[sonnet, codex-b\]$", text, re.M)
 
     def roles(name: str) -> list[str]:
         block = re.search(
@@ -140,6 +141,6 @@ def test_the_committed_config_has_sonnet_only_authoring():
         assert line, f"roles line not found: {name}"
         return [role.strip() for role in line.group(1).split(",") if role.strip()]
 
-    assert "author" in roles("sonnet")
-    for name in ("codex", "opencode-nemotron", "qwen", "kimi"):
+    assert "author" in roles("sonnet") and "author" in roles("codex-b")
+    for name in ("codex-a", "opencode-nemotron", "qwen", "kimi"):   # codex-a is the reviewer login
         assert "author" not in roles(name)

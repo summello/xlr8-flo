@@ -32,7 +32,7 @@ REQUIRED_RUNTIME_CONFIGURATION = {
     "ARTIFACT_REGISTRY_LOCATION": "us-central1",
     "ARTIFACT_REGISTRY_REPOSITORY": "flo",
     "EMAIL_PROVIDER": "resend",
-    "EMAIL_FROM": "notifications@xlr8flo.summello.com",
+    "EMAIL_FROM": "notifications@mail.summello.com",
     "RESEND_DOMAIN_ID": "f71820d9-2fda-486d-8bcd-48c1390a009e",
 }
 
