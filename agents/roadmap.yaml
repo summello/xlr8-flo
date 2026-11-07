@@ -2243,7 +2243,7 @@ epics:
           - E13-S08
           - E13-S11
           - E13-S12
-        st: review
+        st: done
       - id: E13-S18
         t: 'Change order screen: field diff, signed budget effect, reapproval line'
         k: ui
