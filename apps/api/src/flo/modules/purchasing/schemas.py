@@ -239,6 +239,7 @@ class AwardedLineRead(BaseModel):
     vendor_id: UUID
     requisition_id: UUID
     requisition_line_id: UUID
+    requisition_number: str
     description: str
     uom_code: str
     currency: str
@@ -249,9 +250,21 @@ class AwardedLineRead(BaseModel):
     ordered_value: str
 
 
+class AwardedVendorRead(BaseModel):
+    vendor_id: UUID
+    vendor_name: str
+    eligible: bool
+    reasons: list[str]
+
+
 class AwardedLinesRead(BaseModel):
     award_id: UUID
+    award_number: str
+    award_status: Literal["draft", "approval_pending", "approved", "superseded", "cancelled"]
+    rfq_id: UUID
     lines: list[AwardedLineRead]
+    vendors: list[AwardedVendorRead]
+    can_override: bool = False
 
 
 type ChangeStatus = Literal["draft", "approval_pending", "approved", "rejected", "withdrawn"]

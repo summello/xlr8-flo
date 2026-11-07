@@ -1368,6 +1368,10 @@
             "title": "Requisition Line Id",
             "type": "string"
           },
+          "requisition_number": {
+            "title": "Requisition Number",
+            "type": "string"
+          },
           "rfq_line_id": {
             "format": "uuid",
             "title": "Rfq Line Id",
@@ -1393,6 +1397,7 @@
           "vendor_id",
           "requisition_id",
           "requisition_line_id",
+          "requisition_number",
           "description",
           "uom_code",
           "currency",
@@ -1412,19 +1417,87 @@
             "title": "Award Id",
             "type": "string"
           },
+          "award_number": {
+            "title": "Award Number",
+            "type": "string"
+          },
+          "award_status": {
+            "enum": [
+              "draft",
+              "approval_pending",
+              "approved",
+              "superseded",
+              "cancelled"
+            ],
+            "title": "Award Status",
+            "type": "string"
+          },
+          "can_override": {
+            "default": false,
+            "title": "Can Override",
+            "type": "boolean"
+          },
           "lines": {
             "items": {
               "$ref": "#/components/schemas/AwardedLineRead"
             },
             "title": "Lines",
             "type": "array"
+          },
+          "rfq_id": {
+            "format": "uuid",
+            "title": "Rfq Id",
+            "type": "string"
+          },
+          "vendors": {
+            "items": {
+              "$ref": "#/components/schemas/AwardedVendorRead"
+            },
+            "title": "Vendors",
+            "type": "array"
           }
         },
         "required": [
           "award_id",
-          "lines"
+          "award_number",
+          "award_status",
+          "rfq_id",
+          "lines",
+          "vendors"
         ],
         "title": "AwardedLinesRead",
+        "type": "object"
+      },
+      "AwardedVendorRead": {
+        "properties": {
+          "eligible": {
+            "title": "Eligible",
+            "type": "boolean"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "vendor_id": {
+            "format": "uuid",
+            "title": "Vendor Id",
+            "type": "string"
+          },
+          "vendor_name": {
+            "title": "Vendor Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "vendor_id",
+          "vendor_name",
+          "eligible",
+          "reasons"
+        ],
+        "title": "AwardedVendorRead",
         "type": "object"
       },
       "BalanceQueryRead": {

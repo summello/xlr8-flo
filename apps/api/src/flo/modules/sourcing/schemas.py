@@ -578,6 +578,16 @@ class AwardHeader:
 
 
 @dataclass(frozen=True)
+class AwardSummary:
+    """What the create-PO screen labels an award with (E13-S13)."""
+
+    number: str
+    status: str
+    rfq_id: UUID
+    vendor_names: dict[UUID, str]
+
+
+@dataclass(frozen=True)
 class AwardedLine:
     """One award line with the RFQ line and requisition line it prices (E13-S01)."""
 

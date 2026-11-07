@@ -8,9 +8,9 @@ Loaded into every agent session. Updated by `flo done` (status) and by Opus at e
 | | |
 |---|---|
 | Milestone | **M3 — First sellable release** |
-| Stories | 178 / 249 done |
+| Stories | 179 / 249 done |
 | Branch | milestone/M3-sellable |
-| In flight | E13-S13, E13-S14, E13-S18, E13-S19 |
+| In flight | E13-S14, E13-S18, E13-S19 |
 | Blocked | — |
 <!-- STATE:END -->
 

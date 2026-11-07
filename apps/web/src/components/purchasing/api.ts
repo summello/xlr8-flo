@@ -10,6 +10,9 @@ export type PoHistory = components["schemas"]["PoHistoryRead"];
 export type PoBudget = components["schemas"]["PoBudgetSummaryRead"];
 export type PoTransmission = components["schemas"]["PoTransmissionRead"];
 export type PoChange = components["schemas"]["PoChangeRead"];
+export type AwardedLines = components["schemas"]["AwardedLinesRead"];
+export type AwardedLine = components["schemas"]["AwardedLineRead"];
+export type AwardedVendor = components["schemas"]["AwardedVendorRead"];
 type Sent = NonNullable<PoRow["sent"]>;
 
 /** PO list tabs (pages/purchase-orders.md 4.1); the counts come from the server, one key each. */

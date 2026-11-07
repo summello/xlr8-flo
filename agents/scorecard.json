@@ -7415,6 +7415,65 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E13-S13",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 1
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "725b3b32-41e5-4c64-951d-5c70f0947dfd",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S13",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1b34b-1b06-7732-b802-48aaa30c4fa1",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Create-POs screen at /purchase-orders/new?award=: one POST per vendor and requisition with per-group idempotency keys, field checks, override reason and refetch. awarded-lines now returns award number/status, RFQ id, vendor names and eligibility, requisition numbers and can_override.",
+      "title": "Create POs from awarded lines",
+      "durations": {
+        "wall_s": 14217,
+        "author_s": 13675,
+        "review_s": {
+          "codex": 204
+        },
+        "gate_s": 0
+      }
     }
   ]
 }

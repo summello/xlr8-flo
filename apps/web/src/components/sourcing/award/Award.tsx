@@ -53,6 +53,7 @@ export default function Award({ id, award, c, onAward, navigate }: { id: string;
   return <form className="aw" noValidate onSubmit={e => { e.preventDefault(); void run(true); }} aria-busy={busy || undefined}>
     {problem && <SubmitSummary title={problem.title} lead={problem.lead} problems={problem.problems} />}
     {locked && <p className="req-pill" role="status" data-tone="info">{award.status === "approval_pending" ? "Approval Pending" : award.status.replaceAll("_", " ")}: this award can no longer be edited here.</p>}
+    {award.status === "approved" && <a className="req-link-button" href={`/purchase-orders/new?award=${award.id}`} onClick={e => { e.preventDefault(); navigate(`/purchase-orders/new?award=${award.id}`); }}>Create PO</a>}
     <div className="aw-top"><h3>Award {award.number}</h3><Standing award={award} />
       <button type="button" disabled={locked} onClick={lowest}>Set All to Lowest</button></div>
     <Lines c={c} rows={rows} setRow={setRow} required={award.justification_required === true} locked={locked} />

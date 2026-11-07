@@ -4456,6 +4456,8 @@ export interface components {
              * Format: uuid
              */
             requisition_line_id: string;
+            /** Requisition Number */
+            requisition_number: string;
             /**
              * Rfq Line Id
              * Format: uuid
@@ -4478,8 +4480,41 @@ export interface components {
              * Format: uuid
              */
             award_id: string;
+            /** Award Number */
+            award_number: string;
+            /**
+             * Award Status
+             * @enum {string}
+             */
+            award_status: "draft" | "approval_pending" | "approved" | "superseded" | "cancelled";
+            /**
+             * Can Override
+             * @default false
+             */
+            can_override?: boolean;
             /** Lines */
             lines: components["schemas"]["AwardedLineRead"][];
+            /**
+             * Rfq Id
+             * Format: uuid
+             */
+            rfq_id: string;
+            /** Vendors */
+            vendors: components["schemas"]["AwardedVendorRead"][];
+        };
+        /** AwardedVendorRead */
+        AwardedVendorRead: {
+            /** Eligible */
+            eligible: boolean;
+            /** Reasons */
+            reasons: string[];
+            /**
+             * Vendor Id
+             * Format: uuid
+             */
+            vendor_id: string;
+            /** Vendor Name */
+            vendor_name: string;
         };
         /** BalanceQueryRead */
         BalanceQueryRead: {

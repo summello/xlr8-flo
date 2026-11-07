@@ -103,10 +103,12 @@ def awarded_lines(
     award_id: UUID,
     context: AwardViewContext,
     connection: Connection,
+    request: Request,
     vendor_id: Annotated[UUID | None, Query()] = None,
 ) -> AwardedLinesRead:
+    can_override = permits(request, "rfq.approve", award_target(award_id, connection))
     return PurchaseOrderService(connection, current_scope(), context.user_id).awarded(
-        award_id, vendor_id
+        award_id, vendor_id, can_override
     )
 
 

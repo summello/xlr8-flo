@@ -2177,7 +2177,7 @@ epics:
         dep:
           - E13-S01
           - E13-S12
-        st: in_progress
+        st: done
       - id: E13-S14
         t: 'PO editor: header, lines with tax and freight apart, budget preview, vendor eligibility'
         k: ui
@@ -2270,7 +2270,7 @@ epics:
         dep:
           - E13-S07
           - E13-S12
-        st: in_progress
+        st: review
       - id: E13-S20
         t: 'PO decision panel: Purchase Order Evidence block'
         k: ui

@@ -471,6 +471,46 @@ async def send(browser, method, suffix="", data=None, extra=None):
     )
 
 
+def test_awarded_lines_label_the_award_vendors_requisitions_and_override(lifecycle_db):
+    """E13-S13: award number, status, RFQ, vendor names, eligibility, requisition numbers."""
+    db, _ = lifecycle_db
+    rfq, row, a, _, award_id, _ = ready(db)
+    name = sql(
+        db,
+        "SELECT vendor_snapshot->>'trading_name' FROM rfq_invitee WHERE vendor_id=%s",
+        (a,),
+    )[0][0]
+    number = sql(db, "SELECT number FROM award WHERE id=%s", (award_id,))[0][0]
+    path = f"/awarded-lines?award_id={award_id}"
+
+    async def read(browser):
+        response = await send(browser, "GET", path)
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            got = await read(browser)
+            assert got["award_number"] == number and got["award_status"] == "approved"
+            assert got["rfq_id"] == str(rfq.id) and got["can_override"] is True
+            assert {x["requisition_number"] for x in got["lines"]} == {
+                sql(db, "SELECT number FROM requisition WHERE id=%s", (row.id,))[0][0]
+            }
+            [vendor] = got["vendors"]
+            assert vendor["vendor_id"] == str(a) and vendor["vendor_name"] == name
+            assert vendor["eligible"] is True and vendor["reasons"] == []
+            sql(db, "UPDATE vendor SET status='suspended' WHERE id=%s RETURNING 1", (a,))
+            [vendor] = (await read(browser))["vendors"]
+            assert vendor["eligible"] is False and vendor["reasons"]
+            regrant(db, ["purchase_order.view"])
+            assert (await read(browser))["can_override"] is False
+            supersede(db, rfq)
+            assert (await read(browser))["award_status"] == "superseded"
+
+    asyncio.run(scenario())
+
+
 def test_authorization_per_role_and_a_replayed_delete(lifecycle_db):
     db, _ = lifecycle_db
     rfq, _, a, _, award_id, unit_id = ready(db)

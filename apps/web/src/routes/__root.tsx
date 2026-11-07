@@ -34,6 +34,7 @@ import NewVendor from "./vendors/new";
 import EditVendor from "./vendors/edit";
 import PurchaseOrderList from "./purchase-orders/list";
 import PurchaseOrderDetail from "./purchase-orders/detail";
+import NewPurchaseOrders from "./purchase-orders/new";
 import RfqList from "./sourcing/rfqs/list";
 import RfqDetail from "./sourcing/rfqs/detail";
 import RfqComparison from "./sourcing/rfqs/comparison";
@@ -193,6 +194,13 @@ const ROUTES: Readonly<Record<RoutePath, RouteDefinition>> = {
     hierarchy: [ORGANIZATION, ["/sourcing/rfqs", "RFQs"], ["/sourcing/rfqs/new", "New RFQ"]],
     phase: "commit",
     title: "New RFQ",
+  },
+  "/purchase-orders/new": {
+    activeHref: "/purchase-orders",
+    description: "Order the open quantities of an approved award, one draft per vendor and requisition.",
+    hierarchy: [ORGANIZATION, ["/purchase-orders", "Purchase Orders"], ["/purchase-orders/new", "Create Purchase Orders"]],
+    phase: "commit",
+    title: "Create Purchase Orders",
   },
   "/purchase-orders": {
     activeHref: "/purchase-orders",
@@ -443,6 +451,7 @@ export default function RootRoute() {
       {vendorEditId ? <EditVendor key={vendorEditId} id={vendorEditId} navigate={navigate} /> : undefined}
       {shellRoute.path === "/sourcing" || shellRoute.path === "/sourcing/rfqs" ? <RfqList key={window.location.search} navigate={navigate} /> : undefined}
       {shellRoute.path === "/purchase-orders" ? <PurchaseOrderList key={window.location.search} navigate={navigate} /> : undefined}
+      {shellRoute.path === "/purchase-orders/new" ? <NewPurchaseOrders key={window.location.search} navigate={navigate} /> : undefined}
       {poId ? <PurchaseOrderDetail key={poId} id={poId} navigate={navigate} /> : undefined}
       {rfqId ? <RfqDetail key={rfqId} id={rfqId} navigate={navigate} /> : undefined}
       {editRfqId ? <EditRfq key={editRfqId} id={editRfqId} navigate={navigate} /> : undefined}

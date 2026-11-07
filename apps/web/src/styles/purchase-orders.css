@@ -22,3 +22,8 @@
 @container (min-width: 760px) { .po-lanes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @container (min-width: 1100px) { .po-body { grid-template-columns: minmax(0, 7fr) minmax(0, 3fr); } }
 @media (max-width: 1023px) { .po-version > button, .po-note button { min-block-size: var(--touch-target); } }
+/* Create POs from an award (E13-S13). */
+.po-create-vendor { display: grid; gap: var(--space-3); margin-block-end: var(--space-6); }
+.po-create-vendor h3 { font-size: var(--text-body); font-weight: var(--weight-heading); }
+.po-create-table td:last-child, .po-create-table th:last-child { inline-size: calc(var(--touch-target) * 3); }
+@media (max-width: 1023px) { .po-create-table input { min-block-size: var(--touch-target); } }

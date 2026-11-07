@@ -39,6 +39,7 @@ from flo.modules.purchasing.pricing import Figures, landed, spread
 from flo.modules.purchasing.schemas import (
     AwardedLineRead,
     AwardedLinesRead,
+    AwardedVendorRead,
     PoAttachmentRead,
     PoBudgetProjectRead,
     PoBudgetSummaryRead,
@@ -68,6 +69,7 @@ from flo.modules.requisitions.service import (
 from flo.modules.sourcing.service import (
     award_evidence,
     award_line_quotes,
+    award_summary,
     award_unit,
     awarded_lines,
     lock_award,
@@ -366,9 +368,21 @@ class PurchaseOrderService:
             released_currency=None if released[0] is None else str(released[1]).strip(),
         )
 
-    def awarded(self, award_id: UUID, vendor_id: UUID | None) -> AwardedLinesRead:
+    def awarded(
+        self, award_id: UUID, vendor_id: UUID | None, can_override: bool = False
+    ) -> AwardedLinesRead:
         """Open to order per award line, with the value already on draft POs."""
         found = awarded_lines(self.connection, self.scope, award_id, vendor_id=vendor_id)
+        summary = award_summary(self.connection, self.scope, award_id)
+        requisitions = RequisitionService(self.connection, self.scope, self.actor_id)
+        numbers = {
+            rid: requisitions.get(rid).number
+            for rid in dict.fromkeys(x.requisition_id for x in found)
+        }
+        vendor_ids = list(dict.fromkeys(x.vendor_id for x in found))
+        eligibility = VendorService(self.connection, self.scope, self.actor_id).eligibility(
+            vendor_ids, award_unit(self.connection, self.scope, award_id), today()
+        )
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             ordered: dict[tuple[UUID, UUID], Decimal] = defaultdict(Decimal)
             for r in self.repo.execute(
@@ -381,6 +395,19 @@ class PurchaseOrderService:
                 ordered[key] += quantize(cast(Decimal, r[2]), str(r[3]).strip())
         return AwardedLinesRead(
             award_id=award_id,
+            award_number=summary.number,
+            award_status=cast(Any, summary.status),
+            rfq_id=summary.rfq_id,
+            can_override=can_override,
+            vendors=[
+                AwardedVendorRead(
+                    vendor_id=v,
+                    vendor_name=summary.vendor_names.get(v, ""),
+                    eligible=v in eligibility and eligibility[v].eligible,
+                    reasons=[r.text for r in eligibility[v].reasons] if v in eligibility else [],
+                )
+                for v in vendor_ids
+            ],
             lines=[
                 AwardedLineRead(
                     rfq_line_id=x.rfq_line_id,
@@ -388,6 +415,7 @@ class PurchaseOrderService:
                     vendor_id=x.vendor_id,
                     requisition_id=x.requisition_id,
                     requisition_line_id=x.requisition_line_id,
+                    requisition_number=numbers[x.requisition_id],
                     description=x.description,
                     uom_code=x.uom_code,
                     currency=x.currency,

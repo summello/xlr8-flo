@@ -18,6 +18,7 @@ export const ROUTE_PATHS = [
   "/sourcing/rfqs",
   "/sourcing/rfqs/new",
   "/purchase-orders",
+  "/purchase-orders/new",
   "/assets",
   "/help/keyboard",
   "/views/archive",

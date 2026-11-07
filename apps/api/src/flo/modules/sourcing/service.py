@@ -39,6 +39,7 @@ from flo.modules.sourcing.schemas import (
     AwardedLine,
     AwardHeader,
     AwardLineQuote,
+    AwardSummary,
     DeliveryRead,
     InviteeCandidate,
     InviteeCandidatePage,
@@ -1264,6 +1265,27 @@ def bid_attachments_sealed(connection: Conn, scope: Scope, id: UUID, actor_id: U
 
 
 # -- purchase orders draw on an approved award (E13-S01) ------------------------------------
+
+
+def award_summary(conn: Conn, scope: Scope, award_id: UUID) -> AwardSummary:
+    """Number, status, RFQ and invitee names of an award, 404 for an unknown or foreign id."""
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        repo = RfqRepository(conn, scope)
+        row = repo.execute(
+            "SELECT number, status, rfq_id FROM award WHERE org_id = %(org_id)s AND id = %(id)s",
+            {"id": award_id},
+        ).fetchone()
+        if row is None:
+            raise ProblemError(ErrorCode.NOT_FOUND)
+        names = {
+            cast(UUID, r[0]): cast(str, r[1] or "")
+            for r in repo.execute(
+                "SELECT vendor_id, vendor_snapshot->>'trading_name' FROM rfq_invitee "
+                "WHERE org_id = %(org_id)s AND rfq_id = %(rfq)s",
+                {"rfq": row[2]},
+            ).fetchall()
+        }
+    return AwardSummary(str(row[0]), str(row[1]), cast(UUID, row[2]), names)
 
 
 def award_unit(conn: Conn, scope: Scope, award_id: UUID) -> UUID:
