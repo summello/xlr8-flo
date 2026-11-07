@@ -38,7 +38,7 @@ test("search and Load More go to the server; Remove needs a reason", async ({ pa
   await expect(page.getByRole("button", { name: /^Remove .* from the suppression list$/ })).toHaveCount(60);
   expect(state.queries.some(q => q.includes("cursor="))).toBe(true);
   await page.getByLabel("Search by email").fill("user01");
-  await page.getByRole("button", { name: "Search" }).click();
+  await page.getByRole("button", { name: "Search", exact: true }).click();
   await expect(page.getByRole("button", { name: /^Remove .* from the suppression list$/ })).toHaveCount(1);
   expect(state.queries.some(q => q.includes("q=user01"))).toBe(true);
 
