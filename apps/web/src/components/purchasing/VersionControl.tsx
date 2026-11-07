@@ -42,7 +42,7 @@ export default function VersionControl({ po, navigate }: { po: Po; navigate: (hr
       <h3>Change orders</h3>
       {changes.error ? <div role="alert"><p>{changes.error}</p><button type="button" onClick={changes.reload}>Try again</button></div> :
         (changes.data ?? []).length === 0 ? <p className="req-sub">No change orders.</p> :
-        <ul className="vendor-list-plain">{(changes.data ?? []).map(c => <li key={c.id}><strong>Change order {c.number}</strong><span className="req-sub">{label(c.status)}{c.reason ? `: ${c.reason}` : ""}</span></li>)}</ul>}
+        <ul className="vendor-list-plain">{(changes.data ?? []).map(c => <li key={c.id}><a href={`/purchase-orders/${po.id}/changes/${c.number}`} onClick={go(`${po.id}/changes/${c.number}`)}>Change order {c.number}</a><span className="req-sub">{label(c.status)}{c.reason ? `: ${c.reason}` : ""}</span></li>)}</ul>}
     </div>}
   </div>;
 }

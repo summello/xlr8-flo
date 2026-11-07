@@ -7592,6 +7592,65 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E13-S18",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex"
+      ],
+      "rounds": 3,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex": 3
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex": {
+          "ran_tests": true,
+          "reviews": 3,
+          "findings": 4,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "b013a64d-c9ff-4fdb-b682-f3e0937e5f0b",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S18",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex": {
+          "agent": "codex",
+          "id": "01a1b3d6-28c4-7ea3-ab25-0f243d3977e5",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Adds the change order screen (/purchase-orders/:id/changes/:n) with a debounced one-at-a-time PATCH, server-computed diff, signed budget effect and approval line, plus Start Change Order on the PO detail and change-order links in the version control. Web only; no API change.",
+      "title": "Change order screen: field diff, signed budget effect, reapproval line",
+      "durations": {
+        "wall_s": 23004,
+        "author_s": 17832,
+        "review_s": {
+          "codex": 21
+        },
+        "gate_s": 0
+      }
     }
   ]
 }
