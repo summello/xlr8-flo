@@ -2,6 +2,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "@phosphor-icons/react";
 import { forwardRef, useId, useRef, useState } from "react";
 import { apiClient } from "../../../api/client";
+import Person from "../../ui/Person";
 import { failure, mutationHeaders, type Problem } from "../../requisitions/api";
 import { useLoad } from "../../requisitions/useLoad";
 import type { PoTransmission } from "../api";
@@ -50,7 +51,7 @@ const ChangeRecipient = forwardRef<HTMLButtonElement, { poId: string; vendorId: 
           : <fieldset className="vendor-dialog-units" aria-describedby={fieldError ? `${uid}-error` : undefined}><legend className="t-label">Contacts</legend>
             {contacts.data.length === 0 && <p>This vendor has no contacts.</p>}
             {contacts.data.map((c, i) => <label key={c.id} className="project-checkbox"><input type="checkbox" ref={i === 0 ? first : undefined} checked={chosen.includes(c.id)}
-              onChange={e => setChosen(s => e.target.checked ? [...s, c.id] : s.filter(x => x !== c.id))} />{c.name} <span className="req-sub">{c.email} · {c.type}</span></label>)}
+              onChange={e => setChosen(s => e.target.checked ? [...s, c.id] : s.filter(x => x !== c.id))} /><Person name={c.name} email={c.email} /> <span className="req-sub">{c.type}</span></label>)}
             {fieldError && <p role="alert" id={`${uid}-error`} className="field-error">{fieldError}</p>}
           </fieldset>}
         {refusal && <p role="alert" className="field-error">{refusal}</p>}

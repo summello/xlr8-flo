@@ -3,6 +3,7 @@ import { PaperPlaneTilt, X } from "@phosphor-icons/react";
 import { useRef, useState } from "react";
 import { apiClient } from "../../../api/client";
 import Money from "../../ui/Money";
+import Person from "../../ui/Person";
 import { failure, mutationHeaders, type Problem } from "../../requisitions/api";
 import { useLoad } from "../../requisitions/useLoad";
 import type { Po } from "../api";
@@ -59,7 +60,7 @@ export default function IssueDialog({ po, navigate, onReload }: { po: Po; naviga
         <Dialog.Title>Issue {po.number}</Dialog.Title>
         <Dialog.Description>Issuing sends this version to the vendor and commits the budget. Check what goes out.</Dialog.Description>
         <dl className="po-issue-facts">
-          <dt>Recipients</dt><dd>{po.recipients.length ? <ul className="vendor-list-plain">{po.recipients.map(r => <li key={String(r.email)}>{String(r.name)} <span className="req-sub">{String(r.email)}</span></li>)}</ul>
+          <dt>Recipients</dt><dd>{po.recipients.length ? <ul className="vendor-list-plain">{po.recipients.map((r, i) => <li key={i}><Person name={String(r.name)} email={String(r.email)} /></li>)}</ul>
             : "No recipient is set. Issuing sends to the vendor's document contacts and stops if it has none."}</dd>
           <dt>Version</dt><dd>v{po.revision + 1}</dd>
           <dt>Template</dt><dd>Email {EMAIL_TEMPLATE}, document {copy.data?.template_version ?? "…"}</dd>

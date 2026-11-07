@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { apiClient } from "../../api/client";
+import Person, { personLabel } from "../../components/ui/Person";
 import Signal from "../../components/ui/Signal";
 import { sentSignal, type Po, type PoTransmission } from "../../components/purchasing/api";
 import IssueStage from "../../components/purchasing/issue/IssueStage";
@@ -93,7 +94,7 @@ function Moment({ po, id, rows, setRows, back }: { po: Po; id: string; rows: PoT
     return () => { cancelAnimationFrame(outer); cancelAnimationFrame(inner); };
   }, [focus, attempt, step]);
 
-  const failureText = failed.length ? `Not delivered: ${failed.map(r => r.recipient_name || r.recipient_email).join(", ")}.` : null;
+  const failureText = failed.length ? `Not delivered: ${failed.map(r => personLabel(r.recipient_name, r.recipient_email)).join(", ")}.` : null;
   const outcome = failed.length ? "The email did not reach every recipient." : current.length && current.every(r => r.result === "delivered") ? "The email was delivered." : "The email is on its way. Results appear here.";
 
   return <section className="req-page po-page po-issue" aria-label="Purchase order issued">
@@ -104,7 +105,7 @@ function Moment({ po, id, rows, setRows, back }: { po: Po; id: string; rows: PoT
       <h3>Result</h3>
       <p role="status">{outcome}{capped && " Still sending — results will appear on the order."}</p>
       <table className="po-lines"><caption className="visually-hidden">Result of the current send</caption><thead><tr><th scope="col">Recipient</th><th scope="col">Version</th><th scope="col">Result</th></tr></thead>
-        <tbody>{current.map(r => <tr key={r.id}><td>{r.recipient_name} <span className="req-sub">{r.recipient_email}</span></td><td>v{po.revision + 1}</td><td><Signal tone={sentSignal(r).tone} label={sentSignal(r).label} /></td></tr>)}</tbody></table>
+        <tbody>{current.map(r => <tr key={r.id}><td><Person name={r.recipient_name} email={r.recipient_email} /></td><td>v{po.revision + 1}</td><td><Signal tone={sentSignal(r).tone} label={sentSignal(r).label} /></td></tr>)}</tbody></table>
       {plan && <div className="po-recovery">
         <p ref={message} tabIndex={-1} role="alert">{failureText}{plan.focus === "message" && " The vendor's address reported this email as spam. Someone who can view this vendor's contacts can change the recipient."}</p>
         <div className="po-actions">
