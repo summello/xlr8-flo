@@ -4,11 +4,11 @@ import { poId, stubPo } from "./po-screens-fixture";
 const NOW = "2026-10-12T10:00:00Z";
 const projectId = "66666666-6666-4666-8666-666666666666";
 
-type Options = { status?: string; actions?: string[]; fail?: { status: number; body: Record<string, unknown> } };
+type Options = { status?: string; actions?: string[]; nullEffectCodes?: boolean; fail?: { status: number; body: Record<string, unknown> } };
 export type Sent = { method: string; path: string; headers: Record<string, string>; body: Record<string, unknown> };
 
 /** `stubPo` plus the three routes of E13-S19, registered later so they win; everything else falls back to it. Figures are deliberately odd: the dialog must show the server's. */
-export async function stubCancel(page: Page, { status = "issued", actions = ["cancel", "reduce"], fail }: Options = {}) {
+export async function stubCancel(page: Page, { status = "issued", actions = ["cancel", "reduce"], nullEffectCodes = false, fail }: Options = {}) {
   await stubPo(page, { status });
   const state = { status, sent: [] as Sent[], fail };
   const lines = [1, 2, 3].map(n => ({ line_no: n, rfq_line_id: `r${n}`, requisition_line_id: `q${n}`, description: `Pump ${n}`, uom_code: "EA", quantity: "4.0000", unit_price: "100.0000", project_id: projectId, department_code: "OPS", ledger_account_code: "6100", price: "400.0000", tax: "0.0000", freight: "0.0000", line_total: "400.0000", budget_amount: "400.0000", budget_amount_project: "400.0000", value: "400.0000", value_converted: "400.0000" }));
@@ -33,7 +33,7 @@ export async function stubCancel(page: Page, { status = "issued", actions = ["ca
       state.sent.push({ method, path, headers: req.headers(), body: req.postDataJSON() });
       if (state.fail) return send(state.fail.body, state.fail.status);
       if (path.endsWith("/cancel")) { state.status = "cancelled"; return send({ status: "cancelled" }); }
-      return send({ id: "c2", number: 2, status: "approval_pending", budget_effect: [{ delta: "-123.4500", currency: "USD", department_code: "OPS", ledger_account_code: "6100" }] }, 201);
+      return send({ id: "c2", number: 2, status: "approval_pending", budget_effect: [{ project_id: projectId, delta: "-123.4500", currency: "USD", department_code: nullEffectCodes ? null : "OPS", ledger_account_code: nullEffectCodes ? null : "6100" }] }, 201);
     }
     return route.fallback();
   });

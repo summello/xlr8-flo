@@ -124,7 +124,10 @@ class PoChangeAdapter:
             {
                 "total": change.total,
                 "diff": json.dumps(change.diff, sort_keys=True, default=str),
-                "budget_effect": json.dumps(change.budget_effect, sort_keys=True),
+                "budget_effect": json.dumps(
+                    [effect.model_dump(mode="json") for effect in change.budget_effect],
+                    sort_keys=True,
+                ),
             },
         )
 

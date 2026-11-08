@@ -71,6 +71,19 @@ test("reduce: only the changed rows are sent, the result view shows the signed e
   await expect(dialog.getByRole("button", { name: "Close", exact: true })).toBeFocused();
 });
 
+test("reduce: null budget effect codes render dashes, never null or undefined", async ({ page, baseURL }) => {
+  await stubCancel(page, { nullEffectCodes: true });
+  const { dialog } = await open(page, baseURL, "Cancel or Reduce");
+  await dialog.getByLabel("Reduce Quantities").check();
+  await dialog.getByLabel("New quantity for line 1").fill("2.5");
+  await dialog.getByLabel("Reason (required)").fill("Over-ordered");
+  await dialog.getByRole("button", { name: "Submit Reduction" }).click();
+  const effect = dialog.getByRole("list", { name: "Budget effect" });
+  await expect(effect).toContainText("— · —");
+  await expect(effect).not.toContainText("null");
+  await expect(effect).not.toContainText("undefined");
+});
+
 test("nothing changed is refused; a stale_version refusal keeps the reason and offers Reload", async ({ page, baseURL }) => {
   const state = await stubCancel(page, { fail: { status: 409, body: { detail: "The purchase order changed. Reload it and retry.", correlation_id: "c1", checks: { problem: "stale_version" } } } });
   const { dialog } = await open(page, baseURL, "Cancel or Reduce");

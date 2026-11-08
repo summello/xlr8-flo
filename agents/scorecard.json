@@ -8270,6 +8270,58 @@
         },
         "gate_s": 237
       }
+    },
+    {
+      "story": "E13-S28",
+      "kind": "crud",
+      "size": "S",
+      "tags": [],
+      "author": "codex-b",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 1
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "codex-b": {
+          "agent": "codex-b",
+          "id": "01a1bb79-7033-7a53-90e7-04e57a008ea6",
+          "source": "codex rollout matched on cwd"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a1bc29-8cbc-7ff3-9260-eb0d557da83c",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "PO change budget effects now have generated end-to-end types while preserving the existing approval digest. Null accounting codes render as dashes in both change views.",
+      "title": "Typed budget effect on a PO change, no hand-written client type",
+      "durations": {
+        "wall_s": 14897,
+        "author_s": 5738,
+        "review_s": {
+          "codex-a": 172
+        },
+        "gate_s": 590
+      }
     }
   ]
 }
