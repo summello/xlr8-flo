@@ -4467,6 +4467,11 @@
       },
       "DisputeRead": {
         "properties": {
+          "can_resolve": {
+            "default": false,
+            "title": "Can Resolve",
+            "type": "boolean"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -10021,6 +10026,18 @@
       "PerformanceRead": {
         "description": "Figures are computed here from current rows only, never in the browser (VEN-007).",
         "properties": {
+          "actions": {
+            "default": [],
+            "items": {
+              "enum": [
+                "add_score",
+                "dispute"
+              ],
+              "type": "string"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
           "categories": {
             "items": {
               "$ref": "#/components/schemas/CategoryAverage"

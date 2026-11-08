@@ -54,7 +54,7 @@ from flo.modules.vendors.schemas import (
     VendorPatch,
     VendorStatus,
 )
-from flo.modules.vendors.service import VendorService
+from flo.modules.vendors.service import SCORE_ACTION_PERMISSIONS, VendorService
 
 router = APIRouter(prefix="/api/v1/vendors", tags=["vendors"])
 
@@ -375,6 +375,7 @@ def list_scores(
     id: UUID,
     context: ViewContext,
     connection: Connection,
+    request: Request,
     category: str | None = None,
     start: Annotated[date | None, Query(alias="from")] = None,
     end: Annotated[date | None, Query(alias="to")] = None,
@@ -382,7 +383,13 @@ def list_scores(
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
 ) -> ScorePage:
     return VendorService(connection, current_scope(), context.user_id).list_scores(
-        id, category, start, end, cursor, limit
+        id,
+        category,
+        start,
+        end,
+        cursor,
+        limit,
+        permits(request, "vendor.approve", organization_target()),
     )
 
 
@@ -424,10 +431,19 @@ def performance(
     id: UUID,
     context: ViewContext,
     connection: Connection,
+    request: Request,
     start: Annotated[date | None, Query(alias="from")] = None,
     end: Annotated[date | None, Query(alias="to")] = None,
 ) -> PerformanceRead:
-    return VendorService(connection, current_scope(), context.user_id).performance(id, start, end)
+    # the same permissions the routes require (E11-S22)
+    actions = [
+        name
+        for name, needed in SCORE_ACTION_PERMISSIONS
+        if all(permits(request, p, organization_target()) for p in needed)
+    ]
+    return VendorService(connection, current_scope(), context.user_id).performance(
+        id, start, end, actions
+    )
 
 
 @router.post("/{id}/submit", response_model=ChangeRead)

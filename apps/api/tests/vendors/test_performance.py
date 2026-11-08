@@ -388,6 +388,78 @@ def test_roles_purchasing_scores_sourcing_cannot_and_routes_work(header_db):
     asyncio.run(scenario())
 
 
+def test_performance_actions_match_what_each_role_may_do(header_db):
+    db = header_db
+    vid = vendor(db)
+    svc = service(db)
+    roles = [
+        (["vendor.view"], []),
+        (["vendor.view", "purchase_order.view"], ["add_score"]),
+        (["vendor.view", "vendor.edit"], ["dispute"]),
+        (["vendor.view", "purchase_order.view", "vendor.edit"], ["add_score", "dispute"]),
+    ]
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            for n, (permissions, expected) in enumerate(roles):
+                regrant(db, permissions)
+                perf = await send(browser, "GET", f"/{vid}/performance")
+                assert perf.json()["actions"] == expected, permissions
+                fresh = score(svc, vid, "quality", 3, SEP, f"PO-S{n}")
+                added = await send(
+                    browser,
+                    "POST",
+                    f"/{vid}/scores",
+                    {"category": "pricing", "score": 4, "period": "2026-08-01"}
+                    | {"source_ref": f"PO-R{n}", "rationale": "r"},
+                )
+                raised = await send(
+                    browser, "POST", f"/{vid}/scores/{fresh.id}/disputes", {"reason": "r"}
+                )
+                # a listed action's route succeeds; an unlisted one is refused
+                assert added.status_code == (201 if "add_score" in expected else 403), permissions
+                assert raised.status_code == (201 if "dispute" in expected else 403), permissions
+
+    asyncio.run(scenario())
+
+
+def test_can_resolve_follows_permission_raiser_and_resolution(header_db):
+    db = header_db
+    vid = vendor(db)
+    mine = service(db)
+    other = service(db, actor=other_actor(db))
+    own = score(mine, vid, "quality", 3, SEP, "PO-1")
+    raised = mine.dispute_score(vid, own.id, DisputeCreate(reason="Too low"))
+
+    def flags(svc, can_approve):
+        page = svc.list_scores(vid, None, None, None, None, 50, can_approve)
+        return [d.can_resolve for r in page.rows for d in r.disputes]
+
+    assert flags(mine, True) == [False]  # the raiser, even holding vendor.approve
+    assert flags(other, False) == [False]  # no vendor.approve
+    assert flags(other, True) == [True]
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)  # the admin raised nothing in this vendor's second dispute
+            regrant(db, ["vendor.view", "vendor.approve"])
+            listed = (await send(browser, "GET", f"/{vid}/scores")).json()["rows"]
+            assert [d["can_resolve"] for r in listed for d in r["disputes"]] == [False]
+            theirs = score(other, vid, "pricing", 2, SEP, "PO-2")
+            second = other.dispute_score(vid, theirs.id, DisputeCreate(reason="Low"))
+            listed = (await send(browser, "GET", f"/{vid}/scores")).json()["rows"]
+            flagged = {d["id"]: d["can_resolve"] for r in listed for d in r["disputes"]}
+            assert flagged == {str(raised.id): False, str(second.id): True}
+            resolve = f"/{vid}/scores/{theirs.id}/disputes/{second.id}/resolve"
+            done = await send(browser, "POST", resolve, {"resolution": "dismissed", "note": "No"})
+            assert done.status_code == 200, done.text
+            listed = (await send(browser, "GET", f"/{vid}/scores")).json()["rows"]
+            assert not any(d["can_resolve"] for r in listed for d in r["disputes"])  # resolved
+
+    asyncio.run(scenario())
+
+
 def test_vendor_performance_migration_roundtrip(empty_database):  # noqa: F811
     from flo.kernel import migrate
     from flo.kernel.logging import correlation_context

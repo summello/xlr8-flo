@@ -64,6 +64,20 @@ test("a dismissed dispute changes no figure", async ({ page }) => {
   await expect(page.locator(".perf-overall strong")).toHaveText("3.0");
 });
 
+test("a caller the server lists no actions for sees no Add Score, Dispute or Resolve", async ({ page }) => {
+  const state = await stubVendors(page);
+  state.actions = [];
+  const row = { category_code: "PRICING", score: 3, period: "2026-09-01", source_type: "po", scored_by_email: "dev@example.test", scored_at: "2026-10-01T00:00:00Z", supersedes: null, superseded_by: null };
+  const dispute = { id: "dddddddd-0000-4000-8000-000000000001", score_id: "bbbbbbbb-0000-4000-8000-000000000002", raised_by_email: "dev@example.test", raised_at: "2026-10-02T00:00:00Z", reason: "Low.", can_resolve: false, resolution: null, resolved_by_email: null, resolved_at: null, resolution_note: null };
+  state.scores.push({ ...row, id: "bbbbbbbb-0000-4000-8000-000000000001", source_ref: "PO-0001", rationale: "Fine.", disputes: [] });
+  state.scores.push({ ...row, id: dispute.score_id, source_ref: "PO-0002", rationale: "Fine too.", disputes: [dispute] });
+  await page.goto(`/vendors/${vendorId}`);
+  await page.getByRole("button", { name: "Open Scorecard" }).click();
+  const sheet = page.getByRole("dialog");
+  await expect(sheet.getByRole("row", { name: /PO-0002/ })).toContainText("Open, waiting for a decision");
+  for (const name of ["Add Score", /^Dispute /, /^Resolve/]) await expect(sheet.getByRole("button", { name })).toHaveCount(0);
+});
+
 test("the card shows the server's average, never one computed from the visible rows", async ({ page }) => {
   const state = await stubVendors(page);
   state.overall = "3.7";

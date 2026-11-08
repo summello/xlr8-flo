@@ -5627,6 +5627,11 @@ export interface components {
         /** DisputeRead */
         DisputeRead: {
             /**
+             * Can Resolve
+             * @default false
+             */
+            can_resolve?: boolean;
+            /**
              * Id
              * Format: uuid
              */
@@ -7578,6 +7583,11 @@ export interface components {
          * @description Figures are computed here from current rows only, never in the browser (VEN-007).
          */
         PerformanceRead: {
+            /**
+             * Actions
+             * @default []
+             */
+            actions?: ("add_score" | "dispute")[];
             /** Categories */
             categories: components["schemas"]["CategoryAverage"][];
             /** Count */

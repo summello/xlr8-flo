@@ -519,6 +519,8 @@ class DisputeRead(BaseModel):
     resolved_by_name: str | None
     resolved_at: datetime | None
     resolution_note: str | None
+    # the caller may resolve it: vendor.approve, not the raiser, still open (E11-S22)
+    can_resolve: bool = False
 
 
 class ScoreRead(BaseModel):
@@ -554,6 +556,7 @@ class PerformanceRead(BaseModel):
     categories: list[CategoryAverage]
     overall: str | None
     count: int
+    actions: list[Literal["add_score", "dispute"]] = []  # what the caller may do (E11-S22)
 
 
 class SubmitCreate(BaseModel):

@@ -4,7 +4,7 @@ import base64
 import json
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Literal, cast
 from uuid import UUID, uuid4
 
 import psycopg
@@ -151,16 +151,19 @@ class PerformanceMixin:
             raise ProblemError(ErrorCode.NOT_FOUND)
         return self._scores([row])[0]
 
-    def _scores(self, rows: list[tuple[object, ...]]) -> list[ScoreRead]:
+    def _scores(self, rows: list[tuple[object, ...]], can_approve: bool = False) -> list[ScoreRead]:
+        """`can_approve`: the caller holds vendor.approve, so resolvable disputes say so."""
         ids = [r[0] for r in rows]
         disputes = self.repo.execute(
-            f"SELECT {DISPUTE_COLUMNS} {DISPUTE_FROM} WHERE d.org_id = %(org_id)s "
+            f"SELECT {DISPUTE_COLUMNS}, d.raised_by {DISPUTE_FROM} WHERE d.org_id = %(org_id)s "
             "AND d.score_id = ANY(%(ids)s) ORDER BY d.raised_at, d.id",
             {"ids": ids},
         ).fetchall()
         by_score: dict[UUID, list[DisputeRead]] = {}
         for d in disputes:
-            read = DisputeRead.model_validate(dict(zip(DISPUTE_FIELDS, d, strict=True)))
+            read = DisputeRead.model_validate(dict(zip(DISPUTE_FIELDS, d[:-1], strict=True)))
+            # the same checks resolve_dispute makes: unresolved, and not the raiser
+            read.can_resolve = can_approve and read.resolution is None and d[-1] != self.actor_id
             by_score.setdefault(read.score_id, []).append(read)
         return [
             ScoreRead.model_validate(
@@ -251,6 +254,7 @@ class PerformanceMixin:
         end: date | None,
         cursor: str | None,
         limit: int = 50,
+        can_approve: bool = False,
     ) -> ScorePage:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             self._row(vendor_id)
@@ -274,13 +278,19 @@ class PerformanceMixin:
                     "limit": limit + 1,
                 },
             ).fetchall()
-            page = self._scores(rows[:limit])
+            page = self._scores(rows[:limit], can_approve)
             more = len(rows) > limit
             return ScorePage(
                 rows=page, next_cursor=_cursor(page[-1].period, page[-1].id) if more else None
             )
 
-    def performance(self, vendor_id: UUID, start: date | None, end: date | None) -> PerformanceRead:
+    def performance(
+        self,
+        vendor_id: UUID,
+        start: date | None,
+        end: date | None,
+        actions: list[Literal["add_score", "dispute"]] | None = None,
+    ) -> PerformanceRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             self._row(vendor_id)
             rows = self.repo.execute(
@@ -312,6 +322,7 @@ class PerformanceMixin:
                 else None
             ),
             count=sum(c for _, _, c in exact),
+            actions=actions or [],
         )
 
     def _dispute(self, id: UUID, lock: bool = False) -> tuple[object, ...]:

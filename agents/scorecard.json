@@ -8211,6 +8211,65 @@
         },
         "gate_s": 340
       }
+    },
+    {
+      "story": "E11-S22",
+      "kind": "ui",
+      "size": "S",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 1
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "2847b002-f832-457b-b6d0-10d23e3d0bac",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S22",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a1bbfc-c4ff-7813-8d10-ee1e466f5315",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Performance reads now list the caller's allowed score actions and each dispute says whether the caller can resolve it, using the same permission and separation-of-duty checks the routes make. The scorecard sheet shows Add Score, Dispute and Resolve only when the server allows them.",
+      "title": "Scorecard actions follow the server's per-action permissions",
+      "durations": {
+        "wall_s": 9965,
+        "author_s": 9138,
+        "review_s": {
+          "codex-a": 175
+        },
+        "gate_s": 237
+      }
     }
   ]
 }

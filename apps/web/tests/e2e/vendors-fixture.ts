@@ -38,6 +38,9 @@ export async function stubVendors(page: Page, { canReveal = true, canEdit = canR
     scores: [] as Record<string, any>[],
     /** When set, the stub reports this overall figure whatever the rows say: the browser must show the server's number. */
     overall: null as string | null,
+    /** What the stub says the caller may do; a stand-in for the server's per-role list (E11-S22). */
+    actions: ["add_score", "dispute"] as string[],
+    canResolve: true,
   };
   let seq = 0;
   const uid = () => `aaaaaaaa-0000-4000-8000-${String(++seq).padStart(12, "0")}`;
@@ -46,7 +49,7 @@ export async function stubVendors(page: Page, { canReveal = true, canEdit = canR
     const rows = current(), cats = [...new Set(rows.map(s => s.category_code as string))].sort();
     const avg = (c: string) => { const r = rows.filter(s => s.category_code === c); return r.reduce((n, s) => n + s.score, 0) / r.length; };
     const overall = cats.length ? (cats.reduce((n, c) => n + avg(c), 0) / cats.length).toFixed(1) : null;
-    return { categories: cats.map(c => ({ category_code: c, average: avg(c).toFixed(1), count: rows.filter(s => s.category_code === c).length })), overall: state.overall ?? overall, count: rows.length };
+    return { categories: cats.map(c => ({ category_code: c, average: avg(c).toFixed(1), count: rows.filter(s => s.category_code === c).length })), overall: state.overall ?? overall, count: rows.length, actions: state.actions };
   };
   await page.route("**/api/v1/**", async route => {
     const req = route.request(), url = new URL(req.url()), path = url.pathname, method = req.method();
@@ -94,7 +97,7 @@ export async function stubVendors(page: Page, { canReveal = true, canEdit = canR
       if (!score) return send({ detail: "Not found." }, 404);
       const b = req.postDataJSON();
       if (!dispute[2]) {
-        const d = { id: uid(), score_id: score.id, raised_by_email: "dev@example.test", raised_at: NOW, reason: b.reason, resolution: null, resolved_by_email: null, resolved_at: null, resolution_note: null };
+        const d = { id: uid(), score_id: score.id, raised_by_email: "dev@example.test", raised_at: NOW, reason: b.reason, can_resolve: state.canResolve, resolution: null, resolved_by_email: null, resolved_at: null, resolution_note: null };
         score.disputes.push(d);
         return send(d, 201);
       }
