@@ -10,6 +10,7 @@ from flo.kernel.errors import ProblemError
 from flo.kernel.logging import correlation_context
 from flo.kernel.outbox.store import OutboxStore
 from flo.kernel.tenancy.context import Scope
+from flo.kernel.tenancy.rls import tenant_transaction
 from flo.modules.purchasing import transmission
 from flo.modules.purchasing.cancel import cancel
 from flo.modules.purchasing.schemas import PoCancelCreate
@@ -281,7 +282,9 @@ def test_resend_refuses_what_has_no_notice_to_repeat(lifecycle_db):
     with pytest.raises(ProblemError) as error:
         resend(db, po)
     assert error.value.checks["problem"] == "nothing_to_resend"
-    sql(db, "UPDATE purchase_order SET status = 'superseded' WHERE id = %s RETURNING 1", (po.id,))
+    with tenant_transaction(db[0], Scope(db[1])):  # a terminal status is frozen (E13-S26): force it
+        db[0].execute("SET LOCAL session_replication_role = replica")
+        db[0].execute("UPDATE purchase_order SET status = 'superseded' WHERE id = %s", (po.id,))
     with pytest.raises(ProblemError) as error:
         resend(db, po)
     assert error.value.checks["problem"] == "not_resendable"

@@ -53,6 +53,11 @@ def setstatus(db, po, status):
         # force any status: the immutability trigger (E13-S06) would refuse a way out of issued
         db[0].execute("SET LOCAL session_replication_role = replica")
         db[0].execute("UPDATE purchase_order SET status=%s WHERE id=%s", (status, po.id))
+        if status == "issued":  # an issued row is stamped, as both issue paths leave it (E13-S26)
+            db[0].execute(
+                "UPDATE purchase_order SET issued_at = now(), issued_by = %s WHERE id = %s",
+                (db[3], po.id),
+            )
 
 
 def move(db, po, action, version=None, reason=None):
