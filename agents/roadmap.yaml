@@ -2048,7 +2048,7 @@ epics:
           - E12-S14
           - E12-S15
           - E12-S16
-        st: todo
+        st: in_progress
 
   - id: E13
     name: Purchase orders
@@ -2446,7 +2446,7 @@ epics:
           - E13-S06
           - E13-S18
           - E13-S19
-        st: todo
+        st: in_progress
       - id: E13-S29
         t: ACC-008 evidence, a keyboard-only walkthrough of the project-to-PO flow
         k: chore
