@@ -483,8 +483,9 @@ def test_reads_show_everything_to_approvers_and_only_own_bids_to_editors(lifecyc
             assert [x["id"] for x in editor.json()] == [str(mine.id)]
             assert other.status_code == 403 and own.status_code == 200
             nobody, other, own = await reads(["rfq.view"])
-            # neither permission: no collection and no one else's bid; the keyer reads their own
-            assert (nobody.status_code, other.status_code, own.status_code) == (403, 403, 200)
+            # neither permission: no collection and no bid by id, the keyer's own included; one
+            # rule for list and read (M3 E12 checkpoint O1, operator 8 Nov 2026)
+            assert (nobody.status_code, other.status_code, own.status_code) == (403, 403, 403)
             sql(
                 db, "UPDATE bid SET keyed_by=%s WHERE id=%s RETURNING 1", (second_user(db), mine.id)
             )

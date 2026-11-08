@@ -478,7 +478,7 @@ def test_bid_content_stays_behind_the_declaration_for_an_evaluator_only(lifecycl
             await reads(browser, ["rfq.view", "rfq.edit"], gated)
             await reads(browser, ["rfq.view", "rfq.approve"], {**gated, "refresh": 403})
             # view only: the gate removes access, never widens it
-            await reads(browser, ["rfq.view"], {**gated, "refresh": 403, "list": 403})
+            await reads(browser, ["rfq.view"], {**gated, "refresh": 403, "list": 403, "bid": 403})
             with correlation_context("declare"):
                 ev(db).declare(rfq.id, DeclarationIn(conflict=True, detail="Related"))
             await reads(browser, ["rfq.view", "rfq.edit"], gated)  # recused, permanently
@@ -486,7 +486,7 @@ def test_bid_content_stays_behind_the_declaration_for_an_evaluator_only(lifecycl
             sql(db, "DELETE FROM rfq_evaluator WHERE rfq_id=%s RETURNING 1", (rfq.id,))
             open_ = {"comparison": 200, "refresh": 200, "list": 200, "bid": 200}
             await reads(browser, ["rfq.view", "rfq.edit"], open_)  # not an evaluator: as today
-            await reads(browser, ["rfq.view"], {**open_, "refresh": 403, "list": 403})
+            await reads(browser, ["rfq.view"], {**open_, "refresh": 403, "list": 403, "bid": 403})
 
     asyncio.run(scenario())
 

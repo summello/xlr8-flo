@@ -389,6 +389,16 @@ def create_bid(
     )
 
 
+def _bid_reader(id: UUID, connection: Connection, request: Request) -> bool:
+    """One rule for the bid list and a bid by id: `rfq.edit` (own bids) or `rfq.approve` (all).
+    Returns whether the caller reads every bid. A foreign RFQ is 404 before any permission."""
+    target = rfq_target(id, connection)
+    approve = permits(request, "rfq.approve", target)
+    if not approve and not permits(request, "rfq.edit", target):
+        raise ProblemError(ErrorCode.FORBIDDEN)
+    return approve
+
+
 @router.get("/rfqs/{id}/bids", response_model=list[BidRead | SealedBidRead])
 def list_bids(
     id: UUID,
@@ -396,10 +406,7 @@ def list_bids(
     connection: Connection,
     request: Request,
 ) -> list[BidRead | SealedBidRead]:
-    target = rfq_target(id, connection)  # a foreign RFQ is 404 before any permission is weighed
-    approve = permits(request, "rfq.approve", target)
-    if not approve and not permits(request, "rfq.edit", target):
-        raise ProblemError(ErrorCode.FORBIDDEN)
+    approve = _bid_reader(id, connection, request)
     return BidService(connection, current_scope(), user_id).list_bids(id, all_bids=approve)
 
 
@@ -412,8 +419,7 @@ def get_bid(
     request: Request,
     response: Response,
 ) -> BidRead | SealedBidRead:
-    target = rfq_target(id, connection)
-    approve = permits(request, "rfq.approve", target)
+    approve = _bid_reader(id, connection, request)
     bid = BidService(connection, current_scope(), user_id).read(id, bid_id, all_bids=approve)
     return _bid_done(bid, response)
 
