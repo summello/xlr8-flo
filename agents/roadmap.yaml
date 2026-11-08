@@ -1681,7 +1681,7 @@ epics:
         dep:
           - E11-S11
           - E11-S12
-        st: todo
+        st: in_progress
       - id: E11-S22
         t: Scorecard actions follow the server's per-action permissions
         k: ui
@@ -1693,7 +1693,7 @@ epics:
         dep:
           - E11-S07
           - E11-S18
-        st: todo
+        st: in_progress
 
   - id: E12
     name: Sourcing

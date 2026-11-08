@@ -588,8 +588,8 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E11-S18** Vendor Performance card and scorecard sheet | E11 | ui | M | VEN-007, VEN-015 | ~~E11-S07~~, ~~E11-S12~~ |
 | 🔨 | **E11-S19** Live duplicate check carries identifiers in the body, never the URL | E11 | security | S | VEN-014, AUD-006 | ~~E11-S06~~, ~~E11-S14~~ |
 | 🔨 | **E11-S20** The approver sees a directly created vendor has no questionnaire | E11 | ui | S | VEN-004, VEN-005, VEN-006 | ~~E11-S05~~, ~~E11-S06~~, ~~E11-S15~~ |
-| ⬜ | **E11-S21** Eligible Here only for a unit the user actually belongs to | E11 | ui | M | VEN-012, VEN-008 | ~~E11-S11~~, ~~E11-S12~~ |
-| ⬜ | **E11-S22** Scorecard actions follow the server's per-action permissions | E11 | ui | S | VEN-015 | ~~E11-S07~~, ~~E11-S18~~ |
+| 🔨 | **E11-S21** Eligible Here only for a unit the user actually belongs to | E11 | ui | M | VEN-012, VEN-008 | ~~E11-S11~~, ~~E11-S12~~ |
+| 🔨 | **E11-S22** Scorecard actions follow the server's per-action permissions | E11 | ui | S | VEN-015 | ~~E11-S07~~, ~~E11-S18~~ |
 | ✅ | **E12-S01** RFQ from approved requisition lines, open-quantity guard | E12 | engine | L | SRC-001, SRC-003, SRC-018 | ~~E09-S06~~, ~~E11-S01~~ |
 | ✅ | **E12-S02** RFQ content, invitations, deadline, terms, attachments, vendor eligibility check | E12 | crud | M | SRC-002, VEN-012 | ~~E12-S01~~, ~~E11-S02~~, ~~E11-S11~~ |
 | ✅ | **E12-S03** RFQ lifecycle and post-publication versioning communicated to invitees | E12 | engine | M | SRC-004, SRC-005 | ~~E12-S02~~ |
