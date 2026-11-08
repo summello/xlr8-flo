@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { inFlight, refusal, scripted } from "./submit-retry-fixture";
 
 const rfqId = "11111111-1111-4111-8111-111111111111";
 const meId = "66666666-6666-4666-8666-666666666666";
@@ -198,3 +199,55 @@ for (const theme of ["light", "dark"] as const) {
     });
   }
 }
+
+const SUBMIT = /\/evaluation\/scores\/submit$/;
+const scoreA = (page: Page) => page.getByLabel("Score for Technical fit, Acme Tooling, 0 to 10");
+async function fillBoth(page: Page) { await scoreA(page).fill("8"); await page.getByLabel("Score for Delivery plan, Acme Tooling, 0 to 10").fill("6"); }
+const puts = (state: { writes: { method: string }[] }) => state.writes.filter(w => w.method === "PUT").length;
+
+test("retry after a lost submit response replays the same key without saving again", async ({ page }) => {
+  const state = await stubEvaluation(page, { declared: "clear" });
+  const keys = await scripted(page, SUBMIT, ["abort"]);
+  await page.goto(evaluation);
+  await fillBoth(page);
+  await page.getByRole("button", { name: "Submit Scores" }).click();
+  await expect(page.getByText(/Your entries are kept/)).toBeVisible();
+  expect(puts(state)).toBe(1);
+  await page.getByRole("button", { name: "Submit Scores" }).click();
+  await expect(page.getByText("Scores submitted.")).toBeVisible();
+  expect(puts(state)).toBe(1);
+  expect(keys).toHaveLength(2);
+  expect(keys[1]).toBe(keys[0]);
+});
+
+test("editing after a lost submit response saves again and submits under a new key", async ({ page }) => {
+  const state = await stubEvaluation(page, { declared: "clear" });
+  const keys = await scripted(page, SUBMIT, ["abort"]);
+  await page.goto(evaluation);
+  await fillBoth(page);
+  await page.getByRole("button", { name: "Submit Scores" }).click();
+  await expect(page.getByText(/Your entries are kept/)).toBeVisible();
+  await scoreA(page).fill("9");
+  await page.getByRole("button", { name: "Submit Scores" }).click();
+  await expect(page.getByText("Scores submitted.")).toBeVisible();
+  expect(puts(state)).toBe(2);
+  expect(keys[1]).not.toBe(keys[0]);
+});
+
+test("a definitive refusal drops the key; a request_in_flight conflict keeps it", async ({ page }) => {
+  const state = await stubEvaluation(page, { declared: "clear" });
+  const keys = await scripted(page, SUBMIT, [refusal, inFlight]);
+  await page.goto(evaluation);
+  await fillBoth(page);
+  const press = () => page.getByRole("button", { name: "Submit Scores" }).click();
+  await press();
+  await expect(page.getByText(/Your entries are kept/)).toBeVisible();
+  await press(); // refused for good: the next press is a new operation (saves, new key)
+  await expect(page.getByText(/still being processed/)).toBeVisible();
+  expect(keys[1]).not.toBe(keys[0]);
+  expect(puts(state)).toBe(2);
+  await press(); // in flight: same key, no save
+  await expect(page.getByText("Scores submitted.")).toBeVisible();
+  expect(keys[2]).toBe(keys[1]);
+  expect(puts(state)).toBe(2);
+});

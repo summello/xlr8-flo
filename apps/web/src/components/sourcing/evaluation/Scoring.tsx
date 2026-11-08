@@ -14,7 +14,7 @@ export default function Scoring({ id, evaluation, me, onChanged }: { id: string;
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const version = useRef(me.version), submitKey = useRef<string | null>(null);
+  const version = useRef(me.version), pending = useRef<{ fingerprint: string; key: string } | null>(null);
   const summary = useRef<HTMLDivElement>(null);
   const all = evaluation.vendors.flatMap(v => evaluation.criteria.map(c => ({ vendor: v, criterion: c, key: cellKey(v.vendor_id, c.id ?? "") })));
   const editable = all.filter(c => mine.get(c.key)?.status !== "submitted");
@@ -37,7 +37,6 @@ export default function Scoring({ id, evaluation, me, onChanged }: { id: string;
   };
 
   const serverRefusal = (p: Problem | undefined, status: number, sent: { vendor_id: string; criterion_id: string }[], action: string) => {
-    submitKey.current = null;
     if (status !== 409 && status !== 422) { setMessage(failure(p, action)); return; }
     const found: Record<string, string> = {};
     for (const e of p?.errors ?? []) { const n = /^cells\/(\d+)$/.exec(e.field)?.[1], c = n === undefined ? undefined : sent[Number(n)]; if (c) found[cellKey(c.vendor_id, c.criterion_id)] = e.message; }
@@ -53,15 +52,23 @@ export default function Scoring({ id, evaluation, me, onChanged }: { id: string;
     const body = editable.filter(c => cells[c.key]?.score.trim()).map(c => ({ vendor_id: c.vendor.vendor_id, criterion_id: c.criterion.id ?? "", score: Number(cells[c.key]!.score), ...(cells[c.key]!.comment.trim() ? { comment: cells[c.key]!.comment.trim() } : {}) }));
     if (body.length === 0) { setMessage("Enter at least one score first."); return; }
     setBusy(true);
+    const fingerprint = JSON.stringify(body);
     try {
-      const put = await apiClient.PUT("/api/v1/sourcing/rfqs/{id}/evaluation/scores", { params: { path: { id } }, headers: mutationHeaders(crypto.randomUUID(), version.current), body: { cells: body } });
-      if (!put.data) return serverRefusal(put.error as Problem | undefined, put.response.status, body, final ? "Submitting your scores" : "Saving your scores");
-      version.current = put.data.version;
-      if (!final) return onChanged("Scores saved. You can finish later.");
-      submitKey.current ??= crypto.randomUUID(); // one key per attempt, reused on retry
-      const done = await apiClient.POST("/api/v1/sourcing/rfqs/{id}/evaluation/scores/submit", { params: { path: { id } }, headers: mutationHeaders(submitKey.current) });
+      // A held key means a submit was sent with no answer: replay it unsaved while nothing changed (the draft may already be submitted).
+      const replay = final && pending.current?.fingerprint === fingerprint;
+      if (!replay) {
+        pending.current = null;
+        const put = await apiClient.PUT("/api/v1/sourcing/rfqs/{id}/evaluation/scores", { params: { path: { id } }, headers: mutationHeaders(crypto.randomUUID(), version.current), body: { cells: body } });
+        if (!put.data) return serverRefusal(put.error as Problem | undefined, put.response.status, body, final ? "Submitting your scores" : "Saving your scores");
+        version.current = put.data.version;
+        if (!final) return onChanged("Scores saved. You can finish later.");
+        pending.current = { fingerprint, key: crypto.randomUUID() };
+      }
+      const done = await apiClient.POST("/api/v1/sourcing/rfqs/{id}/evaluation/scores/submit", { params: { path: { id } }, headers: mutationHeaders(pending.current!.key) });
+      // The first attempt may still be running: keep the key and tell the user (kernel/errors/codes.py request_in_flight).
+      if (done.response.status === 409 && (done.error as Problem | undefined)?.type?.endsWith("/request_in_flight")) { setMessage("The first attempt is still being processed. Press Submit Scores again in a moment."); return; }
+      pending.current = null;
       if (!done.data) return serverRefusal(done.error as Problem | undefined, done.response.status, body, "Submitting your scores");
-      submitKey.current = null;
       onChanged("Scores submitted.");
     } catch {
       setMessage(failure(undefined, final ? "Submitting your scores" : "Saving your scores"));
