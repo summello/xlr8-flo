@@ -1,0 +1,71 @@
+{
+  "story": "M3",
+  "reviewer": "opus",
+  "verdict": "changes_requested",
+  "ran_tests": false,
+  "exit_criteria": {
+    "ACC-002": "met: PO issue — apps/api/tests/purchasing/test_issue.py::test_a_retry_with_the_same_or_a_new_key_never_commits_twice, ::test_route_retries_with_the_same_and_a_new_key_commit_once, ::test_each_group_commits_under_its_own_stable_ledger_key, test_issue_concurrency.py::test_two_simultaneous_issues_commit_once_and_return_the_same_result; vendor transmission — test_transmission.py::test_issue_enqueues_one_email_and_one_row_per_recipient_with_the_pdf, ::test_enqueue_twice_is_a_unique_violation_and_empty_recipients_refuse, ::test_dispatcher_retry_keeps_the_key_and_the_attachment_and_reads_sent, ::test_two_simultaneous_resends_make_one_set_of_rows; transfer — budget/test_change_requests.py::test_transfer_approved_posts_balanced_legs_once, budget/test_transfer_same_level.py::test_transfer_and_replay (M1).",
+    "ACC-005": "met: test_changes.py::test_an_issued_po_refuses_every_write_in_the_service_and_the_database, ::test_status_and_version_cannot_be_rewritten_by_raw_sql, ::test_a_date_change_is_not_material_applies_at_once_and_keeps_the_prior_revision, ::test_change_numbers_run_across_the_revision_chain; snapshot preserved — test_vendor_copy.py::test_each_revision_has_its_own_snapshot_and_the_old_one_never_moves. Caveat already tracked as E13-S26 (immutability trigger lapses at closed/cancelled).",
+    "ACC-006": "met: requisition — requisitions/test_release.py::test_cancel_after_approval_needs_a_reason_and_releases_once, ::test_two_concurrent_stops_release_once_twenty_runs, test_exactly_once_property.py::test_release_is_exactly_once_across_random_concurrent_lifecycles; PO — purchasing/test_cancel.py::test_cancel_after_issue_releases_the_remainder_once_and_re_reserves_it, ::test_cancel_after_a_partial_release_releases_only_the_remainder, ::test_cancel_after_a_change_order_increase_releases_both_commitment_entries, ::test_cancel_and_issue_of_one_approved_po_have_one_winner.",
+    "ACC-008": "unproven: every M3 screen spec has its own keyboard path, but all 41 e2e specs run against stubbed API fixtures, one screen each; no spec drives project -> requisition -> RFQ -> award -> PO -> email as one chain, keyboard only, against the real API. The only story citing ACC-008 is E13-S27 (open). See finding 1.",
+    "PO-014": "met: test_vendor_copy.py::test_po_v1_renders_the_golden_snapshot_to_the_same_bytes_everywhere, ::test_the_pdf_comes_from_the_snapshot_not_from_live_data, ::test_render_refuses_an_unknown_template_and_an_unissued_copy, ::test_a_render_that_differs_from_the_issued_bytes_is_never_served.",
+    "EML-001": "met for the automated gate: kernel/email.py::po_domain_gate refuses any po-* template under the resend provider until the latest email_domain_status row has spf=pass and dkim=pass; enforced in kernel/outbox/dispatcher.py:114. Tests: test_deliverability.py::test_only_po_templates_are_gated_and_only_in_production, ::test_a_gated_po_email_sends_when_spf_and_dkim_pass, ::test_the_gate_and_dead_rows_read_fixed_reasons, ::test_domain_status_mapping. Production verification and DMARC remain operator steps. The gate dead-letters rather than holds; see finding 2."
+  },
+  "findings": [
+    {
+      "severity": "major",
+      "category": "correctness",
+      "file": "apps/web/tests/e2e",
+      "line": 1,
+      "requirement": "ACC-008",
+      "problem": "The ACC-008 exit criterion has no evidence. Keyboard paths are proven one screen at a time against page.route/fixture stubs, so a break in a hand-off between screens (a redirect that drops focus, a create that lands on a page with no keyboard route to the next step, the missing Close control already tracked in E13-S27) passes every spec. The milestone claims a chained flow that nothing exercises.",
+      "fix": "Add one unstubbed Playwright spec against the seeded stack that drives project -> requisition -> submit/approve -> RFQ -> bid -> award -> PO -> issue -> transmission log with keyboard only (no click), plus axe on each landing page. Make it a story before the PR leaves draft, or have the operator record ACC-008 as deferred to E19-S09."
+    },
+    {
+      "severity": "major",
+      "category": "ui",
+      "file": "apps/api/src/flo/kernel/outbox/dispatcher.py",
+      "line": 114,
+      "requirement": "EML-001",
+      "problem": "An unverified domain raises PermanentOutboxError, so each PO email issued before verification goes dead instead of waiting. The issue still commits the budget and marks the PO issued, and the Issue dialog (components/purchasing/issue/IssueDialog.tsx) never reads po_email_allowed, so a buyer on a new tenant is told the vendor will be emailed and finds out only from a dead row in the transmission log. Once the domain passes, nothing re-sends: every such PO needs a manual Resend.",
+      "fix": "Pick one: treat the gate as transient (outbox retries until the domain passes, bounded by the outbox's normal backoff), or keep the dead state and have the Issue dialog read /sending-domain and say 'The vendor will not be emailed until the sending domain is verified; resend from the transmission log afterwards.' The first matches EML-001's 'held until it passes'."
+    },
+    {
+      "severity": "minor",
+      "category": "quality",
+      "file": "apps/web/src/features/auth/api.ts",
+      "line": 32,
+      "requirement": "ACC-002",
+      "problem": "Three Idempotency-Key conventions in the web client: writeHeaders() mints a fresh UUID on every call; requisitions/api.ts::mutationHeaders(key, version) takes a caller key; purchasing inlines key refs (IssueDialog, CancelOrReduce). Callers that use writeHeaders() alone get a new key per click or retry: routes/purchase-orders/edit.tsx:83 (submit), routes/purchase-orders/detail.tsx:49 (open change), routes/purchase-orders/changes.tsx:123/148, components/vendors/DocumentSheet.tsx:41 (mutationHeaders(crypto.randomUUID())). Server state guards stop duplicates today, so nothing double-posts, but the header promises retry safety it does not give. Wider than E12-S25, which covers sourcing only.",
+      "fix": "Move mutationHeaders(key, version?) next to writeHeaders in features/auth/api.ts, drop the random key from writeHeaders, and have every POST hold its key in a ref per attempt, as CancelOrReduce does. Fold into E12-S25."
+    },
+    {
+      "severity": "minor",
+      "category": "quality",
+      "file": "apps/api/src/flo/modules/purchasing/schemas.py",
+      "line": 19,
+      "requirement": "FIN-001",
+      "problem": "The NUMERIC(18,4) decimal-string rule r\"[0-9]{1,14}(?:\\.[0-9]{1,4})?\" is copied six times across M3 modules (purchasing/schemas.py:19 and :27, sourcing/schemas.py:48 and :395, sourcing/awards.py:62, requisitions/schemas.py:214) besides four in approvals. Purchasing returns money as str while sourcing/schemas.py:599-606 returns Decimal for the same award quantities and prices, so the generated client types differ between the two screens that hand off an award line.",
+      "fix": "One parse_amount(value) -> Decimal and one Annotated Amount type in kernel/money.py; modules import it. Pick one wire type for money (string) and use it in sourcing's award-line read."
+    },
+    {
+      "severity": "minor",
+      "category": "quality",
+      "file": "apps/api/src/flo/modules/sourcing/awards.py",
+      "line": 948,
+      "requirement": "FIN-011",
+      "problem": "Two lock orders on the same rows: award supersede takes project_balance then the award; PO issue, cancel and change (purchasing/issue.py:3, cancel.py:3, changes.py:6) take the award then project_balance. The inversion is defended by an unlocked probe plus a re-check (SUPERSEDE_GUARDS) and covered by test_cancel.py::test_supersede_probes_for_a_po_before_it_waits_on_any_lock, so it holds today, but any new award-side command that forgets the probe can deadlock against a PO command.",
+      "fix": "Record one order (award, then balances by id, then requisitions, then document) in docs/m3-conventions or kernel docs and move supersede to it; drop the probe once the order is single."
+    },
+    {
+      "severity": "minor",
+      "category": "quality",
+      "file": "apps/api/src/flo/api/internal.py",
+      "line": 698,
+      "requirement": "EML-001",
+      "problem": "The router writes email_domain_status with raw SQL on its own connection while kernel/email.py owns the reads of the same table; the write side of the gate lives in api/, against AGENTS.md section 3.3.",
+      "fix": "Add record_domain_check(connection, status) beside latest_domain_check in kernel/email.py and call it from the router."
+    }
+  ],
+  "notes": "Static review, no tests run, no plants. Checked and clean: all 34 migrations have a downgrade (0089 marked # irreversible); every new tenant table enables RLS with a tenant_isolation policy (email_domain_status is deliberately global and holds no org_id); no float in vendors/sourcing/purchasing; no module imports another's models/repo/db (api/ -> identity.models is the pre-M3 pattern); every permission code used resolves in identity.models.PERMISSION_CODES; all audit writes go through kernel audit_event. Already-tracked items E11-S19..E13-S28 are not re-reported and look correctly sized; E13-S27 should cite this review's ACC-008 finding."
+}
