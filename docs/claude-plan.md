@@ -587,8 +587,8 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E11-S17** Questionnaire administration screen | E11 | ui | M | VEN-006, CUS-007, A11Y-003 | ~~E11-S05~~ |
 | ✅ | **E11-S18** Vendor Performance card and scorecard sheet | E11 | ui | M | VEN-007, VEN-015 | ~~E11-S07~~, ~~E11-S12~~ |
 | ⬜ | **E11-S19** Live duplicate check carries identifiers in the body, never the URL | E11 | security | S | VEN-014, AUD-006 | ~~E11-S06~~, ~~E11-S14~~ |
-| ⛔ | **E11-S20** A directly created vendor and the onboarding questionnaire (operator question) | E11 | engine | S | VEN-004, VEN-005, VEN-006 | ~~E11-S05~~, ~~E11-S06~~ |
-| ⛔ | **E11-S21** Eligible Here for the user's own unit (operator question) | E11 | engine | M | VEN-012, VEN-008 | ~~E11-S11~~, ~~E11-S12~~ |
+| ⬜ | **E11-S20** The approver sees a directly created vendor has no questionnaire | E11 | ui | S | VEN-004, VEN-005, VEN-006 | ~~E11-S05~~, ~~E11-S06~~, ~~E11-S15~~ |
+| ⬜ | **E11-S21** Eligible Here only for a unit the user actually belongs to | E11 | ui | M | VEN-012, VEN-008 | ~~E11-S11~~, ~~E11-S12~~ |
 | ⬜ | **E11-S22** Scorecard actions follow the server's per-action permissions | E11 | ui | S | VEN-015 | ~~E11-S07~~, ~~E11-S18~~ |
 | ✅ | **E12-S01** RFQ from approved requisition lines, open-quantity guard | E12 | engine | L | SRC-001, SRC-003, SRC-018 | ~~E09-S06~~, ~~E11-S01~~ |
 | ✅ | **E12-S02** RFQ content, invitations, deadline, terms, attachments, vendor eligibility check | E12 | crud | M | SRC-002, VEN-012 | ~~E12-S01~~, ~~E11-S02~~, ~~E11-S11~~ |
@@ -643,8 +643,8 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ⬜ | **E13-S26** An issued purchase order stays immutable after it is closed or cancelled | E13 | migration | S | PO-011, PO-013, PO-014 | ~~E13-S06~~, ~~E13-S07~~, ~~E13-S16~~ |
 | 🔨 | **E13-S27** Close an issued purchase order from its detail page | E13 | ui | S | PO-007, ACC-008 | ~~E13-S03~~, ~~E13-S12~~ |
 | ⬜ | **E13-S28** Typed budget effect on a PO change, no hand-written client type | E13 | crud | S | PO-011 | ~~E13-S06~~, ~~E13-S18~~, ~~E13-S19~~ |
-| ⛔ | **E13-S29** ACC-008 evidence, the project-to-PO flow keyboard only end to end (operator question) | E13 | test | L | ACC-008 | E13-S27 |
-| ⛔ | **E13-S30** A PO issued before the sending domain is verified (operator question) | E13 | engine | S | EML-001, PO-012, UX-005 | ~~E13-S10~~, ~~E13-S21~~ |
+| ⬜ | **E13-S29** ACC-008 evidence, a keyboard-only walkthrough of the project-to-PO flow | E13 | docs | S | ACC-008 | E13-S27 |
+| ⬜ | **E13-S30** Issue refuses to queue a PO email the sending domain cannot send | E13 | engine | M | EML-001, PO-012, UX-005 | ~~E13-S10~~, ~~E13-S21~~ |
 | ✅ | **E22-S01** Create Project with budget: form and Excel, sponsors, through the project approval workflow | E22 | engine | L | PROJ-003 | ~~E09-S17~~ |
 | ✅ | **E22-S02** Soft delete for every draft document | E22 | crud | M | DATA-002 | ~~E09-S15~~ |
 | ✅ | **E22-S03** One audit helper instead of twelve, behaviour-preserving | E22 | chore | M | AUD-001 | — |
@@ -657,7 +657,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E22-S10** Approval Availability: set, list and revoke an out-of-office delegation | E22 | ui | M | APR-004, APR-014, APR-017, APR-019, A11Y-006 | — |
 | ✅ | **E22-S11** Faster checks: template test databases, sharded backend and E2E CI | E22 | chore | M | SEC-012 | — |
 | ✅ | **E22-S12** Balanced E2E shards on a production build; backend static job; combined checks need detect | E22 | chore | M | SEC-012 | — |
-| ⛔ | **E22-S13** One list-scope rule, project grants roll down in lists as in point checks (operator question) | E22 | security | M | USR-003, ACC-004 | ~~E22-S04~~, ~~E22-S06~~ |
+| ⬜ | **E22-S13** One list-scope rule, project grants roll down in lists as in point checks | E22 | security | M | USR-003, ACC-004 | ~~E22-S04~~, ~~E22-S06~~ |
 
 #### M4 — Full Phase-1 scope · 0/34 done
 

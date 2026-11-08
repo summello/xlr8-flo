@@ -1656,8 +1656,8 @@ epics:
           - E11-S14
         st: todo
       - id: E11-S20
-        t: A directly created vendor and the onboarding questionnaire (operator question)
-        k: engine
+        t: The approver sees a directly created vendor has no questionnaire
+        k: ui
         s: S
         tags: []
         reqs:
@@ -1667,10 +1667,11 @@ epics:
         dep:
           - E11-S05
           - E11-S06
-        st: blocked
+          - E11-S15
+        st: todo
       - id: E11-S21
-        t: Eligible Here for the user's own unit (operator question)
-        k: engine
+        t: Eligible Here only for a unit the user actually belongs to
+        k: ui
         s: M
         tags:
           - ui
@@ -1680,7 +1681,7 @@ epics:
         dep:
           - E11-S11
           - E11-S12
-        st: blocked
+        st: todo
       - id: E11-S22
         t: Scorecard actions follow the server's per-action permissions
         k: ui
@@ -2447,20 +2448,19 @@ epics:
           - E13-S19
         st: todo
       - id: E13-S29
-        t: ACC-008 evidence, the project-to-PO flow keyboard only end to end (operator question)
-        k: test
-        s: L
-        tags:
-          - ui
+        t: ACC-008 evidence, a keyboard-only walkthrough of the project-to-PO flow
+        k: docs
+        s: S
+        tags: []
         reqs:
           - ACC-008
         dep:
           - E13-S27
-        st: blocked
+        st: todo
       - id: E13-S30
-        t: A PO issued before the sending domain is verified (operator question)
+        t: Issue refuses to queue a PO email the sending domain cannot send
         k: engine
-        s: S
+        s: M
         tags: []
         reqs:
           - EML-001
@@ -2469,7 +2469,7 @@ epics:
         dep:
           - E13-S10
           - E13-S21
-        st: blocked
+        st: todo
 
   - id: E22
     name: Budget governance follow-ups
@@ -2616,7 +2616,7 @@ epics:
 
   # ─────────────────── M4 — Full Phase-1 scope ───────────────────
       - id: E22-S13
-        t: One list-scope rule, project grants roll down in lists as in point checks (operator question)
+        t: One list-scope rule, project grants roll down in lists as in point checks
         k: security
         s: M
         tags:
@@ -2628,7 +2628,7 @@ epics:
         dep:
           - E22-S04
           - E22-S06
-        st: blocked
+        st: todo
 
   - id: E14
     name: Assets & warehouses
