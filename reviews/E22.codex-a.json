@@ -1,0 +1,57 @@
+{
+  "story": "E22",
+  "reviewer": "codex-a",
+  "verdict": "changes_requested",
+  "ran_tests": false,
+  "findings": [
+    {
+      "severity": "major",
+      "category": "correctness",
+      "file": "apps/api/src/flo/modules/identity/resolver.py",
+      "line": 176,
+      "stories": [
+        "E22-S04",
+        "E22-S06"
+      ],
+      "requirement": "USR-003",
+      "problem": "AuthorizationResolver.granted_scopes returns only directly assigned project IDs, while point authorization and the separate S04 granted_scopes helper follow roll-down edges. A parent-project grant can therefore read a child directly and see its requisitions, but the projects list omits that child.",
+      "fix": "Consolidate the two granted-scope implementations and make list scopes expand project descendants using the same roll-down semantics as effective-access checks."
+    },
+    {
+      "severity": "major",
+      "category": "correctness",
+      "file": "apps/web/src/components/approvals/availability-model.ts",
+      "line": 24,
+      "stories": [
+        "E22-S10"
+      ],
+      "requirement": "APR-017",
+      "problem": "Delegation dates are converted at midnight in the browser timezone rather than the organization timezone required by the story. A user working in another timezone creates a shifted active delegation window, and other viewers can see different boundary dates.",
+      "fix": "Resolve the period in the organization timezone, preferably by sending calendar dates for server-side conversion or by supplying the organization timezone to a timezone-aware conversion."
+    },
+    {
+      "severity": "major",
+      "category": "ui",
+      "file": "apps/web/src/routes/approvals/availability.tsx",
+      "line": 193,
+      "stories": [
+        "E22-S10"
+      ],
+      "requirement": "A11Y-006",
+      "problem": "The unselected Organization tab has tabIndex=-1 but the tab widget has no arrow-key handler, so keyboard-only users cannot focus or activate that tab.",
+      "fix": "Implement the same roving-focus arrow/Home/End keyboard behavior used by the approval inbox tabs, with tab IDs and an associated labelled tabpanel."
+    },
+    {
+      "severity": "minor",
+      "category": "ui",
+      "file": "apps/web/src/routes/approvals/availability.tsx",
+      "line": 185,
+      "stories": [
+        "E22-S10"
+      ],
+      "requirement": "A11Y-006",
+      "problem": "Reason is validated as required, but it has no required marker and its inline error has no ID or aria-describedby association, so the requirement and validation message are not programmatically conveyed.",
+      "fix": "Mark Reason as required consistently with the other fields and connect a stable error element ID through aria-describedby."
+    }
+  ]
+}
