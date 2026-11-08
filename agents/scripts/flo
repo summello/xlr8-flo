@@ -2859,7 +2859,7 @@ def merged_in(sid, sha):
 
 
 def gh_runs(branch):
-    r = subprocess.run(["gh", "run", "list", "--workflow", "CI", "--branch", branch, "--limit", "10",
+    r = subprocess.run(["gh", "run", "list", "--workflow", "CI", "--branch", branch, "--limit", "30",
                         "--json", "headSha,status,conclusion,databaseId"],
                        cwd=ROOT, capture_output=True, text=True)
     return json.loads(r.stdout) if r.returncode == 0 and r.stdout.strip() else []
