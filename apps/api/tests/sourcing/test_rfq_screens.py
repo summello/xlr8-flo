@@ -7,6 +7,7 @@ from flo.api.health import app
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import tenant_transaction
 from flo.modules.identity.models import AuthorizationTarget, ScopeType
+from flo.modules.identity.service import IdentityAuthorizationService
 from flo.modules.sourcing.lifecycle import ExtendDeadline
 from flo.modules.sourcing.service import _TONES
 from tests.isolation.test_real_sessions import client, login
@@ -90,6 +91,30 @@ def test_the_list_shows_only_units_where_rfq_view_is_held_and_counts_match(lifec
     }
     assert second.json()["next_cursor"] is None
     assert bad.status_code == 422
+
+
+def test_the_list_is_empty_not_forbidden_without_a_unit_grant(lifecycle_db):
+    # E22-S13: no rfq.view anywhere, or a project grant alone (RFQs are checked by unit), is an
+    # empty 200 and never a list of every RFQ.
+    db, _ = lifecycle_db
+    mine, _, _ = publish(db)
+    project = uuid4()
+    with tenant_transaction(db[0], Scope(db[1])):
+        IdentityAuthorizationService(db[0], Scope(db[1]), db[3]).register_scope(
+            ScopeType.PROJECT, project, ScopeType.BU, mine.unit_id
+        )
+
+    async def steps(fetch):
+        regrant(db, ["vendor.view"])
+        nothing = await fetch("/rfqs")
+        regrant(db, ["rfq.view"], AuthorizationTarget(ScopeType.PROJECT, project))
+        return nothing, await fetch("/rfqs"), await fetch(f"/rfqs/{mine.id}")
+
+    nothing, project_only, by_id = session(steps)
+    for response in (nothing, project_only):
+        assert response.status_code == 200, response.text
+        assert response.json()["rows"] == [] and response.json()["counts"]["all"] == 0
+    assert by_id.status_code in (403, 404), by_id.text  # list <=> point check: unit-scoped
 
 
 def test_screens_routes_conceal_foreign_tenants(header_db):

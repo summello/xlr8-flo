@@ -186,8 +186,8 @@ def require_resolved(
 def require_granted(permission: str) -> Callable[..., GrantedScopes]:
     """Allow a list route when the permission is held at any scope; return where.
 
-    The route narrows its rows to those scopes. A user holding it nowhere gets 403, as
-    ``require`` on the organization does.
+    The route narrows its rows to those scopes. A user holding it nowhere gets the falsy
+    ``GrantedScopes``, never a 403: the route answers an empty page without running its query.
     """
 
     def enforce(request: Request) -> GrantedScopes:
@@ -197,10 +197,7 @@ def require_granted(permission: str) -> Callable[..., GrantedScopes]:
         except TenantScopeMissing as exc:
             raise ProblemError(ErrorCode.UNAUTHORIZED) from exc
         with _factory(request)(scope) as resolver:
-            granted = resolver.granted_scopes(user_id, permission)
-        if not granted:
-            raise ProblemError(ErrorCode.FORBIDDEN)
-        return granted
+            return resolver.granted_scopes(user_id, permission)
 
     setattr(enforce, _REQUIRE_MARKER, permission)
     return enforce

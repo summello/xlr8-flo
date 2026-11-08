@@ -1,6 +1,7 @@
 """E22-S06 (USR-005, USR-006, ACC-004): baseline roles read, not write."""
 
 import asyncio
+from uuid import UUID
 
 import httpx
 import pytest
@@ -15,6 +16,7 @@ from tests.org.conftest import org_database as org_database
 from tests.projects.conftest import app_for, body, service, unit
 from tests.projects.conftest import project_db as project_db
 
+PROJECT, BU = ScopeType.PROJECT, ScopeType.BU
 ROLES = ("requestor", "approver", "sourcing-specialist", "purchasing-user", "vendor-manager")
 
 
@@ -90,8 +92,36 @@ def test_project_scoped_requestor_lists_only_that_project(project_db):
     assert call(db, viewer, "GET", f"/api/v1/projects/{other.id}").status_code == 404
 
 
-def test_reader_with_no_grant_anywhere_still_gets_403_on_the_lists(project_db):
+def test_reader_with_no_grant_anywhere_gets_an_empty_200_on_the_lists(project_db):
+    # E22-S13: no grant anywhere is an empty page on every list route, never a 403.
     db = project_db
     viewer = insert_identity(db, "nobody")
-    assert call(db, viewer, "GET", "/api/v1/projects").status_code == 403
-    assert call(db, viewer, "GET", "/api/v1/master/department").status_code == 403
+    for path in ("/api/v1/projects", "/api/v1/master/department"):
+        empty = call(db, viewer, "GET", path)
+        assert empty.status_code == 200 and empty.json()["rows"] == [], path
+    assert call(db, viewer, "GET", "/api/v1/master/currency").json() == []
+
+
+def test_project_list_follows_roll_down_exactly_as_the_by_id_read(project_db):
+    # E22-S13: a project grant lists the sub-project across a rolling edge and not across a
+    # non-rolling one; a unit grant lists both; list membership == 200 by id.
+    db = project_db
+    a = unit(db, "A")
+    parent = service(db).create(body(a))
+    rolls = service(db).create(body(a, parent_id=parent.id))
+    stops = service(db).create(body(a, parent_id=parent.id))
+    db.connection.execute(
+        "UPDATE authorization_scope SET roll_down = false WHERE scope_id = %s", (stops.id,)
+    )
+    everything = [parent, rolls, stops]
+    expected = {
+        PROJECT: {parent.id, rolls.id},
+        BU: {parent.id, rolls.id, stops.id},
+    }
+    for kind, target_id in ((PROJECT, parent.id), (BU, a.id)):
+        viewer = holder(db, "requestor", AuthorizationTarget(kind, target_id))
+        listed = call(db, viewer, "GET", "/api/v1/projects").json()["rows"]
+        assert {UUID(r["id"]) for r in listed} == expected[kind], kind
+        for row in everything:
+            by_id = call(db, viewer, "GET", f"/api/v1/projects/{row.id}").status_code
+            assert (by_id == 200) == (row.id in expected[kind]), (kind, row.id, by_id)

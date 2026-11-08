@@ -8387,6 +8387,72 @@
         },
         "gate_s": 804
       }
+    },
+    {
+      "story": "E22-S13",
+      "kind": "security",
+      "size": "M",
+      "tags": [
+        "auth",
+        "security"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 2
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "868d2bfe-7538-4d06-9cee-bccd57b7bf3b",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S13",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a1bd5e-19bf-7a13-a916-c8f4d439b136",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Lists now use one scope rule: AuthorizationResolver.granted_scopes runs the roll-down CTE (moved from identity.service, which is deleted), and requisitions/RFQ lists use it. require_granted returns the empty grant instead of 403, and every list route returns an empty page without running its query.",
+      "title": "One list-scope rule, project grants roll down in lists as in point checks",
+      "durations": {
+        "wall_s": 17498,
+        "author_s": 9177,
+        "review_s": {
+          "codex-a": 392,
+          "opus": 593
+        },
+        "gate_s": 612
+      }
     }
   ]
 }

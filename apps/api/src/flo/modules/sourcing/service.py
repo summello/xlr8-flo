@@ -182,6 +182,12 @@ class RfqService:
         """RFQs by deadline; `visible` is the units the caller holds `rfq.view` in, None = all."""
         if not 1 <= page_size <= 50:
             raise invalid("page_size", "Choose a page size from 1 to 50.")
+        if visible is not None and not visible:
+            return RfqPage(
+                rows=[],
+                next_cursor=None,
+                counts=RfqCounts(drafts=0, open=0, evaluating=0, awarded=0, all=0),
+            )
         escaped = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         params: dict[str, object] = {
             "prefix": escaped + "%",

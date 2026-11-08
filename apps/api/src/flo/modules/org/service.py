@@ -13,6 +13,7 @@ from flo.kernel import setting_guards
 from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
+from flo.kernel.authz import GrantedScopes
 from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError
 from flo.kernel.identity import IdentityId
 from flo.kernel.tenancy.context import Scope
@@ -636,6 +637,7 @@ class OrgService:
         self,
         kind: str,
         *,
+        granted: GrantedScopes | None = None,
         q: str = "",
         active: bool | None = None,
         as_of: date | None = None,
@@ -643,6 +645,8 @@ class OrgService:
         page_size: int = 50,
     ) -> MasterPage:
         known_kind(kind)
+        if granted is not None and not granted:  # no read grant anywhere: empty, no query
+            return MasterPage(rows=[], next_cursor=None)
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             prefix = (
                 q.strip().upper().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")

@@ -497,6 +497,8 @@ class PurchaseOrderService:
             "issued": f"p.status = 'issued' AND NOT {ATTENTION_SQL}",
             "attention": f"p.status = 'issued' AND {ATTENTION_SQL}",
         }
+        if not granted:
+            return PoPage(rows=[], counts=dict.fromkeys(tabs, 0), next_cursor=None)
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             # one pass, six keys; `issued` is the clean ones, `attention` the rest of them
             counts = dict(

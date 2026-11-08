@@ -16,6 +16,7 @@ from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.logging import correlation_context
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import tenant_transaction
+from flo.modules.identity.service import IdentityAuthorizationService
 from flo.modules.org.schemas import OrgAddressCreate
 from flo.modules.org.service import NumberingService, OrgService
 from flo.modules.purchasing.schemas import PoCreate, PoLineIn, PoLinePatch, PoPatch
@@ -536,11 +537,14 @@ def test_authorization_per_role_and_a_replayed_delete(lifecycle_db):
             gone = await send(browser, "DELETE", f"/{po.id}", None, {"If-Match": '"1"'})
             assert gone.status_code == 403
             regrant(db, ["rfq.view", "rfq.create"])  # sourcing specialist: neither code
-            for method, suffix in (("GET", f"/{po.id}"), ("GET", ""), ("POST", "")):
+            for method, suffix in (("GET", f"/{po.id}"), ("POST", "")):
                 response = await send(
                     browser, method, suffix, payload if method == "POST" else None
                 )
                 assert response.status_code == 403, (method, suffix)
+            # E22-S13: the list with no purchase_order.view anywhere is an empty 200, not a 403
+            empty = await send(browser, "GET")
+            assert empty.status_code == 200 and empty.json()["rows"] == [], empty.text
             regrant(db, ["purchase_order.view", "purchase_order.create"])
             created = await send(browser, "POST", "", payload)
             assert created.status_code == 201 and created.headers["ETag"] == '"1"', created.text
@@ -576,6 +580,16 @@ def test_the_list_shows_only_permitted_units_and_a_unit_scoped_viewer_gets_200(l
             mine = await send(browser, "GET")
             assert mine.status_code == 200 and mine.json()["rows"] == []  # unit B only: not unit A
             assert set(mine.json()["counts"].values()) == {0}  # all six keys (E13-S12)
+            # E22-S13: a project grant alone shows no PO, in the list or by id (POs follow the unit)
+            project_id = uuid4()
+            with tenant_transaction(db[0], Scope(db[1])):
+                IdentityAuthorizationService(db[0], Scope(db[1]), db[3]).register_scope(
+                    ScopeType.PROJECT, project_id, ScopeType.BU, unit_id
+                )
+            regrant(db, ["purchase_order.view"], AuthorizationTarget(ScopeType.PROJECT, project_id))
+            only = await send(browser, "GET")
+            assert only.status_code == 200 and only.json()["rows"] == []
+            assert (await send(browser, "GET", f"/{po.id}")).status_code in (403, 404)
             regrant(db, ["purchase_order.view"], AuthorizationTarget(ScopeType.BU, unit_id))
             seen = await send(browser, "GET", "?tab=draft")
             assert [r["id"] for r in seen.json()["rows"]] == [str(po.id)]
