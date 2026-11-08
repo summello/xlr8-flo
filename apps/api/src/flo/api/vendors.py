@@ -1,6 +1,5 @@
 """Parse and authorize vendor operations (VEN-001, VEN-008, VEN-009)."""
 
-import re
 from datetime import date
 from typing import Annotated, cast
 from uuid import UUID
@@ -34,6 +33,7 @@ from flo.modules.vendors.schemas import (
     DocumentCreate,
     DocumentReject,
     DocumentReplace,
+    DuplicateCheck,
     DuplicateResult,
     Eligibility,
     InactivateCreate,
@@ -153,22 +153,13 @@ def vendor_eligibility(
     return rules[id]
 
 
-@router.get("/duplicate-check", response_model=DuplicateResult)
+@router.post("/duplicate-check", response_model=DuplicateResult)
 def duplicate_check(
-    request: Request,
-    context: RequestContext,
-    connection: Connection,
-    tax_id: Annotated[str | None, Query(min_length=1, max_length=64)] = None,
-    tax_id_country: Annotated[str | None, Query(min_length=2, max_length=2)] = None,
+    body: DuplicateCheck, context: RequestContext, connection: Connection
 ) -> DuplicateResult:
-    """`identifiers[type]=value` pairs ride the query string beside the tax id."""
-    identifiers = {
-        match[1]: value
-        for key, value in request.query_params.items()
-        if (match := re.fullmatch(r"identifiers\[(.{1,64})\]", key)) and value
-    }
+    """Identifiers ride in the body: a URL is logged at the edge and in browser history."""
     return VendorService(connection, current_scope(), context.user_id).duplicate_check(
-        tax_id, tax_id_country, identifiers
+        body.tax_id, body.tax_id_country, body.identifiers
     )
 
 

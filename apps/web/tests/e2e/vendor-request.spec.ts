@@ -59,6 +59,8 @@ test("fill, save draft, reload keeps the values, submit shows the submitted stat
 
 test("a duplicate shows at the field; Use Existing Vendor navigates; a requester has no override", async ({ page }) => {
   const state = await stubRequest(page, { submit: "duplicate" });
+  const seen: string[] = [];
+  page.on("request", r => seen.push(`${r.method()} ${r.url()}`));
   await page.goto("/vendors/new");
   const tax = page.getByLabel("Tax id", { exact: true });
   await tax.pressSequentially("99-999");
@@ -67,6 +69,8 @@ test("a duplicate shows at the field; Use Existing Vendor navigates; a requester
   const signal = page.getByRole("status").filter({ hasText: "Already used by Old Co (VEN-0009)." });
   await expect(signal).toBeVisible();
   expect(state.checks).toHaveLength(1);
+  expect(seen.filter(r => r.includes("/vendors/duplicate-check")).every(r => r.startsWith("POST "))).toBe(true);
+  expect(seen.filter(r => r.includes("99-999"))).toEqual([]); // the typed tax id never rides in a URL
   await expect(page.getByRole("button", { name: "Override with a Reason" })).toHaveCount(0);
   page.once("dialog", d => void d.accept()); // leaving typed, unsaved input asks first
   await page.getByRole("link", { name: "Use Existing Vendor" }).click();

@@ -601,10 +601,46 @@ def test_vendor_change_routes_conceal_foreign_tenants(vdb):
                 response = await send(browser, method, suffix, data)
                 assert response.status_code == 404, (method, suffix, response.text)
             # the live check never sees the other tenant's vendor
-            seen = await send(browser, "GET", "/duplicate-check?tax_id=123456789&tax_id_country=US")
+            seen = await send(
+                browser, "POST", "/duplicate-check", {"tax_id": "123456789", "tax_id_country": "US"}
+            )
             assert seen.status_code == 200 and seen.json()["matches"] == []
 
     asyncio.run(scenario())
+
+
+def test_duplicate_check_is_post_only_and_identifiers_ride_in_the_body(vdb):
+    db, _ = vdb
+    org_svc(db).create_master(
+        "vendor_identifier_type",
+        MasterCreate(
+            code="DUNS", name="DUNS", effective_from="2000-01-01", attributes={"unique": True}
+        ),
+    )
+    ready(db, "Mine", identifiers={"duns": "ab1"})
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            old = await send(browser, "GET", "/duplicate-check?tax_id=99887766")
+            assert old.status_code == 422  # falls to GET /{id}, which refuses the malformed id
+            by_id = await send(
+                browser, "POST", "/duplicate-check", {"identifiers": {"duns": "ab1"}}
+            )
+            assert by_id.status_code == 200, by_id.text
+            assert [m["field"] for m in by_id.json()["matches"]] == ["identifiers.DUNS"]
+            bad = await send(browser, "POST", "/duplicate-check", {"org_id": str(uuid4())})
+            assert bad.status_code == 422
+            many = {"identifiers": {f"t{i}": "x" for i in range(21)}}
+            assert (await send(browser, "POST", "/duplicate-check", many)).status_code == 422
+
+    asyncio.run(scenario())
+    queries = {
+        p.name
+        for r in app.routes
+        for p in getattr(getattr(r, "dependant", None), "query_params", [])
+    }
+    assert "tax_id" not in queries
 
 
 def test_vendor_change_routes_end_to_end_and_per_role(vdb):
@@ -619,12 +655,15 @@ def test_vendor_change_routes_end_to_end_and_per_role(vdb):
     async def scenario():
         async with client(app) as browser:
             await login(browser)
-            check = "/duplicate-check?tax_id=99-88-7766&tax_id_country=US"
-            assert len((await send(browser, "GET", check)).json()["matches"]) == 2  # both drafts
+            check = "/duplicate-check"
+            body = {"tax_id": "99-88-7766", "tax_id_country": "US"}
+            assert (
+                len((await send(browser, "POST", check, body)).json()["matches"]) == 2
+            )  # both drafts
             submitted = await send(browser, "POST", f"/{vendor.id}/submit", {})
             assert submitted.status_code == 200, submitted.text
             assert submitted.json()["status"] == "pending"
-            hit = (await send(browser, "GET", check)).json()["matches"]
+            hit = (await send(browser, "POST", check, body)).json()["matches"]
             assert {m["field"] for m in hit} == {"tax_id"}
             assert str(vendor.id) in {m["vendor_id"] for m in hit}
             blocked = await send(browser, "POST", f"/{twin.id}/submit", {})
@@ -643,8 +682,8 @@ def test_vendor_change_routes_end_to_end_and_per_role(vdb):
                 ),
                 (["vendor.edit"], ("POST", f"/{twin.id}/inactivate", {"reason": "x"}), 403),
                 (["vendor.edit"], ("POST", f"/{twin.id}/revise", None), 409),
-                (["vendor.request"], ("GET", check, None), 200),
-                (["vendor.view"], ("GET", check, None), 403),
+                (["vendor.request"], ("POST", check, body), 200),
+                (["vendor.view"], ("POST", check, body), 403),
                 (["vendor.request"], ("GET", f"/{twin.id}/changes", None), 403),
                 (["vendor.view"], ("GET", f"/{twin.id}/changes", None), 200),
                 (["vendor.approve"], ("POST", f"/{twin.id}/inactivate", {"reason": "x"}), 409),

@@ -8146,6 +8146,71 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E11-S19",
+      "kind": "security",
+      "size": "S",
+      "tags": [
+        "security"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "bcb9f004-6a35-4a14-919b-594094d21014",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S19",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a1bbc5-9d8d-7432-a81f-f0953a8c0841",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "The live duplicate check is now POST /vendors/duplicate-check with tax id and identifiers in the body; the GET is deleted and the web form sends an Idempotency-Key per check. Tests and generated client updated.",
+      "title": "Live duplicate check carries identifiers in the body, never the URL",
+      "durations": {
+        "wall_s": 10140,
+        "author_s": 5454,
+        "review_s": {
+          "codex-a": 1241,
+          "opus": 316
+        },
+        "gate_s": 340
+      }
     }
   ]
 }

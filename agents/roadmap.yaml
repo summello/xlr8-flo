@@ -1654,7 +1654,7 @@ epics:
         dep:
           - E11-S06
           - E11-S14
-        st: review
+        st: done
       - id: E11-S20
         t: The approver sees a directly created vendor has no questionnaire
         k: ui

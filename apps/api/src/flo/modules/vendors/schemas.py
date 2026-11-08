@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from datetime import date, datetime
-from typing import Literal
+from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator
@@ -611,6 +611,16 @@ class DuplicateMatch(BaseModel):
     vendor_id: UUID | None = None
     vendor_number: str | None = None
     trading_name: str | None = None
+
+
+class DuplicateCheck(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    tax_id: str | None = Field(default=None, min_length=1, max_length=64)
+    tax_id_country: str | None = Field(default=None, min_length=2, max_length=2)
+    identifiers: dict[
+        Annotated[str, Field(min_length=1, max_length=64)],
+        Annotated[str, Field(min_length=1, max_length=64)],
+    ] = Field(default_factory=dict, max_length=20)
 
 
 class DuplicateResult(BaseModel):

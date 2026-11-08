@@ -5036,6 +5036,53 @@
         "title": "DriftRead",
         "type": "object"
       },
+      "DuplicateCheck": {
+        "additionalProperties": false,
+        "properties": {
+          "identifiers": {
+            "additionalProperties": {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxProperties": 20,
+            "propertyNames": {
+              "maxLength": 64,
+              "minLength": 1
+            },
+            "title": "Identifiers",
+            "type": "object"
+          },
+          "tax_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Id"
+          },
+          "tax_id_country": {
+            "anyOf": [
+              {
+                "maxLength": 2,
+                "minLength": 2,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Id Country"
+          }
+        },
+        "title": "DuplicateCheck",
+        "type": "object"
+      },
       "DuplicateMatch": {
         "description": "Name and number only when the caller may view that vendor; otherwise just the field.",
         "properties": {
@@ -40281,46 +40328,10 @@
       }
     },
     "/api/v1/vendors/duplicate-check": {
-      "get": {
-        "description": "`identifiers[type]=value` pairs ride the query string beside the tax id.",
-        "operationId": "duplicate_check_api_v1_vendors_duplicate_check_get",
+      "post": {
+        "description": "Identifiers ride in the body: a URL is logged at the edge and in browser history.",
+        "operationId": "duplicate_check_api_v1_vendors_duplicate_check_post",
         "parameters": [
-          {
-            "in": "query",
-            "name": "tax_id",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "maxLength": 64,
-                  "minLength": 1,
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Tax Id"
-            }
-          },
-          {
-            "in": "query",
-            "name": "tax_id_country",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "maxLength": 2,
-                  "minLength": 2,
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Tax Id Country"
-            }
-          },
           {
             "in": "header",
             "name": "X-FLO-Origin-Secret",
@@ -40338,6 +40349,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DuplicateCheck"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {

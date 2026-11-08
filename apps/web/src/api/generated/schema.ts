@@ -3449,13 +3449,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        get?: never;
+        put?: never;
         /**
          * Duplicate Check
-         * @description `identifiers[type]=value` pairs ride the query string beside the tax id.
+         * @description Identifiers ride in the body: a URL is logged at the edge and in browser history.
          */
-        get: operations["duplicate_check_api_v1_vendors_duplicate_check_get"];
-        put?: never;
-        post?: never;
+        post: operations["duplicate_check_api_v1_vendors_duplicate_check_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5792,6 +5792,17 @@ export interface components {
              * Format: uuid
              */
             run_id: string;
+        };
+        /** DuplicateCheck */
+        DuplicateCheck: {
+            /** Identifiers */
+            identifiers?: {
+                [key: string]: string;
+            };
+            /** Tax Id */
+            tax_id?: string | null;
+            /** Tax Id Country */
+            tax_id_country?: string | null;
         };
         /**
          * DuplicateMatch
@@ -21551,19 +21562,20 @@ export interface operations {
             };
         };
     };
-    duplicate_check_api_v1_vendors_duplicate_check_get: {
+    duplicate_check_api_v1_vendors_duplicate_check_post: {
         parameters: {
-            query?: {
-                tax_id?: string | null;
-                tax_id_country?: string | null;
-            };
+            query?: never;
             header?: {
                 "X-FLO-Origin-Secret"?: string | null;
             };
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DuplicateCheck"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

@@ -11,7 +11,7 @@ import { useLoad } from "../../requisitions/useLoad";
 import Signal from "../../ui/Signal";
 import { patchHeaders } from "../questionnaire/api";
 import {
-  CONTACT_LABELS, CONTACT_TYPES, EMPTY, clientProblems, complete, duplicateQuery, hasAnswer, matchText, problemFor,
+  CONTACT_LABELS, CONTACT_TYPES, EMPTY, clientProblems, complete, duplicateBody, hasAnswer, matchText, problemFor,
   type Answer, type ContactType, type Form, type Problem, type Question,
 } from "./model";
 import "../../../styles/projects.css";
@@ -189,10 +189,9 @@ export default function VendorRequestForm({ navigate, id }: { navigate: (href: s
   };
 
   const runCheck = async (form: Form) => {
-    const query = duplicateQuery(form), n = ++check.current;
-    if (Object.keys(query).length === 0) { setMatches([]); setCanOverride(false); return; }
-    // identifiers[type] keys are not in the generated query type; the server reads them from the raw query string.
-    const res = await apiClient.GET("/api/v1/vendors/duplicate-check", { params: { query: query as never } }).catch(() => undefined);
+    const body = duplicateBody(form), n = ++check.current;
+    if (Object.keys(body).length === 0) { setMatches([]); setCanOverride(false); return; }
+    const res = await apiClient.POST("/api/v1/vendors/duplicate-check", { headers: mutationHeaders(crypto.randomUUID()), body }).catch(() => undefined);
     if (n === check.current && res?.data) { setMatches(res.data.matches); setCanOverride(res.data.can_override ?? false); }
   };
   // Debounced, once per blur: the server never sees a request per keystroke.
