@@ -26,6 +26,7 @@ export default function VendorEvidence({ evidence }: { evidence: Json }) {
           label={`Score ${score} of 100, ${score < threshold ? "below" : "at or above"} the threshold of ${threshold}`}
         />
       )}
+      {kind === "create" && payload.questionnaire === false && <Signal tone="neutral" label="Created directly; no questionnaire" />}
       {kind === "create" && arr<Line>(payload.breakdown).length > 0 && (
         <details className="appr-fold">
           <summary>Score Breakdown</summary>

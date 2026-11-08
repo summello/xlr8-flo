@@ -256,8 +256,8 @@ class ChangesMixin:
                     ),
                     checks={"problem": "contacts_incomplete"},
                 )
-            # ponytail: a vendor created directly (no onboarding request) has no questionnaire,
-            # so there are no answers to check or score; require one if policy says otherwise.
+            # Direct create stays the trusted path (operator, 8 Nov 2026, E11-S20): no questionnaire
+            # to check or score, and the approver's evidence says so via payload["questionnaire"].
             onboarded = self.repo.execute(
                 "SELECT 1 FROM vendor_onboarding WHERE org_id = %(org_id)s AND vendor_id = %(id)s",
                 {"id": id},
@@ -283,6 +283,8 @@ class ChangesMixin:
                     "threshold": result.threshold,
                     "breakdown": [line.model_dump(mode="json") for line in result.breakdown],
                 }
+            else:
+                payload["questionnaire"] = False
             # Locked, then checked: of two submits with one tax id, the later one sees the first.
             duplicates.lock(self.repo, id)
             matches = duplicates.find(self.repo, vendor_id=id)

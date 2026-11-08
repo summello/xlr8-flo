@@ -76,10 +76,11 @@ export function matchText(m: { vendor_number?: string | null; trading_name?: str
   return m.trading_name ? `Already used by ${m.trading_name}${m.vendor_number ? ` (${m.vendor_number})` : ""}.` : "Already used by another vendor.";
 }
 
-/** Query for `GET /vendors/duplicate-check`; identifiers ride as `identifiers[type]=value` keys. */
-export function duplicateQuery(form: Form): Record<string, string> {
-  const q: Record<string, string> = {};
-  if (form.tax_id.trim()) { q.tax_id = form.tax_id.trim(); if (form.tax_id_country.length === 2) q.tax_id_country = form.tax_id_country; }
-  for (const [type, value] of Object.entries(form.identifiers)) if (value.trim()) q[`identifiers[${type}]`] = value.trim();
-  return q;
+/** Body for `POST /vendors/duplicate-check`: tax data never rides in the URL. */
+export function duplicateBody(form: Form) {
+  const body: { tax_id?: string; tax_id_country?: string; identifiers?: Record<string, string> } = {};
+  if (form.tax_id.trim()) { body.tax_id = form.tax_id.trim(); if (form.tax_id_country.length === 2) body.tax_id_country = form.tax_id_country; }
+  const identifiers = Object.fromEntries(Object.entries(form.identifiers).map(([t, v]) => [t, v.trim()]).filter(([, v]) => v));
+  if (Object.keys(identifiers).length) body.identifiers = identifiers;
+  return body;
 }

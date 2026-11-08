@@ -6,16 +6,16 @@ import Person, { personLabel } from "../../ui/Person";
 import { restoreFocus } from "../../../lib/focus";
 import { failure, formatDate, formatDateTime } from "../../requisitions/api";
 import { useLoad } from "../../requisitions/useLoad";
-import { openDispute, type Dispute, type Score } from "./api";
+import { openDispute, type Dispute, type Performance, type Score } from "./api";
 import { AddScoreForm, DisputeForm, ResolveForm } from "./ScoreForms";
 
-type Props = { vendorId: string; categories: string[]; opener: HTMLElement | null; onClose: () => void; onChanged: () => void };
+type Props = { vendorId: string; categories: string[]; actions: NonNullable<Performance["actions"]>; opener: HTMLElement | null; onClose: () => void; onChanged: () => void };
 type Panel = { kind: "add" } | { kind: "dispute"; score: Score } | { kind: "resolve"; score: Score; dispute: Dispute };
 
 const monthLabel = (period: string) => new Intl.DateTimeFormat(undefined, { year: "numeric", month: "short" }).format(new Date(`${period}T00:00:00`));
 
 /** §3.6 scorecard sheet (DECISIONS 134). Rows are append-only: an adjustment shows the struck original beside it (VEN-015). */
-export default function ScorecardSheet({ vendorId, categories, opener, onClose, onChanged }: Props) {
+export default function ScorecardSheet({ vendorId, categories, actions, opener, onClose, onChanged }: Props) {
   const [panel, setPanel] = useState<Panel | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [tail, setTail] = useState<{ rows: Score[]; cursor: string | null } | null>(null);
@@ -49,7 +49,7 @@ export default function ScorecardSheet({ vendorId, categories, opener, onClose, 
             <Dialog.Description id="scorecard-desc" className="visually-hidden">Every score with its source order, scorer and rationale. Nothing is edited in place.</Dialog.Description></div>
           <Dialog.Close className="appr-close" aria-label="Close"><X aria-hidden="true" />Close</Dialog.Close>
         </header>
-        <div><button type="button" onClick={() => { setNotice(null); setPanel({ kind: "add" }); }}>Add Score</button></div>
+        {actions.includes("add_score") && <div><button type="button" onClick={() => { setNotice(null); setPanel({ kind: "add" }); }}>Add Score</button></div>}
         {notice && <p role="status">{notice}</p>}
         {panel?.kind === "add" && <AddScoreForm vendorId={vendorId} categories={categories} onDone={done} onCancel={() => setPanel(null)} />}
         {first.error ? <div role="alert"><p>{first.error}</p><button type="button" onClick={first.reload}>Try again</button></div>
@@ -75,8 +75,8 @@ export default function ScorecardSheet({ vendorId, categories, opener, onClose, 
                   </p>)}
                 </td>
                 <td>{s.superseded_by ? null : open
-                  ? <button type="button" aria-label={`Resolve dispute on ${s.source_ref} ${s.category_code}`} onClick={() => { setNotice(null); setPanel({ kind: "resolve", score: s, dispute: open }); }}>Resolve</button>
-                  : <button type="button" aria-label={`Dispute ${s.source_ref} ${s.category_code}`} onClick={() => { setNotice(null); setPanel({ kind: "dispute", score: s }); }}>Dispute</button>}</td>
+                  ? open.can_resolve && <button type="button" aria-label={`Resolve dispute on ${s.source_ref} ${s.category_code}`} onClick={() => { setNotice(null); setPanel({ kind: "resolve", score: s, dispute: open }); }}>Resolve</button>
+                  : actions.includes("dispute") && <button type="button" aria-label={`Dispute ${s.source_ref} ${s.category_code}`} onClick={() => { setNotice(null); setPanel({ kind: "dispute", score: s }); }}>Dispute</button>}</td>
               </tr>
               {panel && panel.kind !== "add" && panel.score.id === s.id && <tr><td colSpan={5}>
                 {panel.kind === "dispute"

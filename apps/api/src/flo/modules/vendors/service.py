@@ -3,7 +3,7 @@
 import base64
 import json
 from collections.abc import Callable
-from typing import cast
+from typing import Literal, cast
 from uuid import UUID, uuid4
 
 import psycopg
@@ -75,6 +75,11 @@ ACTION_PERMISSIONS = (
     ("request_change", "vendor.edit"),
     ("inactivate", "vendor.approve"),
     ("verify_documents", "vendor.approve"),
+)
+# The scorecard actions and every permission the matching route requires (E11-S22).
+SCORE_ACTION_PERMISSIONS: tuple[tuple[Literal["add_score", "dispute"], tuple[str, ...]], ...] = (
+    ("add_score", ("vendor.view", "purchase_order.view")),
+    ("dispute", ("vendor.edit",)),
 )
 CONTACT_COLUMNS = (
     "id, type, name, email, phone, receives_documents, created_at, updated_at, version"

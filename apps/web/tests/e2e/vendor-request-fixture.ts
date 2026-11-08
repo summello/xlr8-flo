@@ -29,7 +29,7 @@ export async function stubRequest(page: Page, opts: { approver?: boolean; submit
     if (path === "/api/v1/master/vendor_identifier_type") return send({ rows: [{ id: unitId, kind: "vendor_identifier_type", code: "DUNS", name: "DUNS Number", active: true, created_at: NOW, updated_at: NOW }], next_cursor: null });
     if (path === "/api/v1/vendors/duplicate-check") {
       state.checks.push(url.search);
-      const hit = url.searchParams.get("tax_id") === "99-999";
+      const hit = body().tax_id === "99-999";
       return send({ can_override: Boolean(opts.approver), matches: hit ? [{ field: "tax_id", match: true, vendor_id: existingId, vendor_number: "VEN-0009", trading_name: "Old Co" }] : [] });
     }
     if (path === "/api/v1/vendors/onboarding-requests" && method === "POST") {

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from datetime import date, datetime
-from typing import Literal
+from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator
@@ -519,6 +519,8 @@ class DisputeRead(BaseModel):
     resolved_by_name: str | None
     resolved_at: datetime | None
     resolution_note: str | None
+    # the caller may resolve it: vendor.approve, not the raiser, still open (E11-S22)
+    can_resolve: bool = False
 
 
 class ScoreRead(BaseModel):
@@ -554,6 +556,7 @@ class PerformanceRead(BaseModel):
     categories: list[CategoryAverage]
     overall: str | None
     count: int
+    actions: list[Literal["add_score", "dispute"]] = []  # what the caller may do (E11-S22)
 
 
 class SubmitCreate(BaseModel):
@@ -611,6 +614,16 @@ class DuplicateMatch(BaseModel):
     vendor_id: UUID | None = None
     vendor_number: str | None = None
     trading_name: str | None = None
+
+
+class DuplicateCheck(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    tax_id: str | None = Field(default=None, min_length=1, max_length=64)
+    tax_id_country: str | None = Field(default=None, min_length=2, max_length=2)
+    identifiers: dict[
+        Annotated[str, Field(min_length=1, max_length=64)],
+        Annotated[str, Field(min_length=1, max_length=64)],
+    ] = Field(default_factory=dict, max_length=20)
 
 
 class DuplicateResult(BaseModel):

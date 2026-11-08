@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EMPTY, clientProblems, complete, duplicateQuery, matchText, problemFor, type Form, type Question } from "./model";
+import { EMPTY, clientProblems, complete, duplicateBody, matchText, problemFor, type Form, type Question } from "./model";
 
 const q = (key: string, required: boolean): Question => ({ key, position: 1, prompt: `Prompt ${key}`, type: "text", required, choices: null });
 const filled: Form = { ...EMPTY, trading_name: "Acme", legal_name: "Acme Ltd", contacts: {
@@ -24,9 +24,9 @@ describe("request form model", () => {
     expect(problemFor("identifiers.duns", "x").target).toBe("vr-id-duns");
     expect(problemFor("tax_id", "x").category).toBe("Identifiers");
   });
-  it("names a duplicate vendor only when the server did, and sends identifiers as brackets", () => {
+  it("names a duplicate vendor only when the server did, and sends identifiers in the body", () => {
     expect(matchText({})).toBe("Already used by another vendor.");
     expect(matchText({ trading_name: "Old Co", vendor_number: "VEN-0007" })).toBe("Already used by Old Co (VEN-0007).");
-    expect(duplicateQuery({ ...filled, tax_id: " 12-3 ", tax_id_country: "US", identifiers: { duns: "99" } })).toEqual({ tax_id: "12-3", tax_id_country: "US", "identifiers[duns]": "99" });
+    expect(duplicateBody({ ...filled, tax_id: " 12-3 ", tax_id_country: "US", identifiers: { duns: "99" } })).toEqual({ tax_id: "12-3", tax_id_country: "US", identifiers: { duns: "99" } });
   });
 });

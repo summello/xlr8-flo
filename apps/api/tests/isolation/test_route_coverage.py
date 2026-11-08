@@ -120,7 +120,7 @@ COVERED = {
     ("GET", "/api/v1/purchase-orders/{id}/pdf"): VENDOR_COPY_ROUTES,
     ("GET", "/api/v1/purchase-orders/{id}/vendor-copy"): VENDOR_COPY_ROUTES,
     ("GET", "/api/v1/vendors/counts"): LISTDOCS,
-    ("GET", "/api/v1/vendors/duplicate-check"): CROUTES,
+    ("POST", "/api/v1/vendors/duplicate-check"): CROUTES,
     ("POST", "/api/v1/vendors/{id}/submit"): CROUTES,
     ("POST", "/api/v1/vendors/{id}/revise"): CROUTES,
     ("POST", "/api/v1/vendors/{id}/changes"): CROUTES,

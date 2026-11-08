@@ -137,7 +137,7 @@ export default function VendorDetail({ id, navigate }: { id: string; navigate: (
       </Card>
     </div>
     {dialog && <VendorDialog kind={dialog} vendorId={id} unit={unit.data} onClose={() => setDialog(null)} onDone={() => { setDialog(null); vendor.reload(); changes.reload(); eligibility.reload(); }} />}
-    {scorecard && <ScorecardSheet vendorId={id} categories={(performance.data?.categories ?? []).map(c => c.category_code)} opener={scorecard.opener} onClose={() => setScorecard(null)} onChanged={performance.reload} />}
+    {scorecard && <ScorecardSheet vendorId={id} actions={performance.data?.actions ?? []} categories={(performance.data?.categories ?? []).map(c => c.category_code)} opener={scorecard.opener} onClose={() => setScorecard(null)} onChanged={performance.reload} />}
     {open && <DocumentSheet vendorId={id} doc={open.doc} canVerify={may("verify_documents")} opener={open.opener} onClose={() => setOpen(null)} onChanged={docs.reload} />}
   </section>;
 }

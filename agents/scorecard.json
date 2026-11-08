@@ -8089,6 +8089,187 @@
         },
         "gate_s": 217
       }
+    },
+    {
+      "story": "E11-S20",
+      "kind": "ui",
+      "size": "S",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 1
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "24b5ace7-6983-410e-9e95-07be39a79da2",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S20",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a1bbc5-9d76-7d73-b860-a64ddda43794",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Submitting a directly created vendor now stores questionnaire:false in the change payload, so the approver's evidence shows 'Created directly; no questionnaire' instead of a score. Submit, scoring and the state machine are unchanged.",
+      "title": "The approver sees a directly created vendor has no questionnaire",
+      "durations": {
+        "wall_s": 7661,
+        "author_s": 5112,
+        "review_s": {
+          "codex-a": 1176
+        },
+        "gate_s": 0
+      }
+    },
+    {
+      "story": "E11-S19",
+      "kind": "security",
+      "size": "S",
+      "tags": [
+        "security"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "bcb9f004-6a35-4a14-919b-594094d21014",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S19",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a1bbc5-9d8d-7432-a81f-f0953a8c0841",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "The live duplicate check is now POST /vendors/duplicate-check with tax id and identifiers in the body; the GET is deleted and the web form sends an Idempotency-Key per check. Tests and generated client updated.",
+      "title": "Live duplicate check carries identifiers in the body, never the URL",
+      "durations": {
+        "wall_s": 10140,
+        "author_s": 5454,
+        "review_s": {
+          "codex-a": 1241,
+          "opus": 316
+        },
+        "gate_s": 340
+      }
+    },
+    {
+      "story": "E11-S22",
+      "kind": "ui",
+      "size": "S",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 1
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "2847b002-f832-457b-b6d0-10d23e3d0bac",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S22",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a1bbfc-c4ff-7813-8d10-ee1e466f5315",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Performance reads now list the caller's allowed score actions and each dispute says whether the caller can resolve it, using the same permission and separation-of-duty checks the routes make. The scorecard sheet shows Add Score, Dispute and Resolve only when the server allows them.",
+      "title": "Scorecard actions follow the server's per-action permissions",
+      "durations": {
+        "wall_s": 9965,
+        "author_s": 9138,
+        "review_s": {
+          "codex-a": 175
+        },
+        "gate_s": 237
+      }
     }
   ]
 }

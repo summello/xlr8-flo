@@ -4467,6 +4467,11 @@
       },
       "DisputeRead": {
         "properties": {
+          "can_resolve": {
+            "default": false,
+            "title": "Can Resolve",
+            "type": "boolean"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -5034,6 +5039,53 @@
           "detected_at"
         ],
         "title": "DriftRead",
+        "type": "object"
+      },
+      "DuplicateCheck": {
+        "additionalProperties": false,
+        "properties": {
+          "identifiers": {
+            "additionalProperties": {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxProperties": 20,
+            "propertyNames": {
+              "maxLength": 64,
+              "minLength": 1
+            },
+            "title": "Identifiers",
+            "type": "object"
+          },
+          "tax_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Id"
+          },
+          "tax_id_country": {
+            "anyOf": [
+              {
+                "maxLength": 2,
+                "minLength": 2,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Id Country"
+          }
+        },
+        "title": "DuplicateCheck",
         "type": "object"
       },
       "DuplicateMatch": {
@@ -9974,6 +10026,18 @@
       "PerformanceRead": {
         "description": "Figures are computed here from current rows only, never in the browser (VEN-007).",
         "properties": {
+          "actions": {
+            "default": [],
+            "items": {
+              "enum": [
+                "add_score",
+                "dispute"
+              ],
+              "type": "string"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
           "categories": {
             "items": {
               "$ref": "#/components/schemas/CategoryAverage"
@@ -40281,46 +40345,10 @@
       }
     },
     "/api/v1/vendors/duplicate-check": {
-      "get": {
-        "description": "`identifiers[type]=value` pairs ride the query string beside the tax id.",
-        "operationId": "duplicate_check_api_v1_vendors_duplicate_check_get",
+      "post": {
+        "description": "Identifiers ride in the body: a URL is logged at the edge and in browser history.",
+        "operationId": "duplicate_check_api_v1_vendors_duplicate_check_post",
         "parameters": [
-          {
-            "in": "query",
-            "name": "tax_id",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "maxLength": 64,
-                  "minLength": 1,
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Tax Id"
-            }
-          },
-          {
-            "in": "query",
-            "name": "tax_id_country",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "maxLength": 2,
-                  "minLength": 2,
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Tax Id Country"
-            }
-          },
           {
             "in": "header",
             "name": "X-FLO-Origin-Secret",
@@ -40338,6 +40366,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DuplicateCheck"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
