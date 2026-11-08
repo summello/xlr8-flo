@@ -7,11 +7,11 @@ Loaded into every agent session. Updated by `flo done` (status) and by Opus at e
 
 | | |
 |---|---|
-| Milestone | **M4 — Full Phase-1 scope** |
-| Stories | 188 / 249 done |
-| Branch | milestone/M4-phase1-complete |
+| Milestone | **M3 — First sellable release** |
+| Stories | 188 / 258 done |
+| Branch | milestone/M3-sellable |
 | In flight | — |
-| Blocked | — |
+| Blocked | E11-S20, E11-S21, E22-S13 |
 <!-- STATE:END -->
 
 ## What this product is

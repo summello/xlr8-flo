@@ -562,7 +562,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E10-S12** Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11) | E10 | ui | L | APR-011, APR-021, ACC-007 | ~~E10-S11~~, ~~E10-S05~~ |
 | ✅ | **E10-S13** Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes | E10 | engine | M | APR-003, PROJ-002, VEN-005, BUD-007 | ~~E10-S07~~ |
 
-#### M3 — First sellable release · 79/79 done
+#### M3 — First sellable release · 79/88 done
 
 > Vendors, RFQs, awards and purchase orders by email. Closes the money loop end to end.
 
@@ -586,6 +586,10 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E11-S16** Vendor status, availability and local-disable dialogs | E11 | ui | M | VEN-005, VEN-008, VEN-009, A11Y-002 | ~~E11-S06~~, ~~E11-S12~~ |
 | ✅ | **E11-S17** Questionnaire administration screen | E11 | ui | M | VEN-006, CUS-007, A11Y-003 | ~~E11-S05~~ |
 | ✅ | **E11-S18** Vendor Performance card and scorecard sheet | E11 | ui | M | VEN-007, VEN-015 | ~~E11-S07~~, ~~E11-S12~~ |
+| ⬜ | **E11-S19** Live duplicate check carries identifiers in the body, never the URL | E11 | security | S | VEN-014, AUD-006 | ~~E11-S06~~, ~~E11-S14~~ |
+| ⛔ | **E11-S20** A directly created vendor and the onboarding questionnaire (operator question) | E11 | engine | S | VEN-004, VEN-005, VEN-006 | ~~E11-S05~~, ~~E11-S06~~ |
+| ⛔ | **E11-S21** Eligible Here for the user's own unit (operator question) | E11 | engine | M | VEN-012, VEN-008 | ~~E11-S11~~, ~~E11-S12~~ |
+| ⬜ | **E11-S22** Scorecard actions follow the server's per-action permissions | E11 | ui | S | VEN-015 | ~~E11-S07~~, ~~E11-S18~~ |
 | ✅ | **E12-S01** RFQ from approved requisition lines, open-quantity guard | E12 | engine | L | SRC-001, SRC-003, SRC-018 | ~~E09-S06~~, ~~E11-S01~~ |
 | ✅ | **E12-S02** RFQ content, invitations, deadline, terms, attachments, vendor eligibility check | E12 | crud | M | SRC-002, VEN-012 | ~~E12-S01~~, ~~E11-S02~~, ~~E11-S11~~ |
 | ✅ | **E12-S03** RFQ lifecycle and post-publication versioning communicated to invitees | E12 | engine | M | SRC-004, SRC-005 | ~~E12-S02~~ |
@@ -610,6 +614,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E12-S22** Comparison engine: converted unit price on each cell (SRC-009 unit cost, for E12-S10) | E12 | engine | S | SRC-009, SRC-010 | ~~E12-S06~~, ~~E12-S21~~ |
 | ✅ | **E12-S23** No zero-value lines: bids refuse a quoted price of 0 or one that rounds to 0, a bid must quote a line, and the zero-price special cases go | E12 | engine | M | SRC-006, FIN-009 | ~~E13-S02~~ |
 | ✅ | **E12-S24** Lines with no priced quote: one derived rule across documents, auto-cancel at award approval, a small notice | E12 | engine | L | SRC-009, SRC-018 | ~~E12-S23~~, ~~E12-S08~~, ~~E13-S07~~ |
+| ⬜ | **E12-S25** Retrying a submit replays it instead of re-saving the draft (bids, scores, award) | E12 | ui | M | ACC-002, UX-005 | ~~E12-S14~~, ~~E12-S15~~, ~~E12-S16~~ |
 | ✅ | **E13-S01** PO from awarded requisition lines or authorized project items, scoped numbering | E13 | crud | L | PO-001, PO-002, PO-006, SEQ-001 | ~~E12-S08~~, ~~E12-S09~~ |
 | ✅ | **E13-S02** Tax and freight per BU/OU policy, separately visible on line and document | E13 | ledger | M | FIN-008, FIN-009, PO-016 | ~~E13-S01~~ |
 | ✅ | **E13-S03** PO lifecycle state machine | E13 | engine | M | PO-007, WF-002 | ~~E13-S01~~, ~~E11-S09~~ |
@@ -635,6 +640,9 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E13-S23** PO lock order: withdrawal takes the approval instance before the PO; change-order submit takes the award first | E13 | concurrency | S | PO-007 | ~~E13-S07~~ |
 | ✅ | **E13-S24** Vendor cancellation email for a cancelled issued PO, through the outbox | E13 | engine | M | PO-013, PO-015, ARCH-006 | ~~E13-S07~~, ~~E13-S09~~ |
 | ✅ | **E13-S25** Per-file vendor-facing mark on PO attachments (records intent, sends nothing until E19-S04) | E13 | security | M | PO-017 | ~~E13-S11~~ |
+| ⬜ | **E13-S26** An issued purchase order stays immutable after it is closed or cancelled | E13 | migration | S | PO-011, PO-013, PO-014 | ~~E13-S06~~, ~~E13-S07~~, ~~E13-S16~~ |
+| ⬜ | **E13-S27** Close an issued purchase order from its detail page | E13 | ui | S | PO-007, ACC-008 | ~~E13-S03~~, ~~E13-S12~~ |
+| ⬜ | **E13-S28** Typed budget effect on a PO change, no hand-written client type | E13 | crud | S | PO-011 | ~~E13-S06~~, ~~E13-S18~~, ~~E13-S19~~ |
 | ✅ | **E22-S01** Create Project with budget: form and Excel, sponsors, through the project approval workflow | E22 | engine | L | PROJ-003 | ~~E09-S17~~ |
 | ✅ | **E22-S02** Soft delete for every draft document | E22 | crud | M | DATA-002 | ~~E09-S15~~ |
 | ✅ | **E22-S03** One audit helper instead of twelve, behaviour-preserving | E22 | chore | M | AUD-001 | — |
@@ -647,6 +655,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E22-S10** Approval Availability: set, list and revoke an out-of-office delegation | E22 | ui | M | APR-004, APR-014, APR-017, APR-019, A11Y-006 | — |
 | ✅ | **E22-S11** Faster checks: template test databases, sharded backend and E2E CI | E22 | chore | M | SEC-012 | — |
 | ✅ | **E22-S12** Balanced E2E shards on a production build; backend static job; combined checks need detect | E22 | chore | M | SEC-012 | — |
+| ⛔ | **E22-S13** One list-scope rule, project grants roll down in lists as in point checks (operator question) | E22 | security | M | USR-003, ACC-004 | ~~E22-S04~~, ~~E22-S06~~ |
 
 #### M4 — Full Phase-1 scope · 0/34 done
 

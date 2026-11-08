@@ -1642,6 +1642,57 @@ epics:
           - E11-S07
           - E11-S12
         st: done
+      - id: E11-S19
+        t: Live duplicate check carries identifiers in the body, never the URL
+        k: security
+        s: S
+        tags:
+          - security
+        reqs:
+          - VEN-014
+          - AUD-006
+        dep:
+          - E11-S06
+          - E11-S14
+        st: todo
+      - id: E11-S20
+        t: A directly created vendor and the onboarding questionnaire (operator question)
+        k: engine
+        s: S
+        tags: []
+        reqs:
+          - VEN-004
+          - VEN-005
+          - VEN-006
+        dep:
+          - E11-S05
+          - E11-S06
+        st: blocked
+      - id: E11-S21
+        t: Eligible Here for the user's own unit (operator question)
+        k: engine
+        s: M
+        tags:
+          - ui
+        reqs:
+          - VEN-012
+          - VEN-008
+        dep:
+          - E11-S11
+          - E11-S12
+        st: blocked
+      - id: E11-S22
+        t: Scorecard actions follow the server's per-action permissions
+        k: ui
+        s: S
+        tags:
+          - ui
+        reqs:
+          - VEN-015
+        dep:
+          - E11-S07
+          - E11-S18
+        st: todo
 
   - id: E12
     name: Sourcing
@@ -1983,6 +2034,20 @@ epics:
           - E12-S08
           - E13-S07
         st: done
+      - id: E12-S25
+        t: Retrying a submit replays it instead of re-saving the draft (bids, scores, award)
+        k: ui
+        s: M
+        tags:
+          - ui
+        reqs:
+          - ACC-002
+          - UX-005
+        dep:
+          - E12-S14
+          - E12-S15
+          - E12-S16
+        st: todo
 
   - id: E13
     name: Purchase orders
@@ -2341,6 +2406,46 @@ epics:
         dep:
           - E13-S11
         st: done
+      - id: E13-S26
+        t: An issued purchase order stays immutable after it is closed or cancelled
+        k: migration
+        s: S
+        tags:
+          - migration
+        reqs:
+          - PO-011
+          - PO-013
+          - PO-014
+        dep:
+          - E13-S06
+          - E13-S07
+          - E13-S16
+        st: todo
+      - id: E13-S27
+        t: Close an issued purchase order from its detail page
+        k: ui
+        s: S
+        tags:
+          - ui
+        reqs:
+          - PO-007
+          - ACC-008
+        dep:
+          - E13-S03
+          - E13-S12
+        st: todo
+      - id: E13-S28
+        t: Typed budget effect on a PO change, no hand-written client type
+        k: crud
+        s: S
+        tags: []
+        reqs:
+          - PO-011
+        dep:
+          - E13-S06
+          - E13-S18
+          - E13-S19
+        st: todo
 
   - id: E22
     name: Budget governance follow-ups
@@ -2486,6 +2591,20 @@ epics:
         st: done
 
   # ─────────────────── M4 — Full Phase-1 scope ───────────────────
+      - id: E22-S13
+        t: One list-scope rule, project grants roll down in lists as in point checks (operator question)
+        k: security
+        s: M
+        tags:
+          - auth
+          - security
+        reqs:
+          - USR-003
+          - ACC-004
+        dep:
+          - E22-S04
+          - E22-S06
+        st: blocked
 
   - id: E14
     name: Assets & warehouses
