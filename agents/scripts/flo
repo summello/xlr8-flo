@@ -2832,11 +2832,11 @@ def cmd_ci_watch(argv):
         if run.get("conclusion") == "success" or superseded:
             (scratch / f"{s['id']}.ci-red").unlink(missing_ok=True)
             if s["st"] == "done":
-                # a refused reap (die) must not abort the watch: on 8 Nov E13-S21's refusal
-                # left M3.ci-red in place after the milestone went green and stopped the line
                 try:
                     cmd_reap([s["id"]])
                 except SystemExit:
+                    # a refused reap (die) must not abort the watch: on 8 Nov E13-S21's refusal
+                    # left M3.ci-red in place after the milestone went green and stopped the line
                     pass
         elif run.get("conclusion") != "cancelled":
             mark(s["id"], pkt["branch"], run)

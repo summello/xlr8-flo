@@ -5,7 +5,7 @@ import { cellKey, parseScore, type Evaluation } from "./api";
 
 type Cell = { score: string; comment: string };
 type Me = NonNullable<Evaluation["me"]>;
-const fieldId = (key: string) => `eval-score-${key.replace("|", "-")}`;
+const fieldId = (key: string) => `eval-score-${key.replaceAll("|", "-")}`;
 
 /** One fold per vendor: a score 0..10 and a comment per criterion. The server decides what is editable, sealed or shown (SRC-011). */
 export default function Scoring({ id, evaluation, me, onChanged }: { id: string; evaluation: Evaluation; me: Me; onChanged: (notice: string) => void }) {
