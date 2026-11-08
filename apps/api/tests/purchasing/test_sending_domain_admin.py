@@ -111,6 +111,50 @@ def test_sending_domain_read_follows_the_stored_check(stack, resend_settings):
     assert denied == 403
 
 
+def test_vendor_copy_reports_the_same_gate_as_sending_domain(stack, resend_settings):
+    from tests.purchasing.test_issue import approve
+    from tests.purchasing.test_purchase_orders import create, ready
+
+    db, settings = stack[0], resend_settings
+    rfq, _, a, _, award_id, _ = ready(db)
+    po = create(db, rfq, a, award_id, "4")
+    approve(db, po)
+
+    async def read(browser):
+        regrant(db, ["purchase_order.view", "org.setting.manage"])
+        copy = f"/api/v1/purchase-orders/{po.id}/vendor-copy"
+        held = (
+            (await browser.get(copy)).json()["po_email_allowed"],
+            (await browser.get(BASE)).json()["po_email_allowed"],
+        )
+        store(settings, "pass", "pass")
+        open_ = (
+            (await browser.get(copy)).json()["po_email_allowed"],
+            (await browser.get(BASE)).json()["po_email_allowed"],
+        )
+        return held, open_
+
+    assert run(db, read) == ((False, False), (True, True))
+
+
+def test_sending_domain_derives_the_gate_from_the_one_check_it_returns(
+    stack, resend_settings, monkeypatch
+):
+    from flo.modules.purchasing import transmission
+
+    db, settings = stack[0], resend_settings
+    store(settings, "fail", "fail")
+    real, reads = transmission.latest_domain_check, []
+
+    def spy(conn):
+        reads.append(1)
+        return real(conn)
+
+    monkeypatch.setattr(transmission, "latest_domain_check", spy)  # plant: read twice
+    body = transmission.sending_domain(db[0], Scope(db[1]), Settings(email_provider="resend"))
+    assert len(reads) == 1 and (body.spf, body.po_email_allowed) == ("fail", False)
+
+
 def test_sending_domain_before_any_check_is_allowed_under_smtp(stack):
     async def read(browser):
         return (await browser.get(BASE)).json()

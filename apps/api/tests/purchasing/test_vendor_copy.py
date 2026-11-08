@@ -98,7 +98,9 @@ def stored(db):
 
 
 def vendor_json(db, po_id):
-    return vendor_copy_read(db[0], Scope(db[1]), po_id).model_dump(mode="json")
+    return vendor_copy_read(db[0], Scope(db[1]), po_id, po_email_allowed=True).model_dump(
+        mode="json"
+    )
 
 
 # -- the whitelist ---------------------------------------------------------------------------

@@ -8132,6 +8132,14 @@ export interface components {
             /** Truncated */
             truncated: boolean;
         };
+        /** PoIssue */
+        PoIssue: {
+            /**
+             * Send Email
+             * @default true
+             */
+            send_email?: boolean;
+        };
         /** PoLineIn */
         PoLineIn: {
             /** Quantity */
@@ -10521,6 +10529,8 @@ export interface components {
             email_summary: string;
             /** Issued */
             issued: boolean;
+            /** Po Email Allowed */
+            po_email_allowed: boolean;
             /** Template Version */
             template_version: string;
             vendor_copy: components["schemas"]["VendorCopy"];
@@ -17728,7 +17738,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PoIssue"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

@@ -145,6 +145,8 @@ NOT_A_PERSON = {
     # a suppressed mailbox has no person behind it; po_email_allowed is a boolean, not an address
     "flo.modules.purchasing.schemas.SuppressionRead.email",
     "flo.modules.purchasing.schemas.SendingDomainRead.po_email_allowed",
+    "flo.modules.purchasing.pdf.VendorCopyRead.po_email_allowed",
+    "flo.modules.purchasing.schemas.PoIssue.send_email",
 }
 
 

@@ -8453,6 +8453,63 @@
         },
         "gate_s": 612
       }
+    },
+    {
+      "story": "E13-S30",
+      "kind": "engine",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 2
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "94682f6e-c905-4406-b921-6879c9e0c9f2",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S30",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a1bd83-1fb3-7a40-9a93-728416b6c765",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Issue now refuses (409 po_email_held) when the sending domain cannot send, unless the buyer issues without email (send_email false), which writes an audit row and queues nothing. The Issue dialog and result page reflect the held state with a Download PDF link.",
+      "title": "Issue refuses to queue a PO email the sending domain cannot send",
+      "durations": {
+        "wall_s": 18503,
+        "author_s": 5655,
+        "review_s": {
+          "codex-a": 380
+        },
+        "gate_s": 554
+      }
     }
   ]
 }

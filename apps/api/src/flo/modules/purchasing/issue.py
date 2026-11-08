@@ -13,6 +13,9 @@ from uuid import UUID
 import psycopg
 from psycopg.types.json import Jsonb
 
+from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
+from flo.kernel.audit.writer import AuditConnection
+from flo.kernel.config import Settings
 from flo.kernel.errors import ErrorCode, ProblemError, conflict
 from flo.kernel.money import quantize
 from flo.kernel.tenancy.context import Scope
@@ -46,7 +49,16 @@ def notify_requester_issued(conn: Conn, scope: Scope, po_id: UUID) -> None:
     """E17-S02 wires the requester's in-app notification here, in the issue transaction."""
 
 
-def issue(conn: Conn, scope: Scope, po_id: UUID, actor_id: UUID, if_match: str | None) -> PoRead:
+def issue(
+    conn: Conn,
+    scope: Scope,
+    po_id: UUID,
+    actor_id: UUID,
+    if_match: str | None,
+    *,
+    settings: Settings,
+    send_email: bool = True,
+) -> PoRead:
     service = PurchaseOrderService(conn, scope, actor_id)
     expected = parse_if_match(if_match)
     with tenant_transaction(cast(RlsSession, conn), scope):
@@ -71,6 +83,12 @@ def issue(conn: Conn, scope: Scope, po_id: UUID, actor_id: UUID, if_match: str |
             raise conflict("invalid_transition", "Only an approved purchase order can be issued.")
         if expected != version:
             raise conflict("stale_version", "The purchase order changed. Reload it and retry.")
+        if send_email and not transmission.po_email_allowed(conn, settings):
+            raise conflict(
+                "po_email_held",
+                "Purchase order email is held until the sending domain is verified. "
+                "Nothing was issued.",
+            )
         recipients = h["recipients"] or [
             r.model_dump(mode="json")
             for r in VendorService(conn, scope, actor_id).document_recipients(
@@ -174,6 +192,17 @@ def issue(conn: Conn, scope: Scope, po_id: UUID, actor_id: UUID, if_match: str |
         freeze(conn, scope, po_id)  # E13-S08: before the send reads the snapshot
         for requisition_id in requisitions:
             mark_completed(conn, scope, requisition_id, actor_id)
-        enqueue_transmission(conn, scope, po_id, version + 1)
+        if send_email:
+            enqueue_transmission(conn, scope, po_id, version + 1)
+        else:
+            audit_event(
+                cast(AuditConnection, conn),
+                scope,
+                actor=AuditActor(ActorKind.USER, actor_id),
+                action="purchase_order.issue_without_email",
+                target_type="purchase_order",
+                target_id=po_id,
+                outcome=Outcome.SUCCESS,
+            )
         notify_requester_issued(conn, scope, po_id)
     return service.get(po_id)

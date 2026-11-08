@@ -206,9 +206,12 @@ class VendorCopyRead(BaseModel):
     email_summary: str
     template_version: str
     issued: bool
+    po_email_allowed: bool
 
 
-def vendor_copy_read(conn: Conn, scope: Scope, po_id: UUID) -> VendorCopyRead:
+def vendor_copy_read(
+    conn: Conn, scope: Scope, po_id: UUID, *, po_email_allowed: bool
+) -> VendorCopyRead:
     try:
         pv = frozen(conn, scope, po_id)
     except ProblemError as error:
@@ -220,6 +223,7 @@ def vendor_copy_read(conn: Conn, scope: Scope, po_id: UUID) -> VendorCopyRead:
             email_summary=email_summary(pv.copy),
             template_version=pv.template_version,
             issued=True,
+            po_email_allowed=po_email_allowed,
         )
     status = PurchaseOrderService(conn, scope)._row(po_id)["status"]
     if status not in ("draft", "approval_pending", "approved"):
@@ -230,4 +234,5 @@ def vendor_copy_read(conn: Conn, scope: Scope, po_id: UUID) -> VendorCopyRead:
         email_summary=email_summary(copy),
         template_version=TEMPLATE_VERSION,
         issued=False,
+        po_email_allowed=po_email_allowed,
     )

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { apiClient } from "../../api/client";
 import Person, { personLabel } from "../../components/ui/Person";
 import Signal from "../../components/ui/Signal";
+import { FilePdf } from "@phosphor-icons/react";
 import { sentSignal, type Po, type PoTransmission } from "../../components/purchasing/api";
 import IssueStage from "../../components/purchasing/issue/IssueStage";
 import ChangeRecipient from "../../components/purchasing/transmissions/ChangeRecipient";
@@ -43,6 +44,7 @@ function Moment({ po, id, rows, setRows, back }: { po: Po; id: string; rows: PoT
   useEffect(() => { if (motion.play) sessionStorage.setItem(storage, "1"); }, [storage, motion]);
 
   const current = currentSend(rows, id);
+  const emailed = current.length > 0;
   const failed = current.filter(r => FAILED.includes(r.result));
   const canChange = po.vendor_status !== null;
   const plan = recovery(current, canChange);
@@ -89,12 +91,17 @@ function Moment({ po, id, rows, setRows, back }: { po: Po; id: string; rows: PoT
   return <section className="req-page po-page po-issue" aria-label="Purchase order issued">
     <header><h2 className="po-number">{po.number} Issued</h2><p className="req-sub">{back}</p></header>
     {motion.reduced && <p className="req-sub">Animation is off: this is the finished picture.</p>}
-    <IssueStage step={step} play={motion.play} onStep={setStep} failed={failed.length > 0} number={po.number} version={po.revision + 1} vendor={vendor} failure={failureText} />
+    <IssueStage step={step} play={motion.play} onStep={setStep} failed={failed.length > 0} number={po.number} version={po.revision + 1} vendor={vendor} failure={failureText} emailed={emailed} />
     {step >= 3 && <div className="po-result">
       <h3>Result</h3>
+      {!emailed ? <>
+        <p role="status">Issued without email. Download the PDF and send it to the vendor yourself.</p>
+        <a className="req-link-button" href={`/api/v1/purchase-orders/${id}/pdf`} target="_blank" rel="noreferrer"><FilePdf aria-hidden="true" weight="regular" />Download PDF</a>
+      </> : <>
       <p role="status">{outcome}{capped && " Still sending — results will appear on the order."}</p>
       <table className="po-lines"><caption className="visually-hidden">Result of the current send</caption><thead><tr><th scope="col">Recipient</th><th scope="col">Version</th><th scope="col">Result</th></tr></thead>
         <tbody>{current.map(r => <tr key={r.id}><td><Person name={r.recipient_name} email={r.recipient_email} /></td><td>v{po.revision + 1}</td><td><Signal tone={sentSignal(r).tone} label={sentSignal(r).label} /></td></tr>)}</tbody></table>
+      </>}
       {plan && <div className="po-recovery">
         <p ref={message} tabIndex={-1} role="alert">{failureText}{plan.focus === "message" && " The vendor's address reported this email as spam. Someone who can view this vendor's contacts can change the recipient."}</p>
         <div className="po-actions">

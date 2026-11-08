@@ -11575,6 +11575,18 @@
         "title": "PoHistoryRead",
         "type": "object"
       },
+      "PoIssue": {
+        "additionalProperties": false,
+        "properties": {
+          "send_email": {
+            "default": true,
+            "title": "Send Email",
+            "type": "boolean"
+          }
+        },
+        "title": "PoIssue",
+        "type": "object"
+      },
       "PoLineIn": {
         "additionalProperties": false,
         "properties": {
@@ -18719,6 +18731,10 @@
             "title": "Issued",
             "type": "boolean"
           },
+          "po_email_allowed": {
+            "title": "Po Email Allowed",
+            "type": "boolean"
+          },
           "template_version": {
             "title": "Template Version",
             "type": "string"
@@ -18731,7 +18747,8 @@
           "vendor_copy",
           "email_summary",
           "template_version",
-          "issued"
+          "issued",
+          "po_email_allowed"
         ],
         "title": "VendorCopyRead",
         "type": "object"
@@ -32852,6 +32869,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/PoIssue"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {
