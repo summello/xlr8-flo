@@ -49,7 +49,7 @@ export default function VendorSheet({ c, rfq, v, opener, onClose }: { c: Compari
             <div className="cmp-scroll"><table className="cmp-table"><caption className="visually-hidden">Lines quoted by {v.vendor_name}</caption>
               <thead><tr><th scope="col">Line</th><th scope="col">Quantity</th><th scope="col">Unit price ({v.currency})</th><th scope="col">Landed line</th></tr></thead>
               <tbody>{c.lines.map(l => { const cell = l.cells.find(x => x.vendor_id === v.vendor_id);
-                return <tr key={l.rfq_line_id}><th scope="row">{l.line_no}. {l.description}</th>{!cell || cell.not_quoted ? <td colSpan={3}>Not quoted</td> : <><td className="numeric">{cell.quantity}</td><td className="numeric">{cell.unit_price}</td><td>{money(cell.landed)}</td></>}</tr>; })}</tbody></table></div></section>
+                return <tr key={l.rfq_line_id}><th scope="row">{l.line_no}. {l.description}</th>{!cell || cell.not_quoted ? <td colSpan={3}>Not quoted</td> : <><td className="numeric">{cell.quantity}</td><td className="numeric">{cell.unit_price === null ? "—" : <Money value={cell.unit_price} currency={v.currency} zero="value" />}</td><td>{money(cell.landed)}</td></>}</tr>; })}</tbody></table></div></section>
           {bid && <section aria-labelledby="cmp-sheet-req"><h3 id="cmp-sheet-req">Requirements</h3>
             <ul className="vendor-list-plain">{bid.requirements.map(r => <li key={r.requirement_id}>{(rfq.requirements ?? []).find(q => q.id === r.requirement_id)?.text ?? "Requirement"}: <strong>{r.met ? "Met" : "Not Met"}</strong>{r.note && `, ${r.note}`}</li>)}</ul></section>}
           {bid && <section aria-labelledby="cmp-sheet-exc"><h3 id="cmp-sheet-exc">Exceptions</h3>

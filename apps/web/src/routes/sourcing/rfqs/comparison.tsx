@@ -57,7 +57,7 @@ export default function RfqComparison({ id, navigate }: { id: string; navigate: 
 
   const back = <a href={`/sourcing/rfqs/${id}`} onClick={e => { e.preventDefault(); navigate(`/sourcing/rfqs/${id}`); }}>Back to the RFQ</a>;
   const failed = rfq.error ?? comparison.error;
-  if (failed) return <section className="req-page cmp" aria-label="Bid comparison"><div role="alert"><p>{comparison.error ? "Could not load the comparison. Nothing was opened." : failed}</p><p className="req-sub">{failed}</p><button type="button" onClick={() => { rfq.reload(); comparison.reload(); }}>Try again</button></div>{back}</section>;
+  if (failed) return <section className="req-page cmp" aria-label="Bid comparison"><div role="alert"><p>{comparison.error ? "Could not load the comparison. Nothing was opened." : failed}</p>{comparison.error && <p className="req-sub">{failed}</p>}<button type="button" onClick={() => { rfq.reload(); comparison.reload(); }}>Try again</button></div>{back}</section>;
   if (!rfq.data || !comparison.data) return <section className="req-page cmp" aria-label="Bid comparison" aria-busy="true"><p className="req-skeleton" role="status" aria-label="Loading comparison" /></section>;
   const r = rfq.data, c = comparison.data;
   const head = <header className="cmp-head"><h2>{r.number} · {r.title}</h2>{back}</header>;

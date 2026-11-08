@@ -153,6 +153,12 @@ test("bid sheet: opens on Close, keeps Tab inside, Escape returns focus to the h
   await expect(sheet).toContainText("Converted from EUR at 1.0850 (Central bank, effective");
   await expect(sheet).toContainText("DAP Kuwait");
   await expect(sheet.getByText("ISO 9001 certified: Met")).toBeVisible();
+  // the unit price is money: formatted by <Money>, never the raw server decimal (M3 release review, qwen)
+  const lines = sheet.locator("section[aria-labelledby=cmp-sheet-lines]");
+  const price = lines.locator("tbody td.numeric").nth(1);
+  await expect(price.locator(".project-money")).toHaveCount(1);
+  await expect(price).toContainText("10.00");
+  await expect(price).not.toContainText("10.0000");
   await expect(sheet.getByText("Two year warranty: Not Met, Certificate pending")).toBeVisible();
   for (let i = 0; i < 12; i++) { await page.keyboard.press("Tab"); expect(await sheet.evaluate(n => n.contains(document.activeElement))).toBe(true); }
   await page.keyboard.press("Escape");
