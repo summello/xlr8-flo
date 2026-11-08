@@ -642,7 +642,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E13-S25** Per-file vendor-facing mark on PO attachments (records intent, sends nothing until E19-S04) | E13 | security | M | PO-017 | ~~E13-S11~~ |
 | ⬜ | **E13-S26** An issued purchase order stays immutable after it is closed or cancelled | E13 | migration | S | PO-011, PO-013, PO-014 | ~~E13-S06~~, ~~E13-S07~~, ~~E13-S16~~ |
 | ✅ | **E13-S27** Close an issued purchase order from its detail page | E13 | ui | S | PO-007, ACC-008 | ~~E13-S03~~, ~~E13-S12~~ |
-| ⬜ | **E13-S28** Typed budget effect on a PO change, no hand-written client type | E13 | crud | S | PO-011 | ~~E13-S06~~, ~~E13-S18~~, ~~E13-S19~~ |
+| 🔨 | **E13-S28** Typed budget effect on a PO change, no hand-written client type | E13 | crud | S | PO-011 | ~~E13-S06~~, ~~E13-S18~~, ~~E13-S19~~ |
 | ⬜ | **E13-S29** ACC-008 evidence, a keyboard-only walkthrough of the project-to-PO flow | E13 | chore | M | ACC-008 | ~~E13-S27~~ |
 | ⬜ | **E13-S30** Issue refuses to queue a PO email the sending domain cannot send | E13 | engine | M | EML-001, PO-012, UX-005 | ~~E13-S10~~, ~~E13-S21~~ |
 | ✅ | **E22-S01** Create Project with budget: form and Excel, sponsors, through the project approval workflow | E22 | engine | L | PROJ-003 | ~~E09-S17~~ |
