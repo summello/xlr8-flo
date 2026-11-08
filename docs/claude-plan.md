@@ -641,7 +641,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E13-S24** Vendor cancellation email for a cancelled issued PO, through the outbox | E13 | engine | M | PO-013, PO-015, ARCH-006 | ~~E13-S07~~, ~~E13-S09~~ |
 | ✅ | **E13-S25** Per-file vendor-facing mark on PO attachments (records intent, sends nothing until E19-S04) | E13 | security | M | PO-017 | ~~E13-S11~~ |
 | ⬜ | **E13-S26** An issued purchase order stays immutable after it is closed or cancelled | E13 | migration | S | PO-011, PO-013, PO-014 | ~~E13-S06~~, ~~E13-S07~~, ~~E13-S16~~ |
-| ⬜ | **E13-S27** Close an issued purchase order from its detail page | E13 | ui | S | PO-007, ACC-008 | ~~E13-S03~~, ~~E13-S12~~ |
+| 🔨 | **E13-S27** Close an issued purchase order from its detail page | E13 | ui | S | PO-007, ACC-008 | ~~E13-S03~~, ~~E13-S12~~ |
 | ⬜ | **E13-S28** Typed budget effect on a PO change, no hand-written client type | E13 | crud | S | PO-011 | ~~E13-S06~~, ~~E13-S18~~, ~~E13-S19~~ |
 | ⛔ | **E13-S29** ACC-008 evidence, the project-to-PO flow keyboard only end to end (operator question) | E13 | test | L | ACC-008 | E13-S27 |
 | ⛔ | **E13-S30** A PO issued before the sending domain is verified (operator question) | E13 | engine | S | EML-001, PO-012, UX-005 | ~~E13-S10~~, ~~E13-S21~~ |
