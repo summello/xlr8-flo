@@ -1,0 +1,24 @@
+{
+  "story": "M3-auth",
+  "reviewer": "deepseek",
+  "verdict": "approve",
+  "ran_tests": false,
+  "findings": [
+    {
+      "severity": "minor",
+      "file": "apps/api/src/flo/api/sourcing.py",
+      "line": 406,
+      "requirement": "ACC-008",
+      "problem": "get_bid and list_bids treat the rfq.edit holder asymmetrically: list_bids (line 392) lets a holder of rfq.edit proceed with all_bids=False and enumerates that user's own keyed bids, but get_bid (line 406) passes all_bids=approve (rfq.approve only) to BidService.read, so the same rfq.edit-only user who can list a bid id receives FORBIDDEN on read() because keyed_by != actor and all_bids is False. Not a cross-tenant leak (the read() check is correct), but the list exposes ids the sibling route refuses, which is an inconsistent authorization surface.",
+      "fix": "Pass the same capability to read() as list_bids derives, i.e. permit read when the caller holds rfq.edit-or-approve on the RFQ (authoring users may read their keyed bids), or omit keyed bid ids from list_bids for edit-only holders so both routes agree."
+    },
+    {
+      "severity": "minor",
+      "file": "migrations/20261022_0066_baseline_role_reads.py",
+      "line": 18,
+      "requirement": "TEN-010",
+      "problem": "The migration-internal track table policy uses current_setting('app.org_id', true) (missing_ok), whereas the sibling track table in migrations/20261102_0088_purchasing_reads_grant.py uses current_setting('app.org_id')::uuid without missing_ok. Both track tables are only written inside a DO loop that sets app.org_id first, so this is not exploitable, but the two RLS policies for the same migration pattern disagree and the mismatch makes a future non-org path able to select the 0066 track silently (NULL setting) rather than erroring.",
+      "fix": "Make the two track-table policies identical (drop the `, true` in 0066, or add it in 0088) so the migration-track helper tables enforce org_id consistently."
+    }
+  ]
+}
