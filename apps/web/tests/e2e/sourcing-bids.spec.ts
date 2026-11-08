@@ -356,7 +356,7 @@ test("a changed late-acceptance reason after a lost response is a new operation"
   expect(keys[2]).toBe(keys[1]);
   await page.getByLabel("Reason for Accepting a Late Bid").fill("Courier strike, confirmed");
   await accept.click();
-  await expect(page.getByText("Received. The figures stay sealed").or(page.getByText("Late, Accepted By Override"))).toBeVisible();
+  await expect(page.locator("dd", { hasText: "Late, Accepted By Override" })).toBeVisible();
   expect(patches(state)).toBe(saved + 1);
   expect(keys[3]).not.toBe(keys[2]);
 });
