@@ -20,10 +20,13 @@ export function recovery(rows: readonly Pick<PoTransmission, "result">[], canCha
   return { actions: canChangeRecipient ? ["resend", "change_recipient"] : ["resend"], focus: "resend" };
 }
 
-const ISSUE_EMAIL = "po-issued-v1";
-/** The rows of the current send: this revision's issue email, the greatest attempt. */
-export function currentSend(rows: readonly PoTransmission[], id: string): PoTransmission[] {
-  const mine = rows.filter(r => r.po_id === id && r.template_version === ISSUE_EMAIL);
+export const ISSUE_EMAIL = "po-issued-v1";
+export const CANCEL_EMAIL = "po-cancelled-v1";
+/** The template in words; an unknown id is shown raw. */
+export const templateWords = (id: string) => (id === ISSUE_EMAIL ? "Purchase Order" : id === CANCEL_EMAIL ? "Cancellation Notice" : id);
+/** The rows of the current send: this revision's rows of one template (the issue email by default), the greatest attempt. */
+export function currentSend(rows: readonly PoTransmission[], id: string, template: string = ISSUE_EMAIL): PoTransmission[] {
+  const mine = rows.filter(r => r.po_id === id && r.template_version === template);
   const attempt = Math.max(0, ...mine.map(r => r.attempt));
   return mine.filter(r => r.attempt === attempt);
 }

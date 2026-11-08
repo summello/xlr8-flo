@@ -8,7 +8,12 @@ const vendorId = "44444444-4444-4444-8444-444444444444";
 const projectId = "66666666-6666-4666-8666-666666666666";
 const NOW = "2026-10-12T10:00:00Z";
 
-type Options = { status?: string; budget?: "ok" | "forbidden" | "superseded"; vendorStatus?: string | null; vendorCopy?: "ok" | "unissued" | "404" | "500"; leaks?: boolean };
+export type Tx = Record<string, unknown> & { id: string; attempt: number; result: string };
+/** One transmission row of PO `poId`; override any field. */
+export const tx = (result: string, over: Record<string, unknown> = {}): Tx => ({ id: `t${over.attempt ?? 1}-${result}`, po_id: poId, revision: 1, version: 3, attempt: 1, recipient_name: "Dock", recipient_email: "dock@example.test", template_version: "po-issued-v1", provider_message_id: null, result, created_at: NOW, result_at: result === "queued" ? null : NOW, result_reason: null, ...over });
+export const contactIds = { dock: "c0000000-0000-4000-8000-000000000001", office: "c0000000-0000-4000-8000-000000000002" };
+
+type Options = { transmissions?: Tx[]; resend?: "ok" | "403" | "409"; status?: string; budget?: "ok" | "forbidden" | "superseded"; vendorStatus?: string | null; vendorCopy?: "ok" | "unissued" | "404" | "500"; leaks?: boolean };
 
 /** Internal values the vendor copy page must never show (EML-005): the stub serves them from the other PO routes only. */
 export const LEAKS = ["PRJ-LEAK-9", "DEPT-LEAK-9", "LEDG-LEAK-9", "777777.7700", "777,777.77", "INTERNAL-NOTE-LEAK-9"];
@@ -18,9 +23,9 @@ export const counts = { all: 12, draft: 1, awaiting: 2, ready: 3, issued: 4, att
 const line = (n: number, leaks: boolean) => ({ line_no: n, rfq_line_id: `r${n}`, requisition_line_id: `q${n}`, description: `Pump ${n}`, uom_code: "EA", quantity: "4.0000", unit_price: "100.0000", project_id: projectId, department_code: leaks ? "DEPT-LEAK-9" : "OPS", ledger_account_code: leaks ? "LEDG-LEAK-9" : "6100", price: "400.0000", tax: "40.0000", freight: "10.0000", line_total: "450.0000", budget_amount: "450.0000", budget_amount_project: "450.0000", value: "450.0000", value_converted: "450.0000" });
 
 /** An in-memory stand-in for the PO API. Every budget figure is a deliberately odd number: the page must show the server's, never its own sum. */
-export async function stubPo(page: Page, { status = "issued", budget = "ok", vendorStatus = "active", vendorCopy = "ok", leaks = false }: Options = {}) {
+export async function stubPo(page: Page, { status = "issued", budget = "ok", vendorStatus = "active", vendorCopy = "ok", leaks = false, transmissions, resend = "ok" }: Options = {}) {
   const base = `/api/v1/purchase-orders`;
-  const state = { queries: [] as URL[], paths: [] as string[], copyFails: vendorCopy === "500" };
+  const state = { queries: [] as URL[], paths: [] as string[], copyFails: vendorCopy === "500", rows: transmissions ?? [tx("delivered")], resends: [] as { headers: Record<string, string>; body: unknown }[], writes: [] as string[] };
   const po = () => ({
     id: poId, number: "PO-0007", unit_id: unitId, vendor_id: vendorId, vendor_snapshot: { trading_name: "Acme Tooling" }, requisition_id: reqId, award_id: "a1", currency: "USD", converted_currency: "USD",
     rate: { rate: "1", to: "USD" }, bill_to: { line1: "1 Main St", city: "Springfield", country: "US" }, ship_to_address_id: null, recipients: [{ name: "Dock", email: "dock@example.test" }], requester_id: unitId,
@@ -61,7 +66,20 @@ export async function stubPo(page: Page, { status = "issued", budget = "ok", ven
     if (path === `${base}/${poId}/versions`) return send([{ revision: 0, po_id: nextId, status: "superseded", total: "17000.0000", currency: "USD", issued_at: NOW, is_current: false }, { revision: 1, po_id: poId, status, total: "18000.0000", currency: "USD", issued_at: NOW, is_current: true }]);
     if (path === `${base}/${poId}/changes`) return send([{ id: "c1", po_id: poId, number: 1, version: 1, from_version: 1, status: "approved", material: true, reason: "Price rise", created_by: unitId, created_at: NOW, draft: {}, diff: [], budget_effect: [], result_po_id: poId, total: "18000.0000", budget_total_project: "18000.0000" }]);
     if (path === `${base}/${poId}/history`) return send({ entries: [{ occurred_at: NOW, actor: "buyer@example.test", action: "purchase_order.issue", detail: "Status: issued" }], truncated: false });
-    if (path === `${base}/${poId}/transmissions`) return send([{ id: "t1", po_id: poId, revision: 1, version: 3, attempt: 1, recipient_name: "Dock", recipient_email: "dock@example.test", template_version: "po-issued-v1", provider_message_id: null, result: "delivered", created_at: NOW, result_at: NOW }]);
+    if (req.method() !== "GET") state.writes.push(`${req.method()} ${path}`);
+    if (path === `${base}/${poId}/transmissions/resend` && req.method() === "POST") {
+      state.resends.push({ headers: req.headers(), body: req.postDataJSON() });
+      if (resend === "403") return send({ title: "Forbidden", status: 403, detail: "You may not resend this purchase order.", correlation_id: "c" }, 403);
+      if (resend === "409") return send({ title: "Conflict", status: 409, detail: "An email for this order is still being sent.", correlation_id: "c", checks: { problem: "transmission_queued" } }, 409);
+      const ids = (req.postDataJSON() as { contact_ids?: string[] }).contact_ids;
+      const who = ids ? ids.map(i => (i === contactIds.office ? ["Office", "office@example.test"] : ["Dock", "dock@example.test"])) : [["Dock", "dock@example.test"]];
+      const attempt = Math.max(...state.rows.map(r => r.attempt)) + 1;
+      state.rows = [...who.map(([n, e]) => tx("queued", { attempt, id: `t${attempt}-${n}`, recipient_name: n, recipient_email: e })), ...state.rows];
+      return send(state.rows);
+    }
+    if (path === `/api/v1/vendors/${vendorId}/contacts`) return send([{ id: contactIds.dock, name: "Dock", email: "dock@example.test", type: "ordering", receives_documents: true, phone: null, suppressed: true, created_at: NOW, updated_at: NOW },
+      { id: contactIds.office, name: "Office", email: "office@example.test", type: "accounts", receives_documents: false, phone: null, suppressed: false, created_at: NOW, updated_at: NOW }]);
+    if (path === `${base}/${poId}/transmissions`) return send(state.rows);
     if (path === `${base}/${poId}/budget-summary`) {
       if (budget === "forbidden") return send({ title: "Forbidden", status: 403, detail: "No.", correlation_id: "c" }, 403);
       if (budget === "superseded") return send({ title: "Conflict", status: 409, detail: "Replaced.", correlation_id: "c", checks: { problem: "superseded", current_id: nextId } }, 409);

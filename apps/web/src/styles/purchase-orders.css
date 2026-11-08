@@ -56,3 +56,5 @@
 .po-pre { white-space: pre-line; }
 .po-vendor-copy { display: grid; gap: var(--space-4); }
 .po-vc-scroll { overflow-x: auto; max-inline-size: 100%; }
+.po-mono { font-family: var(--font-mono); overflow-wrap: anywhere; }
+.po-resend-note, .vendor-head-actions .field-error { flex-basis: 100%; margin: 0; }

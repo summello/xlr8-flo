@@ -9,7 +9,7 @@ import Card from "../sourcing/Card";
 import Money from "../ui/Money";
 import Person from "../ui/Person";
 import Signal from "../ui/Signal";
-import { FUTURE_STATES, HOLDS, LIFECYCLE, sentSignal, type Po } from "./api";
+import { FUTURE_STATES, HOLDS, LIFECYCLE, type Po } from "./api";
 
 async function unwrap<T>(result: Promise<{ data?: T; error?: unknown }>, action: string): Promise<T> {
   const { data, error } = await result;
@@ -82,18 +82,6 @@ export function LinesCard({ po }: { po: Po }) {
       {po.released_amount && po.released_currency && <div><dt>Released commitment</dt><dd><Money zero="value" value={po.released_amount} currency={po.released_currency} /></dd></div>}
     </dl>
   </section>;
-}
-
-export function TransmissionsCard({ id }: { id: string }) {
-  const load = useLoad(() => unwrap(apiClient.GET("/api/v1/purchase-orders/{id}/transmissions", { params: { path: { id } } }), "Loading transmissions"), [id]);
-  const rows = load.data ?? [];
-  const latest = rows.filter(r => r.attempt === Math.max(...rows.map(x => x.attempt)));
-  return <Card title="Transmissions" load={load}>
-    {rows.length === 0 ? <p>Nothing has been sent to the vendor yet.</p> : <>
-      <div><h3>Sent to Vendor</h3><ul className="vendor-list-plain">{latest.map(r => <li key={r.id}><Signal tone={sentSignal(r).tone} label={sentSignal(r).label} /><span className="req-sub"><Person name={r.recipient_name} email={r.recipient_email} /></span></li>)}</ul></div>
-      <h3>Send log</h3>
-      <ul className="vendor-list-plain">{rows.map(r => <li key={r.id}><strong>Attempt {r.attempt}, revision {r.revision}</strong><span className="req-sub"><Person name={r.recipient_name} email={r.recipient_email} /> · {sentSignal(r).label} · queued {formatDateTime(r.created_at)}</span></li>)}</ul></>}
-  </Card>;
 }
 
 /** One block per project of the lines. The figures are the server's: nothing here adds or subtracts. */

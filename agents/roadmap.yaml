@@ -2227,7 +2227,7 @@ epics:
           - E13-S09
           - E13-S10
           - E13-S12
-        st: review
+        st: done
       - id: E13-S17
         t: 'Vendor copy preview: email and PDF as the supplier sees them'
         k: ui

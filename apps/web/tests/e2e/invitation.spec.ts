@@ -141,7 +141,7 @@ test('plant: hard chooser return loses the in-memory invitation', async ({ page 
     await page.getByRole('button', { name: 'Sign in to accept' }).click();
     await page.getByLabel('Email', { exact: true }).fill(invitation.email); await page.getByLabel('Password', { exact: true }).fill('disposable sign-in password'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
     await page.getByRole('button', { name: /Other Capital, A/ }).click();
-    await expect(page.getByRole('heading', { name: 'Invitation Unavailable' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Invitation Unavailable' })).toBeVisible({ timeout: 20_000 }); // dev-mode hard reload recompiles cold
     await expect(expect(page.getByRole('heading', { name: 'Join Fixture Capital', exact: true })).toBeVisible({ timeout: 100 })).rejects.toThrow();
 });
 for (const access of ['choose', 'verify', 'enroll'] as const) test(`detour re-entry probe ${access}`, async ({ page }) => {
@@ -188,10 +188,10 @@ async function checkingToFormShift(page: Page, width: number, removePlaceholder 
     if (removePlaceholder) await page.route(process.env.CI ? '**/assets/*.js' : '**/src/features/invitation/Screen.tsx*', async route => {
         const response = await route.fetch(); const source = await response.text();
         if (process.env.CI) {
-            const placeholder = source.match(/function (\w+)\(\)\{return\(0,\w+\.jsxs\)\(`aside`,\{className:`auth-aside invite-aside invite-placeholder`/);
+            const placeholder = source.match(/function ([\w$]+)\(\)\{return\(0,[\w$]+\.jsxs\)\(`aside`,\{className:`auth-aside invite-aside invite-placeholder`/);
             expect(placeholder).not.toBeNull();
             const start = `function ${placeholder![1]}(){return`;
-            await route.fulfill({ response, body: source.replace(start, `${start} null;`) });
+            await route.fulfill({ response, body: source.replace(start, () => `${start} null;`) });
         } else {
             expect(source).toContain('jsxDEV(PlaceholderAside,');
             await route.fulfill({ response, body: source.replaceAll('jsxDEV(PlaceholderAside,', 'jsxDEV(() => null,') });

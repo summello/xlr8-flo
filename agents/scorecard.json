@@ -7971,6 +7971,65 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E13-S16",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 3
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 3,
+          "findings": 2,
+          "blockers": 2,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "065765a8-f48c-4027-8ae3-df800e18a040",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S16",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a1b88a-e72f-7412-b4d8-4523f23f1383",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Detail page now owns the transmissions list: a send log table with a Details sheet, header Resend and Change Recipient (shared useResend hook, cancelled POs use the cancellation template), and suppressed contacts marked in Change Recipient. Web only; no API change.",
+      "title": "Transmission log, change recipient and resend",
+      "durations": {
+        "wall_s": 15940,
+        "author_s": 6512,
+        "review_s": {
+          "codex-a": 100
+        },
+        "gate_s": 378
+      }
     }
   ]
 }

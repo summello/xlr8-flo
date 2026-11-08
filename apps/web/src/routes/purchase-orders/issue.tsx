@@ -6,7 +6,8 @@ import { sentSignal, type Po, type PoTransmission } from "../../components/purch
 import IssueStage from "../../components/purchasing/issue/IssueStage";
 import ChangeRecipient from "../../components/purchasing/transmissions/ChangeRecipient";
 import { currentSend, FAILED, recovery, TERMINAL } from "../../components/purchasing/transmissions/recovery";
-import { failure, mutationHeaders, type Problem } from "../../components/requisitions/api";
+import { useResend } from "../../components/purchasing/transmissions/useResend";
+import { failure, type Problem } from "../../components/requisitions/api";
 import { useLoad } from "../../components/requisitions/useLoad";
 import "../../styles/projects.css";
 import "../../styles/requisitions.css";
@@ -67,22 +68,10 @@ function Moment({ po, id, rows, setRows, back }: { po: Po; id: string; rows: PoT
   }, [pending, capped, tick, id, setRows]);
 
   // Resend with the same recipients.
-  const [busy, setBusy] = useState(false), [refusal, setRefusal] = useState<string | null>(null);
-  const key = useRef<string | null>(null), inFlight = useRef(false);
   const resendRef = useRef<HTMLButtonElement>(null), changeRef = useRef<HTMLButtonElement>(null), message = useRef<HTMLParagraphElement>(null);
-  const sent = (data: PoTransmission[]) => { setRows(data); since.current = 0; setCapped(false); setTick(n => n + 1); setRefusal(null); };
-  const resend = async () => {
-    if (inFlight.current) return;
-    inFlight.current = true; setBusy(true); setRefusal(null);
-    key.current ??= crypto.randomUUID();
-    try {
-      const { data, error, response } = await apiClient.POST("/api/v1/purchase-orders/{id}/transmissions/resend", { params: { path: { id } }, headers: mutationHeaders(key.current), body: {} });
-      if (data) { key.current = null; sent(data); return; }
-      if (response.status >= 400 && response.status < 500) key.current = null;
-      setRefusal(failure(error as Problem | undefined, "Resending"));
-    } catch { setRefusal(failure(undefined, "Resending")); }
-    finally { inFlight.current = false; setBusy(false); }
-  };
+  const received = (data: PoTransmission[]) => { setRows(data); since.current = 0; setCapped(false); setTick(n => n + 1); };
+  const { resend, busy, refusal, clearRefusal } = useResend(id, received);
+  const sent = (data: PoTransmission[]) => { received(data); clearRefusal(); };
 
   // The recovery is focused when a failure appears, and again when a new attempt fails.
   const focus = plan?.focus;

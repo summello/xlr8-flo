@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { recovery } from "./recovery";
+import type { PoTransmission } from "../api";
+import { CANCEL_EMAIL, currentSend, ISSUE_EMAIL, recovery } from "./recovery";
 
 const r = (...result: ("failed" | "bounced" | "address_suppressed" | "complained" | "delivered" | "queued")[]) => result.map(x => ({ result: x }));
 
@@ -26,5 +27,16 @@ describe("recovery", () => {
   });
   it("complained outranks bounced in the same send", () => {
     expect(recovery(r("bounced", "complained"), true)?.actions).toEqual(["change_recipient"]);
+  });
+});
+
+describe("currentSend", () => {
+  const t = (id: string, po_id: string, template_version: string, attempt: number) => ({ id, po_id, template_version, attempt }) as PoTransmission;
+  const rows = [t("a", "po", ISSUE_EMAIL, 1), t("b", "po", ISSUE_EMAIL, 2), t("c", "po", CANCEL_EMAIL, 3), t("d", "po", CANCEL_EMAIL, 3), t("e", "old", CANCEL_EMAIL, 9)];
+  it("defaults to the issue email, greatest attempt of this PO", () => {
+    expect(currentSend(rows, "po").map(x => x.id)).toEqual(["b"]);
+  });
+  it("takes the cancellation notice's greatest attempt when asked, never another revision's", () => {
+    expect(currentSend(rows, "po", CANCEL_EMAIL).map(x => x.id)).toEqual(["c", "d"]);
   });
 });

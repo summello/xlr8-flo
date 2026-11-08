@@ -15,6 +15,8 @@ const ALLOWED: Record<string, string> = {
   "components/vendors/request/VendorRequestForm.tsx|.email": "vendor request form: contact email being typed",
   "components/vendors/request/VendorRequestForm.tsx|\"email\"": "vendor request form: input attributes",
   "components/requisitions/changes/ReviewScreen.tsx|.requester_email": "hands the requester to Versions, which renders it through Person",
+  "components/purchasing/transmissions/TransmissionSheet.tsx|.recipient_email": "E13-S16 packet: the sheet title is exactly 'Email to {recipient_email}'; the Recipient row beside it renders through Person",
+  "components/purchasing/transmissions/TransmissionsCard.tsx|.recipient_email": "E13-S16 packet: a Details button's accessible name is exactly 'Details for {recipient_email}, attempt {n}'; the cells render through Person",
   "routes/admin/sending-domain.tsx|.email": "suppressed address: a bare mailbox with no person or name behind it",
   "components/admin/email/RemoveSuppressionDialog.tsx|.email": "suppressed address: a bare mailbox with no person or name behind it",
   "routes/_dev/form-gallery.tsx|.email": "dev gallery: form validation demo",
