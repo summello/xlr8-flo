@@ -1668,7 +1668,7 @@ epics:
           - E11-S05
           - E11-S06
           - E11-S15
-        st: todo
+        st: in_progress
       - id: E11-S21
         t: Eligible Here only for a unit the user actually belongs to
         k: ui
