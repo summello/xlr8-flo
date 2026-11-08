@@ -1654,7 +1654,7 @@ epics:
         dep:
           - E11-S06
           - E11-S14
-        st: in_progress
+        st: review
       - id: E11-S20
         t: The approver sees a directly created vendor has no questionnaire
         k: ui
@@ -1668,7 +1668,7 @@ epics:
           - E11-S05
           - E11-S06
           - E11-S15
-        st: in_progress
+        st: done
       - id: E11-S21
         t: Eligible Here only for a unit the user actually belongs to
         k: ui
@@ -2446,7 +2446,7 @@ epics:
           - E13-S06
           - E13-S18
           - E13-S19
-        st: in_progress
+        st: review
       - id: E13-S29
         t: ACC-008 evidence, a keyboard-only walkthrough of the project-to-PO flow
         k: chore

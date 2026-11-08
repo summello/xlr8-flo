@@ -40,6 +40,21 @@ test("a below-threshold score is a fact; Approve stays enabled and decides", asy
   await expect.poll(() => state.posts.at(-1)?.body.outcome).toBe("approve");
 });
 
+test("a directly created vendor says so and shows no score", async ({ page }) => {
+  const state = await setup(page);
+  state.evidence[state.pending[0]!.instance_id] = { ...create, payload: { questionnaire: false } };
+  const evidence = await open(page, "New vendor");
+  await expect(evidence.getByText("Created directly; no questionnaire")).toBeVisible();
+  await expect(evidence.getByText(/^Score \d/)).toHaveCount(0);
+});
+
+test("an onboarded vendor shows its score and not the direct-create text", async ({ page }) => {
+  await setup(page);
+  const evidence = await open(page, "New vendor");
+  await expect(evidence.getByText("Score 62 of 100, below the threshold of 70")).toBeVisible();
+  await expect(evidence.getByText("Created directly; no questionnaire")).toHaveCount(0);
+});
+
 test("the duplicate shows its reason and link, and the identifier is masked", async ({ page }) => {
   await setup(page);
   const evidence = await open(page, "New vendor");

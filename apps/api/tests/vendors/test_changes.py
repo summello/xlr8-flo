@@ -312,6 +312,10 @@ def test_no_published_workflow_refuses_and_writes_nothing(header_db):
     assert sql(db, "SELECT count(*) FROM vendor_change")[0][0] == 0
 
 
+def bare_ready(db):
+    return ready(db, name="Direct")
+
+
 def test_submit_needs_contacts_and_required_answers_but_not_a_passing_score(vdb):
     db, _ = vdb
     s = service(db)
@@ -338,6 +342,11 @@ def test_submit_needs_contacts_and_required_answers_but_not_a_passing_score(vdb)
     s.put_answers(onboarding.vendor_id, AnswersPut(answers={"name": "x"}), '"1"')
     change = s.submit(onboarding.vendor_id, SubmitCreate())  # 50 < 90 does not block
     assert change.payload["score"] == 50 and change.payload["threshold"] == 90
+    assert "questionnaire" not in change.payload and "breakdown" in change.payload
+    # direct create: no answers needed, no refusal, and the flag says so (E11-S20)
+    direct = s.submit(bare_ready(db).id, SubmitCreate())
+    assert direct.payload["questionnaire"] is False and "score" not in direct.payload
+    assert s.evidence(direct.id)["payload"]["questionnaire"] is False
 
 
 # -- duplicates -----------------------------------------------------------------------------------

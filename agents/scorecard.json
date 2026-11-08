@@ -8089,6 +8089,63 @@
         },
         "gate_s": 217
       }
+    },
+    {
+      "story": "E11-S20",
+      "kind": "ui",
+      "size": "S",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 1
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "24b5ace7-6983-410e-9e95-07be39a79da2",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S20",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a1bbc5-9d76-7d73-b860-a64ddda43794",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Submitting a directly created vendor now stores questionnaire:false in the change payload, so the approver's evidence shows 'Created directly; no questionnaire' instead of a score. Submit, scoring and the state machine are unchanged.",
+      "title": "The approver sees a directly created vendor has no questionnaire",
+      "durations": {
+        "wall_s": 7661,
+        "author_s": 5112,
+        "review_s": {
+          "codex-a": 1176
+        },
+        "gate_s": 0
+      }
     }
   ]
 }
