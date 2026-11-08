@@ -8030,6 +8030,65 @@
         },
         "gate_s": 378
       }
+    },
+    {
+      "story": "E13-S27",
+      "kind": "ui",
+      "size": "S",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 1
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "7a3df9c7-d27a-4ae1-9ff5-30010e86a1a8",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S27",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a1bac6-b8f3-7f82-9a72-5247d1007a41",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Added a Close Purchase Order dialog (ClosePo.tsx) to the PO detail header, shown only when the server lists close in actions; it POSTs the transition with CSRF, Idempotency-Key and If-Match and reloads. New po-close.spec.ts covers headers, empty reason, stale 409, keyboard and axe in both themes.",
+      "title": "Close an issued purchase order from its detail page",
+      "durations": {
+        "wall_s": 24565,
+        "author_s": 829,
+        "review_s": {
+          "codex-a": 160
+        },
+        "gate_s": 217
+      }
     }
   ]
 }

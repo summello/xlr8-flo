@@ -2434,7 +2434,7 @@ epics:
         dep:
           - E13-S03
           - E13-S12
-        st: review
+        st: done
       - id: E13-S28
         t: Typed budget effect on a PO change, no hand-written client type
         k: crud
