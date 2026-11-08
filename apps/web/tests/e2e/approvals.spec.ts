@@ -260,6 +260,30 @@ test("the organization tab appears for administrators", async ({ page }) => {
   await expect(page.getByRole("tab", { name: "Organization" })).toBeVisible();
 });
 
+test("availability tabs move with the arrow, Home and End keys", async ({ page }) => {
+  await stubApprovals(page, { delegateAdmin: true });
+  await page.goto("/approvals/availability");
+  const mine = page.getByRole("tab", { name: "My Delegations" }), org = page.getByRole("tab", { name: "Organization" });
+  await mine.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(org).toBeFocused();
+  await expect(org).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("tabpanel", { name: "Organization" })).toBeVisible();
+  await page.keyboard.press("Home");
+  await expect(mine).toBeFocused();
+  await expect(mine).toHaveAttribute("aria-selected", "true");
+});
+
+test("availability: Reason is marked required and its error is described", async ({ page }) => {
+  await stubApprovals(page);
+  await page.goto("/approvals/availability");
+  await expect(page.locator("label[for=avail-reason]")).toContainText("Required");
+  await page.getByLabel(/^Reason/).fill("");
+  await page.getByRole("button", { name: "Save Out-of-Office" }).click();
+  await expect(page.getByLabel(/^Reason/)).toHaveAttribute("aria-describedby", "avail-reason-error");
+  await expect(page.locator("#avail-reason-error")).toContainText("Say why you are away.");
+});
+
 test("eligibility is requested for what is covered and decisions on my behalf render every state", async ({ page }) => {
   const state = await stubApprovals(page);
   state.behalfFails = true;

@@ -1,6 +1,6 @@
 import { CheckCircle, WarningCircle } from "@phosphor-icons/react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 
 import { apiClient } from "../../api/client";
 import type { components } from "../../api/generated/schema";
@@ -24,6 +24,7 @@ const blank: AvailabilityForm = { starts: "", ends: "", delegate: "", reason: "O
 
 export default function Availability({ navigate }: { navigate: (href: string) => void }) {
   const [tab, setTab] = useState<"mine" | "organization">(() => new URLSearchParams(window.location.search).get("view") === "organization" ? "organization" : "mine");
+  const tabRefs = useRef<Record<"mine" | "organization", HTMLButtonElement | null>>({ mine: null, organization: null });
   const [organizationFailed, setOrganizationFailed] = useState(false);
   const [form, setForm] = useState<AvailabilityForm>(blank);
   const [problems, setProblems] = useState<Problem[]>([]);
@@ -32,6 +33,16 @@ export default function Availability({ navigate }: { navigate: (href: string) =>
   const [mine, setMine] = useState<Delegation[]>();
   const [covering, setCovering] = useState<Delegation[]>([]);
   const [organization, setOrganization] = useState<Delegation[]>();
+  /** Tabs follow the arrow, Home and End keys (MASTER: the approval inbox tabs). */
+  const onTabKey = (event: KeyboardEvent<HTMLButtonElement>) => {
+    const tabs = organization !== undefined ? (["mine", "organization"] as const) : (["mine"] as const);
+    const index = tabs.indexOf(tab as never);
+    const next = { ArrowRight: tabs[(index + 1) % tabs.length], ArrowLeft: tabs[(index + tabs.length - 1) % tabs.length], Home: tabs[0], End: tabs[tabs.length - 1] }[event.key];
+    if (next === undefined) return;
+    event.preventDefault();
+    setTab(next);
+    tabRefs.current[next]?.focus();
+  };
   const [loadFailed, setLoadFailed] = useState(false);
   const [people, setPeople] = useState<Picked[]>([]);
   const [peopleFailed, setPeopleFailed] = useState(false);
@@ -154,7 +165,7 @@ export default function Availability({ navigate }: { navigate: (href: string) =>
               </div>
             )}
             {saved && <p role="status" className="appr-note"><CheckCircle aria-hidden="true" />{saved}</p>}
-            <p className="appr-meta">{[form.starts, form.ends, form.delegate].some((v) => v === "") ? "Starts, Ends and Pass Approvals To are required and some are still empty." : "All required fields are filled."}</p>
+            <p className="appr-meta">{[form.starts, form.ends, form.delegate, form.reason.trim()].some((v) => v === "") ? "Starts, Ends, Pass Approvals To and Reason are required and some are still empty." : "All required fields are filled."}</p>
             <div className="appr-field">
               <label htmlFor="avail-starts">Starts <span className="appr-tag">Required</span></label>
               <input id="avail-starts" type="date" value={form.starts} aria-invalid={fieldError("starts") ? true : undefined} aria-describedby={fieldError("starts") ? "avail-starts-error" : undefined} onChange={(e) => set({ starts: e.target.value })} />
@@ -181,19 +192,19 @@ export default function Availability({ navigate }: { navigate: (href: string) =>
               <label><input type="radio" name="avail-covers" checked={form.covers === "po"} onChange={() => set({ covers: "po" })} /> Purchase orders only</label>
             </fieldset>
             <div className="appr-field">
-              <label htmlFor="avail-reason">Reason</label>
-              <input id="avail-reason" value={form.reason} aria-invalid={fieldError("reason") ? true : undefined} onChange={(e) => set({ reason: e.target.value })} />
-              {fieldError("reason") && <p className="field-error"><WarningCircle aria-hidden="true" weight="regular" /><span>{fieldError("reason")}</span></p>}
+              <label htmlFor="avail-reason">Reason <span className="appr-tag">Required</span></label>
+              <input id="avail-reason" value={form.reason} aria-invalid={fieldError("reason") ? true : undefined} aria-describedby={fieldError("reason") ? "avail-reason-error" : undefined} onChange={(e) => set({ reason: e.target.value })} />
+              {fieldError("reason") && <p id="avail-reason-error" className="field-error"><WarningCircle aria-hidden="true" weight="regular" /><span>{fieldError("reason")}</span></p>}
             </div>
             <footer className="appr-actions"><button type="submit" className="appr-primary" aria-busy={saving}>Save Out-of-Office</button></footer>
           </form>
 
           <div className="appr-card">
             <div role="tablist" aria-label="Delegations" className="appr-tabs">
-              <button role="tab" type="button" aria-selected={tab === "mine"} tabIndex={tab === "mine" ? 0 : -1} onClick={() => setTab("mine")}>My Delegations</button>
-              {organization !== undefined && <button role="tab" type="button" aria-selected={tab === "organization"} tabIndex={tab === "organization" ? 0 : -1} onClick={() => setTab("organization")}>Organization</button>}
+              <button role="tab" type="button" id="avail-tab-mine" ref={(el) => { tabRefs.current.mine = el; }} aria-selected={tab === "mine"} tabIndex={tab === "mine" ? 0 : -1} onKeyDown={onTabKey} onClick={() => setTab("mine")}>My Delegations</button>
+              {organization !== undefined && <button role="tab" type="button" id="avail-tab-organization" ref={(el) => { tabRefs.current.organization = el; }} aria-selected={tab === "organization"} tabIndex={tab === "organization" ? 0 : -1} onKeyDown={onTabKey} onClick={() => setTab("organization")}>Organization</button>}
             </div>
-            <div role="tabpanel">
+            <div role="tabpanel" aria-labelledby={`avail-tab-${tab}`}>
               {tab === "organization" && organizationFailed ? (
                 <div role="alert" className="appr-state"><h3>Could not load organization delegations</h3><p>You may not have access to this view. No organization data is shown.</p><button type="button" onClick={() => setTab("mine")}>Back to My Delegations</button></div>
               ) : loadFailed ? (
