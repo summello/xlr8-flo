@@ -842,19 +842,22 @@ engine (modules/approvals), and the boundaries between modules (a module may imp
 service and schemas only)."""
 RELEASE_AREAS = {
     "money": """Your area: MONEY AND LEDGER only. Read apps/api/src/flo/modules/budget/ and
-modules/requisitions/{approval,funding,lifecycle,amendments,revisions,codes}.py. Check: every
+modules/requisitions/{approval,funding,lifecycle,amendments,revisions,codes}.py, and the
+commitment paths modules/purchasing/ (PO issue, change orders, cancel) and modules/sourcing/ (award
+against funding). Check: every
 reserve, release, transfer and allocation happens under the balance lock and inside one
 transaction; releases happen exactly once; Decimal only; no float or round(); idempotency keys;
 abandoned projects kept out of totals. Ignore UI and the approval engine internals.""",
     "auth": """Your area: AUTHORIZATION AND TENANCY only. Read apps/api/src/flo/api/*.py (each
-route's require/permitted), modules/identity/, and the new migrations' RLS/FORCE RLS/policies.
+route's require/permitted), modules/identity/, the field-level masking in modules/vendors/, and
+the new migrations' RLS/FORCE RLS/policies.
 Check: every route authorizes server-side; org_id only from the session; a foreign tenant gets
 404; every new tenant table has RLS; permission codes match the catalogue. Ignore UI and money maths.""",
-    "approvals": """Your area: THE APPROVAL ENGINE only. Read apps/api/src/flo/modules/approvals/.
-Check: version pinning, decisions and their audit, stale-version guard, delegation, workflow
+    "approvals": """Your area: THE APPROVAL ENGINE only. Read apps/api/src/flo/modules/approvals/
+and the document adapters other modules register with it (vendors, sourcing awards, purchasing). Check: version pinning, decisions and their audit, stale-version guard, delegation, workflow
 gating (no workflow => refused), adapter on_outcome inside the decision transaction. Ignore UI.""",
     "ui": """Your area: THE WEB UI only. Read apps/web/src/routes and components for requisitions,
-approvals, projects and budget. Check against the rules: tokens only (no hardcoded colour,
+approvals, projects, budget, vendors, sourcing (RFQ, bids, comparison, award) and purchase orders. Check against the rules: tokens only (no hardcoded colour,
 spacing, radius, duration), keyboard reachable, colour never the only signal, money with tabular
 figures and parenthesised negatives, loading/empty/error states, generated API types only.""",
 }
