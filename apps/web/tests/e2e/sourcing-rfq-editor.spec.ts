@@ -300,6 +300,34 @@ test("a sixth invitee is refused in words, even for the lead", async ({ page }) 
   expect(state.rfq.invitees).toHaveLength(5);
 });
 
+test("publish keeps its Idempotency-Key across a lost response and takes a new one after a definitive answer", async ({ page }) => {
+  await stub(page);
+  const keys: string[] = [];
+  let attempt = 0;
+  await page.route(`**/api/v1/sourcing/rfqs/${rfqId}/publish`, async route => {
+    keys.push(route.request().headers()["idempotency-key"] ?? "");
+    attempt += 1;
+    if (attempt === 2) await route.fallback(); // the stub answers 422: a definitive outcome
+    else await route.abort("failed"); // the response is lost
+  });
+  await page.goto(EDIT);
+  const publish = async () => {
+    await page.getByRole("button", { name: "Publish RFQ" }).first().click();
+    const dialog = page.getByRole("dialog", { name: "Publish RFQ" });
+    if (await dialog.isVisible()) await dialog.getByRole("button", { name: "Publish RFQ" }).click();
+  };
+  await page.getByRole("button", { name: "Publish RFQ" }).click();
+  await page.getByRole("dialog", { name: "Publish RFQ" }).getByRole("button", { name: "Publish RFQ" }).click();
+  await expect.poll(() => keys.length).toBe(1);
+  await page.getByRole("dialog", { name: "Publish RFQ" }).getByRole("button", { name: "Publish RFQ" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "Review the fields below" })).toBeVisible();
+  await publish();
+  await expect.poll(() => keys.length).toBe(3);
+  expect(keys[0]).not.toBe("");
+  expect(keys[1]).toBe(keys[0]); // the retry after a lost response replays the same key
+  expect(keys[2]).not.toBe(keys[1]); // after a definitive 422 the next attempt is a new operation
+});
+
 test("publish lists every problem in a focused summary and keeps the input", async ({ page }) => {
   const state = await stub(page);
   await page.goto(EDIT);

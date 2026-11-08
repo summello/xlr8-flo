@@ -39,6 +39,8 @@ function Body({ rfq, mode, onRfq, navigate }: { rfq: Rfq; mode: Mode; onRfq: (ne
   const [confirm, setConfirm] = useState(false);
   const [publishMessage, setPublishMessage] = useState<string | null>(null);
   const submission = useRef<Submission | null>(null);
+  // One publish key until a response arrives: a retry after a lost response replays the stored outcome.
+  const publishKey = useRef<string | null>(null);
   const inFlight = useRef(false);
   const summary = useRef<HTMLDivElement>(null);
   const errors = Object.fromEntries(problems.map(p => [p.fieldId, p.message]));
@@ -74,7 +76,9 @@ function Body({ rfq, mode, onRfq, navigate }: { rfq: Rfq; mode: Mode; onRfq: (ne
   const publish = async () => {
     setBusy(true); setPublishMessage(null);
     try {
-      const { data, error } = await apiClient.POST("/api/v1/sourcing/rfqs/{id}/publish", { params: { path: { id: rfq.id } }, headers: mutationHeaders(submission.current?.key ?? crypto.randomUUID()) });
+      publishKey.current ??= crypto.randomUUID();
+      const { data, error } = await apiClient.POST("/api/v1/sourcing/rfqs/{id}/publish", { params: { path: { id: rfq.id } }, headers: mutationHeaders(publishKey.current) });
+      publishKey.current = null; // a response arrived, so the outcome is known
       if (data) { navigate(`/sourcing/rfqs/${rfq.id}`); return; }
       const problem = error as Problem | undefined;
       if (problem?.errors?.length) { setConfirm(false); setProblems(summaryOf(problem, "Publishing the RFQ")); } else setPublishMessage(failure(problem, "Publishing the RFQ"));
