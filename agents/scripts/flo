@@ -2811,7 +2811,10 @@ def cmd_ci_watch(argv):
                           f"{run['conclusion']}\njobs: {','.join(jobs)}\n" + "\n".join(log.splitlines()[-200:]) + "\n")
         print(f"RED {key}: {branch} run {run['databaseId']} — {marker}")
 
-    latest = {m["branch"]: [r for r in gh_runs(m["branch"]) if r.get("status") == "completed"][:1]
+    # a cancelled run (superseded by a later push) says nothing: chore pushes cancelled every
+    # milestone run on 8 Nov, so it never read green and E13-S21's stale marker came back each tick
+    latest = {m["branch"]: [r for r in gh_runs(m["branch"])
+                            if r.get("status") == "completed" and r.get("conclusion") != "cancelled"][:1]
               for m in rm.get("milestones", [])}
     green = {b: runs[0]["headSha"] for b, runs in latest.items()
              if runs and runs[0].get("conclusion") == "success"}
