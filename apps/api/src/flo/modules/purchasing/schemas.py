@@ -356,6 +356,14 @@ class PoChangePatch(BaseModel):
     )(lambda cls, v: v if v is None else _amount(v))
 
 
+class PoBudgetEffectRead(BaseModel):
+    project_id: UUID
+    department_code: str | None
+    ledger_account_code: str | None
+    currency: str
+    delta: str
+
+
 class PoChangeRead(BaseModel):
     id: UUID
     po_id: UUID
@@ -369,7 +377,7 @@ class PoChangeRead(BaseModel):
     created_at: datetime
     draft: dict[str, Any]
     diff: list[dict[str, Any]]  # field level: line_no, field, label, was, now (words for the UI)
-    budget_effect: list[dict[str, Any]]  # signed delta per sub-project and code group
+    budget_effect: list[PoBudgetEffectRead]  # signed delta per sub-project and code group
     result_po_id: UUID | None
     total: str  # the order total if applied, in the PO currency, as last drafted
     budget_total_project: str  # its budget total in the project currency

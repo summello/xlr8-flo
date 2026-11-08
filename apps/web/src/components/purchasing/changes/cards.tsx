@@ -3,8 +3,6 @@ import Money from "../../ui/Money";
 import type { Po, PoChange } from "../api";
 import { approvalLine, type DiffEntry } from "./approval";
 
-type Effect = { project_id: string; department_code: string | null; ledger_account_code: string | null; currency: string; delta: string };
-
 /** `What Changes`: the server's diff, in words, verbatim. The figures are never recomputed here. */
 export function DiffCard({ change, po, updating, rejected }: { change: PoChange; po: Po; updating: boolean; rejected: boolean }) {
   const diff = change.diff as DiffEntry[];
@@ -21,7 +19,7 @@ export function DiffCard({ change, po, updating, rejected }: { change: PoChange;
 }
 
 export function EffectCard({ change, name }: { change: PoChange; name: (projectId: string) => string }) {
-  const effects = change.budget_effect as Effect[];
+  const effects = change.budget_effect;
   return <section className="req-card" aria-labelledby="chg-effect-h">
     <header className="req-card-head"><h2 id="chg-effect-h">Budget Effect</h2></header>
     {effects.length === 0 ? <p>No budget effect.</p> : <ul className="vendor-list-plain">{effects.map((x, i) => <li key={i}>

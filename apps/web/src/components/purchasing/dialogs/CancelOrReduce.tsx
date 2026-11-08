@@ -100,7 +100,7 @@ export default function CancelOrReduce({ po, onDone }: { po: Po; onDone: () => v
           <Dialog.Title>Change Order {result.number} Submitted</Dialog.Title>
           <Dialog.Description>It is waiting for approval.</Dialog.Description>
           <ul className="vendor-list-plain" aria-label="Budget effect">{result.budget_effect.map((e, i) => <li key={i}>
-            <Money value={String(e.delta)} currency={String(e.currency)} zero="value" /> · {String(e.department_code)} · {String(e.ledger_account_code)}</li>)}</ul>
+            <Money value={e.delta} currency={e.currency} zero="value" /> · {e.department_code ?? "—"} · {e.ledger_account_code ?? "—"}</li>)}</ul>
           <div className="req-actions"><button type="button" ref={done} onClick={finish}>Close</button></div>
         </> : <>
           <Dialog.Title>{mode === "cancel" ? `Cancel ${po.number}` : `Reduce ${po.number}`}</Dialog.Title>

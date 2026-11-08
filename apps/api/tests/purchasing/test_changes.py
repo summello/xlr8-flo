@@ -4,7 +4,8 @@ import asyncio
 import typing
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
-from uuid import uuid4
+from types import SimpleNamespace
+from uuid import UUID, uuid4
 
 import psycopg
 import pytest
@@ -20,17 +21,19 @@ from flo.modules.approvals.schemas import (
     Outcome,
     OutcomeContext,
 )
-from flo.modules.approvals.service import decide, get_instance
+from flo.modules.approvals.service import decide, get_instance, material_digest
 from flo.modules.budget import reconcile
 from flo.modules.purchasing.approval import PoChangeAdapter
 from flo.modules.purchasing.changes import ChangeService
 from flo.modules.purchasing.schemas import (
+    PoBudgetEffectRead,
     PoChangeAdd,
     PoChangeCreate,
     PoChangeLineEdit,
     PoChangePatch,
     PoPatch,
 )
+from flo.modules.purchasing.service import PurchaseOrderService
 from tests.approvals.test_engine import graph
 from tests.approvals.test_workflow_definitions import definition, draft, svc
 from tests.isolation.test_real_sessions import client, login
@@ -347,6 +350,74 @@ def test_reject_and_withdraw_end_the_change_and_leave_the_order_alone(lifecycle_
 # -- budget effect -------------------------------------------------------------------------
 
 
+def test_a_po_change_read_returns_the_five_typed_budget_effect_fields_with_stored_delta(
+    lifecycle_db,
+):
+    db, _ = lifecycle_db
+    po, _ = issued(db)
+    change = open_change(db, po, lines=[line(unit_price="77.5")])
+    [effect] = change.budget_effect
+    [(stored_delta,)] = sql(
+        db, "SELECT budget_effect->0->>'delta' FROM po_change WHERE id=%s", (change.id,)
+    )
+    assert effect.model_dump(mode="json") == {
+        "project_id": str(effect.project_id),
+        "department_code": "D",
+        "ledger_account_code": "L",
+        "currency": "USD",
+        "delta": "-50.00",
+    }
+    assert effect.delta == stored_delta == "-50.00"
+
+
+def test_typed_change_budget_effect_keeps_the_pre_story_approval_digest(monkeypatch):
+    change = SimpleNamespace(
+        id=UUID("22222222-2222-4222-8222-222222222222"),
+        po_id=UUID("33333333-3333-4333-8333-333333333333"),
+        version=2,
+        created_by=UUID("44444444-4444-4444-8444-444444444444"),
+        diff=[
+            {
+                "line_no": 1,
+                "field": "unit_price",
+                "label": "Unit price",
+                "was": "90.0000",
+                "now": "77.5000",
+            }
+        ],
+        budget_effect=[
+            PoBudgetEffectRead(
+                project_id=UUID("11111111-1111-4111-8111-111111111111"),
+                department_code="OPS",
+                ledger_account_code="6100",
+                currency="USD",
+                delta="-50.00",
+            )
+        ],
+        total="350.00",
+        budget_total_project="350.00",
+    )
+    po = SimpleNamespace(
+        id=change.po_id,
+        unit_id=UUID("55555555-5555-4555-8555-555555555555"),
+        vendor_id=UUID("66666666-6666-4666-8666-666666666666"),
+        currency="USD",
+        converted_currency="USD",
+    )
+    monkeypatch.setattr(ChangeService, "get_by_id", lambda _self, _id: change)
+    monkeypatch.setattr(PurchaseOrderService, "get", lambda _self, _id: po)
+
+    snapshot = PoChangeAdapter().snapshot(
+        typing.cast(typing.Any, object()),
+        Scope(UUID("77777777-7777-4777-8777-777777777777")),
+        change.id,
+    )
+
+    assert material_digest(snapshot) == (
+        "42ff92098d4d2410b9f5f4c2a33fef5fcac78553a8dac3e5f069d30723eb65e3"
+    )
+
+
 def test_a_decrease_releases_and_re_reserves_and_a_retry_posts_nothing_twice(lifecycle_db):
     db, _ = lifecycle_db
     po, _ = issued(db)
@@ -354,7 +425,7 @@ def test_a_decrease_releases_and_re_reserves_and_a_retry_posts_nothing_twice(lif
     before = entries(db)
     reserved, committed = totals(db)
     change = submit(db, open_change(db, po, lines=[line(unit_price="77.5")]))
-    assert change.budget_effect[0]["delta"] == "-50.00"
+    assert change.budget_effect[0].delta == "-50.00"
     decide_change(db, change)
     new = entries(db)[len(before) :]
     own = [e for e in new if e[2].startswith(f"po:{po.id}:co1:")]
@@ -385,7 +456,7 @@ def test_an_increase_commits_once_and_moves_the_quantities(lifecycle_db):
     publish_change(db)
     rows = entries(db)
     change = submit(db, open_change(db, po, lines=[line(quantity="5")]))
-    assert change.budget_effect[0]["delta"] == "90.00"
+    assert change.budget_effect[0].delta == "90.00"
     decide_change(db, change)
     [commit] = [e for e in entries(db)[len(rows) :] if e[0] == "commitment"]
     assert commit[1] == Decimal("90.0000") and commit[2].startswith(f"po:{po.id}:co1:commit:")

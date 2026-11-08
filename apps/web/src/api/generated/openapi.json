@@ -10667,6 +10667,54 @@
         "title": "PoAttachmentVendorFacing",
         "type": "object"
       },
+      "PoBudgetEffectRead": {
+        "properties": {
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "delta": {
+            "title": "Delta",
+            "type": "string"
+          },
+          "department_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department Code"
+          },
+          "ledger_account_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ledger Account Code"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "department_code",
+          "ledger_account_code",
+          "currency",
+          "delta"
+        ],
+        "title": "PoBudgetEffectRead",
+        "type": "object"
+      },
       "PoBudgetProjectRead": {
         "properties": {
           "actual": {
@@ -11310,8 +11358,7 @@
         "properties": {
           "budget_effect": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/PoBudgetEffectRead"
             },
             "title": "Budget Effect",
             "type": "array"

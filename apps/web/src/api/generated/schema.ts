@@ -7788,6 +7788,22 @@ export interface components {
             /** Vendor Facing */
             vendor_facing: boolean;
         };
+        /** PoBudgetEffectRead */
+        PoBudgetEffectRead: {
+            /** Currency */
+            currency: string;
+            /** Delta */
+            delta: string;
+            /** Department Code */
+            department_code: string | null;
+            /** Ledger Account Code */
+            ledger_account_code: string | null;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+        };
         /** PoBudgetProjectRead */
         PoBudgetProjectRead: {
             /** Actual */
@@ -8031,9 +8047,7 @@ export interface components {
         /** PoChangeRead */
         PoChangeRead: {
             /** Budget Effect */
-            budget_effect: {
-                [key: string]: unknown;
-            }[];
+            budget_effect: components["schemas"]["PoBudgetEffectRead"][];
             /** Budget Total Project */
             budget_total_project: string;
             /**
