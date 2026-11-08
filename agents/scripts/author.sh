@@ -64,7 +64,12 @@ case "$A" in
     # own login and usage cap (CODEX_HOME); model and effort pinned from agents.yaml, never from config.toml
     M="$("$W/apps/api/.venv/bin/python" "$R/agents/scripts/flo" launch-model "$S")"
     E="$("$W/apps/api/.venv/bin/python" "$R/agents/scripts/flo" launch-model "$S" --effort)"
-    nohup sh -c "CODEX_HOME='$HOME/.codex-b' codex exec -m '$M' -c model_reasoning_effort='$E' -c project_doc_max_bytes=0 -s workspace-write --skip-git-repo-check \"\$(cat '$P')\" > '$D/$S.log' 2>&1; echo \"exit \$?\" >> '$D/$S.log'" > /dev/null 2>&1 &
+    # a worktree's index, objects and refs live in the parent .git, outside the workspace-write
+    # sandbox: without these the author edits but can never commit (E13-S28, 8 Nov 2026)
+    GC="$(git -C "$W" rev-parse --path-format=absolute --git-common-dir)"
+    GD="$(git -C "$W" rev-parse --path-format=absolute --git-dir)"
+    GIT_DIRS="--add-dir '$GD' --add-dir '$GC/objects' --add-dir '$GC/refs' --add-dir '$GC/logs'"
+    nohup sh -c "CODEX_HOME='$HOME/.codex-b' codex exec -m '$M' -c model_reasoning_effort='$E' -c project_doc_max_bytes=0 -s workspace-write $GIT_DIRS --skip-git-repo-check \"\$(cat '$P')\" > '$D/$S.log' 2>&1; echo \"exit \$?\" >> '$D/$S.log'" > /dev/null 2>&1 &
     ;;
   opencode-nemotron)
     # isolated auth store; the key is read at the point of use and never exported to this shell
