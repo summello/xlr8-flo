@@ -858,8 +858,16 @@ def get_instance(
                         }
                     )
                 )
-        rid = cast(UUID, instance["requester_id"])
-        requester = _people(repo, [rid])[rid]
+        # The requester is history, not a live member: no membership filter, so a requester
+        # who has since left the organisation still reads (M3 release review, qwen + deepseek).
+        # approval_instance.requester_id REFERENCES identity, so the row exists.
+        requester = cast(
+            tuple[str, str | None],
+            repo.execute(
+                "SELECT email,display_name FROM identity WHERE id=%(id)s",
+                {"id": instance["requester_id"]},
+            ).fetchone(),
+        )
         return InstanceRead.model_validate(
             {
                 k: v

@@ -731,3 +731,27 @@ def publish_blocked_route(db):
     blocked["edges"][1]["when"]["value"]["currency"] = "INR"
     version = svc(db).create_version(workflow_id, WorkflowVersionWrite(graph=blocked))
     svc(db).publish(workflow_id, version.version, True)
+
+
+def test_instance_reads_after_the_requester_leaves_the_organisation(lifecycle_db):
+    """M3 release review (qwen + deepseek, major): get_instance raised KeyError once the
+    requester's membership was gone, so every read of an open approval failed."""
+    from flo.modules.approvals.service import get_instance
+
+    db = lifecycle_db[0]
+    row = funded(lifecycle_db)
+    requester_id, email = (
+        db[0]
+        .execute(
+            "SELECT a.requester_id,i.email FROM approval_instance a JOIN identity i "
+            "ON i.id=a.requester_id WHERE a.id=%s",
+            (row.approval.instance_id,),
+        )
+        .fetchone()
+    )
+    db[0].execute(
+        "DELETE FROM identity_membership WHERE identity_id=%s AND org_id=%s",
+        (requester_id, db[1]),
+    )
+    instance = get_instance(db[0], Scope(db[1]), row.approval.instance_id)
+    assert instance.requester_email == email
