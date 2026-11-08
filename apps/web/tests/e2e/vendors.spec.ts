@@ -22,6 +22,15 @@ test("search, switch tabs, open a vendor, open a document and verify it", async 
   expect(state.verified).toBe(true);
 });
 
+test("without verify_documents the document sheet is read-only: no Verify or Reject", async ({ page }) => {
+  await stubVendors(page, { canVerify: false });
+  await page.goto(`/vendors/${vendorId}`);
+  await page.getByRole("button", { name: "Open INS" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Verify", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Reject", exact: true })).toHaveCount(0);
+});
+
 test("paging is server-side: limit and cursor are sent and no request asks for everything", async ({ page }) => {
   const state = await stubVendors(page);
   await page.goto("/vendors?tab=all");

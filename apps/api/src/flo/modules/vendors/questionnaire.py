@@ -19,7 +19,9 @@ from flo.modules.vendors.schemas import (
     VersionPatch,
     VersionRead,
     conflict,
+    expected_version,
     invalid,
+    stale,
 )
 from flo.modules.vendors.scoring import clean_options
 
@@ -41,24 +43,6 @@ VERSION_FIELDS = (
 )
 QUESTION_COLUMNS = "key, position, prompt, type, required, weight, options, row_version"
 QUESTION_FIELDS = tuple(QUESTION_COLUMNS.replace(" ", "").split(","))
-
-
-def expected_version(header: str | None, thing: str) -> int:
-    """`If-Match` carries the integer version (m2-conventions O)."""
-    if header is None:
-        raise ProblemError(
-            ErrorCode.BAD_REQUEST, detail=f"Supply If-Match with the {thing} version."
-        )
-    try:
-        return int(header.strip().strip('"'))
-    except ValueError:
-        raise ProblemError(
-            ErrorCode.BAD_REQUEST, detail="If-Match must contain an integer version."
-        ) from None
-
-
-def stale(thing: str) -> ProblemError:
-    return conflict("stale_version", f"The {thing} changed. Reload it and retry.")
 
 
 class QuestionnaireMixin:

@@ -31,6 +31,26 @@ def conflict(problem: str, detail: str) -> ProblemError:
     return ProblemError(ErrorCode.CONFLICT, detail=detail, checks={"problem": problem})
 
 
+def expected_version(header: str | None, thing: str) -> int:
+    """Parse If-Match (m2-conventions O): missing or non-integer is 400."""
+    if header is None:
+        raise ProblemError(
+            ErrorCode.BAD_REQUEST,
+            detail=f"Supply If-Match with the {thing} version.",
+            checks={"problem": "if_match_required"},
+        )
+    try:
+        return int(header.strip().strip('"'))
+    except ValueError:
+        raise ProblemError(
+            ErrorCode.BAD_REQUEST, detail="If-Match must contain an integer version."
+        ) from None
+
+
+def stale(thing: str) -> ProblemError:
+    return conflict("stale_version", f"The {thing} changed. Reload it and retry your update.")
+
+
 class VendorNames(BaseModel):
     model_config = ConfigDict(extra="forbid")
     trading_name: str | None = Field(default=None, min_length=1, max_length=200)

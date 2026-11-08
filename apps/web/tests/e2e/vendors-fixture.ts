@@ -25,7 +25,7 @@ const clear = { tax_id: TAX, tax_id_country: "US", bank_name: "Acme Operating", 
 const masked = { tax_id: "•••• 6789", tax_id_country: "US", bank_name: "•••• ting", bank_account: "•••• 4821", bank_routing: "•••• 0-00", version: 1 };
 
 /** An in-memory stand-in for the vendor API. Every list request is recorded so a test can assert server paging. */
-export async function stubVendors(page: Page, { canReveal = true, canEdit = canReveal }: { canReveal?: boolean; canEdit?: boolean } = {}) {
+export async function stubVendors(page: Page, { canReveal = true, canEdit = canReveal, canVerify = true }: { canReveal?: boolean; canEdit?: boolean; canVerify?: boolean } = {}) {
   const state = {
     requests: [] as URL[],
     verified: false,
@@ -64,7 +64,7 @@ export async function stubVendors(page: Page, { canReveal = true, canEdit = canR
       const next = start + limit < all.length ? String(start + limit) : null;
       return send({ rows: all.slice(start, start + limit), next_cursor: next });
     }
-    if (path === `/api/v1/vendors/${vendorId}`) return send({ ...rows[0], sensitive: masked, sensitive_access: { can_reveal: canReveal, can_edit: canEdit, ask: "Vendor Manager or Budget/Finance User" }, units: [], disabled_in: [], identifiers: {} });
+    if (path === `/api/v1/vendors/${vendorId}`) return send({ ...rows[0], actions: canVerify ? ["verify_documents"] : [], sensitive: masked, sensitive_access: { can_reveal: canReveal, can_edit: canEdit, ask: "Vendor Manager or Budget/Finance User" }, units: [], disabled_in: [], identifiers: {} });
     if (path === `/api/v1/vendors/${vendorId}/sensitive` && method === "PUT") {
       const body = req.postDataJSON() as Record<string, unknown>;
       state.puts.push({ body, ifMatch: req.headers()["if-match"] });

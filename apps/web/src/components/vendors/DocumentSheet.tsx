@@ -16,10 +16,11 @@ const SCAN = {
   rejected: { word: "Quarantined", tone: "danger" },
 } as const;
 
-type Props = { vendorId: string; doc: DocState; opener: HTMLElement | null; onClose: () => void; onChanged: () => void };
+/** canVerify: the server listed `verify_documents` (vendor.approve); without it the sheet is read-only. */
+type Props = { vendorId: string; doc: DocState; canVerify: boolean; opener: HTMLElement | null; onClose: () => void; onChanged: () => void };
 
 /** §3.6 document sheet. Radix traps focus, closes on Escape and returns focus to the opener. */
-export default function DocumentSheet({ vendorId, doc, opener, onClose, onChanged }: Props) {
+export default function DocumentSheet({ vendorId, doc, canVerify, opener, onClose, onChanged }: Props) {
   const [reason, setReason] = useState("");
   const [rejecting, setRejecting] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -68,7 +69,7 @@ export default function DocumentSheet({ vendorId, doc, opener, onClose, onChange
           <dt>Versions</dt><dd>{file.data && file.data.versions > 1 ? `Version ${doc.attachment_version ?? file.data.version} of ${file.data.versions}. Earlier versions are kept.` : "Only one version."}</dd>
         </dl>}
         {problem && <p role="alert" className="field-error">{problem}</p>}
-        {!missing && doc.document_id && <footer className="appr-actions">
+        {canVerify && !missing && doc.document_id && <footer className="appr-actions">
           {rejecting ? <>
             <label>Reason, shown to the uploader<textarea value={reason} onChange={e => setReason(e.target.value)} /></label>
             <button type="button" disabled={busy} onClick={() => void decide("reject")}>Reject Document</button>

@@ -482,7 +482,9 @@ def test_questionnaire_routes_run_end_to_end_through_the_middleware(header_db):
             )
             assert added.status_code == 201, added.text
             missing = await call(browser, "PATCH", f"{ADMIN}/{vid}/questions/a", {"weight": 90})
+            # one If-Match error shape across every vendor write (M3 epic checkpoint E11)
             assert missing.status_code == 400
+            assert missing.json()["checks"]["problem"] == "if_match_required"
             stale = await call(
                 browser,
                 "PATCH",

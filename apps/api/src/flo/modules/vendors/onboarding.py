@@ -11,7 +11,6 @@ from flo.kernel.errors import ErrorCode, ProblemError, ProblemFieldError
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.vendors.models import VendorRepository
-from flo.modules.vendors.questionnaire import expected_version, stale
 from flo.modules.vendors.schemas import (
     AnswersPut,
     Choice,
@@ -21,6 +20,8 @@ from flo.modules.vendors.schemas import (
     VendorCreate,
     VendorDetail,
     conflict,
+    expected_version,
+    stale,
 )
 from flo.modules.vendors.scoring import (
     CHOICE_TYPES,

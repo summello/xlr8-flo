@@ -63,7 +63,9 @@ from flo.modules.vendors.schemas import (
     VendorStatus,
     VendorUnit,
     conflict,
+    expected_version,
     invalid,
+    stale,
 )
 
 SETTING = "vendor.allow_local_disable"
@@ -86,30 +88,6 @@ _SUPPRESSED = (
 
 # the order the list shows them: look ahead before looking back (VEN-011)
 ATTENTION: tuple[AttentionState, ...] = ("expiring", "expired", "missing", "rejected")
-
-
-def expected_version(header: str | None, thing: str) -> int:
-    """Parse If-Match (convention O): missing is 400, a non-integer is 400."""
-    if header is None:
-        raise ProblemError(
-            ErrorCode.BAD_REQUEST,
-            detail=f"Supply If-Match with the {thing} version.",
-            checks={"problem": "if_match_required"},
-        )
-    try:
-        return int(header.strip('"'))
-    except ValueError as exc:
-        raise ProblemError(
-            ErrorCode.BAD_REQUEST, detail="If-Match must contain an integer version."
-        ) from exc
-
-
-def stale(thing: str) -> ProblemError:
-    return ProblemError(
-        ErrorCode.CONFLICT,
-        detail=f"The {thing} changed. Reload it and retry your update.",
-        checks={"problem": "stale_version"},
-    )
 
 
 def _cursor(name: str, id: UUID) -> str:
@@ -397,18 +375,7 @@ class VendorService(
             return SensitiveValues.model_validate(sensitive.reveal(self.repo, id, groups))
 
     def put_sensitive(self, id: UUID, body: SensitivePut, version: str | None) -> SensitiveWritten:
-        if version is None:
-            raise ProblemError(
-                ErrorCode.BAD_REQUEST,
-                detail="Supply If-Match with the sensitive record version.",
-                checks={"problem": "if_match_required"},
-            )
-        try:
-            expected = int(version.strip().strip('"'))
-        except ValueError as exc:
-            raise ProblemError(
-                ErrorCode.BAD_REQUEST, detail="If-Match must contain an integer version."
-            ) from exc
+        expected = expected_version(version, "sensitive record")
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             # The owner of a draft writes without reveal; anyone else needs it (decision 124).
             if self.can_write_draft(id) == "edit" and not self._holds("vendor.sensitive.reveal"):
