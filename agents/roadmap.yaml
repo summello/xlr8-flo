@@ -2449,8 +2449,8 @@ epics:
         st: todo
       - id: E13-S29
         t: ACC-008 evidence, a keyboard-only walkthrough of the project-to-PO flow
-        k: docs
-        s: S
+        k: chore
+        s: M
         tags: []
         reqs:
           - ACC-008
