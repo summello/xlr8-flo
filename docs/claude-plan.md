@@ -657,7 +657,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E22-S10** Approval Availability: set, list and revoke an out-of-office delegation | E22 | ui | M | APR-004, APR-014, APR-017, APR-019, A11Y-006 | — |
 | ✅ | **E22-S11** Faster checks: template test databases, sharded backend and E2E CI | E22 | chore | M | SEC-012 | — |
 | ✅ | **E22-S12** Balanced E2E shards on a production build; backend static job; combined checks need detect | E22 | chore | M | SEC-012 | — |
-| ⬜ | **E22-S13** One list-scope rule, project grants roll down in lists as in point checks | E22 | security | M | USR-003, ACC-004 | ~~E22-S04~~, ~~E22-S06~~ |
+| 🔨 | **E22-S13** One list-scope rule, project grants roll down in lists as in point checks | E22 | security | M | USR-003, ACC-004 | ~~E22-S04~~, ~~E22-S06~~ |
 
 #### M4 — Full Phase-1 scope · 0/34 done
 
