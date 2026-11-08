@@ -640,7 +640,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E13-S23** PO lock order: withdrawal takes the approval instance before the PO; change-order submit takes the award first | E13 | concurrency | S | PO-007 | ~~E13-S07~~ |
 | ✅ | **E13-S24** Vendor cancellation email for a cancelled issued PO, through the outbox | E13 | engine | M | PO-013, PO-015, ARCH-006 | ~~E13-S07~~, ~~E13-S09~~ |
 | ✅ | **E13-S25** Per-file vendor-facing mark on PO attachments (records intent, sends nothing until E19-S04) | E13 | security | M | PO-017 | ~~E13-S11~~ |
-| ⬜ | **E13-S26** An issued purchase order stays immutable after it is closed or cancelled | E13 | migration | S | PO-011, PO-013, PO-014 | ~~E13-S06~~, ~~E13-S07~~, ~~E13-S16~~ |
+| 🔨 | **E13-S26** An issued purchase order stays immutable after it is closed or cancelled | E13 | migration | S | PO-011, PO-013, PO-014 | ~~E13-S06~~, ~~E13-S07~~, ~~E13-S16~~ |
 | ✅ | **E13-S27** Close an issued purchase order from its detail page | E13 | ui | S | PO-007, ACC-008 | ~~E13-S03~~, ~~E13-S12~~ |
 | 👀 | **E13-S28** Typed budget effect on a PO change, no hand-written client type | E13 | crud | S | PO-011 | ~~E13-S06~~, ~~E13-S18~~, ~~E13-S19~~ |
 | ⬜ | **E13-S29** ACC-008 evidence, a keyboard-only walkthrough of the project-to-PO flow | E13 | chore | M | ACC-008 | ~~E13-S27~~ |
