@@ -2456,6 +2456,7 @@ epics:
           - ACC-008
         dep:
           - E13-S27
+          - E13-S31
         st: todo
       - id: E13-S30
         t: Issue refuses to queue a PO email the sending domain cannot send
