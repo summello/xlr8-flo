@@ -8687,6 +8687,63 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E13-S29",
+      "kind": "chore",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 2
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 2,
+          "blockers": 2,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "3c1b3484-2ed2-46eb-963f-7ee98a55bf8a",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S29",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a1bf0e-580c-70c3-a6dc-8e6f0593867c",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Added a dev-only walkthrough seed (guarded to a local database, smtp and local storage), a vite walkthrough mode that proxies /api with the origin secret and drops the fixtures, and the keyboard-only ACC-008 walkthrough document. A test seeds a tenant and drives project to issued PO as the five seeded people through the real app.",
+      "title": "ACC-008 evidence, a keyboard-only walkthrough of the project-to-PO flow",
+      "durations": {
+        "wall_s": 4802,
+        "author_s": 1865,
+        "review_s": {
+          "codex-a": 166
+        },
+        "gate_s": 175
+      }
     }
   ]
 }

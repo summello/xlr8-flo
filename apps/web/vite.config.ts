@@ -175,9 +175,33 @@ function formFixture(): Plugin {
   return { ...plugin, configurePreviewServer: plugin.configureServer };
 }
 
-export default defineConfig({
-  plugins: [react(), tailwindcss(), gridFixture(), formFixture()],
-  test: {
-    exclude: ["e2e/**", "tests/a11y/**", "tests/e2e/**", "node_modules/**"],
-  },
+// `vite --mode walkthrough` (docs/ops/acc-008-walkthrough.md): one origin in front of the real API,
+// no fixtures. Every other mode keeps both fixtures; the e2e suite depends on them.
+export default defineConfig(({ mode }) => {
+  const walkthrough = mode === "walkthrough";
+  const secret = process.env.ORIGIN_SHARED_SECRET ?? "";
+  if (walkthrough && secret.length < 32) {
+    throw new TypeError("ORIGIN_SHARED_SECRET must be at least 32 characters");
+  }
+  return {
+    plugins: [
+      react(),
+      tailwindcss(),
+      ...(walkthrough ? [] : [gridFixture(), formFixture()]),
+    ],
+    server: walkthrough
+      ? {
+          proxy: {
+            "/api": {
+              changeOrigin: false,
+              headers: { "X-FLO-Origin-Secret": secret },
+              target: "http://127.0.0.1:8000",
+            },
+          },
+        }
+      : {},
+    test: {
+      exclude: ["e2e/**", "tests/a11y/**", "tests/e2e/**", "node_modules/**"],
+    },
+  };
 });

@@ -37,3 +37,5 @@ whether approval is needed; every figure comes from the server.
 ## Editing a draft (E13-S14)
 
 A draft can be changed at `/purchase-orders/<id>/edit` by a user who holds `purchase_order.create` on its unit. It may change Ship To (any active Ship To of the unit or above), terms, needed-by date, line quantities, line tax and freight, and the freight mode (per line or per document). Totals are recomputed by the server on every save; the screen never sums them. **Submit for Approval saves unsaved edits first**, then submits the saved draft; if the save fails nothing is submitted. Only the buyer who drafted the order can submit it. The vendor, its recipients and any eligibility override are fixed when the draft is created and cannot change here. Notes are internal unless marked Sent to Vendor; a file marked For the vendor is not sent until scanning is available.
+
+The keyboard-only walkthrough from a project to an issued order, with its dev seed, is `docs/ops/acc-008-walkthrough.md` (E13-S29).
