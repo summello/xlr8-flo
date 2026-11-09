@@ -288,3 +288,66 @@ for (const theme of ["light", "dark"] as const) {
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   });
 }
+
+test("held domain: the dialog says so, Issue Without Email sends send_email false, and the result offers the PDF", async ({ page, baseURL }) => {
+  await reduce(page);
+  const state = await stubIssue(page, { emailAllowed: false });
+  const { trigger, dialog } = await openDialog(page, baseURL);
+  await expect(dialog).toContainText("Purchase order email is held until the sending domain is verified");
+  await expect(dialog).toContainText("No email goes to the vendor.");
+  await expect(dialog.getByRole("button", { name: "Issue", exact: true })).toHaveCount(0);
+  await page.keyboard.press("Tab");
+  await dialog.getByRole("button", { name: "Not Yet" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(dialog).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+  expect(state.issuePosts).toHaveLength(0);
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.getByRole("button", { name: "Issue Without Email" }).click();
+  await expect(page).toHaveURL(new RegExp(`/purchase-orders/${poId}/issue$`), { timeout: 20_000 });
+  expect(state.issuePosts).toHaveLength(1);
+  expect(state.issuePosts[0]!.body).toEqual({ send_email: false });
+  await expect(page.locator(".po-result")).toContainText("Issued without email.", { timeout: 20_000 });
+  await expect(page.getByRole("link", { name: "Download PDF" })).toHaveAttribute("href", `/api/v1/purchase-orders/${poId}/pdf`);
+  await expect(page.getByText("Email queued to the vendor.")).toHaveCount(0);
+});
+
+test("a 409 po_email_held on a plain Issue switches to the held state, focuses the message and re-keys", async ({ page, baseURL }) => {
+  const state = await stubIssue(page, { heldOnPlainIssue: true });
+  const { dialog } = await openDialog(page, baseURL);
+  await dialog.getByRole("button", { name: "Issue", exact: true }).click();
+  const held = dialog.getByText("Issue without email, then download the PDF");
+  await expect(held).toBeVisible();
+  await expect(held.locator("..")).toBeFocused();
+  await expect(dialog.getByRole("alert")).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Issue Without Email" }).click();
+  await expect(page).toHaveURL(new RegExp(`/purchase-orders/${poId}/issue$`), { timeout: 20_000 });
+  expect(state.issuePosts).toHaveLength(2);
+  expect(state.issuePosts[1]!.body).toEqual({ send_email: false });
+  expect(state.issuePosts[1]!.headers["idempotency-key"]).not.toBe(state.issuePosts[0]!.headers["idempotency-key"]);
+});
+
+test("without email: another revision's rows still read as not emailed", async ({ page, baseURL }) => {
+  await stubIssue(page, { emailAllowed: false, withoutEmailRows: "other" });
+  const { dialog } = await openDialog(page, baseURL);
+  await dialog.getByRole("button", { name: "Issue Without Email" }).click();
+  await expect(page.locator(".po-result")).toContainText("Issued without email.", { timeout: 20_000 });
+  await expect(page.getByText("Email queued to the vendor.")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Download PDF" })).toBeVisible();
+});
+
+for (const theme of ["light", "dark"] as const) {
+  test(`axe: the held dialog and the without-email result in ${theme}`, async ({ page, baseURL }) => {
+    test.setTimeout(90_000);
+    await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
+    await stubIssue(page, { emailAllowed: false });
+    const { dialog } = await openDialog(page, baseURL);
+    await expect(dialog).toContainText("Issuing commits");
+    await expect(dialog).toContainText("held until the sending domain is verified");
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await dialog.getByRole("button", { name: "Issue Without Email" }).click();
+    await expect(page.locator(".po-result")).toContainText("Issued without email.", { timeout: 20_000 });
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  });
+}

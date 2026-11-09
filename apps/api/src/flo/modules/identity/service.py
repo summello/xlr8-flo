@@ -702,54 +702,24 @@ def register_project_scope(
     )
 
 
-def granted_scopes(
-    connection: IdentityAuthorizationConnection,
-    scope: Scope,
-    user_id: IdentityId,
-    permission: str,
-) -> tuple[bool, list[UUID], list[UUID]]:
-    """Where the user holds `permission`: (organization-wide, business units, projects).
+def assigned_unit(
+    connection: IdentityAuthorizationConnection, scope: Scope, user_id: UUID
+) -> UUID | None:
+    """The one business unit the user is assigned to by any role, else None.
 
-    Business-unit grants cover everything beneath them. A project grant covers its sub-projects
-    only across edges that roll down, as in the effective-access check. Organization-wide
-    returns empty lists: the caller needs no filter.
+    Org- and project-scoped assignments are ignored: they say nothing about which unit the user
+    works in. Two different units answer None rather than guessing.
     """
     with tenant_transaction(connection, scope):
         rows = connection.execute(
             """
-        WITH RECURSIVE grants AS (
-            SELECT DISTINCT ur.scope_type, ur.scope_id
-              FROM user_role ur
-              JOIN role_permission rp ON rp.org_id = ur.org_id AND rp.role_id = ur.role_id
-             WHERE ur.org_id = %(org_id)s AND ur.user_id = %(user_id)s
-               AND rp.permission_code = %(permission)s
-               AND (ur.effective_from IS NULL OR ur.effective_from <= CURRENT_TIMESTAMP)
-        ), covered (scope_type, scope_id, unconditional) AS (
-            SELECT scope_type, scope_id, scope_type <> 'project' FROM grants
-             WHERE scope_type <> 'org'
-            UNION
-            SELECT h.scope_type, h.scope_id, c.unconditional
-              FROM authorization_scope h
-              JOIN covered c ON h.parent_scope_type = c.scope_type
-               AND h.parent_scope_id = c.scope_id
-             WHERE h.org_id = %(org_id)s AND (c.unconditional OR h.roll_down)
-        )
-        SELECT 'org' AS scope_type, NULL::uuid AS scope_id
-         WHERE EXISTS (SELECT 1 FROM grants WHERE scope_type = 'org')
-        UNION ALL SELECT DISTINCT scope_type, scope_id FROM covered
+        SELECT DISTINCT scope_id FROM user_role
+         WHERE org_id = %(org_id)s AND user_id = %(user_id)s AND scope_type = 'bu'
+           AND (effective_from IS NULL OR effective_from <= CURRENT_TIMESTAMP)
         """,
-            RoleRepository(connection, scope).scoped_params(
-                {"user_id": user_id, "permission": permission}
-            ),
+            RoleRepository(connection, scope).scoped_params({"user_id": user_id}),
         ).fetchall()
-    kinds = [(str(_value(r, 0, "scope_type")), _value(r, 1, "scope_id")) for r in rows]
-    if any(k == "org" for k, _ in kinds):
-        return True, [], []
-    return (
-        False,
-        [cast(UUID, i) for k, i in kinds if k == "bu"],
-        [cast(UUID, i) for k, i in kinds if k == "project"],
-    )
+    return cast(UUID, _value(rows[0], 0, "scope_id")) if len(rows) == 1 else None
 
 
 def user_exists(connection: IdentityAuthorizationConnection, scope: Scope, user_id: UUID) -> bool:

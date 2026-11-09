@@ -20,6 +20,7 @@ from flo.kernel.config import Settings
 from flo.kernel.email import (
     DOMAIN_CHECK_JOB,
     DOMAIN_NOT_VERIFIED,
+    DomainCheck,
     latest_domain_check,
     po_domain_gate,
 )
@@ -31,7 +32,7 @@ from flo.kernel.ports.email import EmailAttachment
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.purchasing.models import READ_STATE, TRANSMISSION_FROM
-from flo.modules.purchasing.pdf import filename, frozen, pdf_for
+from flo.modules.purchasing.pdf import VendorCopyRead, filename, frozen, pdf_for, vendor_copy_read
 from flo.modules.purchasing.schemas import (
     PoTransmissionRead,
     SendingDomainRead,
@@ -472,6 +473,22 @@ def _domain_job_open(conn: Conn, scope: Scope) -> bool:
     )
 
 
+def _gate_open(settings: Settings, check: DomainCheck | None) -> bool:
+    """The one EML-001 expression, applied to a check the caller already read."""
+    return po_domain_gate(settings, None if check is None else check.status)(TEMPLATE) is None
+
+
+def po_email_allowed(conn: Conn, settings: Settings) -> bool:
+    """The gate from one read of the latest check; runs inside the caller's transaction."""
+    return _gate_open(settings, latest_domain_check(conn))
+
+
+def vendor_copy(conn: Conn, scope: Scope, po_id: UUID, settings: Settings) -> VendorCopyRead:
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        allowed = po_email_allowed(conn, settings)
+    return vendor_copy_read(conn, scope, po_id, po_email_allowed=allowed)
+
+
 def sending_domain(conn: Conn, scope: Scope, settings: Settings) -> SendingDomainRead:
     with tenant_transaction(cast(RlsSession, conn), scope):
         check = latest_domain_check(conn)
@@ -483,7 +500,7 @@ def sending_domain(conn: Conn, scope: Scope, settings: Settings) -> SendingDomai
         detail="" if status is None else status.detail,
         checked_at=None if check is None else check.checked_at,
         check_pending=pending,
-        po_email_allowed=po_domain_gate(settings, status)(TEMPLATE) is None,
+        po_email_allowed=_gate_open(settings, check),
     )
 
 

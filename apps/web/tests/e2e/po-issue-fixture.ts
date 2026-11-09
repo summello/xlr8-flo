@@ -18,15 +18,21 @@ type Options = {
   noise?: boolean;
   /** The vendor contacts call: a list, an empty list, or a 500. */
   contacts?: "ok" | "empty" | "error";
+  /** The vendor copy's `po_email_allowed` (E13-S30). */
+  emailAllowed?: boolean;
+  /** The domain lapsed after the dialog opened: a plain issue (no body) is refused 409 `po_email_held`. */
+  heldOnPlainIssue?: boolean;
+  /** After an issue without email: `other` still returns an earlier revision's rows (another `po_id`). */
+  withoutEmailRows?: "empty" | "other";
 };
 export type Sent = { method: string; path: string; headers: Record<string, string>; body: unknown };
 
 const NAMES: Record<string, string> = { Dock: "dock@example.test", Office: "office@example.test" };
 
 /** `stubPo` for an approved PO, plus the routes of the issue moment, registered later so they win. Unmatched calls still 404. */
-export async function stubIssue(page: Page, { vendorStatus = "active", budget = "ok", stale = false, abortFirst = false, recipients = ["Dock"], sequence = [["queued"]], noise = false, contacts = "ok" }: Options = {}) {
+export async function stubIssue(page: Page, { vendorStatus = "active", budget = "ok", stale = false, abortFirst = false, recipients = ["Dock"], sequence = [["queued"]], noise = false, contacts = "ok", emailAllowed = true, heldOnPlainIssue = false, withoutEmailRows = "empty" }: Options = {}) {
   await stubPo(page, { status: "approved", budget, vendorStatus });
-  const state = { status: "approved", issuePosts: [] as Sent[], resends: [] as Sent[], transmissionGets: 0, contactGets: 0, attempt: 1, results: sequence, aborted: false };
+  const state = { status: "approved", issuePosts: [] as Sent[], resends: [] as Sent[], transmissionGets: 0, contactGets: 0, attempt: 1, results: sequence, aborted: false, withoutEmail: false };
   const base = `/api/v1/purchase-orders/${poId}`;
   const line = { line_no: 1, rfq_line_id: "r1", requisition_line_id: "q1", description: "Pump 1", uom_code: "EA", quantity: "4.0000", unit_price: "100.0000", project_id: projectId, department_code: "OPS", ledger_account_code: "6100", price: "400.0000", tax: "0.0000", freight: "0.0000", line_total: "400.0000", budget_amount: "400.0000", budget_amount_project: "400.0000", value: "400.0000", value_converted: "400.0000" };
   const detail = () => ({
@@ -53,7 +59,7 @@ export async function stubIssue(page: Page, { vendorStatus = "active", budget = 
     const record = (): Sent => ({ method, path, headers: req.headers(), body: req.postData() ? req.postDataJSON() : null });
     if (method === "GET" && path === base) return send(detail());
     if (method === "GET" && path === `${base}/vendor-copy`) {
-      return send({ issued: false, template_version: "po-v1", email_summary: "Purchase order PO-0007", vendor_copy: {
+      return send({ issued: false, po_email_allowed: emailAllowed, template_version: "po-v1", email_summary: "Purchase order PO-0007", vendor_copy: {
         number: "PO-0007", revision: 1, currency: "USD", bill_to: {}, ship_to: null, issued_on: null, letterhead_address: null, needed_by: null, standard_terms: null, terms: "Net 30",
         vendor_legal_name: "Acme Tooling Ltd", vendor_trading_name: "Acme Tooling", price_total: "400.0000", tax_total: "0.0000", freight_total: "0.0000", total: "400.0000",
         lines: [{ line_no: 1, description: "Pump 1", quantity: "4.0000", uom_code: "EA", unit_price: "100.0000", line_total: "400.0000", price: "400.0000", tax: "0.0000", freight: "0.0000" }],
@@ -63,12 +69,15 @@ export async function stubIssue(page: Page, { vendorStatus = "active", budget = 
       const sent = record(); state.issuePosts.push(sent);
       if (abortFirst && !state.aborted) { state.aborted = true; return route.abort(); }
       if (stale) return send({ title: "Conflict", status: 409, detail: "Stale.", correlation_id: "c", checks: { problem: "stale_version" } }, 409);
-      state.status = "issued";
+      const noEmail = (sent.body as { send_email?: boolean } | null)?.send_email === false;
+      if (heldOnPlainIssue && !noEmail) return send({ title: "Conflict", status: 409, detail: "Purchase order email is held until the sending domain is verified. Nothing was issued.", correlation_id: "c", checks: { problem: "po_email_held" } }, 409);
+      state.status = "issued"; state.withoutEmail = noEmail;
       return send(detail());
     }
     if (method === "GET" && path === `${base}/transmissions`) {
       if (state.status !== "issued") return send([]);
       state.transmissionGets += 1;
+      if (state.withoutEmail) return send(withoutEmailRows === "other" ? [{ ...row(0, "bounced", 9), revision: 0, po_id: "88888888-8888-4888-8888-888888888888" }] : []);
       return send(rows());
     }
     if (method === "POST" && path === `${base}/transmissions/resend`) {

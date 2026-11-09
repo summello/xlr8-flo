@@ -932,9 +932,8 @@ class ProjectService:
         balances: bool = False,
         granted: GrantedScopes | None = None,
     ) -> ProjectPage:
-        # `granted` narrows rows to the caller's units and projects; None means the whole
-        # organization. ponytail: a project grant lists that project only, not its sub-projects;
-        # list descendants too when a project-scoped reader needs the tree.
+        # `granted` narrows rows to the caller's units and projects (roll-down already expanded
+        # by the resolver); None means the whole organization; an empty grant lists nothing.
         if sort not in ("number", "name", "status", "created_at") or direction not in (
             "asc",
             "desc",
@@ -974,6 +973,8 @@ class ProjectService:
                 raise invalid(
                     "cursor", "Invalid cursor. Restart paging with the selected order."
                 ) from exc
+        if granted is not None and not granted:
+            return ProjectPage(total=0, rows=[], next_cursor=None)
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             prefix = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
             params = {

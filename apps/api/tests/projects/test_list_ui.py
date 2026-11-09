@@ -40,7 +40,9 @@ def test_list_balance_requires_organization_ledger_read(project_db):
     assert visible["allocated"] == visible["available"] == "123.4567"
     viewer = insert_identity(db, "wrong-permission")
     grant_permissions(db, viewer, "ledger.read")
-    assert request(db, "GET", viewer=viewer).status_code == 403
+    # E22-S13: holding the read permission nowhere is an empty 200, no longer a 403.
+    denied = request(db, "GET", viewer=viewer)
+    assert denied.status_code == 200 and denied.json()["rows"] == [] and denied.json()["total"] == 0
 
 
 def db_scope(db):

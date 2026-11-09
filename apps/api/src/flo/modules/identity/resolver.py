@@ -169,20 +169,36 @@ class AuthorizationResolver(ScopedRepo[AuthorizationDecision]):
         )
 
     def granted_scopes(self, user_id: IdentityId, permission: str) -> GrantedScopes:
-        """Scopes where the user's current assignments carry the permission."""
+        """Scopes where the user holds the permission, as the effective-access check sees them.
 
+        A unit grant covers every project beneath it whatever `roll_down` says; a project grant
+        covers a sub-project only across edges that roll down. Units never roll down to units.
+        """
+
+        # ponytail: a unit grant expands to every project id beneath it in Python; if an org passes
+        # ~5k projects under one unit, narrow in SQL with this CTE as a subquery instead.
         rows = self._connection.execute(
             """
-            SELECT DISTINCT assignment.scope_type, assignment.scope_id
-              FROM user_role AS assignment
-              JOIN role_permission
-                ON role_permission.org_id = assignment.org_id
-               AND role_permission.role_id = assignment.role_id
-             WHERE assignment.org_id = %(org_id)s
-               AND assignment.user_id = %(user_id)s
-               AND role_permission.permission_code = %(permission)s
-               AND (assignment.effective_from IS NULL
-                    OR assignment.effective_from <= CURRENT_TIMESTAMP)
+            WITH RECURSIVE grants AS (
+                SELECT DISTINCT ur.scope_type, ur.scope_id
+                  FROM user_role ur
+                  JOIN role_permission rp ON rp.org_id = ur.org_id AND rp.role_id = ur.role_id
+                 WHERE ur.org_id = %(org_id)s AND ur.user_id = %(user_id)s
+                   AND rp.permission_code = %(permission)s
+                   AND (ur.effective_from IS NULL OR ur.effective_from <= CURRENT_TIMESTAMP)
+            ), covered (scope_type, scope_id, unconditional) AS (
+                SELECT scope_type, scope_id, scope_type <> 'project' FROM grants
+                 WHERE scope_type <> 'org'
+                UNION
+                SELECT h.scope_type, h.scope_id, c.unconditional
+                  FROM authorization_scope h
+                  JOIN covered c ON h.parent_scope_type = c.scope_type
+                   AND h.parent_scope_id = c.scope_id
+                 WHERE h.org_id = %(org_id)s AND (c.unconditional OR h.roll_down)
+            )
+            SELECT 'org' AS scope_type, NULL::uuid AS scope_id
+             WHERE EXISTS (SELECT 1 FROM grants WHERE scope_type = 'org')
+            UNION ALL SELECT DISTINCT scope_type, scope_id FROM covered
             """,
             self.scoped_params({"user_id": user_id, "permission": permission_code(permission)}),
         ).fetchall()

@@ -25,9 +25,11 @@ const clear = { tax_id: TAX, tax_id_country: "US", bank_name: "Acme Operating", 
 const masked = { tax_id: "•••• 6789", tax_id_country: "US", bank_name: "•••• ting", bank_account: "•••• 4821", bank_routing: "•••• 0-00", version: 1 };
 
 /** An in-memory stand-in for the vendor API. Every list request is recorded so a test can assert server paging. */
-export async function stubVendors(page: Page, { canReveal = true, canEdit = canReveal, canVerify = true }: { canReveal?: boolean; canEdit?: boolean; canVerify?: boolean } = {}) {
+export async function stubVendors(page: Page, { canReveal = true, canEdit = canReveal, canVerify = true, noUnit = false, unitFails = false }: { canReveal?: boolean; canEdit?: boolean; canVerify?: boolean; noUnit?: boolean; unitFails?: boolean } = {}) {
   const state = {
     requests: [] as URL[],
+    eligibilityRequests: 0,
+    unitHealed: false,
     verified: false,
     reveals: [] as unknown[],
     puts: [] as { body: Record<string, unknown>; ifMatch: string | undefined }[],
@@ -56,6 +58,9 @@ export async function stubVendors(page: Page, { canReveal = true, canEdit = canR
     const send = (body: unknown, status = 200) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
     if (path === "/api/v1/auth/sessions" || path === "/api/v1/master/currency") return send([]);
     if (path === "/api/v1/auth/organizations") return send({ items: [], current_org_id: unitId });
+    if (path === "/api/v1/vendors/my-unit" && unitFails && !state.unitHealed) return send({ detail: "Unit lookup failed.", correlation_id: "c" }, 500);
+    if (path === "/api/v1/vendors/my-unit") return send(noUnit ? { unit_id: null, name: null } : { unit_id: unitId, name: "Plant 7" });
+    if (path.endsWith("/eligibility")) { state.eligibilityRequests += 1; return send({ eligible: true, reasons: [], warnings: [] }); }
     if (path === "/api/v1/org/units") return send({ rows: [{ id: unitId, code: "P4", name: "Plant 4", kind: "bu", active: true, parent_id: null, created_at: NOW }], next_cursor: null });
     if (path === "/api/v1/vendors/counts") return send({ active: 3, pending: 1, attention: 7, inactive: 0, all: 4 });
     if (path === "/api/v1/vendors") {

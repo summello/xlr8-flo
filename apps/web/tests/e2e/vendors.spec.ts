@@ -42,6 +42,56 @@ test("paging is server-side: limit and cursor are sent and no request asks for e
   await expect(page.getByRole("tab", { name: /^Needs Attention/ })).toContainText("7");
 });
 
+test("with one unit the Eligible Here column and Available in <unit> show, and the list asks for that unit", async ({ page }) => {
+  const state = await stubVendors(page);
+  await page.goto("/vendors");
+  await expect(page.getByRole("columnheader", { name: "Eligible Here" })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Availability" })).toContainText("Available in Plant 7");
+  expect(state.requests.every(u => u.searchParams.has("available_in"))).toBe(true);
+});
+
+test("with no single unit there is no column, no select, one notice, and no available_in", async ({ page }) => {
+  const state = await stubVendors(page, { noUnit: true });
+  await page.goto("/vendors?here=1");
+  await expect(page.getByRole("link", { name: "Acme Tooling" })).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: "Eligible Here" })).toHaveCount(0);
+  await expect(page.getByRole("combobox", { name: "Availability" })).toHaveCount(0);
+  await expect(page.getByText("Eligibility by unit shows when you belong to exactly one unit.")).toBeVisible();
+  expect(state.requests.length).toBeGreaterThan(0);
+  expect(state.requests.some(u => u.searchParams.has("available_in"))).toBe(false);
+});
+
+test("the profile of a user with no single unit asks for no eligibility and offers no Disable Here", async ({ page }) => {
+  const state = await stubVendors(page, { noUnit: true });
+  await page.goto(`/vendors/${vendorId}`);
+  await expect(page.getByText("Pat Payer").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: /Disable Here/ })).toHaveCount(0);
+  expect(state.eligibilityRequests).toBe(0);
+});
+
+test("a failed unit lookup on the list shows a retryable error and loads no unfiltered list", async ({ page }) => {
+  const state = await stubVendors(page, { unitFails: true });
+  await page.goto("/vendors");
+  await expect(page.getByRole("alert")).toContainText("Unit lookup failed");
+  await expect(page.getByText("Eligibility by unit shows when")).toHaveCount(0);
+  expect(state.requests.length).toBe(0);
+  state.unitHealed = true;
+  await page.getByRole("button", { name: "Try again" }).click();
+  await expect(page.getByRole("link", { name: "Acme Tooling" })).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: "Eligible Here" })).toBeVisible();
+});
+
+test("a failed unit lookup on the profile shows a retryable error, not a silent no-unit profile", async ({ page }) => {
+  const state = await stubVendors(page, { unitFails: true });
+  await page.goto(`/vendors/${vendorId}`);
+  await expect(page.getByRole("alert").filter({ hasText: "Unit lookup failed" })).toBeVisible();
+  expect(state.eligibilityRequests).toBe(0);
+  state.unitHealed = true;
+  await page.getByRole("button", { name: "Try again" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "Unit lookup failed" })).toHaveCount(0);
+  await expect.poll(() => state.eligibilityRequests).toBeGreaterThan(0);
+});
+
 test("the documents signal looks ahead, says it in words and the status pill keeps its icon", async ({ page }) => {
   await stubVendors(page);
   await page.goto("/vendors");

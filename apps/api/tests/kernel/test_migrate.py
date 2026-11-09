@@ -189,6 +189,7 @@ def test_real_migration_chain_validates_with_the_metadata_gap() -> None:
         "20261101_0087",
         "20261102_0088",
         "20261102_0089",
+        "20261108_0090",
     ]
     assert revisions[5].down_revision == "20260825_0005"
 
@@ -3590,10 +3591,13 @@ def test_email_deliverability_migration_roundtrips_and_keeps_transmissions(empty
             "SELECT count(*) FROM information_schema.columns WHERE table_name = 'po_transmission'"
             " AND column_name IN ('result_reason', 'vendor_contact_id')"
         ).fetchone() == (2,)
-        assert conn.execute(
-            "SELECT 1 FROM information_schema.columns WHERE table_name = 'email_domain_status'"
-            " AND column_name = 'org_id'"
-        ).fetchone() is None  # global: no tenant column
+        assert (
+            conn.execute(
+                "SELECT 1 FROM information_schema.columns WHERE table_name = 'email_domain_status'"
+                " AND column_name = 'org_id'"
+            ).fetchone()
+            is None
+        )  # global: no tenant column
         mig.downgrade(conn)
         for table in (
             "email_message_route",
@@ -3688,3 +3692,75 @@ def test_purchasing_reads_grant_roundtrips_and_keeps_a_grant_already_held(empty_
         mig.downgrade(conn)
         assert held() == before  # only the grant the migration inserted goes
         mig.upgrade(conn)
+
+
+def test_po_terminal_immutable_migration_roundtrips_on_a_closed_issued_order(empty_database):
+    from flo.kernel.logging import correlation_context
+    from flo.kernel.tenancy.context import Scope
+    from flo.kernel.tenancy.rls import tenant_transaction
+    from flo.modules.org.schemas import OrgUnitCreate
+    from flo.modules.org.service import OrgService
+    from tests.org.test_bootstrap import admin_id, create
+
+    revisions = migrate.discover_migrations(MIGRATIONS)
+    migrate.apply_migrations(
+        [r for r in revisions if r.revision <= "20261102_0089"], empty_database
+    )
+    mig = next(r for r in revisions if r.revision == "20261108_0090")
+    with (
+        psycopg.connect(empty_database, autocommit=True) as conn,
+        correlation_context("po-terminal-migration"),
+    ):
+        tenant = create(conn)
+        actor = admin_id(conn)
+        scope = Scope(tenant.org_id)
+        bu = OrgService(conn, scope, actor).create_unit(
+            OrgUnitCreate(code="BU", name="BU", kind="bu")
+        )
+        rfq, award, po = uuid4(), uuid4(), uuid4()
+        with tenant_transaction(conn, scope):
+            conn.execute(
+                "INSERT INTO rfq(id,org_id,number,title,unit_id,currency,owner_id)"
+                " VALUES(%s,%s,'RFQ-00001','T',%s,'KWD',%s)",
+                (rfq, tenant.org_id, bu.id, actor),
+            )
+            conn.execute(
+                "INSERT INTO award(id,org_id,number,rfq_id,basis,status,rates,created_by)"
+                " VALUES(%s,%s,'AWD-00001',%s,'manual','approved','{}',%s)",
+                (award, tenant.org_id, rfq, actor),
+            )
+            conn.execute("SET LOCAL session_replication_role = replica")  # requisition absent
+            conn.execute(
+                "INSERT INTO purchase_order(id,org_id,number,unit_id,vendor_id,requisition_id,"
+                "vendor_snapshot,award_id,currency,rate,bill_to,recipients,requester_id,"
+                "created_by,requisition_version,status,issued_at,issued_by)"
+                " VALUES(%s,%s,'PO-1',%s,%s,%s,'{}',%s,'KWD','{}','{}','[]',%s,%s,1,'closed',"
+                "now(),%s)",
+                (po, tenant.org_id, bu.id, uuid4(), uuid4(), award, actor, actor, actor),
+            )
+
+        def snapshot():
+            with tenant_transaction(conn, scope):
+                return conn.execute("SELECT to_jsonb(p) FROM purchase_order p").fetchall()
+
+        before = snapshot()
+        mig.upgrade(conn)
+        assert snapshot() == before
+        for statement in (  # plant: dropping `closed` from the protected set lets these through
+            "UPDATE purchase_order SET terms = 'x'",
+            "UPDATE purchase_order SET status = 'issued', version = version + 1",
+            "DELETE FROM purchase_order",
+        ):
+            with (
+                pytest.raises(psycopg.errors.CheckViolation, match="issued_is_immutable"),
+                tenant_transaction(conn, scope),
+            ):
+                conn.execute(statement)
+        mig.downgrade(conn)
+        with tenant_transaction(conn, scope):  # the 0084 behaviour: a closed row is open again
+            conn.execute("UPDATE purchase_order SET terms = 'x'")
+        assert snapshot() != before
+        mig.upgrade(conn)
+        assert snapshot()[0][0]["terms"] == "x"  # data survives; no write is possible any more
+        with pytest.raises(psycopg.errors.CheckViolation), tenant_transaction(conn, scope):
+            conn.execute("UPDATE purchase_order SET terms = NULL")

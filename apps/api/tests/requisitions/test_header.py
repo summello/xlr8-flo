@@ -856,3 +856,48 @@ def test_list_is_filtered_to_the_scopes_where_the_caller_may_view(header_db):
             assert await listed(browser) == set()
 
     asyncio.run(scenario())
+
+
+def test_project_grant_lists_requisitions_across_roll_down_edges_as_the_by_id_read(header_db):
+    # E22-S13: a project grant lists the requisitions of the project and of a roll_down
+    # sub-project, not those behind a non-rolling edge nor a standalone one; list <=> 200 by id.
+    from flo.modules.identity.models import AuthorizationTarget
+    from flo.modules.identity.service import ScopeType
+    from tests.vendors.test_vendors import regrant
+
+    db = header_db
+    a = unit(db, "PA")
+    parent = project(db, a)
+    ps = ProjectService(db[0], Scope(db[1]), db[3], settings(db[0]))
+    body = ProjectCreate(
+        bu_id=a.id,
+        name="Sub",
+        currency="USD",
+        department_code="D",
+        ledger_account_code="L",
+        parent_id=parent.id,
+    )
+    rolls, stops = ps.create(body), ps.create(body)
+    with tenant_transaction(db[0], Scope(db[1])):
+        db[0].execute(
+            "UPDATE authorization_scope SET roll_down = false WHERE scope_id = %s", (stops.id,)
+        )
+    own, via_roll, behind_stop = (draft(db, p=p) for p in (parent, rolls, stops))
+    standalone = draft(db, unit(db, "PB"))
+    expected = {str(own.id), str(via_roll.id)}
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            regrant(
+                db,
+                ["requisition.view"],
+                AuthorizationTarget(ScopeType.PROJECT, parent.id, None, None),
+            )
+            listed = {r["id"] for r in (await send(browser, "GET")).json()["rows"]}
+            assert listed == expected
+            for row in (own, via_roll, behind_stop, standalone):
+                by_id = (await send(browser, "GET", f"/{row.id}")).status_code
+                assert (by_id == 200) == (str(row.id) in listed), (row.id, by_id)
+
+    asyncio.run(scenario())

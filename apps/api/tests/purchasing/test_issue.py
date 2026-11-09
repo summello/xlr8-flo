@@ -7,6 +7,7 @@ from uuid import uuid4
 import pytest
 
 from flo.api.health import app
+from flo.kernel.config import Settings
 from flo.kernel.logging import correlation_context
 from flo.kernel.tenancy.context import Scope
 from flo.modules.budget import reconcile
@@ -32,9 +33,17 @@ def approve(db, po):
     sql(db, "UPDATE purchase_order SET status='approved' WHERE id=%s RETURNING 1", (po.id,))
 
 
-def run(db, po, version="1", connection=None):
+def run(db, po, version="1", connection=None, settings=None, send_email=True):
     with correlation_context("issue"):
-        return issue(connection or db[0], Scope(db[1]), po.id, db[3], f'"{version}"')
+        return issue(
+            connection or db[0],
+            Scope(db[1]),
+            po.id,
+            db[3],
+            f'"{version}"',
+            settings=settings or Settings(),
+            send_email=send_email,
+        )
 
 
 def ledger(db):
@@ -321,3 +330,75 @@ def test_issue_lines_refuses_more_than_was_ordered_and_writes_nothing(lifecycle_
         (audits[0][0] + 1,)
     ]  # only the first call audited
     assert ledger(db) == rows
+
+
+def held_state(db, po):
+    return sql(
+        db,
+        "SELECT (SELECT status FROM purchase_order), (SELECT count(*) FROM ledger_entry), "
+        "(SELECT count(*) FROM po_transmission), "
+        "(SELECT count(*) FROM outbox WHERE left(idempotency_key, 16) = 'po_transmission:'), "
+        "(SELECT count(*) FROM audit_log WHERE action = 'purchase_order.issue_without_email')",
+    )[0]
+
+
+def set_domain(db, spf, dkim):
+    sql(db, "DELETE FROM email_domain_status RETURNING 1")
+    sql(
+        db,
+        "INSERT INTO email_domain_status (spf, dkim, detail, checked_at) "
+        "VALUES (%s, %s, '', now()) RETURNING 1",
+        (spf, dkim),
+    )
+
+
+def test_a_held_domain_refuses_the_issue_and_writes_nothing(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, _, a, _, award_id, _ = ready(db)
+    po = create(db, rfq, a, award_id, "4")
+    approve(db, po)
+    resend = Settings(email_provider="resend")
+    before = sql(db, "SELECT recipients FROM purchase_order")
+    entries = held_state(db, po)[1]
+    assert refused(lambda: run(db, po, settings=resend)).checks["problem"] == "po_email_held"
+    # plant: the held check after issue_lines leaves a commitment entry
+    assert held_state(db, po) == ("approved", entries, 0, 0, 0)
+    assert sql(db, "SELECT recipients FROM purchase_order") == before
+
+
+def test_issue_without_email_commits_but_queues_nothing(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, _, a, _, award_id, _ = ready(db)
+    po = create(db, rfq, a, award_id, "4")
+    approve(db, po)
+    resend = Settings(email_provider="resend")
+    entries = held_state(db, po)[1]
+    assert run(db, po, settings=resend, send_email=False).status == "issued"
+    status, after, transmissions, outbox, audits = held_state(db, po)
+    assert (status, transmissions, outbox, audits) == ("issued", 0, 0, 1)  # plant: enqueue anyway
+    assert after > entries and totals(db)[1] > 0
+    # a retry of the issued PO returns it, held or not (PO-012)
+    assert run(db, po, settings=resend).status == "issued"
+
+
+def test_a_verified_domain_queues_the_email_and_send_email_false_still_works(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, _, a, _, award_id, _ = ready(db)
+    po = create(db, rfq, a, award_id, "4")
+    approve(db, po)
+    set_domain(db, "pass", "pass")
+    resend = Settings(email_provider="resend")
+    assert run(db, po, settings=resend).status == "issued"
+    assert held_state(db, po)[2:] == (1, 1, 0)
+
+
+def test_send_email_false_also_works_with_a_verified_domain(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, _, a, _, award_id, _ = ready(db)
+    po = create(db, rfq, a, award_id, "4")
+    approve(db, po)
+    set_domain(db, "pass", "pass")
+    assert (
+        run(db, po, settings=Settings(email_provider="resend"), send_email=False).status == "issued"
+    )
+    assert held_state(db, po)[2:] == (0, 0, 1)

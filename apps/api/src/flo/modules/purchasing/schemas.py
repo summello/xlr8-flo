@@ -283,6 +283,11 @@ class AwardedLinesRead(BaseModel):
 type ChangeStatus = Literal["draft", "approval_pending", "approved", "rejected", "withdrawn"]
 
 
+class PoIssue(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    send_email: bool = True
+
+
 class PoChangeCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     reason: str | None = Field(default=None, max_length=500)

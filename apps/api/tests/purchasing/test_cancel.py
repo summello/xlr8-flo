@@ -8,6 +8,7 @@ import psycopg
 import pytest
 
 from flo.api.health import app
+from flo.kernel.config import Settings
 from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.logging import correlation_context
 from flo.kernel.tenancy.context import Scope
@@ -446,7 +447,9 @@ def test_cancel_and_issue_of_one_approved_po_have_one_winner(lifecycle_db):
     def work(conn, n):
         with correlation_context("cancel-issue"):
             if n == 0:
-                return issue(conn, Scope(db[1]), po.id, db[3], f'"{version}"').status
+                return issue(
+                    conn, Scope(db[1]), po.id, db[3], f'"{version}"', settings=Settings()
+                ).status
             return cancel(conn, Scope(db[1]), po.id, db[3], f'"{version}"', body).status
 
     outcome = _race(db, work)

@@ -9138,6 +9138,39 @@
         "title": "MilestoneRead",
         "type": "object"
       },
+      "MyUnit": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "unit_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Id"
+          }
+        },
+        "required": [
+          "unit_id",
+          "name"
+        ],
+        "title": "MyUnit",
+        "type": "object"
+      },
       "Node": {
         "additionalProperties": false,
         "properties": {
@@ -11573,6 +11606,18 @@
           "truncated"
         ],
         "title": "PoHistoryRead",
+        "type": "object"
+      },
+      "PoIssue": {
+        "additionalProperties": false,
+        "properties": {
+          "send_email": {
+            "default": true,
+            "title": "Send Email",
+            "type": "boolean"
+          }
+        },
+        "title": "PoIssue",
         "type": "object"
       },
       "PoLineIn": {
@@ -18719,6 +18764,10 @@
             "title": "Issued",
             "type": "boolean"
           },
+          "po_email_allowed": {
+            "title": "Po Email Allowed",
+            "type": "boolean"
+          },
           "template_version": {
             "title": "Template Version",
             "type": "string"
@@ -18731,7 +18780,8 @@
           "vendor_copy",
           "email_summary",
           "template_version",
-          "issued"
+          "issued",
+          "po_email_allowed"
         ],
         "title": "VendorCopyRead",
         "type": "object"
@@ -32852,6 +32902,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/PoIssue"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {
@@ -40456,6 +40523,65 @@
           }
         },
         "summary": "Duplicate Check",
+        "tags": [
+          "vendors"
+        ]
+      }
+    },
+    "/api/v1/vendors/my-unit": {
+      "get": {
+        "operationId": "my_unit_api_v1_vendors_my_unit_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-FLO-Origin-Secret",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flo-Origin-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyUnit"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Client error expressed as RFC 9457 problem details."
+          },
+          "5XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Server error expressed as RFC 9457 problem details."
+          }
+        },
+        "summary": "My Unit",
         "tags": [
           "vendors"
         ]

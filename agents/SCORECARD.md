@@ -2,10 +2,10 @@
 
 # Agent scorecard
 
-**177 merged stories.** Scores appear once an agent has 3+ samples in that role —
+**181 merged stories.** Scores appear once an agent has 3+ samples in that role —
 before that the number would be noise, so it reads `—`.
 
-> **Data quality.** 114 of 177 records took `rounds` from a counter with no reliable
+> **Data quality.** 114 of 181 records took `rounds` from a counter with no reliable
 > writer (before E23-S13, 22 Oct 2026): in this repository only `flo escalate` ever raised it, and
 > records that also carry review-run counts say 1 round while their reviewers ran up to 7 times.
 > *Clean merge*, *Mean rounds* and the author score include those records, so read them as
@@ -17,17 +17,17 @@ before that the number would be noise, so it reads `—`.
 |---|---:|---:|---:|---:|---:|---:|
 | `opencode-nemotron` | 10 | 0/10 | 100% | 1.00 | 0.00 | **100.0** |
 | `codex` | 68 | 0/68 | 97% | 1.04 | 0.00 | **97.9** |
-| `sonnet` | 98 | 62/98 | 51% | 1.80 | 0.00 | **63.6** |
+| `sonnet` | 102 | 66/102 | 50% | 1.79 | 0.00 | **63.1** |
 | `codex-b` | 1 | 1/1 | 100% | 1.00 | 0.00 | — |
 
-**Judgement day (Sonnet on gated work): 31 of 10 verified gated records.** It is due: run the script in `docs/ops/sonnet-round-churn.md` and decide.
+**Judgement day (Sonnet on gated work): 33 of 10 verified gated records.** It is due: run the script in `docs/ops/sonnet-round-churn.md` and decide.
 
 ## As reviewer
 
 | Agent | Reviews | Ran tests | Findings/review | Blocker precision | Escapes missed | Score |
 |---|---:|---:|---:|---:|---:|---:|
-| `codex-a` | 7 | 100% | 0.3 | 100% | 0 | **87.5** |
 | `codex` | 81 | 100% | 0.7 | 91% | 0 | **87.4** |
+| `codex-a` | 11 | 100% | 0.3 | 100% | 0 | **87.1** |
 | `deepseek` | 6 | 100% | 1.0 | — | 0 | **77.5** |
 | `opencode-nemotron` | 5 | 100% | 0.0 | — | 0 | **70.0** |
 | `qwen` | 10 | 100% | 1.6 | 0% | 0 | **67.0** |

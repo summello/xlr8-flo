@@ -20,7 +20,7 @@ from flo.modules.org.schemas import OrgAddressRead
 from flo.modules.purchasing.cancel import cancel, cancel_preview, reduce
 from flo.modules.purchasing.changes import ChangeService
 from flo.modules.purchasing.issue import issue
-from flo.modules.purchasing.pdf import VendorCopyRead, filename, frozen, pdf_for, vendor_copy_read
+from flo.modules.purchasing.pdf import VendorCopyRead, filename, frozen, pdf_for
 from flo.modules.purchasing.schemas import (
     AwardedLinesRead,
     PoAttachmentRead,
@@ -34,6 +34,7 @@ from flo.modules.purchasing.schemas import (
     PoChangeRead,
     PoCreate,
     PoHistoryRead,
+    PoIssue,
     PoPage,
     PoPatch,
     PoRead,
@@ -55,6 +56,7 @@ from flo.modules.purchasing.transmission import (
     request_domain_check,
     resend,
     sending_domain,
+    vendor_copy,
 )
 
 router = APIRouter(prefix="/api/v1/purchase-orders", tags=["purchasing"])
@@ -253,9 +255,22 @@ def issue_purchase_order(
     context: IssueContext,
     connection: Connection,
     response: Response,
+    settings: Annotated[Settings, Depends(get_auth_settings)],
     version: Annotated[str | None, Header(alias="If-Match")] = None,
+    body: PoIssue | None = None,
 ) -> PoRead:
-    return _etag(issue(connection, current_scope(), id, context.user_id, version), response)
+    return _etag(
+        issue(
+            connection,
+            current_scope(),
+            id,
+            context.user_id,
+            version,
+            settings=settings,
+            send_email=body.send_email if body else True,
+        ),
+        response,
+    )
 
 
 @router.post("/{id}/cancel", response_model=PoCancelRead)
@@ -395,8 +410,13 @@ def po_pdf(id: UUID, context: ViewContext, connection: Connection) -> Response:
 
 
 @router.get("/{id}/vendor-copy", response_model=VendorCopyRead)
-def po_vendor_copy(id: UUID, context: ViewContext, connection: Connection) -> VendorCopyRead:
-    return vendor_copy_read(connection, current_scope(), id)
+def po_vendor_copy(
+    id: UUID,
+    context: ViewContext,
+    connection: Connection,
+    settings: Annotated[Settings, Depends(get_auth_settings)],
+) -> VendorCopyRead:
+    return vendor_copy(connection, current_scope(), id, settings)
 
 
 @router.get("/{id}/transmissions", response_model=list[PoTransmissionRead])

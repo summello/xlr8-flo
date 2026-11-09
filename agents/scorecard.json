@@ -8322,6 +8322,253 @@
         },
         "gate_s": 590
       }
+    },
+    {
+      "story": "E13-S26",
+      "kind": "migration",
+      "size": "S",
+      "tags": [
+        "migration"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "13699401-0e67-438b-9cdb-5ad7371d0a84",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S26",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a1bd25-30c4-7190-87ff-8599d64f5b38",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Migration 20261108_0090 replaces the two PO immutability trigger functions so a closed or cancelled PO that was issued stays frozen (header, lines, delete), terminal status is final, and an unstamped issued PO cannot go terminal. Tests added for each, plus a migration round trip; two test helpers now force raw status moves the way the trigger requires.",
+      "title": "An issued purchase order stays immutable after it is closed or cancelled",
+      "durations": {
+        "wall_s": 18634,
+        "author_s": 7041,
+        "review_s": {
+          "codex-a": 4149,
+          "opus": 2028
+        },
+        "gate_s": 804
+      }
+    },
+    {
+      "story": "E22-S13",
+      "kind": "security",
+      "size": "M",
+      "tags": [
+        "auth",
+        "security"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 2
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "868d2bfe-7538-4d06-9cee-bccd57b7bf3b",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S13",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a1bd5e-19bf-7a13-a916-c8f4d439b136",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Lists now use one scope rule: AuthorizationResolver.granted_scopes runs the roll-down CTE (moved from identity.service, which is deleted), and requisitions/RFQ lists use it. require_granted returns the empty grant instead of 403, and every list route returns an empty page without running its query.",
+      "title": "One list-scope rule, project grants roll down in lists as in point checks",
+      "durations": {
+        "wall_s": 17498,
+        "author_s": 9177,
+        "review_s": {
+          "codex-a": 392,
+          "opus": 593
+        },
+        "gate_s": 612
+      }
+    },
+    {
+      "story": "E13-S30",
+      "kind": "engine",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 2
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "94682f6e-c905-4406-b921-6879c9e0c9f2",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S30",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a1bd83-1fb3-7a40-9a93-728416b6c765",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Issue now refuses (409 po_email_held) when the sending domain cannot send, unless the buyer issues without email (send_email false), which writes an audit row and queues nothing. The Issue dialog and result page reflect the held state with a Download PDF link.",
+      "title": "Issue refuses to queue a PO email the sending domain cannot send",
+      "durations": {
+        "wall_s": 18503,
+        "author_s": 5655,
+        "review_s": {
+          "codex-a": 380
+        },
+        "gate_s": 554
+      }
+    },
+    {
+      "story": "E11-S21",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 4
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 4,
+          "findings": 1,
+          "blockers": 1,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "7d1d6d2b-6ae7-45f2-a5af-52f3232e86ae",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S21",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a1bdac-3e5a-7ab2-9990-40bfdfde9201",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Added identity.assigned_unit (the one BU-scoped assignment, else None) and GET /vendors/my-unit; the vendor list and profile now use it instead of the first org unit, and hide Eligible Here, the Availability select and unit actions when the user has no single unit.",
+      "title": "Eligible Here only for a unit the user actually belongs to",
+      "durations": {
+        "wall_s": 39634,
+        "author_s": 18063,
+        "review_s": {
+          "codex-a": 194
+        },
+        "gate_s": 0
+      }
     }
   ]
 }

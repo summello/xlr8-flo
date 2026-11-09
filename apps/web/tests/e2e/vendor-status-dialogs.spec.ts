@@ -6,7 +6,7 @@ const VENDOR = ID(7), UNIT = ID(9);
 const NOW = "2026-10-20T09:00:00Z";
 
 /** An in-memory stand-in for the E11 API: the status never changes by itself, only by a decided change. */
-async function stub(page: Page, seed: { status: "active" | "suspended" | "pending_approval"; pendingCreate?: boolean; allow?: boolean; disabled?: boolean; viewOnly?: boolean; unitsDenied?: boolean; unitsDelay?: Promise<void>; noUnits?: boolean }) {
+async function stub(page: Page, seed: { status: "active" | "suspended" | "pending_approval"; pendingCreate?: boolean; allow?: boolean; disabled?: boolean; viewOnly?: boolean; unitsDenied?: boolean; unitsDelay?: Promise<void>; noUnits?: boolean; noMyUnit?: boolean }) {
   const state = { status: seed.status, disabled: seed.disabled ?? false, changes: (seed.pendingCreate ? [{ id: ID(49), vendor_id: VENDOR, kind: "create", payload: {}, reason: null, status: "pending", requested_by_email: "me@x.test", requested_by_me: true, requested_at: NOW, decided_at: null }] : []) as unknown[], writes: [] as { path: string; body: unknown }[], fail: null as { status: number; detail: string } | null };
   const detail = () => ({ id: VENDOR, number: "VEN-00007", trading_name: "Acme Ltd", legal_name: "Acme Limited", status: state.status, availability: "global", created_by_email: "a@x.test", created_at: NOW, updated_at: NOW, version: 1, units: [], identifiers: {},
     actions: seed.viewOnly ? [] : ["edit", "request_change"], local_disable_units: seed.viewOnly || seed.allow === false ? [] : [UNIT],
@@ -29,6 +29,7 @@ async function stub(page: Page, seed: { status: "active" | "suspended" | "pendin
     }
     if (path === `/api/v1/vendors/${VENDOR}`) return send(detail());
     if (path === "/api/v1/org/units" && seed.unitsDenied && url.searchParams.get("page_size") === "100") return send({ detail: "You do not have permission to do that." }, 403);
+    if (path === "/api/v1/vendors/my-unit") return send(seed.noMyUnit ? { unit_id: null, name: null } : { unit_id: UNIT, name: "Plant 4" });
     if (path === "/api/v1/org/units" && url.searchParams.get("page_size") === "100") {
       await seed.unitsDelay;
       if (seed.noUnits) return send({ rows: [], next_cursor: null });

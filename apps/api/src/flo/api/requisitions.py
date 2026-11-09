@@ -10,12 +10,10 @@ from flo.api.admin_users import deleted_visible, organization_target
 from flo.api.auth import get_auth_settings
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
-from flo.kernel.authz import permits, require, require_member, require_resolved
+from flo.kernel.authz import GrantedScopes, permits, require, require_granted, require_resolved
 from flo.kernel.config import Settings
-from flo.kernel.identity import IdentityId
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
-from flo.modules.identity.service import IdentityAuthorizationConnection, granted_scopes
 from flo.modules.org.service import OrgService
 from flo.modules.projects.service import ProjectService
 from flo.modules.requisitions import amendments, codes, revisions
@@ -114,7 +112,7 @@ WithdrawContext = Annotated[
     AuthorizationContext, Depends(require("requisition.withdraw", requisition_target))
 ]
 # A self-scoped list: rows are filtered to the scopes where the caller holds requisition.view.
-ListUser = Annotated[IdentityId, Depends(require_member())]
+ListScopes = Annotated[GrantedScopes, Depends(require_granted("requisition.view"))]
 
 
 @router.post("", status_code=201, response_model=RequisitionRead)
@@ -132,7 +130,7 @@ def create_requisition(
 
 @router.get("", response_model=RequisitionPage)
 def list_requisitions(
-    user_id: ListUser,
+    granted: ListScopes,
     connection: Connection,
     status: RequisitionStatus | None = None,
     project_id: UUID | None = None,
@@ -145,14 +143,8 @@ def list_requisitions(
     cursor: str | None = None,
     page_size: Annotated[int, Query(ge=1, le=50)] = 50,
 ) -> RequisitionPage:
-    org_wide, units, projects = granted_scopes(
-        cast(IdentityAuthorizationConnection, connection),
-        current_scope(),
-        user_id,
-        "requisition.view",
-    )
-    return RequisitionService(connection, current_scope(), user_id).list(
-        visible=None if org_wide else (units, projects),
+    return RequisitionService(connection, current_scope(), granted.user_id).list(
+        visible=None if granted.org_wide else (list(granted.bu_ids), list(granted.project_ids)),
         status=status,
         project_id=project_id,
         bu_id=bu_id,

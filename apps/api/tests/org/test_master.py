@@ -208,8 +208,14 @@ def test_permissions(master_db, method, path, body, grant):
     viewer = insert_identity(db, "viewer")
     if grant:
         grant_permissions(db, viewer, "master.manage" if method == "GET" else "master.read")
+    response = request(db, method, path.format(id=row.id), body, viewer)
+    if method == "GET":
+        # E22-S13: a list without master.read anywhere is an empty 200, never a 403.
+        assert response.status_code == 200
+        assert (response.json() if path == "/currency" else response.json()["rows"]) == []
+        return
     expected = 404 if "{id}" in path and not grant else 403
-    assert request(db, method, path.format(id=row.id), body, viewer).status_code == expected
+    assert response.status_code == expected
 
 
 def test_unknown_kind_and_currency_read_only(master_db):

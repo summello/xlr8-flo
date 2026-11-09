@@ -37,7 +37,7 @@ WriteContext = Annotated[AuthorizationContext, Depends(require("master.manage", 
 
 @router.get("/currency", response_model=list[CurrencyRead])
 def currencies(context: ReadContext, q: str = "") -> list[CurrencyRead]:
-    return list_currencies(q)
+    return list_currencies(q) if context else []
 
 
 @router.post("/{kind}", status_code=201, response_model=MasterRef)
@@ -59,7 +59,7 @@ def select(
     page_size: Annotated[int, Query(ge=1, le=50)] = 50,
 ) -> MasterPage:
     return OrgService(connection, current_scope(), context.user_id).list_master(
-        kind, q=q, active=active, as_of=as_of, cursor=cursor, page_size=page_size
+        kind, granted=context, q=q, active=active, as_of=as_of, cursor=cursor, page_size=page_size
     )
 
 

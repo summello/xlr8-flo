@@ -3462,6 +3462,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/vendors/my-unit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My Unit */
+        get: operations["my_unit_api_v1_vendors_my_unit_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/vendors/onboarding-requests": {
         parameters: {
             query?: never;
@@ -7264,6 +7281,13 @@ export interface components {
              */
             project_id: string;
         };
+        /** MyUnit */
+        MyUnit: {
+            /** Name */
+            name: string | null;
+            /** Unit Id */
+            unit_id: string | null;
+        };
         /** Node */
         Node: {
             /**
@@ -8131,6 +8155,14 @@ export interface components {
             entries: components["schemas"]["PoHistoryEntry"][];
             /** Truncated */
             truncated: boolean;
+        };
+        /** PoIssue */
+        PoIssue: {
+            /**
+             * Send Email
+             * @default true
+             */
+            send_email?: boolean;
         };
         /** PoLineIn */
         PoLineIn: {
@@ -10521,6 +10553,8 @@ export interface components {
             email_summary: string;
             /** Issued */
             issued: boolean;
+            /** Po Email Allowed */
+            po_email_allowed: boolean;
             /** Template Version */
             template_version: string;
             vendor_copy: components["schemas"]["VendorCopy"];
@@ -17728,7 +17762,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PoIssue"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -21608,6 +21646,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DuplicateResult"];
+                };
+            };
+            /** @description Client error expressed as RFC 9457 problem details. */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Server error expressed as RFC 9457 problem details. */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    my_unit_api_v1_vendors_my_unit_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-FLO-Origin-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyUnit"];
                 };
             };
             /** @description Client error expressed as RFC 9457 problem details. */

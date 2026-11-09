@@ -34,7 +34,12 @@ export default function VendorDetail({ id, navigate }: { id: string; navigate: (
     if (!data) throw new Error(response?.status === 404 ? "This vendor does not exist or you cannot see it." : failure(error, "Loading the vendor"));
     return data;
   }, [id]);
-  const unit = useLoad(async () => (await apiClient.GET("/api/v1/org/units", { params: { query: { page_size: 1 } } })).data?.rows[0] ?? null, []);
+  // The one unit the user belongs to; null when they belong to none or several, so nothing is judged "here".
+  const unit = useLoad(async () => {
+    const { data, error } = await apiClient.GET("/api/v1/vendors/my-unit");
+    if (!data) throw new Error(failure(error, "Loading your unit"));
+    return data.unit_id ? { id: data.unit_id, name: data.name ?? "my unit" } : null;
+  }, []);
   const eligibility = useLoad(async () => {
     if (!unit.data) return null;
     return (await apiClient.GET("/api/v1/vendors/{id}/eligibility", { params: { path: { id }, query: { unit_id: unit.data.id } } })).data ?? null;
@@ -88,6 +93,7 @@ export default function VendorDetail({ id, navigate }: { id: string; navigate: (
     <header className="vendor-head">
       <div><h2 className="vendor-name">{v.trading_name}</h2><p className="req-sub">{v.number} · {v.legal_name}</p></div>
       <StatusPill docType="vendor" status={v.status} />
+      {unit.error && <div role="alert"><p>{unit.error}</p><button type="button" onClick={unit.reload}>Try again</button></div>}
       {eligibility.data && <Eligibility eligibility={eligibility.data} variant="header" unitName={unit.data?.name} />}
       {actions.length > 0 && <div className="vendor-head-actions">{actions.map(a => <button key={a.kind} type="button" className={a.destructive ? "vendor-destructive" : undefined} onClick={() => setDialog(a.kind)}>{a.destructive && <XCircle aria-hidden="true" />}{a.text}</button>)}</div>}
     </header>

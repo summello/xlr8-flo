@@ -622,6 +622,8 @@ class RequisitionService:
           AND (%(standalone)s::boolean IS NULL OR r.standalone=%(standalone)s)
           AND (%(requester_id)s::uuid IS NULL OR r.requester_id=%(requester_id)s)
           AND (r.number ILIKE %(prefix)s OR r.title ILIKE %(substring)s)"""
+        if visible is not None and not (visible[0] or visible[1]):
+            return RequisitionPage(rows=[], total=0, next_cursor=None)
         if visible is not None:
             params.update(visible_units=visible[0], visible_projects=visible[1])
             filters += """

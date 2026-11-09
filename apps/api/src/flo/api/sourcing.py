@@ -10,13 +10,19 @@ from flo.api.auth import get_auth_settings
 from flo.api.authz_factory import production_authorization_resolver
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
-from flo.kernel.authz import HoldersResolverFactory, permits, require, require_member
+from flo.kernel.authz import (
+    GrantedScopes,
+    HoldersResolverFactory,
+    permits,
+    require,
+    require_granted,
+    require_member,
+)
 from flo.kernel.config import Settings
 from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.identity import IdentityId
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
-from flo.modules.identity.service import IdentityAuthorizationConnection, granted_scopes
 from flo.modules.org.service import OrgService
 from flo.modules.sourcing.awards import (
     AwardCreate,
@@ -150,18 +156,19 @@ def patch_rfq_lines(
 
 @router.get("/rfqs", response_model=RfqPage)
 def list_rfqs(
-    user_id: Annotated[IdentityId, Depends(require_member())],
+    granted: Annotated[GrantedScopes, Depends(require_granted("rfq.view"))],
     connection: Connection,
     tab: RfqTab = "all",
     q: str = "",
     cursor: str | None = None,
     page_size: Annotated[int, Query(ge=1, le=50)] = 50,
 ) -> RfqPage:
-    org_wide, units, _ = granted_scopes(
-        cast(IdentityAuthorizationConnection, connection), current_scope(), user_id, "rfq.view"
-    )
-    return RfqService(connection, current_scope(), user_id).list_rfqs(
-        visible=None if org_wide else units, tab=tab, q=q, cursor=cursor, page_size=page_size
+    return RfqService(connection, current_scope(), granted.user_id).list_rfqs(
+        visible=None if granted.org_wide else list(granted.bu_ids),
+        tab=tab,
+        q=q,
+        cursor=cursor,
+        page_size=page_size,
     )
 
 
@@ -612,14 +619,11 @@ def add_evaluator(
     id: UUID, body: EvaluatorAdd, context: EditContext, connection: Connection
 ) -> EvaluatorRead:
     unit_id = RfqService(connection, current_scope()).unit_of(id)
-    org_wide, units, _ = granted_scopes(
-        cast(IdentityAuthorizationConnection, connection),
-        current_scope(),
-        IdentityId(body.identity_id),
-        "rfq.view",
-    )
+    factory: HoldersResolverFactory = production_authorization_resolver
+    with factory(current_scope()) as resolver:
+        granted = resolver.granted_scopes(IdentityId(body.identity_id), "rfq.view")
     return EvaluationService(connection, current_scope(), context.user_id).add_evaluator(
-        id, body.identity_id, may_view=org_wide or unit_id in units
+        id, body.identity_id, may_view=granted.org_wide or unit_id in granted.bu_ids
     )
 
 
