@@ -1,4 +1,5 @@
 import { PencilSimple, Scales, Trophy } from "@phosphor-icons/react";
+import StartEvaluation from "./StartEvaluation";
 import CancelRfqDialog from "./CancelRfqDialog";
 import ExtendDeadlineDialog from "./ExtendDeadlineDialog";
 import SupersedeAwardDialog from "./SupersedeAwardDialog";
@@ -15,6 +16,7 @@ export default function RfqHeaderActions({ rfq, award, onChanged, navigate }: { 
     rfq.status === "published" && rfq.can_edit ? go("amend", "Amend") : null,
     rfq.status === "published" && rfq.can_approve ? <CancelRfqDialog key="cancel" rfq={rfq} onDone={onChanged} /> : null,
     award?.status === "approved" && rfq.can_approve ? <SupersedeAwardDialog key="supersede" rfq={rfq} award={award} onDone={onChanged} /> : null,
+    rfq.status === "closed" && rfq.can_edit ? <StartEvaluation key="start-evaluation" rfq={rfq} navigate={navigate} /> : null,
     rfq.status === "closed" || rfq.status === "under_evaluation" ? compare : null,
     rfq.status === "awarded" ? viewAward : null,
   ].filter(Boolean);

@@ -482,6 +482,26 @@ def test_only_editors_publish_and_viewers_read_versions(lifecycle_db, permission
     assert life(db).get(rfq.id).status == ("published" if status == 200 else "draft")
 
 
+@pytest.mark.parametrize(
+    ("permissions", "status", "after"),
+    [(["rfq.view"], 403, "closed"), (["rfq.view", "rfq.edit"], 200, "under_evaluation")],
+)
+def test_only_editors_start_evaluation_of_a_closed_rfq(lifecycle_db, permissions, status, after):
+    db, _ = lifecycle_db
+    rfq, _, _ = publish(db)
+    sql(db, "UPDATE rfq SET status='closed' WHERE id=%s RETURNING 1", (rfq.id,))
+    regrant(db, permissions)
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            return await send(browser, "POST", f"/rfqs/{rfq.id}/start-evaluation")
+
+    attempt = asyncio.run(scenario())
+    assert attempt.status_code == status, attempt.text
+    assert life(db).get(rfq.id).status == after
+
+
 def test_a_unit_scoped_editor_chooses_among_the_offered_contacts_and_publishes(lifecycle_db):
     from flo.modules.identity.models import AuthorizationTarget, ScopeType
 

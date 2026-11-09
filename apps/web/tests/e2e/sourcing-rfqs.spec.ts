@@ -9,11 +9,11 @@ const unitId = "55555555-5555-4555-8555-555555555555";
 const NOW = "2026-10-01T00:00:00Z";
 const minute = (ms: number) => new Date(Math.floor((Date.now() + ms) / 60_000) * 60_000).toISOString();
 
-type Options = { recused?: boolean; evaluator?: boolean; canEdit?: boolean; bounced?: boolean; refuseServer?: boolean; twoPages?: boolean; status?: string; canApprove?: boolean; award?: boolean; refuse?: "insufficient-budget" | "po_exists"; awardsFail?: boolean; refreshFail?: boolean };
+type Options = { recused?: boolean; evaluator?: boolean; canEdit?: boolean; bounced?: boolean; refuseServer?: boolean; twoPages?: boolean; status?: string; canApprove?: boolean; award?: boolean; refuse?: "insufficient-budget" | "po_exists"; awardsFail?: boolean; refreshFail?: boolean; start?: "conflict" | "lost" | "hold" };
 
 /** An in-memory stand-in for the sourcing API: one published RFQ and one draft. */
-async function stubRfqs(page: Page, { recused = false, evaluator = true, canEdit = true, bounced = false, refuseServer = false, twoPages = false, status = "published", canApprove = false, award = false, refuse, awardsFail = false, refreshFail = false }: Options = {}) {
-  const state = { failAwards: awardsFail, failRefresh: false, status: award ? "awarded" : status, awardStatus: "approved", deadline: minute(2 * 86_400_000), version: 1, posts: [] as { path: string; key: string | undefined; body: unknown }[], requests: [] as URL[] };
+async function stubRfqs(page: Page, { recused = false, evaluator = true, canEdit = true, bounced = false, refuseServer = false, twoPages = false, status = "published", canApprove = false, award = false, refuse, awardsFail = false, refreshFail = false, start }: Options = {}) {
+  const state = { failAwards: awardsFail, failRefresh: false, status: award ? "awarded" : status, awardStatus: "approved", deadline: minute(2 * 86_400_000), version: 1, posts: [] as { path: string; key: string | undefined; body: unknown }[], requests: [] as URL[], starts: [] as Record<string, string>[], release: () => {}, loseNext: start === "lost" };
   const detail = () => ({
     id: rfqId, number: "RFQ-0001", title: "Centrifugal pumps", status: state.status, unit_id: unitId, currency: "USD", owner_email: "buyer@example.test", bids_received: 2,
     version: state.version, edit_revision: state.version, created_at: NOW, updated_at: NOW, deadline_at: state.deadline, deadline_tz: "UTC", published_at: NOW,
@@ -54,6 +54,14 @@ async function stubRfqs(page: Page, { recused = false, evaluator = true, canEdit
       state.posts.push({ path, key: req.headers()["idempotency-key"], body });
       if (refuseServer) return send({ title: "Validation failed", status: 422, detail: "Choose a deadline later than the current one.", errors: [{ field: "deadline_at", message: "The vendors have already been told a later date." }] }, 422);
       state.deadline = body.deadline_at; state.version = 2;
+      return send(detail());
+    }
+    if (path === `/api/v1/sourcing/rfqs/${rfqId}/start-evaluation` && req.method() === "POST") {
+      state.starts.push(req.headers());
+      if (state.loseNext) { state.loseNext = false; return route.abort(); }
+      if (start === "conflict") return send({ title: "Conflict", status: 409, detail: "This RFQ is no longer closed. Reload the page.", checks: { problem: "invalid_transition" } }, 409);
+      if (start === "hold") await new Promise<void>(resolve => { state.release = resolve; });
+      state.status = "under_evaluation";
       return send(detail());
     }
     if (path === `/api/v1/sourcing/rfqs/${rfqId}/awards`) return state.failAwards ? (state.failAwards = false, send({}, 500)) : send(award ? [{ id: "aw1", number: "AWD-0001", status: state.awardStatus, total: "1200.0000", budget_total: "1200.0000", currency: "USD", rfq_id: rfqId, created_at: NOW, lines: [{ vendor_id: vendorId, line_no: 1, quantity: "4.0000" }] }] : []);
@@ -348,4 +356,121 @@ for (const theme of ["light", "dark"] as const) {
       expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     });
   }
+}
+
+const csrf = (page: Page) => page.addInitScript(() => { document.cookie = "flo_csrf=test-csrf; path=/"; });
+const tabTo = async (page: Page) => { await page.locator(".vendor-name").evaluate(el => { el.tabIndex = -1; el.focus(); }); for (let i = 0; i < 15 && !(await page.evaluate(() => document.activeElement?.textContent?.includes("Start Evaluation"))); i++) await page.keyboard.press("Tab"); };
+
+const shownCases = [["closed", true, true], ["closed", false, false], ["draft", true, false], ["published", true, false], ["under_evaluation", true, false], ["awarded", true, false], ["cancelled", true, false]] as const;
+for (const [status, canEdit, shown] of shownCases) {
+  test(`Start Evaluation is ${shown ? "shown" : "absent"} on a ${status} RFQ with can_edit ${canEdit}`, async ({ page }) => {
+    await stubRfqs(page, { status, canEdit });
+    await page.goto(`/sourcing/rfqs/${rfqId}`);
+    await expect(page.getByRole("heading", { name: /RFQ-0001/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Start Evaluation" })).toHaveCount(shown ? 1 : 0);
+  });
+}
+
+test("Start Evaluation sits before Open Comparison in RFQ actions", async ({ page }) => {
+  await stubRfqs(page, { status: "closed" });
+  await page.goto(`/sourcing/rfqs/${rfqId}`);
+  await expect(page.getByRole("button", { name: "Start Evaluation" })).toBeVisible();
+  const names = await page.getByRole("group", { name: "RFQ actions" }).locator("> *").allInnerTexts();
+  expect(names.map(n => n.trim())).toEqual(["Start Evaluation", "Open Comparison"]);
+});
+
+for (const keyName of ["Enter", "Space"]) {
+  test(`Start Evaluation by keyboard (${keyName}): one POST with key and CSRF, lands on /evaluation with focus in main`, async ({ page }) => {
+    await csrf(page);
+    const state = await stubRfqs(page, { status: "closed" });
+    await page.goto(`/sourcing/rfqs/${rfqId}`);
+    await expect(page.getByRole("heading", { name: /RFQ-0001/ })).toBeVisible();
+    await tabTo(page);
+    const button = page.getByRole("button", { name: "Start Evaluation" });
+    await expect(button).toBeFocused();
+    const ring = await button.evaluate(el => { const s = getComputedStyle(el); return { outline: s.outlineStyle, shadow: s.boxShadow }; });
+    expect(ring.outline !== "none" || ring.shadow !== "none").toBe(true);
+    await page.keyboard.press(keyName === "Space" ? " " : keyName);
+    await expect(page).toHaveURL(`/sourcing/rfqs/${rfqId}/evaluation`);
+    expect(state.starts).toHaveLength(1);
+    expect(state.starts[0]!["idempotency-key"]).toBeTruthy();
+    expect(state.starts[0]!["x-csrf-token"]).toBe("test-csrf");
+    await expect(page.locator("main")).toBeFocused();
+  });
+}
+
+test("Start Evaluation by a non-evaluator: the screen says so and Back to the RFQ offers Open Comparison, not Start Evaluation", async ({ page }) => {
+  await csrf(page);
+  await stubRfqs(page, { status: "closed", evaluator: false });
+  await page.goto(`/sourcing/rfqs/${rfqId}`);
+  await page.getByRole("button", { name: "Start Evaluation" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByText("You are not an evaluator on this RFQ")).toBeVisible();
+  await page.getByRole("link", { name: "Back to the RFQ" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("link", { name: "Open Comparison" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Start Evaluation" })).toHaveCount(0);
+});
+
+test("Start Evaluation pending: label changes, button stays focused and enabled, a second Enter sends nothing", async ({ page }) => {
+  await csrf(page);
+  const state = await stubRfqs(page, { status: "closed", start: "hold" });
+  await page.goto(`/sourcing/rfqs/${rfqId}`);
+  const button = page.getByRole("button", { name: "Start Evaluation" });
+  await button.focus();
+  await page.keyboard.press("Enter");
+  const busy = page.getByRole("button", { name: "Starting…" });
+  await expect(busy).toBeFocused();
+  await expect(busy).toHaveAttribute("aria-busy", "true");
+  await expect(busy).not.toBeDisabled();
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(200);
+  expect(state.starts).toHaveLength(1);
+  state.release();
+  await expect(page).toHaveURL(`/sourcing/rfqs/${rfqId}/evaluation`);
+  expect(state.starts).toHaveLength(1);
+});
+
+test("Start Evaluation 409: the server's detail shows in the alert, URL and focus stay, a new press uses a new key", async ({ page }) => {
+  await csrf(page);
+  const state = await stubRfqs(page, { status: "closed", start: "conflict" });
+  await page.goto(`/sourcing/rfqs/${rfqId}`);
+  const button = page.getByRole("button", { name: "Start Evaluation" });
+  await button.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("alert").filter({ hasText: "no longer closed" })).toBeVisible();
+  await expect(page).toHaveURL(`/sourcing/rfqs/${rfqId}`);
+  await expect(button).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("alert").filter({ hasText: "no longer closed" })).toBeVisible();
+  expect(state.starts).toHaveLength(2);
+  expect(state.starts[1]!["idempotency-key"]).not.toBe(state.starts[0]!["idempotency-key"]);
+});
+
+test("Start Evaluation lost response: the alert shows and the retry carries the same key", async ({ page }) => {
+  await csrf(page);
+  const state = await stubRfqs(page, { status: "closed", start: "lost" });
+  await page.goto(`/sourcing/rfqs/${rfqId}`);
+  await page.getByRole("button", { name: "Start Evaluation" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("alert").filter({ hasText: "Starting evaluation" })).toBeVisible();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(`/sourcing/rfqs/${rfqId}/evaluation`);
+  expect(state.starts).toHaveLength(2);
+  expect(state.starts[1]!["idempotency-key"]).toBe(state.starts[0]!["idempotency-key"]);
+});
+
+for (const theme of ["light", "dark"] as const) {
+  test(`closed RFQ with Start Evaluation passes axe in ${theme} theme, with and without the failure alert`, async ({ page }) => {
+    await csrf(page);
+    await page.addInitScript(t => localStorage.setItem("xlr8flo.theme", t), theme);
+    await stubRfqs(page, { status: "closed", start: "conflict" });
+    await page.goto(`/sourcing/rfqs/${rfqId}`);
+    await page.locator(".app-shell").waitFor();
+    await expect(page.getByRole("button", { name: "Start Evaluation" })).toBeVisible();
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await page.getByRole("button", { name: "Start Evaluation" }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "no longer closed" })).toBeVisible();
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  });
 }
