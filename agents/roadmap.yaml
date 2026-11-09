@@ -1681,7 +1681,7 @@ epics:
         dep:
           - E11-S11
           - E11-S12
-        st: review
+        st: done
       - id: E11-S22
         t: Scorecard actions follow the server's per-action permissions
         k: ui

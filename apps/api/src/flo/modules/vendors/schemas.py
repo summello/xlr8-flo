@@ -113,6 +113,11 @@ class Reason(BaseModel):
     date: Day | None = None
 
 
+class MyUnit(BaseModel):
+    unit_id: UUID | None
+    name: str | None
+
+
 class Eligibility(BaseModel):
     eligible: bool
     reasons: list[Reason] = []

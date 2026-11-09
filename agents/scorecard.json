@@ -8510,6 +8510,65 @@
         },
         "gate_s": 554
       }
+    },
+    {
+      "story": "E11-S21",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 4
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 4,
+          "findings": 1,
+          "blockers": 1,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "7d1d6d2b-6ae7-45f2-a5af-52f3232e86ae",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E11-S21",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a1bdac-3e5a-7ab2-9990-40bfdfde9201",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Added identity.assigned_unit (the one BU-scoped assignment, else None) and GET /vendors/my-unit; the vendor list and profile now use it instead of the first org unit, and hide Eligible Here, the Availability select and unit actions when the user has no single unit.",
+      "title": "Eligible Here only for a unit the user actually belongs to",
+      "durations": {
+        "wall_s": 39634,
+        "author_s": 18063,
+        "review_s": {
+          "codex-a": 194
+        },
+        "gate_s": 0
+      }
     }
   ]
 }

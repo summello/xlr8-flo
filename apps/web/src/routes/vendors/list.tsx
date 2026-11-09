@@ -30,7 +30,7 @@ function read() {
   return {
     tab: (TABS.some(t => t[0] === tab) ? tab : "active") as Tab,
     q: p.get("q") ?? "",
-    // ponytail: the server attaches eligibility only for a named unit, so "here" is the default view.
+    // The server attaches eligibility only for a named unit, so "here" is the default view when the user has one.
     here: p.get("here") !== "0",
     documents: ((ATTENTION as readonly string[]).includes(doc ?? "") ? doc : "") as (typeof ATTENTION)[number] | "",
   };
@@ -63,17 +63,19 @@ export default function VendorList({ navigate }: { navigate: (href: string) => v
     window.history.pushState(null, "", `${window.location.pathname}${params.size ? `?${params}` : ""}`);
     setFilters(value); setPages([null]); setIndex(0);
   };
-  // Eligible Here is worked out by the server for one unit. ponytail: the first unit stands in until the user has a default unit.
+  // Eligible Here is worked out by the server for the one unit the user belongs to; none or several: no column.
   const unit = useLoad(async () => {
-    const { data } = await apiClient.GET("/api/v1/org/units", { params: { query: { page_size: 1 } } });
-    return data?.rows[0] ?? null;
+    const { data, error } = await apiClient.GET("/api/v1/vendors/my-unit");
+    if (!data) throw new Error(failure(error, "Loading your unit"));
+    return { id: data?.unit_id ?? null, name: data?.name ?? "my unit" };
   }, []);
   const counts = useLoad(async () => (await apiClient.GET("/api/v1/vendors/counts")).data ?? null, []);
   const fixed = TABS.find(t => t[0] === tab)![2] as { status?: readonly VendorRow["status"][]; documents?: readonly (typeof ATTENTION)[number][] };
   const cursor = pages[index] ?? null;
   const unitId = unit.data?.id;
+  const hasUnit = Boolean(unitId);
   const list = useLoad(async () => {
-    if (here && unit.loading) return null; // wait for the unit so the first request is the right one
+    if (unit.loading || unit.error) return null; // wait for the unit so the first request is the right one
     const { data, error } = await apiClient.GET("/api/v1/vendors", { params: { query: {
       q, limit: PAGE, ...(cursor ? { cursor } : {}),
       ...(fixed.status ? { status: [...fixed.status] } : {}),
@@ -82,10 +84,10 @@ export default function VendorList({ navigate }: { navigate: (href: string) => v
     } } });
     if (!data) throw new Error(failure(error, "Loading vendors"));
     return data;
-  }, [tab, q, documents, cursor, unitId, here, unit.loading]);
+  }, [tab, q, documents, cursor, unitId, here, unit.loading, unit.error]);
   const rows = list.data?.rows ?? [];
   const canRequest = (ROUTE_PATHS as readonly string[]).includes("/vendors/new");
-  const filtered = Boolean(q || !here || documents);
+  const filtered = Boolean(q || (hasUnit && !here) || documents);
   return <section className="req-page vendor-list" aria-label="Vendor list">
     <header className="req-heading">
       <p>{counts.data ? `${counts.data.all} ${counts.data.all === 1 ? "vendor" : "vendors"}` : ""}</p>
@@ -97,22 +99,24 @@ export default function VendorList({ navigate }: { navigate: (href: string) => v
     }}>{text}{counts.data && <span className="req-tab-count"> {counts.data[name === "pending" ? "pending" : name]}</span>}</button>)}</div>
     <form role="search" className="req-filters" onSubmit={e => { e.preventDefault(); change({ q: draft.trim() }); }}>
       <label>Search<input type="search" value={draft} placeholder="Name or number" onChange={e => setDraft(e.target.value)} /></label>
-      <label>Availability<select value={here ? "1" : "0"} onChange={e => change({ here: e.target.value === "1" })}><option value="1">Available in {unit.data?.name ?? "my unit"}</option><option value="0">All vendors</option></select></label>
+      {hasUnit && <label>Availability<select value={here ? "1" : "0"} onChange={e => change({ here: e.target.value === "1" })}><option value="1">Available in {unit.data?.name ?? "my unit"}</option><option value="0">All vendors</option></select></label>}
       <label>Documents<select value={documents} onChange={e => change({ documents: e.target.value as typeof documents })}><option value="">Any</option>{ATTENTION.map(a => <option key={a} value={a}>{docWords(a, 0).text.replace("Expiring Today", "Expiring Soon")}</option>)}</select></label>
       <button type="submit">Search</button>
       {filtered && <button type="button" onClick={() => { setDraft(""); change({ q: "", here: true, documents: "" }); }}>Clear filters</button>}
     </form>
+    {unit.data && !hasUnit && <p className="req-sub">Eligibility by unit shows when you belong to exactly one unit.</p>}
     <div role="tabpanel" id="vendor-panel" aria-labelledby={`vendor-tab-${tab}`}>
+      {unit.error && <div role="alert"><p>{unit.error}</p><button type="button" onClick={unit.reload}>Try again</button></div>}
       {list.error && <div role="alert"><p>{list.error}</p><button type="button" onClick={list.reload}>Try again</button></div>}
-      {!list.data && !list.error && <div className="req-card req-card-skeleton" aria-busy="true"><p className="req-skeleton" role="status" aria-label="Loading vendors" /></div>}
+      {!list.data && !list.error && !unit.error && <div className="req-card req-card-skeleton" aria-busy="true"><p className="req-skeleton" role="status" aria-label="Loading vendors" /></div>}
       {list.data && (rows.length === 0 ? <div className="req-empty"><h3>{filtered ? "No Vendors Match" : "No Vendors Here"}</h3><p>{filtered ? "Clear filters to see everything in this view." : "Vendors in this view appear here."}</p></div> :
         <table className="vendor-table" aria-busy={list.loading || undefined}>
           <caption className="visually-hidden">Vendors</caption>
-          <thead><tr><th scope="col">Vendor</th><th scope="col">Status</th><th scope="col">Eligible Here</th><th scope="col">Availability</th><th scope="col">Documents</th></tr></thead>
+          <thead><tr><th scope="col">Vendor</th><th scope="col">Status</th>{hasUnit && <th scope="col">Eligible Here</th>}<th scope="col">Availability</th><th scope="col">Documents</th></tr></thead>
           <tbody>{rows.map(v => <tr key={v.id} data-grid-row>
             <td data-label="Vendor"><a href={`/vendors/${v.id}`} onClick={e => { e.preventDefault(); navigate(`/vendors/${v.id}`); }}>{v.trading_name}</a><span className="req-sub">{v.number} · {v.legal_name}</span></td>
             <td data-label="Status"><StatusPill docType="vendor" status={v.status} /></td>
-            <td data-label="Eligible Here">{v.eligibility ? <Eligibility eligibility={v.eligibility} variant="cell" /> : "—"}</td>
+            {hasUnit && <td data-label="Eligible Here">{v.eligibility ? <Eligibility eligibility={v.eligibility} variant="cell" /> : "—"}</td>}
             <td data-label="Availability">{AVAILABILITY[v.availability]}</td>
             <td data-label="Documents"><Documents summary={v.documents} /></td>
           </tr>)}</tbody>

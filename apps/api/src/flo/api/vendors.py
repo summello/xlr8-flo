@@ -15,7 +15,9 @@ from flo.kernel.authz import permits, require, require_member
 from flo.kernel.config import Settings
 from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.tenancy.context import current_scope
+from flo.modules.identity import service as identity_service
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
+from flo.modules.identity.service import IdentityAuthorizationConnection
 from flo.modules.org.service import OrgService, today
 from flo.modules.vendors.schemas import (
     AnswersPut,
@@ -37,6 +39,7 @@ from flo.modules.vendors.schemas import (
     DuplicateResult,
     Eligibility,
     InactivateCreate,
+    MyUnit,
     OnboardingRead,
     PerformanceRead,
     ScoreCreate,
@@ -139,6 +142,18 @@ def list_vendors(
 @router.get("/counts", response_model=VendorCounts)
 def vendor_counts(context: ViewContext, connection: Connection) -> VendorCounts:
     return VendorService(connection, current_scope(), context.user_id).counts()
+
+
+@router.get("/my-unit", response_model=MyUnit)
+def my_unit(context: ViewContext, connection: Connection) -> MyUnit:
+    unit_id = identity_service.assigned_unit(
+        cast(IdentityAuthorizationConnection, connection), current_scope(), context.user_id
+    )
+    if unit_id is None:
+        return MyUnit(unit_id=None, name=None)
+    return MyUnit(
+        unit_id=unit_id, name=OrgService(connection, current_scope()).get_unit(unit_id).name
+    )
 
 
 @router.get("/{id}/eligibility", response_model=Eligibility)

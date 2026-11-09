@@ -702,6 +702,26 @@ def register_project_scope(
     )
 
 
+def assigned_unit(
+    connection: IdentityAuthorizationConnection, scope: Scope, user_id: UUID
+) -> UUID | None:
+    """The one business unit the user is assigned to by any role, else None.
+
+    Org- and project-scoped assignments are ignored: they say nothing about which unit the user
+    works in. Two different units answer None rather than guessing.
+    """
+    with tenant_transaction(connection, scope):
+        rows = connection.execute(
+            """
+        SELECT DISTINCT scope_id FROM user_role
+         WHERE org_id = %(org_id)s AND user_id = %(user_id)s AND scope_type = 'bu'
+           AND (effective_from IS NULL OR effective_from <= CURRENT_TIMESTAMP)
+        """,
+            RoleRepository(connection, scope).scoped_params({"user_id": user_id}),
+        ).fetchall()
+    return cast(UUID, _value(rows[0], 0, "scope_id")) if len(rows) == 1 else None
+
+
 def user_exists(connection: IdentityAuthorizationConnection, scope: Scope, user_id: UUID) -> bool:
     """Membership is evidenced by a role assignment in the session organization."""
     repository = RoleRepository(connection, scope)

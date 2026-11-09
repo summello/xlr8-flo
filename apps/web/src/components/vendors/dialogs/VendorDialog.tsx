@@ -7,7 +7,7 @@ import type { Unit } from "../api";
 
 export type DialogKind = "suspend" | "reactivate" | "availability" | "disable" | "enable";
 
-type Props = { kind: DialogKind; vendorId: string; unit: Unit | null; onClose: () => void; onDone: () => void };
+type Props = { kind: DialogKind; vendorId: string; unit: { id: string; name: string } | null; onClose: () => void; onDone: () => void };
 
 const TEXT: Record<DialogKind, { title: string; intro: string; confirm: (unit?: string) => string; approval: boolean; undo: string }> = {
   suspend: { title: "Suspend Vendor", intro: "A suspended vendor cannot be chosen for new RFQs or purchase orders. Existing records keep the vendor as it was.", confirm: () => "Request Suspension", approval: true, undo: "Yes, by requesting reactivation." },

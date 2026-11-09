@@ -77,6 +77,7 @@ OROUTES = (
     "test_onboarding_routes_conceal_foreign_tenants_and_other_requesters"
 )
 PROUTES = "vendors/test_performance.py::test_score_routes_conceal_foreign_tenants"
+MYUNIT = "vendors/test_my_unit.py::test_my_unit_route_conceals_foreign_tenants"
 CROUTES = "vendors/test_changes.py::test_vendor_change_routes_conceal_foreign_tenants"
 LISTDOCS = (
     "vendors/test_list_documents.py::"
@@ -120,6 +121,7 @@ COVERED = {
     ("GET", "/api/v1/purchase-orders/{id}/pdf"): VENDOR_COPY_ROUTES,
     ("GET", "/api/v1/purchase-orders/{id}/vendor-copy"): VENDOR_COPY_ROUTES,
     ("GET", "/api/v1/vendors/counts"): LISTDOCS,
+    ("GET", "/api/v1/vendors/my-unit"): MYUNIT,
     ("POST", "/api/v1/vendors/duplicate-check"): CROUTES,
     ("POST", "/api/v1/vendors/{id}/submit"): CROUTES,
     ("POST", "/api/v1/vendors/{id}/revise"): CROUTES,
