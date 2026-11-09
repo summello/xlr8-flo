@@ -8569,6 +8569,65 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E12-S25",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "ui"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 2
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 2,
+          "blockers": 2,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "875ba6ad-486a-4374-9050-ecf1c9af1649",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S25",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a1be1e-3f7b-7b73-8067-48092307c442",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Bid sheet, evaluation scoring and award now keep the submit key beside a fingerprint of everything the submit depends on; a press with an unchanged fingerprint replays the submit unsaved with the same key, and a changed form saves and submits under a new key. A response clears the key except a request_in_flight 409, which keeps it.",
+      "title": "Retrying a submit replays it instead of re-saving the draft (bids, scores, award)",
+      "durations": {
+        "wall_s": 45138,
+        "author_s": 42688,
+        "review_s": {
+          "codex-a": 242
+        },
+        "gate_s": 0
+      }
     }
   ]
 }

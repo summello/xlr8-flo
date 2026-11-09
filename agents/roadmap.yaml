@@ -2048,7 +2048,7 @@ epics:
           - E12-S14
           - E12-S15
           - E12-S16
-        st: in_progress
+        st: done
 
   - id: E13
     name: Purchase orders

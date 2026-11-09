@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { B, C, award, check, comparison, problem, rfqId, stubAward } from "./award-fixture";
 import { keyboardFocus } from "./helpers";
+import { inFlight, refusal, scripted } from "./submit-retry-fixture";
 
 const url = `/sourcing/rfqs/${rfqId}/award?basis=lowest_cost_supplier`;
 test.use({ viewport: { width: 1600, height: 1000 } });
@@ -195,4 +196,56 @@ test("Create PO appears on an approved award only", async ({ page }) => {
   await page.goto(url);
   await expect(page.getByRole("heading", { name: "Award AWD-0001" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Create PO" })).toHaveCount(0);
+});
+
+const SUBMIT = /\/award\/submit$/;
+async function fillAward(page: Page) { await qty(page, "Cirrus Works", 1).fill("4"); await page.getByLabel(/Award Rationale/).fill("Cheapest"); }
+const submit = (page: Page) => page.getByRole("button", { name: "Submit for Approval" });
+
+test("retry after a lost submit response replays the same key without saving again", async ({ page }) => {
+  const stub = await stubAward(page, { existing: award() });
+  const keys = await scripted(page, SUBMIT, ["abort"]);
+  await page.goto(url);
+  await fillAward(page);
+  await submit(page).click();
+  await expect(page.getByText("The award was not submitted")).toBeVisible();
+  expect(stub.puts).toHaveLength(1);
+  await submit(page).click();
+  await expect(page.getByText(/Approval Pending/)).toBeVisible();
+  expect(stub.puts).toHaveLength(1);
+  expect(stub.patches).toHaveLength(1);
+  expect(keys).toHaveLength(2);
+  expect(keys[1]).toBe(keys[0]);
+});
+
+test("editing after a lost submit response saves again and submits under a new key", async ({ page }) => {
+  const stub = await stubAward(page, { existing: award() });
+  const keys = await scripted(page, SUBMIT, ["abort"]);
+  await page.goto(url);
+  await fillAward(page);
+  await submit(page).click();
+  await expect(page.getByText("The award was not submitted")).toBeVisible();
+  await page.getByLabel(/Award Rationale/).fill("Cheapest and in stock");
+  await submit(page).click();
+  await expect(page.getByText(/Approval Pending/)).toBeVisible();
+  expect(stub.puts).toHaveLength(2);
+  expect(keys[1]).not.toBe(keys[0]);
+});
+
+test("a definitive refusal drops the key; a request_in_flight conflict keeps it", async ({ page }) => {
+  const stub = await stubAward(page, { existing: award() });
+  const keys = await scripted(page, SUBMIT, [refusal, inFlight]);
+  await page.goto(url);
+  await fillAward(page);
+  await submit(page).click();
+  await expect(page.getByText("The award was not submitted")).toBeVisible();
+  await submit(page).click(); // refused for good: a new operation
+  await expect(page.getByText("still being submitted")).toBeVisible();
+  await expect(page.getByText("Your selections are kept.").first()).toBeVisible();
+  expect(keys[1]).not.toBe(keys[0]);
+  expect(stub.puts).toHaveLength(2);
+  await submit(page).click(); // in flight: same key, no save
+  await expect(page.getByText(/Approval Pending/)).toBeVisible();
+  expect(keys[2]).toBe(keys[1]);
+  expect(stub.puts).toHaveLength(2);
 });

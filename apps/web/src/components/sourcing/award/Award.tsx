@@ -18,7 +18,7 @@ export default function Award({ id, award, c, onAward, navigate }: { id: string;
   const [rows, setRows] = useState<Record<string, Row>>(() => Object.fromEntries(award.lines.map(l => [rowKey(l.rfq_line_id, l.vendor_id), { quantity: l.quantity, reason: l.justification ?? l.tie_override_reason ?? "" }])));
   const [rationale, setRationale] = useState(award.rationale ?? "");
   const [problem, setProblem] = useState<Failure | null>(null), [busy, setBusy] = useState(false), [saved, setSaved] = useState(false);
-  const key = useRef<string | null>(null), locked = award.status !== "draft", path = { params: { path: { id } } };
+  const pending = useRef<{ fingerprint: string; key: string } | null>(null), locked = award.status !== "draft", path = { params: { path: { id } } };
   const setRow = (k: string, patch: Partial<Row>) => setRows(r => ({ ...r, [k]: { quantity: "", reason: "", ...r[k], ...patch } }));
   const lowest = () => setRows(Object.fromEntries(c.lines.filter(l => l.lowest).flatMap(l => l.cells.map(cell => [rowKey(l.rfq_line_id, cell.vendor_id), { quantity: cell.vendor_id === l.lowest!.vendor_id ? lowestQty(l.quantity, cell.quantity) : "", reason: "" }]))));
   const fail = (title: string, error: Problem | undefined, action: string) => setProblem({ title, lead: failure(error, action), problems: (error?.errors ?? []).map(e => problemOf(c, e)) });
@@ -35,12 +35,18 @@ export default function Award({ id, award, c, onAward, navigate }: { id: string;
   const run = async (submit: boolean) => {
     setBusy(true); setProblem(null); setSaved(false);
     try {
-      const draft = await save();
+      // A held key means a submit was sent with no answer: replay it unsaved while nothing changed (the draft may already be submitted).
+      const fingerprint = JSON.stringify({ lines: linesBody(c, rows), rationale: rationale.trim() });
+      const replay = submit && pending.current?.fingerprint === fingerprint;
+      const draft = replay ? award : await save();
       if (!draft || !submit) { setSaved(draft !== null); return; }
-      key.current ??= crypto.randomUUID();
-      const { data, error, response } = await apiClient.POST("/api/v1/sourcing/rfqs/{id}/award/submit", { ...path, headers: mutationHeaders(key.current) });
-      if (data) { key.current = null; onAward(data); return; }
+      if (!replay) pending.current = { fingerprint, key: crypto.randomUUID() };
+      const { data, error, response } = await apiClient.POST("/api/v1/sourcing/rfqs/{id}/award/submit", { ...path, headers: mutationHeaders(pending.current!.key) });
       const e = error as Problem | undefined;
+      // The first attempt may still be running: keep the key (kernel/errors/codes.py request_in_flight).
+      if (response?.status === 409 && e?.type?.endsWith("/request_in_flight")) { setProblem({ title: "The award is still being submitted", lead: "The first attempt is still being processed. Press Submit for Approval again in a moment. Your selections are kept.", problems: [] }); return; }
+      pending.current = null;
+      if (data) { onAward(data); return; }
       if (response?.status === 409 && e?.checks?.problem === "workflow_not_set_up") setProblem({ title: "No approval workflow", lead: NO_WORKFLOW, problems: [] });
       else if (response?.status === 409 && e?.checks?.problem === "over_scope") {
         const k = e.checks, over = nonZero(k.over_scope_by ?? "0") ? `Over scope by ${formatMoney(k.over_scope_by!, draft.currency)} ${draft.currency}` : `Over reserved funds by ${formatMoney(k.over_funds_by!, draft.currency)} ${draft.currency}`;

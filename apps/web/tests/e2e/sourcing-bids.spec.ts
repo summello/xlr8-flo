@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { comparison } from "./comparison-fixture";
+import { inFlight, refusal, scripted } from "./submit-retry-fixture";
 
 const rfqId = "11111111-1111-4111-8111-111111111111";
 const vendorId = "44444444-4444-4444-8444-444444444444";
@@ -293,3 +294,96 @@ for (const theme of ["light", "dark"] as const) {
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   });
 }
+
+const BID_SUBMIT = /\/bids\/[^/]+\/submit$/;
+const patches = (state: { posts: { method: string }[] }) => state.posts.filter(p => p.method === "PATCH").length;
+const submitBid = (page: Page) => page.getByRole("button", { name: "Submit Bid" }).click();
+
+async function openKeyed(page: Page, steps: Parameters<typeof scripted>[2], options: Options = {}) {
+  const state = await stubBids(page, options);
+  const keys = await scripted(page, BID_SUBMIT, steps);
+  await page.goto(`/sourcing/rfqs/${rfqId}`);
+  await page.getByRole("button", { name: "Record Bid" }).click();
+  await key(page, stamp(minute(-HOUR)));
+  return { state, keys };
+}
+
+test("retry after a lost submit response replays the same key without saving again", async ({ page }) => {
+  const { state, keys } = await openKeyed(page, ["abort"]);
+  await submitBid(page);
+  await expect(page.getByRole("alert").filter({ hasText: /Submitting the bid failed/ })).toBeVisible();
+  expect(patches(state)).toBe(1);
+  await submitBid(page);
+  await expect(page.getByText("Received. The figures stay sealed")).toBeVisible();
+  expect(patches(state)).toBe(1);
+  expect(keys).toHaveLength(2);
+  expect(keys[1]).toBe(keys[0]);
+});
+
+test("editing, a new evidence file, or a new late reason after a lost response is a new operation", async ({ page }) => {
+  const { state, keys } = await openKeyed(page, ["abort", "abort", "pass"]);
+  await submitBid(page);
+  await expect(page.getByRole("alert").filter({ hasText: /Submitting the bid/ })).toBeVisible();
+  await page.getByLabel("Freight (USD)").fill("3");
+  await submitBid(page);
+  await expect(page.getByRole("alert").filter({ hasText: /Submitting the bid/ })).toBeVisible();
+  expect(patches(state)).toBe(2);
+  expect(keys[1]).not.toBe(keys[0]);
+  await page.getByLabel("Evidence (the vendor's email or file)").setInputFiles({ name: "other.txt", mimeType: "text/plain", buffer: Buffer.from("other") });
+  await submitBid(page);
+  await expect(page.getByText("Received. The figures stay sealed")).toBeVisible();
+  expect(patches(state)).toBe(3);
+  expect(state.posts.filter(p => p.body === "file")).toHaveLength(2);
+  expect(keys[2]).not.toBe(keys[1]);
+});
+
+test("a changed late-acceptance reason after a lost response is a new operation", async ({ page }) => {
+  const late = stamp(minute(-HOUR));
+  const state = await stubBids(page, { lead: true, deadline: minute(-2 * HOUR) });
+  const keys = await scripted(page, BID_SUBMIT, ["pass", "abort", "abort", "pass"]);
+  await page.goto(`/sourcing/rfqs/${rfqId}`);
+  await page.getByRole("button", { name: "Record Bid" }).click();
+  await key(page, late);
+  await submitBid(page); // late: the stub asks for a reason
+  await page.getByLabel("Reason for Accepting a Late Bid").fill("Courier strike");
+  const accept = page.getByRole("button", { name: "Accept Late Bid and Save" });
+  await accept.click();
+  await expect(page.getByRole("alert").filter({ hasText: /Submitting the bid/ })).toBeVisible();
+  const saved = patches(state);
+  await accept.click(); // same reason: replay, no save
+  await expect(page.getByRole("alert").filter({ hasText: /Submitting the bid/ })).toBeVisible();
+  expect(patches(state)).toBe(saved);
+  expect(keys[2]).toBe(keys[1]);
+  await page.getByLabel("Reason for Accepting a Late Bid").fill("Courier strike, confirmed");
+  await accept.click();
+  await expect(page.locator("dd", { hasText: "Late, Accepted By Override" })).toBeVisible();
+  expect(patches(state)).toBe(saved + 1);
+  expect(keys[3]).not.toBe(keys[2]);
+});
+
+test("a definitive refusal drops the key; a request_in_flight conflict keeps it", async ({ page }) => {
+  const { state, keys } = await openKeyed(page, [refusal, inFlight]);
+  await submitBid(page);
+  await expect(page.getByRole("alert").filter({ hasText: /Refused\./ })).toBeVisible();
+  await submitBid(page); // refused for good: a new operation
+  await expect(page.getByText(/still being processed/)).toBeVisible();
+  expect(keys[1]).not.toBe(keys[0]);
+  expect(patches(state)).toBe(2);
+  await submitBid(page); // in flight: same key, no save
+  await expect(page.getByText("Received. The figures stay sealed")).toBeVisible();
+  expect(keys[2]).toBe(keys[1]);
+  expect(patches(state)).toBe(2);
+});
+
+test("a replacement evidence file with the same name and size is still a new operation", async ({ page }) => {
+  const { state, keys } = await openKeyed(page, ["abort"]);
+  await submitBid(page);
+  await expect(page.getByRole("alert").filter({ hasText: /Submitting the bid failed/ })).toBeVisible();
+  expect(patches(state)).toBe(1);
+  await page.getByLabel("Evidence (the vendor's email or file)").setInputFiles({ name: "vendor-email.txt", mimeType: "text/plain", buffer: Buffer.from("QUOTE") }); // "quote" before: same name, same size
+  await submitBid(page);
+  await expect(page.getByText("Received. The figures stay sealed")).toBeVisible();
+  expect(patches(state)).toBe(2);
+  expect(state.posts.filter(p => p.body === "file")).toHaveLength(2);
+  expect(keys[1]).not.toBe(keys[0]);
+});
