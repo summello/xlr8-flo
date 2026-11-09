@@ -645,7 +645,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E13-S28** Typed budget effect on a PO change, no hand-written client type | E13 | crud | S | PO-011 | ~~E13-S06~~, ~~E13-S18~~, ~~E13-S19~~ |
 | ⬜ | **E13-S29** ACC-008 evidence, a keyboard-only walkthrough of the project-to-PO flow | E13 | chore | M | ACC-008 | ~~E13-S27~~, E13-S31 |
 | ✅ | **E13-S30** Issue refuses to queue a PO email the sending domain cannot send | E13 | engine | M | EML-001, PO-012, UX-005 | ~~E13-S10~~, ~~E13-S21~~ |
-| ⬜ | **E13-S31** Start Evaluation from a closed RFQ, by keyboard | E13 | ui | S | ACC-008, SRC-004 | ~~E12-S03~~, ~~E12-S10~~, ~~E12-S11~~, ~~E12-S15~~ |
+| 🔨 | **E13-S31** Start Evaluation from a closed RFQ, by keyboard | E13 | ui | S | ACC-008, SRC-004 | ~~E12-S03~~, ~~E12-S10~~, ~~E12-S11~~, ~~E12-S15~~ |
 | ✅ | **E22-S01** Create Project with budget: form and Excel, sponsors, through the project approval workflow | E22 | engine | L | PROJ-003 | ~~E09-S17~~ |
 | ✅ | **E22-S02** Soft delete for every draft document | E22 | crud | M | DATA-002 | ~~E09-S15~~ |
 | ✅ | **E22-S03** One audit helper instead of twelve, behaviour-preserving | E22 | chore | M | AUD-001 | — |

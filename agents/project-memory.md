@@ -10,7 +10,7 @@ Loaded into every agent session. Updated by `flo done` (status) and by Opus at e
 | Milestone | **M3 — First sellable release** |
 | Stories | 198 / 261 done |
 | Branch | milestone/M3-sellable |
-| In flight | — |
+| In flight | E13-S31 |
 | Blocked | — |
 <!-- STATE:END -->
 

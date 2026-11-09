@@ -2485,7 +2485,7 @@ epics:
           - E12-S10
           - E12-S11
           - E12-S15
-        st: todo
+        st: in_progress
 
   - id: E22
     name: Budget governance follow-ups
