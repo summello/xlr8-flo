@@ -241,6 +241,7 @@ test("a definitive refusal drops the key; a request_in_flight conflict keeps it"
   await expect(page.getByText("The award was not submitted")).toBeVisible();
   await submit(page).click(); // refused for good: a new operation
   await expect(page.getByText("still being submitted")).toBeVisible();
+  await expect(page.getByText("Your selections are kept.").first()).toBeVisible();
   expect(keys[1]).not.toBe(keys[0]);
   expect(stub.puts).toHaveLength(2);
   await submit(page).click(); // in flight: same key, no save

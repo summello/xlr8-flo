@@ -374,3 +374,16 @@ test("a definitive refusal drops the key; a request_in_flight conflict keeps it"
   expect(keys[2]).toBe(keys[1]);
   expect(patches(state)).toBe(2);
 });
+
+test("a replacement evidence file with the same name and size is still a new operation", async ({ page }) => {
+  const { state, keys } = await openKeyed(page, ["abort"]);
+  await submitBid(page);
+  await expect(page.getByRole("alert").filter({ hasText: /Submitting the bid failed/ })).toBeVisible();
+  expect(patches(state)).toBe(1);
+  await page.getByLabel("Evidence (the vendor's email or file)").setInputFiles({ name: "vendor-email.txt", mimeType: "text/plain", buffer: Buffer.from("QUOTE") }); // "quote" before: same name, same size
+  await submitBid(page);
+  await expect(page.getByText("Received. The figures stay sealed")).toBeVisible();
+  expect(patches(state)).toBe(2);
+  expect(state.posts.filter(p => p.body === "file")).toHaveLength(2);
+  expect(keys[1]).not.toBe(keys[0]);
+});

@@ -54,7 +54,9 @@ function KeyingSheet({ rfq, invitee, bid, setBid, switchTo, opener, onClose, onC
   const stale = (name: string) => (keys.current[name] ??= crypto.randomUUID());
   // A submit sent with no answer keeps its key beside a fingerprint of everything it depends on (the RFQ editor's `submission` pattern).
   const pending = useRef<{ fingerprint: string; key: string } | null>(null);
-  const print = (evidence: string | null | undefined, accepting: boolean, withFile: boolean) => JSON.stringify([accepting, accepting ? reason.trim() : null, evidence ?? null, withFile && file ? [file.name, file.size, file.lastModified] : null, version, currency, date, time, freight, leadTime, validUntil, terms, warranty, exceptions, lines, answers]);
+  // fileRev counts every selection: two different files can share name, size and date, so the file itself is no fingerprint.
+  const fileRev = useRef(0);
+  const print = (evidence: string | null | undefined, accepting: boolean) => JSON.stringify([accepting, accepting ? reason.trim() : null, evidence ?? null, fileRev.current, version, currency, date, time, freight, leadTime, validUntil, terms, warranty, exceptions, lines, answers]);
   const lineError = (i: number) => errors[`lines/${rfq.lines[i]!.id}`];
 
   /** Everything the buyer typed, checked at the boundary. The server checks it again. */
@@ -125,11 +127,11 @@ function KeyingSheet({ rfq, invitee, bid, setBid, switchTo, opener, onClose, onC
     try {
       // Replay unsaved only when nothing the submit depends on changed since the save it followed (the draft may already be submitted).
       const held = pending.current;
-      const replay = !!held && !!full && held.fingerprint === print(full.evidence_attachment_id, accepting, true);
+      const replay = !!held && !!full && held.fingerprint === print(full.evidence_attachment_id, accepting);
       const saved = replay || !keying ? full : await save();
       if (!saved && keying) return;
       const target = saved ?? bid!;
-      if (!replay) pending.current = { fingerprint: print(isFull(target) ? target.evidence_attachment_id : undefined, accepting, false), key: crypto.randomUUID() };
+      if (!replay) pending.current = { fingerprint: print(isFull(target) ? target.evidence_attachment_id : undefined, accepting), key: crypto.randomUUID() };
       const { data, error, response } = await apiClient.POST("/api/v1/sourcing/rfqs/{id}/bids/{bid_id}/submit", { params: { path: { id: rfq.id, bid_id: target.id } }, headers: mutationHeaders(pending.current!.key, target.row_version), body: accepting ? { accept_late_reason: reason.trim() } : {} });
       const p = error as Problem | undefined;
       // The first attempt may still be running: keep the key (kernel/errors/codes.py request_in_flight).
@@ -187,7 +189,7 @@ function KeyingSheet({ rfq, invitee, bid, setBid, switchTo, opener, onClose, onC
               <input id="bid-time" value={time} onChange={e => setTime(e.target.value)} inputMode="numeric" placeholder="HH:MM" aria-invalid={!!errors.sent || undefined} aria-describedby={errors.sent ? "bid-sent-error" : undefined} />
               {errors.sent && <p id="bid-sent-error" className="field-error">{errors.sent}</p>}</div>
             <div className="req-field" data-wide data-invalid={errors.evidence ? "true" : undefined}><label className="t-label" htmlFor="bid-evidence">Evidence (the vendor's email or file)</label>
-              <input id="bid-evidence" type="file" onChange={e => setFile(e.target.files?.[0] ?? null)} aria-invalid={!!errors.evidence || undefined} aria-describedby={errors.evidence ? "bid-evidence-error" : undefined} />
+              <input id="bid-evidence" type="file" onChange={e => { fileRev.current += 1; setFile(e.target.files?.[0] ?? null); }} aria-invalid={!!errors.evidence || undefined} aria-describedby={errors.evidence ? "bid-evidence-error" : undefined} />
               {full?.evidence_attachment_id && !file && <span className="req-sub">Evidence is attached. Choose a file to replace it.</span>}
               {errors.evidence && <p id="bid-evidence-error" className="field-error">{errors.evidence}</p>}</div>
             <p className="req-sub">Keyed By Us: {full ? formatDateTime(full.keyed_at) : "set when you save"}</p>

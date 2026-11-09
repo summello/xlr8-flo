@@ -44,7 +44,7 @@ export default function Award({ id, award, c, onAward, navigate }: { id: string;
       const { data, error, response } = await apiClient.POST("/api/v1/sourcing/rfqs/{id}/award/submit", { ...path, headers: mutationHeaders(pending.current!.key) });
       const e = error as Problem | undefined;
       // The first attempt may still be running: keep the key (kernel/errors/codes.py request_in_flight).
-      if (response?.status === 409 && e?.type?.endsWith("/request_in_flight")) { setProblem({ title: "The award is still being submitted", lead: "The first attempt is still being processed. Press Submit for Approval again in a moment.", problems: [] }); return; }
+      if (response?.status === 409 && e?.type?.endsWith("/request_in_flight")) { setProblem({ title: "The award is still being submitted", lead: "The first attempt is still being processed. Press Submit for Approval again in a moment. Your selections are kept.", problems: [] }); return; }
       pending.current = null;
       if (data) { onAward(data); return; }
       if (response?.status === 409 && e?.checks?.problem === "workflow_not_set_up") setProblem({ title: "No approval workflow", lead: NO_WORKFLOW, problems: [] });
