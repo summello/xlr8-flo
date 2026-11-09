@@ -2813,11 +2813,14 @@ def cmd_ci_watch(argv):
 
     # a cancelled run (superseded by a later push) says nothing: chore pushes cancelled every
     # milestone run on 8 Nov, so it never read green and E13-S21's stale marker came back each tick
-    latest = {m["branch"]: [r for r in gh_runs(m["branch"])
-                            if r.get("status") == "completed" and r.get("conclusion") != "cancelled"][:1]
-              for m in rm.get("milestones", [])}
-    green = {b: runs[0]["headSha"] for b, runs in latest.items()
-             if runs and runs[0].get("conclusion") == "success"}
+    done_runs = {m["branch"]: [r for r in gh_runs(m["branch"])
+                               if r.get("status") == "completed" and r.get("conclusion") != "cancelled"]
+                 for m in rm.get("milestones", [])}
+    latest = {b: runs[:1] for b, runs in done_runs.items()}
+    # any green milestone run holding the squash supersedes a story's red: a later unrelated
+    # red (an e2e flake, 9 Nov) re-marked E13-S21 on every tick when only the latest counted
+    green = {b: [r["headSha"] for r in runs if r.get("conclusion") == "success"]
+             for b, runs in done_runs.items()}
     for _, s in stories(rm):
         task = worktree_path(s["id"]) / "task.json"
         if not task.exists():
@@ -2831,7 +2834,7 @@ def cmd_ci_watch(argv):
         # squash: E22-S12's branch failed on a test fixed on the milestone (22 Oct), and the
         # marker resumed its author for a fix on every tick.
         mb = pkt.get("milestone_branch")
-        superseded = s["st"] == "done" and mb in green and merged_in(s["id"], green[mb])
+        superseded = s["st"] == "done" and any(merged_in(s["id"], g) for g in green.get(mb, []))
         if run.get("conclusion") == "success" or superseded:
             (scratch / f"{s['id']}.ci-red").unlink(missing_ok=True)
             if s["st"] == "done":

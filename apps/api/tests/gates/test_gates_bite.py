@@ -1518,6 +1518,9 @@ def test_ci_watch_marks_red_once_and_reaps_green_merged_stories(
     assert s04.exists()  # the green milestone head does not hold S04's squash yet
 
     holds.add(("E99-S04", "m-fix"))
+    # a later unrelated red on the milestone head (an e2e flake, 9 Nov) must not hide the green
+    # run that holds S04's squash: E13-S21 was re-marked on every tick when only the head counted
+    runs["milestone/M9"] = [run("m-flake", "failure"), run("m-fix", "success")]
     flo.cmd_ci_watch([])
     # S04's own run stays red, but a green milestone holding its squash supersedes it (E22-S12,
     # 22 Oct: the marker resumed its author for a fix on every tick).
