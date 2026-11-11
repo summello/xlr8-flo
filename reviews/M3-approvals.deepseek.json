@@ -1,24 +1,7 @@
 {
   "story": "M3-approvals",
   "reviewer": "deepseek",
-  "verdict": "changes_requested",
+  "verdict": "approve",
   "ran_tests": false,
-  "findings": [
-    {
-      "severity": "major",
-      "file": "apps/api/src/flo/modules/approvals/engine.py",
-      "line": 862,
-      "requirement": "E22-S07",
-      "problem": "get_instance resolves the requester with `requester = _people(repo, [rid])[rid]`, an unguarded subscript. `_people` filters on `identity_membership` (`AND EXISTS (SELECT 1 FROM identity_membership m WHERE m.org_id=%(org_id)s AND m.identity_id=i.id)`), so a requester who has since left the organization produces an empty mapping and `[rid]` raises KeyError, so every read of that document's approval (inbox, decision panel, instance history all route through get_instance/instances_for) 500s. In the same file `notify_outcome` (line 448) looks up the same requester with `emails_by_id(...).get(requester_id)` and degrades to an absent recipient; and the name-plumbing in this same diff adds `emails.get(x, \"(removed user)\")` fallbacks in decisions.py, delegation.py, explain.py, and inbox.py. Only the requester path was left unguarded.",
-      "fix": "Resolve the requester the way the sibling paths do: use a `.get(...)` with a `\"(removed user)\"` / None fallback (e.g. reuse `emails_by_id`/`names_by_id`, or guard `_people`), so a removed requester renders an attribution fallback instead of raising."
-    },
-    {
-      "severity": "minor",
-      "file": "apps/api/src/flo/modules/approvals/engine.py",
-      "line": 340,
-      "requirement": "E22-S04",
-      "problem": "Two membership notions coexist under different helpers. `eligible_approvers` builds `EligibleSet.members` from `resolver.holders(...)` (role-grant/`user_role` based) and its exclusion filter joins `user_role`, but `_step` and `get_instance` then map those same ids through `_people`, which filters on the separate `identity_membership` table. `ordered = sorted(people[m.user_id] for m in eligible.members)` (line 340, mirrored at line 347) is an unguarded subscript: any permission holder lacking an `identity_membership` row falls out of `people` and raises KeyError. This is the \"duplicated helper\" drift the milestone asks reviewers to catch — `_people` is not the same membership predicate as the rest of the approval path.",
-      "fix": "Make the live-membership lookup one helper with one predicate (either resolve names/emails by id without the membership filter, as `emails_by_id`/`names_by_id` already do, or key `_people` off the same source `eligible_approvers`-uses), and let the mapping degrade gracefully instead of subscripting."
-    }
-  ]
+  "findings": []
 }

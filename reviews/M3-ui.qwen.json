@@ -1,24 +1,7 @@
 {
   "story": "M3-ui",
   "reviewer": "qwen",
-  "verdict": "changes_requested",
+  "verdict": "approve",
   "ran_tests": false,
-  "findings": [
-    {
-      "severity": "major",
-      "file": "apps/web/src/components/sourcing/comparison/VendorSheet.tsx",
-      "line": 52,
-      "requirement": "SRC-009",
-      "problem": "The vendor sheet's line table renders the money value as the raw server decimal string: <td className=\"numeric\">{cell.unit_price}</td> (and raw {cell.quantity}). No digit grouping, no fixed fraction digits, and no negative treatment (parentheses/icon/colour) — the value is whatever _s() produced on the server. Its sibling view on the same page (Detail.tsx line 23, By Line) renders the same cell's unit cost through the shared <Money> component, so one page shows two money formats. Every other money display in the new screens (PO editor/changes, vendor copy, comparison matrix, bids, award) uses Money or formatMoney.",
-      "fix": "Render the cell through the shared component with the vendor's currency: <Money value={cell.unit_price} currency={v.currency} zero=\"value\" /> (the column header already names v.currency), and group the quantity with formatQuantity as the LinePicker/BidSheet do."
-    },
-    {
-      "severity": "minor",
-      "file": "apps/web/src/routes/sourcing/rfqs/comparison.tsx",
-      "line": 60,
-      "requirement": "UX-004",
-      "problem": "When the RFQ load fails (rfq.error set, comparison.error not), failed === rfq.error and the alert renders the same message twice: <p>{...failed}</p> followed by <p className=\"req-sub\">{failed}</p>. A screen reader reads the duplicate out of role=alert. The sibling error blocks (purchase-orders/issue.tsx, detail.tsx) render the message once.",
-      "fix": "Show the custom sentence only on the comparison-error branch and drop the second <p> when it would repeat the first, e.g. {comparison.error ? <p className=\"req-sub\">{failed}</p> : null}."
-    }
-  ]
+  "findings": []
 }

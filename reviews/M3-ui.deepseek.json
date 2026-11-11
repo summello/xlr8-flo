@@ -1,24 +1,16 @@
 {
   "story": "M3-ui",
   "reviewer": "deepseek",
-  "verdict": "changes_requested",
+  "verdict": "approve",
   "ran_tests": false,
   "findings": [
     {
       "severity": "minor",
-      "file": "apps/web/src/components/purchasing/create/AwardedLines.tsx",
-      "line": 36,
-      "requirement": "E11-S11",
-      "problem": "The 'one web component' rule for vendor eligibility is bypassed. The shared vendors/Eligibility component renders not-eligible as a Signal with tone \"danger\" and reasons as \"first reason and N more\". The PO-create path re-implements it inline as `Signal tone=\"warning\"` with `vendor.reasons.join(\"; \")`, so the same state ships with two tones (amber here, red elsewhere) and two reason formats. vendors/editor/InvitedVendorsCard.tsx:27 does the same a third way: plain secondary text with no icon or tone at all for an invited (not-eligible) vendor, while its own Picker path (line 87) uses the shared component. Eligibility is decided by the server in all three, so the drift is display-only, but it defeats the single-component story's purpose and muddies the status vocabulary E11-S09 aligns.",
-      "fix": "Give the shared Eligibility component a variant that covers the invited/inline row and the award-lines header, and route both AwardedLines.tsx and InvitedVendorsCard.tsx through it so tone and reason phrasing are single-sourced."
-    },
-    {
-      "severity": "minor",
-      "file": "apps/web/src/components/sourcing/bids/BidSheet.tsx",
-      "line": 196,
-      "requirement": "E12-S14",
-      "problem": "Money is rendered two ways across the milestone: the shared ui/Money component applies the MASTER money rule (parenthesised negatives, a sign icon, and a `data-negative` colour via tokens), but BidSheet renders its line totals and totals inline as `formatMoney(x, currency, navigator.language) + ' ' + currency` (lines 196, 237, 247, 258) with no `<Money>` import, no sign icon and no negative colour, and the currency code appended outside the `.project-currency` span. It also passes `navigator.language` where the shared component uses the en-US default plus `separators()`, so grouping can diverge from the rest of the app. Bid line amounts are non-negative today, so this is latent rather than an active failure.",
-      "fix": "Route the bid sheet's monetary cells through the shared `<Money>` component (or a single formatting helper that also applies sign/colour), and drop the ad-hoc `navigator.language` locale in favour of the app's shared formatter."
+      "file": "apps/web/src/styles/vendors.css",
+      "line": 40,
+      "requirement": "UI tokens only (AGENTS.md §3.4)",
+      "problem": ".mask sets a literal letter-spacing: 0.04em instead of a tracking token. Every other letter-spacing in the stylesheets uses --tracking-* (a tracking token for the mono face already exists and is used elsewhere, e.g. base.css/requisitions.css). This is the only hardcoded spacing/letter-spacing value in the whole M3 web diff.",
+      "fix": "Replace `letter-spacing: 0.04em` with the existing mono tracking token (var(--tracking-label) or a dedicated mono tracking token already defined in tokens.css), so the mask face stays token-driven."
     }
   ]
 }
