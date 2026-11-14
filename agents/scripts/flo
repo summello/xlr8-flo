@@ -2834,7 +2834,11 @@ def cmd_ci_watch(argv):
         # squash: E22-S12's branch failed on a test fixed on the milestone (22 Oct), and the
         # marker resumed its author for a fix on every tick.
         mb = pkt.get("milestone_branch")
-        superseded = s["st"] == "done" and any(merged_in(s["id"], g) for g in green.get(mb, []))
+        # no milestone runs means gh failed (a wake from sleep, 14 Nov), not red: unknown must not
+        # re-mark a merged story from its own old run, as E12-S25 and E13-S21 were
+        if s["st"] == "done" and not done_runs.get(mb):
+            continue
+        superseded =s["st"] == "done" and any(merged_in(s["id"], g) for g in green.get(mb, []))
         if run.get("conclusion") == "success" or superseded:
             (scratch / f"{s['id']}.ci-red").unlink(missing_ok=True)
             if s["st"] == "done":

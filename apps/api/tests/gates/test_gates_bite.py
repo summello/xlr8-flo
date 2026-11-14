@@ -1526,6 +1526,22 @@ def test_ci_watch_marks_red_once_and_reaps_green_merged_stories(
     # 22 Oct: the marker resumed its author for a fix on every tick).
     assert not s04.exists() and reaped == ["E99-S01", "E99-S04"]
 
+    # a refused reap keeps the worktree; then gh fails on the milestone list (a wake from sleep,
+    # 14 Nov) and returns nothing. Unknown is not red: S04 must not be re-marked from its old run.
+    (tmp_path / "E99-S04").mkdir()
+    (tmp_path / "E99-S04" / "task.json").write_text(
+        json.dumps(
+            {
+                "branch": "story/E99-S04",
+                "submitted_sha": "sha-E99-S04",
+                "milestone_branch": "milestone/M9",
+            }
+        )
+    )
+    runs["milestone/M9"] = []
+    flo.cmd_ci_watch([])
+    assert not s04.exists()
+
 
 def _git(repo: Path, *args: str) -> str:
     return subprocess.run(
