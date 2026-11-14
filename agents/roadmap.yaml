@@ -2049,6 +2049,25 @@ epics:
           - E12-S15
           - E12-S16
         st: done
+      - id: E12-S26
+        t: 'Release audit fixes: award reads behind the declaration, lowest-price flag at
+          submit, PO read figures, webhook signature'
+        k: engine
+        s: M
+        tags:
+          - security
+        reqs:
+          - SRC-011
+          - SRC-014
+          - PO-013
+          - SEC-011
+        dep:
+          - E12-S07
+          - E12-S16
+          - E13-S06
+          - E13-S10
+          - E13-S12
+        st: todo
 
   - id: E13
     name: Purchase orders

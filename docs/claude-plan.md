@@ -562,7 +562,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E10-S12** Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11) | E10 | ui | L | APR-011, APR-021, ACC-007 | ~~E10-S11~~, ~~E10-S05~~ |
 | ✅ | **E10-S13** Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes | E10 | engine | M | APR-003, PROJ-002, VEN-005, BUD-007 | ~~E10-S07~~ |
 
-#### M3 — First sellable release · 91/91 done
+#### M3 — First sellable release · 91/92 done
 
 > Vendors, RFQs, awards and purchase orders by email. Closes the money loop end to end.
 
@@ -615,6 +615,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E12-S23** No zero-value lines: bids refuse a quoted price of 0 or one that rounds to 0, a bid must quote a line, and the zero-price special cases go | E12 | engine | M | SRC-006, FIN-009 | ~~E13-S02~~ |
 | ✅ | **E12-S24** Lines with no priced quote: one derived rule across documents, auto-cancel at award approval, a small notice | E12 | engine | L | SRC-009, SRC-018 | ~~E12-S23~~, ~~E12-S08~~, ~~E13-S07~~ |
 | ✅ | **E12-S25** Retrying a submit replays it instead of re-saving the draft (bids, scores, award) | E12 | ui | M | ACC-002, UX-005 | ~~E12-S14~~, ~~E12-S15~~, ~~E12-S16~~ |
+| ⬜ | **E12-S26** Release audit fixes: award reads behind the declaration, lowest-price flag at submit, PO read figures, webhook signature | E12 | engine | M | SRC-011, SRC-014, PO-013, SEC-011 | ~~E12-S07~~, ~~E12-S16~~, ~~E13-S06~~, ~~E13-S10~~, ~~E13-S12~~ |
 | ✅ | **E13-S01** PO from awarded requisition lines or authorized project items, scoped numbering | E13 | crud | L | PO-001, PO-002, PO-006, SEQ-001 | ~~E12-S08~~, ~~E12-S09~~ |
 | ✅ | **E13-S02** Tax and freight per BU/OU policy, separately visible on line and document | E13 | ledger | M | FIN-008, FIN-009, PO-016 | ~~E13-S01~~ |
 | ✅ | **E13-S03** PO lifecycle state machine | E13 | engine | M | PO-007, WF-002 | ~~E13-S01~~, ~~E11-S09~~ |
