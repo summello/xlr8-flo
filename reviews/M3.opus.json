@@ -1,0 +1,80 @@
+{
+  "story": "M3",
+  "reviewer": "opus",
+  "round": 2,
+  "verdict": "approve",
+  "ran_tests": false,
+  "findings": [
+    {
+      "severity": "major",
+      "category": "correctness",
+      "file": "docs/ops/acc-008-walkthrough.md",
+      "line": 1,
+      "requirement": "ACC-008",
+      "problem": "Round 1: the ACC-008 exit criterion had no evidence; keyboard paths were proven one stubbed screen at a time and nothing drove the chain.",
+      "fix": "Resolved by E13-S29 through the operator-recorded route round 1 allowed. The evidence path is sound and complete: (a) walkthrough_seed.py:79-94 refuses any non-localhost DATABASE_URL, any EMAIL_PROVIDER other than smtp and any STORAGE_PROVIDER other than local, before Settings or a connection (tests/test_walkthrough_seed.py:42); (b) tests/test_walkthrough_seed.py:113 drives the seeded tenant through the real routes, person by person, from project to an issued PO with one po_transmission row to vendor@example.com, so the five people's grants and the five workflows are proven to carry the chain before a human starts; (c) the checklist covers every hand-off ACC-008 names (project, approval, requisition, RFQ, bid, close, Start Evaluation via E13-S31, comparison, award, approval, PO, issue, transmission log, Mailpit), fixes every entered value per screen, states focus on arrival and pointer-off rules, and every control label it names resolves in apps/web/src (grep: Create project, Confirm transition, Start RFQ, Create RFQ Draft, Invite Selected, Publish RFQ, Record Bid, Submit Bid, Start Evaluation, Open Comparison, Start Award, View Award, Create PO, Create Draft POs, Sent to Vendor, Close Purchase Order, Close Order); (d) vite.config.ts walkthrough mode keeps ORIGIN_SHARED_SECRET in the dev proxy, never in the bundle. Not covered and acceptable: no axe per landing page (each screen's own spec runs axe); the held-email path (smtp opens the gate; EML-001 is covered by E13-S30's tests). ACC-008 is met only when the operator attaches the section 4 record to PR #22 with steps 1 to 13 passing; the PR must not leave draft before that. The automated e2e-live spec remains a follow-up (section 5).",
+      "status": "resolved"
+    },
+    {
+      "severity": "major",
+      "category": "ui",
+      "file": "apps/api/src/flo/modules/purchasing/issue.py",
+      "line": 86,
+      "requirement": "EML-001",
+      "problem": "Round 1: an unverified domain dead-lettered each PO email issued before verification, the Issue dialog never read po_email_allowed, and the buyer was told the vendor would be emailed.",
+      "fix": "Resolved by E13-S30. issue.py:86-91 refuses a plain Issue with 409 po_email_held inside the issue transaction before any ledger write, so nothing commits and no outbox row is queued; issue.py:195-205 issues with send_email=false, queues nothing and audits purchase_order.issue_without_email. GET /vendor-copy now carries po_email_allowed (transmission.py:481-489); IssueDialog.tsx reads it, says 'No email goes to the vendor', relabels the action Issue Without Email, focuses the held note on a late 409 and rekeys; the result page (routes/purchase-orders/issue.tsx) shows 'Issued without email' with a Download PDF link instead of 'Email queued'. The issue path can no longer produce a gate-dead row. Residual on the change-order path recorded separately below.",
+      "status": "resolved"
+    },
+    {
+      "severity": "minor",
+      "category": "correctness",
+      "file": "apps/api/src/flo/modules/purchasing/changes.py",
+      "line": 688,
+      "requirement": "EML-001",
+      "problem": "Residual of round-1 finding 2, outside E13-S30's file list: applying an approved change order calls enqueue_transmission for the new revision with no po_email_allowed check, so while the sending domain is unverified the revision's vendor email is queued and then dead-lettered by dispatcher.py:114-115, and the approver is not told. Not a release blocker: email_domain_status is platform-global, so it applies only before the operator verifies the one sending domain, which the EML-001 exit criterion requires anyway; the dead row carries the fixed reason and Resend works once the domain passes (attempt rows exist).",
+      "fix": "Follow-up story: read po_email_allowed in the change apply transaction and either skip the enqueue and audit purchase_order.revision_without_email (matching E13-S30) or refuse the apply with po_email_held; surface it on the change approval and the PO detail.",
+      "status": "open"
+    },
+    {
+      "severity": "minor",
+      "category": "quality",
+      "file": "apps/web/src/features/auth/api.ts",
+      "line": 32,
+      "requirement": "ACC-002",
+      "problem": "Unchanged: writeHeaders() still mints a fresh Idempotency-Key per call (line 34), and routes/purchase-orders/edit.tsx:83 (submit), detail.tsx:50 (open change), changes.tsx:123/148 and components/vendors/DocumentSheet.tsx:41 (mutationHeaders(crypto.randomUUID())) still send a new key per click. Server state guards still prevent double posts.",
+      "fix": "As round 1; fold into E12-S25's follow-up. Not a release blocker.",
+      "status": "open"
+    },
+    {
+      "severity": "minor",
+      "category": "quality",
+      "file": "apps/api/src/flo/modules/purchasing/schemas.py",
+      "line": 19,
+      "requirement": "FIN-001",
+      "problem": "Unchanged: the NUMERIC(18,4) string regex is still copied at purchasing/schemas.py:19 and :27, sourcing/schemas.py:48 and :395, sourcing/awards.py:62, requisitions/schemas.py:214 (plus five in approvals), and sourcing/schemas.py:599-606 still returns award-line money as Decimal while purchasing returns str. kernel/money.py has no shared parse_amount/Amount.",
+      "fix": "As round 1. Follow-up, not a release blocker.",
+      "status": "open"
+    },
+    {
+      "severity": "minor",
+      "category": "quality",
+      "file": "apps/api/src/flo/modules/sourcing/awards.py",
+      "line": 948,
+      "requirement": "FIN-011",
+      "problem": "Unchanged: supersede still locks project_balance then the award (awards.py:948, defended by the SUPERSEDE_GUARDS probe at :959/:975), while purchasing/issue.py:3 still locks the award then balances. No single lock order is recorded.",
+      "fix": "As round 1. Follow-up, not a release blocker; the probe and test_supersede_probes_for_a_po_before_it_waits_on_any_lock hold today.",
+      "status": "open"
+    },
+    {
+      "severity": "minor",
+      "category": "quality",
+      "file": "apps/api/src/flo/api/internal.py",
+      "line": 698,
+      "requirement": "EML-001",
+      "problem": "Unchanged: the router still INSERTs into email_domain_status with raw SQL while kernel/email.py:39 owns the read; there is no record_domain_check in kernel/email.py.",
+      "fix": "As round 1. Follow-up, not a release blocker.",
+      "status": "open"
+    }
+  ],
+  "notes": "Static re-check of the six round-1 findings at d80501a4 (E13-S29, E13-S30, E13-S31 and fixes 32dc6f6e, 621b85ca, b3b717ef merged). No tests run, no plants. The three fix commits address release-review findings (vendor sheet money, approval read after a requester leaves, bid-by-id permission), none of the six. Both majors resolved; the four minors stay open as follow-ups and do not block M3; one new minor is the change-order residual of finding 2. Condition on the PR leaving draft: the operator's ACC-008 result record on PR #22 with every step passing, and the EML-001 production domain verification, both operator steps."
+}

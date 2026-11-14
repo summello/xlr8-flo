@@ -71,6 +71,7 @@ def test_quota_endpoint_reports_all_four_required_metrics_with_current_percentag
         "cloud_run_requests": 500_000,
         "r2_storage": 1_000_000_000,
         "artifact_registry": 100_000_000,
+        "email_sends": 25,
     }
 
     response = _get_quota(_collectors(values))
@@ -82,6 +83,7 @@ def test_quota_endpoint_reports_all_four_required_metrics_with_current_percentag
         "cloud_run_requests",
         "r2_storage",
         "artifact_registry",
+        "email_sends",
     }
     assert {
         name: (metric["current"], metric["percentage"])
@@ -91,6 +93,7 @@ def test_quota_endpoint_reports_all_four_required_metrics_with_current_percentag
         "cloud_run_requests": (500_000, 25.0),
         "r2_storage": (1_000_000_000, 10.0),
         "artifact_registry": (100_000_000, 20.0),
+        "email_sends": (25, 25.0),
     }
     assert document["alerts"] == []
 
@@ -161,7 +164,7 @@ def test_quota_authentication_rejects_before_opening_a_database_connection(
     assert missing.status_code == 404
     assert wrong.status_code == 404
     assert correct.status_code == 200
-    assert database_connections == 1
+    assert database_connections == 2  # the Neon size and the email count
 
 
 @pytest.mark.parametrize(
@@ -185,6 +188,12 @@ def test_quota_authentication_rejects_before_opening_a_database_connection(
             80,
             "Prune to 3 images (automate first)",
             "~$0",
+        ),
+        (
+            "email_sends",
+            80,
+            "Transactional sends continue and digests wait; move to Resend's paid tier",
+            "$20/mo",
         ),
     ),
 )

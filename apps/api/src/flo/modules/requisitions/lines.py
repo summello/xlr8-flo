@@ -15,9 +15,11 @@ from flo.modules.requisitions.schemas import (
     LinesRead,
     LinesReplace,
     LineWriteResult,
+    UnpricedCancellation,
     invalid,
 )
 from flo.modules.requisitions.service import RequisitionService
+from flo.modules.requisitions.sourcing import unpriced_cancellations
 
 FIELDS = (
     "id",
@@ -67,6 +69,12 @@ class LineService(RequisitionService):
                 - Decimal(cast(str, values["cancelled_qty"]))
             )
             result.append(LineRead.model_validate(values))
+        for line_id, rfq_id, number, qty in unpriced_cancellations(
+            self.connection, self.scope, [r.id for r in result if Decimal(r.cancelled_qty) > 0]
+        ):
+            next(r for r in result if r.id == line_id).unpriced_cancellations.append(
+                UnpricedCancellation(rfq_id=rfq_id, rfq_number=number, quantity=format(qty, "f"))
+            )
         return result
 
     def list_lines(self, id: UUID) -> LinesRead:

@@ -1,0 +1,460 @@
+"""Purchase order contracts. Quantities and amounts are decimal strings (E13-S01)."""
+
+import re
+from datetime import date, datetime
+from decimal import Decimal
+from typing import Any, Literal
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+type PoTab = Literal["all", "draft", "awaiting", "ready", "issued", "attention"]
+type PoStatus = Literal[
+    "draft", "approval_pending", "approved", "issued", "partially_delivered", "delivered",
+    "accepted", "closed", "cancelled", "superseded", "deleted",
+]  # fmt: skip
+
+
+def _qty(value: object) -> object:
+    if not isinstance(value, str) or not re.fullmatch(r"[0-9]{1,14}(?:\.[0-9]{1,4})?", value):
+        raise ValueError("Enter a quantity as a decimal string with at most 4 decimals.")
+    if Decimal(value) <= 0:
+        raise ValueError("Enter a quantity above zero.")
+    return value
+
+
+def _amount(value: object) -> object:
+    if not isinstance(value, str) or not re.fullmatch(r"[0-9]{1,14}(?:\.[0-9]{1,4})?", value):
+        raise ValueError("Enter an amount of zero or more with at most 4 decimals.")
+    return value
+
+
+class PoLineIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    rfq_line_id: UUID
+    quantity: str
+
+    _quantity = field_validator("quantity", mode="before", json_schema_input_type=str)(
+        lambda cls, v: _qty(v)
+    )
+
+
+class PoCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    award_id: UUID
+    vendor_id: UUID
+    lines: list[PoLineIn] = Field(min_length=1, max_length=500)
+    override_reason: str | None = Field(default=None, max_length=500)
+
+    @field_validator("override_reason", mode="before")
+    @classmethod
+    def _strip(cls, v: object) -> object:
+        return (v.strip() or None) if isinstance(v, str) else v
+
+
+class PoLinePatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    line_no: int = Field(ge=1)
+    quantity: str | None = None
+    tax: str | None = None
+    freight: str | None = None  # `line` freight mode only
+
+    _quantity = field_validator("quantity", mode="before", json_schema_input_type=str)(
+        lambda cls, v: v if v is None else _qty(v)
+    )
+    _amounts = field_validator("tax", "freight", mode="before", json_schema_input_type=str)(
+        lambda cls, v: v if v is None else _amount(v)
+    )
+
+
+class PoPatch(BaseModel):
+    """A field left out is unchanged; `terms` and `needed_by` may be set to null. A given
+    `ship_to_address_id` must be an active Ship To (null is refused: 422 `ship_to_invalid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+    terms: str | None = Field(default=None, max_length=4000)
+    needed_by: date | None = None
+    ship_to_address_id: UUID | None = None
+    lines: list[PoLinePatch] | None = Field(default=None, max_length=500)
+    freight_mode: Literal["line", "document"] | None = None
+    document_freight: str | None = None  # `document` freight mode only
+
+    _document_freight = field_validator(
+        "document_freight", mode="before", json_schema_input_type=str
+    )(lambda cls, v: v if v is None else _amount(v))
+
+
+class PurchaseOrderTransitionCreate(BaseModel):
+    """M3 accepts `close` only; E13-S04 and S07 widen `action`."""
+
+    model_config = ConfigDict(extra="forbid")
+    action: Literal["close"]
+    reason: str = Field(min_length=1, max_length=500)
+
+
+class PoLineRead(BaseModel):
+    line_no: int
+    rfq_line_id: UUID
+    requisition_line_id: UUID
+    description: str
+    uom_code: str
+    quantity: str
+    unit_price: str
+    project_id: UUID
+    department_code: str | None
+    ledger_account_code: str | None
+    price: str
+    tax: str
+    freight: str
+    line_total: str
+    budget_amount: str
+    budget_amount_project: str
+    value: str  # the landed line, as `line_total`
+    value_converted: str
+
+
+class PoRead(BaseModel):
+    id: UUID
+    number: str
+    unit_id: UUID
+    vendor_id: UUID
+    vendor_snapshot: dict[str, Any]
+    requisition_id: UUID
+    award_id: UUID
+    currency: str
+    converted_currency: str
+    rate: dict[str, Any]
+    bill_to: dict[str, Any]
+    ship_to_address_id: UUID | None
+    recipients: list[dict[str, Any]]
+    requester_id: UUID
+    terms: str | None
+    needed_by: date | None
+    status: PoStatus
+    version: int
+    revision: int  # 0 = the original issue; each applied change order adds one
+    supersedes_id: UUID | None
+    created_at: datetime
+    freight_mode: Literal["line", "document"]
+    document_freight: str | None
+    lines: list[PoLineRead]
+    price_total: str
+    tax_total: str
+    freight_total: str
+    total: str
+    budget_total: str
+    budget_total_project: str
+    total_converted: str
+    released_amount: str | None = None  # released commitment over the PO's life, never actuals
+    released_currency: str | None = None
+    # the unit's budget treatment while the PO is live; None once issued (amounts were frozen)
+    tax_consumes_budget: bool | None = None
+    freight_consumes_budget: bool | None = None
+    # the GET route fills these in for the caller; every other route returns the defaults
+    vendor_status: str | None = None  # the vendor's status now; None without `vendor.view`
+    actions: list[str] = []  # lifecycle and command names the caller may run on this PO now
+
+
+class PoCancelRead(PoRead):
+    notice: str | None = None
+
+
+class PoProjectRef(BaseModel):
+    id: UUID
+    code: str
+    name: str
+
+
+class PoCancelPreviewRead(BaseModel):
+    status: PoStatus
+    released: str  # the open commitment cancel would release; "0.0000" before issue
+    released_currency: str | None  # None when released is 0
+    rereserved: bool  # issued, a live reservation, and released > 0
+    requisition_number: str
+    reservation_project: PoProjectRef | None  # the live reservation's project when rereserved
+    main_project: PoProjectRef  # where "Also cancel" returns the money
+
+
+type SentResult = Literal[
+    "queued", "sent", "failed", "address_suppressed", "delivered", "bounced", "complained"
+]
+
+
+class PoSentRead(BaseModel):
+    result: SentResult  # the worst row of the latest attempt
+    result_at: datetime | None
+
+
+class PoListRow(BaseModel):
+    id: UUID
+    number: str
+    unit_id: UUID
+    vendor_id: UUID
+    vendor_name: str
+    requisition_id: UUID
+    currency: str
+    total: str
+    status: PoStatus
+    created_at: datetime
+    revision: int
+    projects: list[PoProjectRef]  # at most 3, by code
+    project_count: int
+    sent: PoSentRead | None
+
+
+class PoVersionRead(BaseModel):
+    revision: int
+    po_id: UUID
+    status: PoStatus
+    total: str
+    currency: str
+    issued_at: datetime | None
+    is_current: bool
+
+
+class PoHistoryEntry(BaseModel):
+    occurred_at: datetime
+    actor: str | None
+    action: str
+    detail: str | None
+
+
+class PoHistoryRead(BaseModel):
+    entries: list[PoHistoryEntry]  # oldest first
+    truncated: bool
+
+
+class PoBudgetProjectRead(BaseModel):
+    project_id: UUID
+    project_code: str
+    project_name: str
+    currency: str
+    committed: str  # other purchase orders' commitments; this PO's share is never in it
+    this_po: str
+    this_po_state: Literal["reserved", "committed", "released"]
+    available_after_issue: str  # the project's `available` now: the reservation is already out
+    actual: str
+
+
+class PoBudgetSummaryRead(BaseModel):
+    projects: list[PoBudgetProjectRead]
+
+
+class PoPage(BaseModel):
+    rows: list[PoListRow]
+    counts: dict[str, int]
+    next_cursor: str | None
+
+
+class AwardedLineRead(BaseModel):
+    rfq_line_id: UUID
+    line_no: int
+    vendor_id: UUID
+    requisition_id: UUID
+    requisition_line_id: UUID
+    requisition_number: str
+    description: str
+    uom_code: str
+    currency: str
+    unit_price: str
+    awarded_qty: str
+    ordered_qty: str
+    open_qty: str
+    ordered_value: str
+
+
+class AwardedVendorRead(BaseModel):
+    vendor_id: UUID
+    vendor_name: str
+    eligible: bool
+    reasons: list[str]
+
+
+class AwardedLinesRead(BaseModel):
+    award_id: UUID
+    award_number: str
+    award_status: Literal["draft", "approval_pending", "approved", "superseded", "cancelled"]
+    rfq_id: UUID
+    lines: list[AwardedLineRead]
+    vendors: list[AwardedVendorRead]
+    can_override: bool = False
+
+
+type ChangeStatus = Literal["draft", "approval_pending", "approved", "rejected", "withdrawn"]
+
+
+class PoIssue(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    send_email: bool = True
+
+
+class PoChangeCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reason: str | None = Field(default=None, max_length=500)
+
+
+class PoChangeLineEdit(BaseModel):
+    """An existing line: `remove`, or a lower or higher `quantity`, a lower `unit_price`, `tax`,
+    `freight` (`line` mode only). A project, department or ledger account is accepted only to be
+    refused (422 `use_transfer`)."""
+
+    model_config = ConfigDict(extra="forbid")
+    line_no: int = Field(ge=1)
+    remove: bool = False
+    quantity: str | None = None
+    unit_price: str | None = None
+    tax: str | None = None
+    freight: str | None = None
+    project_id: UUID | None = None
+    department_code: str | None = None
+    ledger_account_code: str | None = None
+
+    _quantity = field_validator("quantity", mode="before", json_schema_input_type=str)(
+        lambda cls, v: v if v is None else _qty(v)
+    )
+    _amounts = field_validator(
+        "unit_price", "tax", "freight", mode="before", json_schema_input_type=str
+    )(lambda cls, v: v if v is None else _amount(v))
+
+
+class PoCancelCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reason: str = Field(min_length=1, max_length=500)
+    cancel_requisition_lines: bool = False
+    notify_vendor: bool = True
+
+
+class PoReduceCreate(BaseModel):
+    """Quantity reductions only; `cancel` has the rest (E13-S07)."""
+
+    model_config = ConfigDict(extra="forbid")
+    reason: str = Field(min_length=1, max_length=500)
+    lines: list[PoChangeLineEdit] = Field(min_length=1, max_length=500)
+
+
+class PoChangeAdd(BaseModel):
+    """A line from another awarded line of the PO's vendor, award and requisition."""
+
+    model_config = ConfigDict(extra="forbid")
+    rfq_line_id: UUID
+    quantity: str
+
+    _quantity = field_validator("quantity", mode="before", json_schema_input_type=str)(
+        lambda cls, v: _qty(v)
+    )
+
+
+class PoChangePatch(BaseModel):
+    """A field left out is unchanged; `lines` and `add` replace the draft's list; `terms` and
+    `needed_by` may be set to null."""
+
+    model_config = ConfigDict(extra="forbid")
+    reason: str | None = Field(default=None, max_length=500)
+    terms: str | None = Field(default=None, max_length=4000)
+    needed_by: date | None = None
+    document_freight: str | None = None  # `document` freight mode only
+    lines: list[PoChangeLineEdit] | None = Field(default=None, max_length=500)
+    add: list[PoChangeAdd] | None = Field(default=None, max_length=500)
+
+    _document_freight = field_validator(
+        "document_freight", mode="before", json_schema_input_type=str
+    )(lambda cls, v: v if v is None else _amount(v))
+
+
+class PoBudgetEffectRead(BaseModel):
+    project_id: UUID
+    department_code: str | None
+    ledger_account_code: str | None
+    currency: str
+    delta: str
+
+
+class PoChangeRead(BaseModel):
+    id: UUID
+    po_id: UUID
+    number: int
+    version: int
+    from_version: int
+    status: ChangeStatus
+    material: bool
+    reason: str | None
+    created_by: UUID
+    created_at: datetime
+    draft: dict[str, Any]
+    diff: list[dict[str, Any]]  # field level: line_no, field, label, was, now (words for the UI)
+    budget_effect: list[PoBudgetEffectRead]  # signed delta per sub-project and code group
+    result_po_id: UUID | None
+    total: str  # the order total if applied, in the PO currency, as last drafted
+    budget_total_project: str  # its budget total in the project currency
+
+
+class TransmissionResend(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    contact_ids: list[UUID] | None = Field(default=None, min_length=1, max_length=20)
+
+
+class PoTransmissionRead(BaseModel):
+    id: UUID
+    po_id: UUID
+    revision: int
+    version: int
+    attempt: int
+    recipient_name: str
+    recipient_email: str
+    template_version: str
+    provider_message_id: str | None
+    result: Literal[
+        "queued", "sent", "failed", "address_suppressed", "delivered", "bounced", "complained"
+    ]
+    created_at: datetime
+    result_at: datetime | None
+    result_reason: str | None
+
+
+class SuppressionDelete(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reason: str = Field(min_length=1, max_length=500)
+
+    @field_validator("reason", mode="before")
+    @classmethod
+    def _trimmed(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
+
+
+type DomainResult = Literal["pass", "fail", "unknown"]
+
+
+class SendingDomainRead(BaseModel):
+    spf: DomainResult | None
+    dkim: DomainResult | None
+    detail: str
+    checked_at: datetime | None
+    check_pending: bool
+    po_email_allowed: bool
+
+
+class SuppressionRead(BaseModel):
+    id: UUID
+    email: str
+    reason: Literal["bounced", "complained"]
+    created_at: datetime
+
+
+class SuppressionPage(BaseModel):
+    rows: list[SuppressionRead]
+    next_cursor: str | None
+
+
+class PoAttachmentVendorFacing(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    vendor_facing: bool
+
+
+class PoAttachmentRead(BaseModel):
+    id: UUID
+    display_name: str
+    version: int
+    scan_status: str
+    uploaded_at: datetime
+    document_id: UUID  # the revision the file sits on
+    vendor_facing: bool  # intent only: nothing is sent before E19-S04

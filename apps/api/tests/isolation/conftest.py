@@ -58,8 +58,7 @@ def tenant_database() -> Iterator[TenantDatabase]:
     connection.execute(sql.SQL("CREATE ROLE {} NOLOGIN").format(sql.Identifier(owner)))
     connection.execute(
         sql.SQL(
-            "CREATE TABLE public.{} ("
-            "id uuid PRIMARY KEY, org_id uuid NOT NULL, name text NOT NULL)"
+            "CREATE TABLE public.{} (id uuid PRIMARY KEY, org_id uuid NOT NULL, name text NOT NULL)"
         ).format(sql.Identifier(table))
     )
     connection.execute(
@@ -87,14 +86,10 @@ def tenant_database() -> Iterator[TenantDatabase]:
         yield database
     finally:
         connection.execute("RESET ROLE")
-        connection.execute(
-            sql.SQL("DROP TABLE IF EXISTS public.{}").format(sql.Identifier(table))
-        )
+        connection.execute(sql.SQL("DROP TABLE IF EXISTS public.{}").format(sql.Identifier(table)))
         connection.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(owner)))
         connection.close()
 
 
 def assume_application_role(database: TenantDatabase) -> None:
-    database.connection.execute(
-        sql.SQL("SET ROLE {}").format(sql.Identifier(database.owner))
-    )
+    database.connection.execute(sql.SQL("SET ROLE {}").format(sql.Identifier(database.owner)))

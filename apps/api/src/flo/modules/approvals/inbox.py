@@ -32,6 +32,7 @@ from flo.modules.identity.service import (
     AuthorizationResolver,
     IdentityAuthorizationConnection,
     emails_by_id,
+    names_by_id,
 )
 from flo.modules.org.schemas import CodesRead
 
@@ -60,6 +61,7 @@ class InboxRow(Contract):
     title: str
     requester_note: str | None
     requester_email: str
+    requester_name: str | None
     document_version: int
     amount: InboxMoney | None
     step: InboxStep
@@ -67,6 +69,7 @@ class InboxRow(Contract):
     decided_at: datetime | None
     status_word: str
     on_behalf_of_email: str | None
+    on_behalf_of_name: str | None
     href: str
     codes: CodesRead | None = None
     codes_expired: bool = False
@@ -279,13 +282,12 @@ def inbox(
             for doc_id, summary in engine.adapter_for(kind).summaries(conn, scope, ids).items():
                 summaries[(kind, doc_id)] = summary
         selected = [e for e in selected if (e.document_type, e.document_id) in summaries]
-        emails = emails_by_id(
-            cast(IdentityAuthorizationConnection, conn),
-            [
-                *(s.requester_id for s in summaries.values()),
-                *(e.other for e in selected if e.other is not None),
-            ],
-        )
+        people = [
+            *(s.requester_id for s in summaries.values()),
+            *(e.other for e in selected if e.other is not None),
+        ]
+        emails = emails_by_id(cast(IdentityAuthorizationConnection, conn), people)
+        names = names_by_id(cast(IdentityAuthorizationConnection, conn), people)
 
         def doc(e: Entry) -> DocumentSummary:
             return summaries[(e.document_type, e.document_id)]
@@ -300,7 +302,12 @@ def inbox(
                 for e in selected
                 if any(
                     v.casefold().startswith(needle)
-                    for v in (doc(e).number, doc(e).title, requester(e))
+                    for v in (
+                        doc(e).number,
+                        doc(e).title,
+                        requester(e),
+                        names.get(doc(e).requester_id) or "",
+                    )
                 )
             ]
         selected.sort(key=lambda e: str(e.task_id))
@@ -349,6 +356,7 @@ def inbox(
                     title=s.title,
                     requester_note=s.note,
                     requester_email=requester(e),
+                    requester_name=names.get(s.requester_id),
                     document_version=e.document_version,
                     amount=None if s.amount is None else _money(s.amount),
                     step=_step(e),
@@ -356,6 +364,7 @@ def inbox(
                     decided_at=e.decided_at,
                     status_word=word,
                     on_behalf_of_email=behalf,
+                    on_behalf_of_name=names.get(e.other) if behalf and e.other else None,
                     href=s.href,
                     codes=s.codes,
                     codes_expired=s.codes is not None and s.codes.expired,

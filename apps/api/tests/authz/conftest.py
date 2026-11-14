@@ -97,6 +97,8 @@ def authorization_database() -> Iterator[AuthorizationDatabase]:
     access_migration = load_migration(ACCESS_MIGRATION, "authz_test_access")
     drop_objects(connection)
     identity_migration.upgrade(connection)
+    # E22-S07 column only; migration 0067 needs tables this fixture never builds.
+    connection.execute("ALTER TABLE identity ADD COLUMN IF NOT EXISTS display_name text")
     connection.execute(
         "CREATE TABLE identity_membership (identity_id uuid PRIMARY KEY REFERENCES identity(id), "
         "org_id uuid NOT NULL)"

@@ -162,7 +162,6 @@ def test_project_status_depth_currency_and_inactive_standalone(lines_db):
     db = lines_db
     p = project(db)
     row, _ = complete(db, p)
-    change(db, "project", p.id, "status='deferred',currency='EUR'")
     # Build a real depth-five hierarchy through the existing project service.
     parent = p.id
     for i in range(4):
@@ -181,6 +180,8 @@ def test_project_status_depth_currency_and_inactive_standalone(lines_db):
             )
         )
         parent = child.id
+    # A child must share its main project's currency, so the root changes only afterwards.
+    change(db, "project", p.id, "status='deferred',currency='EUR'")
     change(db, "requisition", row.id, "project_id=%s", (parent,))
     change(db, "project", parent, "status='deferred',currency='EUR'")
     result = check(db, row)

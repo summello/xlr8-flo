@@ -1,0 +1,16 @@
+{
+  "story": "M3-money",
+  "reviewer": "qwen",
+  "verdict": "approve",
+  "ran_tests": false,
+  "findings": [
+    {
+      "severity": "major",
+      "file": "apps/api/src/flo/modules/requisitions/funding.py",
+      "line": 91,
+      "requirement": "FIN-006",
+      "problem": "rereserve's own contract ('The caller holds the project_balance locks') is not honoured on one reachable path. rereserve (requisitions/lifecycle.py:406-444) releases the live reservation via release_live, then re-reserves held+amount on the reservation's project. release_live early-returns without posting when the live reservation's remaining is 0 (funding.py:91), which is exactly when release_reservation would have taken the FOR UPDATE on the reservation project's balance row (reservations.py:68). The subsequent reserve() then posts against that balance row with no lock held for it. ChangeService._lock (purchasing/changes.py:613-628) locks only the PO line projects; on a sub-project-funded requisition (decision 205, reservation project != line projects) a quantities-only reduce after the PO was issued for the full reservation (which drives the reservation remaining to 0 via _consume's min(amount, held) release in postings.py:187-199) reaches this path: _post's rereserve (purchasing/changes.py ~769-777, key po_change_{n}) releases 0 and re-reserves the returned amount on an unlocked balance row, racing any concurrent reserve/transfer on that project through post_entry's availability check. Every sibling path locks first (reduce_to funding.py:131-133, _consume postings.py:122, release_reservation self-lock reservations.py:68); this is the one reserve in the M3 money flow without the balance lock, so the release-exactly-once and under-lock invariants hold for all but this interleaving (worst case under the default no-negative-budget setting: a concurrent reserve and this one both pass availability and the row overdraws).",
+      "fix": "Lock the reservation project's balance in rereserve itself, before the early-return branch: after reading row, take lock_balance on reservation_remaining(row.reservation_entry_id).project_id when row.reservation_entry_id is not None (or move the remaining==0 early-return into release_reservation so the self-lock at reservations.py:68 always runs). That closes the gap for every current and future caller without relying on each one to hold the right row."
+    }
+  ]
+}

@@ -25,6 +25,7 @@ from flo.kernel.outbox import OutboxDispatcher, OutboxStore, email_handler
 from flo.kernel.outbox.dispatcher import DispatcherConnection, PermanentOutboxError
 from flo.kernel.outbox.store import OutboxConnection, OutboxRecord, OutboxState
 from flo.kernel.ports.email import (
+    EmailAttachment,
     PermanentEmailError,
     TransientEmailError,
 )
@@ -99,15 +100,20 @@ def _add_email(
     *,
     key: str = "send-purchase-order-42",
 ) -> UUID:
-    with correlation_context("po-issue-request"), tenant_transaction(
-        cast(OutboxConnection, connection), Scope(org_id)
+    with (
+        correlation_context("po-issue-request"),
+        tenant_transaction(cast(OutboxConnection, connection), Scope(org_id)),
     ):
-        return OutboxStore(cast(OutboxConnection, connection), Scope(org_id)).add_email(
-            to="buyer@example.invalid",
-            template="purchase-order-issued-v1",
-            context={"purchase_order": "PO-00042"},
-            idempotency_key=key,
-        ).id
+        return (
+            OutboxStore(cast(OutboxConnection, connection), Scope(org_id))
+            .add_email(
+                to="buyer@example.invalid",
+                template="purchase-order-issued-v1",
+                context={"purchase_order": "PO-00042"},
+                idempotency_key=key,
+            )
+            .id
+        )
 
 
 def test_business_change_and_outbox_row_commit_or_roll_back_together(
@@ -121,8 +127,9 @@ def test_business_change_and_outbox_row_commit_or_roll_back_together(
         sql.SQL("CREATE TABLE {} (id uuid PRIMARY KEY)").format(sql.Identifier(business_table))
     )
     try:
-        with correlation_context("commit-request"), tenant_transaction(
-            cast(OutboxConnection, connection), Scope(org_id)
+        with (
+            correlation_context("commit-request"),
+            tenant_transaction(cast(OutboxConnection, connection), Scope(org_id)),
         ):
             connection.execute(
                 sql.SQL("INSERT INTO {} VALUES (%s)").format(sql.Identifier(business_table)),
@@ -135,9 +142,11 @@ def test_business_change_and_outbox_row_commit_or_roll_back_together(
                 idempotency_key="committed-effect",
             )
 
-        with pytest.raises(RuntimeError, match="forced rollback"), correlation_context(
-            "rollback-request"
-        ), tenant_transaction(cast(OutboxConnection, connection), Scope(org_id)):
+        with (
+            pytest.raises(RuntimeError, match="forced rollback"),
+            correlation_context("rollback-request"),
+            tenant_transaction(cast(OutboxConnection, connection), Scope(org_id)),
+        ):
             connection.execute(
                 sql.SQL("INSERT INTO {} VALUES (%s)").format(sql.Identifier(business_table)),
                 (rolled_back,),
@@ -322,9 +331,10 @@ def test_resend_adapter_passes_idempotency_and_returns_message_id() -> None:
         requester=request,
     )
 
-    assert sender.send(
-        "buyer@example.invalid", "template-v2", {"name": "Buyer"}, "effect-key-7"
-    ) == "resend-message-7"
+    assert (
+        sender.send("buyer@example.invalid", "template-v2", {"name": "Buyer"}, "effect-key-7")
+        == "resend-message-7"
+    )
     headers = cast(Mapping[str, str], captured["headers"])
     assert headers["Idempotency-Key"] == "effect-key-7"
     assert headers["Authorization"] == "Bearer provider-secret"
@@ -419,3 +429,111 @@ def test_email_provider_is_selected_only_by_configuration() -> None:
     )
     with pytest.raises(RuntimeError, match="RESEND_API_KEY"):
         create_resend_sender(Settings())
+
+
+def test_email_without_attachments_reaches_a_sender_that_has_no_such_parameter() -> None:
+    class OldSender:
+        def send(self, to: str, template: str, context: object, idempotency_key: str) -> str:
+            return "old-1"
+
+    deliver = email_handler(OldSender())
+    payload = {"to": "a@example.invalid", "template": "v1", "context": {}}
+    assert (
+        deliver(_outbox_record(payload)) == "old-1"
+    )  # plant: always passing attachments= -> TypeError
+
+
+def test_email_attachments_are_decoded_and_malformed_ones_are_permanent() -> None:
+    seen: list[object] = []
+
+    class Sender:
+        def send(self, to, template, context, idempotency_key, attachments=()):  # type: ignore[no-untyped-def]
+            seen.extend(attachments)
+            return "m"
+
+    deliver = email_handler(Sender())
+    base = {"to": "a@example.invalid", "template": "v1", "context": {}}
+    good = [{"filename": "a.pdf", "content_type": "application/pdf", "content_b64": "AQID"}]
+    deliver(_outbox_record(base | {"attachments": good}))
+    assert seen == [EmailAttachment("a.pdf", "application/pdf", b"\x01\x02\x03")]
+    for bad in ("x", [{"filename": "a"}], [good[0] | {"content_b64": "***"}]):
+        with pytest.raises(PermanentOutboxError):
+            deliver(_outbox_record(base | {"attachments": bad}))
+
+
+def test_adapters_carry_the_attachment_only_when_given() -> None:
+    attachment = EmailAttachment("PO-1.pdf", "application/pdf", b"%PDF")
+    captured: dict[str, object] = {}
+
+    def request(url: str, headers: Mapping[str, str], body: bytes, timeout: float):  # type: ignore[no-untyped-def]
+        captured["body"] = json.loads(body)
+        return 200, b'{"id":"r1"}'
+
+    resend = ResendEmailSender("provider-secret", "noreply@example.invalid", requester=request)
+    resend.send("a@example.invalid", "t", {}, "k", attachments=[attachment])
+    assert captured["body"]["attachments"] == [  # type: ignore[index]
+        {"filename": "PO-1.pdf", "content": "JVBERg==", "content_type": "application/pdf"}
+    ]
+    resend.send("a@example.invalid", "t", {}, "k")
+    assert "attachments" not in captured["body"]  # type: ignore[operator]
+    smtp = FakeSmtp()
+    sender = SmtpEmailSender(
+        "localhost", 1025, "noreply@xlr8flo.local", smtp_factory=lambda *_: cast(smtplib.SMTP, smtp)
+    )
+    sender.send("a@example.invalid", "t", {}, "k", attachments=[attachment])
+    assert smtp.message is not None
+    [part] = list(smtp.message.iter_attachments())
+    assert part.get_filename() == "PO-1.pdf" and part.get_content() == b"%PDF"
+
+
+def test_outbox_payload_has_an_attachments_key_only_when_given(outbox_database) -> None:
+    connection = outbox_database
+    org_id = uuid4()
+    with (
+        correlation_context("attach"),
+        tenant_transaction(cast(OutboxConnection, connection), Scope(org_id)),
+    ):
+        store = OutboxStore(cast(OutboxConnection, connection), Scope(org_id))
+        plain = store.add_email(
+            to="a@example.invalid", template="t", context={}, idempotency_key="1"
+        )
+        withpdf = store.add_email(
+            to="a@example.invalid",
+            template="t",
+            context={},
+            idempotency_key="2",
+            attachments=[EmailAttachment("a.pdf", "application/pdf", b"\x00")],
+        )
+    assert "attachments" not in plain.payload
+    assert withpdf.payload["attachments"] == [
+        {"filename": "a.pdf", "content_type": "application/pdf", "content_b64": "AA=="}
+    ]
+
+
+@pytest.mark.parametrize(("count", "alerted"), [(80, True), (79, False)])
+def test_email_sends_quota_counts_sent_rows_of_the_last_24_hours(
+    outbox_database, count: int, alerted: bool
+) -> None:
+    import asyncio
+
+    from flo.api.internal import _email_sends_24h, build_quota_report
+
+    connection = outbox_database
+    org_id = uuid4()
+    insert = (
+        "INSERT INTO outbox (id, org_id, topic, payload, idempotency_key, state, "
+        "provider_message_id, sent_at, correlation_id) "
+        "VALUES (%s, %s, 'email', '{}', %s, 'sent', 'm', now() - %s * interval '1 hour', 'c')"
+    )
+    with tenant_transaction(cast(OutboxConnection, connection), Scope(org_id)):
+        for n in range(count):
+            connection.execute(insert, (uuid4(), org_id, f"k{n}", 1))
+        connection.execute(insert, (uuid4(), org_id, "old", 25))  # outside the window
+    url = os.environ.get("TEST_DATABASE_URL") or os.environ["DATABASE_URL"]
+    settings = Settings(database_url=url.replace("postgresql+psycopg://", "postgresql://", 1))
+    assert asyncio.run(_email_sends_24h(settings)) == count
+
+    from tests.test_internal import _collectors
+
+    report = asyncio.run(build_quota_report(_collectors({"email_sends": count})))
+    assert [a.metric for a in report.alerts] == (["email_sends"] if alerted else [])

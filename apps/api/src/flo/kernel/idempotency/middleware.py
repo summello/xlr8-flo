@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from collections.abc import Callable
 from contextlib import AbstractContextManager
 from hashlib import sha256
@@ -41,6 +42,18 @@ IDEMPOTENCY_KEY_EXEMPT_PATHS = frozenset(
 
 IDEMPOTENCY_BYPASS_PATHS = frozenset(
     {"/api/v1/imports", "/api/v1/auth/organization", "/api/v1/invitations/accept"}
+)
+
+# Reads that must never be stored or replayed: a stored response would copy cleartext into
+# idempotency_key and a replay would skip authorization and audit (E11-S04 vendor reveal). The
+# path shape, not the id format: FastAPI also accepts a 32-hex UUID, and any form it accepts
+# must skip storage.
+IDEMPOTENCY_BYPASS_PATTERN = re.compile(r"^/api/v1/vendors/[^/]+/sensitive/reveal/?$")
+
+# E22-S02: the soft-delete commands replay like a POST; no other DELETE route is keyed.
+IDEMPOTENT_DELETE_PATTERN = re.compile(
+    r"^/api/v1/(?:requisitions|projects|purchase-orders|budget/change-requests)/[^/]+/?$"
+    r"|^/api/v1/workflows/[^/]+/versions/[^/]+/?$"
 )
 
 _logger = logging.getLogger(__name__)
@@ -218,13 +231,22 @@ class IdempotencyMiddleware:
         self._connection_factory = connection_factory
         self._required_key = required_key
 
+    @staticmethod
+    def _keyed(scope: ASGIScope) -> bool:
+        method = scope.get("method")
+        return method == "POST" or (
+            method == "DELETE"
+            and IDEMPOTENT_DELETE_PATTERN.match(str(scope.get("path", ""))) is not None
+        )
+
     async def __call__(self, scope: ASGIScope, receive: Receive, send: Send) -> None:
-        if scope["type"] != "http" or scope.get("method") != "POST":
+        if scope["type"] != "http" or not self._keyed(scope):
             await self._app(scope, receive, send)
             return
 
         # D-M1-19 and E05-S12: uploads and session selections must never replay.
-        if str(scope.get("path", "")).rstrip("/") in IDEMPOTENCY_BYPASS_PATHS:
+        path = str(scope.get("path", "")).rstrip("/")
+        if path in IDEMPOTENCY_BYPASS_PATHS or IDEMPOTENCY_BYPASS_PATTERN.match(path):
             await self._app(scope, receive, send)
             return
 

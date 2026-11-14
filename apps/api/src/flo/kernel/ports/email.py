@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from typing import Protocol
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from typing import Literal, Protocol
 
 
 class TransientEmailError(RuntimeError):
@@ -12,6 +13,13 @@ class TransientEmailError(RuntimeError):
 
 class PermanentEmailError(RuntimeError):
     """A provider rejection that must not be retried."""
+
+
+@dataclass(frozen=True)
+class EmailAttachment:
+    filename: str
+    content_type: str
+    content: bytes
 
 
 class EmailSender(Protocol):
@@ -23,5 +31,23 @@ class EmailSender(Protocol):
         template: str,
         context: Mapping[str, object],
         idempotency_key: str,
+        attachments: Sequence[EmailAttachment] = (),
     ) -> str:
         """Return the provider's stable message identifier."""
+
+
+type DomainResult = Literal["pass", "fail", "unknown"]
+
+
+@dataclass(frozen=True)
+class DomainStatus:
+    spf: DomainResult
+    dkim: DomainResult
+    detail: str
+
+
+class DomainChecker(Protocol):
+    """Read the sending domain's SPF and DKIM state; holds a different key from the sender."""
+
+    def domain_status(self) -> DomainStatus:
+        """Raise TransientEmailError or PermanentEmailError when the provider cannot answer."""

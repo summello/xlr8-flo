@@ -160,7 +160,9 @@ def test_project_defaults_standalone_currency_estimate_audit_and_idempotency(hea
                 replay = await send(browser, "POST", data=data, key=key)
                 assert replay.json() == row
                 get = await send(browser, "GET", "/" + row["id"])
-                assert get.json() == row and get.headers["etag"] == '"1"'
+                # can_edit is set by the single-record GET only (E22-S02)
+                assert get.json() == row | {"can_edit": True}
+                assert get.headers["etag"] == '"1"'
                 updated = await send(
                     browser,
                     "PATCH",
@@ -576,8 +578,12 @@ def test_authorization_outcomes_and_unauthenticated_routes(header_db, grant):
                     else 403
                 )
                 assert result.status_code == expected, result.text
+            # The list is self-scoped: it shows only the scopes where requisition.view is held.
             result = await send(browser, "GET")
-            assert result.status_code == 403
+            assert result.status_code == 200
+            assert [r["id"] for r in result.json()["rows"]] == (
+                [str(row.id)] if grant == "bu_view" else []
+            )
 
     asyncio.run(scenario())
 
@@ -819,5 +825,79 @@ def test_list_page_size_and_filtered_totals_per_currency(header_db):
             assert len(nxt.json()["rows"]) == 2
             for bad in ("0", "51"):
                 assert (await send(browser, "GET", "?page_size=" + bad)).status_code == 422
+
+    asyncio.run(scenario())
+
+
+def test_list_is_filtered_to_the_scopes_where_the_caller_may_view(header_db):
+    from flo.modules.identity.models import AuthorizationTarget
+    from flo.modules.identity.service import ScopeType
+    from tests.vendors.test_vendors import regrant
+
+    db = header_db
+    mine, other = unit(db, "MINE"), unit(db, "OTHER")
+    in_mine, in_other = draft(db, mine), draft(db, other)
+
+    async def listed(browser):
+        return {r["id"] for r in (await send(browser, "GET")).json()["rows"]}
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            assert await listed(browser) == {str(in_mine.id), str(in_other.id)}
+            # a grant on one business unit lists that unit only; the other unit stays hidden
+            regrant(
+                db, ["requisition.view"], AuthorizationTarget(ScopeType.BU, mine.id, None, None)
+            )
+            assert await listed(browser) == {str(in_mine.id)}
+            assert (await send(browser, "GET", f"/{in_other.id}")).status_code == 404
+            # no grant at all: an empty list, not an error
+            regrant(db, ["vendor.view"])
+            assert await listed(browser) == set()
+
+    asyncio.run(scenario())
+
+
+def test_project_grant_lists_requisitions_across_roll_down_edges_as_the_by_id_read(header_db):
+    # E22-S13: a project grant lists the requisitions of the project and of a roll_down
+    # sub-project, not those behind a non-rolling edge nor a standalone one; list <=> 200 by id.
+    from flo.modules.identity.models import AuthorizationTarget
+    from flo.modules.identity.service import ScopeType
+    from tests.vendors.test_vendors import regrant
+
+    db = header_db
+    a = unit(db, "PA")
+    parent = project(db, a)
+    ps = ProjectService(db[0], Scope(db[1]), db[3], settings(db[0]))
+    body = ProjectCreate(
+        bu_id=a.id,
+        name="Sub",
+        currency="USD",
+        department_code="D",
+        ledger_account_code="L",
+        parent_id=parent.id,
+    )
+    rolls, stops = ps.create(body), ps.create(body)
+    with tenant_transaction(db[0], Scope(db[1])):
+        db[0].execute(
+            "UPDATE authorization_scope SET roll_down = false WHERE scope_id = %s", (stops.id,)
+        )
+    own, via_roll, behind_stop = (draft(db, p=p) for p in (parent, rolls, stops))
+    standalone = draft(db, unit(db, "PB"))
+    expected = {str(own.id), str(via_roll.id)}
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            regrant(
+                db,
+                ["requisition.view"],
+                AuthorizationTarget(ScopeType.PROJECT, parent.id, None, None),
+            )
+            listed = {r["id"] for r in (await send(browser, "GET")).json()["rows"]}
+            assert listed == expected
+            for row in (own, via_roll, behind_stop, standalone):
+                by_id = (await send(browser, "GET", f"/{row.id}")).status_code
+                assert (by_id == 200) == (str(row.id) in listed), (row.id, by_id)
 
     asyncio.run(scenario())

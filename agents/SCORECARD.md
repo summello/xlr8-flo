@@ -2,25 +2,35 @@
 
 # Agent scorecard
 
-**89 merged stories.** Scores appear once an agent has 3+ samples in that role —
+**184 merged stories.** Scores appear once an agent has 3+ samples in that role —
 before that the number would be noise, so it reads `—`.
+
+> **Data quality.** 114 of 184 records took `rounds` from a counter with no reliable
+> writer (before E23-S13, 22 Oct 2026): in this repository only `flo escalate` ever raised it, and
+> records that also carry review-run counts say 1 round while their reviewers ran up to 7 times.
+> *Clean merge*, *Mean rounds* and the author score include those records, so read them as
+> indicative until *Rounds verified* equals *Stories*. The records are not rewritten.
 
 ## As author
 
-| Agent | Stories | Clean merge | Mean rounds | Escapes/story | Score |
-|---|---:|---:|---:|---:|---:|
-| `opencode-nemotron` | 10 | 100% | 1.00 | 0.00 | **100.0** |
-| `codex` | 66 | 97% | 1.05 | 0.00 | **97.8** |
-| `sonnet` | 13 | 8% | 2.62 | 0.00 | **29.6** |
+| Agent | Stories | Rounds verified | Clean merge | Mean rounds | Escapes/story | Score |
+|---|---:|---:|---:|---:|---:|---:|
+| `opencode-nemotron` | 10 | 0/10 | 100% | 1.00 | 0.00 | **100.0** |
+| `codex` | 68 | 0/68 | 97% | 1.04 | 0.00 | **97.9** |
+| `sonnet` | 105 | 69/105 | 50% | 1.79 | 0.00 | **62.9** |
+| `codex-b` | 1 | 1/1 | 100% | 1.00 | 0.00 | — |
+
+**Judgement day (Sonnet on gated work): 33 of 10 verified gated records.** It is due: run the script in `docs/ops/sonnet-round-churn.md` and decide.
 
 ## As reviewer
 
 | Agent | Reviews | Ran tests | Findings/review | Blocker precision | Escapes missed | Score |
 |---|---:|---:|---:|---:|---:|---:|
-| `qwen` | 8 | 100% | 1.9 | — | 0 | **84.1** |
+| `codex-a` | 14 | 100% | 0.4 | 100% | 0 | **87.9** |
+| `codex` | 81 | 100% | 0.7 | 91% | 0 | **87.4** |
 | `deepseek` | 6 | 100% | 1.0 | — | 0 | **77.5** |
-| `codex` | 13 | 100% | 0.0 | — | 0 | **70.0** |
 | `opencode-nemotron` | 5 | 100% | 0.0 | — | 0 | **70.0** |
+| `qwen` | 10 | 100% | 1.6 | 0% | 0 | **67.0** |
 | `kimi` | 2 | 100% | 0.0 | — | 0 | — |
 
 ## How these are computed
@@ -28,7 +38,9 @@ before that the number would be noise, so it reads `—`.
 **Author score** = 50 × clean-merge rate + 30 × round efficiency + 20 × (1 − escape rate).
 A *clean merge* is one review round with no gate failure. *Round efficiency* is full at one
 round and zero at three. An *escape* is a blocker Opus found at final review — meaning two
-reviewers approved code that was wrong.
+reviewers approved code that was wrong. A *round* is one review that sent itemised findings back
+to the author, counted from the round files the supervisor caps on, plus one for the first
+submission; a round file with no itemised finding is a `void_round` and is not charged.
 
 **Reviewer score** = 25 × test compliance + 30 × blocker precision + 30 × catch rate
 + 15 × thoroughness. *Precision* is blockers upheld ÷ blockers raised, so crying wolf costs.

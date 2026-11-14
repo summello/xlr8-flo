@@ -1,0 +1,16 @@
+{
+  "story": "M3-ui",
+  "reviewer": "deepseek",
+  "verdict": "approve",
+  "ran_tests": false,
+  "findings": [
+    {
+      "severity": "minor",
+      "file": "apps/web/src/styles/vendors.css",
+      "line": 40,
+      "requirement": "UI tokens only (AGENTS.md §3.4)",
+      "problem": ".mask sets a literal letter-spacing: 0.04em instead of a tracking token. Every other letter-spacing in the stylesheets uses --tracking-* (a tracking token for the mono face already exists and is used elsewhere, e.g. base.css/requisitions.css). This is the only hardcoded spacing/letter-spacing value in the whole M3 web diff.",
+      "fix": "Replace `letter-spacing: 0.04em` with the existing mono tracking token (var(--tracking-label) or a dedicated mono tracking token already defined in tokens.css), so the mask face stays token-driven."
+    }
+  ]
+}

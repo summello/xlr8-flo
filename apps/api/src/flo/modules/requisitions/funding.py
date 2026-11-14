@@ -44,6 +44,7 @@ def move_funds(
     key: str,
     reason: str,
     actor_id: UUID,
+    allow_negative: bool | None = None,
 ) -> None:
     """Transfer `amount` source to target in one balanced group (D-M2-19); caller holds the locks.
 
@@ -74,6 +75,7 @@ def move_funds(
         ],
         source_type="requisition",
         source_id=cast(UUID, requisition_row["id"]),
+        allow_negative=allow_negative,
     )
 
 
@@ -108,14 +110,15 @@ def reduce_to(
     new_amount: Decimal,
     version: int,
     actor_id: UUID,
+    source: str | None = None,
 ) -> LedgerEntry | None:
     """Release `remaining - new_amount` from the live reservation, once per version.
 
     Returns the release entry (None when nothing was released).
 
     One transaction holds project_balance, then the requisition, through the remaining read and
-    the release; the same order as every other stop. No M2 route
-    calls this; M3's partial award and line cancel do.
+    the release; the same order as every other stop. `source` (an award) joins the key so two
+    documents on one requisition at the same version never share a release.
     """
     with tenant_transaction(cast(RlsSession, conn), scope):
         repo = RequisitionRepository(conn, scope)
@@ -152,6 +155,8 @@ def reduce_to(
             amount=remaining - new_amount,
             actor_id=actor_id,
             reason="reduced",
-            idempotency_key=f"req:{requisition_id}:release:{row[1]}:reduce:{version}",
+            idempotency_key=f"req:{requisition_id}:release:{row[1]}:reduce:"
+            + (f"{source}:" if source else "")
+            + str(version),
         )
         return entry

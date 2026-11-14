@@ -119,7 +119,7 @@ DECISIONS 6g in full, especially: 104 and 114 (the two award bases), 105 (`Start
 never disabled, refused over scope with the figure), 106 (5 vendors; compliance pass or fail per
 requirement; base currency is the organization's), 108 and 118 (sealed for everyone until the
 deadline, opens by itself), 116 (freight pro rata by line value), 117 (rate warning after 7 days,
-refresh by any sourcing role), 119 (ties go to the earlier submission, buyer override with reason;
+refresh by an `rfq.edit` holder, amended 27 Oct 2026), 119 (ties go to the earlier submission, buyer override with reason;
 compliance requirements belong to the RFQ, copied from a template; waiving one needs a reason and the
 sourcing lead, audited), 120 (colour has three jobs: win, worth a look, failure; density by closed
 folds). Also: no vendor portal; approvals reuse the inbox decision panel; D-M2-7 (only supplier prices

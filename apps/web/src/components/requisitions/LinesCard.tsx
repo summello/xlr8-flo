@@ -1,5 +1,5 @@
 import { Check, Plus, Trash } from "@phosphor-icons/react";
-import Money from "./ReqMoney";
+import Money from "../ui/Money";
 import { lineTotal, newLine, estimateOf, type DraftLine } from "./model";
 import type { LookupOption } from "./api";
 
@@ -56,11 +56,11 @@ export default function LinesCard({ lines, currency, units, errors, onChange, ad
                   {line.uom_code && !units.some(u => u.value === line.uom_code) && <option value={line.uom_code}>{line.uom_code}</option>}</select>}</CellField>}</td>
             <td data-label="Unit price" data-numeric><CellField n={n} field="unit_price" label="Unit price" help={`Price for one unit, in ${currency}.`} error={err(n, "unit_price")}>
               {p => <input {...p} className="numeric" inputMode="decimal" autoComplete="off" aria-label={`Unit price, line ${n}`} value={line.unit_price} onChange={e => patch(line.key, { unit_price: e.target.value })} />}</CellField></td>
-            <td data-label="Line total" data-numeric>{total === null ? <span aria-label={`Line total, line ${n}: not yet`}>—</span> : <Money value={total} currency={currency} />}</td>
+            <td data-label="Line total" data-numeric>{total === null ? <span aria-label={`Line total, line ${n}: not yet`}>—</span> : <Money zero="value" value={total} currency={currency} />}</td>
             <td><button type="button" className="req-icon-button" aria-label={`Remove line ${n}`} onClick={() => { onChange(lines.filter(l => l.key !== line.key)); requestAnimationFrame(() => addRef.current?.focus()); }}><Trash aria-hidden="true" weight="regular" /></button></td>
           </tr>;
         })}</tbody>
       </table>}
-    <p className="req-total"><span>Estimated total</span><Money value={estimateOf(lines, currency)} currency={currency} /></p>
+    <p className="req-total"><span>Estimated total</span><Money zero="value" value={estimateOf(lines, currency)} currency={currency} /></p>
   </section>;
 }

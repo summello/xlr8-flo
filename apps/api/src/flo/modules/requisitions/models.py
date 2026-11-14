@@ -30,11 +30,19 @@ FIELDS = (
     "updated_at",
 )
 COLUMNS = ", ".join("r." + field + ("::text" if field == "estimate" else "") for field in FIELDS)
-READ_SQL = f"""SELECT {COLUMNS}, p.number, p.name, u.name, i.email FROM requisition r
+READ_SQL = f"""SELECT {COLUMNS}, p.number, p.name, u.name, i.email, i.display_name
+ FROM requisition r
  LEFT JOIN project p ON p.org_id=r.org_id AND p.id=r.project_id
  JOIN org_unit u ON u.org_id=r.org_id AND u.id=r.bu_id
  JOIN identity i ON i.id=r.requester_id"""
-READ_FIELDS = (*FIELDS, "project_number", "project_name", "bu_name", "requester_email")
+READ_FIELDS = (
+    *FIELDS,
+    "project_number",
+    "project_name",
+    "bu_name",
+    "requester_email",
+    "requester_name",
+)
 
 
 class RequisitionRepository(ScopedRepo[object]):

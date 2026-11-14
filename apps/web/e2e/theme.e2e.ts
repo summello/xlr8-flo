@@ -40,10 +40,15 @@ test("the token baseline is accessible and paints its own background", async ({ 
   // goto resolves before the SPA mounts; under load the count below ran on an empty shell.
   await expect(page.locator("a, button, input, select, textarea, [tabindex]").first()).toBeVisible();
 
-  const paint = await page.locator("body").evaluate((body) => ({
-    background: getComputedStyle(body).backgroundColor,
-    canvas: getComputedStyle(document.documentElement).getPropertyValue("--canvas").trim(),
-  }));
+  const paint = await page.locator("body").evaluate((body) => {
+    // Build minification changes token spelling; compare browser-resolved colours.
+    const probe = document.createElement("span");
+    probe.style.backgroundColor = "var(--canvas)";
+    body.append(probe);
+    const canvas = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    return { background: getComputedStyle(body).backgroundColor, canvas };
+  });
   expect(paint.background).toBe(paint.canvas);
   expect(await page.locator("a, button, input, select, textarea, [tabindex]").count()).toBeGreaterThan(0);
 

@@ -45,7 +45,8 @@ def test_create_details_scope_audit_and_status(project_db):
     assert row["owner_id"] == str(db.actor_id)
     assert row["status"] == "draft" and row["version"] == 1
     assert row["number"].endswith("0001")
-    assert set(row) == set(body(bu).model_dump()) | {
+    assert set(row) == set(body(bu).model_dump()) - {"budget"} | {
+        "requested_budget",
         "id",
         "number",
         "status",
@@ -64,8 +65,10 @@ def test_create_details_scope_audit_and_status(project_db):
         "codes",
         "codes_expired",
         "can_substitute_codes",
+        "can_edit",
     }
-    assert request(db, "GET", "/" + row["id"]).json() == row
+    # can_edit is set by the single-record GET only (E22-S02)
+    assert request(db, "GET", "/" + row["id"]).json() == row | {"can_edit": True}
     from uuid import UUID
 
     assert get_status(db.connection, Scope(db.org_a), UUID(row["id"])) == "draft"
@@ -262,7 +265,11 @@ def test_bu_grant_covers_project_and_conceals_other_bu(project_db):
         ).status_code
         == 404
     )
-    assert request(db, "GET", viewer=viewer).status_code == 403
+    # E22-S06: the list is open to a BU-scoped reader, narrowed to its own BU.
+    listed = request(db, "GET", viewer=viewer)
+    assert listed.status_code == 200
+    assert {row["id"] for row in listed.json()["rows"]} == {created.json()["id"]}
+    assert listed.json()["total"] == 1
 
 
 def test_twenty_concurrent_creates_and_failed_create_leaves_gap(project_db):

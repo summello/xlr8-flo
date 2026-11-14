@@ -221,7 +221,7 @@ Operator answers to the open Budget Transfer questions, then the screen list con
 114. **Best Average Cost is the lowest total landed cost among vendors that quoted every line** (operator). A partial bid cannot win it. Settles the assumption in decision 104.
 115. **Only an Organization Administrator changes `Allow Cross-Level Transfers` and the evidence-required setting** (operator). Every change is audited.
 116. **Freight is shared across lines pro rata by line value** (operator), for per-line comparison.
-117. **A rate older than 7 days shows a warning, and any sourcing role may refresh it** (operator). The rate, its source and its date are stored with the comparison; the vendor's bid never changes.
+117. **A rate older than 7 days shows a warning, and any sourcing role may refresh it** (operator). The rate, its source and its date are stored with the comparison; the vendor's bid never changes. **Amended 27 Oct 2026 (operator): the server wins. `Refresh Rate` requires `rfq.edit` on the RFQ's unit (`api/sourcing.py`, E12-S06), not any sourcing role; the page shows it only to `rfq.edit` holders (E12-S10).**
 118. **A sealed round is hidden from everyone until the deadline** (operator), including evaluators and the RFQ owner; it opens on its own.
 119. **Ties on a line read `Tied` and the earlier submission takes the line; the buyer may override with a reason** (operator). **Compliance requirements belong to the RFQ** (copied from a template); **waiving one needs a reason and the sourcing lead** (operator), and is audited. **Still open:** how a split award interacts with vendor minimum order values.
 
@@ -297,6 +297,25 @@ Screens added around the built comparison: RFQ list, start an RFQ from approved 
 159. **Captions on a sunken ground step up to the secondary colour** (`.row.group`, `.notice`), the same fix as DECISIONS section 7.
 160. **New classes in `xlr8flo.css` (tokens only):** `.cols-rfq .cols-rln .cols-rit .cols-rinv .cols-rdi .cols-rbl .cols-rev .cols-raw`. Everything else is reused (`.sig`, `.elig`, `.diff`, `.stepper`, `.sheet.wide`, `.dialog`, `.total-bar`, `.action-bar`, `.fold`, `.v-chk`, `.v-w`, `.v-n`). No new Design System section: no new component.
 161. **The inbox gains one pending award row set:** `AWD-00095` and `AWD-00096`, so `approvals.spec.mjs` counts moved again (see below). The `Start RFQ` action is on `RequisitionDetail` for a requisition in sourcing.
+
+**Operator answers, 15 Oct 2026** (M3 planner session, the four blocking questions of `design/E12-S19.md`):
+
+204. **(6i-9) An award with no published award workflow is refused** (409 `workflow_not_set_up`, D-M2-21). **Supersedes 147:** the award draft's notice becomes "No award workflow is published. Ask an administrator to set one up. Your draft is kept.", and the button stays `Submit for Approval`. The board is stale until the design session redraws it.
+205. **(6i-10) The unused reservation is released once at award approval and returned to the main project in the same transaction.** Confirms 148 and settles where the money goes (E09-S16 left it on the sub-project).
+206. **(6i-11) Requisition status triggers:** `sourced` when every open line is on a published RFQ; `awarded` and `open_for_purchase` together when every line's quantity is awarded on approved awards; `completed` when every line is ordered (received, from M4).
+207. **(6i-12) Publishing an RFQ needs no approval.** It commits no money; it is the buyer's act, audited.
+
+**Operator answers, 15 Oct 2026** (M3 planner session, purchase orders; `pages/purchase-orders.md` §7):
+
+208. **(6j-13) A PO with no published PO workflow is refused** (409 `workflow_not_set_up`, D-M2-21, PO-003). The editor's `Approve when no PO workflow is published` is dropped; the board is stale.
+209. **(6j-14) Cancelling or reducing an issued PO** releases the unused commitment once and **re-reserves it on the sub-project for the reopened quantity**, so another PO can order it without re-approval. If the requisition line is cancelled as well, the amount is released and returned to the main project (as 205).
+210. **(6j-15) Budget Summary definitions confirmed** as written in `pages/purchase-orders.md` §7.9 (`Committed`, `This PO`, `Available After Issue`, `Project Actual`).
+211. **(6j-16) Tax and freight treatment (claude-plan §14 #6, FIN-008):** two settings per BU/OU, `tax.consumes_budget` and `freight.consumes_budget`, default on. When on, that component counts against the budget (award scope check, PO commitment); when off it is shown separately on the PO and not committed. Always separately visible (PO-016).
+
+**Operator answers, 19 Oct 2026** (M3 planner session, `design/E12-S19.md` item 3, SRC-017):
+
+212. **(6i-13) Cancelling an RFQ leaves the reservation with the requisition.** No ledger entry; the RFQ's quantity returns to the lines as open and the requisition can be sourced again. Releasing the money stays the job of cancelling the requisition.
+213. **(6i-14) Superseding an approved award is the exact reversal of its approval's money (205):** the awarded quantity returns as open, and the amount released and returned to the main project at approval is transferred back main → sub-project and re-reserved, in one transaction. Refused with `InsufficientBudget` when the main project no longer has it available. Allowed only before any PO exists.
 
 **Self-review with impeccable (13 Oct 2026, two isolated assessments: design review A, detector with browser evidence B).**
 
@@ -384,6 +403,59 @@ Three open comments on the published canvas. Where a comment left a choice open,
 201. **`xlr8flo.css` exists in both canvases** and a test fails if they differ. The Design System sheet, this decision log and MASTER stay single.
 202. **The two onboarding decision panels** (`ApprSheetVendor`, `ApprSheetVendorLow`) stay on the Approval Inbox page; their tests moved to `canvas/tests/vendor-decision.spec.mjs`.
 203. **Specs and rules that named `design-system/canvas/`** now name both (AGENTS.md authority 3, `agents/claude.md`, `author.sh`, `docs/author-traps.md`, CodeQL ignore).
+
+## 6n. M3 open questions closed (21 Oct 2026; operator, in batches, planner session)
+
+The three parking stories (E11-S08 vendors, E12-S19 sourcing, E13-S22 purchase orders) and the M2 follow-ups were put to the operator in five batches. Each answer is below; "assumption confirmed" means the packet's stated behaviour ships as written and nothing changes.
+
+**Money and authorization**
+
+214. **Vendor minimum order value, and split awards below it, are deferred to M4** (E11-S08 #2, E12-S19 #6). MOV is not captured in M3 (6h-9 stands); splitting below a vendor's minimum is the buyer's judgement.
+215. **An override by an RFQ author who also holds `rfq.approve` is allowed and audited** (E12-S19 #7, E13-S22 #5: a non-lowest award, or a PO issued to a vendor suspended after approval). The reason field and the audit row are the control. Assumption confirmed.
+216. **Assigning a standalone request to an existing project:** the final approver, who must hold `requisition.approve` on the target project (M2 follow-up, E09-S06). Assumption confirmed.
+217. **Baseline roles from Requestor up gain `project.read` and `master.read` in their scope** (M2 follow-up, `docs/m2-decisions.md`). Requestors can see the projects they spend against. Change story **E22-S06**.
+
+**Vendor data**
+
+218. **Required document types stay org-wide in M3; per-category requirements are M4** (E11-S08 #1). The category is already stored. Assumption confirmed.
+219. **One scoring set for every vendor** (four fixed dimensions plus org-wide extras; E11-S08 #4). Scores stay comparable across vendors. Assumption confirmed.
+220. **A questionnaire draft finishes on the version it started on** (E11-S08 #6). Assumption confirmed.
+221. **A reveal of masked tax or banking data lasts 60 s and re-masks on leaving the card** (E11-S08 #3). Assumption confirmed.
+
+**Sourcing and purchase-order operations**
+
+222. **Evaluation criteria and weights are set per RFQ by its owner while draft, prefilled from an organisation default** an administrator maintains (E12-S19 #8). Folded into **E12-S07**.
+223. **The RFQ deadline is in the organisation's time zone, editable per RFQ** (E12-S19 #9). Assumption confirmed.
+224. **An attachment that fails its scan blocks publish until removed or replaced;** no override (E12-S19 #10). Assumption confirmed.
+225. **`Closed` is manual in M3;** from M4 a fully received purchase order closes automatically, and manual close stays for short-closes (E13-S22 #3).
+226. **Supplier acknowledgement is deferred to the M4 vendor portal** (E13-S22 #6). Not captured in M3.
+227. **The PO PDF is one code-versioned system layout carrying the organisation's address block and terms text,** set by an administrator and copied into each version's snapshot so issued PDFs never change (PO-014). No template editor, no template approval (E13-S22 #7). **The organisation logo follows when uploads are scanned** (decision 171, D-14): it is an uploaded image embedded in a document sent outside the company. Folded into **E13-S08**.
+228. **Email allowance (100/day, the platform's Resend account):** transactional PO sends still go and digests wait, as shipped; **the operator is alerted once a day when 80 sends are used.** The cap is the platform's, not an organisation's, so the alert goes to the operator's monitoring, not to an org admin (E13-S22 #8). Folded into **E13-S09**.
+
+**UI**
+
+229. **Questionnaire rows reorder with Move Up and Move Down only;** no drag (E11-S08 #5). Assumption confirmed.
+230. **The vendor profile ships with its eight cards as drawn, and the 375 tab strip wraps;** a horizontally scrolling tab strip becomes one cross-list follow-up (E11-S08 #8, #9).
+231. **Requisition tones:** `rejected` danger, `withdrawn` neutral (the requester's own act), **`expired` warning** (recoverable by resubmitting, not an error). MASTER §2.3 gains the three rows. Change story **E22-S08** (E09-S11 shipped `expired` as danger).
+232. **People are shown by display name with the email as secondary text and as the fallback** (E11-S08 #10). **Amends D-M2-16:** the identity gains a display name, copied from the invitation's `full_name` at acceptance. Change story **E22-S07**; boards that show email only are stale for the design session.
+
+233. **Approval delegation gets its screen in M3** (STORY-NOTES §3; the E10-S08 engine had none). Built from `pages/approval-inbox.md` §5 and boards `ApprovalDelegation`, `Deleg*`, under the rules already accepted (59, 66, 80, 81). Story **E22-S10**.
+
+234. **A reader scoped to a business unit sees its own scope plus organisation-wide master data** (operator, 22 Oct 2026; E22-S06's block). `GET /projects` and `GET /master/{kind}` accept `project.read` / `master.read` held at any scope and narrow rows to the caller's scopes: projects in the caller's BU/OU (and any project the caller holds a project-scoped grant on); master rows of the caller's BU/OU **plus** organisation-level rows (`unit_id` NULL), which apply to every unit. A foreign-tenant or out-of-scope id stays 404. Story **E22-S06**.
+
+235. **Approval evidence is read with the instance, under the document's read permission; sensitive vendor fields stay masked** (operator, 22 Oct 2026; E11-S15's block). `GET /api/v1/approvals/instances/{id}` returns the adapter snapshot's `material.evidence` as an `evidence` field, guarded by the check it already makes (`adapter.read_permission` on the document, `vendor.view` for vendor changes). Any sensitive vendor field in the evidence payload is masked exactly as `GET /vendors/{id}` masks it; revealing stays the separate audited `POST /vendors/{id}/sensitive/reveal`. No extra endpoint. Story **E11-S15**.
+
+236. **The vendor detail names whether the caller may reveal, and whom to ask** (planner, 22 Oct 2026, applying decision 124 and MASTER 7.15; E11-S13's block). `GET /vendors/{id}` returns `sensitive_access: {can_reveal: bool, ask: str}`: `can_reveal` is the server's own check of `vendor.sensitive.reveal` (the permission `POST /vendors/{id}/sensitive/reveal` already enforces), and `ask` lists the organization's role names that hold it. A caller who cannot reveal sees the masked last four, `Restricted` and whom to ask, and no button (decision 124). The reveal asks for one of the closed reason codes (`verify_payment`, `vendor_request`, `audit_support`, `other`) with an optional note. Story **E11-S13**.
+
+237. **A requester completes their own draft vendor request** (operator, 22 Oct 2026; E11-S14's block). A caller holding `vendor.request` may write contacts, identifiers, documents and tax/bank details on a vendor they created (`vendor.created_by` = caller) while it is `draft`, through the existing routes. Sensitive values are write-only for them: saved, always returned masked, never revealed (reveal stays `vendor.sensitive.reveal`, decision 124). Once submitted it locks for them; `vendor.edit` holders keep their current rights. Someone else's draft or a foreign tenant's is 404. Story **E11-S14**.
+
+238. **The vendor detail lists the actions the caller may take** (planner, 22 Oct 2026; E11-S16's block; same pattern as 236, no new rule). `GET /vendors/{id}` returns `actions: list[str]`, each computed in the service by the same check its route makes: `edit` and `request_change` (`vendor.edit`), `inactivate` and `verify_documents` (`vendor.approve`); and `local_disable_units: list[uuid]`, the units where the caller holds `vendor.edit` (the disable and enable routes' check), empty when the vendor does not allow local disable. The UI shows a control only when its action is listed; the server still refuses a forced call. Story **E11-S16**.
+
+239. **A requester reads their own draft vendor request** (operator, 23 Oct 2026; E11-S14 review round 1). `GET /vendors/{id}`, `GET /vendors/{id}/contacts` and `GET /vendors/{id}/documents` admit a caller without `vendor.view` when they hold `vendor.request` and `vendor.created_by` is the caller, **in any status** (the read side of decision 237; amended 23 Oct by the operator so a submitted request reopens read-only instead of 404, as `GET /vendors/{id}/onboarding` already does). Sensitive values stay masked. Writes still lock at submit (237). Anyone else's vendor or a foreign tenant's is 404. `vendor.view` holders are unchanged. Story **E11-S14**.
+
+240. **The duplicate check says whether the caller may override** (operator, 23 Oct 2026; same pattern as 236 and 238, no new rule). `GET /vendors/duplicate-check` returns `can_override: bool`, the server's own `vendor.approve` check that the override path makes. The UI shows Override with a Reason only when it is true and never probes another route to find out; the server still refuses a forced override. Story **E11-S14**.
+
+241. **A vendor requester lists the units a vendor can be restricted to** (operator, 23 Oct 2026; E11-S14 planner pre-flight). `GET /org/units` admits a caller who holds `org.unit.read` (unchanged) **or** `vendor.request`. A caller with `vendor.request` and without `org.unit.read` gets only active units of their own organization (the `active` filter is forced to true), in the same `OrgUnitRead` shape; `GET /org/units/{id}` and every write are unchanged. A member holding neither permission gets 403. The rule lives in the org service, not the router. Unit names are reference data, not sensitive. Story **E11-S14** (the Where It Applies unit picker).
 
 ## 7. Findings to feed back into MASTER.md (amended 9 Oct 2026, see 97)
 

@@ -1,0 +1,12 @@
+.aw { display: grid; gap: var(--space-4); }
+.aw-top, .aw-standing, .aw-row, .aw-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.aw-top h3 { margin-inline-end: auto; }
+.aw-line { display: grid; gap: var(--space-3); }
+.aw-row > * { min-width: 0; }
+.aw-vendor { flex: 1 1 10rem; display: grid; }
+.aw-qty, .aw-reason { display: grid; gap: var(--space-1); }
+.aw-reason { flex: 2 1 16rem; }
+.aw-table { width: 100%; border-collapse: collapse; }
+.aw-table th, .aw-table td { padding: var(--space-2) var(--space-3); text-align: start; border-block-end: 1px solid var(--border); }
+.aw-table .numeric { text-align: end; }
+.aw-bar > .req-link-button { margin-inline-start: auto; }

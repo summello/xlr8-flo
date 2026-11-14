@@ -3,14 +3,16 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 
 import pytest
+from botocore.exceptions import ClientError  # type: ignore[import-untyped]
 
 from flo.kernel.adapters import r2 as r2_module
-from flo.kernel.adapters.minio import MinioStorage
+from flo.kernel.adapters.s3_local import LocalS3Storage
 from flo.kernel.config import Settings
 from flo.kernel.storage import (
     R2Storage,
     Storage,
     create_storage,
+    ensure_bucket,
     opaque_storage_key,
     verify_storage_round_trip,
 )
@@ -187,13 +189,13 @@ def test_storage_provider_is_swapped_only_by_configuration(
 ) -> None:
     monkeypatch.setattr(r2_module.boto3, "client", lambda *_args, **_kwargs: FakeS3Client())
     settings = Settings(
-        storage_provider="minio",
+        storage_provider="local",
         storage_endpoint_url="http://localhost:9000",
         storage_access_key_id="local-access",
         storage_secret_access_key="local-secret",
     )
 
-    assert isinstance(create_storage(settings), MinioStorage)
+    assert isinstance(create_storage(settings), LocalS3Storage)
 
 
 def test_storage_factory_names_missing_configuration_without_echoing_values() -> None:
@@ -222,3 +224,48 @@ def test_usage_of_an_empty_bucket_whose_listing_omits_contents() -> None:
             return OmittingPaginator()
 
     assert R2Storage(OmittingClient(), "flo-attachments").usage_bytes() == 0
+
+
+class BucketClient:
+    def __init__(self, head_code: str | None) -> None:
+        self.head_code = head_code
+        self.created: list[object] = []
+
+    def head_bucket(self, **kwargs: object) -> object:
+        if self.head_code is not None:
+            raise ClientError({"Error": {"Code": self.head_code}}, "HeadBucket")
+        return {}
+
+    def create_bucket(self, **kwargs: object) -> object:
+        self.created.append(kwargs["Bucket"])
+        return {}
+
+
+def _bucket_settings() -> Settings:
+    return Settings(
+        storage_provider="local",
+        storage_endpoint_url="http://localhost:9000",
+        storage_access_key_id="local-access",
+        storage_secret_access_key="local-secret",
+    )
+
+
+@pytest.mark.parametrize(("head_code", "created"), [("404", ["flo-attachments"]), (None, [])])
+def test_ensure_bucket_creates_only_when_missing(
+    monkeypatch: pytest.MonkeyPatch, head_code: str | None, created: list[str]
+) -> None:
+    client = BucketClient(head_code)
+    monkeypatch.setattr(r2_module.boto3, "client", lambda *_a, **_k: client)
+
+    ensure_bucket(_bucket_settings())
+
+    assert client.created == created
+
+
+def test_ensure_bucket_reraises_other_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+    client = BucketClient("403")
+    monkeypatch.setattr(r2_module.boto3, "client", lambda *_a, **_k: client)
+
+    with pytest.raises(ClientError):
+        ensure_bucket(_bucket_settings())
+    assert client.created == []

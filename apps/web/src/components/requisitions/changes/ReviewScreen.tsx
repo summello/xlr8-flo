@@ -1,6 +1,7 @@
 import { CheckCircle, PaperPlaneTilt } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 import { apiClient } from "../../../api/client";
+import { personLabel } from "../../ui/Person";
 import { CardSkeleton, CardState } from "../DetailCards";
 import ReqField from "../ReqField";
 import { failure, mutationHeaders, type Problem, type Requisition } from "../api";
@@ -118,7 +119,7 @@ export default function ReviewScreen({ id, kind, navigate, onLoaded }: { id: str
       <aside className="req-side">
         {set && <WhatHappens set={set} verb={amend ? "You Submit" : "You Resubmit"} />}
         {set && <FundingEffect set={set} retry={changes.reload} />}
-        <section className="req-partial"><CardState name="the versions" error={revisions.error} loading={revisions.loading} hasData={revisions.data !== null} retry={revisions.reload}><Versions revisions={revisions.data ?? []} requester={{ id: req.requester_id, email: req.requester_email }} /></CardState></section>
+        <section className="req-partial"><CardState name="the versions" error={revisions.error} loading={revisions.loading} hasData={revisions.data !== null} retry={revisions.reload}><Versions revisions={revisions.data ?? []} requester={{ id: req.requester_id, email: req.requester_email, name: req.requester_name }} /></CardState></section>
       </aside>
     </div>
     <div className="req-action-bar">
@@ -135,7 +136,7 @@ async function whoIsAsked(row: Requisition): Promise<string> {
   const { data } = await apiClient.GET("/api/v1/approvals/instances/{id}", { params: { path: { id: row.approval.instance_id } } }).catch(() => ({ data: undefined }));
   if (!data) return "";
   const step = data.route.find(n => n.node_id === data.current_node_id) ?? data.route[0];
-  const emails = data.tasks.filter(t => t.status === "open").flatMap(t => t.approver_emails);
-  const who = emails.length ? emails : step?.approver_emails ?? [];
+  const emails = data.tasks.filter(t => t.status === "open").flatMap(t => t.approver_emails.map((e, i) => personLabel(t.approver_names[i], e)));
+  const who = emails.length ? emails : step?.approver_emails.map((e, i) => personLabel(step.approver_names[i], e)) ?? [];
   return who.length ? ` Now with ${who.join(", ")}${step ? ` at ${step.label}` : ""}.` : "";
 }

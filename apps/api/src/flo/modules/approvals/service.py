@@ -11,7 +11,7 @@ from uuid import UUID, uuid4
 import psycopg
 from psycopg.types.json import Jsonb
 
-from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
+from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
 from flo.kernel.authz import PermissionHoldersResolver
@@ -273,8 +273,10 @@ class WorkflowService:
             raise ProblemError(ErrorCode.NOT_FOUND)
         return row
 
-    def _version(self, id: UUID, version: int) -> dict[str, object]:
-        row = self.repo.version(id, version)
+    def _version(
+        self, id: UUID, version: int, *, include_deleted: bool = False
+    ) -> dict[str, object]:
+        row = self.repo.version(id, version, include_deleted=include_deleted)
         if row is None:
             raise ProblemError(ErrorCode.NOT_FOUND)
         return row
@@ -282,16 +284,16 @@ class WorkflowService:
     def _audit(
         self, action: str, id: UUID, before: dict[str, object] | None, after: dict[str, object]
     ) -> None:
-        AuditWriter(cast(AuditConnection, self.connection), self.scope).write(
+        audit_event(
+            cast(AuditConnection, self.connection),
+            self.scope,
             actor=AuditActor(ActorKind.USER, self.actor_id),
             action=action,
             target_type="workflow",
             target_id=id,
             outcome=Outcome.SUCCESS,
-            before_source=before,
-            before_fields=tuple(before or ()),
-            after_source=after,
-            after_fields=tuple(after),
+            before=before,
+            after=after,
         )
 
     def get(self, id: UUID) -> WorkflowRead:
@@ -322,10 +324,14 @@ class WorkflowService:
             self._audit("workflow.create", id, None, self._definition(id))
             return self.get(id)
 
-    def get_version(self, id: UUID, version: int) -> WorkflowVersionRead:
+    def get_version(
+        self, id: UUID, version: int, *, include_deleted: bool = False
+    ) -> WorkflowVersionRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             self._definition(id)
-            return WorkflowVersionRead.model_validate(self._version(id, version))
+            return WorkflowVersionRead.model_validate(
+                self._version(id, version, include_deleted=include_deleted)
+            )
 
     def create_version(self, id: UUID, body: WorkflowVersionWrite) -> WorkflowVersionRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
@@ -390,6 +396,38 @@ class WorkflowService:
             after = self._version(id, version)
             self._audit("workflow.version.update", id, before, after)
             return WorkflowVersionRead.model_validate(after)
+
+    def delete_version(self, id: UUID, version: int) -> None:
+        """Soft-delete the draft version; the number is kept so it is never reused."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self._definition(id, lock=True)
+            before = self._version(id, version)
+            if before["status"] != "draft":
+                raise conflict("not_draft")
+            self.repo.execute(
+                "UPDATE workflow_version SET status='deleted',row_version=row_version+1 "
+                "WHERE org_id=%(org_id)s AND definition_id=%(id)s AND version=%(version)s",
+                {"id": id, "version": version},
+            )
+            # A workflow that never had a published version frees its scope with its last draft.
+            live = self.repo.execute(
+                "SELECT 1 FROM workflow_version WHERE org_id=%(org_id)s AND definition_id=%(id)s "
+                "AND status<>'deleted' LIMIT 1",
+                {"id": id},
+            ).fetchone()
+            retired = live is None
+            if retired:
+                self.repo.execute(
+                    "UPDATE workflow_definition SET retired_at=now() "
+                    "WHERE org_id=%(org_id)s AND id=%(id)s AND retired_at IS NULL",
+                    {"id": id},
+                )
+            self._audit(
+                "workflow.version.delete",
+                id,
+                {"version": version, "status": "draft"},
+                {"version": version, "status": "deleted", "definition_retired": retired},
+            )
 
     def validation(self, id: UUID, version: int) -> ValidationReport:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):

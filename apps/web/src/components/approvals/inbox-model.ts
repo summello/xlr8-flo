@@ -1,6 +1,8 @@
 import type { components } from "../../api/generated/schema";
 import type { StatusTone } from "../status/tones";
 
+export type { StatusTone };
+
 export type InboxRow = components["schemas"]["InboxRow"];
 export type InboxPage = components["schemas"]["InboxPage"];
 

@@ -3,7 +3,7 @@ import type { components } from "../../src/api/generated/schema";
 export const workflowId = "11111111-1111-4111-8111-111111111111";
 export const approverId = "22222222-2222-4222-8222-222222222222";
 export async function stubBuilder(page: Page) {
-    const state = { graph: { nodes: [{ id: "start", kind: "start", name: "Start" }, { id: "end", kind: "end", name: "End" }], edges: [], layout: { start: { x: 40, y: 40 }, end: { x: 320, y: 40 } } } as components["schemas"]["WorkflowGraph"], report: { errors: [], warnings: [] } as components["schemas"]["ValidationReport"], catalog: { amount: "money" } as Record<string, string>, stale: false, peopleFail: false, published: false, draft: true, writes: [] as {
+    const state = { graph: { nodes: [{ id: "start", kind: "start", name: "Start" }, { id: "end", kind: "end", name: "End" }], edges: [], layout: { start: { x: 40, y: 40 }, end: { x: 320, y: 40 } } } as components["schemas"]["WorkflowGraph"], report: { errors: [], warnings: [] } as components["schemas"]["ValidationReport"], catalog: { amount: "money" } as Record<string, string>, stale: false, failDelete: false, peopleFail: false, published: false, draft: true, writes: [] as {
             method: string;
             path: string;
             body: Record<string, unknown>;
@@ -27,7 +27,7 @@ export async function stubBuilder(page: Page) {
                 body = { detail: "Approver service is unavailable." };
             }
             else
-                body = { rows: [{ user_id: approverId, email: "approver@example.test" }] };
+                body = { rows: [{ user_id: approverId, email: "approver@example.test", name: "Ada Lovelace" }, { user_id: "cccccccc-0000-4000-8000-000000000009", email: "unnamed@example.test", name: null }] };
         }
         else if (path === "/api/v1/org/units")
             body = { rows: [{ id: approverId }], next_cursor: null };
@@ -44,6 +44,8 @@ export async function stubBuilder(page: Page) {
             body = version();
         }
         else if (path.includes("/versions/")) {
+            if (req.method() === "DELETE")
+                return route.fulfill({ status: state.failDelete ? 409 : 204, ...(state.failDelete ? { contentType: "application/json", body: JSON.stringify({ detail: "Only a draft can be deleted.", checks: { problem: "not_draft" } }) } : {}) });
             if (req.method() === "PUT") {
                 if (state.stale) {
                     status = 409;
