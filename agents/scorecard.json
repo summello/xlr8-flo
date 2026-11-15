@@ -8744,6 +8744,71 @@
         },
         "gate_s": 175
       }
+    },
+    {
+      "story": "E12-S26",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "security"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "d548c07b-f6a2-47f3-b3e8-e1a041cee2a8",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S26",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a1dbe0-e917-7973-bc20-9bf153547434",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Award GETs now sit behind the evaluator declaration, submit refreshes not_lowest from the live standing, PO ordered_value ignores superseded/cancelled POs, PO history keeps the newest events, and a non-ASCII svix signature is a 401 instead of a 500.",
+      "title": "Release audit fixes: award reads behind the declaration, lowest-price flag at submit, PO read figures, webhook signature",
+      "durations": {
+        "wall_s": 15767,
+        "author_s": 662,
+        "review_s": {
+          "codex-a": 52,
+          "opus": 1007
+        },
+        "gate_s": 2
+      }
     }
   ]
 }

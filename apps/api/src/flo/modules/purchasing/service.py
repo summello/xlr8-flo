@@ -391,7 +391,8 @@ class PurchaseOrderService:
             for r in self.repo.execute(
                 "SELECT l.rfq_line_id, l.vendor_id, l.line_total, p.currency "
                 "FROM po_line l JOIN purchase_order p ON p.org_id = l.org_id AND p.id = l.po_id "
-                "WHERE l.org_id = %(org_id)s AND l.award_id = %(id)s AND p.status <> 'deleted'",
+                "WHERE l.org_id = %(org_id)s AND l.award_id = %(id)s "
+                "AND p.status NOT IN ('deleted', 'superseded', 'cancelled')",
                 {"id": award_id},
             ).fetchall():
                 key = (cast(UUID, r[0]), cast(UUID, r[1]))
@@ -614,9 +615,12 @@ class PurchaseOrderService:
                 "SELECT a.occurred_at, i.email, a.action, a.reason, a.after "
                 "FROM audit_log a LEFT JOIN identity i ON i.id = a.actor_id "
                 "WHERE a.org_id = %(org_id)s AND a.target_type = 'purchase_order' "
-                "AND a.target_id = ANY(%(ids)s) ORDER BY a.occurred_at, a.id LIMIT %(limit)s",
+                "AND a.target_id = ANY(%(ids)s) "
+                "ORDER BY a.occurred_at DESC, a.id DESC LIMIT %(limit)s",
                 {"ids": chain, "limit": HISTORY_CAP + 1},
             ).fetchall()
+        truncated = len(rows) > HISTORY_CAP
+        rows = rows[:HISTORY_CAP][::-1]  # the newest, shown oldest first
         return PoHistoryRead(
             entries=[
                 PoHistoryEntry(
@@ -625,9 +629,9 @@ class PurchaseOrderService:
                     action=cast(str, r[2]),
                     detail=_detail(cast(str | None, r[3]), cast(dict[str, Any] | None, r[4])),
                 )
-                for r in rows[:HISTORY_CAP]
+                for r in rows
             ],
-            truncated=len(rows) > HISTORY_CAP,
+            truncated=truncated,
         )
 
     def budget_projects(self, id: UUID) -> list[UUID]:

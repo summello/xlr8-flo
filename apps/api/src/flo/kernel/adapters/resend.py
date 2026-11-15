@@ -257,7 +257,7 @@ def verify_svix(
     signed = f"{svix_id}.{svix_timestamp}.".encode() + body
     expected = base64.b64encode(hmac.new(key, signed, hashlib.sha256).digest()).decode()
     return any(
-        hmac.compare_digest(expected, entry[3:])
+        hmac.compare_digest(expected.encode(), entry[3:].encode())
         for entry in svix_signature.split()
         if entry.startswith("v1,")
     )

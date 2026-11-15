@@ -468,13 +468,22 @@ def test_bid_content_stays_behind_the_declaration_for_an_evaluator_only(lifecycl
             "refresh": await read(browser, "POST", f"/rfqs/{rfq.id}/comparison/refresh-rate"),
             "list": await read(browser, "GET", f"/rfqs/{rfq.id}/bids"),
             "bid": await read(browser, "GET", f"/rfqs/{rfq.id}/bids/{bid_id}"),
+            "award": await read(browser, "GET", f"/rfqs/{rfq.id}/award"),
+            "awards": await read(browser, "GET", f"/rfqs/{rfq.id}/awards"),
         }
         assert got == expect, (grant, got)
 
     async def scenario():
         async with client(app) as browser:
             await login(browser)
-            gated = {"comparison": 409, "refresh": 409, "list": 409, "bid": 409}
+            gated = {
+                "comparison": 409,
+                "refresh": 409,
+                "list": 409,
+                "bid": 409,
+                "award": 409,
+                "awards": 409,
+            }
             await reads(browser, ["rfq.view", "rfq.edit"], gated)
             await reads(browser, ["rfq.view", "rfq.approve"], {**gated, "refresh": 403})
             # view only: the gate removes access, never widens it
@@ -484,7 +493,14 @@ def test_bid_content_stays_behind_the_declaration_for_an_evaluator_only(lifecycl
             await reads(browser, ["rfq.view", "rfq.edit"], gated)  # recused, permanently
             sql(db, "DELETE FROM rfq_score WHERE rfq_id=%s RETURNING 1", (rfq.id,))
             sql(db, "DELETE FROM rfq_evaluator WHERE rfq_id=%s RETURNING 1", (rfq.id,))
-            open_ = {"comparison": 200, "refresh": 200, "list": 200, "bid": 200}
+            open_ = {
+                "comparison": 200,
+                "refresh": 200,
+                "list": 200,
+                "bid": 200,
+                "award": 404,
+                "awards": 200,
+            }
             await reads(browser, ["rfq.view", "rfq.edit"], open_)  # not an evaluator: as today
             await reads(browser, ["rfq.view"], {**open_, "refresh": 403, "list": 403, "bid": 403})
 

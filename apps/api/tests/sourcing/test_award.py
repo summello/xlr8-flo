@@ -31,7 +31,7 @@ from flo.modules.sourcing.awards import (
     Quote,
     amounts,
 )
-from flo.modules.sourcing.schemas import RfqContentPatch
+from flo.modules.sourcing.schemas import BidLineIn, BidPatch, BidSubmit, RfqContentPatch
 from tests.approvals.test_engine import graph
 from tests.approvals.test_workflow_definitions import definition, draft, svc
 from tests.isolation.test_real_sessions import client, headers, login
@@ -43,6 +43,7 @@ from tests.requisitions.test_header import empty_database as empty_database  # n
 from tests.requisitions.test_header import header_db as header_db  # noqa: F401
 from tests.requisitions.test_lifecycle import lifecycle_db as lifecycle_db  # noqa: F401
 from tests.requisitions.test_lines import lines_db as lines_db  # noqa: F401
+from tests.sourcing.test_bids import bids, evidence, key
 from tests.sourcing.test_comparison import deadline_ago, quoted
 from tests.sourcing.test_rfq import draft_rfq, entry, refused, send, sql
 from tests.sourcing.test_rfq_content import invite, vendor
@@ -93,7 +94,8 @@ def rfq_for(db, row, line, qty, names=("A", "B"), prices=("80", "90"), **bid):
         rfq = life(db).publish(rfq.id)
     vids = [i.vendor_id for i in rfq.invitees]
     for vid, price in zip(vids, prices, strict=True):
-        quoted(db, rfq, vid, "USD", price=price, **bid)
+        if price is not None:  # None: invited, no bid yet
+            quoted(db, rfq, vid, "USD", price=price, **bid)
     deadline_ago(db, rfq, 1)
     sql(db, "UPDATE rfq SET status='under_evaluation' WHERE id=%s RETURNING 1", (rfq.id,))
     return rfq, vids
@@ -283,6 +285,90 @@ def test_a_non_lowest_line_needs_a_justification_when_the_setting_is_on_and_not_
         put = AwardLinesPut(lines=[pick(db, rfq, b, "10", justification="Local stock")])
         awards(db).put_lines(rfq.id, put, str(award.version))
     assert submit(db, rfq).status == "approval_pending"
+
+
+def late_bid(db, rfq, vendor_id, price):
+    """The lead accepts a bid sent after the deadline, once the award lines were saved."""
+    sql(db, "UPDATE rfq SET status='closed' WHERE id=%s RETURNING 1", (rfq.id,))
+    draft = key(db, rfq, vendor_id, "USD")
+    line = rfq_line_of(db, rfq)
+    with correlation_context("bid"):
+        draft = bids(db).patch(
+            rfq.id,
+            draft.id,
+            BidPatch(
+                lines=[BidLineIn(rfq_line_id=line, quoted=True, unit_price=price, tax="0")],
+                evidence_attachment_id=evidence(db, draft.id),
+            ),
+            str(draft.row_version),
+        )
+        body = BidSubmit(accept_late_reason="Courier strike")
+        bids(db).submit(rfq.id, draft.id, body, str(draft.row_version), True)
+    sql(db, "UPDATE rfq SET status='under_evaluation' WHERE id=%s RETURNING 1", (rfq.id,))
+
+
+def test_the_non_lowest_flag_follows_the_standing_at_submit_not_at_save(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, _, _, [a, b, c] = scene(db, prices=("80", "80", None), names=("A", "B", "C"))
+    line = rfq_line_of(db, rfq)
+    award = prepare(db, rfq, pick(db, rfq, b, "10", tie_override_reason="Nearer"))
+    assert award.lines[0].not_lowest is False  # tied at 80 when saved
+    late_bid(db, rfq, c, "70")  # C is now the lowest
+    error = refused(lambda: submit(db, rfq), ErrorCode.VALIDATION_FAILED)
+    assert [e.field for e in error.errors] == [f"lines/{line}/{b}"]
+    assert error.errors[0].message == "Justify choosing other than the lowest price."
+    assert awards(db).read(rfq.id).status == "draft"
+    stored = "SELECT not_lowest FROM award_line WHERE award_id=%s"
+    assert sql(db, stored, (award.id,)) == [(False,)]  # the 422 rolled the refresh back
+    with correlation_context("award"):
+        put = AwardLinesPut(
+            lines=[pick(db, rfq, b, "10", tie_override_reason="Nearer", justification="Stock")]
+        )
+        awards(db).put_lines(rfq.id, put, str(award.version))
+    done = submit(db, rfq)
+    assert done.status == "approval_pending"
+    assert done.lines[0].not_lowest is True
+    assert a != c
+
+
+def test_with_the_setting_off_the_stale_flag_still_submits_and_reaches_the_evidence(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, _, _, [_a, b, c] = scene(db, prices=("80", "80", None), names=("A", "B", "C"))
+    key_ = "sourcing.require_non_lowest_justification"
+    OrgService(db[0], Scope(db[1]), db[3]).set_setting(key_, SettingPut(value=False))
+    award = prepare(db, rfq, pick(db, rfq, b, "10", tie_override_reason="Nearer"))
+    late_bid(db, rfq, c, "70")
+    done = submit(db, rfq)
+    assert done.status == "approval_pending" and done.lines[0].not_lowest is True
+    evidence_ = AwardService(db[0], Scope(db[1])).evidence(award.id)
+    assert [x["vendor_name"] for x in evidence_["not_lowest"]] == ["B"]
+
+
+def test_award_reads_stay_behind_the_evaluators_declaration(lifecycle_db):
+    from flo.modules.sourcing.evaluation import DeclarationIn
+    from tests.sourcing.test_evaluation import ev, evaluate
+
+    db, _ = lifecycle_db
+    rfq, _, _, [_a, b] = scene(db)
+    prepare(db, rfq, pick(db, rfq, b, "10"))
+    assert awards(db).read(rfq.id).lines and awards(db).awards(rfq.id)  # not an evaluator
+    evaluate(db, rfq, db[3], declare=False)
+
+    def gated(code):
+        for read in (awards(db).read, awards(db).awards):
+            assert refused(lambda: read(rfq.id), ErrorCode.CONFLICT).checks["problem"] == code
+
+    gated("declaration_required")
+    with correlation_context("declare"):
+        ev(db).declare(rfq.id, DeclarationIn(conflict=False))
+    assert awards(db).read(rfq.id).lines and awards(db).awards(rfq.id)
+    rfq2, _, _, [_a, b2] = scene(db, workflow=False)
+    prepare(db, rfq2, pick(db, rfq2, b2, "10"))
+    evaluate(db, rfq2, db[3], declare=False)
+    with correlation_context("declare"):
+        ev(db).declare(rfq2.id, DeclarationIn(conflict=True, detail="Related"))
+    for read in (awards(db).read, awards(db).awards):
+        assert refused(lambda: read(rfq2.id), ErrorCode.CONFLICT).checks["problem"] == "recused"
 
 
 def test_the_justification_is_not_required_when_the_org_turns_the_setting_off(lifecycle_db):

@@ -49,7 +49,7 @@ from flo.modules.requisitions.service import (
     sourcing_basis,
 )
 from flo.modules.sourcing.comparison import ComparisonRead, ComparisonService, SealedComparisonRead
-from flo.modules.sourcing.evaluation import weighted
+from flo.modules.sourcing.evaluation import assert_may_see_bids, weighted
 from flo.modules.sourcing.schemas import ReasonBody
 from flo.modules.sourcing.service import CURRENT_BID, SUPERSEDE_GUARDS, no_priced_quote
 
@@ -520,6 +520,14 @@ class AwardService(ComparisonService):
     # -- the read --------------------------------------------------------------------------
 
     def read(self, rfq_id: UUID) -> AwardRead:
+        """The GET entry point: prices stay behind the evaluator's declaration (SRC-011)."""
+        with tenant_transaction(cast(RlsSession, self.connection), self.scope):
+            self._rfq(rfq_id)
+            assert_may_see_bids(self.repo, rfq_id, self.actor_id)
+            return self._read_for(rfq_id)
+
+    def _read_for(self, rfq_id: UUID) -> AwardRead:
+        """Ungated: what a write returns after its own checks."""
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             _, unit_id, ccy, _ = self._rfq(rfq_id)
             return self._read(self._award(rfq_id), ccy, unit_id)
@@ -624,7 +632,7 @@ class AwardService(ComparisonService):
                     )
             self._store(self.award_by_id(id), picks, cmp, standing)
             self._audit_award("award.create", id, None, {"basis": body.basis, "number": number})
-        return self.read(rfq_id)
+        return self._read_for(rfq_id)
 
     def _store(
         self,
@@ -734,7 +742,7 @@ class AwardService(ComparisonService):
             self._store(award, body.lines, cmp, standing)
             self._bump(award["id"])
             self._audit_award("award.lines", award["id"], None, {"lines": len(body.lines)})
-        return self.read(rfq_id)
+        return self._read_for(rfq_id)
 
     def patch(self, rfq_id: UUID, body: AwardPatch, if_match: str | None) -> AwardRead:
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
@@ -749,7 +757,7 @@ class AwardService(ComparisonService):
             )
             self._bump(award["id"])
             self._audit_award("award.rationale", award["id"], None, {"rationale": body.rationale})
-        return self.read(rfq_id)
+        return self._read_for(rfq_id)
 
     def _bump(self, award_id: UUID) -> None:
         self.repo.execute(
@@ -769,8 +777,18 @@ class AwardService(ComparisonService):
                 )
             id = cast(UUID, award["id"])
             require_workflow_for(self.connection, self.scope, "award", id, "awards")
-            rows = self._rows(id)
             cmp, standing = self._standing(rfq_id)
+            # the flag was stored at save time; a late bid may have moved the standing since
+            for r in self._rows(id):
+                fresh = r.vendor_id not in standing.get(r.rfq_line_id, (set(), None))[0]
+                if fresh != r.not_lowest:
+                    self.repo.execute(
+                        "UPDATE award_line SET not_lowest = %(v)s "
+                        "WHERE org_id = %(org_id)s AND award_id = %(id)s "
+                        "AND rfq_line_id = %(line)s AND vendor_id = %(vendor)s",
+                        {"v": fresh, "id": id, "line": r.rfq_line_id, "vendor": r.vendor_id},
+                    )
+            rows = self._rows(id)
             setting = OrgService(self.connection, self.scope).effective_setting(
                 unit_id, "sourcing.require_non_lowest_justification"
             )
@@ -881,7 +899,7 @@ class AwardService(ComparisonService):
             self._audit_award(
                 "award.submit", id, {"status": "draft"}, {"status": "approval_pending"}
             )
-        return self.read(rfq_id)
+        return self._read_for(rfq_id)
 
     def withdraw(self, rfq_id: UUID) -> AwardRead:
         """One transaction: the approval ends WITHDRAWN and the adapter moves the award to draft."""
@@ -902,12 +920,13 @@ class AwardService(ComparisonService):
                 actor_id=cast(UUID, self.actor_id),
                 reason="",
             )
-        return self.read(rfq_id)
+        return self._read_for(rfq_id)
 
     def awards(self, rfq_id: UUID) -> list[AwardRead]:
         """Every award of the RFQ, newest first, superseded and cancelled included (WF-005)."""
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             _, unit_id, ccy, _ = self._rfq(rfq_id)
+            assert_may_see_bids(self.repo, rfq_id, self.actor_id)
             ids = [
                 cast(UUID, r[0])
                 for r in self.repo.execute(
@@ -940,7 +959,7 @@ class AwardService(ComparisonService):
                 {"status": "draft"},
                 {"status": "cancelled", "reason": body.reason},
             )
-        return self.read(rfq_id)
+        return self._read_for(rfq_id)
 
     def supersede(self, rfq_id: UUID, body: ReasonBody) -> AwardRead:
         """Decision 213: undo an approved award exactly; refused once a PO exists (SRC-017).
@@ -1024,7 +1043,7 @@ class AwardService(ComparisonService):
                 {"status": "awarded"},
                 {"status": "under_evaluation", "reason": body.reason},
             )
-        return self.read(rfq_id)
+        return self._read_for(rfq_id)
 
     # -- the approval outcomes (inside the decision's transaction) ---------------------------
 

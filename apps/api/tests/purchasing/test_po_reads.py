@@ -333,3 +333,39 @@ def test_the_detail_route_offers_only_what_the_caller_may_run(lifecycle_db):
             assert got["actions"] == [] and got["vendor_status"] is None
 
     asyncio.run(scenario())
+
+
+def test_ordered_value_counts_only_the_live_revision_and_drops_a_cancelled_po(lifecycle_db):
+    db, _ = lifecycle_db
+    po = issued_po(db)
+    award_id, vendor_id, qty = sql(
+        db, "SELECT award_id, vendor_id, quantity FROM po_line WHERE po_id=%s", (po.id,)
+    )[0]
+    before = pos(db).awarded(award_id, vendor_id).lines[0].ordered_value
+    new_id = revise(db, po)  # the old revision stays `superseded` with its copied lines
+    live = Decimal(qty) * Decimal("77.5")  # the change order's unit price
+    assert pos(db).awarded(award_id, vendor_id).lines[0].ordered_value == f"{live:.2f}", before
+    with correlation_context("cancel"):
+        cancel(
+            db[0], Scope(db[1]), new_id, db[3], f'"{pos(db).get(new_id).version}"',
+            PoCancelCreate(reason="not needed", notify_vendor=False),
+        )  # fmt: skip
+    assert pos(db).awarded(award_id, vendor_id).lines[0].ordered_value == "0.00"
+
+
+def test_history_keeps_the_newest_events_when_it_hits_the_cap(lifecycle_db, monkeypatch):
+    db, _ = lifecycle_db
+    po = issued_po(db)
+    monkeypatch.setattr("flo.modules.purchasing.service.HISTORY_CAP", 3)
+    for i in range(5):
+        sql(
+            db,
+            "INSERT INTO audit_log(org_id, actor_kind, outcome, correlation_id, occurred_at, "
+            "action, target_type, target_id) "
+            "VALUES (%s, 'system', 'success', 'cap', now() + %s * interval '1 day', %s, "
+            "'purchase_order', %s) RETURNING 1",
+            (db[1], i + 1, f"purchase_order.x{i}", po.id),
+        )
+    history = pos(db).history(po.id)
+    assert [e.action for e in history.entries] == [f"purchase_order.x{i}" for i in (2, 3, 4)]
+    assert history.truncated

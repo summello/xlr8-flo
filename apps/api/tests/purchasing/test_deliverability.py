@@ -158,6 +158,8 @@ def test_svix_known_answer_and_failures():
     assert verify_svix(SECRET, "msg_p4", "1614265330", "v1,bad " + good, body, now) is True
     assert verify_svix(SECRET, None, "1614265330", good, body, now) is False
     assert verify_svix(SECRET, "msg_p4", "soon", good, body, now) is False
+    # non-ASCII is a bad signature, not a TypeError from compare_digest on str
+    assert verify_svix(SECRET, "msg_p4", "1614265330", "v1,\u00e9", body, now) is False
 
 
 # -- webhook --------------------------------------------------------------------------------
@@ -182,6 +184,8 @@ def test_webhook_rejects_bad_signature_old_timestamp_and_missing_headers(stack):
     assert post_webhook(body, forged).status_code == 401  # plant: skip verification -> 200
     assert post_webhook(body, sign(body, "evt_2", int(time.time()) - 301)).status_code == 401
     assert post_webhook(body, {"svix-id": "evt_3"}).status_code == 401
+    odd = {"svix-signature": "v1,\u00e9".encode("latin-1")}  # Starlette decodes headers as latin-1
+    assert post_webhook(body, sign(body, "evt_4"), odd).status_code == 401
     assert result(db, po) == [(1, "sent", None)]
     assert count(db, "email_event") == 0 and count(db, "email_suppression") == 0
 
