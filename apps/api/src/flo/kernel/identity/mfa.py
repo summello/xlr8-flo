@@ -20,6 +20,7 @@ from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from pyotp.totp import TOTP
 
 from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.identity.hashing import run_argon2
@@ -145,8 +146,8 @@ def _datetime(value: object) -> datetime:
     return timestamp if timestamp.tzinfo is not None else timestamp.replace(tzinfo=UTC)
 
 
-def _totp(secret: str) -> pyotp.TOTP:
-    return pyotp.TOTP(
+def _totp(secret: str) -> TOTP:
+    return TOTP(
         secret,
         digits=TOTP_DIGITS,
         interval=TOTP_INTERVAL_SECONDS,
