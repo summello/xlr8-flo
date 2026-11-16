@@ -79,6 +79,20 @@ def event(type_: str, message_id: str, bounce: str | None = None, **extra) -> by
     return json.dumps({"type": type_, "created_at": "2026-11-07T00:00:00Z", "data": data}).encode()
 
 
+def tagged(message_id, tags, created_at, type_="email.bounced") -> bytes:
+    doc: dict[str, object] = {
+        "type": type_,
+        "data": {"email_id": message_id, "bounce": {"type": "Permanent"}, "tags": tags},
+    }
+    if created_at is not None:
+        doc["created_at"] = created_at
+    return json.dumps(doc).encode()
+
+
+def iso(age_seconds: int) -> str:
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - age_seconds))
+
+
 @pytest.fixture
 def stack(lifecycle_db):
     """The production dependency stack with the webhook secret and database configured."""
@@ -681,3 +695,61 @@ def test_the_job_stores_a_row_or_leaves_the_last_status_in_force(stack, monkeypa
     assert post_job().json() == {"spf": "pass", "dkim": "fail"}
     with psycopg.connect(stack[1].database_url.get_secret_value()) as conn:
         assert latest_domain_status(conn) == DomainStatus("pass", "fail", "DKIM TXT k: failed")
+
+
+# -- E13-S32: an event that beats its route row -----------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("tags", "created_at", "status"),
+    [
+        ({"kind": "po"}, "now", 503),
+        ({"kind": "po"}, "old", 200),
+        (None, "now", 200),
+        ({"kind": "other"}, "now", 200),
+        ({"kind": "po"}, None, 200),
+        ({"kind": "po"}, "nonsense", 200),
+    ],
+)
+def test_an_unrouted_po_event_is_retried_only_while_fresh(stack, tags, created_at, status):
+    db, _ = stack
+    stamp = {"now": iso(0), "old": iso(7200)}.get(created_at, created_at)
+    body = tagged("never-sent", tags, stamp)
+    response = post_webhook(body, sign(body, "evt_1"))
+    assert response.status_code == status  # plants: drop the tag check / the age check
+    assert count(db, "email_event") == 0 and count(db, "email_suppression") == 0
+    if status == 503:
+        assert response.content == b""
+
+
+def test_an_unsigned_unrouted_po_event_is_401_not_503(stack):
+    body = tagged("never-sent", {"kind": "po"}, iso(0))
+    forged = sign(body, "evt_1") | {"svix-signature": "v1," + "A" * 44}
+    assert post_webhook(body, forged).status_code == 401
+
+
+def test_a_retried_event_is_applied_once_the_route_exists(stack):
+    db, _ = stack
+    po, message_id = sent_po(db)
+    [(outbox_id,)] = sql(db, "SELECT outbox_id FROM email_message_route")
+    sql(db, "DELETE FROM email_message_route RETURNING 1")  # the event outran sent()'s route insert
+    body = tagged(message_id, {"kind": "po"}, iso(0))
+    assert post_webhook(body, sign(body, "evt_1")).status_code == 503
+    assert result(db, po) == [(1, "sent", None)] and count(db, "email_suppression") == 0
+    sql(
+        db,
+        "INSERT INTO email_message_route (provider_message_id, org_id, outbox_id) "
+        "VALUES (%s, %s, %s) RETURNING 1",
+        (message_id, db[1], outbox_id),
+    )
+    assert post_webhook(body, sign(body, "evt_2")).status_code == 200
+    assert result(db, po) == [(1, "bounced", BOUNCED_REASON)]
+    assert count(db, "email_suppression") == 1
+
+
+def test_a_routed_tagged_event_is_applied_and_answers_200(stack):
+    db, _ = stack
+    po, message_id = sent_po(db)
+    body = tagged(message_id, {"kind": "po"}, iso(0), "email.delivered")
+    assert post_webhook(body, sign(body, "evt_1")).status_code == 200
+    assert result(db, po) == [(1, "delivered", None)]

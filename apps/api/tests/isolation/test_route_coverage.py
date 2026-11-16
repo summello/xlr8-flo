@@ -50,8 +50,7 @@ EVALUATION_ROUTES = "sourcing/test_evaluation.py::test_evaluation_routes_conceal
 AWARD_ROUTES = "sourcing/test_award.py::test_award_routes_conceal_foreign_tenants"
 PO_ROUTES = "purchasing/test_purchase_orders.py::test_purchase_order_routes_conceal_foreign_tenants"
 PO_READ_ROUTES = (
-    "purchasing/test_po_reads.py::"
-    "test_po_read_routes_conceal_foreign_tenants_and_check_permissions"
+    "purchasing/test_po_reads.py::test_po_read_routes_conceal_foreign_tenants_and_check_permissions"
 )
 VENDOR_COPY_ROUTES = (
     "purchasing/test_vendor_copy.py::test_vendor_copy_routes_conceal_foreign_tenants"

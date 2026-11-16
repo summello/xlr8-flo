@@ -476,6 +476,9 @@ def test_adapters_carry_the_attachment_only_when_given() -> None:
     ]
     resend.send("a@example.invalid", "t", {}, "k")
     assert "attachments" not in captured["body"]  # type: ignore[operator]
+    assert "tags" not in captured["body"]  # type: ignore[operator]
+    resend.send("a@example.invalid", "po-issue-v1", {}, "k")  # E13-S32: PO mail is tagged
+    assert captured["body"]["tags"] == [{"name": "kind", "value": "po"}]  # type: ignore[index]
     smtp = FakeSmtp()
     sender = SmtpEmailSender(
         "localhost", 1025, "noreply@xlr8flo.local", smtp_factory=lambda *_: cast(smtplib.SMTP, smtp)

@@ -15,7 +15,7 @@ from psycopg.types.json import Jsonb
 from flo.kernel.audit.writer import CorrelationMissing
 from flo.kernel.db.repo import ScopedRepo
 from flo.kernel.logging import current_correlation_id
-from flo.kernel.ports.email import EmailAttachment
+from flo.kernel.ports.email import EmailAttachment, is_po_template
 from flo.kernel.tenancy.context import Scope
 
 type DatabaseRow = Sequence[object] | Mapping[str, object]
@@ -241,7 +241,7 @@ class WorkerOutboxStore:
         if (
             row.org_id is not None
             and row.topic == "email"
-            and str(row.payload.get("template", "")).startswith("po-")
+            and is_po_template(row.payload.get("template"))
         ):
             self._connection.execute(
                 "INSERT INTO email_message_route (provider_message_id, org_id, outbox_id) "

@@ -126,6 +126,12 @@ class ChangesMixin:
         submit is 409 `not_draft`."""
         status, _, creator = self._lock(id)
         if self._holds("vendor.edit"):
+            if status == "pending_approval":  # the approver decides on the record as submitted
+                raise conflict(
+                    "pending_approval",
+                    "This vendor is awaiting approval. Withdraw the request or wait for the "
+                    "decision before changing it.",
+                )
             return "edit"
         if not self._holds("vendor.request"):
             raise ProblemError(ErrorCode.FORBIDDEN)

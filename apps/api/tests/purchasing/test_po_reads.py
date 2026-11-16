@@ -137,6 +137,29 @@ def test_the_search_runs_on_the_server_across_pages(lifecycle_db):
     assert pos(db).list_orders(_all(db), "all", None, 5, q="no-such-%").rows == []
 
 
+def test_the_list_shows_the_live_revision_once_and_counts_follow_the_search(lifecycle_db):
+    db, _ = lifecycle_db
+    po = issued_po(db)
+    live = revise(db, po)
+    page = listing(db)
+    assert [r.id for r in page.rows] == [live]  # plant: list 'superseded' again -> two rows
+    assert (page.counts["all"], page.counts["issued"]) == (1, 1)
+    assert [r.id for r in listing(db, "issued").rows] == [live]
+    assert pos(db).get(po.id).status == "superseded" and len(pos(db).versions(live)) == 2
+
+
+def test_counts_apply_the_search_but_not_the_cursor(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, _, a, _, award_id, _ = ready(db)
+    first = create(db, rfq, a, award_id, "4")
+    create(db, rfq, a, award_id, "3")
+    found = pos(db).list_orders(_all(db), "all", None, 5, q=first.number)
+    assert len(found.rows) == 1 and found.counts["all"] == 1  # plant: counts ignore q -> 2
+    one = pos(db).list_orders(_all(db), "all", None, 1)
+    two = pos(db).list_orders(_all(db), "all", one.next_cursor, 1)
+    assert one.counts == two.counts and two.counts["all"] == 2
+
+
 # -- B3, B4: versions and history --------------------------------------------------------------
 
 

@@ -22,6 +22,11 @@ class EmailAttachment:
     content: bytes
 
 
+def is_po_template(template: object) -> bool:
+    """PO emails are the routed (and provider-tagged) ones; one test for send and for routing."""
+    return isinstance(template, str) and template.startswith("po-")
+
+
 class EmailSender(Protocol):
     """Deliver one template while preserving provider idempotency."""
 

@@ -466,21 +466,22 @@ class PurchaseOrderService:
             "limit": page_size + 1,
         }
         where = (
-            "p.org_id = %(org_id)s AND p.status <> 'deleted' "
+            "p.org_id = %(org_id)s AND p.status NOT IN ('deleted', 'superseded') "
             "AND (%(org_wide)s OR p.unit_id = ANY(%(bu_ids)s::uuid[]))"
         )
-        after = ""
+        search = ""
         needle = (q or "").strip()
         if needle:  # number, vendor name or a project code of its lines; `%` and `_` are literal
             params["q"] = (
                 "%" + needle.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
             )
-            after += (
+            search = (
                 " AND (p.number ILIKE %(q)s OR p.vendor_snapshot->>'trading_name' ILIKE %(q)s "
                 "OR EXISTS (SELECT 1 FROM po_line l JOIN project pr ON pr.org_id = l.org_id "
                 "AND pr.id = l.project_id WHERE l.org_id = p.org_id AND l.po_id = p.id "
                 "AND pr.number ILIKE %(q)s))"
             )
+        after = ""
         if cursor is not None:
             try:
                 at, last = json.loads(base64.urlsafe_b64decode(cursor.encode()))
@@ -489,7 +490,7 @@ class PurchaseOrderService:
                 raise _invalid(
                     "cursor", "The page cursor is not valid.", "invalid_cursor"
                 ) from None
-            after += " AND (p.created_at, p.id) < (%(c_at)s, %(c_id)s)"
+            after = " AND (p.created_at, p.id) < (%(c_at)s, %(c_id)s)"
         tabs = {
             "all": "true",
             "draft": "p.status = 'draft'",
@@ -510,7 +511,7 @@ class PurchaseOrderService:
                         self.repo.execute(
                             "SELECT "
                             + ", ".join(f"count(*) FILTER (WHERE {c})" for c in tabs.values())
-                            + f" FROM purchase_order p WHERE {where}",
+                            + f" FROM purchase_order p WHERE {where}{search}",
                             params,
                         ).fetchone(),
                     ),
@@ -521,7 +522,7 @@ class PurchaseOrderService:
                 "SELECT p.id, p.number, p.unit_id, p.vendor_id, "
                 "p.vendor_snapshot->>'trading_name', p.requisition_id, p.currency, p.status, "
                 "p.created_at, p.revision FROM purchase_order p "
-                f"WHERE {where} AND {tabs[tab]}{after} "
+                f"WHERE {where}{search} AND {tabs[tab]}{after} "
                 "ORDER BY p.created_at DESC, p.id DESC LIMIT %(limit)s",
                 params,
             ).fetchall()

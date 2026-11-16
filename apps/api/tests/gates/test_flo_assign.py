@@ -142,5 +142,5 @@ def test_the_committed_config_has_sonnet_first_and_codex_b_overflow_authoring():
         return [role.strip() for role in line.group(1).split(",") if role.strip()]
 
     assert "author" in roles("sonnet") and "author" in roles("codex-b")
-    for name in ("codex-a", "opencode-nemotron", "qwen", "kimi"):   # codex-a is the reviewer login
+    for name in ("codex-a", "opencode-nemotron", "qwen", "kimi"):  # codex-a is the reviewer login
         assert "author" not in roles(name)

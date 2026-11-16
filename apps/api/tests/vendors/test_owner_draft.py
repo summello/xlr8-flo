@@ -11,6 +11,7 @@ from flo.kernel.tenancy.context import Scope
 from flo.modules.vendors.documents import draft_write
 from flo.modules.vendors.schemas import (
     ContactCreate,
+    ContactPatch,
     DocumentCreate,
     SensitivePut,
     SubmitCreate,
@@ -361,3 +362,39 @@ def test_the_three_owner_reads_refuse_other_requesters_and_members_over_http(vdb
                 assert got.status_code == 200, (suffix, got.text)
 
     asyncio.run(scenario())
+
+
+def test_a_vendor_edit_holder_cannot_change_a_vendor_while_its_create_request_is_in_approval(vdb):
+    """E13-S32: the approver decides on the record as submitted."""
+    db, _ = vdb
+    types(db, TAX=True)
+    editor = make_actor(db, ["vendor.edit", "vendor.sensitive.reveal", "vendor.view"])
+    s, vendor = svc(db, editor), draft_of(db, editor)
+    made = s.create_contact(vendor.id, contact("billing"))
+    attachment, _ = attach(db, vendor.id)
+    doc = s.add_document(vendor.id, DocumentCreate(type_code="TAX", attachment_id=attachment))
+    set_status(db, vendor.id, "pending_approval")
+    before = sql(db, "SELECT count(*) FROM vendor_contact WHERE vendor_id = %s", (vendor.id,))
+    name = sql(db, "SELECT trading_name, version FROM vendor WHERE id = %s", (vendor.id,))
+
+    def frozen(call):
+        with pytest.raises(ProblemError) as error:
+            call()
+        assert problem(error) == (ErrorCode.CONFLICT, "pending_approval")
+
+    frozen(lambda: s.update(vendor.id, VendorPatch(trading_name="Sneaky"), f'"{vendor.version}"'))
+    frozen(lambda: s.create_contact(vendor.id, contact("service_delivery")))
+    frozen(lambda: s.update_contact(vendor.id, made.id, ContactPatch(name="X"), '"0"'))
+    frozen(lambda: s.delete_contact(vendor.id, made.id))
+    frozen(lambda: s.put_sensitive(vendor.id, SENSITIVE, '"0"'))
+    frozen(
+        lambda: s.add_document(vendor.id, DocumentCreate(type_code="TAX", attachment_id=attachment))
+    )
+    frozen(lambda: s.replace_document(vendor.id, doc.document_id, None))
+    frozen(lambda: draft_write(db[0], Scope(db[1]), vendor.id, editor))
+    assert (
+        sql(db, "SELECT count(*) FROM vendor_contact WHERE vendor_id = %s", (vendor.id,)) == before
+    )
+    assert sql(db, "SELECT trading_name, version FROM vendor WHERE id = %s", (vendor.id,)) == name
+    set_status(db, vendor.id, "active")  # every other status behaves as before
+    assert s.create_contact(vendor.id, contact("service_delivery"))

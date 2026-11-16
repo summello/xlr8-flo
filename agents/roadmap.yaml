@@ -2523,7 +2523,7 @@ epics:
           - E13-S10
           - E13-S12
           - E12-S26
-        st: todo
+        st: done
 
   - id: E22
     name: Budget governance follow-ups

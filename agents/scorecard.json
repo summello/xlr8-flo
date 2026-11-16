@@ -8809,6 +8809,72 @@
         },
         "gate_s": 2
       }
+    },
+    {
+      "story": "E13-S32",
+      "kind": "engine",
+      "size": "M",
+      "tags": [
+        "security",
+        "auth"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "3eb93c63-d936-4faa-85db-3f5929564113",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S32",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a1e579-0e05-7f32-b51b-66443bc5e866",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "54f76a9a-8a94-4bdb-82c6-5bd06053fd18",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "PO list drops superseded revisions and counts honour the search but not the cursor; PO emails are tagged kind=po and the webhook answers 503 for a fresh unrouted PO event so Resend retries; a vendor.edit holder gets 409 pending_approval on every vendor write while the create request is in approval.",
+      "title": "Release audit follow-ups: one row per PO in the list, early delivery events retried, no vendor edits while a create request is pending",
+      "durations": {
+        "wall_s": 1780,
+        "author_s": 462,
+        "review_s": {
+          "codex-a": 261,
+          "opus": 352
+        },
+        "gate_s": 2
+      }
     }
   ]
 }

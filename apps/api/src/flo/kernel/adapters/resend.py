@@ -21,6 +21,7 @@ from flo.kernel.ports.email import (
     EmailSender,
     PermanentEmailError,
     TransientEmailError,
+    is_po_template,
 )
 
 _RESEND_EMAILS_URL = "https://api.resend.com/emails"
@@ -89,6 +90,8 @@ class ResendEmailSender(EmailSender):
             "to": [to],
             "template": {"id": template, "variables": dict(context)},
         }
+        if is_po_template(template):  # the webhook retries an early event only for these (E13-S32)
+            request_body["tags"] = [{"name": "kind", "value": "po"}]
         if attachments:
             request_body["attachments"] = [
                 {
