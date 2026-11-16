@@ -7,9 +7,9 @@ Loaded into every agent session. Updated by `flo done` (status) and by Opus at e
 
 | | |
 |---|---|
-| Milestone | **M4 — Full Phase-1 scope** |
-| Stories | 201 / 262 done |
-| Branch | milestone/M4-phase1-complete |
+| Milestone | **M3 — First sellable release** |
+| Stories | 201 / 263 done |
+| Branch | milestone/M3-sellable |
 | In flight | — |
 | Blocked | — |
 <!-- STATE:END -->
