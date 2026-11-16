@@ -2068,6 +2068,19 @@ epics:
           - E13-S10
           - E13-S12
         st: done
+      - id: E12-S27
+        t: A declared conflict outlives removal from the evaluator list
+        k: engine
+        s: S
+        tags:
+          - security
+          - auth
+        reqs:
+          - SRC-011
+        dep:
+          - E12-S07
+          - E12-S26
+        st: todo
 
   - id: E13
     name: Purchase orders
