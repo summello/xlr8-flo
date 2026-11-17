@@ -22,6 +22,7 @@ from flo.modules.sourcing.evaluation import (
     EvaluationService,
     ScoreIn,
     ScoresPut,
+    assert_may_see_bids,
 )
 from flo.modules.sourcing.schemas import BidSubmit, SealedBidRead
 from tests.isolation.test_real_sessions import client, login
@@ -491,18 +492,24 @@ def test_bid_content_stays_behind_the_declaration_for_an_evaluator_only(lifecycl
             with correlation_context("declare"):
                 ev(db).declare(rfq.id, DeclarationIn(conflict=True, detail="Related"))
             await reads(browser, ["rfq.view", "rfq.edit"], gated)  # recused, permanently
-            sql(db, "DELETE FROM rfq_score WHERE rfq_id=%s RETURNING 1", (rfq.id,))
-            sql(db, "DELETE FROM rfq_evaluator WHERE rfq_id=%s RETURNING 1", (rfq.id,))
-            open_ = {
-                "comparison": 200,
-                "refresh": 200,
-                "list": 200,
-                "bid": 200,
-                "award": 404,
-                "awards": 200,
-            }
-            await reads(browser, ["rfq.view", "rfq.edit"], open_)  # not an evaluator: as today
-            await reads(browser, ["rfq.view"], {**open_, "refresh": 403, "list": 403, "bid": 403})
+            # removal from the list never lifts a declared conflict (service call, not SQL)
+            with correlation_context("remove"):
+                ev(db).remove_evaluator(rfq.id, db[3], str(version(db, rfq, db[3])))
+            assert sql(db, "SELECT count(*) FROM rfq_evaluator")[0][0] == 0
+            await reads(browser, ["rfq.view", "rfq.edit"], gated)
+            await reads(browser, ["rfq.view", "rfq.approve"], {**gated, "refresh": 403})
+            for can_approve in (False, True):
+                assert (
+                    problem(lambda c=can_approve: view(db, rfq, can_approve=c)) == "recused"
+                )  # GET /evaluation
+            with correlation_context("evaluator"):  # added again: still recused, forever
+                ev(db).add_evaluator(rfq.id, db[3], may_view=True)
+            await reads(browser, ["rfq.view", "rfq.edit"], gated)
+            assert problem(lambda: put(db, rfq, vids, db[3])) == "recused"
+            declare = ev(db).declare
+            assert problem(lambda: declare(rfq.id, DeclarationIn(conflict=False))) == (
+                "already_declared"
+            )
 
     asyncio.run(scenario())
 
@@ -632,5 +639,49 @@ def test_evaluation_routes_conceal_foreign_tenants(lifecycle_db):
                         {"If-Match": '"1"'},
                     )
                     assert response.status_code == 404, (method, suffix, response.text)
+
+    asyncio.run(scenario())
+
+
+def test_the_gate_reads_membership_and_declaration_in_one_statement(lifecycle_db):
+    db, _ = lifecycle_db
+    rfq, _ = scene(db)
+    evaluate(db, rfq, db[3], declare=False)
+    service = ev(db)
+    calls = []
+    real = service.repo.execute
+    service.repo.execute = lambda *a, **k: calls.append(a[0]) or real(*a, **k)
+    with tenant_transaction(db[0], service.scope):
+        assert problem(lambda: assert_may_see_bids(service.repo, rfq.id, db[3])) == DECLARE_FIRST
+    assert len(calls) == 1, calls
+
+
+@pytest.mark.parametrize("declared_clear", [None, False, True])  # None: never an evaluator
+def test_a_removed_evaluator_with_no_conflict_reads_as_an_ordinary_viewer(
+    lifecycle_db, declared_clear
+):
+    db, _ = lifecycle_db
+    rfq, _ = scene(db)
+    bid_id = sql(db, "SELECT id FROM bid WHERE rfq_id=%s", (rfq.id,))[0][0]
+    if declared_clear is not None:
+        evaluate(db, rfq, db[3], declare=declared_clear)
+        with correlation_context("remove"):
+            ev(db).remove_evaluator(rfq.id, db[3], str(version(db, rfq, db[3])))
+    assert view(db, rfq).me is None
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            regrant(db, ["rfq.view", "rfq.edit"])
+            for method, suffix, want in (
+                ("GET", "/comparison", 200),
+                ("POST", "/comparison/refresh-rate", 200),
+                ("GET", "/bids", 200),
+                ("GET", f"/bids/{bid_id}", 200),
+                ("GET", "/award", 404),
+                ("GET", "/awards", 200),
+            ):
+                got = (await send(browser, method, f"/rfqs/{rfq.id}{suffix}")).status_code
+                assert got == want, suffix
 
     asyncio.run(scenario())

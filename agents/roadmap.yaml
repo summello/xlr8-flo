@@ -2080,7 +2080,7 @@ epics:
         dep:
           - E12-S07
           - E12-S26
-        st: todo
+        st: done
 
   - id: E13
     name: Purchase orders

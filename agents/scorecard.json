@@ -8875,6 +8875,72 @@
         },
         "gate_s": 2
       }
+    },
+    {
+      "story": "E12-S27",
+      "kind": "engine",
+      "size": "S",
+      "tags": [
+        "security",
+        "auth"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 2
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 1,
+          "blockers": 1,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "fad430a6-24d5-4b38-bf72-46718184c14f",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S27",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a1e6be-ea24-7702-a529-96a50d71a03b",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": "54f76a9a-8a94-4bdb-82c6-5bd06053fd18",
+          "source": "env:CLAUDE_CODE_SESSION_ID"
+        }
+      },
+      "recap": "A declared conflict is read by identity alone, so removal from the evaluator list no longer lifts the recusal on bid-content reads or GET /evaluation. The gate reads membership and declaration in one statement (round 1 fix), pinned by a statement-count test.",
+      "title": "A declared conflict outlives removal from the evaluator list",
+      "durations": {
+        "wall_s": 2613,
+        "author_s": 451,
+        "review_s": {
+          "codex-a": 60,
+          "opus": 347
+        },
+        "gate_s": 1
+      }
     }
   ]
 }

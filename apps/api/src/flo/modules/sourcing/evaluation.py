@@ -241,22 +241,36 @@ def weighted(repo: RfqRepository, rfq_id: UUID) -> dict[UUID, Decimal] | None:
     return tally(repo, rfq_id).weighted()
 
 
-def assert_may_see_bids(repo: RfqRepository, rfq_id: UUID, identity_id: UUID | None) -> None:
-    """Bid content reaches an evaluator only after they declare no conflict. Callers run this
-    after their own authorization and only once the bids are unsealed; it never widens access."""
+def _standing(
+    repo: RfqRepository, rfq_id: UUID, identity_id: UUID | None
+) -> tuple[bool, bool | None]:
+    """One statement, one snapshot: (is a current evaluator, declared conflict). The declaration
+    is read by identity alone so removal from the list never hides it: True conflict, False
+    clear, None not declared."""
     row = repo.execute(
-        "SELECT (SELECT bool_or(d.conflict) FROM rfq_evaluator_declaration d "
-        "WHERE d.org_id = e.org_id AND d.rfq_id = e.rfq_id AND d.identity_id = e.identity_id) "
-        "FROM rfq_evaluator e WHERE e.org_id = %(org_id)s AND e.rfq_id = %(rfq)s "
-        "AND e.identity_id = %(who)s",
+        "SELECT EXISTS(SELECT 1 FROM rfq_evaluator WHERE org_id = %(org_id)s AND rfq_id = %(rfq)s "
+        "AND identity_id = %(who)s), "
+        "(SELECT bool_or(conflict) FROM rfq_evaluator_declaration "
+        "WHERE org_id = %(org_id)s AND rfq_id = %(rfq)s AND identity_id = %(who)s)",
         {"rfq": rfq_id, "who": identity_id},
     ).fetchone()
-    if row is None:
-        return
-    if row[0] is None:
+    assert row is not None
+    return bool(row[0]), cast("bool | None", row[1])
+
+
+def _recused() -> ProblemError:
+    return conflict("recused", "You declared a conflict and are recused from this RFQ.")
+
+
+def assert_may_see_bids(repo: RfqRepository, rfq_id: UUID, identity_id: UUID | None) -> None:
+    """Bid content reaches an evaluator only after they declare no conflict, and a declared
+    conflict outlives removal from the list. Callers run this after their own authorization and
+    only once the bids are unsealed; it never widens access."""
+    is_evaluator, declared = _standing(repo, rfq_id, identity_id)
+    if declared:
+        raise _recused()
+    if is_evaluator and declared is None:
         raise conflict("declaration_required", "Declare whether you have a conflict first.")
-    if row[0]:
-        raise conflict("recused", "You declared a conflict and are recused from this RFQ.")
 
 
 def _invalid(field: str, message: str, problem: str) -> ProblemError:
@@ -344,10 +358,10 @@ class EvaluationService(RfqService):
         submitted, then everyone's (to evaluators and `rfq.approve`)."""
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             head = self._head(rfq_id)
+            if _standing(self.repo, rfq_id, self.actor_id)[1]:
+                raise _recused()
             t = tally(self.repo, rfq_id)
             me = self.actor_id if self.actor_id in t.state else None
-            if me is not None and t.state[me] is True:
-                raise conflict("recused", "You declared a conflict and are recused from this RFQ.")
             opened = visible(head[1], head[2])
             cleared = me is None or t.state[me] is False
             names: dict[UUID, str | None] = {}
