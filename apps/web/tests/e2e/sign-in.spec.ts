@@ -126,6 +126,7 @@ test('plant: mapping every login status to the credential alert fails service fa
 });
 test('keyboard, show toggle, empty fields and Enter submission', async ({ page }) => {
   await stub(page); await page.goto('/sign-in');
+  await expect(page.getByRole('heading', { name: 'Sign In', level: 1 })).toBeFocused(); // E13-S33: arrival focus; the next Tab reaches Email
   await page.keyboard.press('Tab'); await expect(page.getByLabel('Email', { exact: true })).toBeFocused();
   await page.keyboard.press('Tab'); await expect(page.getByLabel('Password', { exact: true })).toBeFocused();
   await page.keyboard.press('Tab'); await expect(page.getByRole('button', { name: 'Show', exact: true })).toBeFocused();

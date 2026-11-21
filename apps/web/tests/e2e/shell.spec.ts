@@ -9,6 +9,9 @@ async function openCommandMenu(page: Page) {
 test("skip link is first, keyboard-visible, and jumps to main", async ({ page }) => {
   await page.goto("/");
   await page.locator(".app-shell").waitFor();
+  // E13-S33: the shell focuses main on arrival; restart keyboard navigation from the top of the document.
+  await expect(page.getByRole("main")).toBeFocused();
+  await page.evaluate(() => { (document.activeElement as HTMLElement).blur(); window.getSelection()?.collapse(document.body, 0); });
   await page.keyboard.press("Tab");
 
   const skipLink = page.getByRole("link", { name: "Skip to main content" });
