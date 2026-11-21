@@ -6,6 +6,14 @@ ACC-008: a complete project-to-PO workflow is operable without a mouse (M3 exit 
 manual evidence for this release. The tester follows it on the local stack and attaches the result record
 (section 4) to PR #22. Staging has no second deployed environment, so the local stack is where it runs.
 
+**Run it only once E22-S14, E12-S28 and E13-S33 are merged.** The first automated run (21 Nov 2026) found that a
+unit-scoped Requester could not load the business units (E22-S14), that the RFQ editor discarded typed fields
+after Invite Selected or Save Draft (E12-S28), and that focus fell to the page body after several actions
+(E13-S33). Before those merge, step 1 cannot complete as written and steps 1, 3, 5, 6, 9 and 14 fail the focus rule.
+
+**Allow about 90 minutes.** The RFQ deadline must be at least an hour ahead (step 4), and the RFQ closes only after
+it passes (step 7). Record the bid (step 6) during the wait.
+
 ## 1. Setup (not part of the evidence)
 
 Run from the repository root unless a line says otherwise.
@@ -49,6 +57,12 @@ the next).
 - Where a screen has drag-and-drop, use its keyboard equivalent (the Move Up and Move Down buttons) and say so
   in the note.
 - Record the browser and the operating system.
+- Date fields follow the browser's locale: day-month-year in en-GB, month-day-year in en-US. Type the date in the
+  order the field shows.
+- Arriving on a new page puts focus on the page itself (its `main` region, named by the page heading); the
+  next Tab reaches the first control in the page. That counts as visible focus.
+- To switch person: Tab to **Account menu**, press Enter, Tab to **Sign out**, press Enter. Wait for the sign-in
+  page before typing; signing in as the next person on a half-finished sign-out leaves the previous person in.
 
 ## 3. The chain, keyboard only
 
@@ -57,7 +71,7 @@ left as the screen shows it.
 
 | screen | screen (person) | field | value | rule that makes it required |
 |---|---|---|---|---|
-| 1 | New project (Requester) | Business unit | "Operations" (choose from the suggestions) | `ProjectForm.tsx` ~16 |
+| 1 | New project (Requester) | Business unit | "Operations": type `Op`, press ArrowDown to the suggestion, Enter. The box may then show the unit's id instead of its name; that is a known follow-up, not a failure | `ProjectForm.tsx` ~16 |
 | 1 | | Project name | "Pump Station Refit" | ~17 |
 | 1 | | Department | `OPS` | ~18 |
 | 1 | | Ledger account | `6100` | ~19 |
@@ -83,7 +97,7 @@ left as the screen shows it.
 | 4 | | Delivery Location | "Operations warehouse" | same |
 | 4 | | Delivery Terms | "DAP" | same |
 | 4 | | Terms | "Net 30" | same |
-| 4 | | Response Deadline Date and Time (24-hour) | now plus 65 minutes, rounded up to the minute, **in the zone the Time Zone field shows** (`UTC` unless set, `sourcing/schemas.py` ~193; past midnight there, the next date) | ~148-158 (at least one hour ahead) |
+| 4 | | Response Deadline Date and Time (24-hour) | now plus 65 minutes, rounded up to the minute, **in the zone the Time Zone field shows** (`UTC` unless set, `sourcing/schemas.py` ~193; past midnight there, the next date). The date arrives prefilled from the requisition; overwrite it | ~148-158 (at least one hour ahead) |
 | 4 | | Invited vendor | "Acme Pumps", contact "Acme Orders" `vendor@example.com` | ~160-171 |
 | 4 | | Criteria, evaluators, requirements | none (leave empty; no criteria means no weight check) | ~172-179 |
 | 5 | Record Bid on the RFQ (Buyer) | Version Answered | the default (Version 1) | `BidSheet.tsx` ~34 |
@@ -109,9 +123,9 @@ Steps (one hand-off each; the person signed in, the start URL, the keys pressed,
 the expected result):
 
 1. **Project (Requester).** Start at `/projects/new`. Tab through the screen 1 fields, typing the values above,
-   then activate **Create project**. Expect the project detail page with focus on its heading. Tab to
-   **Change status**, choose Pending approval, activate **Confirm transition**. Expect the status to read
-   pending approval.
+   then activate **Create project**. Expect the project detail page with focus on the page. Tab to
+   **Approval pending** and press Enter (the status changes at once; a reason dialog with **Confirm transition**
+   appears only for a transition that needs a reason). Expect the status to read approval pending.
 2. **Approve the project (Approver).** Sign out, sign in as the Approver. Start at `/approvals`. Tab to the
    project's row and press Enter; focus lands in the decision panel. Activate **Approve**. Expect the project to be
    active (a requisition can use only an active project).
@@ -138,7 +152,9 @@ the expected result):
 11. **Purchase order (Buyer).** Sign in as the Buyer. Open the RFQ detail, Tab to **View Award** and press Enter
     (the approved award at `/sourcing/rfqs/<id>/award`). Tab to **Create PO** and press Enter; focus arrives on
     `/purchase-orders/new?award=<id>` with the awarded lines loaded. Keep the quantity (screen 8) and activate
-    **Create Draft POs**. On the PO, activate **Submit for Approval**.
+    **Create Draft POs**. Open the new PO (the PO number link), Tab to **Edit** and press Enter; on the edit page
+    activate **Submit for Approval** (the PO detail page has no submit control). Expect the PO detail page with
+    status approval pending.
 12. **Approve the PO (PO approver).** Sign in as the PO approver; from `/approvals` approve it. Open the PO,
     activate **Issue**, then **Issue** in the dialog. Run the tick.
 13. **Transmission log.** On the PO detail the transmission card shows **Sent to Vendor**. Open Mailpit and find
