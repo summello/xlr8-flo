@@ -239,6 +239,8 @@ test("E13-S33 first route focuses main, but never takes focus from a control the
     });
   });
   await page.goto("/budget");
+  await page.locator("#main-content").waitFor();
+  await page.evaluate(() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)))); // the shell's focus frame has run
   await expect(page.locator("#deep-link-control")).toBeFocused();
 });
 
