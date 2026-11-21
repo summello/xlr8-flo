@@ -111,7 +111,8 @@ def test_selection_isolation_and_no_replay(multi):
             assert await chosen(browser) == str(b.org_id)
             assert (await browser.get(f"/api/v1/org/units/{record}")).status_code == 404
             # The organization admin grant in A grants no permission in B.
-            assert (await browser.get("/api/v1/org/units")).status_code == 403
+            listed = await browser.get("/api/v1/org/units")  # E22-S13 decision 2: empty, not 403
+            assert listed.status_code == 200 and listed.json()["rows"] == []
             await select(browser, a.org_id)
             assert await chosen(browser) == str(a.org_id)
             assert (await browser.get(f"/api/v1/org/units/{record}")).status_code == 200
