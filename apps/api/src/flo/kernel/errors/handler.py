@@ -243,9 +243,7 @@ def _response_documentation() -> dict[str, dict[str, Any]]:
 def _problem_component_schemas() -> dict[str, Any]:
     """Return every schema needed by the shared RFC 9457 response reference."""
 
-    problem_schema = ProblemDetails.model_json_schema(
-        ref_template="#/components/schemas/{model}"
-    )
+    problem_schema = ProblemDetails.model_json_schema(ref_template="#/components/schemas/{model}")
     definitions = problem_schema.pop("$defs", {})
     return {**definitions, "ProblemDetails": problem_schema}
 

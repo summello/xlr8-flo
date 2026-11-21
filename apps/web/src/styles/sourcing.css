@@ -1,0 +1,40 @@
+/* RFQ list and detail (E12-S11). Tokens only; layout follows design-system/pages/sourcing.md 4.1 and 4.4. */
+.rfq-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); }
+.rfq-steps li { display: flex; align-items: center; gap: var(--space-2); color: var(--fg-secondary); }
+.rfq-steps li[aria-current="step"] { color: var(--fg); font-weight: var(--weight-heading); border-block-end: 2px solid var(--border-strong); }
+.rfq-steps li svg { width: var(--icon-inline); height: var(--icon-inline); flex-shrink: 0; }
+.rfq-banner { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); border: 1px solid var(--status-danger); border-radius: var(--radius-card); color: var(--fg); }
+.rfq-banner svg { color: var(--status-danger); width: var(--icon-inline); height: var(--icon-inline); }
+.rfq-was { color: var(--fg-muted); text-decoration: line-through; }
+.rfq-invitee { display: grid; gap: var(--space-1); padding-block: var(--space-2); border-block-end: 1px solid var(--border); }
+.rfq-invitee:last-child { border-block-end: 0; }
+
+/* New RFQ line picker (E12-S12). */
+.rfq-picker tbody th[scope="rowgroup"] { color: var(--fg); text-transform: none; letter-spacing: normal; font-size: var(--text-body); border-block-end: 1px solid var(--border-strong); }
+.rfq-picker td:last-child, .rfq-picker th:last-child { inline-size: 14ch; }
+.rfq-pick { display: flex; align-items: flex-start; gap: var(--space-2); }
+.rfq-pick > span { display: grid; gap: var(--space-1); min-width: 0; }
+.rfq-filters { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: end; }
+.rfq-filters > * { min-width: 0; }
+
+/* Bid sheet (E12-S14). Tokens only; layout follows design-system/pages/sourcing.md 4.5. */
+.bid-sheet { width: min(calc(var(--sheet-w) * 2), 100%); display: grid; gap: var(--space-4); align-content: start; }
+.bid-form, .bid-readonly, .bid-replace { display: grid; gap: var(--space-4); }
+.bid-form fieldset, .bid-requirements { border: 1px solid var(--border); border-radius: var(--radius-card); padding: var(--space-3); margin: 0; }
+.bid-summary { padding: var(--space-3) var(--space-4); border: 1px solid var(--status-danger); border-radius: var(--radius-card); }
+.bid-summary ul { margin: var(--space-2) 0 0; padding-inline-start: var(--space-4); }
+.bid-lines td input.numeric, .bid-totals td { text-align: end; font-variant-numeric: tabular-nums; }
+.bid-totals { max-inline-size: var(--sheet-w); margin-inline-start: auto; }
+.bid-sheet .field-error { color: var(--status-danger); margin: 0; }
+.bid-link { border: 0; background: none; padding: 0; text-decoration: underline; cursor: pointer; font: inherit; }
+.eval-page { display: grid; gap: var(--space-4); align-content: start; }
+.eval-scoring, .eval-all { display: grid; gap: var(--space-4); }
+.eval-fold { border: 1px solid var(--border); border-radius: var(--radius-card); padding: var(--space-3) var(--space-4); }
+.eval-fold > summary { cursor: pointer; font-weight: var(--weight-heading); min-height: var(--touch-target); display: flex; align-items: center; }
+.eval-fold input { inline-size: 8ch; }
+.eval-fold textarea { inline-size: 100%; }
+.eval-summary { border: 1px solid var(--status-danger); border-radius: var(--radius-card); padding: var(--space-3) var(--space-4); }
+.eval-radio { display: flex; align-items: center; gap: var(--space-2); min-height: var(--touch-target); }
+.eval-state { display: flex; align-items: center; gap: var(--space-2); }
+.eval-state svg { inline-size: var(--icon-inline); block-size: var(--icon-inline); flex-shrink: 0; }
+.eval-declaration .req-actions { justify-content: flex-start; }

@@ -35,15 +35,16 @@ const expectedStatus = {
     rejected: "danger",
     withdrawn: "neutral",
     cancelled: "danger",
-    expired: "danger",
+    expired: "warning",
   },
   purchase_order: {
     draft: "neutral",
     approval_pending: "info",
     approved: "info",
     issued: "success",
-    partially_fulfilled: "info",
-    fulfilled: "success",
+    partially_delivered: "info",
+    delivered: "success",
+    accepted: "success",
     closed: "neutral",
     cancelled: "danger",
     superseded: "warning",
@@ -51,17 +52,25 @@ const expectedStatus = {
   rfq: {
     draft: "neutral",
     published: "info",
-    closed: "neutral",
+    closed: "info",
     under_evaluation: "info",
     awarded: "success",
     cancelled: "danger",
   },
+  award: {
+    draft: "neutral",
+    approval_pending: "info",
+    approved: "success",
+    superseded: "warning",
+    cancelled: "danger",
+  },
   vendor: {
-    pending: "info",
+    draft: "neutral",
+    pending_approval: "info",
     active: "success",
     suspended: "warning",
-    expired: "danger",
     inactive: "neutral",
+    rejected: "danger",
   },
   budget: {
     within: "success",
@@ -90,13 +99,14 @@ const expectedLabels = {
   withdrawn: "Withdrawn",
   approved: "Approved",
   issued: "Issued",
-  partially_fulfilled: "Partially fulfilled",
-  fulfilled: "Fulfilled",
+  partially_delivered: "Partially delivered",
+  delivered: "Delivered",
+  accepted: "Accepted",
   closed: "Closed",
   superseded: "Superseded",
   published: "Published",
   under_evaluation: "Under evaluation",
-  pending: "Pending",
+  pending_approval: "Pending approval",
   suspended: "Suspended",
   expired: "Expired",
   inactive: "Inactive",
@@ -160,6 +170,17 @@ describe("StatusPill", () => {
     }
   });
 
+  it("renders an expired requisition with the warning tone and Warning icon, not XCircle", () => {
+    const markup = renderSelection({ docType: "requisition", status: "expired" });
+    const icon = (node: React.ReactElement) => renderToStaticMarkup(node).replace(/^<svg[^>]*>/, "");
+
+    expect(markup).toContain('data-tone="warning"');
+    expect(markup).toContain(icon(<Warning />));
+    expect(markup).not.toContain(icon(<XCircle />));
+    expect(renderSelection({ docType: "requisition", status: "rejected" })).toContain('data-tone="danger"');
+    expect(renderSelection({ docType: "requisition", status: "withdrawn" })).toContain('data-tone="neutral"');
+  });
+
   it("snapshots square status geometry through the dedicated pill tokens", () => {
     const openingTag = renderSelection({ docType: "purchase_order", status: "issued" }).match(
       /^<span[^>]+>/,
@@ -194,7 +215,10 @@ describe("StatusPill", () => {
       cwd: sourceRoot,
     }).filter(
       (path) =>
-        path !== "components/status/StatusPill.tsx" && !path.includes("/__tests__/"),
+        // Signal is the one other reader of the tone icons (MASTER 7.14, E11-S11).
+        path !== "components/status/StatusPill.tsx" &&
+        path !== "components/ui/Signal.tsx" &&
+        !path.includes("/__tests__/"),
     );
 
     expect(componentFiles).toContain("components/shell/AppShell.tsx");

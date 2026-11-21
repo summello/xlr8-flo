@@ -1,0 +1,90 @@
+{
+  "story": "E11",
+  "reviewer": "codex-a",
+  "verdict": "changes_requested",
+  "ran_tests": false,
+  "findings": [
+    {
+      "severity": "major",
+      "category": "security",
+      "file": "apps/web/src/components/vendors/request/model.ts",
+      "line": 82,
+      "stories": [
+        "E11-S04",
+        "E11-S06",
+        "E11-S14"
+      ],
+      "requirement": "AUD-006",
+      "problem": "The live duplicate check places the raw tax identifier in a GET query string. This conflicts with the form contract that tax data never enters a URL and can expose it through browser, proxy, CDN, and access logs outside the audited sensitive-data path.",
+      "fix": "Send sensitive duplicate probes in a request body to a non-cacheable endpoint, retain masked/minimal responses, and ensure request logging excludes the body."
+    },
+    {
+      "severity": "major",
+      "category": "correctness",
+      "file": "apps/api/src/flo/modules/vendors/changes.py",
+      "line": 259,
+      "stories": [
+        "E11-S01",
+        "E11-S05",
+        "E11-S06"
+      ],
+      "requirement": "VEN-006",
+      "problem": "A vendor created through POST /vendors has no vendor_onboarding row, and submit deliberately skips required-answer validation and scoring when that row is absent. A vendor.create holder can therefore submit and activate a vendor without the published questionnaire evidence required by the submit contract.",
+      "fix": "Ensure every newly created vendor that can be submitted gets an onboarding row pinned to the published questionnaire, or reject submission when onboarding is absent; always run required-answer validation and scoring before opening approval."
+    },
+    {
+      "severity": "major",
+      "category": "ui",
+      "file": "apps/web/src/routes/vendors/list.tsx",
+      "line": 66,
+      "stories": [
+        "E11-S11",
+        "E11-S12"
+      ],
+      "requirement": "VEN-012",
+      "problem": "Eligible Here and the availability filter use the first org unit returned by UUID order, not the user's default/current unit. The page can therefore label eligibility and filter vendors for an unrelated unit while presenting the result as 'Here'.",
+      "fix": "Resolve the authenticated user's actual default/current unit and pass that unit to available_in and eligibility; if it cannot be resolved, show an explicit recoverable error instead of substituting an arbitrary unit."
+    },
+    {
+      "severity": "major",
+      "category": "ui",
+      "file": "apps/web/src/components/vendors/DocumentSheet.tsx",
+      "line": 71,
+      "stories": [
+        "E11-S03",
+        "E11-S12"
+      ],
+      "requirement": "VEN-003",
+      "problem": "Every caller who can open a document sees Verify and Reject controls, including requesters and vendor viewers without vendor.approve. The profile already receives the server's verify_documents action but does not pass or enforce it in the sheet, so unauthorized users are led into predictable 403 failures.",
+      "fix": "Pass the server-provided verify_documents capability into DocumentSheet and render the review footer only when it is present."
+    },
+    {
+      "severity": "major",
+      "category": "ui",
+      "file": "apps/web/src/components/vendors/performance/ScorecardSheet.tsx",
+      "line": 52,
+      "stories": [
+        "E11-S07",
+        "E11-S18"
+      ],
+      "requirement": "VEN-015",
+      "problem": "The scorecard unconditionally renders Add Score, Dispute, and Resolve controls to every vendor.view caller, although the server requires purchase_order.view, vendor.edit, and vendor.approve respectively. Read-only and differently privileged users are shown actions they cannot perform.",
+      "fix": "Return explicit per-action capabilities from the server and independently gate Add Score, Dispute, and Resolve with those capabilities while retaining server-side authorization."
+    },
+    {
+      "severity": "minor",
+      "category": "quality",
+      "file": "apps/api/src/flo/modules/vendors/questionnaire.py",
+      "line": 46,
+      "stories": [
+        "E11-S01",
+        "E11-S02",
+        "E11-S05",
+        "E11-S17"
+      ],
+      "requirement": "m2-conventions \u00a7O",
+      "problem": "The epic contains a second implementation of expected_version/stale instead of sharing the service implementation. The copies have already drifted: missing If-Match includes checks.problem=if_match_required for vendor/contact writes but omits it for questionnaire/onboarding writes, producing inconsistent error contracts.",
+      "fix": "Move If-Match parsing and stale-version construction to one dependency-safe shared helper and use it across vendor, contact, questionnaire, and onboarding writes with one error shape."
+    }
+  ]
+}

@@ -336,18 +336,14 @@ def test_mfa_migration_extends_sessions_and_is_reversible_with_seeded_data(
         sql.SQL("CREATE TABLE {} (value text NOT NULL)").format(sql.Identifier(sentinel))
     )
     connection.execute(
-        sql.SQL("INSERT INTO {} (value) VALUES ('preserved')").format(
-            sql.Identifier(sentinel)
-        )
+        sql.SQL("INSERT INTO {} (value) VALUES ('preserved')").format(sql.Identifier(sentinel))
     )
     try:
         session_database.migration.downgrade(connection)
         assert connection.execute("SELECT to_regclass('public.auth_session')").fetchone() == (
             "auth_session",
         )
-        assert connection.execute(
-            "SELECT to_regclass('public.mfa_factor')"
-        ).fetchone() == (None,)
+        assert connection.execute("SELECT to_regclass('public.mfa_factor')").fetchone() == (None,)
         assert connection.execute(
             sql.SQL("SELECT value FROM {}").format(sql.Identifier(sentinel))
         ).fetchone() == ("preserved",)

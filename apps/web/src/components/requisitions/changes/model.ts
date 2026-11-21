@@ -58,5 +58,5 @@ export const baseRevision = (revisions: readonly Revision[], amendmentNo: number
   return applied.length ? Math.max(...applied) : undefined;
 };
 
-/** The revision's actor: the requester by email, anyone else by the id the server returned. */
-export const actorOf = (id: string, requester: { id: string; email: string }) => id === requester.id ? requester.email : id;
+/** The revision's actor: the requester as a person, anyone else by the id the server returned. */
+export const actorOf = (id: string, requester: { id: string; email: string; name: string | null }) => id === requester.id ? { name: requester.name, email: requester.email } : id;

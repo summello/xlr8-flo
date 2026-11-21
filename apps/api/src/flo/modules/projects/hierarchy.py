@@ -20,9 +20,11 @@ class Hierarchy:
             f"""WITH RECURSIVE walk AS (
             SELECT p.id AS origin, {COLUMNS}, 1 AS depth_guard
             FROM project p WHERE p.org_id = %(org_id)s AND p.id = ANY(%(ids)s)
+            AND p.status <> 'deleted'
             UNION
             SELECT walk.origin, {COLUMNS}, walk.depth_guard + 1
             FROM walk JOIN project p ON {edge} AND p.org_id = %(org_id)s
+            AND p.status <> 'deleted'
             WHERE depth_guard < 6
             ), unique_nodes AS (
             SELECT DISTINCT ON (origin, id) * FROM walk

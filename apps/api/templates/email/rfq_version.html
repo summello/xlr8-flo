@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="en"><body>
+<p>RFQ {{ rfq_number }} {{ title }}: version {{ version }}.</p>
+{% if reason %}<p>Reason for the change: {{ reason }}</p>{% endif %}
+<ul>
+{% for field, change in changes.items() %}<li>{{ field }}: {{ change.was }} became {{ change.now }}</li>
+{% endfor %}</ul>
+</body></html>

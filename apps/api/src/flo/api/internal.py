@@ -23,13 +23,21 @@ from flo.api.authz_factory import production_authorization_resolver
 from flo.api.origin_auth import require_origin_secret
 from flo.kernel.authz import PermissionResolverFactory, public_route
 from flo.kernel.config import Settings
-from flo.kernel.email import create_email_sender
+from flo.kernel.email import (
+    DOMAIN_CHECK_JOB,
+    create_domain_checker,
+    create_email_sender,
+    latest_domain_check,
+    latest_domain_status,
+    po_domain_gate,
+)
 from flo.kernel.errors import ErrorCode, ProblemError
-from flo.kernel.jobs import JobRunner
+from flo.kernel.jobs import Job, JobRunner, PermanentJobError
 from flo.kernel.jobs.runner import RunnerConnection
 from flo.kernel.logging import correlation_context
 from flo.kernel.outbox import OutboxDispatcher, email_handler
 from flo.kernel.outbox.dispatcher import DispatcherConnection
+from flo.kernel.ports.email import PermanentEmailError, TransientEmailError
 from flo.kernel.storage import create_storage
 from flo.kernel.tenancy.context import Scope
 from flo.modules.approvals.reminders import job_handler as reminders_job_handler
@@ -40,6 +48,8 @@ from flo.modules.imports.jobs import handlers as import_handlers
 from flo.modules.org.fx import MAX_BYTES, FeedFailure, Fetcher, ingest
 from flo.modules.org.schemas import FxIngestReport
 from flo.modules.requisitions.service import expire_org
+from flo.modules.sourcing import lifecycle as rfq_lifecycle
+from flo.modules.vendors import expiry as vendor_expiry
 
 _logger = logging.getLogger(__name__)
 _METADATA_TOKEN_URL = (
@@ -58,7 +68,7 @@ TickProcessor = Callable[[], Awaitable["TickReport"]]
 @dataclass(frozen=True, slots=True)
 class QuotaPolicy:
     limit: int
-    unit: Literal["bytes", "requests"]
+    unit: Literal["bytes", "requests", "emails"]
     thresholds: tuple[int, ...]
     action: str
     cost: str
@@ -86,6 +96,13 @@ QUOTA_POLICIES: dict[str, QuotaPolicy] = {
         action="Pay-as-you-go",
         cost="~$0.15/mo per 10 GB",
     ),
+    "email_sends": QuotaPolicy(
+        limit=100,
+        unit="emails",
+        thresholds=(80,),
+        action="Transactional sends continue and digests wait; move to Resend's paid tier",
+        cost="$20/mo",
+    ),
     "artifact_registry": QuotaPolicy(
         limit=_DECIMAL_GB // 2,
         unit="bytes",
@@ -110,7 +127,7 @@ class QuotaMetric(BaseModel):
 
     current: int = Field(ge=0)
     limit: int = Field(gt=0)
-    unit: Literal["bytes", "requests"]
+    unit: Literal["bytes", "requests", "emails"]
     percentage: float = Field(ge=0)
     alert: QuotaAlert | None = None
 
@@ -279,6 +296,29 @@ async def _neon_storage_bytes(settings: Settings) -> int:
     return row[0]
 
 
+async def _email_sends_24h(settings: Settings) -> int:
+    if settings.database_url is None:
+        raise RuntimeError("DATABASE_URL is not configured")
+    connection = await psycopg.AsyncConnection.connect(settings.database_url.get_secret_value())
+    try:
+        # psycopg opens the transaction on the first statement and closing rolls it back; the
+        # SET LOCALs are the worker marker of WorkerOutboxStore.claim. The cap is the platform
+        # account's, so tenant and identity rows both count.
+        await connection.execute("SET LOCAL app.org_id = '00000000-0000-0000-0000-000000000000'")
+        await connection.execute("SET LOCAL app.worker = 'jobs'")
+        # ponytail: no index on sent_at; add a partial one if the scan shows
+        cursor = await connection.execute(
+            "SELECT count(*) FROM outbox WHERE topic = 'email' "
+            "AND sent_at > now() - interval '24 hours'"
+        )
+        row = await cursor.fetchone()
+    finally:
+        await connection.close()
+    if row is None or not isinstance(row[0], int) or row[0] < 0:
+        raise RuntimeError("PostgreSQL returned an invalid email count")
+    return row[0]
+
+
 def get_internal_settings() -> Settings:
     return Settings()
 
@@ -301,6 +341,7 @@ def get_quota_collectors(
     return {
         "neon_storage": lambda: _neon_storage_bytes(settings),
         "cloud_run_requests": cloud_run_requests,
+        "email_sends": lambda: _email_sends_24h(settings),
         "r2_storage": r2_storage_bytes,
         "artifact_registry": artifact_registry_bytes,
     }
@@ -315,11 +356,20 @@ def _run_jobs_tick(settings: Settings) -> TickReport:
     database_url = settings.database_url.get_secret_value()
     connection = psycopg.connect(database_url)
     try:
+        with psycopg.connect(database_url) as due:
+            rfq_lifecycle.enqueue_due(due)  # each tick: RFQs past their deadline close this minute
         jobs = JobRunner(
             cast(RunnerConnection, connection),
             {
                 "budget-reconcile": job_handler(lambda: psycopg.connect(database_url)),
                 "approval.reminders": reminders_job_handler(lambda: psycopg.connect(database_url)),
+                DOMAIN_CHECK_JOB: _domain_check_job(settings),
+                rfq_lifecycle.JOB_KIND: rfq_lifecycle.job_handler(
+                    lambda: psycopg.connect(database_url)
+                ),
+                vendor_expiry.JOB_KIND: vendor_expiry.job_handler(
+                    lambda: psycopg.connect(database_url)
+                ),
                 **import_handlers(
                     lambda: psycopg.connect(database_url),
                     cast(PermissionResolverFactory, production_authorization_resolver),
@@ -327,9 +377,18 @@ def _run_jobs_tick(settings: Settings) -> TickReport:
             },
             random_fraction=random.random,
         ).run(25.0)
+        # read once, in its own transaction: a bare SELECT here would open an implicit one and
+        # `connection.close()` would roll back every `sent` the dispatcher commits as savepoints
+        with connection.transaction():
+            domain_status = latest_domain_status(connection)
         outbox = OutboxDispatcher(
             cast(DispatcherConnection, connection),
-            {"email": email_handler(create_email_sender(settings))},
+            {
+                "email": email_handler(
+                    create_email_sender(settings),
+                    domain_gate=po_domain_gate(settings, domain_status),
+                )
+            },
             random_fraction=random.random,
         ).run(25.0)
     finally:
@@ -544,6 +603,34 @@ async def approval_reminders(
     return await asyncio.to_thread(_run_approval_reminders, settings)
 
 
+class VendorExpiryTriggerReport(BaseModel):
+    organizations: int
+
+
+def _run_vendor_document_expiry(settings: Settings) -> VendorExpiryTriggerReport:
+    if settings.database_url is None:
+        raise RuntimeError("DATABASE_URL is not configured")
+    with psycopg.connect(settings.database_url.get_secret_value()) as connection:
+        return VendorExpiryTriggerReport(organizations=vendor_expiry.enqueue_all(connection))
+
+
+@router.post(
+    "/internal/jobs/vendor-document-expiry",
+    response_model=VendorExpiryTriggerReport,
+    include_in_schema=False,
+)
+@public_route
+async def vendor_document_expiry(
+    settings: Annotated[Settings, Depends(get_internal_settings)],
+) -> VendorExpiryTriggerReport:
+    """Require origin secret and Idempotency-Key; never replayed. Only queues tenant jobs.
+
+    A repeat queues another job per organization; a document is notified once per threshold
+    (stamped on the row), so extra runs send nothing.
+    """
+    return await asyncio.to_thread(_run_vendor_document_expiry, settings)
+
+
 def fetch_fx(url: str) -> bytes:
     if urllib.parse.urlsplit(url).scheme != "https":
         raise FeedFailure("network")
@@ -589,3 +676,60 @@ async def fx_ingest(
 ) -> FxIngestReport:
     """Require origin secret and Idempotency-Key, no replay; repeats retain existing rates."""
     return await asyncio.to_thread(_run_fx_ingest, settings, fetcher)
+
+
+class EmailDomainCheckReport(BaseModel):
+    spf: Literal["pass", "fail", "unknown"]
+    dkim: Literal["pass", "fail", "unknown"]
+
+
+def _run_email_domain_check(settings: Settings) -> EmailDomainCheckReport:
+    if settings.database_url is None:
+        raise RuntimeError("DATABASE_URL is not configured")
+    try:
+        status = create_domain_checker(settings).domain_status()
+    except (TransientEmailError, PermanentEmailError):
+        # no row: the last stored status stays in force, so a provider blip stops nothing
+        raise ProblemError(
+            ErrorCode.SERVICE_UNAVAILABLE, checks={"problem": "email_domain_check_unavailable"}
+        ) from None
+    with psycopg.connect(settings.database_url.get_secret_value()) as connection:
+        connection.execute(
+            "INSERT INTO email_domain_status (spf, dkim, detail) VALUES (%s, %s, %s)",
+            (status.spf, status.dkim, status.detail),
+        )
+    return EmailDomainCheckReport(spf=status.spf, dkim=status.dkim)
+
+
+def _domain_check_job(settings: Settings) -> Callable[[Job], None]:
+    """A tenant-requested check (E13-S21): one provider call per minute across organizations."""
+
+    def handle(job: Job) -> None:
+        if settings.database_url is None:
+            raise RuntimeError("DATABASE_URL is not configured")
+        with psycopg.connect(settings.database_url.get_secret_value()) as connection:
+            check = latest_domain_check(connection)
+        if check is not None and check.recent:
+            return
+        try:
+            _run_email_domain_check(settings)
+        except ProblemError:
+            raise PermanentJobError("email domain check unavailable") from None
+
+    return handle
+
+
+@router.post(
+    "/internal/jobs/email-domain-check",
+    response_model=EmailDomainCheckReport,
+    include_in_schema=False,
+)
+@public_route
+async def email_domain_check(
+    settings: Annotated[Settings, Depends(get_internal_settings)],
+) -> EmailDomainCheckReport:
+    """Require origin secret and Idempotency-Key; never replayed.
+
+    A repeat appends another status row.
+    """
+    return await asyncio.to_thread(_run_email_domain_check, settings)

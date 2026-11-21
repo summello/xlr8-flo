@@ -8,7 +8,7 @@ from uuid import UUID, uuid4
 import psycopg
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
+from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.tenancy.context import Scope
@@ -84,7 +84,9 @@ class FiscalService:
         before: dict[str, object] | None,
         after: dict[str, object] | None,
     ) -> None:
-        AuditWriter(cast(AuditConnection, self.connection), self.scope).write(
+        audit_event(
+            cast(AuditConnection, self.connection),
+            self.scope,
             actor=AuditActor(ActorKind.USER, self.actor_id)
             if self.actor_id is not None
             else AuditActor(ActorKind.SYSTEM),
@@ -93,10 +95,8 @@ class FiscalService:
             target_id=target_id,
             outcome=Outcome.SUCCESS,
             reason=cast(str | None, after.get("reason")) if after else None,
-            before_source=before,
-            before_fields=tuple(before or ()),
-            after_source=after,
-            after_fields=tuple(after or ()),
+            before=before,
+            after=after,
         )
 
     def start_month(self) -> int:

@@ -207,9 +207,7 @@ class PasswordResetService:
             (email_key, ip_key, now - self._rate_window),
         ).fetchall()
         counts = {cast(str, row[0]): cast(int, row[1]) for row in rows}
-        return counts.get("email", 0) > self._email_limit or counts.get(
-            "ip", 0
-        ) > self._ip_limit
+        return counts.get("email", 0) > self._email_limit or counts.get("ip", 0) > self._ip_limit
 
     def _security_event(
         self,

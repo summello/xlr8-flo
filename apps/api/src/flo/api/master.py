@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Query
 from flo.api.admin_users import organization_target
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
-from flo.kernel.authz import require
+from flo.kernel.authz import GrantedScopes, require, require_granted
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.org.schemas import CurrencyRead, MasterCreate, MasterPage, MasterPatch, MasterRef
@@ -26,7 +26,9 @@ def record_target(kind: str, id: UUID, connection: Connection) -> TargetProtocol
     )
 
 
-ReadContext = Annotated[AuthorizationContext, Depends(require("master.read", organization_target))]
+# Master rows carry no unit, so every row is organization-level and visible to a reader at any
+# scope; the tenant filter in the service is the only narrowing.
+ReadContext = Annotated[GrantedScopes, Depends(require_granted("master.read"))]
 CreateContext = Annotated[
     AuthorizationContext, Depends(require("master.manage", organization_target))
 ]
@@ -35,7 +37,7 @@ WriteContext = Annotated[AuthorizationContext, Depends(require("master.manage", 
 
 @router.get("/currency", response_model=list[CurrencyRead])
 def currencies(context: ReadContext, q: str = "") -> list[CurrencyRead]:
-    return list_currencies(q)
+    return list_currencies(q) if context else []
 
 
 @router.post("/{kind}", status_code=201, response_model=MasterRef)
@@ -57,7 +59,7 @@ def select(
     page_size: Annotated[int, Query(ge=1, le=50)] = 50,
 ) -> MasterPage:
     return OrgService(connection, current_scope(), context.user_id).list_master(
-        kind, q=q, active=active, as_of=as_of, cursor=cursor, page_size=page_size
+        kind, granted=context, q=q, active=active, as_of=as_of, cursor=cursor, page_size=page_size
     )
 
 

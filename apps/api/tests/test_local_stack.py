@@ -13,10 +13,11 @@ def test_compose_uses_digest_pinned_images_and_defines_healthchecks() -> None:
     compose = (ROOT / "compose.yaml").read_text()
     images = re.findall(r"^\s+image: (\S+)$", compose, flags=re.MULTILINE)
 
-    assert len(images) == 4
+    assert len(images) == 3
     assert all(re.search(r"@sha256:[0-9a-f]{64}$", image) for image in images)
     assert all(":latest" not in image for image in images)
-    for service in ("postgres", "minio", "mailpit"):
+    assert "minio" not in compose.lower()
+    for service in ("postgres", "seaweedfs", "mailpit"):
         match = re.search(
             rf"^  {service}:\n(?P<body>.*?)(?=^  [a-z][a-z-]*:\n|^volumes:\n)",
             compose,
@@ -34,68 +35,55 @@ def test_compose_publishes_ports_on_loopback_only() -> None:
     assert published_ports == [
         "127.0.0.1:5432:5432",
         "127.0.0.1:9000:9000",
-        "127.0.0.1:9001:9001",
         "127.0.0.1:1025:1025",
         "127.0.0.1:8025:8025",
     ]
 
 
-def test_up_waits_for_health_and_prints_all_four_urls(
+def _stub_up(monkeypatch: pytest.MonkeyPatch) -> tuple[list[tuple], list[str]]:
+    calls: list[tuple] = []
+    events: list[str] = []
+    monkeypatch.setitem(FLO_GLOBALS, "_run_compose", lambda *a, **_: calls.append(a) or object())
+    monkeypatch.setitem(FLO_GLOBALS, "_wait_for_stack", lambda **_: events.append("wait"))
+    monkeypatch.setitem(FLO_GLOBALS, "_ensure_bucket", lambda: events.append("bucket"))
+    return calls, events
+
+
+def test_up_starts_all_three_then_ensures_bucket(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    compose_calls = []
-    waited = []
-    monkeypatch.setitem(
-        FLO_GLOBALS, "_run_compose", lambda *args, **_: compose_calls.append(args) or object()
-    )
-    monkeypatch.setitem(FLO_GLOBALS, "_wait_for_stack", lambda **_: waited.append(True))
+    calls, events = _stub_up(monkeypatch)
 
     FLO["cmd_up"]([])
 
-    assert compose_calls == [
-        ("up", "-d", "postgres", "mailpit"),
-        ("up", "-d", "minio", "minio-init"),
-    ]
-    assert waited == [True]
+    assert calls == [("up", "-d", "postgres", "seaweedfs", "mailpit")]
+    assert events == ["wait", "bucket"]
     output = capsys.readouterr().out
-    assert len(output.splitlines()) == 4
     assert "postgresql://localhost:5432/flo_dev" in output
-    assert "http://localhost:9000" in output
-    assert "http://localhost:9001" in output
+    assert "Object store: http://localhost:9000" in output
     assert "http://localhost:8025" in output
+    assert "minio" not in output.lower()
 
 
 def test_up_reset_destroys_volumes_before_starting(monkeypatch: pytest.MonkeyPatch) -> None:
-    compose_calls = []
-    monkeypatch.setitem(
-        FLO_GLOBALS, "_run_compose", lambda *args, **_: compose_calls.append(args) or object()
-    )
-    monkeypatch.setitem(FLO_GLOBALS, "_wait_for_stack", lambda **_: None)
+    calls, _ = _stub_up(monkeypatch)
 
     FLO["cmd_up"](["--reset"])
 
-    assert compose_calls == [
+    assert calls == [
         ("down", "--volumes", "--remove-orphans"),
-        ("up", "-d", "postgres", "mailpit"),
-        ("up", "-d", "minio", "minio-init"),
+        ("up", "-d", "postgres", "seaweedfs", "mailpit"),
     ]
 
 
-def test_up_survives_an_unpullable_object_store(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
-    waited = []
-    monkeypatch.setitem(
-        FLO_GLOBALS,
-        "_run_compose",
-        lambda *args, optional=False, **_: None if optional else object(),
-    )
-    monkeypatch.setitem(FLO_GLOBALS, "_wait_for_stack", lambda **kw: waited.append(kw))
+def test_up_fails_loudly_when_object_store_cannot_start(monkeypatch: pytest.MonkeyPatch) -> None:
+    def failing(*args, **_):
+        raise SystemExit("seaweedfs pull failed")
 
-    FLO["cmd_up"]([])
+    monkeypatch.setitem(FLO_GLOBALS, "_run_compose", failing)
 
-    assert waited == [{"object_store": False}]
-    assert "SKIPPED" in capsys.readouterr().out
+    with pytest.raises(SystemExit):
+        FLO["cmd_up"]([])
 
 
 def test_down_stops_the_compose_project(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -107,18 +95,18 @@ def test_down_stops_the_compose_project(monkeypatch: pytest.MonkeyPatch) -> None
     assert compose_calls == [("down",)]
 
 
-def test_wait_requires_all_services_and_bucket_initialization(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    def healthy_status(service: str, include_stopped: bool = False) -> tuple[str, str, int]:
-        assert include_stopped is (service == "minio-init")
-        if service == "minio-init":
-            return "exited", "", 0
+def test_wait_requires_all_services_healthy(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen = []
+
+    def healthy_status(service: str) -> tuple[str, str, int]:
+        seen.append(service)
         return "running", "healthy", 0
 
     monkeypatch.setitem(FLO_GLOBALS, "_container_status", healthy_status)
 
     FLO["_wait_for_stack"](1)
+
+    assert seen == ["postgres", "seaweedfs", "mailpit"]
 
 
 def test_environment_example_exposes_dev_and_test_connections() -> None:
@@ -131,9 +119,6 @@ def test_environment_example_exposes_dev_and_test_connections() -> None:
     assert {
         "DATABASE_URL",
         "TEST_DATABASE_URL",
-        "MINIO_ROOT_USER",
-        "MINIO_ROOT_PASSWORD",
-        "MINIO_BUCKET",
         "S3_ENDPOINT_URL",
         "S3_ACCESS_KEY_ID",
         "S3_SECRET_ACCESS_KEY",

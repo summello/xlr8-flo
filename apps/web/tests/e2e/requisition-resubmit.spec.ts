@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { justificationChange, quantityChange, stubChanges, type ChangeSet, type Submit } from "./requisition-changes-fixture";
+import { keyboardFocus } from "./helpers";
 import { instanceId, lineRow, requisition, reservation, reqId } from "./requisitions-fixture";
 
 const returned = () => requisition({ estimate: "196000.0000", reservation: reservation("196000.0000"), approval: { instance_id: instanceId, status: "returned" }, version: 3 });
@@ -11,13 +12,6 @@ const open = async (page: Page, changes: ChangeSet = quantityChange) => {
   return state;
 };
 const send = (page: Page) => page.locator(".req-action-bar .form-submit");
-async function keyboardFocus(page: Page, locator: Locator) {
-  for (let i = 0; i < 200; i++) {
-    await page.keyboard.press("Tab");
-    if (await locator.evaluate(node => node === document.activeElement)) return;
-  }
-  throw new Error("Control is unreachable by keyboard");
-}
 
 test("a justification-only edit is not material and returns to the same step", async ({ page }) => {
   const state = await open(page, justificationChange);
@@ -30,7 +24,7 @@ test("a justification-only edit is not material and returns to the same step", a
   await send(page).click();
   const done = page.getByRole("status").filter({ hasText: "Resubmitted as Version 2" });
   await expect(done).toBeFocused();
-  await expect(done).toContainText("Now with amara@example.test at Manager review");
+  await expect(done).toContainText("Now with Amara Okafor (amara@example.test) at Manager review");
   await expect(done.getByRole("link", { name: "Back to Requisition" })).toBeVisible();
   expect(state.calls.find(c => c.method === "POST")?.body).toMatchObject({ to: "approval_pending" });
 });

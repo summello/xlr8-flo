@@ -12,3 +12,23 @@ if [ -n "${UV_CACHE_DIR:-}" ] && ! _flo_usable "$UV_CACHE_DIR"; then UV_CACHE_DI
 if [ -n "${XDG_CACHE_HOME:-}" ] && ! _flo_usable "$XDG_CACHE_HOME"; then XDG_CACHE_HOME="$HOME/.cache"; fi
 export UV_CACHE_DIR XDG_CACHE_HOME
 unset -f _flo_usable 2>/dev/null || true
+
+# The manual runners (story-run, review-run, ship, codex-run) call this first. While the fleet
+# supervisor (~/.claude/fleet, agents/fleet.toml) is installed and not paused it owns every step,
+# and a second driver would race it on the same story.
+flo_manual_guard() {
+  if [ -e "$HOME/Library/LaunchAgents/com.fleet.xlr8flo.plist" ] && [ ! -e "$HOME/.claude/fleet/state/xlr8flo/paused" ]; then
+    echo "the fleet supervisor is active; pause it first: python3 ~/.claude/fleet/fleet.py pause --config agents/fleet.toml" >&2
+    exit 3
+  fi
+  # Omnissiah's supervisor (bin/flo-fleet, state in ~/.claude/omnissiah) owns the steps the same way.
+  if [ -e "$HOME/Library/LaunchAgents/com.omnissiah.xlr8flo.plist" ] && [ ! -e "$HOME/.claude/omnissiah/state/xlr8flo/paused" ]; then
+    echo "the Omnissiah supervisor is active; pause it first: python3 ~/Workbench/omnissiah/bin/flo-fleet pause --config .flo/fleet.toml" >&2
+    exit 3
+  fi
+}
+
+# Codex profiles (7 Nov 2026, operator): codex-a reviews, codex-b authors. Each is its own login in
+# its own CODEX_HOME, so usage caps and rollouts never mix. A bare `codex` means codex-a.
+codex_agent() { case "$1" in codex|codex-a) echo codex-a ;; codex-b) echo codex-b ;; *) return 1 ;; esac; }
+codex_home() { echo "$HOME/.$1"; }

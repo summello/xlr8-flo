@@ -36,7 +36,9 @@ from tests.isolation.test_real_sessions import client, headers, login
 from tests.kernel.test_migrate import empty_database as empty_database  # noqa: F401
 from tests.org.test_bootstrap import bootstrap_db as bootstrap_db  # noqa: F401
 
-NOW = datetime(2026, 10, 12, 9, 0, tzinfo=UTC)
+# Relative to today: decide() checks a delegation's window against the real clock, so a fixed date
+# expired every delegation here once the 7-day window passed (CI red from 19 Oct 2026).
+NOW = datetime.now(UTC).replace(hour=9, minute=0, second=0, microsecond=0)
 
 
 def users_graph(*user_ids, repeat=False, due_days=None, escalate=None):
@@ -137,6 +139,47 @@ def test_delegation_covering_only_another_type_grants_no_power(setup, monkeypatc
     with pytest.raises(ProblemError) as error:
         approve(setup, instance.tasks[-1].id, other)
     assert error.value.code == ErrorCode.FORBIDDEN
+
+
+@pytest.mark.parametrize(("types", "covered"), [(["po", "po_change"], True), (["po"], False)])
+def test_a_po_delegation_covers_change_orders_only_when_it_names_them(setup, types, covered):
+    """E13-S06: resolution needs an exact type match, so the PO-only picker stores both types."""
+    from flo.modules.approvals.engine import start
+
+    db, adapter, users, *_ = setup
+    owner, other = users[0], users[1]
+
+    class Change(Adapter):
+        document_type = "po_change"
+
+    class Po(Adapter):
+        document_type = "po"
+
+    change = Change(db)
+    conditions.register_document_type(change)
+    conditions.register_document_type(Po(db))
+    change.summaries = adapter.summaries = lambda conn, scope, ids: {
+        i: DocumentSummary("PO-1 change 1", "Change", None, db[3], "/purchase-orders/1", None)
+        for i in ids
+    }
+    row = definition(db, document_type="po_change")
+    draft(db, row, users_graph(owner))
+    svc(db).publish(row.id, 1, True)
+    instance = start(
+        db[0], Scope(db[1]), document_type="po_change", document_id=change.document,
+        actor_id=db[3], resolver=resolver(db),
+    )  # fmt: skip
+    delegate(setup, owner, other, types=types)
+    body = DecisionWrite(outcome="approve", document_version=change.value.version)
+    if covered:
+        result = decide(
+            db[0], Scope(db[1]), task_id=instance.tasks[-1].id, actor_id=other, body=body
+        )
+        assert result.decision.authority == "delegate"
+    else:
+        with pytest.raises(ProblemError) as error:
+            decide(db[0], Scope(db[1]), task_id=instance.tasks[-1].id, actor_id=other, body=body)
+        assert error.value.code == ErrorCode.FORBIDDEN
 
 
 def test_overlap_refused_back_to_back_allowed_and_no_redelegation(setup):

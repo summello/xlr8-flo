@@ -38,6 +38,7 @@ class EligibleSet(Contract):
 class PickerRow(Contract):
     user_id: UUID
     email: str
+    name: str | None
 
 
 class PickerPage(Contract):
@@ -139,13 +140,20 @@ def approver_picker(
         rows = (
             WorkflowRepository(conn, scope)
             .execute(
-                "SELECT i.id,i.email FROM identity i WHERE i.status='active' AND i.id=ANY(%(ids)s) "
+                "SELECT i.id,i.email,i.display_name FROM identity i WHERE i.status='active' "
+                "AND i.id=ANY(%(ids)s) "
                 "AND EXISTS (SELECT 1 FROM user_role u "
                 "WHERE u.org_id=%(org_id)s AND u.user_id=i.id) "
-                "AND (%(q)s::text IS NULL OR starts_with(lower(i.email),lower(%(q)s))) "
+                "AND (%(q)s::text IS NULL OR starts_with(lower(i.email),lower(%(q)s)) "
+                "OR starts_with(lower(i.display_name),lower(%(q)s))) "
                 "ORDER BY i.email,i.id LIMIT 50",
                 {"ids": ids, "q": q},
             )
             .fetchall()
         )
-        return PickerPage(rows=[PickerRow(user_id=cast(UUID, r[0]), email=str(r[1])) for r in rows])
+        return PickerPage(
+            rows=[
+                PickerRow(user_id=cast(UUID, r[0]), email=str(r[1]), name=cast(str | None, r[2]))
+                for r in rows
+            ]
+        )

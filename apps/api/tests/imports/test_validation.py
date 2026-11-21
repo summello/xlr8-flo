@@ -156,6 +156,7 @@ def test_page_5000_rows_and_async_threshold(probe):
             response = await send(browser, "POST", id, "validate")
             assert response.status_code == 202, response.text
             from tests.imports.test_async_import import tick
+
             assert tick(probe).done == 1
             numbers = []
             suffix = "preview?page_size=50"

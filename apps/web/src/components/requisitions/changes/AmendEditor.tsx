@@ -7,7 +7,7 @@ import { CardSkeleton } from "../DetailCards";
 import LinesCard from "../LinesCard";
 import ReqField from "../ReqField";
 import SubmitSummary from "../SubmitSummary";
-import { failure, mutationHeaders, type LookupOption, type Problem, type Requisition } from "../api";
+import { failure, lookup, mutationHeaders, type LookupOption, type Problem, type Requisition } from "../api";
 import { estimateOf, lineBody, localToday, problemFromError, type DraftLine, type SummaryProblem } from "../model";
 import { useLoad } from "../useLoad";
 import type { components } from "../../../api/generated/schema";
@@ -20,11 +20,6 @@ const linesOf = (a: Amendment): DraftLine[] => a.lines.map(l => ({ key: l.line_i
 const snapshot = (h: FormHeader, l: DraftLine[]) => JSON.stringify([h, l.map(({ key, ...rest }) => (void key, rest))]);
 const text = (v: string) => v.trim() === "" ? null : v.trim();
 
-async function lookup(kind: string, buId?: string): Promise<LookupOption[]> {
-  const { data, error } = await apiClient.GET("/api/v1/requisitions/lookups/{kind}", { params: { path: { kind }, query: { limit: 50, ...(buId ? { bu_id: buId } : {}) } } });
-  if (!data) throw new Error(failure(error, "Loading the list of choices"));
-  return data.rows;
-}
 const withCurrent = (options: LookupOption[] | null, code: string): LookupOption[] => {
   const list = options ?? [];
   return code && !list.some(o => o.value === code) ? [...list, { value: code, label: `${code} (inactive)`, disabled: false, note: null }] : list;

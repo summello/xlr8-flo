@@ -66,6 +66,11 @@ GOOD = {
     "payment_term": {"net_days": 30, "discount_percent": "2", "discount_days": 10},
     "item_category": {},
     "service_category": {},
+    "vendor_contact_type": {},
+    "vendor_document_type": {"required": True},
+    "vendor_score_category": {},
+    "vendor_identifier_type": {"unique": True},
+    "rfq_requirement_template": {"requirements": ["Insurance"]},
 }
 
 
@@ -203,8 +208,14 @@ def test_permissions(master_db, method, path, body, grant):
     viewer = insert_identity(db, "viewer")
     if grant:
         grant_permissions(db, viewer, "master.manage" if method == "GET" else "master.read")
+    response = request(db, method, path.format(id=row.id), body, viewer)
+    if method == "GET":
+        # E22-S13: a list without master.read anywhere is an empty 200, never a 403.
+        assert response.status_code == 200
+        assert (response.json() if path == "/currency" else response.json()["rows"]) == []
+        return
     expected = 404 if "{id}" in path and not grant else 403
-    assert request(db, method, path.format(id=row.id), body, viewer).status_code == expected
+    assert response.status_code == expected
 
 
 def test_unknown_kind_and_currency_read_only(master_db):
@@ -443,3 +454,21 @@ def test_patch_attributes_rejects_bad_values(master_db):
     assert response.status_code == 422
     assert response.json()["checks"]["problem"] == "invalid_attributes"
     assert svc(db).get_master("tax_code", row.id).attributes == {"rate": "20"}
+
+
+@pytest.mark.parametrize("zone", ["Etc/GMT-14", "Etc/GMT+12"])
+def test_master_create_defaults_to_the_utc_date_lookups_use(zone, monkeypatch):
+    # Between them the two zones disagree with UTC's date at every hour of the day, so a default
+    # taken from the local date fails here whenever the suite runs (22 Oct 2026: IST before 05:30).
+    import time
+
+    from flo.modules.org.schemas import MasterCreate
+    from flo.modules.org.service import today
+
+    monkeypatch.setenv("TZ", zone)
+    time.tzset()
+    try:
+        assert MasterCreate(code="X1", name="x").effective_from == today()
+    finally:
+        monkeypatch.undo()
+        time.tzset()

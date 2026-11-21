@@ -149,7 +149,7 @@ class BudgetChangeRequestRead(BaseModel):
     currency: str
     requested_by: UUID
     idempotency_key: str
-    status: Literal["pending", "approved", "rejected", "withdrawn"]
+    status: Literal["pending", "approved", "rejected", "withdrawn", "deleted"]
     created_at: datetime
     decided_at: datetime | None
     result: dict[str, JsonValue] | None

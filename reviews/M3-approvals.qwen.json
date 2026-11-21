@@ -1,0 +1,32 @@
+{
+  "story": "M3-approvals",
+  "reviewer": "qwen",
+  "verdict": "approve",
+  "ran_tests": false,
+  "findings": [
+    {
+      "severity": "major",
+      "file": "apps/api/src/flo/modules/approvals/engine.py",
+      "line": 862,
+      "requirement": "APR-001",
+      "problem": "get_instance does `requester = _people(repo, [rid])[rid]` and _people's query filters on identity_membership (line 303). If the instance's requester is removed from the org while the instance is still readable (staff offboarding mid-approval), the dict lookup raises KeyError and every read of that instance returns 500. Worse, get_instance is called inside the decision transaction (decide's return, withdraw's return) and inside start's return, so a new submission for that document and any further decision on the running instance roll back entirely. Pre-existing on origin/main (the old `_emails(...)[rid]` had the same membership filter); the M3 diff carried the pattern forward when adding requester_name. The sibling read paths (decisions, explain, inbox) all fall back to '(removed user)' instead.",
+      "fix": "Fall back like the sibling paths: `requester = _people(repo, [rid]).get(rid)` and use `requester[0]` / `requester[1]` when present, or look the requester up via emails_by_id (no membership filter) with a None name; never raise from a read."
+    },
+    {
+      "severity": "minor",
+      "file": "apps/api/src/flo/modules/approvals/material.py",
+      "line": 115,
+      "requirement": "APR-004",
+      "problem": "E22-S03 consolidated the module's twelve audit call sites onto the single `audit_event` helper, but two call sites in the module under review still use the raw `AuditWriter(...).write(before_source=..., after_source=...)` API: material.py:115 (approval.supersede) and reminders.py:75 (approval.escalated). Behaviour is equivalent (AuditWriter remains the kernel primitive), so this is intra-module drift, not a correctness bug: a reviewer or operator grepping for `audit_event` will miss the supersede audit trail.",
+      "fix": "Convert both remaining call sites to `audit_event(conn, scope, ..., before=..., after=...)` so the module has exactly one audit call style, matching decisions.py, delegation.py, engine.py and service.py."
+    },
+    {
+      "severity": "minor",
+      "file": "apps/api/src/flo/modules/approvals/validation.py",
+      "line": 156,
+      "requirement": "APR-003",
+      "problem": "validate_graph emits no error for a graph with zero approval steps (start -> end: reachable, no dead_end, out-degree 1, depth 0), so a workflow administrator can publish one. engine.start then takes the zero-step path and auto-approves every submitted document of that type (audited as a SYSTEM decision since the M2 review, but no human is ever involved). That allows the D-M2-21 guard ('a governed action with no published workflow is refused, never auto-approved') to be bypassed deliberately by publishing a no-op workflow, which matters for the sellable money loop (e.g. a zero-step 'po' workflow would issue-eligible POs with no approval).",
+      "fix": "Add a publish-time issue for graphs whose every start-to-end path contains no approval node (error, or at least a warning requiring acknowledge_warnings), so an auto-approving workflow is an explicit, acknowledged admin act rather than a side effect of publishing."
+    }
+  ]
+}

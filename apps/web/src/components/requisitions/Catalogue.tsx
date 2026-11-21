@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiClient } from "../../api/client";
-import Money from "./ReqMoney";
+import Money from "../ui/Money";
 import { formatDate, type CatalogueItem } from "./api";
 
 /** REQ-007/008. A failing search leaves the rest of the form working (partial state). */
@@ -34,7 +34,7 @@ export default function Catalogue({ buId, onAdd }: { buId: string | null; onAdd:
         <ul className="req-suggestions">{rows.map(item => <li key={item.id}>
           <div><strong>{item.description}</strong>
             <span>{item.line_type === "item" ? "Item" : "Service"} · {item.last_event === "purchased" ? "bought" : item.last_event} {formatDate(item.last_event_at)}{item.last_vendor_name ? ` from ${item.last_vendor_name}` : ""}</span>
-            <span><Money value={item.last_unit_price} currency={item.currency} /> per {item.uom_code}</span></div>
+            <span><Money zero="value" value={item.last_unit_price} currency={item.currency} /> per {item.uom_code}</span></div>
           <button type="button" aria-label={`Add ${item.description}`} onClick={() => onAdd(item)}>Add</button></li>)}</ul>)}
   </section>;
 }

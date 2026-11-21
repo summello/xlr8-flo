@@ -1,0 +1,34 @@
+{
+  "story": "E12",
+  "reviewer": "codex-a",
+  "verdict": "changes_requested",
+  "ran_tests": false,
+  "findings": [
+    {
+      "severity": "major",
+      "category": "correctness",
+      "file": "apps/web/src/components/sourcing/editor/Editor.tsx",
+      "line": 77,
+      "stories": [
+        "E12-S13"
+      ],
+      "requirement": "SRC-004",
+      "problem": "Publish generates a fresh Idempotency-Key on every attempt because submission.current is only initialized by the amendment flow. If publication commits but the response is lost, retrying cannot replay the stored success and instead receives invalid_transition, leaving the UI reporting failure for an RFQ that was published.",
+      "fix": "Keep a dedicated publish key across network/unknown-outcome retries, clear it only after a confirmed success or definitive rolled-back response, and replay the publish POST with that same key."
+    },
+    {
+      "severity": "major",
+      "category": "correctness",
+      "file": "apps/web/src/components/sourcing/evaluation/Scoring.tsx",
+      "line": 57,
+      "stories": [
+        "E12-S14",
+        "E12-S15",
+        "E12-S16"
+      ],
+      "requirement": "SRC-006, SRC-011, SRC-012",
+      "problem": "The bid, score, and award submit flows retain their POST key after an unknown network outcome but always repeat preceding PATCH/PUT saves before replaying the POST. If the POST committed and its response was lost, those saves are rejected because the bid/scores/award are now immutable or no longer draft, so the stored successful POST response is never replayed. The same sequence occurs in BidSheet.tsx:124 and award/Award.tsx:38.",
+      "fix": "Track the save and submit phases separately. Once the draft save succeeds and a submit key is allocated, retries must replay the submit POST first with the same key and must not rewrite the draft; clear the phase only after a confirmed response. Apply this consistently to bid, evaluation-score, and award submission."
+    }
+  ]
+}

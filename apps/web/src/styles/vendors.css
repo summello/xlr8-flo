@@ -1,0 +1,64 @@
+/* Vendor list and profile (E11-S12). Tokens only; layout follows design-system/pages/vendors.md. */
+.vendor-table { width: 100%; border-collapse: collapse; color: var(--fg); }
+.vendor-table th { text-align: start; color: var(--fg-secondary); font-size: var(--text-caption); font-weight: var(--weight-heading); padding: var(--space-2) var(--space-3); border-block-end: 1px solid var(--border); }
+.vendor-table td { padding: var(--space-3); border-block-end: 1px solid var(--border); vertical-align: top; }
+.vendor-table a { color: var(--fg); text-decoration: underline; }
+.vendor-table td > .sig + .sig { margin-block-start: var(--space-1); }
+.vendor-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-4); }
+.vendor-name { overflow-wrap: anywhere; font-size: var(--text-title); line-height: var(--leading-title); }
+.vendor-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-1) var(--space-4); }
+.vendor-facts dt { color: var(--fg-secondary); }
+.vendor-facts dd { margin: 0; overflow-wrap: anywhere; }
+.vendor-list-plain { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
+.vendor-sheet { display: grid; gap: var(--space-4); align-content: start; }
+.vendor-profile .req-grid-detail { grid-template-columns: minmax(0, 1fr); }
+@container (min-width: 760px) { .vendor-profile .req-grid-detail { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container (min-width: 1100px) { .vendor-profile .req-grid-detail { grid-template-columns: repeat(3, minmax(0, 1fr)); } .vendor-profile .req-grid-detail > * { grid-column: auto; } .vendor-profile .req-grid-detail > .req-wide { grid-column: 1 / -1; } }
+/* Below 900px of card width the table stacks: each cell carries its column name (pages/vendors.md 3.1). */
+@container (max-width: 899px) {
+  .vendor-table thead { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; }
+  .vendor-table tr, .vendor-table td { display: block; }
+  .vendor-table tr { padding-block: var(--space-2); border-block-end: 1px solid var(--border); }
+  .vendor-table td { border: 0; padding: var(--space-1) var(--space-3); }
+  .vendor-table td[data-label]::before { content: attr(data-label); display: block; color: var(--fg-secondary); font-size: var(--text-caption); }
+}
+/* Vendor status dialogs (E11-S16). Danger fill on the Suspend confirm button only (MASTER 7.13). */
+.vendor-dialog form { display: grid; gap: var(--space-3); }
+.vendor-dialog textarea { font: inherit; padding: var(--space-2) var(--space-3); color: var(--fg); background: var(--surface); border: 1px solid var(--border-control); border-radius: var(--radius-control); }
+.vendor-dialog-units { display: grid; gap: var(--space-2); border: 0; padding: 0; margin: 0; }
+.vendor-dialog-error { color: var(--status-danger); }
+.vendor-dialog .vq-actions button { display: inline-flex; align-items: center; gap: var(--space-1); }
+.vendor-dialog .vendor-danger-confirm { background: var(--status-danger); color: var(--surface); border-color: var(--status-danger); }
+.vendor-dialog .vendor-danger-confirm:hover:not(:disabled) { background: color-mix(in srgb, var(--status-danger), black 8%); }
+.vendor-dialog .vendor-primary-confirm { background: var(--fg); color: var(--surface); border-color: var(--fg); }
+.vendor-head-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-inline-start: auto; }
+.vendor-head-actions button { display: inline-flex; align-items: center; gap: var(--space-1); font: inherit; padding: var(--space-2) var(--space-3); color: var(--fg); background: var(--surface); border: 1px solid var(--border-control); border-radius: var(--radius-control); min-height: var(--row-h); cursor: pointer; }
+.vendor-head-actions button.vendor-destructive { color: var(--status-danger); }
+.vendor-head-actions :focus-visible { outline: 2px solid var(--ring); outline-offset: var(--space-1); }
+@media (max-width: 1023px) { .vendor-head-actions button { min-height: var(--touch-target); } }
+/* Tax and Banking (E11-S13, MASTER 7.15). */
+.mask { font-family: var(--font-mono); letter-spacing: 0.04em; }
+.tax-card { display: grid; gap: var(--space-3); }
+.tax-reveal { display: grid; gap: var(--space-2); }
+.tax-reveal-actions { display: flex; gap: var(--space-2); }
+
+/* Performance card and scorecard sheet (E11-S18). */
+.perf-sheet { width: min(calc(var(--sheet-w) * 2), 100%); }
+.perf-num { text-align: end; font-variant-numeric: tabular-nums; }
+.perf-overall strong { font-size: var(--text-title); line-height: var(--leading-title); font-variant-numeric: tabular-nums; }
+.perf-struck { color: var(--fg-muted); text-decoration: line-through; }
+.perf-dispute { margin: var(--space-2) 0 0; padding-inline-start: var(--space-3); border-inline-start: 2px solid var(--border-strong); }
+.perf-form { display: grid; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-card); }
+.perf-form h3 { margin: 0; font-size: var(--text-heading); line-height: var(--leading-heading); }
+.perf-field { display: grid; gap: var(--space-1); border: 0; padding: 0; margin: 0; }
+.perf-field label { color: var(--fg-secondary); }
+.perf-field select, .perf-field input[type=month] { max-width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-control); border-radius: var(--radius-input); color: var(--fg); background: var(--surface); min-height: var(--touch-target); font: inherit; }
+.perf-field [aria-invalid="true"] { border-color: var(--status-danger); }
+.perf-form .field-error { color: var(--status-danger); margin: 0; }
+/* Request a vendor (E11-S14). Tokens only; the form shares the requisition grid, fields and action bar. */
+.vendor-request .vr-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+.vendor-request .vr-contact { display: grid; gap: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-card); padding: var(--space-3) var(--space-4); margin: 0; min-width: 0; }
+.vendor-request .vr-contact legend { padding-inline: var(--space-2); font-weight: var(--weight-heading); }
+.vendor-request .vr-check { display: inline-flex; align-items: center; gap: var(--space-2); min-block-size: var(--touch-target); }
+.vendor-request .vr-dup { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); grid-column: 1 / -1; }
+.vendor-request .vr-id { display: grid; gap: var(--space-2); }

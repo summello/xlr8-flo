@@ -80,7 +80,7 @@ export default function ProjectList({ navigate }: { navigate: (href: string) => 
       helper.accessor("name", { header: "Name", meta: { label: "Name" }, enableSorting: !extra.group_by,
         cell: ({ row }) => <a href={`/projects/${row.original.id}`} onClick={e => { e.preventDefault(); navigate(`/projects/${row.original.id}`); }}>{row.original.name}</a> }),
       helper.accessor("status", { header: "Status", meta: { label: "Status" }, enableSorting: !extra.group_by,
-        cell: ({ getValue }) => <StatusPill docType="project" status={getValue()} /> }),
+        cell: ({ getValue }) => <StatusPill docType="project" status={getValue() as ProjectStatus} /> }),
       helper.accessor("codes_expired", { header: "Codes", meta: { label: "Codes" }, enableSorting: false,
         cell: ({ getValue }) => getValue() ? <ExpiredCodeBadge /> : <span className="visually-hidden">Codes usable</span> }),
       helper.accessor("bu_name", { header: "BU / OU", meta: { label: "BU / OU" }, enableSorting: false }),

@@ -149,7 +149,7 @@ def test_release_is_exactly_once_across_random_concurrent_lifecycles(lifecycle_d
                         ),
                     )
                 except ProblemError:
-                    pass
+                    pass  # a refused edit is a valid outcome of the random sequence
                 continue
             if op == "expire":
                 change(db, "requisition", row.id, "decided_at=now() - interval '5 days'")
