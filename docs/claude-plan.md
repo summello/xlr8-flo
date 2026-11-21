@@ -650,7 +650,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E13-S30** Issue refuses to queue a PO email the sending domain cannot send | E13 | engine | M | EML-001, PO-012, UX-005 | ~~E13-S10~~, ~~E13-S21~~ |
 | ✅ | **E13-S31** Start Evaluation from a closed RFQ, by keyboard | E13 | ui | S | ACC-008, SRC-004 | ~~E12-S03~~, ~~E12-S10~~, ~~E12-S11~~, ~~E12-S15~~ |
 | ✅ | **E13-S32** Release audit follow-ups: one row per PO in the list, early delivery events retried, no vendor edits while a create request is pending | E13 | engine | M | PO-007, EML-003, VEN-012, SEC-011 | ~~E11-S06~~, ~~E13-S10~~, ~~E13-S12~~, ~~E12-S26~~ |
-| ⬜ | **E13-S33** Focus never falls to the page body on the project-to-PO chain | E13 | ui | M | A11Y-002, ACC-008 | ~~E12-S28~~, ~~E04-S02~~ |
+| 🔨 | **E13-S33** Focus never falls to the page body on the project-to-PO chain | E13 | ui | M | A11Y-002, ACC-008 | ~~E12-S28~~, ~~E04-S02~~ |
 | ✅ | **E22-S01** Create Project with budget: form and Excel, sponsors, through the project approval workflow | E22 | engine | L | PROJ-003 | ~~E09-S17~~ |
 | ✅ | **E22-S02** Soft delete for every draft document | E22 | crud | M | DATA-002 | ~~E09-S15~~ |
 | ✅ | **E22-S03** One audit helper instead of twelve, behaviour-preserving | E22 | chore | M | AUD-001 | — |
