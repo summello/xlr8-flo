@@ -142,6 +142,23 @@ test("keyboard only: Set All to Lowest is reachable and works", async ({ page })
   await keyboardFocus(page, page.getByRole("button", { name: "Submit for Approval" }));
 });
 
+test("E13-S33 keyboard only: Submit for Approval leaves focus on the Approval Pending status", async ({ page }) => {
+  await stubAward(page);
+  await page.goto(`/sourcing/rfqs/${rfqId}/comparison`);
+  await page.getByRole("button", { name: "Start Award" }).focus(); await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: "Award AWD-0001" })).toBeVisible();
+  await page.getByRole("button", { name: "Set All to Lowest" }).focus(); await page.keyboard.press("Enter");
+  await qty(page, "Cirrus Works", 1).fill("2"); await qty(page, "Acme Tooling", 1).fill("2");
+  await qty(page, "Bolt Supply", 2).fill("1"); await qty(page, "Acme Tooling", 2).fill("1");
+  await page.getByLabel(/^Justification.*Acme Tooling, line 1/).fill("Only vendor with stock");
+  await page.getByLabel(/^Justification.*Acme Tooling, line 2/).fill("Existing contract");
+  await page.getByLabel(/Award Rationale/).fill("Best value across both lines");
+  await page.getByRole("button", { name: "Submit for Approval" }).focus(); await page.keyboard.press("Enter");
+  const status = page.getByRole("status").filter({ hasText: /Approval Pending/ });
+  await expect(status).toBeVisible();
+  await expect(status).toBeFocused();
+});
+
 for (const theme of ["light", "dark"] as const) {
   test(`axe: the award draft in the ${theme} theme`, async ({ page }) => {
     await page.addInitScript(t => localStorage.setItem("xlr8flo.theme", t), theme);

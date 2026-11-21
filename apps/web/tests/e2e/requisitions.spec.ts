@@ -810,3 +810,12 @@ test("detail: Start RFQ on a sourcing_in_progress requisition opens the picker w
   expect(Object.fromEntries(url.searchParams)).toEqual({ unit: unitId, unitName: "Infrastructure", requisition: "REQ-00418" });
   await expect(page.getByRole("checkbox", { name: "Source line 1 of REQ-00418" })).toBeChecked();
 });
+
+test("E13-S33 keyboard only: Save draft leaves focus on the Draft saved status", async ({ page }) => {
+  await stubRequisitions(page);
+  await page.goto("/requisitions/new"); await fillHeader(page); await addItem(page, 1, "1", "5");
+  await keyboardFocus(page, page.getByRole("button", { name: "Save draft" })); await page.keyboard.press("Enter");
+  const status = page.locator(".req-status", { hasText: /^Draft saved/ });
+  await expect(status).toBeVisible();
+  await expect(status).toBeFocused();
+});

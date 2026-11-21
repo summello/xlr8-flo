@@ -425,3 +425,23 @@ test("detail: a draft project the caller cannot edit offers no Delete draft", as
   await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Delete draft" })).toHaveCount(0);
 });
+
+test("E13-S33 keyboard only: adding a sponsor keeps focus in the search input", async ({ page }) => {
+  await stubProjects(page); await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
+  await page.getByLabel(/^Business unit\s*\*?$/).fill(unitId);
+  const search = page.getByLabel(/^Sponsors\s*\*?$/);
+  await search.fill("person");
+  const add = page.getByRole("button", { name: "Add Maker Person" });
+  await add.waitFor();
+  await keyboardFocus(page, add); await page.keyboard.press("Enter");
+  await expect(page.getByRole("list", { name: "Chosen sponsors" })).toContainText("Maker Person");
+  await expect(search).toBeFocused();
+});
+
+test("E13-S33 keyboard only: Approval pending without a reason leaves focus on the project status", async ({ page }) => {
+  await stubProjects(page); await page.goto(`/projects/${projectId}`);
+  await keyboardFocus(page, page.getByRole("button", { name: "Approval pending", exact: true })); await page.keyboard.press("Enter");
+  const status = page.locator(".project-record-heading span[tabindex='-1']");
+  await expect(status.locator('[data-status="approval_pending"]')).toBeVisible();
+  await expect(status).toBeFocused();
+});

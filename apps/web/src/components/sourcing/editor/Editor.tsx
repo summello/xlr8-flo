@@ -1,5 +1,6 @@
 import { FloppyDisk, PaperPlaneTilt } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
+import { focusSoon } from "../../../lib/focus";
 import { apiClient } from "../../../api/client";
 import type { components } from "../../../api/generated/schema";
 import ErrorSummary, { type SummaryError } from "../../form/ErrorSummary";
@@ -43,6 +44,7 @@ function Body({ rfq, mode, onRfq, navigate }: { rfq: Rfq; mode: Mode; onRfq: (ne
   const publishKey = useRef<string | null>(null);
   const inFlight = useRef(false);
   const summary = useRef<HTMLDivElement>(null);
+  const savedLine = useRef<HTMLParagraphElement>(null);
   const errors = Object.fromEntries(problems.map(p => [p.fieldId, p.message]));
   const shown = changes(rfq, form);
 
@@ -110,7 +112,7 @@ function Body({ rfq, mode, onRfq, navigate }: { rfq: Rfq; mode: Mode; onRfq: (ne
   return <section className="req-page" aria-label={mode === "edit" ? "Edit RFQ" : "Amend RFQ"}>
     <header className="req-heading"><p>{mode === "edit" ? `${rfq.number} · ${rfq.title}. Draft: nothing reaches a vendor until you publish.` : `${rfq.number} · ${rfq.title}. Version ${rfq.version}: an amendment makes version ${rfq.version + 1} and tells every invitee.`}</p></header>
     <div ref={summary}><ErrorSummary errors={problems} /></div>
-    {saved && <p role="status">{saved}</p>}
+    {saved && <p role="status" ref={savedLine} tabIndex={-1}>{saved}</p>}
     <div id="rfq-form" tabIndex={-1} className="req-grid-detail">
       {CARDS.map(card => <div key={card.id} className="req-wide">{card.render({ rfq, mode, form, setForm: change => setForm(change), errors, linesNote, onRfq, report })}</div>)}
       {mode === "amend" && <>
@@ -132,7 +134,7 @@ function Body({ rfq, mode, onRfq, navigate }: { rfq: Rfq; mode: Mode; onRfq: (ne
     </div>
     <div className="req-actions">
       {mode === "edit" ? <>
-        <button type="button" aria-busy={busy || undefined} onClick={() => void save()}><FloppyDisk aria-hidden="true" weight="regular" />Save Draft</button>
+        <button type="button" aria-busy={busy || undefined} onClick={() => void save().then(ok => { if (ok) focusSoon(() => savedLine.current); })}><FloppyDisk aria-hidden="true" weight="regular" />Save Draft</button>
         <button type="button" className="form-submit" aria-busy={busy || undefined} onClick={() => void save().then(ok => { if (ok) setConfirm(true); })}><PaperPlaneTilt aria-hidden="true" weight="regular" />Publish RFQ</button>
       </> : <button type="button" className="form-submit" aria-busy={busy || undefined} onClick={() => void amend()}><PaperPlaneTilt aria-hidden="true" weight="regular" />{busy ? "Amending" : "Amend RFQ"}</button>}
     </div>

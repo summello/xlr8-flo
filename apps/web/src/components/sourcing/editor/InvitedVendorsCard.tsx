@@ -1,5 +1,6 @@
 import { MagnifyingGlass, Trash } from "@phosphor-icons/react";
 import { useState } from "react";
+import { focusSoon } from "../../../lib/focus";
 import { apiClient } from "../../../api/client";
 import Eligibility from "../../vendors/Eligibility";
 import { failure, mutationHeaders, type Problem } from "../../requisitions/api";
@@ -64,16 +65,18 @@ function Picker({ rfq, q, onRfq, report }: { rfq: Rfq; q: string; onRfq: (next: 
     const blank = chosen.find(r => !r.eligibility.eligible && !picks[r.vendor_id]!.override?.trim());
     if (blank) { report(`Enter a reason to override ${blank.trading_name}.`); return; }
     setBusy(true); report(null);
-    let current = rfq;
+    let current = rfq, failed = false;
     for (const row of chosen) {
       try {
         const { data, error } = await apiClient.POST("/api/v1/sourcing/rfqs/{id}/invitees", { params: { path: { id: rfq.id } }, headers: mutationHeaders(crypto.randomUUID()), body: { vendor_id: row.vendor_id, ...(row.eligibility.eligible ? {} : { override_reason: picks[row.vendor_id]!.override!.trim() }) } });
-        if (!data) { report((error as Problem | undefined)?.detail ?? failure(error as Problem | undefined, `Inviting ${row.trading_name}`)); break; }
+        if (!data) { failed = true; report((error as Problem | undefined)?.detail ?? failure(error as Problem | undefined, `Inviting ${row.trading_name}`)); break; }
         current = data; onRfq(data); toggle(row.vendor_id, false);
-      } catch { report(failure(undefined, `Inviting ${row.trading_name}`)); break; }
+      } catch { failed = true; report(failure(undefined, `Inviting ${row.trading_name}`)); break; }
     }
     setBusy(false);
     if (current !== rfq) first.reload();
+    // The list reloads under the pressed button; on full success focus the count it changed. A failure keeps its alert.
+    if (current !== rfq && !failed) focusSoon(() => document.getElementById("rfq-invitees"));
   };
 
   if (first.error) return <div role="alert"><p>{first.error}</p><button type="button" onClick={first.reload}>Try again</button></div>;

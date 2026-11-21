@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { apiClient } from "../../api/client";
 import ProjectLoading from "../../components/projects/Loading";
 import StatusPill from "../../components/status/StatusPill";
@@ -19,6 +19,7 @@ function currentTab(): Tab {
   return tabs.includes(value as Tab) ? value as Tab : "overview";
 }
 export default function ProjectDetail({ id, navigate, onLoaded }: { id: string; navigate: (href: string) => void; onLoaded: (project: Project, unit: string) => void }) {
+  const statusRef = useRef<HTMLSpanElement>(null);
   const [project, setProject] = useState<Project | null>(null);
   const [options, setOptions] = useState<Transition[]>([]);
   const [tab, setTab] = useState<Tab>(currentTab);
@@ -57,7 +58,7 @@ export default function ProjectDetail({ id, navigate, onLoaded }: { id: string; 
     {loading && !project && tab === "overview" ? <ProjectLoading /> : loading && <p role="status">Loading project… Previously loaded details are preserved.</p>}
     {errors.length > 0 && <div role="alert">{errors.map(e => <p key={e}>{e}</p>)}<button onClick={() => { setLoading(true); void load(); }}>Retry project</button></div>}
     {project && <>
-      <header className="project-record-heading"><p className="numeric">{project.number}</p><StatusPill docType="project" status={project.status as ProjectStatus} />
+      <header className="project-record-heading"><p className="numeric">{project.number}</p><span ref={statusRef} tabIndex={-1}><StatusPill docType="project" status={project.status as ProjectStatus} /></span>
         {project.codes_expired && <ExpiredCodeBadge />}
         {project.can_substitute_codes && project.codes && <SubstituteCodes target="project" id={id} codes={project.codes} onDone={() => { setLoading(true); void load(); }} />}
         {project.status === "draft" && project.can_edit && <DeleteDraftDialog kind="Project" reference={project.number} onDone={() => navigate("/projects")}
@@ -69,7 +70,7 @@ export default function ProjectDetail({ id, navigate, onLoaded }: { id: string; 
       {tabs.map(name => <div key={name} id={`panel-${name}`} role="tabpanel" aria-labelledby={`tab-${name}`} hidden={tab !== name} tabIndex={0}>
         {visited.has(name) && (name === "overview" ? <>
           <h2>Overview</h2><dl className="project-facts">{(["name", "description", "owner_id", "sponsor_id", "department_code", "ledger_account_code", "currency", "health", "percent_complete", "planned_start", "planned_end", "actual_start", "actual_end", "schedule_variance_days"] as const).map(key => <div key={key}><dt>{label(key)}</dt><dd>{project[key] === null ? "—" : String(project[key])}</dd></div>)}</dl>
-          <h2>Available actions</h2><Transitions project={project} options={options} reload={() => { setLoading(true); void load(); }} onUpdated={data => { setProject(data); setLoading(true); void load(); }} />
+          <h2>Available actions</h2><Transitions statusRef={statusRef} project={project} options={options} reload={() => { setLoading(true); void load(); }} onUpdated={data => { setProject(data); setLoading(true); void load(); }} />
         </> : name === "schedule" ? <><h2>Schedule</h2><Schedule id={id} /></> : name === "risks" ? <><h2>Risks</h2><Risks id={id} owner={project.owner_id} /></> : <><h2>Budget</h2><Budget id={id} /></>)}
       </div>)}
     </>}

@@ -11,6 +11,11 @@ export function restoreFocus(target: HTMLElement | null): void {
   if (target?.isConnected) target.focus();
 }
 
+/** Focus a target once the DOM has it (E13-S33): the control that held focus is gone, so never leave it on the body. */
+export function focusSoon(target: () => HTMLElement | null | undefined): void {
+  requestAnimationFrame(() => target()?.focus());
+}
+
 export function useFocusOnRouteChange(
   routeKey: string,
   title: string,
@@ -22,6 +27,11 @@ export function useFocusOnRouteChange(
   useEffect(() => {
     if (previousRoute.current === null) {
       previousRoute.current = routeKey;
+      // First route after sign-in: focus main only if nothing else (a deep link's control) already has focus.
+      const active = document.activeElement;
+      if (active && active !== document.body) return;
+      // Not cancelled on cleanup: StrictMode runs this effect twice and the second run takes the equal-route early return.
+      requestAnimationFrame(() => mainRef.current?.focus());
       return;
     }
     if (previousRoute.current === routeKey) return;

@@ -227,6 +227,21 @@ test("all shell landmarks are labelled", async ({ page }) => {
   await expect(page.getByRole("complementary", { name: "Mobile primary sidebar" })).toBeVisible();
 });
 
+test("E13-S33 first route focuses main, but never takes focus from a control the route already focused", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("main")).toBeFocused();
+  // A deep link that already focused a control before the shell mounts (the session probe is async).
+  await page.addInitScript(() => {
+    document.addEventListener("DOMContentLoaded", () => {
+      const control = document.createElement("button");
+      control.id = "deep-link-control"; control.textContent = "Already focused";
+      document.body.append(control); control.focus();
+    });
+  });
+  await page.goto("/budget");
+  await expect(page.locator("#deep-link-control")).toBeFocused();
+});
+
 // These pre-auth-story fixtures represent a signed-in operator.
 test.beforeEach(async ({ page }) => {
   await page.route("**/api/v1/auth/sessions", route => route.fulfill({ status: 200, contentType: "application/json", body: "[]" }));

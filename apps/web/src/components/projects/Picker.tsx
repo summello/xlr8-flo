@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Input from "../form/Input";
 import Person from "../ui/Person";
+import { focusSoon } from "../../lib/focus";
 
 export type PickerOption = { value: string; label: string; disabled?: boolean; note?: string | null };
 
@@ -37,6 +38,7 @@ export default function Picker({ load, selected, onChange, max, noun, blocked, p
   person?: boolean;
 }) {
   const [query, setQuery] = useState("");
+  const search = useRef<HTMLInputElement>(null);
   // The settled result remembers the query and loader it answers, so "searching" is derived
   // (no state is set synchronously inside the effect) and a changed query or unit reads as loading.
   const [result, setResult] = useState<{ query: string; load: typeof load; rows: PickerOption[]; failed: boolean } | null>(null);
@@ -55,10 +57,10 @@ export default function Picker({ load, selected, onChange, max, noun, blocked, p
   const full = selected.length >= max;
   const open = (current?.rows ?? []).filter(o => !selected.some(s => s.value === o.value));
   return <div className="picker">
-    <Input autoComplete="off" inputMode="search" type="search" value={query} placeholder={`Search ${noun}`} onChange={e => setQuery(e.target.value)} />
+    <Input ref={search} autoComplete="off" inputMode="search" type="search" value={query} placeholder={`Search ${noun}`} onChange={e => setQuery(e.target.value)} />
     {failed && <p role="alert">The {noun} list could not load. Your choices are kept; change the search to retry.</p>}
     {full && <p role="status">You have named {max} {noun}, the most allowed. Remove one to add another.</p>}
-    {!full && <PickerMatches state={state} rows={open} noun={noun} blocked={blocked} onAdd={o => onChange([...selected, o])} />}
+    {!full && <PickerMatches state={state} rows={open} noun={noun} blocked={blocked} onAdd={o => { onChange([...selected, o]); focusSoon(() => search.current); }} />}
     <ul className="picker-list" aria-label={`Chosen ${noun}`}>
       {selected.map(o => <li key={o.value}>{person && o.note ? <Person name={o.label} email={o.note} /> : o.label} <button type="button" onClick={() => onChange(selected.filter(s => s.value !== o.value))}>Remove {o.label}</button></li>)}
       {!selected.length && <li className="field-help">None chosen.</li>}

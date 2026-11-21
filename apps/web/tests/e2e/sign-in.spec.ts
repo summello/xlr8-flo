@@ -278,3 +278,18 @@ test('keyboard-only enrollment reaches recovery acknowledgement and home', async
   await expect(page.getByRole('button', { name: 'Continue to XLR8 FLO' })).toBeFocused(); await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/$/);
 });
+
+test('E13-S33 keyboard only: signing in lands focus on main, and signing out lands it on the sign-in heading', async ({ page }) => {
+  await stub(page); await page.goto('/sign-in');
+  await page.getByLabel('Email', { exact: true }).fill('person@example.test');
+  await page.getByLabel('Password', { exact: true }).fill('correct-password');
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole('main')).toBeFocused();
+  await page.getByText('Account menu', { exact: true }).focus(); await page.keyboard.press('Enter');
+  await page.getByRole('button', { name: 'Sign out', exact: true }).focus(); await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/sign-in$/);
+  await expect(page.getByRole('heading', { name: 'Sign In', level: 1 })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.getByLabel('Email', { exact: true })).toBeFocused();
+});
