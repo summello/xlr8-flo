@@ -8941,6 +8941,63 @@
         },
         "gate_s": 1
       }
+    },
+    {
+      "story": "E12-S28",
+      "kind": "api",
+      "size": "S",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 2,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 2
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 1,
+          "blockers": 1,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "597d0059-c531-4286-b6e8-32d2088fa979",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E12-S28",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a1feff-25fa-74f0-bd7b-80587f0b50d4",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Every RFQ change route now answers through _done, which sets can_edit/can_approve exactly as GET does, so the editor and detail pages no longer lose their edit state after a save. A route-walk test fails if any RfqRead route skips _done.",
+      "title": "RFQ change responses carry the caller's edit and approve flags",
+      "durations": {
+        "wall_s": 3567,
+        "author_s": 1354,
+        "review_s": {
+          "codex-a": 252
+        },
+        "gate_s": 0
+      }
     }
   ]
 }

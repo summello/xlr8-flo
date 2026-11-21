@@ -562,7 +562,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E10-S12** Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11) | E10 | ui | L | APR-011, APR-021, ACC-007 | ~~E10-S11~~, ~~E10-S05~~ |
 | ✅ | **E10-S13** Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes | E10 | engine | M | APR-003, PROJ-002, VEN-005, BUD-007 | ~~E10-S07~~ |
 
-#### M3 — First sellable release · 94/97 done
+#### M3 — First sellable release · 95/97 done
 
 > Vendors, RFQs, awards and purchase orders by email. Closes the money loop end to end.
 
@@ -617,7 +617,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E12-S25** Retrying a submit replays it instead of re-saving the draft (bids, scores, award) | E12 | ui | M | ACC-002, UX-005 | ~~E12-S14~~, ~~E12-S15~~, ~~E12-S16~~ |
 | ✅ | **E12-S26** Release audit fixes: award reads behind the declaration, lowest-price flag at submit, PO read figures, webhook signature | E12 | engine | M | SRC-011, SRC-014, PO-013, SEC-011 | ~~E12-S07~~, ~~E12-S16~~, ~~E13-S06~~, ~~E13-S10~~, ~~E13-S12~~ |
 | ✅ | **E12-S27** A declared conflict outlives removal from the evaluator list | E12 | engine | S | SRC-011 | ~~E12-S07~~, ~~E12-S26~~ |
-| 🔨 | **E12-S28** RFQ change responses carry the caller's edit and approve flags | E12 | api | S | SRC-002, UX-005, ACC-008 | ~~E12-S03~~, ~~E12-S27~~ |
+| ✅ | **E12-S28** RFQ change responses carry the caller's edit and approve flags | E12 | api | S | SRC-002, UX-005, ACC-008 | ~~E12-S03~~, ~~E12-S27~~ |
 | ✅ | **E13-S01** PO from awarded requisition lines or authorized project items, scoped numbering | E13 | crud | L | PO-001, PO-002, PO-006, SEQ-001 | ~~E12-S08~~, ~~E12-S09~~ |
 | ✅ | **E13-S02** Tax and freight per BU/OU policy, separately visible on line and document | E13 | ledger | M | FIN-008, FIN-009, PO-016 | ~~E13-S01~~ |
 | ✅ | **E13-S03** PO lifecycle state machine | E13 | engine | M | PO-007, WF-002 | ~~E13-S01~~, ~~E11-S09~~ |
@@ -650,7 +650,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E13-S30** Issue refuses to queue a PO email the sending domain cannot send | E13 | engine | M | EML-001, PO-012, UX-005 | ~~E13-S10~~, ~~E13-S21~~ |
 | ✅ | **E13-S31** Start Evaluation from a closed RFQ, by keyboard | E13 | ui | S | ACC-008, SRC-004 | ~~E12-S03~~, ~~E12-S10~~, ~~E12-S11~~, ~~E12-S15~~ |
 | ✅ | **E13-S32** Release audit follow-ups: one row per PO in the list, early delivery events retried, no vendor edits while a create request is pending | E13 | engine | M | PO-007, EML-003, VEN-012, SEC-011 | ~~E11-S06~~, ~~E13-S10~~, ~~E13-S12~~, ~~E12-S26~~ |
-| ⬜ | **E13-S33** Focus never falls to the page body on the project-to-PO chain | E13 | ui | M | A11Y-002, ACC-008 | E12-S28, ~~E04-S02~~ |
+| ⬜ | **E13-S33** Focus never falls to the page body on the project-to-PO chain | E13 | ui | M | A11Y-002, ACC-008 | ~~E12-S28~~, ~~E04-S02~~ |
 | ✅ | **E22-S01** Create Project with budget: form and Excel, sponsors, through the project approval workflow | E22 | engine | L | PROJ-003 | ~~E09-S17~~ |
 | ✅ | **E22-S02** Soft delete for every draft document | E22 | crud | M | DATA-002 | ~~E09-S15~~ |
 | ✅ | **E22-S03** One audit helper instead of twelve, behaviour-preserving | E22 | chore | M | AUD-001 | — |
@@ -664,7 +664,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E22-S11** Faster checks: template test databases, sharded backend and E2E CI | E22 | chore | M | SEC-012 | — |
 | ✅ | **E22-S12** Balanced E2E shards on a production build; backend static job; combined checks need detect | E22 | chore | M | SEC-012 | — |
 | ✅ | **E22-S13** One list-scope rule, project grants roll down in lists as in point checks | E22 | security | M | USR-003, ACC-004 | ~~E22-S04~~, ~~E22-S06~~ |
-| 🔨 | **E22-S14** The unit list follows the list-scope rule: a unit-scoped grant lists its units | E22 | security | S | USR-003, ACC-004, ACC-008 | ~~E22-S13~~, ~~E11-S05~~ |
+| 👀 | **E22-S14** The unit list follows the list-scope rule: a unit-scoped grant lists its units | E22 | security | S | USR-003, ACC-004, ACC-008 | ~~E22-S13~~, ~~E11-S05~~ |
 
 #### M4 — Full Phase-1 scope · 0/34 done
 

@@ -133,11 +133,11 @@ def create_rfq(
     context: CreateContext,
     connection: Connection,
     settings: Annotated[Settings, Depends(get_auth_settings)],
+    request: Request,
     response: Response,
 ) -> RfqRead:
     rfq = RfqService(connection, current_scope(), context.user_id, settings).create(body)
-    response.headers["ETag"] = f'"{rfq.edit_revision}"'
-    return rfq
+    return _done(rfq, response, request, connection)
 
 
 @router.patch("/rfqs/{id}/lines", response_model=RfqRead)
@@ -146,12 +146,12 @@ def patch_rfq_lines(
     body: RfqLinesPatch,
     context: EditContext,
     connection: Connection,
+    request: Request,
     response: Response,
     revision: Annotated[str | None, Header(alias="If-Match")] = None,
 ) -> RfqRead:
     rfq = RfqService(connection, current_scope(), context.user_id).update_lines(id, body, revision)
-    response.headers["ETag"] = f'"{rfq.edit_revision}"'
-    return rfq
+    return _done(rfq, response, request, connection)
 
 
 @router.get("/rfqs", response_model=RfqPage)
@@ -181,17 +181,17 @@ def get_rfq(
     response: Response,
 ) -> RfqRead:
     rfq = RfqService(connection, current_scope(), context.user_id).get(id)
-    target = rfq_target(id, connection)
-    rfq.can_edit = permits(request, "rfq.edit", target)
-    rfq.can_approve = permits(request, "rfq.approve", target)
-    response.headers["ETag"] = f'"{rfq.edit_revision}"'
-    return rfq
+    return _done(rfq, response, request, connection)
 
 
 Revision = Annotated[str | None, Header(alias="If-Match")]
 
 
-def _done(rfq: RfqRead, response: Response) -> RfqRead:
+def _done(rfq: RfqRead, response: Response, request: Request, connection: Connection) -> RfqRead:
+    # The web replaces its RFQ with this answer, so it must carry the caller's flags, as GET does.
+    target = rfq_target(rfq.id, connection)
+    rfq.can_edit = permits(request, "rfq.edit", target)
+    rfq.can_approve = permits(request, "rfq.approve", target)
     response.headers["ETag"] = f'"{rfq.edit_revision}"'
     return rfq
 
@@ -202,11 +202,12 @@ def patch_rfq(
     body: RfqContentPatch,
     context: EditContext,
     connection: Connection,
+    request: Request,
     response: Response,
     revision: Revision = None,
 ) -> RfqRead:
     service = RfqService(connection, current_scope(), context.user_id)
-    return _done(service.update_content(id, body, revision), response)
+    return _done(service.update_content(id, body, revision), response, request, connection)
 
 
 @router.put("/rfqs/{id}/requirements", response_model=RfqRead)
@@ -215,11 +216,12 @@ def put_requirements(
     body: RequirementsPut,
     context: EditContext,
     connection: Connection,
+    request: Request,
     response: Response,
     revision: Revision = None,
 ) -> RfqRead:
     service = RfqService(connection, current_scope(), context.user_id)
-    return _done(service.put_requirements(id, body, revision), response)
+    return _done(service.put_requirements(id, body, revision), response, request, connection)
 
 
 @router.post("/rfqs/{id}/requirements/from-template", response_model=RfqRead)
@@ -228,10 +230,11 @@ def requirements_from_template(
     body: RequirementsFromTemplate,
     context: EditContext,
     connection: Connection,
+    request: Request,
     response: Response,
 ) -> RfqRead:
     service = RfqService(connection, current_scope(), context.user_id)
-    return _done(service.requirements_from_template(id, body), response)
+    return _done(service.requirements_from_template(id, body), response, request, connection)
 
 
 @router.post("/rfqs/{id}/requirements/{rid}/waive", response_model=RfqRead)
@@ -241,10 +244,11 @@ def waive_requirement(
     body: RequirementWaive,
     context: ApproveContext,
     connection: Connection,
+    request: Request,
     response: Response,
 ) -> RfqRead:
     service = RfqService(connection, current_scope(), context.user_id)
-    return _done(service.waive_requirement(id, rid, body), response)
+    return _done(service.waive_requirement(id, rid, body), response, request, connection)
 
 
 @router.put("/rfqs/{id}/attachments/{aid}/visibility", response_model=RfqRead)
@@ -254,11 +258,12 @@ def put_visibility(
     body: VisibilityPut,
     context: EditContext,
     connection: Connection,
+    request: Request,
     response: Response,
     revision: Revision = None,
 ) -> RfqRead:
     service = RfqService(connection, current_scope(), context.user_id)
-    return _done(service.set_visibility(id, aid, body, revision), response)
+    return _done(service.set_visibility(id, aid, body, revision), response, request, connection)
 
 
 @router.get("/rfqs/{id}/invitee-candidates", response_model=InviteeCandidatePage)
@@ -286,7 +291,7 @@ def add_invitee(
     service = RfqService(connection, current_scope(), context.user_id)
     # An override is an approver's act (decision 146); the body alone never grants it.
     can_override = permits(request, "rfq.approve", rfq_target(id, connection))
-    return _done(service.add_invitee(id, body, can_override), response)
+    return _done(service.add_invitee(id, body, can_override), response, request, connection)
 
 
 @router.delete("/rfqs/{id}/invitees/{vendor_id}", response_model=RfqRead)
@@ -295,11 +300,12 @@ def remove_invitee(
     vendor_id: UUID,
     context: EditContext,
     connection: Connection,
+    request: Request,
     response: Response,
     revision: Revision = None,
 ) -> RfqRead:
     service = RfqService(connection, current_scope(), context.user_id)
-    return _done(service.remove_invitee(id, vendor_id, revision), response)
+    return _done(service.remove_invitee(id, vendor_id, revision), response, request, connection)
 
 
 @router.patch("/rfqs/{id}/invitees/{vendor_id}", response_model=RfqRead)
@@ -309,35 +315,59 @@ def patch_invitee(
     body: InviteePatch,
     context: EditContext,
     connection: Connection,
+    request: Request,
     response: Response,
     revision: Revision = None,
 ) -> RfqRead:
     service = RfqService(connection, current_scope(), context.user_id)
-    return _done(service.update_invitee(id, vendor_id, body, revision), response)
+    return _done(
+        service.update_invitee(id, vendor_id, body, revision), response, request, connection
+    )
 
 
 @router.post("/rfqs/{id}/publish", response_model=RfqRead)
 def publish_rfq(
-    id: UUID, context: EditContext, connection: Connection, response: Response
+    id: UUID, context: EditContext, connection: Connection, request: Request, response: Response
 ) -> RfqRead:
-    return _done(RfqLifecycle(connection, current_scope(), context.user_id).publish(id), response)
+    return _done(
+        RfqLifecycle(connection, current_scope(), context.user_id).publish(id),
+        response,
+        request,
+        connection,
+    )
 
 
 @router.post("/rfqs/{id}/cancel", response_model=RfqRead)
 def cancel_rfq(
-    id: UUID, body: ReasonBody, context: ApproveContext, connection: Connection, response: Response
+    id: UUID,
+    body: ReasonBody,
+    context: ApproveContext,
+    connection: Connection,
+    request: Request,
+    response: Response,
 ) -> RfqRead:
     return _done(
-        RfqLifecycle(connection, current_scope(), context.user_id).cancel(id, body), response
+        RfqLifecycle(connection, current_scope(), context.user_id).cancel(id, body),
+        response,
+        request,
+        connection,
     )
 
 
 @router.post("/rfqs/{id}/amend", response_model=RfqRead)
 def amend_rfq(
-    id: UUID, body: RfqAmend, context: EditContext, connection: Connection, response: Response
+    id: UUID,
+    body: RfqAmend,
+    context: EditContext,
+    connection: Connection,
+    request: Request,
+    response: Response,
 ) -> RfqRead:
     return _done(
-        RfqLifecycle(connection, current_scope(), context.user_id).amend(id, body), response
+        RfqLifecycle(connection, current_scope(), context.user_id).amend(id, body),
+        response,
+        request,
+        connection,
     )
 
 
@@ -347,27 +377,36 @@ def extend_rfq_deadline(
     body: ExtendDeadline,
     context: EditContext,
     connection: Connection,
+    request: Request,
     response: Response,
 ) -> RfqRead:
     return _done(
-        RfqLifecycle(connection, current_scope(), context.user_id).extend(id, body), response
+        RfqLifecycle(connection, current_scope(), context.user_id).extend(id, body),
+        response,
+        request,
+        connection,
     )
 
 
 @router.post("/rfqs/{id}/start-evaluation", response_model=RfqRead)
 def start_rfq_evaluation(
-    id: UUID, context: EditContext, connection: Connection, response: Response
+    id: UUID, context: EditContext, connection: Connection, request: Request, response: Response
 ) -> RfqRead:
     service = RfqLifecycle(connection, current_scope(), context.user_id)
-    return _done(service.start_evaluation(id), response)
+    return _done(service.start_evaluation(id), response, request, connection)
 
 
 @router.post("/rfqs/{id}/invitees/{vendor_id}/resend", response_model=RfqRead)
 def resend_rfq(
-    id: UUID, vendor_id: UUID, context: EditContext, connection: Connection, response: Response
+    id: UUID,
+    vendor_id: UUID,
+    context: EditContext,
+    connection: Connection,
+    request: Request,
+    response: Response,
 ) -> RfqRead:
     service = RfqLifecycle(connection, current_scope(), context.user_id)
-    return _done(service.resend(id, vendor_id), response)
+    return _done(service.resend(id, vendor_id), response, request, connection)
 
 
 @router.get("/rfqs/{id}/versions", response_model=list[RfqVersionRead])
