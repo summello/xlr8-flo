@@ -457,6 +457,10 @@ The three parking stories (E11-S08 vendors, E12-S19 sourcing, E13-S22 purchase o
 
 241. **A vendor requester lists the units a vendor can be restricted to** (operator, 23 Oct 2026; E11-S14 planner pre-flight). `GET /org/units` admits a caller who holds `org.unit.read` (unchanged) **or** `vendor.request`. A caller with `vendor.request` and without `org.unit.read` gets only active units of their own organization (the `active` filter is forced to true), in the same `OrgUnitRead` shape; `GET /org/units/{id}` and every write are unchanged. A member holding neither permission gets 403. The rule lives in the org service, not the router. Unit names are reference data, not sensitive. Story **E11-S14** (the Where It Applies unit picker).
 
+242. **A workflow with no approval steps may be published, and approves automatically** (operator, 21 Nov 2026; raised by qwen in the M3-approvals release review). Setting up approvals is the business owner's responsibility, and some organizations need none, for example an owner who runs the project themselves. A route that reaches End with no step approves the document at submit as today (`approvals/engine.py` ~710-741): the instance is approved, the decision is audited as the SYSTEM actor with `auto: true`, and the requester is notified. Do not refuse such a workflow at publish and do not re-raise it as a finding.
+
+243. **The unit list follows the list-scope rule** (operator, 21 Nov 2026; ACC-008 automated run). Amends 241: `GET /org/units` accepts `org.unit.read` or `vendor.request` held at **any** scope and lists the units where the caller holds one (organization-wide: every unit, as before). The `vendor.request` arm still shows active units only. A caller holding neither anywhere gets an **empty 200**, not 403 (E22-S13 decision 2). Story **E22-S14**.
+
 ## 7. Findings to feed back into MASTER.md (amended 9 Oct 2026, see 97)
 
 - **The MASTER amendment is deferred until after Budget Transfer (item 84), which is now built: the next session can draft it for the operator.** It would fold in the items below plus the ancestry state rows (6f item 86).
