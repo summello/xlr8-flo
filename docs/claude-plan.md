@@ -617,7 +617,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E12-S25** Retrying a submit replays it instead of re-saving the draft (bids, scores, award) | E12 | ui | M | ACC-002, UX-005 | ~~E12-S14~~, ~~E12-S15~~, ~~E12-S16~~ |
 | ✅ | **E12-S26** Release audit fixes: award reads behind the declaration, lowest-price flag at submit, PO read figures, webhook signature | E12 | engine | M | SRC-011, SRC-014, PO-013, SEC-011 | ~~E12-S07~~, ~~E12-S16~~, ~~E13-S06~~, ~~E13-S10~~, ~~E13-S12~~ |
 | ✅ | **E12-S27** A declared conflict outlives removal from the evaluator list | E12 | engine | S | SRC-011 | ~~E12-S07~~, ~~E12-S26~~ |
-| ⬜ | **E12-S28** RFQ change responses carry the caller's edit and approve flags | E12 | api | S | SRC-002, UX-005, ACC-008 | ~~E12-S03~~, ~~E12-S27~~ |
+| 🔨 | **E12-S28** RFQ change responses carry the caller's edit and approve flags | E12 | api | S | SRC-002, UX-005, ACC-008 | ~~E12-S03~~, ~~E12-S27~~ |
 | ✅ | **E13-S01** PO from awarded requisition lines or authorized project items, scoped numbering | E13 | crud | L | PO-001, PO-002, PO-006, SEQ-001 | ~~E12-S08~~, ~~E12-S09~~ |
 | ✅ | **E13-S02** Tax and freight per BU/OU policy, separately visible on line and document | E13 | ledger | M | FIN-008, FIN-009, PO-016 | ~~E13-S01~~ |
 | ✅ | **E13-S03** PO lifecycle state machine | E13 | engine | M | PO-007, WF-002 | ~~E13-S01~~, ~~E11-S09~~ |

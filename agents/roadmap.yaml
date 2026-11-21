@@ -2093,7 +2093,7 @@ epics:
         dep:
           - E12-S03
           - E12-S27
-        st: todo
+        st: in_progress
 
   - id: E13
     name: Purchase orders
