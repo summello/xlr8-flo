@@ -8998,6 +8998,72 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E22-S14",
+      "kind": "security",
+      "size": "S",
+      "tags": [
+        "auth",
+        "security"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 2
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 2,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "48fb9f75-83e9-4b95-a125-c68eaf4e9083",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S14",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a1ff18-1afc-7751-8b9f-78ca83856e49",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "GET /org/units now admits org.unit.read or vendor.request at any scope and narrows rows to the caller's granted units in SQL; a caller with neither gets an empty 200.",
+      "title": "The unit list follows the list-scope rule: a unit-scoped grant lists its units",
+      "durations": {
+        "wall_s": 5662,
+        "author_s": 1505,
+        "review_s": {
+          "codex-a": 245,
+          "opus": 432
+        },
+        "gate_s": 442
+      }
     }
   ]
 }

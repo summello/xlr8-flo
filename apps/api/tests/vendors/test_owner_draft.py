@@ -307,7 +307,7 @@ def test_duplicate_check_says_whether_the_caller_can_override(vdb):
     assert svc(db, requestor).duplicate_check("12-3456789", "US", {}).can_override is False
 
 
-def test_a_requestor_lists_active_units_only_and_neither_permission_is_403(header_db):
+def test_a_requestor_lists_active_units_only_and_neither_permission_is_empty(header_db):
     """DECISIONS 241: vendor.request lists active units; org.unit.read still sees all."""
     db = header_db
     live, retired = unit(db, "LIVE"), unit(db, "OLD")
@@ -333,7 +333,9 @@ def test_a_requestor_lists_active_units_only_and_neither_permission_is_403(heade
             assert str(live.id) in ids and str(retired.id) not in ids  # active=false is ignored
             assert str(foreign.id) not in ids  # TEN-010
             regrant(db, ["record.read"])
-            assert (await units(browser)).status_code == 403
+            nothing = await units(browser)  # E22-S13 decision 2: empty 200, never 403
+            assert nothing.status_code == 200
+            assert nothing.json() == {"rows": [], "next_cursor": None}
 
     asyncio.run(scenario())
 

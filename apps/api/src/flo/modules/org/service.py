@@ -290,23 +290,43 @@ class OrgService:
         active: bool | None,
         cursor: UUID | None,
         page_size: int,
+        read: GrantedScopes | None = None,
+        req: GrantedScopes | None = None,
     ) -> OrgUnitPage:
+        # Both None: internal caller (lookups, vendors), authorized upstream, unfiltered.
+        full = (read is None and req is None) or bool(read and read.org_wide)
+        if not full and not (read or req):
+            return OrgUnitPage(rows=[], next_cursor=None)
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
-            # Internal callers (the requisition lookups) pass no actor and were authorized upstream.
-            if self.actor_id is not None and not self._holds("org.unit.read"):
-                # DECISIONS 241: a requester picks units for a vendor and sees only active ones.
-                if not self._holds("vendor.request"):
-                    raise ProblemError(ErrorCode.FORBIDDEN)
-                active = True
+            params: dict[str, object] = {}
+            if full:
+                narrow = "(%(active)s::boolean IS NULL OR active = %(active)s)"
+            else:
+                # DECISIONS 234/241: org.unit.read units honour ?active; vendor.request units are
+                # always active. Project grants reveal no unit.
+                narrow = """((id = ANY(%(read_units)s)
+                    AND (%(active)s::boolean IS NULL OR active = %(active)s))
+                    OR (active AND (%(req_org)s OR id = ANY(%(req_units)s))))"""
+                params = {
+                    "read_units": list(read.bu_ids) if read else [],
+                    "req_org": bool(req and req.org_wide),
+                    "req_units": list(req.bu_ids) if req else [],
+                }
             rows = self.repo.execute(
-                """
+                f"""
                 SELECT id FROM org_unit WHERE org_id = %(org_id)s
                 AND (%(kind)s::text IS NULL OR kind = %(kind)s)
-                AND (%(active)s::boolean IS NULL OR active = %(active)s)
+                AND {narrow}
                 AND (%(cursor)s::uuid IS NULL OR id > %(cursor)s)
                 ORDER BY id LIMIT %(limit)s
                 """,
-                {"kind": kind, "active": active, "cursor": cursor, "limit": page_size + 1},
+                {
+                    "kind": kind,
+                    "active": active,
+                    "cursor": cursor,
+                    "limit": page_size + 1,
+                    **params,
+                },
             ).fetchall()
             units = [
                 OrgUnitRead.model_validate(self._unit(cast(UUID, row[0])))

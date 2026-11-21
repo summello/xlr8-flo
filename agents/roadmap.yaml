@@ -2735,7 +2735,7 @@ epics:
         dep:
           - E22-S13
           - E11-S05
-        st: review
+        st: done
 
   - id: E14
     name: Assets & warehouses
