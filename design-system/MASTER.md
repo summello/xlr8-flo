@@ -688,6 +688,7 @@ Tokens only; the trace colour is the registered exception in §2.2. Every frame 
 
 - [ ] **Greyscale test** — drain all colour: is the screen still navigable, hierarchical, and unambiguous?
 - [ ] Keyboard-only path through the whole feature, focus visible throughout
+- [ ] Focus never falls to the page body. When an action removes or replaces the focused control (a dialog that closes on success, a button that unmounts, a form swapped for a result), focus moves to the element that reports the result, or to the next surviving control (E13-S33)
 - [ ] Drag interaction ships its non-drag equivalent **in this diff**
 - [ ] Status uses the §2.3 map, with icon; tags use §2.4 swatches, with dot, never an icon
 - [ ] Contrast measured in **both** themes: text ≥4.5:1, glyphs and chart marks ≥3:1
