@@ -83,7 +83,7 @@ export default function Screens({ path, navigate, probeFailed }: Props) {
     const isLogin = path === '/sign-in';
     const headingRef = useRef<HTMLHeadingElement>(null);
     // E13-S33: arriving here (sign out, session end) must not leave focus on the body; the next Tab reaches Email.
-    useEffect(() => { if (isLogin) headingRef.current?.focus(); }, [isLogin]);
+    useEffect(() => { if (isLogin && (!document.activeElement || document.activeElement === document.body)) headingRef.current?.focus(); }, [isLogin]);
     const heading = isChoose ? 'Choose an Organization' : isLogin ? 'Sign In' : isEnroll ? confirmed ? 'Save Your Recovery Codes' : 'Secure Your Account' : 'Two-Step Verification';
     const subline = isChoose ? 'Your account belongs to more than one. Pick where to work. You can switch later from the menu.' : isLogin ? 'Use your work email and password.' : isEnroll ? confirmed ? 'Each code works once if you lose your device. We show them only now.' : 'Your organization requires a second step. It takes a minute.' : 'Enter the 6-digit code from your authenticator app.';
     async function finish() {
