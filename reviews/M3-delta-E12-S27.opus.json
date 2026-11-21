@@ -1,0 +1,27 @@
+{
+  "story": "M3-delta-E12-S27",
+  "reviewer": "opus",
+  "verdict": "approve",
+  "ran_tests": true,
+  "scope": "release delta e1a1ad3d..4bfeff8e (E12-S27, SRC-011): modules/sourcing/evaluation.py, tests/sourcing/test_evaluation.py",
+  "evidence": {
+    "tests": "tests/sourcing/test_evaluation.py + test_award.py at 4bfeff8e on a fresh worktree database: 67 passed",
+    "plants": [
+      "early return for a non-evaluator restored in assert_may_see_bids: route-level removed-after-conflict test fails",
+      "declaration_required applied without is_evaluator: removed-before-declaring and removed-after-clear cases fail",
+      "view checks the conflict only for a current evaluator: GET /evaluation after-removal assertion fails"
+    ],
+    "callers": "every assert_may_see_bids caller (bids.py 352/374, comparison.py 661/679, awards.py 526/929, evaluation.py 618) inherits the rule; no bid-content read pre-checks rfq_evaluator outside evaluation.py; bid content has no attachment path",
+    "tenancy": "both subqueries in _standing carry org_id = %(org_id)s; no new endpoint"
+  },
+  "findings": [
+    {
+      "severity": "minor",
+      "file": "apps/api/tests/sourcing/test_evaluation.py",
+      "line": 659,
+      "requirement": "SRC-011",
+      "problem": "Parameter declared_clear reads as a declaration value, but False means 'added, never declared, removed' and None means 'never an evaluator'; the removed-before-declaring acceptance case is covered only under that misleading name.",
+      "fix": "Rename to a case label (never_evaluator / removed_undeclared / removed_after_clear)."
+    }
+  ]
+}
