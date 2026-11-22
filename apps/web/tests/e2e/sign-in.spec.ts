@@ -182,10 +182,13 @@ test('network failure preserves email and focuses summary', async ({ page }) => 
   await stub(page); await page.goto('/sign-in'); await page.route('**/api/v1/auth/login', route => route.abort()); await login(page);
   await expect(page.getByRole('alert')).toBeFocused(); await expect(page.getByRole('alert')).toContainText('Your email is kept'); await expect(page.getByLabel('Email', { exact: true })).toHaveValue('person@example.test');
 });
-for (const theme of ['light', 'dark']) for (const [path, state] of [['/sign-in', 'signin'], ['/sign-in/mfa', 'verify'], ['/sign-in/mfa/enroll', 'enroll']] as const) {
+for (const theme of ['light', 'dark'] as const) for (const [path, state] of [['/sign-in', 'signin'], ['/sign-in/mfa', 'verify'], ['/sign-in/mfa/enroll', 'enroll']] as const) {
   test(`axe ${theme} ${path}`, async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await stub(page, state); await page.goto(path); await page.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+    // The theme is in force from the first paint (system scheme, no stored preference), not flipped after
+    // load: a flip raced axe under load and measured the old text colour on the new ground (E13-S33 submit).
+    await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: theme });
+    await stub(page, state); await page.goto(path);
+    expect(await page.evaluate(() => matchMedia('(prefers-color-scheme: dark)').matches && !document.documentElement.dataset.theme)).toBe(theme === 'dark');
     await expect(page.locator('.auth-card')).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     if (state === 'enroll') { await enroll(page); expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]); }
