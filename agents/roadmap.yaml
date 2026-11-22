@@ -2736,6 +2736,21 @@ epics:
           - E22-S13
           - E11-S05
         st: done
+      - id: E22-S15
+        t: Requisition lookups admit a unit-scoped requester
+        k: security
+        s: S
+        tags:
+          - auth
+          - security
+        reqs:
+          - USR-003
+          - ACC-004
+          - ACC-008
+        dep:
+          - E22-S14
+          - E09-S02
+        st: todo
 
   - id: E14
     name: Assets & warehouses

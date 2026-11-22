@@ -562,7 +562,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E10-S12** Workflow list, version history and diff, route preview (the keyboard outline ships with the canvas in E10-S11) | E10 | ui | L | APR-011, APR-021, ACC-007 | ~~E10-S11~~, ~~E10-S05~~ |
 | ✅ | **E10-S13** Wire workflows to projects, requisitions, vendors, RFQs, awards, POs, budget changes | E10 | engine | M | APR-003, PROJ-002, VEN-005, BUD-007 | ~~E10-S07~~ |
 
-#### M3 — First sellable release · 97/97 done
+#### M3 — First sellable release · 97/98 done
 
 > Vendors, RFQs, awards and purchase orders by email. Closes the money loop end to end.
 
@@ -665,6 +665,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E22-S12** Balanced E2E shards on a production build; backend static job; combined checks need detect | E22 | chore | M | SEC-012 | — |
 | ✅ | **E22-S13** One list-scope rule, project grants roll down in lists as in point checks | E22 | security | M | USR-003, ACC-004 | ~~E22-S04~~, ~~E22-S06~~ |
 | ✅ | **E22-S14** The unit list follows the list-scope rule: a unit-scoped grant lists its units | E22 | security | S | USR-003, ACC-004, ACC-008 | ~~E22-S13~~, ~~E11-S05~~ |
+| ⬜ | **E22-S15** Requisition lookups admit a unit-scoped requester | E22 | security | S | USR-003, ACC-004, ACC-008 | ~~E22-S14~~, ~~E09-S02~~ |
 
 #### M4 — Full Phase-1 scope · 0/34 done
 
