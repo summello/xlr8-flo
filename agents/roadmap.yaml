@@ -2765,7 +2765,7 @@ epics:
       - id: E22-S15
         t: Unit-scoped grants reach the requisition lookups and out-of-office delegation
         k: security
-        s: S
+        s: M
         tags:
           - auth
           - security

@@ -461,6 +461,10 @@ The three parking stories (E11-S08 vendors, E12-S19 sourcing, E13-S22 purchase o
 
 243. **The unit list follows the list-scope rule** (operator, 21 Nov 2026; ACC-008 automated run). Amends 241: `GET /org/units` accepts `org.unit.read` or `vendor.request` held at **any** scope and lists the units where the caller holds one (organization-wide: every unit, as before). The `vendor.request` arm still shows active units only. A caller holding neither anywhere gets an **empty 200**, not 403 (E22-S13 decision 2). Story **E22-S14**.
 
+244. **Delivery addresses go to anyone who may raise in the unit** (operator, 23 Nov 2026; E22-S15 pre-flight). Unit X's ship-to addresses are listed to a caller holding `requisition.create` on X, `project_request.create` on X, or `requisition.create` on a project of X. Addresses are reference data; without this a standalone or project-scoped requester could not submit. Story **E22-S15**.
+
+245. **Requisition lookups admit non-requesters for what their screens need, reference data only** (operator, 23 Nov 2026; E22-S15 pre-flight). `requisition.view` holders: projects where they hold it (listed disabled, "view only"), their units' delivery addresses, master codes. `master_code.substitute` holders: department and ledger account. Neither gets the member list (`user`). No new access to any document. Story **E22-S15**.
+
 ## 7. Findings to feed back into MASTER.md (amended 9 Oct 2026, see 97)
 
 - **The MASTER amendment is deferred until after Budget Transfer (item 84), which is now built: the next session can draft it for the operator.** It would fold in the items below plus the ancestry state rows (6f item 86).
