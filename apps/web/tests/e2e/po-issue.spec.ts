@@ -244,7 +244,8 @@ test("the moment plays once per session: a second visit shows the finished pictu
   await issueNow(page, baseURL);
   await page.reload();
   await expect(page.getByRole("heading", { name: "Result" })).toBeVisible();
-  expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
+  // Scoped to the stage: since E13-S33 the first route focuses <main>, whose focus ring transitions.
+  expect(await page.locator(".po-stage").evaluate(el => el.getAnimations({ subtree: true }).length)).toBe(0);
 });
 
 test("an unissued PO shows no stage", async ({ page, baseURL }) => {
