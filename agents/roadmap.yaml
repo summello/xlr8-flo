@@ -2573,12 +2573,14 @@ epics:
           - E13-S30
           - E13-S24
           - E13-S06
-        st: in_progress
+        st: review
       - id: E13-S35
         t: Screen corrections from the ACC-008 keyboard runs
         k: ui
         s: M
-        tags: []
+        tags:
+          - auth
+          - security
         reqs:
           - UX-004
           - UX-007
@@ -2587,6 +2589,7 @@ epics:
         dep:
           - E13-S33
           - E22-S09
+          - E22-S14
         st: todo
 
   - id: E22

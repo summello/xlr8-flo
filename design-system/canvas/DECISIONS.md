@@ -465,6 +465,8 @@ The three parking stories (E11-S08 vendors, E12-S19 sourcing, E13-S22 purchase o
 
 245. **Requisition lookups admit non-requesters for what their screens need, reference data only** (operator, 23 Nov 2026; E22-S15 pre-flight). `requisition.view` holders: projects where they hold it (listed disabled, "view only"), their units' delivery addresses, master codes. `master_code.substitute` holders: department and ledger account. Neither gets the member list (`user`). No new access to any document. Story **E22-S15**.
 
+246. **Project creators list the units they may create in** (operator, 23 Nov 2026; E13-S35 pre-flight). `GET /org/units` also lists active units where the caller holds `project.create` (organization-wide: every active unit), alongside `org.unit.read` and `vendor.request` (243). A project-scoped grant reveals no unit. Story **E13-S35**.
+
 ## 7. Findings to feed back into MASTER.md (amended 9 Oct 2026, see 97)
 
 - **The MASTER amendment is deferred until after Budget Transfer (item 84), which is now built: the next session can draft it for the operator.** It would fold in the items below plus the ancestry state rows (6f item 86).
