@@ -1,6 +1,6 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { CheckCircle, Warning, X } from "@phosphor-icons/react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { apiClient } from "../../../api/client";
 import { writeHeaders } from "../../../features/auth/api";
 import { formatQuantity } from "../../../lib/decimal";
@@ -48,6 +48,10 @@ function KeyingSheet({ rfq, invitee, bid, setBid, switchTo, opener, onClose, onC
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const keys = useRef<Record<string, string>>({});
+  // E13-S33: the pressed button is disabled while busy, so focus waits for the commit that re-enables it (or swaps the branch).
+  const saveButton = useRef<HTMLButtonElement>(null), statusValue = useRef<HTMLElement>(null);
+  const refocus = useRef<RefObject<HTMLElement | null> | null>(null);
+  useEffect(() => { if (!busy && refocus.current) { refocus.current.current?.focus(); refocus.current = null; } }, [busy]);
   const lead = !!rfq.can_edit && !!rfq.can_approve;
   const [now] = useState(() => Date.now());
   const passed = new Date(rfq.deadline_at).getTime() <= now;
@@ -137,7 +141,7 @@ function KeyingSheet({ rfq, invitee, bid, setBid, switchTo, opener, onClose, onC
       // The first attempt may still be running: keep the key (kernel/errors/codes.py request_in_flight).
       if (response?.status === 409 && p?.type?.endsWith("/request_in_flight")) { setMessage("The first attempt is still being processed. Press the button again in a moment. Your entries are kept."); return; }
       pending.current = null;
-      if (data) { setBid(data); setLate(false); onChanged(); return; }
+      if (data) { setBid(data); setLate(false); onChanged(); refocus.current = statusValue; return; }
       if (response?.status === 409 && (p?.checks as { problem?: string } | undefined)?.problem === "late_bid") { setLate(true); return; }
       report(p, response?.status, "Submitting the bid");
     } catch { setMessage(failure(undefined, "Submitting the bid")); } finally { setBusy(false); }
@@ -166,7 +170,7 @@ function KeyingSheet({ rfq, invitee, bid, setBid, switchTo, opener, onClose, onC
         {message && <p role="alert" className="field-error">{message}</p>}
         {!keying && <div className="bid-readonly">
           {bid && <dl className="vendor-facts">
-            <dt>Status</dt><dd>{bid.late ? "Late, Accepted By Override" : bid.status === "draft" ? "Draft" : "Submitted"}</dd>
+            <dt>Status</dt><dd ref={statusValue} tabIndex={-1}>{bid.late ? "Late, Accepted By Override" : bid.status === "draft" ? "Draft" : "Submitted"}</dd>
             <dt>Vendor Sent It On</dt><dd>{(() => { const w = wallClock(bid.sent_at, zone); return `${w.date} ${w.time} ${zone}`; })()}</dd>
             <dt>Keyed By Us</dt><dd>{formatDateTime(bid.keyed_at)}</dd>
             {bid.late && <><dt>Accepted By</dt><dd>{bid.late.accepted_by_email ? <Person name={bid.late.accepted_by_name} email={bid.late.accepted_by_email} /> : "A lead"}, {formatDateTime(bid.late.at)}: {bid.late.reason}</dd></>}
@@ -177,7 +181,7 @@ function KeyingSheet({ rfq, invitee, bid, setBid, switchTo, opener, onClose, onC
           {bid?.status === "submitted" && !bid.replaced_by_bid_id && (passed ? <p>Bids can no longer be replaced after the bidding stop time.</p> : rfq.can_edit && <ReplaceForm rfq={rfq} bid={bid} onReplaced={next => { switchTo(next); onChanged(); }} />)}
           {bid?.status === "draft" && !isFull(bid) && <LateAccept lead={lead} late={isLate(bid, rfq.deadline_at)} reason={reason} setReason={setReason} error={errors.reason} busy={busy} onAccept={() => void submit(true)} />}
         </div>}
-        {keying && <form className="bid-form" noValidate onSubmit={e => { e.preventDefault(); void run(save); }}>
+        {keying && <form className="bid-form" noValidate onSubmit={e => { e.preventDefault(); refocus.current = saveButton; void run(save); }}>
           <fieldset className="req-fields"><legend className="t-label">Who and when</legend>
             <div className="req-field"><label className="t-label" htmlFor="bid-version">Version Answered</label>
               <select id="bid-version" value={version} onChange={e => setVersion(e.target.value)} disabled={!!full}>{Array.from({ length: rfq.version }, (_, i) => <option key={i + 1} value={i + 1}>Version {i + 1}</option>)}</select></div>
@@ -231,7 +235,7 @@ function KeyingSheet({ rfq, invitee, bid, setBid, switchTo, opener, onClose, onC
           {late && lead && <div className="req-field" data-invalid={errors.reason ? "true" : undefined}><label className="t-label" htmlFor="bid-late-reason">Reason for Accepting a Late Bid</label>
             <textarea id="bid-late-reason" rows={2} maxLength={500} value={reason} onChange={e => setReason(e.target.value)} aria-invalid={!!errors.reason || undefined} /></div>}
           <div className="req-actions">
-            <button type="submit" disabled={busy}>Save Draft</button>
+            <button type="submit" ref={saveButton} disabled={busy}>Save Draft</button>
             {late && lead ? <button type="button" disabled={busy} onClick={() => void submit(true)}>Accept Late Bid and Save</button>
               : <button type="button" disabled={busy} onClick={() => void submit(false)}>Submit Bid</button>}
           </div>

@@ -9064,6 +9064,63 @@
         },
         "gate_s": 442
       }
+    },
+    {
+      "story": "E13-S33",
+      "kind": "ui",
+      "size": "M",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 1
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "68075eb5-f55e-411e-a498-6ddec4162a01",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S33",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a204ab-3dd8-7f13-80a1-ae89a9fab95f",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Nine actions on the project-to-PO chain now move focus to the element that reports the result instead of dropping it on the page body; each has a keyboard-only Playwright case, and the first-route focus on main skips when a control already has focus.",
+      "title": "Focus never falls to the page body on the project-to-PO chain",
+      "durations": {
+        "wall_s": 93851,
+        "author_s": 93049,
+        "review_s": {
+          "codex-a": 178
+        },
+        "gate_s": 0
+      }
     }
   ]
 }

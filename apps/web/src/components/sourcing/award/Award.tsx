@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { apiClient } from "../../../api/client";
 import { failure, mutationHeaders, type Problem } from "../../requisitions/api";
 import SubmitSummary from "../../requisitions/SubmitSummary";
@@ -19,6 +19,9 @@ export default function Award({ id, award, c, onAward, navigate }: { id: string;
   const [rationale, setRationale] = useState(award.rationale ?? "");
   const [problem, setProblem] = useState<Failure | null>(null), [busy, setBusy] = useState(false), [saved, setSaved] = useState(false);
   const pending = useRef<{ fingerprint: string; key: string } | null>(null), locked = award.status !== "draft", path = { params: { path: { id } } };
+  // E13-S33: Submit locks the form, so the pressed button goes disabled; focus the status that reports it once it renders.
+  const lockedLine = useRef<HTMLParagraphElement>(null), focusLocked = useRef(false);
+  useEffect(() => { if (locked && focusLocked.current) { focusLocked.current = false; lockedLine.current?.focus(); } }, [locked]);
   const setRow = (k: string, patch: Partial<Row>) => setRows(r => ({ ...r, [k]: { quantity: "", reason: "", ...r[k], ...patch } }));
   const lowest = () => setRows(Object.fromEntries(c.lines.filter(l => l.lowest).flatMap(l => l.cells.map(cell => [rowKey(l.rfq_line_id, cell.vendor_id), { quantity: cell.vendor_id === l.lowest!.vendor_id ? lowestQty(l.quantity, cell.quantity) : "", reason: "" }]))));
   const fail = (title: string, error: Problem | undefined, action: string) => setProblem({ title, lead: failure(error, action), problems: (error?.errors ?? []).map(e => problemOf(c, e)) });
@@ -46,7 +49,7 @@ export default function Award({ id, award, c, onAward, navigate }: { id: string;
       // The first attempt may still be running: keep the key (kernel/errors/codes.py request_in_flight).
       if (response?.status === 409 && e?.type?.endsWith("/request_in_flight")) { setProblem({ title: "The award is still being submitted", lead: "The first attempt is still being processed. Press Submit for Approval again in a moment. Your selections are kept.", problems: [] }); return; }
       pending.current = null;
-      if (data) { onAward(data); return; }
+      if (data) { focusLocked.current = true; onAward(data); return; }
       if (response?.status === 409 && e?.checks?.problem === "workflow_not_set_up") setProblem({ title: "No approval workflow", lead: NO_WORKFLOW, problems: [] });
       else if (response?.status === 409 && e?.checks?.problem === "over_scope") {
         const k = e.checks, over = nonZero(k.over_scope_by ?? "0") ? `Over scope by ${formatMoney(k.over_scope_by!, draft.currency)} ${draft.currency}` : `Over reserved funds by ${formatMoney(k.over_funds_by!, draft.currency)} ${draft.currency}`;
@@ -58,7 +61,7 @@ export default function Award({ id, award, c, onAward, navigate }: { id: string;
   const v = verdict(award.checks);
   return <form className="aw" noValidate onSubmit={e => { e.preventDefault(); void run(true); }} aria-busy={busy || undefined}>
     {problem && <SubmitSummary title={problem.title} lead={problem.lead} problems={problem.problems} />}
-    {locked && <p className="req-pill" role="status" data-tone="info">{award.status === "approval_pending" ? "Approval Pending" : award.status.replaceAll("_", " ")}: this award can no longer be edited here.</p>}
+    {locked && <p className="req-pill" role="status" data-tone="info" ref={lockedLine} tabIndex={-1}>{award.status === "approval_pending" ? "Approval Pending" : award.status.replaceAll("_", " ")}: this award can no longer be edited here.</p>}
     {award.status === "approved" && <a className="req-link-button" href={`/purchase-orders/new?award=${award.id}`} onClick={e => { e.preventDefault(); navigate(`/purchase-orders/new?award=${award.id}`); }}>Create PO</a>}
     <div className="aw-top"><h3>Award {award.number}</h3><Standing award={award} />
       <button type="button" disabled={locked} onClick={lowest}>Set All to Lowest</button></div>

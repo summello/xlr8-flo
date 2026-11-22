@@ -133,6 +133,22 @@ test("record a bid with one Not Quoted line and typed tax, submit it, see it rec
   await expect(page.getByRole("row", { name: /RFQ-0001/ }).getByRole("cell", { name: "1", exact: true })).toBeVisible();
 });
 
+test("E13-S33 keyboard only: Save Draft returns focus to Save Draft, Submit Bid lands on the read-only Status", async ({ page }) => {
+  await stubBids(page);
+  await page.goto(`/sourcing/rfqs/${rfqId}`);
+  await page.getByRole("button", { name: "Record Bid" }).focus(); await page.keyboard.press("Enter");
+  await key(page, stamp(minute(-HOUR)));
+  const save = page.getByRole("button", { name: "Save Draft" });
+  await save.focus(); await page.keyboard.press("Enter");
+  await expect(page.getByRole("row", { name: /^Total/ })).toContainText("45.00 USD");
+  await expect(save).toBeFocused();
+  await page.getByRole("button", { name: "Submit Bid" }).focus(); await page.keyboard.press("Enter");
+  await expect(page.getByText("Received. The figures stay sealed")).toBeVisible();
+  const status = page.locator("dd[tabindex='-1']");
+  await expect(status).toHaveText("Submitted");
+  await expect(status).toBeFocused();
+});
+
 test("a quoted line with a blank tax cannot be saved and the error names the line", async ({ page }) => {
   const state = await stubBids(page);
   await page.goto(`/sourcing/rfqs/${rfqId}`);

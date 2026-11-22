@@ -400,6 +400,22 @@ test("keyboard only: tick a vendor in the picker and drive the publish dialog", 
   await expect(dialog).toHaveCount(0);
 });
 
+test("E13-S33 keyboard only: Invite Selected focuses the invitee count, then Save Draft focuses the saved status", async ({ page }) => {
+  await stub(page);
+  await page.goto(EDIT);
+  await invite(page, "Alpha Pumps").focus();
+  await page.keyboard.press("Space");
+  await page.getByRole("button", { name: "Invite Selected" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#rfq-invitees")).toContainText("1 of 5 invited.");
+  await expect(page.locator("#rfq-invitees")).toBeFocused();
+  await fillDraft(page);
+  await page.getByRole("button", { name: "Save Draft" }).focus();
+  await page.keyboard.press("Enter");
+  const saved = page.getByRole("status").filter({ hasText: "Draft saved." });
+  await expect(saved).toBeFocused();
+});
+
 for (const theme of ["light", "dark"] as const) {
   for (const [name, route, status] of [["edit", EDIT, "draft"], ["amend", AMEND, "published"]] as const) {
     test(`/sourcing/rfqs/:id/${name} passes axe in ${theme} theme`, async ({ page }) => {

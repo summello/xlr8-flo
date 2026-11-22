@@ -126,6 +126,7 @@ test('plant: mapping every login status to the credential alert fails service fa
 });
 test('keyboard, show toggle, empty fields and Enter submission', async ({ page }) => {
   await stub(page); await page.goto('/sign-in');
+  await expect(page.getByRole('heading', { name: 'Sign In', level: 1 })).toBeFocused(); // E13-S33: arrival focus; the next Tab reaches Email
   await page.keyboard.press('Tab'); await expect(page.getByLabel('Email', { exact: true })).toBeFocused();
   await page.keyboard.press('Tab'); await expect(page.getByLabel('Password', { exact: true })).toBeFocused();
   await page.keyboard.press('Tab'); await expect(page.getByRole('button', { name: 'Show', exact: true })).toBeFocused();
@@ -181,10 +182,13 @@ test('network failure preserves email and focuses summary', async ({ page }) => 
   await stub(page); await page.goto('/sign-in'); await page.route('**/api/v1/auth/login', route => route.abort()); await login(page);
   await expect(page.getByRole('alert')).toBeFocused(); await expect(page.getByRole('alert')).toContainText('Your email is kept'); await expect(page.getByLabel('Email', { exact: true })).toHaveValue('person@example.test');
 });
-for (const theme of ['light', 'dark']) for (const [path, state] of [['/sign-in', 'signin'], ['/sign-in/mfa', 'verify'], ['/sign-in/mfa/enroll', 'enroll']] as const) {
+for (const theme of ['light', 'dark'] as const) for (const [path, state] of [['/sign-in', 'signin'], ['/sign-in/mfa', 'verify'], ['/sign-in/mfa/enroll', 'enroll']] as const) {
   test(`axe ${theme} ${path}`, async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await stub(page, state); await page.goto(path); await page.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+    // The theme is in force from the first paint (system scheme, no stored preference), not flipped after
+    // load: a flip raced axe under load and measured the old text colour on the new ground (E13-S33 submit).
+    await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: theme });
+    await stub(page, state); await page.goto(path);
+    expect(await page.evaluate(() => matchMedia('(prefers-color-scheme: dark)').matches && !document.documentElement.dataset.theme)).toBe(theme === 'dark');
     await expect(page.locator('.auth-card')).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     if (state === 'enroll') { await enroll(page); expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]); }
@@ -277,4 +281,19 @@ test('keyboard-only enrollment reaches recovery acknowledgement and home', async
   await page.keyboard.press('Space'); await page.keyboard.press('Tab');
   await expect(page.getByRole('button', { name: 'Continue to XLR8 FLO' })).toBeFocused(); await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/$/);
+});
+
+test('E13-S33 keyboard only: signing in lands focus on main, and signing out lands it on the sign-in heading', async ({ page }) => {
+  await stub(page); await page.goto('/sign-in');
+  await page.getByLabel('Email', { exact: true }).fill('person@example.test');
+  await page.getByLabel('Password', { exact: true }).fill('correct-password');
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole('main')).toBeFocused();
+  await page.getByText('Account menu', { exact: true }).focus(); await page.keyboard.press('Enter');
+  await page.getByRole('button', { name: 'Sign out', exact: true }).focus(); await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/sign-in$/);
+  await expect(page.getByRole('heading', { name: 'Sign In', level: 1 })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.getByLabel('Email', { exact: true })).toBeFocused();
 });

@@ -8,11 +8,11 @@ import "../../../styles/vendors.css";
 import "../../../styles/projects.css";
 
 /** E13-S27: close an issued PO (terminal, moves no money). Shown only when the server lists `close` in `actions`. */
-export default function ClosePo({ po, onDone }: { po: Po; onDone: () => void }) {
+export default function ClosePo({ po, onDone, onClosed }: { po: Po; onDone: () => void; onClosed: () => void }) {
   const [open, setOpen] = useState(false), [busy, setBusy] = useState(false);
   const [reason, setReason] = useState(""), [fieldError, setFieldError] = useState<string | null>(null);
   const [refusal, setRefusal] = useState<{ message: string; stale: boolean } | null>(null);
-  const key = useRef<string | null>(null);
+  const key = useRef<string | null>(null), closed = useRef(false);
   const safe = useRef<HTMLButtonElement>(null), opener = useRef<HTMLButtonElement>(null), field = useRef<HTMLTextAreaElement>(null);
   const uid = useId();
   if (!po.actions?.includes("close")) return null;
@@ -24,7 +24,7 @@ export default function ClosePo({ po, onDone }: { po: Po; onDone: () => void }) 
     key.current ??= crypto.randomUUID(); // one key per attempt, reused on a network retry
     try {
       const { response, error } = await apiClient.POST("/api/v1/purchase-orders/{id}/transitions", { params: { path: { id: po.id } }, headers: mutationHeaders(key.current, po.version), body: { action: "close", reason: text } });
-      if (response.ok) { key.current = null; setOpen(false); onDone(); return; }
+      if (response.ok) { key.current = null; closed.current = true; setOpen(false); onClosed(); onDone(); return; }
       const problem = error as (Problem & { checks?: { problem?: string } }) | undefined;
       if (response.status === 409 || response.status === 403 || response.status === 422) key.current = null;
       const stale = response.status === 409 && problem?.checks?.problem === "stale_version";
@@ -35,11 +35,11 @@ export default function ClosePo({ po, onDone }: { po: Po; onDone: () => void }) 
   };
 
   return <Dialog.Root open={open} onOpenChange={next => { if (busy && !next) return; setOpen(next); }}>
-    <button type="button" ref={opener} className="req-link-button" onClick={() => { setReason(""); setFieldError(null); setRefusal(null); key.current = null; setOpen(true); }}>Close Purchase Order</button>
+    <button type="button" ref={opener} className="req-link-button" onClick={() => { closed.current = false; setReason(""); setFieldError(null); setRefusal(null); key.current = null; setOpen(true); }}>Close Purchase Order</button>
     <Dialog.Portal><Dialog.Overlay className="project-dialog-overlay" />
       <Dialog.Content className="project-dialog material-surface material-shadow req-dialog vendor-dialog" data-shadow="lg"
         onOpenAutoFocus={e => { e.preventDefault(); safe.current?.focus(); }}
-        onCloseAutoFocus={e => { e.preventDefault(); opener.current?.focus(); }}
+        onCloseAutoFocus={e => { e.preventDefault(); if (!closed.current) opener.current?.focus(); }}
         onEscapeKeyDown={e => { if (busy) e.preventDefault(); }} onInteractOutside={e => { if (busy) e.preventDefault(); }}>
         <Dialog.Title>Close {po.number}</Dialog.Title>
         <Dialog.Description>Closing ends the order. It cannot be reopened.</Dialog.Description>

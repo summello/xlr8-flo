@@ -1,6 +1,7 @@
 import { CheckCircle, FloppyDisk, PaperPlaneTilt } from "@phosphor-icons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiClient } from "../../api/client";
+import { focusSoon } from "../../lib/focus";
 import { registerGuard } from "../../lib/navigation-guard";
 import StatusPill from "../status/StatusPill";
 import Money from "../ui/Money";
@@ -39,6 +40,7 @@ export default function RequisitionForm({ navigate, initial }: { navigate: (href
   const [project, setProject] = useState<{ id: string; bu_id: string; currency: string } | null>(null);
   const key = useRef<string | null>(null);
   const addRef = useRef<HTMLButtonElement>(null);
+  const statusLine = useRef<HTMLParagraphElement>(null);
 
   const dirty = done === null && snapshot(header, lines) !== saved;
   const dirtyRef = useRef(dirty);
@@ -126,6 +128,7 @@ export default function RequisitionForm({ navigate, initial }: { navigate: (href
     const result = await persist(crypto.randomUUID());
     if (result) { setStatus(`Draft saved ${formatTime(new Date())}`); setToast("Draft saved. Nothing is reserved until you submit."); }
     setBusy(null);
+    if (result) focusSoon(() => statusLine.current); // the pressed button was disabled while saving
   };
 
   const submit = async () => {
@@ -241,7 +244,7 @@ export default function RequisitionForm({ navigate, initial }: { navigate: (href
       </aside>
     </div>
     <div className="req-action-bar">
-      <p role="status" className="req-status">{busy === "submit" ? "Submitting" : busy === "save" ? "Saving" : dirty && row ? `${status} · unsaved changes` : status}</p>
+      <p role="status" className="req-status" ref={statusLine} tabIndex={-1}>{busy === "submit" ? "Submitting" : busy === "save" ? "Saving" : dirty && row ? `${status} · unsaved changes` : status}</p>
       <p className="req-required-state"><span className="rq-open">Required fields are still empty</span><span className="rq-all"><CheckCircle aria-hidden="true" weight="regular" />All required fields complete</span></p>
       <button type="button" onClick={() => void saveDraft()} disabled={busy === "save"} aria-busy={busy === "save" || undefined}><FloppyDisk aria-hidden="true" weight="regular" />Save draft</button>
       <button type="button" className="form-submit" onClick={() => void submit()} disabled={busy === "submit"} aria-busy={busy === "submit" || undefined}><PaperPlaneTilt aria-hidden="true" weight="regular" />{busy === "submit" ? "Submitting" : "Submit for approval"}</button>

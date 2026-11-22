@@ -29,6 +29,10 @@ export default function PurchaseOrderDetail({ id, navigate }: { id: string; navi
     if (!data) throw new Error(response?.status === 404 ? "This purchase order does not exist or you cannot see it." : failure(error as Problem | undefined, "Loading the purchase order"));
     return data;
   }, [id]);
+  // E13-S33: Close Order removes the dialog and its trigger; once the reloaded PO reads closed, focus its status.
+  const statusRef = useRef<HTMLSpanElement>(null), focusClosed = useRef(false);
+  const poStatus = po.data?.status;
+  useEffect(() => { if (poStatus === "closed" && focusClosed.current) { focusClosed.current = false; statusRef.current?.focus(); } }, [poStatus]);
   useEffect(() => { if (po.data) document.title = `PO ${po.data.number}`; }, [po.data]);
 
   // The sends belong to the page, so a resend from the header updates the card too.
@@ -69,8 +73,8 @@ export default function PurchaseOrderDetail({ id, navigate }: { id: string; navi
       <div><h2 className="vendor-name po-number">{p.number}</h2>
         <p className="req-sub"><a href={`/vendors/${p.vendor_id}`}>{typeof p.vendor_snapshot.trading_name === "string" ? p.vendor_snapshot.trading_name : "Vendor"}</a>{p.vendor_status && <> · Vendor {p.vendor_status.replaceAll("_", " ")}</>} · <a href={`/requisitions/${p.requisition_id}`}>Requisition</a></p></div>
       <VersionControl key={p.id} po={p} navigate={navigate} />
-      <StatusPill docType="purchase_order" status={p.status as "draft"} />
-      <div className="vendor-head-actions">{p.actions?.includes("issue") && <IssueDialog po={p} navigate={navigate} onReload={po.reload} />}<ClosePo po={p} onDone={po.reload} /><CancelOrReduce po={p} onDone={po.reload} />{p.actions?.includes("change_order") && <button type="button" className="req-link-button" onClick={() => void startChange()}>Start Change Order</button>}{(p.actions ?? []).includes("edit") && <a className="req-link-button" href={`/purchase-orders/${p.id}/edit`} onClick={e => { e.preventDefault(); navigate(`/purchase-orders/${p.id}/edit`); }}>Edit</a>}{HAS_PDF.includes(p.status) && <a className="req-link-button" href={`/api/v1/purchase-orders/${p.id}/pdf`} target="_blank" rel="noreferrer"><FilePdf aria-hidden="true" weight="regular" />View PDF</a>}<button type="button" className="req-link-button" onClick={e => { setSheetOpener(e.currentTarget); setSheetOpen(true); }}><Envelope aria-hidden="true" weight="regular" />Vendor Copy</button>{plan?.actions.map(a => a === "resend"
+      <span ref={statusRef} tabIndex={-1}><StatusPill docType="purchase_order" status={p.status as "draft"} /></span>
+      <div className="vendor-head-actions">{p.actions?.includes("issue") && <IssueDialog po={p} navigate={navigate} onReload={po.reload} />}<ClosePo po={p} onDone={po.reload} onClosed={() => { focusClosed.current = true; }} /><CancelOrReduce po={p} onDone={po.reload} />{p.actions?.includes("change_order") && <button type="button" className="req-link-button" onClick={() => void startChange()}>Start Change Order</button>}{(p.actions ?? []).includes("edit") && <a className="req-link-button" href={`/purchase-orders/${p.id}/edit`} onClick={e => { e.preventDefault(); navigate(`/purchase-orders/${p.id}/edit`); }}>Edit</a>}{HAS_PDF.includes(p.status) && <a className="req-link-button" href={`/api/v1/purchase-orders/${p.id}/pdf`} target="_blank" rel="noreferrer"><FilePdf aria-hidden="true" weight="regular" />View PDF</a>}<button type="button" className="req-link-button" onClick={e => { setSheetOpener(e.currentTarget); setSheetOpen(true); }}><Envelope aria-hidden="true" weight="regular" />Vendor Copy</button>{plan?.actions.map(a => a === "resend"
         ? <button key={a} type="button" onClick={() => void resend()} aria-busy={resending || undefined} disabled={resending}>{resending ? "Resending…" : "Resend"}</button>
         : <ChangeRecipient key={a} poId={p.id} vendorId={p.vendor_id} onSent={rows => { sends.set(rows); clearRefusal(); }} />)}
         {plan?.actions.includes("resend") && <span className="req-sub po-resend-note">Sends the same version again. Nothing more is committed.</span>}

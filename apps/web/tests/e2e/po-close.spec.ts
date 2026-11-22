@@ -84,6 +84,21 @@ test("keyboard only: reach, open, type, submit; Escape returns focus to the trig
   expect(state.sent).toHaveLength(1);
 });
 
+test("E13-S33 keyboard only: Close Order leaves focus on the PO status, not the body", async ({ page, baseURL }) => {
+  await stubClose(page);
+  const trigger = await open(page, baseURL);
+  await trigger.focus();
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Reason (required)").focus();
+  await page.keyboard.type("Delivered and paid");
+  await dialog.getByRole("button", { name: "Close Order" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(dialog).toHaveCount(0);
+  await expect(page.locator("span[tabindex='-1']:has(> [data-status='closed'])")).toBeFocused();
+  expect(await page.evaluate(() => document.activeElement === document.body)).toBe(false);
+});
+
 for (const theme of ["light", "dark"] as const) {
   test(`close dialog passes axe in ${theme}`, async ({ page, baseURL }) => {
     await page.emulateMedia({ colorScheme: theme });
