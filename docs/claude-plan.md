@@ -652,7 +652,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E13-S32** Release audit follow-ups: one row per PO in the list, early delivery events retried, no vendor edits while a create request is pending | E13 | engine | M | PO-007, EML-003, VEN-012, SEC-011 | ~~E11-S06~~, ~~E13-S10~~, ~~E13-S12~~, ~~E12-S26~~ |
 | ✅ | **E13-S33** Focus never falls to the page body on the project-to-PO chain | E13 | ui | M | A11Y-002, ACC-008 | ~~E12-S28~~, ~~E04-S02~~ |
 | ✅ | **E13-S34** Change-order and cancellation emails follow the sending-domain gate | E13 | engine | S | EML-001 | ~~E13-S30~~, ~~E13-S24~~, ~~E13-S06~~ |
-| ⬜ | **E13-S35** Screen corrections from the ACC-008 keyboard runs | E13 | ui | M | UX-004, UX-007, A11Y-002, ACC-008 | ~~E13-S33~~, ~~E22-S09~~, ~~E22-S14~~ |
+| 🔨 | **E13-S35** Screen corrections from the ACC-008 keyboard runs | E13 | ui | M | UX-004, UX-007, A11Y-002, ACC-008 | ~~E13-S33~~, ~~E22-S09~~, ~~E22-S14~~ |
 | ✅ | **E22-S01** Create Project with budget: form and Excel, sponsors, through the project approval workflow | E22 | engine | L | PROJ-003 | ~~E09-S17~~ |
 | ✅ | **E22-S02** Soft delete for every draft document | E22 | crud | M | DATA-002 | ~~E09-S15~~ |
 | ✅ | **E22-S03** One audit helper instead of twelve, behaviour-preserving | E22 | chore | M | AUD-001 | — |
