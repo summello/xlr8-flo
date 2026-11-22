@@ -9121,6 +9121,63 @@
         },
         "gate_s": 0
       }
+    },
+    {
+      "story": "E13-S34",
+      "kind": "engine",
+      "size": "S",
+      "tags": [],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 1
+      },
+      "gate_failures": 0,
+      "opus_final": false,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 0,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "9b35a548-b27e-4c33-9c61-6249f2cb2bf2",
+          "source": "launch:--session-id",
+          "account": "A",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S34",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a20592-b6b0-74f0-a6a9-77343aa34170",
+          "source": "codex rollout matched on cwd"
+        }
+      },
+      "recap": "Change-order apply and the cancel vendor notice now read the sending-domain gate (EML-001) and queue nothing when it is closed; each commits as before and records why in the audit.",
+      "title": "Change-order and cancellation emails follow the sending-domain gate",
+      "durations": {
+        "wall_s": 2607,
+        "author_s": 1615,
+        "review_s": {
+          "codex-a": 166
+        },
+        "gate_s": 350
+      }
     }
   ]
 }

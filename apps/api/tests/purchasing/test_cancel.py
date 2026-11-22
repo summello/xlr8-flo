@@ -38,7 +38,7 @@ from tests.purchasing.test_changes import (
     publish_change,
     submit,
 )
-from tests.purchasing.test_issue import approve, run, totals
+from tests.purchasing.test_issue import approve, run, set_domain, totals
 from tests.purchasing.test_po_approval import decide_po
 from tests.purchasing.test_po_approval import submit as submit_po
 from tests.purchasing.test_purchase_orders import _race, create, pos, ready, send
@@ -54,7 +54,9 @@ from tests.sourcing.test_rfq import refused, sql
 from tests.vendors.test_vendors import regrant
 
 
-def cancel_po(db, po, version=None, flag=False, connection=None, actor=None, notify=True):
+def cancel_po(
+    db, po, version=None, flag=False, connection=None, actor=None, notify=True, settings=None
+):
     if version is None:
         version = sql(db, "SELECT version FROM purchase_order WHERE id=%s", (po.id,))[0][0]
     body = PoCancelCreate(
@@ -62,8 +64,9 @@ def cancel_po(db, po, version=None, flag=False, connection=None, actor=None, not
     )
     with correlation_context("cancel"):
         return cancel(
-            connection or db[0], Scope(db[1]), po.id, actor or db[3], f'"{version}"', body
-        )
+            connection or db[0], Scope(db[1]), po.id, actor or db[3], f'"{version}"', body,
+            settings=settings,
+        )  # fmt: skip
 
 
 def problem(call):
@@ -567,3 +570,40 @@ def test_cancel_with_requisition_lines_and_an_award_approval_lock_sequence_do_no
 
     assert _race(db, work) == ["cancelled", "locked"]
     clean(db)
+
+
+def cancel_mail(db, po):
+    return sql(
+        db,
+        "SELECT (SELECT count(*) FROM po_transmission WHERE template_version = %s), "
+        "(SELECT after FROM audit_log WHERE action = 'purchase_order.cancel' AND target_id = %s)",
+        ("po-cancelled-v1", po.id),
+    )[0]
+
+
+def test_a_cancel_sends_no_notice_while_the_domain_is_unverified(lifecycle_db):
+    db, _ = lifecycle_db
+    po, _ = issued(db)
+    mail = sql(db, "SELECT count(*) FROM outbox")
+    cancel_po(db, po, settings=Settings(email_provider="resend"))
+    assert sql(db, "SELECT status FROM purchase_order WHERE id = %s", (po.id,)) == [("cancelled",)]
+    assert sql(db, "SELECT count(*) FROM outbox") == mail  # plant: notice queued anyway
+    assert cancel_mail(db, po) == (
+        0,
+        {"status": "cancelled", "vendor_notified": False, "reason": "domain_not_verified"},
+    )
+    assert sql(
+        db,
+        "SELECT count(*) FROM ledger_entry "
+        "WHERE entry_type = 'release' AND idempotency_key LIKE %s",
+        (f"po:{po.id}:cancel:%",),
+    ) == [(1,)]
+
+
+def test_a_cancel_sends_the_notice_when_the_domain_passes(lifecycle_db):
+    db, _ = lifecycle_db
+    po, _ = issued(db)
+    set_domain(db, "pass", "pass")
+    cancel_po(db, po, settings=Settings(email_provider="resend"))
+    notices, after = cancel_mail(db, po)
+    assert notices >= 1 and "reason" not in after

@@ -11,6 +11,7 @@ import psycopg
 import pytest
 
 from flo.api.health import app
+from flo.kernel.config import Settings
 from flo.kernel.errors import ProblemError
 from flo.kernel.logging import correlation_context
 from flo.kernel.tenancy.context import Scope
@@ -37,7 +38,7 @@ from flo.modules.purchasing.service import PurchaseOrderService
 from tests.approvals.test_engine import graph
 from tests.approvals.test_workflow_definitions import definition, draft, svc
 from tests.isolation.test_real_sessions import client, login
-from tests.purchasing.test_issue import approve, run, totals
+from tests.purchasing.test_issue import approve, run, set_domain, totals
 from tests.purchasing.test_purchase_orders import _race, create, pos, ready, send
 from tests.requisitions.test_approval_effects import grant, reviewer
 from tests.requisitions.test_header import bootstrap_db as bootstrap_db  # noqa: F401
@@ -49,8 +50,8 @@ from tests.sourcing.test_rfq import refused, sql
 from tests.vendors.test_vendors import regrant
 
 
-def changes(db, connection=None):
-    return ChangeService(connection or db[0], Scope(db[1]), db[3])
+def changes(db, connection=None, settings=None):
+    return ChangeService(connection or db[0], Scope(db[1]), db[3], settings)
 
 
 def issued(db, qty="4", awarded="10"):
@@ -206,6 +207,44 @@ def test_a_date_change_is_not_material_applies_at_once_and_keeps_the_prior_revis
     assert sql(db, "SELECT count(*) FROM audit_log WHERE action='purchase_order.change_apply'") == [
         (1,)
     ]
+
+
+def revision_mail(db):
+    return sql(
+        db,
+        "SELECT (SELECT count(*) FROM po_transmission), "
+        "(SELECT count(*) FROM outbox WHERE left(idempotency_key, 16) = 'po_transmission:'), "
+        "(SELECT count(*) FROM audit_log WHERE action = 'purchase_order.revision_without_email')",
+    )[0]
+
+
+def test_a_change_order_apply_queues_no_email_while_the_domain_is_unverified(lifecycle_db):
+    db, _ = lifecycle_db
+    po, _ = issued(db)
+    resend = Settings(email_provider="resend")
+    sent = revision_mail(db)[:2]  # the issue email's rows stay
+    change = open_change(db, po, terms="Net 45")
+    applied = changes(db, settings=resend).apply(po.id, 1, f'"{change.version}"')
+    assert applied.status == "approved" and applied.result_po_id is not None
+    assert revisions(db) == [(0, "superseded", 3), (1, "issued", 2)]
+    assert revision_mail(db) == (*sent, 1)  # plant: enqueue anyway / raise instead of skip
+    assert sql(
+        db,
+        "SELECT target_id, after FROM audit_log "
+        "WHERE action = 'purchase_order.revision_without_email'",
+    ) == [(applied.result_po_id, {"revision": 1, "reason": "domain_not_verified"})]
+
+
+def test_a_change_order_apply_still_queues_the_email_when_the_domain_passes(lifecycle_db):
+    db, _ = lifecycle_db
+    po, _ = issued(db)
+    set_domain(db, "pass", "pass")
+    change = open_change(db, po, terms="Net 45")
+    sent = revision_mail(db)[:2]
+    resend = Settings(email_provider="resend")
+    changes(db, settings=resend).apply(po.id, 1, f'"{change.version}"')
+    rows, outbox, audits = revision_mail(db)
+    assert rows > sent[0] and outbox - sent[1] == rows - sent[0] and audits == 0
 
 
 def test_the_issue_stamp_is_written_once_and_whole(lifecycle_db):

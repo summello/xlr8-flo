@@ -13,6 +13,7 @@ from uuid import UUID
 
 import psycopg
 
+from flo.kernel.config import Settings
 from flo.kernel.errors import conflict
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
@@ -61,6 +62,7 @@ def cancel(
     actor_id: UUID,
     if_match: str | None,
     body: PoCancelCreate,
+    settings: Settings | None = None,
 ) -> PoCancelRead:
     service = PurchaseOrderService(conn, scope, actor_id)
     expected = parse_if_match(if_match)
@@ -116,9 +118,16 @@ def cancel(
             raise conflict("invalid_transition", "That purchase order cannot be cancelled.")
         notify = status == "issued" and body.notify_vendor
         recipients = transmission.cancellation_recipients(conn, scope, po_id) if notify else []
+        held = bool(recipients) and not transmission.po_email_allowed(conn, settings or Settings())
+        if held:  # EML-001: no dead-lettered notice; the audit says why
+            recipients = []
         transition(
             conn, scope, po_id, "cancel", actor_id, version, body.reason,
-            after={"vendor_notified": False} if notify and not recipients else None,
+            after=(
+                {"vendor_notified": False} | ({"reason": "domain_not_verified"} if held else {})
+                if notify and not recipients
+                else None
+            ),
         )  # fmt: skip
         if recipients:
             transmission.enqueue_cancellation(conn, scope, po_id, actor_id, recipients)

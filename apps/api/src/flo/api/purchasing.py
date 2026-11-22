@@ -280,9 +280,13 @@ def cancel_purchase_order(
     context: AmendContext,
     connection: Connection,
     response: Response,
+    settings: Annotated[Settings, Depends(get_auth_settings)],
     version: Annotated[str | None, Header(alias="If-Match")] = None,
 ) -> PoCancelRead:
-    return _etag(cancel(connection, current_scope(), id, context.user_id, version, body), response)
+    return _etag(
+        cancel(connection, current_scope(), id, context.user_id, version, body, settings=settings),
+        response,
+    )
 
 
 @router.get("/{id}/cancel-preview", response_model=PoCancelPreviewRead)

@@ -18,6 +18,7 @@ from psycopg.types.json import Jsonb
 
 from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
+from flo.kernel.config import Settings
 from flo.kernel.errors import ErrorCode, ProblemError, conflict
 from flo.kernel.money import quantize
 from flo.kernel.tenancy.context import Scope
@@ -39,6 +40,7 @@ from flo.modules.purchasing.pdf import freeze
 from flo.modules.purchasing.pricing import Figures, landed, spread
 from flo.modules.purchasing.schemas import PoChangeCreate, PoChangePatch, PoChangeRead
 from flo.modules.purchasing.service import PurchaseOrderService, _fmt, _invalid
+from flo.modules.purchasing.transmission import po_email_allowed
 from flo.modules.requisitions.schemas import LineSourcing
 from flo.modules.requisitions.service import (
     issue_lines,
@@ -99,8 +101,15 @@ def _entry(
 
 
 class ChangeService:
-    def __init__(self, connection: Conn, scope: Scope, actor_id: UUID | None = None) -> None:
+    def __init__(
+        self,
+        connection: Conn,
+        scope: Scope,
+        actor_id: UUID | None = None,
+        settings: Settings | None = None,
+    ) -> None:
         self.connection, self.scope, self.actor_id = connection, scope, actor_id
+        self.settings = settings
         self.po = PurchaseOrderService(connection, scope, actor_id)
         self.repo = self.po.repo
 
@@ -685,7 +694,20 @@ class ChangeService:
             reopen_for_purchase(self.connection, self.scope, requisition_id, actor)  # PO-011
         new_id = self._write_revision(h, proposal, actor)
         mark_completed(self.connection, self.scope, requisition_id, actor)
-        enqueue_transmission(self.connection, self.scope, new_id, 2)
+        if po_email_allowed(self.connection, self.settings or Settings()):
+            enqueue_transmission(self.connection, self.scope, new_id, 2)
+        else:  # EML-001: nothing dead-letters; the revision commits and the audit says why
+            audit_event(
+                cast(AuditConnection, self.connection),
+                self.scope,
+                actor=AuditActor(ActorKind.USER, self.actor_id),
+                action="purchase_order.revision_without_email",
+                target_type="purchase_order",
+                target_id=new_id,
+                outcome=Outcome.SUCCESS,
+                before=None,
+                after={"revision": cast(int, h["revision"]) + 1, "reason": "domain_not_verified"},
+            )
         self.repo.execute(
             "UPDATE po_change SET status = 'approved', version = version + 1, "
             "result_po_id = %(new)s "
