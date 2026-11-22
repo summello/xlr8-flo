@@ -667,7 +667,7 @@ Phase order is not negotiable and follows dependency, not preference: money befo
 | ✅ | **E22-S12** Balanced E2E shards on a production build; backend static job; combined checks need detect | E22 | chore | M | SEC-012 | — |
 | ✅ | **E22-S13** One list-scope rule, project grants roll down in lists as in point checks | E22 | security | M | USR-003, ACC-004 | ~~E22-S04~~, ~~E22-S06~~ |
 | ✅ | **E22-S14** The unit list follows the list-scope rule: a unit-scoped grant lists its units | E22 | security | S | USR-003, ACC-004, ACC-008 | ~~E22-S13~~, ~~E11-S05~~ |
-| ⬜ | **E22-S15** Unit-scoped grants reach the requisition lookups and out-of-office delegation | E22 | security | S | USR-003, ACC-004, ACC-008 | ~~E22-S14~~, ~~E09-S02~~ |
+| ⬜ | **E22-S15** Unit-scoped grants reach the requisition lookups and out-of-office delegation | E22 | security | M | USR-003, ACC-004, ACC-008 | ~~E22-S14~~, ~~E09-S02~~ |
 
 #### M4 — Full Phase-1 scope · 0/34 done
 
