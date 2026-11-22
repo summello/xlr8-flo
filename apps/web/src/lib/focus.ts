@@ -31,7 +31,8 @@ export function useFocusOnRouteChange(
       const active = document.activeElement;
       if (active && active !== document.body) return;
       // Not cancelled on cleanup: StrictMode runs this effect twice and the second run takes the equal-route early return.
-      requestAnimationFrame(() => mainRef.current?.focus());
+      // Re-check in the frame: a control focused since this effect ran keeps focus.
+      requestAnimationFrame(() => { const now = document.activeElement; if (!now || now === document.body) mainRef.current?.focus(); });
       return;
     }
     if (previousRoute.current === routeKey) return;
