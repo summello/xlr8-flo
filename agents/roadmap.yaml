@@ -2737,7 +2737,7 @@ epics:
           - E11-S05
         st: done
       - id: E22-S15
-        t: Requisition lookups admit a unit-scoped requester
+        t: Unit-scoped grants reach the requisition lookups and out-of-office delegation
         k: security
         s: S
         tags:
