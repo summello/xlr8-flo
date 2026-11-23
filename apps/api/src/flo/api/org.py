@@ -75,9 +75,15 @@ def list_units(
     cursor: UUID | None = None,
     page_size: Annotated[int, Query(ge=1, le=100)] = 50,
 ) -> OrgUnitPage:
-    # DECISIONS 234/241/246: any of the three permissions at any scope; the service narrows rows to those scopes.
+    # DECISIONS 234/241/246: any of the three permissions at any scope; the service narrows rows.
     return OrgService(connection, current_scope(), read.user_id).list_units(
-        kind=kind, active=active, cursor=cursor, page_size=page_size, read=read, req=req, create=create
+        kind=kind,
+        active=active,
+        cursor=cursor,
+        page_size=page_size,
+        read=read,
+        req=req,
+        create=create,
     )
 
 
