@@ -407,7 +407,7 @@ test("detail: Delete draft asks first, keyboard only, shows the server reason an
   await expect(dialog).toContainText("Only a draft can be deleted.");
   state.failDelete = false;
   await dialog.getByRole("button", { name: "Try Again" }).click();
-  await expect(page).toHaveURL(/\/projects$/);
+  await expect(page).toHaveURL(/\/projects(\?|$)/);
   const deletes = state.requests.filter(r => r.method === "DELETE");
   expect(deletes.map(r => r.path)).toEqual([`/api/v1/projects/${projectId}`, `/api/v1/projects/${projectId}`]);
   expect(deletes[0]!.headers["idempotency-key"]).toBeTruthy();

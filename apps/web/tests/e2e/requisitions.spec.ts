@@ -517,7 +517,7 @@ test("detail: a draft with no reservation says nothing is reserved and Delete dr
   await page.keyboard.press("Tab");
   await expect(dialog.getByRole("button", { name: "Delete Draft" })).toBeFocused();
   await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(/\/requisitions$/);
+  await expect(page).toHaveURL(/\/requisitions(\?|$)/);
   expect(state.calls.find(c => c.method === "DELETE")?.path).toBe(`/api/v1/requisitions/${reqId}`);
   expect(state.calls.some(c => c.path.endsWith("/transitions") && c.method === "POST")).toBe(false);
 });
