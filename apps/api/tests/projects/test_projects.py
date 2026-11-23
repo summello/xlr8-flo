@@ -121,6 +121,11 @@ def test_read_carries_people_by_name_and_the_approval_summary_the_budget(project
     assert shown["owner_name"] == "Olive Owner" and shown["owner_email"]
     assert [p["name"] for p in shown["sponsors"]] == ["Olive Owner"]
     assert shown["sponsors"][0]["id"] == str(db.actor_id)
+    # No display name: the read still succeeds and the email is the fallback.
+    db.connection.execute("UPDATE identity SET display_name = NULL WHERE id = %s", (db.actor_id,))
+    bare_name = request(db, "GET", "/" + made["id"]).json()
+    assert bare_name["owner_name"] is None and bare_name["sponsors"][0]["name"] is None
+    assert bare_name["sponsors"][0]["email"] == bare_name["owner_email"]
     bare = request(db, "POST", json=body(bu).model_dump(mode="json")).json()
     for pid in (made["id"], bare["id"]):
         db.connection.execute(

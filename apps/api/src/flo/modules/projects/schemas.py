@@ -110,7 +110,7 @@ class ProjectPatch(ExternalReference):
 
 class ProjectPerson(BaseModel):
     id: UUID
-    name: str
+    name: str | None
     email: str
 
 

@@ -32,6 +32,7 @@ export default function ProjectForm({ onCreated }: { onCreated: (id: string) => 
   const [errors, setErrors] = useState<SummaryError[]>([]);
   const [units, setUnits] = useState<ComboboxOption[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [unitsError, setUnitsError] = useState(false);
   const [retry, setRetry] = useState(0);
   const [busy, setBusy] = useState(false);
   const [budget, setBudget] = useState("");
@@ -78,7 +79,7 @@ export default function ProjectForm({ onCreated }: { onCreated: (id: string) => 
         cursor = data.next_cursor ?? undefined;
       } while (cursor);
       if (!signal.aborted) setUnits(all);
-    })().catch(() => { if (!signal.aborted) setLoadError("Business units could not load. Your entries are preserved; retry."); });
+    })().then(() => { if (!signal.aborted) setUnitsError(false); }).catch(() => { if (!signal.aborted) setUnitsError(true); });
     return () => controller.abort();
   }, [retry]);
   const unit = values.bu_id;
@@ -124,7 +125,7 @@ export default function ProjectForm({ onCreated }: { onCreated: (id: string) => 
   return <form className="form-kit project-form material-surface" onSubmit={e => void submit(e)} noValidate>
     <p>Define the project before submitting it for approval. You become its owner.</p>
     <div ref={summary}><ErrorSummary errors={errors} /></div>
-    {loadError && <div role="alert"><p>{loadError}</p><button type="button" onClick={() => setRetry(n => n + 1)}>Retry suggestions</button></div>}
+    {(loadError || unitsError) && <div role="alert"><p>{loadError ?? "Business units could not load. Your entries are preserved; retry."}</p><button type="button" onClick={() => setRetry(n => n + 1)}>Retry suggestions</button></div>}
     {fields.map(([key, label, help, required]) => <Field key={key} id={`project-${key}`} label={label} help={help} required={required} error={errors.find(e => e.fieldId === `project-${key}`)?.message}>
       {key === "bu_id"
         ? <Select disabled={units?.length === 0} value={values.bu_id} onChange={e => setValues(v => ({ ...v, bu_id: e.target.value }))}>

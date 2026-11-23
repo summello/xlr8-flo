@@ -21,6 +21,8 @@ from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.approvals.service import require_workflow
 from flo.modules.identity.service import (
     IdentityAuthorizationConnection,
+    emails_by_id,
+    names_by_id,
     register_project_scope,
     user_exists,
 )
@@ -113,14 +115,10 @@ class ProjectService:
             {"id": row["bu_id"]},
         ).fetchone()
         sponsor_ids = self._sponsors_of([row])[cast(UUID, row["id"])]
-        people = {
-            cast(UUID, r[0]): r
-            for r in self.repo.execute(
-                "SELECT id, display_name, email FROM identity WHERE id = ANY(%(ids)s)",
-                {"ids": [cast(UUID, row["owner_id"]), *sponsor_ids]},
-            ).fetchall()
-        }
-        owner = people.get(cast(UUID, row["owner_id"]))
+        owner_id = cast(UUID, row["owner_id"])
+        ids = [owner_id, *sponsor_ids]
+        conn = cast(IdentityAuthorizationConnection, self.connection)
+        emails, names = emails_by_id(conn, ids), names_by_id(conn, ids)
         return self._with_codes(
             ProjectRead.model_validate(
                 with_variance(
@@ -128,12 +126,12 @@ class ProjectService:
                     | {
                         "bu_name": str(unit[0]) if unit is not None else None,
                         "sponsor_ids": sponsor_ids,
-                        "owner_name": owner[1] if owner else None,
-                        "owner_email": owner[2] if owner else None,
+                        "owner_name": names.get(owner_id),
+                        "owner_email": emails.get(owner_id),
                         "sponsors": [
-                            {"id": s, "name": people[s][1], "email": people[s][2]}
+                            {"id": s, "name": names.get(s), "email": emails[s]}
                             for s in sponsor_ids
-                            if s in people
+                            if s in emails
                         ],
                     }
                 )

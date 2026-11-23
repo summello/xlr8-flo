@@ -8685,7 +8685,7 @@ export interface components {
              */
             id: string;
             /** Name */
-            name: string;
+            name: string | null;
         };
         /** ProjectRead */
         ProjectRead: {
