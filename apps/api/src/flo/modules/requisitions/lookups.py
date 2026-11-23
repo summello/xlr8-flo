@@ -36,7 +36,8 @@ class LookupService:
         address_projects: frozenset[UUID] = frozenset(),
     ) -> None:
         self.can_view_project, self.can_view_unit = can_view_project, can_view_unit
-        # Projects the caller holds requisition.create or .view on (direct grants).
+        # Projects where requisition.create or .view is effective (granted_scopes expands unit
+        # grants and roll-down project grants to the projects beneath them).
         self.address_projects = address_projects
         self.can_request_in_unit = can_request_in_unit or can_raise_in_unit
         self.connection, self.scope = connection, scope
@@ -157,8 +158,6 @@ class LookupService:
             or self.can_view_unit(bu_id)
         ):
             return True
-        # ponytail: direct project grants only; a grant on a parent project whose child sits in
-        # another unit is not followed. Resolve descendants if that case appears.
         return bool(self.address_projects) and (
             self.repo.execute(
                 "SELECT 1 FROM project WHERE org_id=%(org_id)s AND bu_id=%(bu)s "
