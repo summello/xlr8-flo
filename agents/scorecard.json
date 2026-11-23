@@ -9178,6 +9178,72 @@
         },
         "gate_s": 350
       }
+    },
+    {
+      "story": "E22-S15",
+      "kind": "security",
+      "size": "M",
+      "tags": [
+        "auth",
+        "security"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 1
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 1,
+          "findings": 1,
+          "blockers": 0,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "c769c644-31e3-4925-9d0b-c60d784ec5e4",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E22-S15",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a205e6-81d3-7e20-859d-d14f8d38cdf7",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Requisition lookups and the two delegation routes are now gated by a permission held at any scope (require_granted) instead of organization-only, with rows narrowed per scope and view-only projects listed disabled. Real-session tests cover unit, project, standalone, viewer, substituter and no-permission callers plus a unit-scoped approver delegating.",
+      "title": "Unit-scoped grants reach the requisition lookups and out-of-office delegation",
+      "durations": {
+        "wall_s": 5577,
+        "author_s": 3434,
+        "review_s": {
+          "codex-a": 813,
+          "opus": 827
+        },
+        "gate_s": 2
+      }
     }
   ]
 }

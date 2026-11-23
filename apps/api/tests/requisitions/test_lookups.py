@@ -183,3 +183,148 @@ def test_user_lookup_matches_display_name_and_shows_it_beside_the_email(lines_db
     conn.execute("UPDATE identity SET display_name=NULL WHERE id=%s", (admin,))
     plain = lookups(db).options("user", "admin@", None, 10).rows
     assert [(r.label, r.note) for r in plain] == [("admin@example.test", None)]
+
+
+# --- E22-S15: scope-held callers reach the lookups through real sessions ----------------------
+
+LOOKUPS = "/api/v1/requisitions/lookups/"
+HOLDER_KINDS = (
+    "project",
+    "bu",
+    "user",
+    "department",
+    "ledger_account",
+    "uom",
+    "item_category",
+    "service_category",
+)
+
+
+def as_holder(db, permissions, target):
+    """Make the signed-in admin hold only these permissions, granted at ``target``."""
+    from flo.modules.identity.models import AuthorizationTarget
+    from flo.modules.identity.service import IdentityAuthorizationService
+
+    auth = IdentityAuthorizationService(db[0], Scope(db[1]), db[3])
+    for row in db[0].execute("SELECT id FROM user_role WHERE user_id=%s", (db[3],)).fetchall():
+        auth.revoke_role(row[0])
+    role = auth.create_role(f"holder-{uuid4().hex[:6]}", "Holder")
+    for permission in permissions:
+        auth.grant_permission(role.id, permission)
+    auth.grant_role(db[3], role.id, AuthorizationTarget(*target))
+
+
+def statuses(db, permissions, target, *bu_ids):
+    """Response per kind, plus one per delivery-address unit asked about, for one holder."""
+    out = {}
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            as_holder(db, permissions, target)
+            for kind in HOLDER_KINDS:
+                out[kind] = await browser.get(LOOKUPS + kind)
+            for bu_id in bu_ids:
+                out[bu_id] = await browser.get(
+                    LOOKUPS + "delivery_address", params={"bu_id": str(bu_id)}
+                )
+
+    asyncio.run(scenario())
+    return out
+
+
+def rows_of(response):
+    return {r["value"]: r for r in response.json()["rows"]}
+
+
+def two_units(db):
+    a, b = unit(db, "UA"), unit(db, "UB")
+    pa, pb = project(db, a), project(db, b)
+    activate(db, pa), activate(db, pb)
+    for u in (a, b):
+        org_svc(db).create_address(
+            u.id,
+            OrgAddressCreate(
+                kind="ship_to",
+                line1=f"{u.code} St",
+                city="X",
+                country="US",
+                effective_from=date(2000, 1, 1),
+            ),
+        )
+    return a, b, pa, pb
+
+
+def test_unit_scoped_requester_reaches_every_form_lookup(lines_db):
+    from flo.modules.identity.models import ScopeType
+
+    db = lines_db
+    a, b, pa, pb = two_units(db)
+    perms = ["requisition.create", "project_request.create"]
+    got = statuses(db, perms, (ScopeType.BU, a.id), a.id, b.id)
+    assert all(got[k].status_code == 200 for k in HOLDER_KINDS), {
+        k: v.status_code for k, v in got.items()
+    }
+    assert set(rows_of(got["project"])) == {str(pa.id)}
+    assert set(rows_of(got["bu"])) == {str(a.id)}
+    assert got[a.id].status_code == 200 and len(got[a.id].json()["rows"]) == 1
+    assert got[b.id].status_code == 404
+
+
+def test_project_scoped_requester_gets_project_unit_addresses_and_no_bu_rows(lines_db):
+    from flo.modules.identity.models import ScopeType
+
+    db = lines_db
+    a, b, pa, pb = two_units(db)
+    got = statuses(db, ["requisition.create"], (ScopeType.PROJECT, pa.id), a.id, b.id)
+    assert set(rows_of(got["project"])) == {str(pa.id)}
+    assert got["bu"].status_code == 200 and got["bu"].json()["rows"] == []
+    assert got["department"].status_code == 200
+    assert got[a.id].status_code == 200  # P_A's unit (decision 1)
+    assert got[b.id].status_code == 404
+
+
+def test_standalone_requester_gets_units_and_addresses_but_no_projects(lines_db):
+    from flo.modules.identity.models import ScopeType
+
+    db = lines_db
+    a, b, pa, pb = two_units(db)
+    got = statuses(db, ["project_request.create"], (ScopeType.BU, a.id), a.id)
+    assert set(rows_of(got["bu"])) == {str(a.id)}
+    assert got[a.id].status_code == 200
+    assert got["project"].status_code == 403
+
+
+def test_unit_scoped_viewer_sees_projects_view_only_and_nothing_else_wide(lines_db):
+    from flo.modules.identity.models import ScopeType
+
+    db = lines_db
+    a, b, pa, pb = two_units(db)
+    got = statuses(db, ["requisition.view"], (ScopeType.BU, a.id), a.id, b.id)
+    rows = rows_of(got["project"])
+    assert set(rows) == {str(pa.id)}
+    assert rows[str(pa.id)]["disabled"] is True and rows[str(pa.id)]["note"] == "view only"
+    assert got[a.id].status_code == 200 and got["department"].status_code == 200
+    assert got["user"].status_code == 403 and got["bu"].status_code == 403
+    assert got[b.id].status_code == 404
+
+
+def test_code_substituter_reaches_only_department_and_ledger_account(lines_db):
+    from flo.modules.identity.models import ScopeType
+
+    db = lines_db
+    a, b, pa, pb = two_units(db)
+    got = statuses(db, ["master_code.substitute"], (ScopeType.PROJECT, pa.id), a.id)
+    allowed = {"department", "ledger_account"}
+    assert {k: v.status_code for k, v in got.items()} == {
+        k: 200 if k in allowed else 403 for k in got
+    }
+
+
+def test_caller_with_none_of_the_four_permissions_gets_403_on_every_kind(lines_db):
+    from flo.modules.identity.models import ScopeType
+
+    db = lines_db
+    a, *_ = two_units(db)
+    got = statuses(db, ["record.read"], (ScopeType.BU, a.id), a.id)
+    assert {v.status_code for v in got.values()} == {403}

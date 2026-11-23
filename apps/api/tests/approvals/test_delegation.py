@@ -650,3 +650,41 @@ def test_delegation_routes_unauthenticated_forbidden_and_foreign_scope(setup):
             assert foreign_create.status_code == 404
 
     asyncio.run(scenario())
+
+
+def test_unit_scoped_approver_sets_out_of_office_delegation_over_http(setup):
+    """E22-S15: approval.delegate held only on a unit reaches both delegation routes."""
+    from flo.modules.identity.models import AuthorizationTarget, ScopeType
+    from flo.modules.org.schemas import OrgUnitCreate
+    from flo.modules.org.service import OrgService
+
+    db, adapter, users, *_ = setup
+    owner_unit = OrgService(db[0], Scope(db[1]), db[3]).create_unit(
+        OrgUnitCreate(code="UA", name="UA", kind="bu")
+    )
+    auth = IdentityAuthorizationService(db[0], Scope(db[1]), db[3])
+    unit_only = auth.create_role("delegate-only", "Delegate only")
+    auth.grant_permission(unit_only.id, "approval.delegate")
+    body = DelegationCreate(
+        delegate_id=users[1], starts_at=NOW, ends_at=NOW + timedelta(days=2), reason="Away"
+    ).model_dump(mode="json")
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            drop_roles(db, db[3])
+            auth.grant_role(db[3], unit_only.id, AuthorizationTarget(ScopeType.BU, owner_unit.id))
+            picker = await browser.get("/api/v1/approvals/delegations/eligible-delegates")
+            assert picker.status_code == 200, picker.text
+            created = await browser.post(
+                "/api/v1/approvals/delegations", json=body, headers=headers(browser, uuid4().hex)
+            )
+            assert created.status_code == 201, created.text
+            mine = await browser.get("/api/v1/approvals/delegations?view=mine")
+            assert [r["id"] for r in mine.json()["rows"]] == [created.json()["id"]]
+            # Administering everyone's delegations stays an organization act.
+            assert (
+                await browser.get("/api/v1/approvals/delegations?view=organization")
+            ).status_code == 403
+
+    asyncio.run(scenario())
