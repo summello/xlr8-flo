@@ -9244,6 +9244,72 @@
         },
         "gate_s": 2
       }
+    },
+    {
+      "story": "E13-S35",
+      "kind": "ui",
+      "size": "M",
+      "tags": [
+        "auth",
+        "security"
+      ],
+      "author": "sonnet",
+      "reviewers": [
+        "codex-a"
+      ],
+      "rounds": 1,
+      "void_rounds": 0,
+      "escalations": 0,
+      "rounds_basis": "round_files",
+      "review_runs": {
+        "codex-a": 2
+      },
+      "gate_failures": 0,
+      "opus_final": true,
+      "escapes": 0,
+      "review": {
+        "codex-a": {
+          "ran_tests": true,
+          "reviews": 2,
+          "findings": 3,
+          "blockers": 2,
+          "blockers_dismissed": 0
+        }
+      },
+      "substitutions": [],
+      "sessions": {
+        "sonnet": {
+          "agent": "sonnet",
+          "id": "0bb128ac-97db-4568-a16d-89215cf7bf0e",
+          "source": "launch:--session-id",
+          "account": "B",
+          "cwd": "/Users/sonammathuria/Workbench/xlr8flo-m3run-E13-S35",
+          "role": "xlr8flo-worker",
+          "model": "sonnet",
+          "effort": "medium"
+        },
+        "codex-a": {
+          "agent": "codex-a",
+          "id": "01a20647-6ec0-7a43-8ed8-5e604836e0af",
+          "source": "codex rollout matched on cwd"
+        },
+        "opus": {
+          "agent": "opus",
+          "id": null,
+          "source": "unavailable: not running inside Claude Code"
+        }
+      },
+      "recap": "Six screen corrections: closed PO stepper shows receiving steps as not tracked, comparison insight hidden at zero difference with vendor/vendors, project owner and sponsors by name, project approvals carry the requested budget, Business unit is a native select of the caller's units (GET /org/units now also lists project.create units, DECISIONS 246), and the status focus target is named.",
+      "title": "Screen corrections from the ACC-008 keyboard runs",
+      "durations": {
+        "wall_s": 12693,
+        "author_s": 6429,
+        "review_s": {
+          "codex-a": 188,
+          "opus": 2117
+        },
+        "gate_s": 2
+      }
     }
   ]
 }

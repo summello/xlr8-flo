@@ -5,7 +5,7 @@ import { BASES, lineNumbers, vendorsOf, type BasisName, type Comparison } from "
 /** Pages/rfq-comparison.md 3: a pair of radio cards, each with its own server result, then the notices for the chosen one. */
 export default function BasisCards({ c, basis, onChange }: { c: Comparison; basis: BasisName; onChange: (next: BasisName) => void }) {
   const chosen = c[basis], pairs = c.vendors.filter(v => vendorsOf(chosen).some(b => b.vendor_id === v.vendor_id) && v.unmet > 0);
-  const insight = c.insight, split = insight?.dearer_basis === "best_average_cost";
+  const insight = c.insight && Number(c.insight.difference) > 0 ? c.insight : null, split = insight?.dearer_basis === "best_average_cost";
   return <section className="cmp-basis" aria-labelledby="cmp-basis-h">
     <h3 id="cmp-basis-h">Award Basis</h3>
     <div role="radiogroup" aria-labelledby="cmp-basis-h" className="cmp-radios">{BASES.map(([name, text, help]) => {
@@ -17,7 +17,7 @@ export default function BasisCards({ c, basis, onChange }: { c: Comparison; basi
       </label>;
     })}</div>
     {insight && <p className="cmp-insight" role="status"><Info aria-hidden="true" weight="regular" />{split
-      ? <span>Splitting the award is <Money value={insight.difference} currency={c.currency} zero="value" />{insight.difference_pct !== null && ` (${insight.difference_pct}%)`} cheaper than the best single vendor, and uses {insight.lowest_cost_supplier_vendors} vendors instead of one.</span>
+      ? <span>Splitting the award is <Money value={insight.difference} currency={c.currency} zero="value" />{insight.difference_pct !== null && ` (${insight.difference_pct}%)`} cheaper than the best single vendor, and uses {insight.lowest_cost_supplier_vendors} {insight.lowest_cost_supplier_vendors === 1 ? "vendor" : "vendors"} instead of one.</span>
       : <span>The best single vendor is <Money value={insight.difference} currency={c.currency} zero="value" />{insight.difference_pct !== null && ` (${insight.difference_pct}%)`} cheaper than splitting the award.</span>}</p>}
     {chosen.within_scope === true && chosen.to_spare !== null && chosen.to_spare !== undefined && <p className="req-pill" data-tone="success"><CheckCircle aria-hidden="true" weight="regular" />Within approved scope, <Money value={chosen.to_spare} currency={c.currency} zero="value" /> to spare</p>}
     {chosen.within_scope === false && chosen.over_by !== null && <p className="req-pill" data-tone="danger"><WarningOctagon aria-hidden="true" weight="regular" />Exceeds approved scope by <Money value={chosen.over_by} currency={c.currency} zero="value" /></p>}

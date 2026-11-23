@@ -68,15 +68,22 @@ def create_unit(body: OrgUnitCreate, context: CreateContext, connection: Connect
 def list_units(
     read: Annotated[GrantedScopes, Depends(require_granted("org.unit.read"))],
     req: Annotated[GrantedScopes, Depends(require_granted("vendor.request"))],
+    create: Annotated[GrantedScopes, Depends(require_granted("project.create"))],
     connection: Connection,
     kind: Literal["bu", "ou"] | None = None,
     active: bool | None = None,
     cursor: UUID | None = None,
     page_size: Annotated[int, Query(ge=1, le=100)] = 50,
 ) -> OrgUnitPage:
-    # DECISIONS 234/241: either permission at any scope; the service narrows rows to those scopes.
+    # DECISIONS 234/241/246: any of the three permissions at any scope; the service narrows rows.
     return OrgService(connection, current_scope(), read.user_id).list_units(
-        kind=kind, active=active, cursor=cursor, page_size=page_size, read=read, req=req
+        kind=kind,
+        active=active,
+        cursor=cursor,
+        page_size=page_size,
+        read=read,
+        req=req,
+        create=create,
     )
 
 

@@ -26,9 +26,11 @@ export function PoStepper({ po }: { po: Po }) {
   return <>
     {po.status === "superseded" && <p className="rfq-banner" role="status"><Warning aria-hidden="true" weight="regular" /><span><strong>Superseded.</strong> A later revision replaced this one. Open it from the version control.</span></p>}
     <ol className="rfq-steps po-steps" aria-label="Purchase order lifecycle">{LIFECYCLE.map(([status, text], i) => {
-      const done = current >= 0 && i < current, here = i === current;
-      const future = FUTURE_STATES.includes(status) && !here && !done;
-      return <li key={status} aria-current={here ? "step" : undefined}>{done ? <CheckCircle aria-hidden="true" weight="regular" /> : here ? <Target aria-hidden="true" weight="regular" /> : <Circle aria-hidden="true" weight="regular" />}{text}<span className="req-sub">{done ? "Done" : here ? "Current" : future ? "Future" : "Not Yet"}</span></li>;
+      const future = FUTURE_STATES.includes(status), passed = current >= 0 && i < current;
+      // M4 receiving states are never drawn done; once the PO is closed they were skipped (text carries it, not colour).
+      const skipped = future && passed, closed = i === current && po.status === "closed";
+      const done = (passed && !future) || closed, here = i === current && !closed;
+      return <li key={status} aria-current={here ? "step" : undefined}>{done ? <CheckCircle aria-hidden="true" weight="regular" /> : here ? <Target aria-hidden="true" weight="regular" /> : <Circle aria-hidden="true" weight="regular" />}{text}<span className="req-sub">{done ? "Done" : here ? "Current" : skipped ? "Not tracked yet" : future ? "Future" : "Not Yet"}</span></li>;
     })}</ol>
   </>;
 }

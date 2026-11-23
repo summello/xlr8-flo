@@ -232,3 +232,18 @@ test("plant guard: the page never shows a price before the bids open", async ({ 
   await expect(page.getByText("3 Received, sealed")).toBeVisible();
   expect(await page.locator("body").innerText()).not.toMatch(MONEY);
 });
+
+test("insight: one vendor shows no insight sentence", async ({ page }) => {
+  const one = comparison();
+  (one as Record<string, unknown>).insight = { difference: "0.0000", difference_pct: "0.00", dearer_basis: "best_average_cost", lowest_cost_supplier_vendors: 1, best_average_cost_vendors: 1 };
+  await stubComparison(page, { body: one });
+  await page.goto(url);
+  await expect(page.getByRole("heading", { name: "RFQ-0001 · Centrifugal pumps" })).toBeVisible();
+  await expect(page.locator(".cmp-insight")).toHaveCount(0);
+});
+
+test("insight: a cheaper split names 2 vendors", async ({ page }) => {
+  await stubComparison(page);
+  await page.goto(url);
+  await expect(page.locator(".cmp-insight")).toContainText("uses 2 vendors instead of one");
+});

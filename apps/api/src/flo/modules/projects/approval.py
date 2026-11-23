@@ -1,6 +1,7 @@
 """Project approval adapter; outcomes use the existing lifecycle writer."""
 
 from collections.abc import Mapping, Sequence
+from decimal import Decimal
 from typing import cast
 from uuid import UUID
 
@@ -8,6 +9,7 @@ import psycopg
 
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
 from flo.kernel.errors import ErrorCode, ProblemError
+from flo.kernel.money import Money
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.approvals.schemas import (
@@ -81,8 +83,13 @@ class ProjectAdapter:
         for id in document_ids:
             project = ProjectService(conn, scope).get(id)
             snapshot = self.snapshot(conn, scope, id)
+            asked = (
+                None
+                if project.requested_budget is None
+                else Money(Decimal(project.requested_budget), project.currency)
+            )
             result[id] = DocumentSummary(
-                project.number, project.name, None, snapshot.requester_id, f"/projects/{id}", None
+                project.number, project.name, asked, snapshot.requester_id, f"/projects/{id}", None
             )
         return result
 

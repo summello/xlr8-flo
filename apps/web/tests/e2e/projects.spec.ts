@@ -4,7 +4,8 @@ import { firstActor, project, projectId, secondActor, stubProjects, unitId } fro
 import { keyboardFocus } from "./helpers";
 
 async function createFields(page: Page) {
-  for (const [label, value] of [["Business unit", unitId], ["Project name", "Plant renewal"], ["Department", "D"], ["Ledger account", "L"], ["Currency", "USD"], ["Description", "Preserved description"], ["Planned start", "2026-10-01"], ["Planned end", "2026-12-31"]]) await page.getByLabel(new RegExp(`^${label}\\s*\\*?$`)).fill(value!);
+  await page.getByLabel(/^Business unit\s*\*?$/).selectOption(unitId);
+  for (const [label, value] of [["Project name", "Plant renewal"], ["Department", "D"], ["Ledger account", "L"], ["Currency", "USD"], ["Description", "Preserved description"], ["Planned start", "2026-10-01"], ["Planned end", "2026-12-31"]]) await page.getByLabel(new RegExp(`^${label}\\s*\\*?$`)).fill(value!);
 }
 
 test("create, list, submit and approve with a second identity sends version and idempotency headers", async ({ page }) => {
@@ -39,7 +40,10 @@ test("create, list, submit and approve with a second identity sends version and 
 test("keyboard-only create, submit, second-user approval and Escape return focus", async ({ page }) => {
   const state = await stubProjects(page);
   await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
-  for (const [label, value] of [["Business unit", unitId], ["Project name", "Plant renewal"], ["Department", "D"], ["Ledger account", "L"], ["Currency", "USD"]]) {
+  await expect(page.locator("#project-bu_id option")).toHaveCount(2);
+  await keyboardFocus(page, page.getByLabel(/^Business unit\s*\*?$/)); await page.keyboard.type("INFRA"); // select type-ahead: the same keyboard path on every platform
+  await expect(page.getByLabel(/^Business unit\s*\*?$/).locator("option:checked")).toHaveText("INFRA Infrastructure");
+  for (const [label, value] of [["Project name", "Plant renewal"], ["Department", "D"], ["Ledger account", "L"], ["Currency", "USD"]]) {
     await keyboardFocus(page, page.getByLabel(new RegExp(`^${label}\\s*\\*?$`))); await page.keyboard.type(value!);
   }
   await keyboardFocus(page, page.getByRole("button", { name: "Create project", exact: true })); await page.keyboard.press("Enter");
@@ -271,7 +275,7 @@ for (const theme of ["light", "dark"] as const) {
   test(`create form passes axe in ${theme}`, async ({ page }) => {
     await page.addInitScript(t => localStorage.setItem("xlr8flo.theme", t), theme);
     await stubProjects(page); await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
-    await page.getByLabel(/^Business unit\s*\*?$/).fill(unitId);
+    await page.getByLabel(/^Business unit\s*\*?$/).selectOption(unitId);
     await expect(page.getByRole("list", { name: "Matching sponsors" })).toContainText("Add Maker Person");
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   });
@@ -298,7 +302,7 @@ test("create with budget, main project and sponsors shows the funds check and se
 
 test("the sponsor picker searches the server and says so when ten are named", async ({ page }) => {
   const state = await stubProjects(page); await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
-  await page.getByLabel(/^Business unit\s*\*?$/).fill(unitId);
+  await page.getByLabel(/^Business unit\s*\*?$/).selectOption(unitId);
   await page.getByLabel(/^Sponsors\s*\*?$/).fill("extra");
   for (let i = 0; i < 10; i++) await page.getByRole("button", { name: /^Add Extra Person/ }).first().click();
   await expect(page.getByRole("status").filter({ hasText: "the most allowed" })).toContainText("Remove one to add another");
@@ -428,7 +432,7 @@ test("detail: a draft project the caller cannot edit offers no Delete draft", as
 
 test("E13-S33 keyboard only: adding a sponsor keeps focus in the search input", async ({ page }) => {
   await stubProjects(page); await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
-  await page.getByLabel(/^Business unit\s*\*?$/).fill(unitId);
+  await page.getByLabel(/^Business unit\s*\*?$/).selectOption(unitId);
   const search = page.getByLabel(/^Sponsors\s*\*?$/);
   await search.fill("person");
   const add = page.getByRole("button", { name: "Add Maker Person" });
@@ -444,4 +448,38 @@ test("E13-S33 keyboard only: Approval pending without a reason leaves focus on t
   const status = page.locator(".project-record-heading span[tabindex='-1']");
   await expect(status.locator('[data-status="approval_pending"]')).toBeVisible();
   await expect(status).toBeFocused();
+});
+
+test("E13-S35 overview names the owner and sponsors, no UUID text, and the status target is named", async ({ page }) => {
+  await stubProjects(page); await page.goto(`/projects/${projectId}`);
+  const facts = page.locator("#panel-overview");
+  await expect(facts).toContainText("Maker Person");
+  await expect(facts).toContainText("Approver Person");
+  await expect(facts).not.toContainText(/[0-9a-f]{8}-[0-9a-f]{4}-/);
+  await expect(page.getByRole("group", { name: /^Project status: .+/ })).toHaveCount(1);
+});
+
+test("E13-S35 Business unit follows next_cursor and lists code and name; an empty list disables it with a message", async ({ page }) => {
+  await stubProjects(page);
+  const units = [1, 2].map(n => ({ id: `0000000${n}-0000-4000-8000-000000000000`, name: `Unit ${n}`, code: `U${n}`, kind: "bu", parent_id: null, active: true, created_at: "2026-10-01T00:00:00Z" }));
+  await page.route("**/api/v1/org/units?**", route => {
+    const cursor = new URL(route.request().url()).searchParams.get("cursor");
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(cursor ? { rows: [units[1]], next_cursor: null } : { rows: [units[0]], next_cursor: units[0]!.id }) });
+  });
+  await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
+  await expect(page.locator("#project-bu_id option")).toHaveText(["Choose a business unit", "U1 Unit 1", "U2 Unit 2"]);
+  await page.unroute("**/api/v1/org/units?**");
+  await page.route("**/api/v1/org/units?**", route => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ rows: [], next_cursor: null }) }));
+  await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
+  await expect(page.getByLabel(/^Business unit\s*\*?$/)).toBeDisabled();
+  await expect(page.getByRole("status").filter({ hasText: "You have no business unit where you can create a project." })).toBeVisible();
+});
+
+test("E13-S35 a units failure stays visible when the other suggestions load fine", async ({ page }) => {
+  await stubProjects(page);
+  await page.route("**/api/v1/org/units?**", route => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ status: 503, detail: "down" }) }));
+  await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
+  await expect(page.getByRole("alert").filter({ hasText: "Business units could not load" })).toBeVisible();
+  await page.waitForTimeout(500);
+  await expect(page.getByRole("alert").filter({ hasText: "Business units could not load" })).toBeVisible();
 });

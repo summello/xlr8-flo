@@ -21,6 +21,8 @@ from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.approvals.service import require_workflow
 from flo.modules.identity.service import (
     IdentityAuthorizationConnection,
+    emails_by_id,
+    names_by_id,
     register_project_scope,
     user_exists,
 )
@@ -112,13 +114,25 @@ class ProjectService:
             "SELECT name FROM org_unit WHERE org_id = %(org_id)s AND id = %(id)s",
             {"id": row["bu_id"]},
         ).fetchone()
+        sponsor_ids = self._sponsors_of([row])[cast(UUID, row["id"])]
+        owner_id = cast(UUID, row["owner_id"])
+        ids = [owner_id, *sponsor_ids]
+        conn = cast(IdentityAuthorizationConnection, self.connection)
+        emails, names = emails_by_id(conn, ids), names_by_id(conn, ids)
         return self._with_codes(
             ProjectRead.model_validate(
                 with_variance(
                     row
                     | {
                         "bu_name": str(unit[0]) if unit is not None else None,
-                        "sponsor_ids": self._sponsors_of([row])[cast(UUID, row["id"])],
+                        "sponsor_ids": sponsor_ids,
+                        "owner_name": names.get(owner_id),
+                        "owner_email": emails.get(owner_id),
+                        "sponsors": [
+                            {"id": s, "name": names.get(s), "email": emails[s]}
+                            for s in sponsor_ids
+                            if s in emails
+                        ],
                     }
                 )
             )

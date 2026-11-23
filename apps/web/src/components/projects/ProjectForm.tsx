@@ -6,6 +6,7 @@ import Combobox, { type ComboboxOption } from "../form/Combobox";
 import ErrorSummary, { type SummaryError } from "../form/ErrorSummary";
 import Field from "../form/Field";
 import Input from "../form/Input";
+import Select from "../form/Select";
 import MoneyInput from "../form/MoneyInput";
 import Money from "../ui/Money";
 import Picker, { type PickerOption } from "./Picker";
@@ -29,7 +30,9 @@ export default function ProjectForm({ onCreated }: { onCreated: (id: string) => 
   const [values, setValues] = useState<Record<Key, string>>({ bu_id: "", name: "", department_code: "", ledger_account_code: "", currency: "", description: "", planned_start: "", planned_end: "" });
   const [options, setOptions] = useState<Partial<Record<Key, ComboboxOption[]>>>({});
   const [errors, setErrors] = useState<SummaryError[]>([]);
+  const [units, setUnits] = useState<ComboboxOption[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [unitsError, setUnitsError] = useState(false);
   const [retry, setRetry] = useState(0);
   const [busy, setBusy] = useState(false);
   const [budget, setBudget] = useState("");
@@ -47,23 +50,38 @@ export default function ProjectForm({ onCreated }: { onCreated: (id: string) => 
     const controller = new AbortController();
     const signal = controller.signal;
     void Promise.all([
-      apiClient.GET("/api/v1/org/units", { signal, params: { query: { q: values.bu_id, page_size: 50 } } }),
       apiClient.GET("/api/v1/master/{kind}", { signal, params: { path: { kind: "department" }, query: { q: values.department_code, page_size: 50, active: true } } }),
       apiClient.GET("/api/v1/master/{kind}", { signal, params: { path: { kind: "ledger_account" }, query: { q: values.ledger_account_code, page_size: 50, active: true } } }),
       apiClient.GET("/api/v1/master/currency", { signal }),
-    ]).then(([units, departments, ledger, currencies]) => {
+    ]).then(([departments, ledger, currencies]) => {
       if (signal.aborted) return;
       setLoadError(null);
       setOptions(current => ({ ...current,
-        bu_id: units.data?.rows.filter(u => u.active).map(u => ({ value: u.id, label: u.name })),
         department_code: departments.data?.rows.map(r => ({ value: r.code, label: r.name })),
         ledger_account_code: ledger.data?.rows.map(r => ({ value: r.code, label: r.name })),
         currency: currencies.data?.map(c => ({ value: c.code, label: c.code })),
       }));
-      if ([units, departments, ledger, currencies].some(r => !r.data)) setLoadError("Some suggestions could not load. Your entries are preserved; retry or enter a known code.");
+      if ([departments, ledger, currencies].some(r => !r.data)) setLoadError("Some suggestions could not load. Your entries are preserved; retry or enter a known code.");
     }).catch(() => { if (!signal.aborted) setLoadError("Suggestions could not load. Your entries are preserved; check your connection and retry."); });
     return () => controller.abort();
-  }, [values.bu_id, values.department_code, values.ledger_account_code, retry]);
+  }, [values.department_code, values.ledger_account_code, retry]);
+  useEffect(() => {
+    // The caller's units (E22-S14 narrows them): page until next_cursor is null, then render; a caller has few.
+    const controller = new AbortController();
+    const signal = controller.signal;
+    void (async () => {
+      const all: ComboboxOption[] = [];
+      let cursor: string | undefined;
+      do {
+        const { data } = await apiClient.GET("/api/v1/org/units", { signal, params: { query: { active: true, page_size: 100, cursor } } });
+        if (!data) throw new Error("units failed");
+        all.push(...data.rows.map(u => ({ value: u.id, label: `${u.code} ${u.name}` })));
+        cursor = data.next_cursor ?? undefined;
+      } while (cursor);
+      if (!signal.aborted) setUnits(all);
+    })().then(() => { if (!signal.aborted) setUnitsError(false); }).catch(() => { if (!signal.aborted) setUnitsError(true); });
+    return () => controller.abort();
+  }, [retry]);
   const unit = values.bu_id;
   const noUnit = /^[0-9a-f-]{36}$/i.test(unit) ? undefined : "Choose a business unit first.";
   const lookup = useCallback(async (kind: "main_projects" | "people", q: string): Promise<PickerOption[]> => {
@@ -107,11 +125,17 @@ export default function ProjectForm({ onCreated }: { onCreated: (id: string) => 
   return <form className="form-kit project-form material-surface" onSubmit={e => void submit(e)} noValidate>
     <p>Define the project before submitting it for approval. You become its owner.</p>
     <div ref={summary}><ErrorSummary errors={errors} /></div>
-    {loadError && <div role="alert"><p>{loadError}</p><button type="button" onClick={() => setRetry(n => n + 1)}>Retry suggestions</button></div>}
+    {(loadError || unitsError) && <div role="alert"><p>{loadError ?? "Business units could not load. Your entries are preserved; retry."}</p><button type="button" onClick={() => setRetry(n => n + 1)}>Retry suggestions</button></div>}
     {fields.map(([key, label, help, required]) => <Field key={key} id={`project-${key}`} label={label} help={help} required={required} error={errors.find(e => e.fieldId === `project-${key}`)?.message}>
-      {["bu_id", "department_code", "ledger_account_code", "currency"].includes(key)
+      {key === "bu_id"
+        ? <Select disabled={units?.length === 0} value={values.bu_id} onChange={e => setValues(v => ({ ...v, bu_id: e.target.value }))}>
+          <option value="">{units === null ? "Loading business units…" : "Choose a business unit"}</option>
+          {units?.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
+        </Select>
+        : ["department_code", "ledger_account_code", "currency"].includes(key)
         ? <Combobox autoComplete="off" inputMode="text" options={options[key] ?? []} value={values[key]} onChange={e => setValues(v => ({ ...v, [key]: e.target.value }))} />
         : <Input autoComplete="off" inputMode="text" type={key.startsWith("planned_") ? "date" : "text"} value={values[key]} onChange={e => setValues(v => ({ ...v, [key]: e.target.value }))} />}
+      {key === "bu_id" && units?.length === 0 && <p role="status" className="field-help">You have no business unit where you can create a project. Ask an administrator for a role on one.</p>}
     </Field>)}
     <Field id="project-budget_amount" label="Budget" help="The budget this project asks for, in the project currency. It is allocated when the project is approved. Required to submit, optional for a draft." error={errors.find(e => e.fieldId === "project-budget_amount")?.message}>
       <MoneyInput autoComplete="off" currency={values.currency || "—"} value={budget} onChange={e => setBudget(e.target.value)} />
