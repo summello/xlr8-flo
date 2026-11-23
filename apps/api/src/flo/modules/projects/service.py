@@ -112,13 +112,29 @@ class ProjectService:
             "SELECT name FROM org_unit WHERE org_id = %(org_id)s AND id = %(id)s",
             {"id": row["bu_id"]},
         ).fetchone()
+        sponsor_ids = self._sponsors_of([row])[cast(UUID, row["id"])]
+        people = {
+            cast(UUID, r[0]): r
+            for r in self.repo.execute(
+                "SELECT id, display_name, email FROM identity WHERE id = ANY(%(ids)s)",
+                {"ids": [cast(UUID, row["owner_id"]), *sponsor_ids]},
+            ).fetchall()
+        }
+        owner = people.get(cast(UUID, row["owner_id"]))
         return self._with_codes(
             ProjectRead.model_validate(
                 with_variance(
                     row
                     | {
                         "bu_name": str(unit[0]) if unit is not None else None,
-                        "sponsor_ids": self._sponsors_of([row])[cast(UUID, row["id"])],
+                        "sponsor_ids": sponsor_ids,
+                        "owner_name": owner[1] if owner else None,
+                        "owner_email": owner[2] if owner else None,
+                        "sponsors": [
+                            {"id": s, "name": people[s][1], "email": people[s][2]}
+                            for s in sponsor_ids
+                            if s in people
+                        ],
                     }
                 )
             )

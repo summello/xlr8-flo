@@ -61,6 +61,9 @@ def test_create_details_scope_audit_and_status(project_db):
         "allocated",
         "available",
         "sponsor_ids",
+        "owner_name",
+        "owner_email",
+        "sponsors",
         "generated_by_requisition_id",
         "codes",
         "codes_expired",
@@ -94,6 +97,44 @@ def test_create_details_scope_audit_and_status(project_db):
     assert db.connection.execute(
         "SELECT count(*) FROM audit_log WHERE action='project.update'"
     ).fetchone() == (1,)
+
+
+def test_read_carries_people_by_name_and_the_approval_summary_the_budget(project_db):
+    from decimal import Decimal
+    from uuid import UUID
+
+    from flo.modules.projects.approval import ProjectAdapter
+
+    db = project_db
+    db.connection.execute(
+        "UPDATE identity SET display_name = 'Olive Owner' WHERE id = %s", (db.actor_id,)
+    )
+    bu = unit(db)
+    made = request(
+        db,
+        "POST",
+        json=body(
+            bu, sponsor_ids=[db.actor_id], budget={"amount": "1250.50", "currency": "USD"}
+        ).model_dump(mode="json"),
+    ).json()
+    shown = request(db, "GET", "/" + made["id"]).json()
+    assert shown["owner_name"] == "Olive Owner" and shown["owner_email"]
+    assert [p["name"] for p in shown["sponsors"]] == ["Olive Owner"]
+    assert shown["sponsors"][0]["id"] == str(db.actor_id)
+    bare = request(db, "POST", json=body(bu).model_dump(mode="json")).json()
+    for pid in (made["id"], bare["id"]):
+        db.connection.execute(
+            "INSERT INTO project_status_event(org_id,project_id,from_status,to_status,actor_id) "
+            "VALUES(%s,%s,'draft','approval_pending',%s)",
+            (db.org_a, pid, db.actor_id),
+        )
+    with tenant_transaction(db.connection, Scope(db.org_a)):
+        summary = ProjectAdapter().summaries(db.connection, Scope(db.org_a), [UUID(made["id"])])
+    asked = summary[UUID(made["id"])].amount
+    assert asked is not None and asked.amount == Decimal("1250.50") and asked.currency == "USD"
+    with tenant_transaction(db.connection, Scope(db.org_a)):
+        none = ProjectAdapter().summaries(db.connection, Scope(db.org_a), [UUID(bare["id"])])
+    assert none[UUID(bare["id"])].amount is None
 
 
 @pytest.mark.parametrize(

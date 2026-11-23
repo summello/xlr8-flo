@@ -108,6 +108,12 @@ class ProjectPatch(ExternalReference):
         return value
 
 
+class ProjectPerson(BaseModel):
+    id: UUID
+    name: str
+    email: str
+
+
 class ProjectRead(BaseModel):
     generated_by_requisition_id: UUID | None
     external_ref: str | None
@@ -121,6 +127,9 @@ class ProjectRead(BaseModel):
     owner_id: UUID
     sponsor_id: UUID | None
     sponsor_ids: list[UUID] = Field(default_factory=list)
+    owner_name: str | None = None
+    owner_email: str | None = None
+    sponsors: list[ProjectPerson] = Field(default_factory=list)
     requested_budget: str | None = None
     department_code: str
     ledger_account_code: str

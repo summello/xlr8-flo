@@ -13118,6 +13118,30 @@
         "title": "ProjectPatch",
         "type": "object"
       },
+      "ProjectPerson": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email"
+        ],
+        "title": "ProjectPerson",
+        "type": "object"
+      },
       "ProjectRead": {
         "properties": {
           "actual_end": {
@@ -13274,10 +13298,32 @@
             "title": "Number",
             "type": "string"
           },
+          "owner_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Email"
+          },
           "owner_id": {
             "format": "uuid",
             "title": "Owner Id",
             "type": "string"
+          },
+          "owner_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Name"
           },
           "parent_id": {
             "anyOf": [
@@ -13359,6 +13405,13 @@
               "type": "string"
             },
             "title": "Sponsor Ids",
+            "type": "array"
+          },
+          "sponsors": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectPerson"
+            },
+            "title": "Sponsors",
             "type": "array"
           },
           "status": {

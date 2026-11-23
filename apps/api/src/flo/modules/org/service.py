@@ -292,25 +292,29 @@ class OrgService:
         page_size: int,
         read: GrantedScopes | None = None,
         req: GrantedScopes | None = None,
+        create: GrantedScopes | None = None,
     ) -> OrgUnitPage:
-        # Both None: internal caller (lookups, vendors), authorized upstream, unfiltered.
-        full = (read is None and req is None) or bool(read and read.org_wide)
-        if not full and not (read or req):
+        # All None: internal caller (lookups, vendors), authorized upstream, unfiltered.
+        full = (read is None and req is None and create is None) or bool(read and read.org_wide)
+        if not full and not (read or req or create):
             return OrgUnitPage(rows=[], next_cursor=None)
         with tenant_transaction(cast(RlsSession, self.connection), self.scope):
             params: dict[str, object] = {}
             if full:
                 narrow = "(%(active)s::boolean IS NULL OR active = %(active)s)"
             else:
-                # DECISIONS 234/241: org.unit.read units honour ?active; vendor.request units are
-                # always active. Project grants reveal no unit.
+                # DECISIONS 234/241/246: org.unit.read units honour ?active; vendor.request and
+                # project.create units are always active. Project grants reveal no unit.
                 narrow = """((id = ANY(%(read_units)s)
                     AND (%(active)s::boolean IS NULL OR active = %(active)s))
-                    OR (active AND (%(req_org)s OR id = ANY(%(req_units)s))))"""
+                    OR (active AND (%(req_org)s OR id = ANY(%(req_units)s)))
+                    OR (active AND (%(create_org)s OR id = ANY(%(create_units)s))))"""
                 params = {
                     "read_units": list(read.bu_ids) if read else [],
                     "req_org": bool(req and req.org_wide),
                     "req_units": list(req.bu_ids) if req else [],
+                    "create_org": bool(create and create.org_wide),
+                    "create_units": list(create.bu_ids) if create else [],
                 }
             rows = self.repo.execute(
                 f"""

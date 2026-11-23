@@ -8675,6 +8675,18 @@ export interface components {
             /** Sponsor Ids */
             sponsor_ids?: string[] | null;
         };
+        /** ProjectPerson */
+        ProjectPerson: {
+            /** Email */
+            email: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
         /** ProjectRead */
         ProjectRead: {
             /** Actual End */
@@ -8735,11 +8747,15 @@ export interface components {
             name: string;
             /** Number */
             number: string;
+            /** Owner Email */
+            owner_email?: string | null;
             /**
              * Owner Id
              * Format: uuid
              */
             owner_id: string;
+            /** Owner Name */
+            owner_name?: string | null;
             /** Parent Id */
             parent_id: string | null;
             /** Percent Complete */
@@ -8756,6 +8772,8 @@ export interface components {
             sponsor_id: string | null;
             /** Sponsor Ids */
             sponsor_ids?: string[];
+            /** Sponsors */
+            sponsors?: components["schemas"]["ProjectPerson"][];
             /** Status */
             status: components["schemas"]["ProjectStatus"] | "deleted";
             /** Version */
