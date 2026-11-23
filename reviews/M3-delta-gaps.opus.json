@@ -1,0 +1,24 @@
+{
+  "story": "M3-delta-gaps",
+  "reviewer": "opus",
+  "verdict": "approve",
+  "ran_tests": true,
+  "scope": "release delta 7bf488cd..c7af90a0: E13-S34 (75db7aee, change-order and cancellation emails follow the sending-domain gate, G4), E22-S15 (206dc850, unit-scoped grants reach the requisition lookups and out-of-office delegation, G7), E13-S35 (d9771e10, screen corrections from the ACC-008 runs, G6), plus two follow-up commits: 691ea8af (E13-S35 round-3 Opus minors: units load failure named, empty-state message described) and c7af90a0 (E22-S15 codex-a minor: lookups comment)",
+  "evidence": {
+    "reviews": "E13-S34: codex-a approve. E22-S15 (auth): codex-a approve (1 minor, fixed in c7af90a0) and fresh Opus approve. E13-S35 (auth): round 1 codex-a changes_requested (2 blockers), story CI red on the first (ProjectPerson.name required while identity.display_name is nullable: 18 backend tests 500); round 2 codex-a approve and Opus approve after cbad8bbf/5a59820b; round 3 Opus minors fixed in 691ea8af.",
+    "tests": "Locally at c7af90a0: tests/requisitions/test_lookups.py, tests/approvals/test_delegation.py, tests/purchasing/test_cancel.py, tests/purchasing/test_changes.py, tests/projects/test_projects.py, tests/org/test_units.py: 150 passed. apps/web tests/e2e/projects.spec.ts: 44 passed; tsc and eslint clean. E13-S35 story CI green at 5a59820b.",
+    "plants": "1) requisitions.py lookups admission check disabled: 4 tests in test_lookups.py fail. 2) changes.py po_email_allowed gate forced true and cancel.py held forced false: test_a_change_order_apply_queues_no_email_while_the_domain_is_unverified and test_a_cancel_sends_no_notice_while_the_domain_is_unverified fail. All restored; tree clean.",
+    "security": "Lookups and delegation routes authorize server-side with require_granted (effective scopes from granted_scopes, which expands unit and roll-down project grants); rows narrow per scope; an unadmitted or foreign unit's addresses return 404; non-requester callers get reference data only, never the user kind (DECISIONS 245). list_units widens only to active units where project.create is held (DECISIONS 246), values bound, fragments code-side. Project people come from identity rows whose ids are read from a tenant-scoped project. Requested budget reaches the approval summary as Decimal Money. Held emails write an audit row with reason domain_not_verified; nothing dead-letters (EML-001).",
+    "acc008": "Automated keyboard run 2 covered all 14 steps; its one failure (step 3, requisition lookups 403 for a unit-scoped Requester) is G7, closed by E22-S15 and asserted by test_lookups.py real-session cases."
+  },
+  "findings": [
+    {
+      "severity": "minor",
+      "file": "agents/scripts/flo",
+      "line": 2426,
+      "requirement": "AGENTS.md 2.4",
+      "problem": "The light gate's story pytest selects only the story's own test files and the suites of modules it touched; E13-S35 changed ProjectRead (projects module) and broke requisitions and imports tests that build projects, which only hosted story CI caught. The gated-story rule (CI green before merge) held, so nothing reached the milestone red.",
+      "fix": "Follow-up for the harness, not this PR: when a schemas.py changes, also run the test suites of modules that import that service."
+    }
+  ]
+}
