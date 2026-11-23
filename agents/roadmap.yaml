@@ -2779,7 +2779,7 @@ epics:
         dep:
           - E22-S14
           - E09-S02
-        st: in_progress
+        st: done
 
   - id: E14
     name: Assets & warehouses

@@ -6,12 +6,13 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Query, Request, Response
 
-from flo.api.admin_users import deleted_visible, organization_target
+from flo.api.admin_users import deleted_visible
 from flo.api.auth import get_auth_settings
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
 from flo.kernel.authz import GrantedScopes, permits, require, require_granted, require_resolved
 from flo.kernel.config import Settings
+from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.org.service import OrgService
@@ -158,35 +159,49 @@ def list_requisitions(
     )
 
 
-OrgCreateContext = Annotated[
-    AuthorizationContext, Depends(require("requisition.create", organization_target))
-]
+# Which of the four lookup permissions admit each kind (E22-S15); anything else is 403.
+# "create" = requisition.create, "request" = project_request.create, "view" = requisition.view,
+# "code" = master_code.substitute.
+_LOOKUP_ADMITS = {
+    "project": ("create", "view"),
+    "bu": ("create", "request"),
+    "user": ("create", "request"),
+    "department": ("create", "request", "view", "code"),
+    "ledger_account": ("create", "request", "view", "code"),
+}
+_LOOKUP_DEFAULT = ("create", "request", "view")  # uom, item_category, service_category, addresses
 
 
 # Registered before "/{id}" so "lookups" is never parsed as a requisition id.
 @router.get("/lookups/{kind}", response_model=LookupRows)
 def lookups(
     kind: str,
-    context: OrgCreateContext,
+    create: Annotated[GrantedScopes, Depends(require_granted("requisition.create"))],
+    request_scopes: Annotated[GrantedScopes, Depends(require_granted("project_request.create"))],
+    view: Annotated[GrantedScopes, Depends(require_granted("requisition.view"))],
+    code: Annotated[GrantedScopes, Depends(require_granted("master_code.substitute"))],
     connection: Connection,
     request: Request,
     q: str = "",
     bu_id: UUID | None = None,
     limit: int = 20,
 ) -> LookupRows:
-    def can_raise(kind: ScopeType, id: UUID, permission: str = "requisition.create") -> bool:
-        return permits(
-            request,
-            permission,
-            cast(TargetProtocol, AuthorizationTarget(kind, id)),
-        )
+    held = {"create": create, "request": request_scopes, "view": view, "code": code}
+    if not any(held[name] for name in _LOOKUP_ADMITS.get(kind, _LOOKUP_DEFAULT)):
+        raise ProblemError(ErrorCode.FORBIDDEN)
+
+    def can(kind: ScopeType, id: UUID, permission: str) -> bool:
+        return permits(request, permission, cast(TargetProtocol, AuthorizationTarget(kind, id)))
 
     return LookupService(
         connection,
         current_scope(),
-        lambda id: can_raise(ScopeType.PROJECT, id),
-        lambda id: can_raise(ScopeType.BU, id),
-        lambda id: can_raise(ScopeType.BU, id, "project_request.create"),
+        lambda id: can(ScopeType.PROJECT, id, "requisition.create"),
+        lambda id: can(ScopeType.BU, id, "requisition.create"),
+        lambda id: can(ScopeType.BU, id, "project_request.create"),
+        can_view_project=lambda id: can(ScopeType.PROJECT, id, "requisition.view"),
+        can_view_unit=lambda id: can(ScopeType.BU, id, "requisition.view"),
+        address_projects=create.project_ids | view.project_ids,
     ).options(kind, q, bu_id, limit)
 
 

@@ -10,9 +10,11 @@ from flo.api.authz_factory import production_authorization_resolver
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
 from flo.kernel.authz import (
+    GrantedScopes,
     HoldersResolverFactory,
     permits,
     require,
+    require_granted,
     require_member,
     require_resolved,
 )
@@ -170,9 +172,8 @@ def decision_trail(
     return decisions_for(connection, current_scope(), id)
 
 
-DelegateContext = Annotated[
-    AuthorizationContext, Depends(require("approval.delegate", organization_target))
-]
+# Held at any scope: a delegation passes on the owner's own tasks (E22-S15).
+DelegateGrant = Annotated[GrantedScopes, Depends(require_granted("approval.delegate"))]
 AdminContext = Annotated[
     AuthorizationContext, Depends(require("approval.admin", organization_target))
 ]
@@ -189,23 +190,27 @@ def _is_admin(request: Request) -> bool:
 
 @router.post("/delegations", status_code=201, response_model=DelegationRead)
 def create_delegation_route(
-    body: DelegationCreate, context: DelegateContext, connection: Connection
+    body: DelegationCreate, granted: DelegateGrant, connection: Connection
 ) -> DelegationRead:
+    if not granted:
+        raise ProblemError(ErrorCode.FORBIDDEN)
     factory: HoldersResolverFactory = production_authorization_resolver
     with factory(current_scope()) as resolver:
         return create_delegation(
-            connection, current_scope(), actor_id=context.user_id, body=body, resolver=resolver
+            connection, current_scope(), actor_id=granted.user_id, body=body, resolver=resolver
         )
 
 
 # Registered before the id routes so "eligible-delegates" is never read as a delegation id.
 @router.get("/delegations/eligible-delegates", response_model=PickerPage)
 def eligible_delegates_route(
-    context: DelegateContext,
+    granted: DelegateGrant,
     connection: Connection,
     document_type: DocumentType | None = None,
     document_types: Annotated[list[DocumentType] | None, Query()] = None,
 ) -> PickerPage:
+    if not granted:
+        raise ProblemError(ErrorCode.FORBIDDEN)
     # A person must hold every selected type; none selected means every registered type.
     chosen: list[str] = [*(document_types or []), *([document_type] if document_type else [])]
     factory: HoldersResolverFactory = production_authorization_resolver
@@ -213,7 +218,7 @@ def eligible_delegates_route(
         return eligible_delegates(
             connection,
             current_scope(),
-            context.user_id,
+            granted.user_id,
             chosen or None,
             resolver,
         )
