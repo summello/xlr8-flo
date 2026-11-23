@@ -473,6 +473,7 @@ test("E13-S35 Business unit follows next_cursor and lists code and name; an empt
   await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
   await expect(page.getByLabel(/^Business unit\s*\*?$/)).toBeDisabled();
   await expect(page.getByRole("status").filter({ hasText: "You have no business unit where you can create a project." })).toBeVisible();
+  await expect(page.getByLabel(/^Business unit\s*\*?$/)).toHaveAccessibleDescription(/You have no business unit where you can create a project/);
 });
 
 test("E13-S35 a units failure stays visible when the other suggestions load fine", async ({ page }) => {
@@ -482,4 +483,16 @@ test("E13-S35 a units failure stays visible when the other suggestions load fine
   await expect(page.getByRole("alert").filter({ hasText: "Business units could not load" })).toBeVisible();
   await page.waitForTimeout(500);
   await expect(page.getByRole("alert").filter({ hasText: "Business units could not load" })).toBeVisible();
+});
+
+test("E13-S35 a units failure is named, with Retry and a non-loading placeholder, when a lookup fails too", async ({ page }) => {
+  await stubProjects(page);
+  await page.route("**/api/v1/org/units?**", route => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ status: 503, detail: "down" }) }));
+  await page.route("**/api/v1/master/department?**", route => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ status: 503, detail: "down" }) }));
+  await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
+  const alert = page.getByRole("alert").filter({ hasText: "Business units could not load" });
+  await expect(alert).toBeVisible();
+  await expect(alert).toContainText("Some suggestions could not load");
+  await expect(alert.getByRole("button", { name: "Retry suggestions" })).toBeVisible();
+  await expect(page.locator("#project-bu_id option").first()).toHaveText("Business units could not be loaded");
 });

@@ -125,17 +125,16 @@ export default function ProjectForm({ onCreated }: { onCreated: (id: string) => 
   return <form className="form-kit project-form material-surface" onSubmit={e => void submit(e)} noValidate>
     <p>Define the project before submitting it for approval. You become its owner.</p>
     <div ref={summary}><ErrorSummary errors={errors} /></div>
-    {(loadError || unitsError) && <div role="alert"><p>{loadError ?? "Business units could not load. Your entries are preserved; retry."}</p><button type="button" onClick={() => setRetry(n => n + 1)}>Retry suggestions</button></div>}
-    {fields.map(([key, label, help, required]) => <Field key={key} id={`project-${key}`} label={label} help={help} required={required} error={errors.find(e => e.fieldId === `project-${key}`)?.message}>
+    {(loadError || unitsError) && <div role="alert">{loadError && <p>{loadError}</p>}{unitsError && <p>Business units could not load. Your entries are preserved; retry.</p>}<button type="button" onClick={() => setRetry(n => n + 1)}>Retry suggestions</button></div>}
+    {fields.map(([key, label, help, required]) => <Field key={key} id={`project-${key}`} label={label} help={key === "bu_id" && units?.length === 0 ? <>{help} <span role="status">You have no business unit where you can create a project. Ask an administrator for a role on one.</span></> : help} required={required} error={errors.find(e => e.fieldId === `project-${key}`)?.message}>
       {key === "bu_id"
         ? <Select disabled={units?.length === 0} value={values.bu_id} onChange={e => setValues(v => ({ ...v, bu_id: e.target.value }))}>
-          <option value="">{units === null ? "Loading business units…" : "Choose a business unit"}</option>
+          <option value="">{units === null ? (unitsError ? "Business units could not be loaded" : "Loading business units…") : "Choose a business unit"}</option>
           {units?.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
         </Select>
         : ["department_code", "ledger_account_code", "currency"].includes(key)
         ? <Combobox autoComplete="off" inputMode="text" options={options[key] ?? []} value={values[key]} onChange={e => setValues(v => ({ ...v, [key]: e.target.value }))} />
         : <Input autoComplete="off" inputMode="text" type={key.startsWith("planned_") ? "date" : "text"} value={values[key]} onChange={e => setValues(v => ({ ...v, [key]: e.target.value }))} />}
-      {key === "bu_id" && units?.length === 0 && <p role="status" className="field-help">You have no business unit where you can create a project. Ask an administrator for a role on one.</p>}
     </Field>)}
     <Field id="project-budget_amount" label="Budget" help="The budget this project asks for, in the project currency. It is allocated when the project is approved. Required to submit, optional for a draft." error={errors.find(e => e.fieldId === "project-budget_amount")?.message}>
       <MoneyInput autoComplete="off" currency={values.currency || "—"} value={budget} onChange={e => setBudget(e.target.value)} />
