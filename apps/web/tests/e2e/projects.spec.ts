@@ -41,7 +41,7 @@ test("keyboard-only create, submit, second-user approval and Escape return focus
   const state = await stubProjects(page);
   await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
   await expect(page.locator("#project-bu_id option")).toHaveCount(2);
-  await keyboardFocus(page, page.getByLabel(/^Business unit\s*\*?$/)); await page.keyboard.press("ArrowDown");
+  await keyboardFocus(page, page.getByLabel(/^Business unit\s*\*?$/)); await page.keyboard.type("INFRA"); // select type-ahead: the same keyboard path on every platform
   await expect(page.getByLabel(/^Business unit\s*\*?$/).locator("option:checked")).toHaveText("INFRA Infrastructure");
   for (const [label, value] of [["Project name", "Plant renewal"], ["Department", "D"], ["Ledger account", "L"], ["Currency", "USD"]]) {
     await keyboardFocus(page, page.getByLabel(new RegExp(`^${label}\\s*\\*?$`))); await page.keyboard.type(value!);
