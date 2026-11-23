@@ -456,7 +456,7 @@ test("E13-S35 overview names the owner and sponsors, no UUID text, and the statu
   await expect(facts).toContainText("Maker Person");
   await expect(facts).toContainText("Approver Person");
   await expect(facts).not.toContainText(/[0-9a-f]{8}-[0-9a-f]{4}-/);
-  await expect(page.locator("span[tabindex='-1'][aria-label^='Project status:']")).toHaveAttribute("aria-label", /Project status: .+/);
+  await expect(page.getByRole("group", { name: /^Project status: .+/ })).toHaveCount(1);
 });
 
 test("E13-S35 Business unit follows next_cursor and lists code and name; an empty list disables it with a message", async ({ page }) => {

@@ -60,7 +60,7 @@ export default function ProjectDetail({ id, navigate, onLoaded }: { id: string; 
     {loading && !project && tab === "overview" ? <ProjectLoading /> : loading && <p role="status">Loading project… Previously loaded details are preserved.</p>}
     {errors.length > 0 && <div role="alert">{errors.map(e => <p key={e}>{e}</p>)}<button onClick={() => { setLoading(true); void load(); }}>Retry project</button></div>}
     {project && <>
-      <header className="project-record-heading"><p className="numeric">{project.number}</p><span ref={statusRef} tabIndex={-1} aria-label={"Project status: " + (statusLabel(project.status) ?? project.status)}><StatusPill docType="project" status={project.status as ProjectStatus} /></span>
+      <header className="project-record-heading"><p className="numeric">{project.number}</p><span ref={statusRef} role="group" tabIndex={-1} aria-label={"Project status: " + (statusLabel(project.status) ?? project.status)}><StatusPill docType="project" status={project.status as ProjectStatus} /></span>
         {project.codes_expired && <ExpiredCodeBadge />}
         {project.can_substitute_codes && project.codes && <SubstituteCodes target="project" id={id} codes={project.codes} onDone={() => { setLoading(true); void load(); }} />}
         {project.status === "draft" && project.can_edit && <DeleteDraftDialog kind="Project" reference={project.number} onDone={() => navigate("/projects")}
