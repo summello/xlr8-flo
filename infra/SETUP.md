@@ -329,12 +329,14 @@ security find-generic-password -a "$USER" -s FLO_PROD_ORIGIN_SHARED_SECRET -w \
    `wrangler.toml` declares this binding as required, so later deploys fail closed if it is absent.
    Wrangler preserves encrypted secret bindings across ordinary code deploys. The Worker overwrites
    any caller-supplied `X-FLO-Origin-Secret` header on every proxied request.
-6. The same Worker has a one-minute Cron Trigger and calls `/internal/health/quota` followed by
+6. The same Worker has a 15-minute Cron Trigger (not one-minute: every tick wakes Neon, and a
+   one-minute tick kept the free-plan compute on 24/7 until its monthly quota ran out on
+   19 Nov 2026) and calls `/internal/health/quota` followed by
    `POST /internal/jobs/tick` from its scheduled handler with the encrypted binding. The tick is
    bounded to 50 seconds and drains the Postgres `SKIP LOCKED` queue and transactional outbox; no
    daemon or Redis service exists. This is the scheduler selected by D-08; do not create a second
    Google Cloud Scheduler job. Confirm **Workers & Pages → flo-api-proxy →
-   Triggers** shows `* * * * *` and **Settings → Variables and Secrets** shows
+   Triggers** shows `*/15 * * * *` and **Settings → Variables and Secrets** shows
    `ORIGIN_SHARED_SECRET` as encrypted.
 7. In **SSL/TLS**, select **Full (strict)**. Enable **Always Use HTTPS**. After the Pages certificate
    is active and HTTPS has been stable, enable HSTS with a conservative max-age; include subdomains

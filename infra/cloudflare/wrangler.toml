@@ -7,7 +7,12 @@ workers_dev = false
 required = ["ORIGIN_SHARED_SECRET"]
 
 [triggers]
-crons = ["* * * * *"]
+# Every 15 minutes, not every minute: each tick wakes Neon, which suspends only after 5 idle
+# minutes, so a one-minute tick kept the free-plan compute on 24/7 and exhausted the monthly
+# quota on 19 Nov 2026 (production down until the reset). Must keep firing at minute :30, where
+# api-proxy.ts runs the daily jobs.
+# ponytail: outbox email waits up to 15 min; tighten to business-hours */5 on a paid Neon plan.
+crons = ["*/15 * * * *"]
 
 [[routes]]
 pattern = "xlr8flo.summello.com/api/*"

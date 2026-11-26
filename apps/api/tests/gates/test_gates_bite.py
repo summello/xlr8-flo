@@ -195,7 +195,7 @@ def assert_single_origin_release_policy(
     assert workflow.index("npx wrangler deploy") < workflow.index("npx wrangler pages deploy")
     assert worker["workers_dev"] is False
     assert worker["secrets"] == {"required": ["ORIGIN_SHARED_SECRET"]}
-    assert worker["triggers"] == {"crons": ["* * * * *"]}
+    assert worker["triggers"] == {"crons": ["*/15 * * * *"]}
     assert worker["routes"] == [
         {
             "pattern": "xlr8flo.summello.com/api/*",
@@ -858,7 +858,7 @@ def test_single_origin_release_policy_rejects_d17_violations_and_then_passes(
         )
     elif violation == "missing-quota-cron":
         planted_worker = worker_configuration.replace(
-            'crons = ["* * * * *"]',
+            'crons = ["*/15 * * * *"]',
             "crons = []",
         )
     else:

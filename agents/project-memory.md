@@ -72,7 +72,8 @@ Multi-tenant SaaS. Free-tier infrastructure until 10 paying customers or 200 MAU
 |---|---|
 | Neon | Free tier is **512 MB** and it is the binding constraint. Attachments never touch Postgres; audit and ledger partitions archive to R2 after 90 days. |
 | Neon + PgBouncer | Use the **pooled** endpoint. RLS works because `SET LOCAL` is transaction-scoped — do not use `SET`. |
-| Cloud Run | `min-instances=0` costs ~1–2 s cold start. The 60 s cron keeps it warm in business hours. Excluded from PERF-001, measured under OPS-006. |
+| Cloud Run | `min-instances=0` costs ~1–2 s cold start. Excluded from PERF-001, measured under OPS-006. |
+| Neon compute quota | Every Worker cron tick wakes Neon, which suspends only after 5 idle minutes. The original one-minute tick ran 24/7 (not "business hours"), used ~110 CU-hours by 19 Nov 2026 against the free plan's ~100/month, and Neon suspended production until 1 Dec. The tick is now `*/15` (`infra/cloudflare/wrangler.toml`), roughly 70 CU-hours/month idle. Never shorten it on the free plan; any new scheduled call that touches Postgres costs compute hours. |
 | Resend | **100/day** is a real ceiling. Notifications batch into digests; transactional PO sends always go immediately. |
 | Artifact Registry | 0.5 GB free. Prune to the last 3 images or it fills quietly. |
 | Secrets | Keychain only: `security find-generic-password -a "$USER" -s OPENROUTER_API_KEY -w`. Never in the environment — an env dump leaks it verbatim. |
