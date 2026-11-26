@@ -342,7 +342,7 @@ def test_picker_foreign_scope_and_authorization(eligibility_tree):
                 str(users[label]) for label in ("org", "child")
             } | {str(db[3])}
             assert (await pick("bu", targets["a"].scope_id, q="BU@")).json()["rows"] == [
-                {"user_id": str(users["bu"]), "email": "bu@example.test"}
+                {"user_id": str(users["bu"]), "email": "bu@example.test", "name": None}
             ]
             assert (await pick("bu", targets["b"].scope_id, q="bu")).json()["rows"] == []
             auth = IdentityAuthorizationService(db[0], Scope(db[1]), db[3])
@@ -412,7 +412,7 @@ def test_role_eligibility_uses_injected_resolver(eligibility_tree):
     db, targets, users = eligibility_tree
 
     class Resolver:
-        def holders(self, permission, target):
+        def holders(self, permission, target, **_):
             assert permission == "requisition.approve"
             assert target == targets["a"]
             return [users["both"]]
@@ -440,7 +440,7 @@ def test_validation_and_publish_use_injected_resolver(eligibility_tree):
     db, targets, users = eligibility_tree
 
     class Resolver:
-        def holders(self, permission, target):
+        def holders(self, permission, target, **_):
             assert permission == "requisition.approve"
             assert target == targets["org"]
             return []

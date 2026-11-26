@@ -21,6 +21,8 @@ REQUIRED_SECRET_REFERENCES = {
     "S3_SECRET_ACCESS_KEY": "flo-r2-secret-access-key:latest",
     "RESEND_API_KEY": "flo-resend-api-key:latest",
     "MFA_ENCRYPTION_KEY": "flo-mfa-encryption-key:latest",
+    "RESEND_WEBHOOK_SECRET": "flo-resend-webhook-secret:latest",
+    "RESEND_DOMAIN_API_KEY": "flo-resend-domain-api-key:latest",
 }
 REQUIRED_RUNTIME_CONFIGURATION = {
     "STORAGE_PROVIDER": "r2",
@@ -30,7 +32,8 @@ REQUIRED_RUNTIME_CONFIGURATION = {
     "ARTIFACT_REGISTRY_LOCATION": "us-central1",
     "ARTIFACT_REGISTRY_REPOSITORY": "flo",
     "EMAIL_PROVIDER": "resend",
-    "EMAIL_FROM": "notifications@xlr8flo.summello.com",
+    "EMAIL_FROM": "notifications@mail.summello.com",
+    "RESEND_DOMAIN_ID": "f71820d9-2fda-486d-8bcd-48c1390a009e",
 }
 
 
@@ -144,8 +147,7 @@ def validate(workflow_path: Path, config_path: Path) -> list[str]:
         raise ValueError("--concurrency must be an integer") from exc
     if request_concurrency < max_concurrency:
         failures.append(
-            "Cloud Run --concurrency must not be lower than "
-            "identity_argon2_max_concurrency"
+            "Cloud Run --concurrency must not be lower than identity_argon2_max_concurrency"
         )
 
     if "--service-account" not in command:
@@ -158,9 +160,7 @@ def validate(workflow_path: Path, config_path: Path) -> list[str]:
     secrets = _assignments(_flag(command, "set-secrets"), "set-secrets")
     for name, reference in REQUIRED_SECRET_REFERENCES.items():
         if secrets.get(name) != reference:
-            failures.append(
-                f"Cloud Run secret reference is MISSING or wrong: {name}={reference}"
-            )
+            failures.append(f"Cloud Run secret reference is MISSING or wrong: {name}={reference}")
 
     runtime = _assignments(_flag(command, "set-env-vars"), "set-env-vars")
     for name, configured in REQUIRED_RUNTIME_CONFIGURATION.items():

@@ -1,0 +1,7 @@
+{
+  "story": "M3-approvals",
+  "reviewer": "deepseek",
+  "verdict": "approve",
+  "ran_tests": false,
+  "findings": []
+}

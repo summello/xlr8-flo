@@ -31,9 +31,17 @@ from flo.kernel.tenancy.context import Scope
 from flo.modules.org.schemas import CodesRead
 
 DocumentType = Literal[
-    "project", "requisition", "project_request", "budget_change", "vendor", "rfq", "award", "po"
+    "project",
+    "requisition",
+    "project_request",
+    "budget_change",
+    "vendor",
+    "rfq",
+    "award",
+    "po",
+    "po_change",
 ]
-VersionStatus = Literal["draft", "published", "superseded"]
+VersionStatus = Literal["draft", "published", "superseded", "deleted"]
 
 
 def invalid(field: str, message: str) -> ProblemError:
@@ -436,6 +444,7 @@ class RouteStepState(StrEnum):
 
 class ExcludedApprover(Contract):
     email: str
+    name: str | None
     reason: str
 
 
@@ -447,6 +456,7 @@ class RouteStep(Contract):
     quorum: int | None
     rule: str
     approver_emails: list[str]
+    approver_names: list[str | None]
     excluded: list[ExcludedApprover]
     state: RouteStepState
     due_at: datetime | None
@@ -476,6 +486,7 @@ class TaskRead(Contract):
     status: Literal["open", "completed", "cancelled"]
     outcome: str | None
     approver_emails: list[str]
+    approver_names: list[str | None]
     due_at: datetime | None
     completed_at: datetime | None
 
@@ -490,11 +501,14 @@ class InstanceRead(Contract):
     document_version: int
     status: Literal["running", "approved", "rejected", "returned", "withdrawn", "superseded"]
     requester_email: str
+    requester_name: str | None
     current_node_id: str | None
     route: list[RouteStep]
     tasks: list[TaskRead]
     started_at: datetime
     finished_at: datetime | None
+    # what the document's adapter shows an approver beside the request; None when it supplies none
+    evidence: dict[str, JsonValue] | None = None
 
 
 class CodeSubstitutions(Contract):
@@ -552,7 +566,9 @@ class DecisionRead(Contract):
     node_id: str | None
     step_label: str | None
     actor_email: str
+    actor_name: str | None
     on_behalf_of_email: str | None
+    on_behalf_of_name: str | None
     authority: Literal["member", "delegate", "admin", "requester"]
     outcome: Literal["approve", "reject", "return", "comment", "withdraw"]
     reject_mode: Literal["return_to_draft", "permanent"] | None
@@ -571,7 +587,7 @@ class DelegationCreate(Contract):
     delegate_id: UUID
     starts_at: datetime
     ends_at: datetime
-    document_types: list[DocumentType] | None = Field(default=None, min_length=1, max_length=8)
+    document_types: list[DocumentType] | None = Field(default=None, min_length=1, max_length=9)
     reason: str = Field(min_length=1, max_length=500)
 
     @model_validator(mode="after")
@@ -591,7 +607,9 @@ class DelegationCreate(Contract):
 class DelegationRead(Contract):
     id: UUID
     delegator_email: str
+    delegator_name: str | None
     delegate_email: str
+    delegate_name: str | None
     starts_at: datetime
     ends_at: datetime
     document_types: list[str] | None

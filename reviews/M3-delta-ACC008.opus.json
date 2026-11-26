@@ -1,0 +1,22 @@
+{
+  "story": "M3-delta-ACC008",
+  "reviewer": "opus",
+  "verdict": "approve",
+  "ran_tests": true,
+  "scope": "release delta 6b48733b..d4d77058: E12-S28 (RFQ flags), E22-S14 (unit list scope), E13-S33 (focus), efe4eb49 (po-issue test scope)",
+  "evidence": {
+    "ci": "CI and CodeQL green on push and pull_request for the milestone head",
+    "e2e": "story e2e and sign-in suite run locally under load (114/114); ACC-008 automated run 2 confirmed E22-S14, E12-S28 and E13-S33 fixes on the real stack",
+    "security": "org/service.py list_units interpolates only code-side constant fragments; every value is bound. Route always passes both GrantedScopes, so the unfiltered internal path is unreachable from HTTP. RFQ flags come from the same permits() as GET; mutations stay authorized by their own contexts."
+  },
+  "findings": [
+    {
+      "severity": "minor",
+      "file": "apps/web/src/routes/projects/detail.tsx",
+      "line": 1,
+      "requirement": "A11Y-002",
+      "problem": "The project status focus target is a bare span with tabIndex=-1 around the StatusPill; it has no name of its own beyond the pill text, so a screen reader announces only the status word.",
+      "fix": "Give the span aria-label 'Project status: <status>' or focus the pill's own element."
+    }
+  ]
+}

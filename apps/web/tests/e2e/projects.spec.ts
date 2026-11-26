@@ -1,19 +1,11 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page, type Locator } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { firstActor, project, projectId, secondActor, stubProjects, unitId } from "./projects-fixture";
+import { keyboardFocus } from "./helpers";
 
 async function createFields(page: Page) {
-  for (const [label, value] of [["Business unit", unitId], ["Project name", "Plant renewal"], ["Department", "D"], ["Ledger account", "L"], ["Currency", "USD"], ["Description", "Preserved description"], ["Planned start", "2026-10-01"], ["Planned end", "2026-12-31"]]) await page.getByLabel(new RegExp(`^${label}\\s*\\*?$`)).fill(value!);
-}
-async function keyboardFocus(page: Page, locator: Locator) {
-  for (let i = 0; i < 150; i++) {
-    await page.keyboard.press("Tab");
-    if (await locator.evaluate(node => node === document.activeElement)) {
-      await expect.poll(() => locator.evaluate(node => getComputedStyle(node).outlineStyle)).not.toBe("none");
-      return;
-    }
-  }
-  throw new Error("Control is unreachable by keyboard");
+  await page.getByLabel(/^Business unit\s*\*?$/).selectOption(unitId);
+  for (const [label, value] of [["Project name", "Plant renewal"], ["Department", "D"], ["Ledger account", "L"], ["Currency", "USD"], ["Description", "Preserved description"], ["Planned start", "2026-10-01"], ["Planned end", "2026-12-31"]]) await page.getByLabel(new RegExp(`^${label}\\s*\\*?$`)).fill(value!);
 }
 
 test("create, list, submit and approve with a second identity sends version and idempotency headers", async ({ page }) => {
@@ -48,7 +40,10 @@ test("create, list, submit and approve with a second identity sends version and 
 test("keyboard-only create, submit, second-user approval and Escape return focus", async ({ page }) => {
   const state = await stubProjects(page);
   await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
-  for (const [label, value] of [["Business unit", unitId], ["Project name", "Plant renewal"], ["Department", "D"], ["Ledger account", "L"], ["Currency", "USD"]]) {
+  await expect(page.locator("#project-bu_id option")).toHaveCount(2);
+  await keyboardFocus(page, page.getByLabel(/^Business unit\s*\*?$/)); await page.keyboard.type("INFRA"); // select type-ahead: the same keyboard path on every platform
+  await expect(page.getByLabel(/^Business unit\s*\*?$/).locator("option:checked")).toHaveText("INFRA Infrastructure");
+  for (const [label, value] of [["Project name", "Plant renewal"], ["Department", "D"], ["Ledger account", "L"], ["Currency", "USD"]]) {
     await keyboardFocus(page, page.getByLabel(new RegExp(`^${label}\\s*\\*?$`))); await page.keyboard.type(value!);
   }
   await keyboardFocus(page, page.getByRole("button", { name: "Create project", exact: true })); await page.keyboard.press("Enter");
@@ -276,6 +271,52 @@ test("loadPage still rejects an oversized server envelope and retries without lo
   await expect(page.locator("tr[data-grid-row]")).toHaveCount(1);
 });
 
+for (const theme of ["light", "dark"] as const) {
+  test(`create form passes axe in ${theme}`, async ({ page }) => {
+    await page.addInitScript(t => localStorage.setItem("xlr8flo.theme", t), theme);
+    await stubProjects(page); await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
+    await page.getByLabel(/^Business unit\s*\*?$/).selectOption(unitId);
+    await expect(page.getByRole("list", { name: "Matching sponsors" })).toContainText("Add Maker Person");
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  });
+}
+
+test("create with budget, main project and sponsors shows the funds check and sends them", async ({ page }) => {
+  const state = await stubProjects(page); await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
+  await createFields(page);
+  await page.getByLabel(/^Budget\s*\*?$/).fill("500");
+  await page.getByLabel(/^Main project\s*\*?$/).fill("Existing");
+  await page.getByRole("button", { name: /^Add PRJ-00001 Existing main project/ }).click();
+  const funds = page.getByTestId("funds-check");
+  await expect(funds).toContainText("Available in the main project");
+  await expect(funds).toContainText("The server checks the budget");
+  await page.getByLabel(/^Sponsors\s*\*?$/).fill("person");
+  await page.getByRole("button", { name: "Add Maker Person" }).click();
+  await page.getByRole("button", { name: "Add Approver Person" }).click();
+  await expect(page.getByRole("list", { name: "Chosen sponsors" })).toContainText("Approver Person");
+  await page.getByRole("button", { name: "Create project", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/projects/${projectId}$`));
+  const post = state.requests.find(r => r.path === "/api/v1/projects" && r.method === "POST")!;
+  expect(post.body).toMatchObject({ budget: { amount: "500", currency: "USD" }, parent_id: projectId, sponsor_ids: expect.arrayContaining([firstActor, secondActor]) });
+});
+
+test("the sponsor picker searches the server and says so when ten are named", async ({ page }) => {
+  const state = await stubProjects(page); await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
+  await page.getByLabel(/^Business unit\s*\*?$/).selectOption(unitId);
+  await page.getByLabel(/^Sponsors\s*\*?$/).fill("extra");
+  for (let i = 0; i < 10; i++) await page.getByRole("button", { name: /^Add Extra Person/ }).first().click();
+  await expect(page.getByRole("status").filter({ hasText: "the most allowed" })).toContainText("Remove one to add another");
+  await expect(page.getByRole("list", { name: "Matching sponsors" })).toHaveCount(0);
+  expect(state.requests.some(r => r.path === "/api/v1/projects/lookups/people" && r.query.get("q") === "extra" && r.query.get("bu_id") === unitId)).toBe(true);
+  await page.getByRole("button", { name: "Remove Extra Person 0" }).click();
+  await expect(page.getByRole("button", { name: /^Add Extra Person/ }).first()).toBeVisible();
+});
+
+test("keyboard-only path reaches budget, main project and sponsors in order", async ({ page }) => {
+  await stubProjects(page); await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
+  for (const label of ["Planned end", "Budget", "Main project", "Sponsors"]) await keyboardFocus(page, page.getByLabel(new RegExp(`^${label}\\s*\\*?$`)));
+});
+
 test("required create fields fail locally with a focused summary and no POST", async ({ page }) => {
   const state = await stubProjects(page); await page.goto("/projects/new");
   await page.getByRole("button", { name: "Create project", exact: true }).click();
@@ -301,8 +342,10 @@ test("record required and integer guards preserve input without writing invalid 
 
 test("initial overview skeleton reserves fact row dimensions without layout shift", async ({ page }) => {
   await stubProjects(page);
+  let release = () => {};
+  const ready = new Promise<void>(resolve => { release = resolve; });
   await page.route(`**/api/v1/projects/${projectId}`, async route => {
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await ready;
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(project) });
   });
   await page.addInitScript(() => {
@@ -315,6 +358,7 @@ test("initial overview skeleton reserves fact row dimensions without layout shif
   const skeleton = page.locator(".project-loading .project-facts > div");
   await expect(skeleton).toHaveCount(14);
   const height = await skeleton.first().evaluate(n => n.getBoundingClientRect().height);
+  release();
   await expect(page.getByRole("heading", { name: "Plant renewal", exact: true })).toBeVisible();
   expect(await page.locator('[role="tabpanel"] .project-facts > div').first().evaluate(n => n.getBoundingClientRect().height)).toBe(height);
   expect(await page.evaluate(() => (window as unknown as { projectShifts: number[] }).projectShifts.reduce((sum, value) => sum + value, 0))).toBeLessThan(0.1);
@@ -347,4 +391,108 @@ test("business-unit grouping keeps equal display names in distinct id runs", asy
   await expect(page.locator(".project-group-start")).toHaveCount(2);
   await expect(page.locator('[data-grid-row="1"] [data-column-id="group"]')).toBeEmpty();
   await expect(page.locator('[data-grid-row="2"] [data-column-id="group"]')).toContainText("Group: Infrastructure");
+});
+
+test("detail: Delete draft asks first, keyboard only, shows the server reason and keeps one key across Try Again", async ({ page }) => {
+  const state = await stubProjects(page);
+  state.failDelete = true;
+  await page.goto(`/projects/${projectId}`);
+  await page.getByRole("button", { name: "Delete draft" }).focus();
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("alertdialog");
+  await expect(dialog.getByRole("button", { name: "Keep Draft" })).toBeFocused();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Enter");
+  await expect(dialog).toContainText("Only a draft can be deleted.");
+  state.failDelete = false;
+  await dialog.getByRole("button", { name: "Try Again" }).click();
+  await expect(page).toHaveURL(/\/projects(\?|$)/);
+  const deletes = state.requests.filter(r => r.method === "DELETE");
+  expect(deletes.map(r => r.path)).toEqual([`/api/v1/projects/${projectId}`, `/api/v1/projects/${projectId}`]);
+  expect(deletes[0]!.headers["idempotency-key"]).toBeTruthy();
+  expect(deletes[1]!.headers["idempotency-key"]).toBe(deletes[0]!.headers["idempotency-key"]);
+});
+
+test("detail: a project that is not a draft offers no Delete draft", async ({ page }) => {
+  const state = await stubProjects(page);
+  state.row = { ...state.row, status: "active" };
+  await page.goto(`/projects/${projectId}`);
+  await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Delete draft" })).toHaveCount(0);
+});
+
+test("detail: a draft project the caller cannot edit offers no Delete draft", async ({ page }) => {
+  const state = await stubProjects(page);
+  state.row = { ...state.row, can_edit: false };
+  await page.goto(`/projects/${projectId}`);
+  await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Delete draft" })).toHaveCount(0);
+});
+
+test("E13-S33 keyboard only: adding a sponsor keeps focus in the search input", async ({ page }) => {
+  await stubProjects(page); await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
+  await page.getByLabel(/^Business unit\s*\*?$/).selectOption(unitId);
+  const search = page.getByLabel(/^Sponsors\s*\*?$/);
+  await search.fill("person");
+  const add = page.getByRole("button", { name: "Add Maker Person" });
+  await add.waitFor();
+  await keyboardFocus(page, add); await page.keyboard.press("Enter");
+  await expect(page.getByRole("list", { name: "Chosen sponsors" })).toContainText("Maker Person");
+  await expect(search).toBeFocused();
+});
+
+test("E13-S33 keyboard only: Approval pending without a reason leaves focus on the project status", async ({ page }) => {
+  await stubProjects(page); await page.goto(`/projects/${projectId}`);
+  await keyboardFocus(page, page.getByRole("button", { name: "Approval pending", exact: true })); await page.keyboard.press("Enter");
+  const status = page.locator(".project-record-heading span[tabindex='-1']");
+  await expect(status.locator('[data-status="approval_pending"]')).toBeVisible();
+  await expect(status).toBeFocused();
+});
+
+test("E13-S35 overview names the owner and sponsors, no UUID text, and the status target is named", async ({ page }) => {
+  await stubProjects(page); await page.goto(`/projects/${projectId}`);
+  const facts = page.locator("#panel-overview");
+  await expect(facts).toContainText("Maker Person");
+  await expect(facts).toContainText("Approver Person");
+  await expect(facts).not.toContainText(/[0-9a-f]{8}-[0-9a-f]{4}-/);
+  await expect(page.getByRole("group", { name: /^Project status: .+/ })).toHaveCount(1);
+});
+
+test("E13-S35 Business unit follows next_cursor and lists code and name; an empty list disables it with a message", async ({ page }) => {
+  await stubProjects(page);
+  const units = [1, 2].map(n => ({ id: `0000000${n}-0000-4000-8000-000000000000`, name: `Unit ${n}`, code: `U${n}`, kind: "bu", parent_id: null, active: true, created_at: "2026-10-01T00:00:00Z" }));
+  await page.route("**/api/v1/org/units?**", route => {
+    const cursor = new URL(route.request().url()).searchParams.get("cursor");
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(cursor ? { rows: [units[1]], next_cursor: null } : { rows: [units[0]], next_cursor: units[0]!.id }) });
+  });
+  await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
+  await expect(page.locator("#project-bu_id option")).toHaveText(["Choose a business unit", "U1 Unit 1", "U2 Unit 2"]);
+  await page.unroute("**/api/v1/org/units?**");
+  await page.route("**/api/v1/org/units?**", route => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ rows: [], next_cursor: null }) }));
+  await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
+  await expect(page.getByLabel(/^Business unit\s*\*?$/)).toBeDisabled();
+  await expect(page.getByRole("status").filter({ hasText: "You have no business unit where you can create a project." })).toBeVisible();
+  await expect(page.getByLabel(/^Business unit\s*\*?$/)).toHaveAccessibleDescription(/You have no business unit where you can create a project/);
+});
+
+test("E13-S35 a units failure stays visible when the other suggestions load fine", async ({ page }) => {
+  await stubProjects(page);
+  await page.route("**/api/v1/org/units?**", route => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ status: 503, detail: "down" }) }));
+  await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
+  await expect(page.getByRole("alert").filter({ hasText: "Business units could not load" })).toBeVisible();
+  await page.waitForTimeout(500);
+  await expect(page.getByRole("alert").filter({ hasText: "Business units could not load" })).toBeVisible();
+});
+
+test("E13-S35 a units failure is named, with Retry and a non-loading placeholder, when a lookup fails too", async ({ page }) => {
+  await stubProjects(page);
+  await page.route("**/api/v1/org/units?**", route => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ status: 503, detail: "down" }) }));
+  await page.route("**/api/v1/master/department?**", route => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ status: 503, detail: "down" }) }));
+  await page.goto("/projects/new"); await page.locator(".project-form").waitFor();
+  const alert = page.getByRole("alert").filter({ hasText: "Business units could not load" });
+  await expect(alert).toBeVisible();
+  await expect(alert).toContainText("Some suggestions could not load");
+  await expect(alert.getByRole("button", { name: "Retry suggestions" })).toBeVisible();
+  await expect(page.locator("#project-bu_id option").first()).toHaveText("Business units could not be loaded");
 });

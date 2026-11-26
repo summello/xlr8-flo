@@ -9,6 +9,9 @@ async function openCommandMenu(page: Page) {
 test("skip link is first, keyboard-visible, and jumps to main", async ({ page }) => {
   await page.goto("/");
   await page.locator(".app-shell").waitFor();
+  // E13-S33: the shell focuses main on arrival; restart keyboard navigation from the top of the document.
+  await expect(page.getByRole("main")).toBeFocused();
+  await page.evaluate(() => { (document.activeElement as HTMLElement).blur(); window.getSelection()?.collapse(document.body, 0); });
   await page.keyboard.press("Tab");
 
   const skipLink = page.getByRole("link", { name: "Skip to main content" });
@@ -225,6 +228,23 @@ test("all shell landmarks are labelled", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 900 });
   await page.getByRole("button", { name: "Open navigation" }).click();
   await expect(page.getByRole("complementary", { name: "Mobile primary sidebar" })).toBeVisible();
+});
+
+test("E13-S33 first route focuses main, but never takes focus from a control the route already focused", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("main")).toBeFocused();
+  // A deep link that already focused a control before the shell mounts (the session probe is async).
+  await page.addInitScript(() => {
+    document.addEventListener("DOMContentLoaded", () => {
+      const control = document.createElement("button");
+      control.id = "deep-link-control"; control.textContent = "Already focused";
+      document.body.append(control); control.focus();
+    });
+  });
+  await page.goto("/budget");
+  await page.locator("#main-content").waitFor();
+  await page.evaluate(() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)))); // the shell's focus frame has run
+  await expect(page.locator("#deep-link-control")).toBeFocused();
 });
 
 // These pre-auth-story fixtures represent a signed-in operator.

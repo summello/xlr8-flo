@@ -26,6 +26,7 @@ from flo.modules.identity.service import (
     AuthorizationResolver,
     IdentityAuthorizationConnection,
     emails_by_id,
+    names_by_id,
 )
 from flo.modules.org.service import OrgService, today
 from flo.modules.projects.service import (
@@ -101,7 +102,9 @@ def assert_completable(
         )
 
 
-def read_row(repo: RequisitionRepository, id: UUID, *, lock: bool = False) -> dict[str, object]:
+def read_row(
+    repo: RequisitionRepository, id: UUID, *, lock: bool = False, include_deleted: bool = False
+) -> dict[str, object]:
     fields = (
         "id",
         "project_id",
@@ -125,6 +128,7 @@ def read_row(repo: RequisitionRepository, id: UUID, *, lock: bool = False) -> di
         "SELECT "
         + ",".join(fields)
         + " FROM requisition WHERE org_id=%(org_id)s AND id=%(id)s"
+        + ("" if include_deleted else " AND status<>'deleted'")
         + (" FOR UPDATE" if lock else ""),
         {"id": id},
     ).fetchone()
@@ -207,7 +211,8 @@ def write_status(
     repo.execute(
         "UPDATE requisition SET status=%(to)s,version=version+1,updated_at=now(), "
         "submitted_at=CASE WHEN %(to)s='approval_pending' THEN now() ELSE submitted_at END, "
-        "decided_at=CASE WHEN %(to)s='approval_pending' THEN decided_at ELSE now() END "
+        "decided_at=CASE WHEN %(to)s IN ('approval_pending','sourced') THEN decided_at "
+        "ELSE now() END "
         "WHERE org_id=%(org_id)s AND id=%(id)s",
         {"id": row["id"], "to": to},
     )
@@ -398,6 +403,47 @@ def transition(
             )
 
 
+def rereserve(
+    conn: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    requisition_id: UUID,
+    *,
+    amount: Decimal,
+    key: str,
+    actor_id: UUID,
+) -> None:
+    """Add `amount` to the live reservation as a new round: release what is held, reserve
+    `remaining + amount` on the same project (never a second live reservation).
+
+    The caller holds the project_balance locks. `key` names the cause and keys the release.
+    """
+    with tenant_transaction(cast(RlsSession, conn), scope):
+        repo = RequisitionRepository(conn, scope)
+        row = read_row(repo, requisition_id, lock=True)
+        held = reservation_remaining(conn, scope, cast(int, row["reservation_entry_id"]))
+        release_live(conn, scope, row, key, actor_id=actor_id)
+        round = cast(int, row["funding_round"]) + 1
+        reservation = reserve(
+            conn,
+            scope,
+            project_id=held.project_id,
+            amount=held.remaining + amount,
+            currency=held.currency,
+            source_type="requisition",
+            source_id=requisition_id,
+            effective_date=today(),
+            actor_id=actor_id,
+            department_code=str(row["department_code"]),
+            ledger_account_code=str(row["ledger_account_code"]),
+            idempotency_key=f"req:{requisition_id}:reserve:{round}",
+        )
+        repo.execute(
+            "UPDATE requisition SET funding_round=%(round)s,reservation_entry_id=%(entry)s"
+            " WHERE org_id=%(org_id)s AND id=%(id)s",
+            {"id": requisition_id, "round": round, "entry": reservation.id},
+        )
+
+
 def stop_approved(
     conn: psycopg.Connection[tuple[object, ...]],
     scope: Scope,
@@ -584,16 +630,16 @@ def events(
             + "requisition_id=%(id)s ORDER BY id DESC",
             {"id": id},
         ).fetchall()
-        emails = emails_by_id(
-            cast(IdentityAuthorizationConnection, conn),
-            [cast(UUID, r[3]) for r in rows if r[3] is not None and r[3] != UUID(int=0)],
-        )
+        actors = [cast(UUID, r[3]) for r in rows if r[3] is not None and r[3] != UUID(int=0)]
+        emails = emails_by_id(cast(IdentityAuthorizationConnection, conn), actors)
+        names = names_by_id(cast(IdentityAuthorizationConnection, conn), actors)
         return [
             StatusEventRead.model_validate(
                 dict(zip(fields, r, strict=True))
                 | {
                     "system": r[3] is None or r[3] == UUID(int=0),
                     "actor_email": emails.get(cast(UUID, r[3])),
+                    "actor_name": names.get(cast(UUID, r[3])),
                 }
             )
             for r in rows

@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict
 
 from flo.api.admin_users import get_admin_connection, organization_target
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
-from flo.kernel.authz import require
+from flo.kernel.authz import GrantedScopes, require, require_granted
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.org.schemas import (
@@ -66,17 +66,24 @@ def create_unit(body: OrgUnitCreate, context: CreateContext, connection: Connect
 
 @router.get("/units", response_model=OrgUnitPage)
 def list_units(
-    context: Annotated[
-        AuthorizationContext, Depends(require("org.unit.read", organization_target))
-    ],
+    read: Annotated[GrantedScopes, Depends(require_granted("org.unit.read"))],
+    req: Annotated[GrantedScopes, Depends(require_granted("vendor.request"))],
+    create: Annotated[GrantedScopes, Depends(require_granted("project.create"))],
     connection: Connection,
     kind: Literal["bu", "ou"] | None = None,
     active: bool | None = None,
     cursor: UUID | None = None,
     page_size: Annotated[int, Query(ge=1, le=100)] = 50,
 ) -> OrgUnitPage:
-    return OrgService(connection, current_scope(), context.user_id).list_units(
-        kind=kind, active=active, cursor=cursor, page_size=page_size
+    # DECISIONS 234/241/246: any of the three permissions at any scope; the service narrows rows.
+    return OrgService(connection, current_scope(), read.user_id).list_units(
+        kind=kind,
+        active=active,
+        cursor=cursor,
+        page_size=page_size,
+        read=read,
+        req=req,
+        create=create,
     )
 
 

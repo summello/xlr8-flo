@@ -7,9 +7,13 @@ import type { components } from "../../api/generated/schema";
 import { writeHeaders } from "../../features/auth/api";
 import ExpiredCodeBadge from "../codes/ExpiredCodeBadge";
 import Money from "../ui/Money";
+import AwardEvidence from "./evidence/AwardEvidence";
+import PurchaseOrderEvidence from "./evidence/PurchaseOrderEvidence";
+import VendorEvidence from "./evidence/VendorEvidence";
 import InboxStatus from "./InboxStatus";
 import type { InboxRow, Tab } from "./inbox-model";
 import { stepLabel } from "./inbox-model";
+import Person, { personLabel } from "../ui/Person";
 
 type Decision = components["schemas"]["DecisionRead"];
 type Instance = components["schemas"]["InstanceRead"];
@@ -215,13 +219,16 @@ export default function DecisionPanel({ row, tab, next, onOpen, onClose, onDecid
               {notice && <p role="status" className="appr-note"><Info aria-hidden="true" />{notice}</p>}
               {row.codes_expired && <ExpiredCodeBadge />}
               <dl className="appr-facts">
-                <div><dt>Requested by</dt><dd>{row.requester_email}</dd></div>
+                <div><dt>Requested by</dt><dd><Person name={row.requester_name} email={row.requester_email} /></dd></div>
                 <div><dt>Amount</dt><dd className="appr-amount">{row.amount ? <Money value={row.amount.amount} currency={row.amount.currency} /> : "Not applicable"}</dd></div>
                 <div><dt>Version</dt><dd>v{version}</dd></div>
                 <div><dt>Step</dt><dd>{stepLabel(row)}</dd></div>
                 {row.requester_note && <div><dt>Note from the requester</dt><dd className="appr-requester-note">{row.requester_note}</dd></div>}
               </dl>
-              <a className="appr-link" href={row.href}>Open the full requisition<ArrowRight aria-hidden="true" /></a>
+              {!(row.document_type === "award" && instance?.evidence) && <a className="appr-link" href={row.href}>Open the full {row.document_type === "vendor" ? "vendor" : row.document_type === "award" ? "award" : row.document_type === "po" || row.document_type === "po_change" ? "purchase order" : "requisition"}<ArrowRight aria-hidden="true" /></a>}
+              {row.document_type === "vendor" && instance?.evidence && <VendorEvidence evidence={instance.evidence} />}
+              {row.document_type === "award" && instance?.evidence && <AwardEvidence evidence={instance.evidence} />}
+              {row.document_type === "po" && instance?.evidence && <PurchaseOrderEvidence evidence={instance.evidence} />}
 
               <section aria-labelledby="appr-trail">
                 <h3 id="appr-trail">Decision Trail <span className="appr-count">{(trail?.length ?? 0) + (canDecide ? 1 : 0)}</span></h3>
@@ -230,7 +237,7 @@ export default function DecisionPanel({ row, tab, next, onOpen, onClose, onDecid
                   {canDecide && <li data-waiting="true"><strong>Waiting for you</strong>, step {stepLabel(row)}{row.due_at && <>, due <time dateTime={row.due_at}>{formatDate(row.due_at)}</time></>}</li>}
                   {[...(trail ?? [])].reverse().map((d) => (
                     <li key={d.id}>
-                      <strong>{d.step_label ?? "Request"}: {d.outcome}</strong> by {d.actor_email}{d.on_behalf_of_email && <> on behalf of {d.on_behalf_of_email}</>}, <time dateTime={d.decided_at}>{formatDate(d.decided_at)}</time>
+                      <strong>{d.step_label ?? "Request"}: {d.outcome}</strong> by <Person name={d.actor_name} email={d.actor_email} />{d.on_behalf_of_email && <> on behalf of <Person name={d.on_behalf_of_name} email={d.on_behalf_of_email} /></>}, <time dateTime={d.decided_at}>{formatDate(d.decided_at)}</time>
                       {d.comment && <p className="appr-trail-note">{d.comment}</p>}
                     </li>
                   ))}
@@ -248,7 +255,7 @@ export default function DecisionPanel({ row, tab, next, onOpen, onClose, onDecid
                 <form className="appr-decide" noValidate onSubmit={(event) => event.preventDefault()}>
                   <label htmlFor="appr-comment">Comment or Reason <span className="appr-tag" data-done={comment.trim() !== "" || undefined}>{comment.trim() !== "" ? "Done" : "Needed to reject or return"}</span></label>
                   <textarea id="appr-comment" rows={4} value={comment} aria-invalid={refusal?.kind === "reason" || undefined} aria-describedby="appr-comment-hint" onChange={(event) => { setComment(event.target.value); rotateKey(); }} />
-                  <p id="appr-comment-hint" className="appr-meta">Recorded with your name{covering ? `, the delegation you act under (${row.on_behalf_of_email})` : ""}, and the version you decided ({version}).</p>
+                  <p id="appr-comment-hint" className="appr-meta">Recorded with your name{covering ? `, the delegation you act under (${personLabel(row.on_behalf_of_name, row.on_behalf_of_email ?? "")})` : ""}, and the version you decided ({version}).</p>
                   <fieldset aria-describedby={modeError ? "appr-mode-error" : undefined} aria-invalid={modeError ? true : undefined}>
                     <legend>If you reject <span className="appr-tag">Required to reject</span></legend>
                     <label><input id="appr-mode-return" type="radio" name="appr-mode" checked={mode === "return_to_draft"} onChange={() => { setMode("return_to_draft"); setModeError(""); rotateKey(); }} /> Return to the requester to fix</label>
@@ -287,7 +294,7 @@ export default function DecisionPanel({ row, tab, next, onOpen, onClose, onDecid
                     <p>{why.why_this_workflow}</p>
                     <ol>
                       {why.steps.map((step) => "members" in step ? (
-                        <li key={step.node_id}><strong>{step.name}</strong>: {step.rule}. Members: {step.members.map((m) => m.email).join(", ") || "none"}.{step.excluded.map((e) => <span key={e.user_id} className="appr-meta"> {e.email} excluded: {e.detail}.</span>)}</li>
+                        <li key={step.node_id}><strong>{step.name}</strong>: {step.rule}. Members: {step.members.map((m) => personLabel(m.name, m.email)).join(", ") || "none"}.{step.excluded.map((e) => <span key={e.user_id} className="appr-meta"> <Person name={e.name} email={e.email} /> excluded: {e.detail}.</span>)}</li>
                       ) : (
                         <li key={step.node_id}><strong>{step.name}</strong>: took {step.taken}.</li>
                       ))}
@@ -320,7 +327,7 @@ function Notices({ tab, row, covering, passed, closed }: { tab: Tab; row: InboxR
   const items: string[] = [];
   if (tab === "completed") items.push("You Decided This");
   else if (closed) items.push("Already Decided");
-  if (covering) items.push(`You Are Covering For ${row.on_behalf_of_email ?? "someone"}`);
+  if (covering) items.push(`You Are Covering For ${row.on_behalf_of_email ? personLabel(row.on_behalf_of_name, row.on_behalf_of_email) : "someone"}`);
   if (passed) items.push(row.status_word);
   if (items.length === 0) return null;
   return <div className="appr-notices">{items.map((item) => <p key={item} className="appr-notice"><Info aria-hidden="true" />{item}</p>)}</div>;

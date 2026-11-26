@@ -3,6 +3,9 @@
 # Review verdicts — per-story, ephemeral, consumed by `flo gate` in place.
 reviews/*.json
 
+# Runner-local fleet state: logs, prompts, pid files, pre-flight records, archived verdicts.
+.scratch/
+
 # Story task packet — written by `flo start` into the worktree, read by gate/done in
 # place. Committing it squash-merges ephemeral state into ROOT, and every later
 # `flo start` then rewrites a tracked file.

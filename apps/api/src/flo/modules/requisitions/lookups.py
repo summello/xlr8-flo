@@ -30,7 +30,15 @@ class LookupService:
         can_raise_in_project: CanRaise,
         can_raise_in_unit: CanRaise,
         can_request_in_unit: CanRaise | None = None,
+        *,
+        can_view_project: CanRaise = lambda id: False,
+        can_view_unit: CanRaise = lambda id: False,
+        address_projects: frozenset[UUID] = frozenset(),
     ) -> None:
+        self.can_view_project, self.can_view_unit = can_view_project, can_view_unit
+        # Projects where requisition.create or .view is effective (granted_scopes expands unit
+        # grants and roll-down project grants to the projects beneath them).
+        self.address_projects = address_projects
         self.can_request_in_unit = can_request_in_unit or can_raise_in_unit
         self.connection, self.scope = connection, scope
         self.can_raise_in_project, self.can_raise_in_unit = can_raise_in_project, can_raise_in_unit
@@ -65,10 +73,12 @@ class LookupService:
         page = service.list(q=needle, status="active", page_size=50)
         rows: list[LookupOption] = []
         for project in page.rows:
-            if not self.can_raise_in_project(project.id):
-                continue
             disabled, note = False, None
-            if project.generated_by_requisition_id is not None:
+            if not self.can_raise_in_project(project.id):
+                if not self.can_view_project(project.id):
+                    continue
+                disabled, note = True, "view only"  # listable for filters, not pickable
+            elif project.generated_by_requisition_id is not None:
                 source = self.repo.execute(
                     "SELECT number FROM requisition WHERE org_id=%(org_id)s AND id=%(id)s",
                     {"id": project.generated_by_requisition_id},
@@ -112,19 +122,24 @@ class LookupService:
         """Active members of the organization, for naming sponsors."""
         escaped = needle.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         found = self.repo.execute(
-            "SELECT i.id,i.email FROM identity i WHERE i.status='active' AND EXISTS ("
+            "SELECT i.id,i.email,i.display_name FROM identity i "
+            "WHERE i.status='active' AND EXISTS ("
             "SELECT 1 FROM user_role r WHERE r.org_id=%(org_id)s AND r.user_id=i.id) "
-            "AND lower(i.email) LIKE %(like)s ORDER BY lower(i.email) LIMIT %(limit)s",
+            "AND (lower(i.email) LIKE %(like)s OR lower(i.display_name) LIKE %(like)s) "
+            "ORDER BY lower(i.email) LIMIT %(limit)s",
             {"like": "%" + escaped + "%", "limit": limit},
         ).fetchall()
-        return [LookupOption(value=str(r[0]), label=str(r[1])) for r in found]
+        return [
+            LookupOption(value=str(r[0]), label=str(r[2] or r[1]), note=str(r[1]) if r[2] else None)
+            for r in found
+        ]
 
     def _addresses(self, needle: str, bu_id: UUID | None, limit: int) -> list[LookupOption]:
         if bu_id is None:
             raise invalid("bu_id", "Choose a unit first.", "bu_required")
         org = OrgService(self.connection, self.scope)
         chain = org.unit_chain(bu_id)  # 404 for an unknown or foreign unit
-        if not self.can_raise_in_unit(bu_id):
+        if not self._unit_admitted(bu_id):
             raise ProblemError(ErrorCode.NOT_FOUND)
         rows: list[LookupOption] = []
         for unit in chain:
@@ -134,3 +149,20 @@ class LookupService:
                     continue
                 rows.append(LookupOption(value=str(address.id), label=label))
         return rows[:limit]
+
+    def _unit_admitted(self, bu_id: UUID) -> bool:
+        """Raise, request or view in the unit, or raise/view in one of its projects."""
+        if (
+            self.can_raise_in_unit(bu_id)
+            or self.can_request_in_unit(bu_id)
+            or self.can_view_unit(bu_id)
+        ):
+            return True
+        return bool(self.address_projects) and (
+            self.repo.execute(
+                "SELECT 1 FROM project WHERE org_id=%(org_id)s AND bu_id=%(bu)s "
+                "AND id = ANY(%(ids)s) LIMIT 1",
+                {"bu": bu_id, "ids": list(self.address_projects)},
+            ).fetchone()
+            is not None
+        )

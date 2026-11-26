@@ -185,9 +185,7 @@ def test_business_change_and_audit_row_commit_or_roll_back_together(
     connection = cast(AuditConnection, audit_database.connection)
     committed_id, rolled_back_id = uuid4(), uuid4()
 
-    with correlation_context("request-commit"), tenant_transaction(
-        connection, Scope(org_id)
-    ):
+    with correlation_context("request-commit"), tenant_transaction(connection, Scope(org_id)):
         audit_database.connection.execute(
             sql.SQL("INSERT INTO {} (id, value) VALUES (%s, 'committed')").format(
                 sql.Identifier(audit_database.business_table)
@@ -204,9 +202,11 @@ def test_business_change_and_audit_row_commit_or_roll_back_together(
             after_fields=("id", "name"),
         )
 
-    with pytest.raises(RuntimeError, match="forced failure"), correlation_context(
-        "request-rollback"
-    ), tenant_transaction(connection, Scope(org_id)):
+    with (
+        pytest.raises(RuntimeError, match="forced failure"),
+        correlation_context("request-rollback"),
+        tenant_transaction(connection, Scope(org_id)),
+    ):
         audit_database.connection.execute(
             sql.SQL("INSERT INTO {} (id, value) VALUES (%s, 'rolled back')").format(
                 sql.Identifier(audit_database.business_table)
@@ -237,9 +237,7 @@ def test_writer_stores_only_allowlisted_before_and_after_fields(
     org_id = uuid4()
     model = _sensitive_model()
     connection = cast(AuditConnection, audit_database.connection)
-    with correlation_context("snapshot-redaction"), tenant_transaction(
-        connection, Scope(org_id)
-    ):
+    with correlation_context("snapshot-redaction"), tenant_transaction(connection, Scope(org_id)):
         record = _writer(audit_database, org_id).write(
             actor=AuditActor(ActorKind.SYSTEM),
             action="project.update",
@@ -292,9 +290,11 @@ def test_writer_rejects_missing_action_identity(
     audit_database: AuditDatabase, action: str, target_type: str
 ) -> None:
     org_id = uuid4()
-    with pytest.raises(ValueError, match="must be non-empty"), correlation_context(
-        "invalid-event"
-    ), tenant_transaction(cast(AuditConnection, audit_database.connection), Scope(org_id)):
+    with (
+        pytest.raises(ValueError, match="must be non-empty"),
+        correlation_context("invalid-event"),
+        tenant_transaction(cast(AuditConnection, audit_database.connection), Scope(org_id)),
+    ):
         _writer(audit_database, org_id).write(
             actor=AuditActor(ActorKind.SYSTEM),
             action=action,
@@ -308,17 +308,16 @@ def test_writer_creates_month_partition_and_uses_utc_microsecond_timestamp(
     audit_database: AuditDatabase,
 ) -> None:
     org_id = uuid4()
-    before = audit_database.connection.execute(
-        "SELECT clock_timestamp()"
-    ).fetchone()
+    before = audit_database.connection.execute("SELECT clock_timestamp()").fetchone()
     assert before is not None
     expected_partition = monthly_partition(cast(datetime, before[0]))
     assert audit_database.connection.execute(
         "SELECT to_regclass(%s)", (f"public.{expected_partition.name}",)
     ).fetchone() == (None,)
 
-    with correlation_context("partition-create"), tenant_transaction(
-        cast(AuditConnection, audit_database.connection), Scope(org_id)
+    with (
+        correlation_context("partition-create"),
+        tenant_transaction(cast(AuditConnection, audit_database.connection), Scope(org_id)),
     ):
         record = _writer(audit_database, org_id).write(
             actor=AuditActor(ActorKind.SYSTEM),
@@ -343,8 +342,9 @@ def test_background_job_restores_request_correlation_and_lost_id_fails(
 
     correlation_id = job_payload["correlation_id"]
     assert correlation_id is not None
-    with correlation_context(correlation_id), tenant_transaction(
-        cast(AuditConnection, audit_database.connection), Scope(org_id)
+    with (
+        correlation_context(correlation_id),
+        tenant_transaction(cast(AuditConnection, audit_database.connection), Scope(org_id)),
     ):
         _writer(audit_database, org_id).write(
             actor=AuditActor(ActorKind.JOB),
@@ -353,8 +353,9 @@ def test_background_job_restores_request_correlation_and_lost_id_fails(
             outcome=Outcome.SUCCESS,
         )
 
-    with pytest.raises(CorrelationMissing), tenant_transaction(
-        cast(AuditConnection, audit_database.connection), Scope(org_id)
+    with (
+        pytest.raises(CorrelationMissing),
+        tenant_transaction(cast(AuditConnection, audit_database.connection), Scope(org_id)),
     ):
         _writer(audit_database, org_id).write(
             actor=AuditActor(ActorKind.JOB),
@@ -374,8 +375,10 @@ def test_blank_correlation_id_fails_before_an_audit_row_is_written(
     audit_database: AuditDatabase,
 ) -> None:
     org_id = uuid4()
-    with pytest.raises(CorrelationMissing), correlation_context(""), tenant_transaction(
-        cast(AuditConnection, audit_database.connection), Scope(org_id)
+    with (
+        pytest.raises(CorrelationMissing),
+        correlation_context(""),
+        tenant_transaction(cast(AuditConnection, audit_database.connection), Scope(org_id)),
     ):
         _writer(audit_database, org_id).write(
             actor=AuditActor(ActorKind.JOB),
@@ -399,8 +402,9 @@ def test_only_truncated_ip_prefix_is_stored(
     stored_prefix: str,
 ) -> None:
     org_id = uuid4()
-    with correlation_context("ip-redaction"), tenant_transaction(
-        cast(AuditConnection, audit_database.connection), Scope(org_id)
+    with (
+        correlation_context("ip-redaction"),
+        tenant_transaction(cast(AuditConnection, audit_database.connection), Scope(org_id)),
     ):
         _writer(audit_database, org_id).write(
             actor=AuditActor(ActorKind.SYSTEM),
@@ -425,9 +429,11 @@ def test_invalid_ip_error_does_not_echo_the_supplied_value(
 ) -> None:
     org_id = uuid4()
     supplied = "203.0.113.79-not-an-address"
-    with pytest.raises(ValueError) as error, correlation_context(
-        "invalid-ip"
-    ), tenant_transaction(cast(AuditConnection, audit_database.connection), Scope(org_id)):
+    with (
+        pytest.raises(ValueError) as error,
+        correlation_context("invalid-ip"),
+        tenant_transaction(cast(AuditConnection, audit_database.connection), Scope(org_id)),
+    ):
         _writer(audit_database, org_id).write(
             actor=AuditActor(ActorKind.SYSTEM),
             action="session.inspect",
@@ -465,9 +471,11 @@ def test_audit_read_requires_permission_and_writes_reader_event(
         )
 
     denied = PermissionProbe(False, [])
-    with pytest.raises(PermissionError, match=AUDIT_READ_PERMISSION), correlation_context(
-        "denied-read"
-    ), tenant_transaction(connection, Scope(org_id)):
+    with (
+        pytest.raises(PermissionError, match=AUDIT_READ_PERMISSION),
+        correlation_context("denied-read"),
+        tenant_transaction(connection, Scope(org_id)),
+    ):
         AuditReader(connection, Scope(org_id), denied).read(
             reader=AuditActor(ActorKind.USER, reader_id)
         )
@@ -523,9 +531,10 @@ def test_database_trigger_rejects_update_and_delete_for_table_owner(
         )
 
     verb = statement.partition(" ")[0]
-    with pytest.raises(
-        ObjectNotInPrerequisiteState, match=f"{verb} is forbidden"
-    ), tenant_transaction(connection, Scope(org_id)):
+    with (
+        pytest.raises(ObjectNotInPrerequisiteState, match=f"{verb} is forbidden"),
+        tenant_transaction(connection, Scope(org_id)),
+    ):
         audit_database.connection.execute(statement)
     assert _audit_count(audit_database, org_id) == 1
 
@@ -562,8 +571,9 @@ def test_rls_hides_another_tenants_audit_rows_even_from_owner(
     org_a, org_b = uuid4(), uuid4()
     connection = cast(AuditConnection, audit_database.connection)
     for org_id in (org_a, org_b):
-        with correlation_context(f"request-{org_id}"), tenant_transaction(
-            connection, Scope(org_id)
+        with (
+            correlation_context(f"request-{org_id}"),
+            tenant_transaction(connection, Scope(org_id)),
         ):
             _writer(audit_database, org_id).write(
                 actor=AuditActor(ActorKind.SYSTEM),
@@ -573,9 +583,7 @@ def test_rls_hides_another_tenants_audit_rows_even_from_owner(
             )
 
     application_owner = f"audit_owner_{uuid4().hex[:12]}"
-    original_owner_row = audit_database.connection.execute(
-        "SELECT current_user"
-    ).fetchone()
+    original_owner_row = audit_database.connection.execute("SELECT current_user").fetchone()
     assert original_owner_row is not None
     original_owner = cast(str, original_owner_row[0])
     partition = monthly_partition(datetime.now(UTC))
@@ -583,9 +591,7 @@ def test_rls_hides_another_tenants_audit_rows_even_from_owner(
         sql.SQL("CREATE ROLE {} NOLOGIN").format(sql.Identifier(application_owner))
     )
     audit_database.connection.execute(
-        sql.SQL("ALTER TABLE audit_log OWNER TO {}").format(
-            sql.Identifier(application_owner)
-        )
+        sql.SQL("ALTER TABLE audit_log OWNER TO {}").format(sql.Identifier(application_owner))
     )
     audit_database.connection.execute(
         sql.SQL("ALTER TABLE {} OWNER TO {}").format(
@@ -615,9 +621,7 @@ def test_rls_hides_another_tenants_audit_rows_even_from_owner(
             )
         )
         audit_database.connection.execute(
-            sql.SQL("ALTER TABLE audit_log OWNER TO {}").format(
-                sql.Identifier(original_owner)
-            )
+            sql.SQL("ALTER TABLE audit_log OWNER TO {}").format(sql.Identifier(original_owner))
         )
         audit_database.connection.execute(
             sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(application_owner))
@@ -653,9 +657,7 @@ def test_older_month_detaches_without_losing_rows(audit_database: AuditDatabase)
             "SELECT correlation_id, column_default FROM {} "
             "CROSS JOIN information_schema.columns "
             "WHERE table_schema = 'public' AND table_name = {} AND column_name = 'id'"
-        ).format(
-            sql.Identifier(old_partition.name), sql.Literal(old_partition.name)
-        )
+        ).format(sql.Identifier(old_partition.name), sql.Literal(old_partition.name))
     ).fetchall()
     assert inheritance == (0,)
     assert retained == [("archive-correlation", None)]
@@ -755,9 +757,7 @@ def test_migration_model_revision_and_reversible_data_preservation(
         sql.SQL("CREATE TABLE {} (value text NOT NULL)").format(sql.Identifier(sentinel))
     )
     audit_database.connection.execute(
-        sql.SQL("INSERT INTO {} (value) VALUES ('preserved')").format(
-            sql.Identifier(sentinel)
-        )
+        sql.SQL("INSERT INTO {} (value) VALUES ('preserved')").format(sql.Identifier(sentinel))
     )
     try:
         audit_database.migration.downgrade(audit_database.connection)

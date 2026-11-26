@@ -6,12 +6,13 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Query, Request, Response
 
-from flo.api.admin_users import organization_target
+from flo.api.admin_users import deleted_visible
 from flo.api.auth import get_auth_settings
 from flo.api.org import Connection
 from flo.kernel.authz import AuthorizationTarget as TargetProtocol
-from flo.kernel.authz import permits, require, require_resolved
+from flo.kernel.authz import GrantedScopes, permits, require, require_granted, require_resolved
 from flo.kernel.config import Settings
+from flo.kernel.errors import ErrorCode, ProblemError
 from flo.kernel.tenancy.context import current_scope
 from flo.modules.identity.models import AuthorizationContext, AuthorizationTarget, ScopeType
 from flo.modules.org.service import OrgService
@@ -69,8 +70,10 @@ def create_target(body: RequisitionCreate, connection: Connection) -> tuple[str,
     )
 
 
-def requisition_target(id: UUID, connection: Connection) -> TargetProtocol:
-    row = RequisitionService(connection, current_scope()).get(id)
+def requisition_target(
+    id: UUID, connection: Connection, *, include_deleted: bool = False
+) -> TargetProtocol:
+    row = RequisitionService(connection, current_scope()).get(id, include_deleted=include_deleted)
     return cast(
         TargetProtocol,
         AuthorizationTarget(
@@ -86,6 +89,17 @@ CreateContext = Annotated[AuthorizationContext, Depends(require_resolved(create_
 ReadContext = Annotated[
     AuthorizationContext, Depends(require("requisition.view", requisition_target))
 ]
+
+
+def requisition_bin_target(
+    id: UUID, connection: Connection, include_deleted: bool = False
+) -> TargetProtocol:
+    return requisition_target(id, connection, include_deleted=include_deleted)
+
+
+BinReadContext = Annotated[
+    AuthorizationContext, Depends(require("requisition.view", requisition_bin_target))
+]
 EditContext = Annotated[
     AuthorizationContext, Depends(require("requisition.edit", requisition_target))
 ]
@@ -98,9 +112,8 @@ SubmitContext = Annotated[
 WithdrawContext = Annotated[
     AuthorizationContext, Depends(require("requisition.withdraw", requisition_target))
 ]
-ListContext = Annotated[
-    AuthorizationContext, Depends(require("requisition.view", organization_target))
-]
+# A self-scoped list: rows are filtered to the scopes where the caller holds requisition.view.
+ListScopes = Annotated[GrantedScopes, Depends(require_granted("requisition.view"))]
 
 
 @router.post("", status_code=201, response_model=RequisitionRead)
@@ -118,7 +131,7 @@ def create_requisition(
 
 @router.get("", response_model=RequisitionPage)
 def list_requisitions(
-    context: ListContext,
+    granted: ListScopes,
     connection: Connection,
     status: RequisitionStatus | None = None,
     project_id: UUID | None = None,
@@ -131,9 +144,8 @@ def list_requisitions(
     cursor: str | None = None,
     page_size: Annotated[int, Query(ge=1, le=50)] = 50,
 ) -> RequisitionPage:
-    # ponytail: BU-only grants cannot list; add granted_scopes filtering
-    # when a tenant uses BU-only grants.
-    return RequisitionService(connection, current_scope(), context.user_id).list(
+    return RequisitionService(connection, current_scope(), granted.user_id).list(
+        visible=None if granted.org_wide else (list(granted.bu_ids), list(granted.project_ids)),
         status=status,
         project_id=project_id,
         bu_id=bu_id,
@@ -147,42 +159,62 @@ def list_requisitions(
     )
 
 
-OrgCreateContext = Annotated[
-    AuthorizationContext, Depends(require("requisition.create", organization_target))
-]
+# Which of the four lookup permissions admit each kind (E22-S15); anything else is 403.
+# "create" = requisition.create, "request" = project_request.create, "view" = requisition.view,
+# "code" = master_code.substitute.
+_LOOKUP_ADMITS = {
+    "project": ("create", "view"),
+    "bu": ("create", "request"),
+    "user": ("create", "request"),
+    "department": ("create", "request", "view", "code"),
+    "ledger_account": ("create", "request", "view", "code"),
+}
+_LOOKUP_DEFAULT = ("create", "request", "view")  # uom, item_category, service_category, addresses
 
 
 # Registered before "/{id}" so "lookups" is never parsed as a requisition id.
 @router.get("/lookups/{kind}", response_model=LookupRows)
 def lookups(
     kind: str,
-    context: OrgCreateContext,
+    create: Annotated[GrantedScopes, Depends(require_granted("requisition.create"))],
+    request_scopes: Annotated[GrantedScopes, Depends(require_granted("project_request.create"))],
+    view: Annotated[GrantedScopes, Depends(require_granted("requisition.view"))],
+    code: Annotated[GrantedScopes, Depends(require_granted("master_code.substitute"))],
     connection: Connection,
     request: Request,
     q: str = "",
     bu_id: UUID | None = None,
     limit: int = 20,
 ) -> LookupRows:
-    def can_raise(kind: ScopeType, id: UUID, permission: str = "requisition.create") -> bool:
-        return permits(
-            request,
-            permission,
-            cast(TargetProtocol, AuthorizationTarget(kind, id)),
-        )
+    held = {"create": create, "request": request_scopes, "view": view, "code": code}
+    if not any(held[name] for name in _LOOKUP_ADMITS.get(kind, _LOOKUP_DEFAULT)):
+        raise ProblemError(ErrorCode.FORBIDDEN)
+
+    def can(kind: ScopeType, id: UUID, permission: str) -> bool:
+        return permits(request, permission, cast(TargetProtocol, AuthorizationTarget(kind, id)))
 
     return LookupService(
         connection,
         current_scope(),
-        lambda id: can_raise(ScopeType.PROJECT, id),
-        lambda id: can_raise(ScopeType.BU, id),
-        lambda id: can_raise(ScopeType.BU, id, "project_request.create"),
+        lambda id: can(ScopeType.PROJECT, id, "requisition.create"),
+        lambda id: can(ScopeType.BU, id, "requisition.create"),
+        lambda id: can(ScopeType.BU, id, "project_request.create"),
+        can_view_project=lambda id: can(ScopeType.PROJECT, id, "requisition.view"),
+        can_view_unit=lambda id: can(ScopeType.BU, id, "requisition.view"),
+        address_projects=create.project_ids | view.project_ids,
     ).options(kind, q, bu_id, limit)
 
 
 @router.get("/{id}", response_model=RequisitionRead)
 def get_requisition(
-    id: UUID, context: ReadContext, connection: Connection, response: Response, request: Request
+    id: UUID,
+    context: BinReadContext,
+    connection: Connection,
+    response: Response,
+    request: Request,
+    include_deleted: bool = False,
 ) -> RequisitionRead:
+    visible = deleted_visible(request, include_deleted)
     row = RequisitionService(connection, current_scope(), context.user_id).detail(
         id,
         lambda project_id: permits(
@@ -191,6 +223,10 @@ def get_requisition(
             cast(TargetProtocol, AuthorizationTarget(ScopeType.PROJECT, project_id)),
         ),
         lambda: permits(request, "requisition.edit", requisition_target(id, connection)),
+        visible,
+    )
+    row.can_edit = permits(
+        request, "requisition.edit", requisition_target(id, connection, include_deleted=visible)
     )
     row.can_substitute_codes = (
         row.codes_expired
@@ -511,6 +547,12 @@ def withdraw_amendment(
     )
     response.headers["ETag"] = f'"{row.version}"'
     return row
+
+
+@router.delete("/{id}", status_code=204)
+def delete_requisition(id: UUID, context: EditContext, connection: Connection) -> Response:
+    RequisitionService(connection, current_scope(), context.user_id).delete(id)
+    return Response(status_code=204)
 
 
 @router.post("/{id}/codes", response_model=RequisitionRead)

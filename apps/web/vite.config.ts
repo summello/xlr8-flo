@@ -1,7 +1,7 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import type { IncomingMessage } from "node:http";
-import type { Plugin } from "vite";
+import type { Plugin, PreviewServer, ViteDevServer } from "vite";
 import { defineConfig } from "vitest/config";
 
 import type { components } from "./src/api/generated/schema.ts";
@@ -57,8 +57,8 @@ function offsetFor(cursor: string | null): number | null {
 }
 
 function gridFixture(): Plugin {
-  return {
-    configureServer(server) {
+  const plugin = {
+    configureServer(server: ViteDevServer | PreviewServer) {
       server.middlewares.use("/api/_dev/grid", (request, response) => {
         const url = new URL(request.url ?? "/", "http://grid.local");
         if (url.searchParams.get("page_size") !== String(GRID_PAGE_SIZE)) {
@@ -120,6 +120,8 @@ function gridFixture(): Plugin {
     },
     name: "xlr8flo-grid-fixture",
   };
+  // The browser suite also exercises these HTTP fixtures against the production preview.
+  return { ...plugin, configurePreviewServer: plugin.configureServer };
 }
 
 async function requestBody(request: IncomingMessage): Promise<string> {
@@ -131,8 +133,8 @@ async function requestBody(request: IncomingMessage): Promise<string> {
 }
 
 function formFixture(): Plugin {
-  return {
-    configureServer(server) {
+  const plugin = {
+    configureServer(server: ViteDevServer | PreviewServer) {
       server.middlewares.use("/api/v1/auth/login", (request, response, next) => {
         if (request.method !== "POST") {
           next();
@@ -169,11 +171,37 @@ function formFixture(): Plugin {
     },
     name: "xlr8flo-form-fixture",
   };
+  // The browser suite also exercises these HTTP fixtures against the production preview.
+  return { ...plugin, configurePreviewServer: plugin.configureServer };
 }
 
-export default defineConfig({
-  plugins: [react(), tailwindcss(), gridFixture(), formFixture()],
-  test: {
-    exclude: ["e2e/**", "tests/a11y/**", "tests/e2e/**", "node_modules/**"],
-  },
+// `vite --mode walkthrough` (docs/ops/acc-008-walkthrough.md): one origin in front of the real API,
+// no fixtures. Every other mode keeps both fixtures; the e2e suite depends on them.
+export default defineConfig(({ mode }) => {
+  const walkthrough = mode === "walkthrough";
+  const secret = process.env.ORIGIN_SHARED_SECRET ?? "";
+  if (walkthrough && secret.length < 32) {
+    throw new TypeError("ORIGIN_SHARED_SECRET must be at least 32 characters");
+  }
+  return {
+    plugins: [
+      react(),
+      tailwindcss(),
+      ...(walkthrough ? [] : [gridFixture(), formFixture()]),
+    ],
+    server: walkthrough
+      ? {
+          proxy: {
+            "/api": {
+              changeOrigin: false,
+              headers: { "X-FLO-Origin-Secret": secret },
+              target: "http://127.0.0.1:8000",
+            },
+          },
+        }
+      : {},
+    test: {
+      exclude: ["e2e/**", "tests/a11y/**", "tests/e2e/**", "node_modules/**"],
+    },
+  };
 });

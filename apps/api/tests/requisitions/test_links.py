@@ -56,7 +56,7 @@ def graph(db, row, check=allow_all):
 def test_graph_after_submit_approve_attachment_and_note(lifecycle_db):
     db, _ = lifecycle_db
     p, row = approved(db)
-    app.dependency_overrides[get_collaboration_storage] = lambda: MemoryStorage()
+    app.dependency_overrides[get_collaboration_storage] = MemoryStorage
 
     async def scenario():
         async with client(app) as browser:

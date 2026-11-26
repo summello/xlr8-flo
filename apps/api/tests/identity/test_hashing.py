@@ -61,9 +61,10 @@ def test_each_identity_receives_a_distinct_salt(
     run(provider.create_identity("one@example.test", "same safe passphrase for both"))
     run(provider.create_identity("two@example.test", "same safe passphrase for both"))
 
-    assert identity_connection.identities["one@example.test"][1] != identity_connection.identities[
-        "two@example.test"
-    ][1]
+    assert (
+        identity_connection.identities["one@example.test"][1]
+        != identity_connection.identities["two@example.test"][1]
+    )
 
 
 def test_duplicate_identity_is_translated_to_the_port_error(
@@ -88,9 +89,7 @@ def test_email_identity_is_casefolded_for_create_and_authentication(
     identity_connection: FakeIdentityConnection,
 ) -> None:
     provider = run(build_local_identity_provider(identity_connection, fast_settings()))
-    identity_id = run(
-        provider.create_identity("User@Example.com", "the original safe passphrase")
-    )
+    identity_id = run(provider.create_identity("User@Example.com", "the original safe passphrase"))
 
     with pytest.raises(IdentityAlreadyExistsError):
         run(
@@ -118,9 +117,7 @@ def test_higher_configured_cost_rehashes_on_successful_authentication(
         build_local_identity_provider(identity_connection, fast_settings(time_cost=1))
     )
     identity_id = run(
-        old_provider.create_identity(
-            "rehash@example.test", "rehash only after successful login"
-        )
+        old_provider.create_identity("rehash@example.test", "rehash only after successful login")
     )
     old_hash = identity_connection.identities["rehash@example.test"][1]
 
@@ -128,9 +125,7 @@ def test_higher_configured_cost_rehashes_on_successful_authentication(
         build_local_identity_provider(identity_connection, fast_settings(time_cost=2))
     )
     result = run(
-        new_provider.authenticate(
-            "rehash@example.test", "rehash only after successful login"
-        )
+        new_provider.authenticate("rehash@example.test", "rehash only after successful login")
     )
     new_hash = identity_connection.identities["rehash@example.test"][1]
 
@@ -209,25 +204,17 @@ def test_identity_migration_is_reversible_and_does_not_touch_seeded_data() -> No
     sentinel = f"identity_migration_sentinel_{uuid4().hex[:12]}"
     try:
         connection.execute(
-            sql.SQL("CREATE TABLE {} (value text NOT NULL)").format(
-                sql.Identifier(sentinel)
-            )
+            sql.SQL("CREATE TABLE {} (value text NOT NULL)").format(sql.Identifier(sentinel))
         )
         connection.execute(
-            sql.SQL("INSERT INTO {} (value) VALUES ('preserved')").format(
-                sql.Identifier(sentinel)
-            )
+            sql.SQL("INSERT INTO {} (value) VALUES ('preserved')").format(sql.Identifier(sentinel))
         )
         migration.upgrade(connection)
         provider = run(
-            build_local_identity_provider(
-                cast(IdentityConnection, connection), fast_settings()
-            )
+            build_local_identity_provider(cast(IdentityConnection, connection), fast_settings())
         )
         identity_id = run(
-            provider.create_identity(
-                "migration@example.test", "a migration integration passphrase"
-            )
+            provider.create_identity("migration@example.test", "a migration integration passphrase")
         )
         assert (
             run(

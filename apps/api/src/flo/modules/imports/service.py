@@ -12,7 +12,7 @@ from uuid import UUID, uuid4
 import psycopg
 from psycopg.types.json import Jsonb
 
-from flo.kernel.audit import ActorKind, AuditActor, AuditWriter, Outcome
+from flo.kernel.audit import ActorKind, AuditActor, Outcome, audit_event
 from flo.kernel.audit.writer import AuditConnection
 from flo.kernel.db.repo import ScopedRepo
 from flo.kernel.errors import ErrorCode, ProblemError
@@ -190,14 +190,15 @@ class ImportService:
         self.replayed = False
 
     def _audit(self, action: str, id: UUID, after: dict[str, object]) -> None:
-        AuditWriter(cast(AuditConnection, self.connection), self.scope).write(
+        audit_event(
+            cast(AuditConnection, self.connection),
+            self.scope,
             actor=AuditActor(ActorKind.USER, self.actor_id),
             action=action,
             target_type="import_batch",
             target_id=id,
             outcome=Outcome.SUCCESS,
-            after_source=after,
-            after_fields=tuple(after),
+            after=after,
         )
 
     def notify(self, id: UUID, status: str, previous: str) -> None:

@@ -373,9 +373,7 @@ def test_ou_setting_grant_covers_unit_and_projects_only(
             )
 
 
-@pytest.mark.parametrize(
-    "path", ["/units", "/units/{id}", "/units/{id}/settings/funding_mode/effective"]
-)
+@pytest.mark.parametrize("path", ["/units/{id}", "/units/{id}/settings/funding_mode/effective"])
 def test_reads_require_read_permission(org_database: AuthorizationDatabase, path: str) -> None:
     db = org_database
     unit = create(db, "U")
@@ -400,3 +398,104 @@ def test_unit_chain_nearest_first_and_foreign_404(org_database):
         with pytest.raises(ProblemError) as error:
             service(db).unit_chain(id)
         assert error.value.code.value == "not-found"
+
+
+def scoped_viewer(
+    db: AuthorizationDatabase, name: str, grants: list[tuple[str, UUID]]
+) -> IdentityId:
+    viewer = insert_identity(db, name)
+    db.connection.execute(
+        "INSERT INTO permission (code) VALUES ('vendor.request'), ('record.read'), "
+        "('project.create') "
+        "ON CONFLICT DO NOTHING"
+    )
+    with service_for(db, Scope(db.org_a), f"{name}-grant") as identity:
+        for index, (permission, unit_id) in enumerate(grants):
+            role = identity.create_role(f"{name}-{chr(97 + index)}", permission)
+            identity.grant_permission(role.id, permission)
+            identity.grant_role(viewer, role.id, AuthorizationTarget(ScopeType.BU, unit_id))
+    return viewer
+
+
+def listed(db: AuthorizationDatabase, viewer: IdentityId, query: str = "") -> list[str]:
+    response = request(db, "GET", "/units" + query, viewer=viewer)
+    assert response.status_code == 200
+    return [row["code"] for row in response.json()["rows"]]
+
+
+def test_unit_list_follows_the_list_scope_rule(org_database: AuthorizationDatabase) -> None:
+    db = org_database
+    a, b, a2 = create(db, "A"), create(db, "B"), create(db, "A2")
+    foreign = create(db, "THEIRS", org=db.org_b)
+    service(db).update_unit(a2.id, OrgUnitPatch(active=False))
+    # Unit-scoped vendor.request: active granted units only; ?active=false does not reveal A2.
+    req = scoped_viewer(db, "req", [("vendor.request", a.id), ("vendor.request", a2.id)])
+    assert listed(db, req) == ["A"]
+    assert listed(db, req, "?active=false") == ["A"]
+    # Unit-scoped org.unit.read: inactive shows unless filtered out.
+    read = scoped_viewer(db, "read", [("org.unit.read", a.id), ("org.unit.read", a2.id)])
+    assert sorted(listed(db, read)) == ["A", "A2"]
+    assert listed(db, read, "?active=true") == ["A"]
+    # Both held at different units.
+    both = scoped_viewer(db, "both", [("org.unit.read", a.id), ("vendor.request", b.id)])
+    assert sorted(listed(db, both)) == ["A", "B"]
+    # Neither permission anywhere: empty 200.
+    none = scoped_viewer(db, "none", [("record.read", a.id)])
+    assert listed(db, none) == []
+    # Organization-wide vendor.request: every active unit, none foreign.
+    wide = insert_identity(db, "wide")
+    grant_permissions(db, wide, "vendor.request")
+    assert sorted(listed(db, wide)) == ["A", "B"]
+    assert foreign.code not in listed(db, read) + listed(db, wide)
+
+
+def test_unit_list_includes_units_where_project_create_is_held(
+    org_database: AuthorizationDatabase,
+) -> None:
+    db = org_database
+    a, b, a2 = create(db, "A"), create(db, "B"), create(db, "A2")
+    service(db).update_unit(a2.id, OrgUnitPatch(active=False))
+    # DECISIONS 246: a BU-scoped project.create lists its active unit only.
+    scoped = scoped_viewer(db, "pc", [("project.create", a.id), ("project.create", a2.id)])
+    assert listed(db, scoped) == ["A"]
+    wide = insert_identity(db, "pcwide")
+    grant_permissions(db, wide, "project.create")
+    assert sorted(listed(db, wide)) == ["A", "B"]
+    # Project-scoped project.create reveals no unit.
+    viewer = insert_identity(db, "pcproj")
+    with service_for(db, Scope(db.org_a), "pcproj-grant") as identity:
+        role = identity.create_role("pcproj", "Project creator")
+        identity.grant_permission(role.id, "project.create")
+        project = uuid4()
+        identity.register_scope(ScopeType.PROJECT, project, ScopeType.BU, a.id)
+        identity.grant_role(viewer, role.id, AuthorizationTarget(ScopeType.PROJECT, project))
+    assert listed(db, viewer) == []
+    assert b.code not in listed(db, scoped)
+
+
+def test_unit_list_pages_within_granted_units_and_ignores_project_grants(
+    org_database: AuthorizationDatabase,
+) -> None:
+    db = org_database
+    units = [create(db, f"G{n}") for n in range(3)]
+    create(db, "UNGRANTED")
+    viewer = scoped_viewer(db, "pager", [("vendor.request", u.id) for u in units])
+    first = request(db, "GET", "/units?page_size=2", viewer=viewer).json()
+    assert len(first["rows"]) == 2 and first["next_cursor"]
+    second = request(
+        db, "GET", "/units?page_size=2&cursor=" + first["next_cursor"], viewer=viewer
+    ).json()
+    codes = [r["code"] for r in first["rows"] + second["rows"]]
+    assert sorted(codes) == ["G0", "G1", "G2"] and second["next_cursor"] is None
+    # A project-scoped grant reveals no unit.
+    viewer = insert_identity(db, "proj")
+    db.connection.execute(
+        "INSERT INTO permission (code) VALUES ('vendor.request') ON CONFLICT DO NOTHING"
+    )
+    with service_for(db, Scope(db.org_a), "proj-grant") as identity:
+        role = identity.create_role("proj-req", "Project requester")
+        identity.grant_permission(role.id, "vendor.request")
+        project = uuid4()
+        identity.register_scope(ScopeType.PROJECT, project, ScopeType.BU, units[0].id)
+        identity.grant_role(viewer, role.id, AuthorizationTarget(ScopeType.PROJECT, project))
+    assert listed(db, viewer) == []

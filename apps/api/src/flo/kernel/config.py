@@ -56,7 +56,7 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="S3_SECRET_ACCESS_KEY",
     )
-    storage_provider: Literal["r2", "minio"] = Field(
+    storage_provider: Literal["r2", "local"] = Field(
         default="r2",
         validation_alias="STORAGE_PROVIDER",
     )
@@ -86,6 +86,20 @@ class Settings(BaseSettings):
     resend_api_key: SecretStr | None = Field(
         default=None,
         validation_alias="RESEND_API_KEY",
+    )
+    resend_webhook_secret: SecretStr | None = Field(
+        default=None,
+        validation_alias="RESEND_WEBHOOK_SECRET",
+    )
+    # a second, full-access key used only by the domain check; the send key stays send-only
+    resend_domain_api_key: SecretStr | None = Field(
+        default=None,
+        validation_alias="RESEND_DOMAIN_API_KEY",
+    )
+    resend_domain_id: str | None = Field(
+        default=None,
+        min_length=1,
+        validation_alias="RESEND_DOMAIN_ID",
     )
     smtp_host: str = Field(default="localhost", min_length=1, validation_alias="SMTP_HOST")
     smtp_port: int = Field(default=1025, ge=1, le=65535, validation_alias="SMTP_PORT")

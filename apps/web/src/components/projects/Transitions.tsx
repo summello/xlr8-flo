@@ -1,12 +1,13 @@
 import * as Dialog from "@radix-ui/react-dialog";
-import { useRef, useState } from "react";
+import { useRef, useState, type RefObject } from "react";
 import { apiClient } from "../../api/client";
 import { writeHeaders } from "../../features/auth/api";
 import Field from "../form/Field";
 import Input from "../form/Input";
+import { focusSoon } from "../../lib/focus";
 import { failure, label, type Project, type Transition } from "./api";
 
-export default function Transitions({ project, options, onUpdated, reload }: { project: Project; options: Transition[]; onUpdated: (p: Project) => void; reload: () => void }) {
+export default function Transitions({ project, options, onUpdated, reload, statusRef }: { statusRef: RefObject<HTMLElement | null>; project: Project; options: Transition[]; onUpdated: (p: Project) => void; reload: () => void }) {
   const [selected, setSelected] = useState<Transition | null>(null);
   const [reason, setReason] = useState("");
   const [override, setOverride] = useState(false);
@@ -21,7 +22,9 @@ export default function Transitions({ project, options, onUpdated, reload }: { p
         params: { path: { id: project.id } }, headers: { ...writeHeaders(), "If-Match": String(project.version) },
         body: { to: option.to, reason: inputReason || null, override: inputOverride },
       });
-      if (data) { onUpdated(data); setSelected(null); setReason(""); setOverride(false); }
+      if (data) { onUpdated(data); setSelected(null); setReason(""); setOverride(false);
+        // The pressed button is replaced by the new status's; with a dialog, Radix returns focus to the origin instead.
+        if (!selected) focusSoon(() => statusRef.current); }
       else { setError(failure(error, "Changing project status")); setStale(response.status === 409 && error?.checks?.problem === "stale_version"); }
     } catch { setError(failure(undefined, "Changing project status")); }
     finally { setBusy(false); }

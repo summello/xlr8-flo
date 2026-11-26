@@ -5,11 +5,14 @@ from __future__ import annotations
 import hashlib
 import json
 import smtplib
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from email.message import EmailMessage
 
 from flo.kernel.config import Settings
 from flo.kernel.ports.email import (
+    DomainChecker,
+    DomainStatus,
+    EmailAttachment,
     EmailSender,
     PermanentEmailError,
     TransientEmailError,
@@ -46,6 +49,7 @@ class SmtpEmailSender(EmailSender):
         template: str,
         context: Mapping[str, object],
         idempotency_key: str,
+        attachments: Sequence[EmailAttachment] = (),
     ) -> str:
         if not to or "\r" in to or "\n" in to:
             raise PermanentEmailError("email recipient is invalid")
@@ -67,6 +71,11 @@ class SmtpEmailSender(EmailSender):
         message["Message-ID"] = f"<{provider_message_id}@xlr8flo.local>"
         message["Resend-Idempotency-Key"] = idempotency_key
         message.set_content(rendered_context)
+        for a in attachments:
+            maintype, _, subtype = a.content_type.partition("/")
+            message.add_attachment(
+                a.content, maintype=maintype, subtype=subtype, filename=a.filename
+            )
         try:
             with self._smtp_factory(
                 self._host,
@@ -92,3 +101,10 @@ def create_smtp_sender(settings: Settings) -> SmtpEmailSender:
         settings.email_from,
         timeout_seconds=settings.email_timeout_seconds,
     )
+
+
+class SmtpDomainChecker(DomainChecker):
+    """Local mail catcher: nothing to verify."""
+
+    def domain_status(self) -> DomainStatus:
+        return DomainStatus("unknown", "unknown", "Local mail catcher")

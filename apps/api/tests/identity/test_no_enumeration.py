@@ -54,26 +54,16 @@ def test_unknown_email_and_wrong_password_medians_differ_by_less_than_ten_percen
 
     for _ in range(100):
         started = time.perf_counter_ns()
-        run(
-            identity_provider.authenticate(
-                "unknown@example.test", "an incorrect safe passphrase"
-            )
-        )
+        run(identity_provider.authenticate("unknown@example.test", "an incorrect safe passphrase"))
         unknown_timings.append(time.perf_counter_ns() - started)
 
         started = time.perf_counter_ns()
-        run(
-            identity_provider.authenticate(
-                "known@example.test", "an incorrect safe passphrase"
-            )
-        )
+        run(identity_provider.authenticate("known@example.test", "an incorrect safe passphrase"))
         wrong_timings.append(time.perf_counter_ns() - started)
 
     unknown_median = statistics.median(unknown_timings)
     wrong_median = statistics.median(wrong_timings)
-    relative_difference = abs(unknown_median - wrong_median) / max(
-        unknown_median, wrong_median
-    )
+    relative_difference = abs(unknown_median - wrong_median) / max(unknown_median, wrong_median)
 
     assert relative_difference < 0.10
 
@@ -106,9 +96,7 @@ def test_each_authentication_path_performs_exactly_one_verification(
         )
         run(current_provider.create_identity("known@example.test", password))
 
-    provider = run(
-        build_local_identity_provider(identity_connection, fast_settings(time_cost=2))
-    )
+    provider = run(build_local_identity_provider(identity_connection, fast_settings(time_cost=2)))
     if path == "malformed":
         identity_id, _ = identity_connection.identities["known@example.test"]
         identity_connection.identities["known@example.test"] = (identity_id, "invalid hash")

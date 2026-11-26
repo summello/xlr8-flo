@@ -2,7 +2,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "@phosphor-icons/react";
 import StatusPill from "../status/StatusPill";
 import Money from "../ui/Money";
-import { label, type Project } from "./api";
+import { label, type Project, type ProjectStatus } from "./api";
 
 export default function ProjectPreview({ project, close, open, origin }: {
   project: Project | null; close: () => void; open: (id: string) => void; origin: HTMLElement | null;
@@ -14,7 +14,7 @@ export default function ProjectPreview({ project, close, open, origin }: {
         <Dialog.Description>Project summary. Open the project to work with its full details.</Dialog.Description>
         {project && <><dl className="project-facts">
           <div><dt>Number</dt><dd>{project.number}</dd></div>
-          <div><dt>Status</dt><dd><StatusPill docType="project" status={project.status} /></dd></div>
+          <div><dt>Status</dt><dd><StatusPill docType="project" status={project.status as ProjectStatus} /></dd></div>
           <div><dt>Business unit</dt><dd>{project.bu_name ?? project.bu_id}</dd></div>
           <div><dt>Owner</dt><dd>{project.owner_id}</dd></div>
           <div><dt>Health</dt><dd>{label(project.health)}</dd></div>

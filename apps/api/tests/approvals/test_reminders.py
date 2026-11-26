@@ -1,7 +1,7 @@
 """Daily digests and escalation: one email per person per day, no amounts, delegate-aware."""
 
 import json
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 from uuid import uuid4
 
 from flo.kernel.tenancy.context import Scope
@@ -47,7 +47,12 @@ def test_one_digest_per_person_per_day_without_amounts(setup):
         else snapshot(conn, scope, id)
     )
     begin(setup)
-    soon = created_at(db) + timedelta(days=1, hours=12)  # due within 24 hours
+    # Both runs on one day and inside the 24-hour due window, whatever the clock says: anchored at
+    # created + 1.5 days, a CI run near 11:30 UTC put "same day" past midnight (22 Oct).
+    created = created_at(db)
+    day = (created + timedelta(days=1, hours=12)).date()
+    midnight = datetime.combine(day, time(), created.tzinfo)
+    soon = max(created + timedelta(days=1, minutes=1), midnight)  # due within 24 hours
     first = run_org(db[0], Scope(db[1]), now=soon)
     second = run_org(db[0], Scope(db[1]), now=soon + timedelta(hours=1))  # same day
     assert (first.digests, second.digests) == (2, 0)
@@ -132,9 +137,7 @@ def test_internal_reminder_trigger_origin_key_and_nonreplay(setup, monkeypatch):
     async def scenario():
         async with client(app) as browser:
             # Use the production CSRF protocol even on internal routes.
-            await browser.get(
-                "/api/v1/auth/sessions", headers={"X-FLO-Origin-Secret": token}
-            )
+            await browser.get("/api/v1/auth/sessions", headers={"X-FLO-Origin-Secret": token})
             path = "/internal/jobs/approval-reminders"
             for secret in (None, "incorrect"):
                 h = headers(browser, uuid4().hex)

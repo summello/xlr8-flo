@@ -41,7 +41,7 @@ class BudgetChangeAdapter:
     def snapshot(
         self, conn: psycopg.Connection[tuple[object, ...]], scope: Scope, document_id: UUID
     ) -> DocumentSnapshot:
-        row = get_request(conn, scope, document_id)
+        row = get_request(conn, scope, document_id, include_deleted=True)
         return DocumentSnapshot(
             1,
             row.requested_by,
@@ -61,7 +61,7 @@ class BudgetChangeAdapter:
     ) -> Mapping[UUID, DocumentSummary]:
         result = {}
         for id in document_ids:
-            row = get_request(conn, scope, id)
+            row = get_request(conn, scope, id, include_deleted=True)
             result[id] = DocumentSummary(
                 str(id),
                 "Budget " + row.kind,
@@ -89,7 +89,7 @@ class BudgetChangeAdapter:
                 "FOR UPDATE",
                 {"id": document_id},
             )
-            row = get_request(conn, scope, document_id)
+            row = get_request(conn, scope, document_id, include_deleted=True)
             status = (
                 "approved"
                 if outcome == Outcome.APPROVED

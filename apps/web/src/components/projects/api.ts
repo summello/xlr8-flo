@@ -5,7 +5,8 @@ export type Phase = components["schemas"]["PhaseRead"];
 export type Milestone = components["schemas"]["MilestoneRead"];
 export type Risk = components["schemas"]["RiskRead"];
 export type Balance = components["schemas"]["BalanceQueryRead"];
-export type ProjectStatus = Project["status"];
+/** `deleted` rows are the Bin's (M7); every screen here works on live ones. */
+export type ProjectStatus = Exclude<Project["status"], "deleted">;
 export const statuses: ProjectStatus[] = ["draft", "approval_pending", "active", "deferred", "completed", "abandoned"];
 export function label(value: string) { return value.replaceAll("_", " ").replace(/^./, c => c.toUpperCase()); }
 export function failure(error: { detail?: string | null } | undefined, action: string) {

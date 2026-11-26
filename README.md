@@ -299,7 +299,7 @@ agents/scripts/flo status          # roadmap state and in-flight stories
 agents/scripts/flo next            # ➜ E01-S01
 agents/scripts/flo board           # ➜ board.html
 
-flo up                             # Postgres 17 + MinIO + Mailpit — no cloud account
+flo up                             # Postgres 17, SeaweedFS (R2 stand-in), Mailpit — no cloud account
 flo check                          # everything CI runs, locally
 ```
 

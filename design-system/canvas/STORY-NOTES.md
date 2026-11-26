@@ -91,7 +91,7 @@ Page spec: `design-system/pages/rfq-comparison.md`. E12-S10 is the UI story and 
 4. **An award UI story is missing** (E12-S08 is an engine story). `Start Award` hands off to it: split by line, scope and reserved-funds guard (SRC-016), non-lowest justification (SRC-014).
 5. **A 5-vendor limit per RFQ** must be enforced on invitation (E12-S02), not only shown.
 6. **Compliance requirements** need a home (per RFQ or per template) and a waiver rule; scoring and conflict-of-interest declarations (E12-S07) feed the Scoring tab.
-7. **Answered 10 Oct 2026 (DECISIONS 112 to 119):** freight pro rata by line value, rate warning after 7 days with a refresh for any sourcing role, a sealed round hidden from everyone, ties and overrides, compliance requirements per RFQ with an audited waiver. **Open:** how a split award interacts with vendor minimum order values.
+7. **Answered 10 Oct 2026 (DECISIONS 112 to 119):** freight pro rata by line value, rate warning after 7 days with a refresh for an `rfq.edit` holder (117 amended 27 Oct 2026: the server wins), a sealed round hidden from everyone, ties and overrides, compliance requirements per RFQ with an audited waiver. **Open:** how a split award interacts with vendor minimum order values.
 8. **New story needed: a tokens story that contrast-measures MASTER 7.13 in dark mode** before any button code is written.
 
 ## 7. Vendors: stories the canvas needs (DECISIONS 6h)

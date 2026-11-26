@@ -59,7 +59,7 @@ class RequisitionAdapter:
         self, conn: psycopg.Connection[tuple[object, ...]], scope: Scope, document_id: UUID
     ) -> DocumentSnapshot:
         repo = RequisitionRepository(conn, scope)
-        row = read_row(repo, document_id)
+        row = read_row(repo, document_id, include_deleted=True)
         header = revisions.live_snapshot(conn, scope, document_id)
         amendment = None
         if row["pending_amendment_id"] is not None:

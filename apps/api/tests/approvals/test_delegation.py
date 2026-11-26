@@ -36,7 +36,9 @@ from tests.isolation.test_real_sessions import client, headers, login
 from tests.kernel.test_migrate import empty_database as empty_database  # noqa: F401
 from tests.org.test_bootstrap import bootstrap_db as bootstrap_db  # noqa: F401
 
-NOW = datetime(2026, 10, 12, 9, 0, tzinfo=UTC)
+# Relative to today: decide() checks a delegation's window against the real clock, so a fixed date
+# expired every delegation here once the 7-day window passed (CI red from 19 Oct 2026).
+NOW = datetime.now(UTC).replace(hour=9, minute=0, second=0, microsecond=0)
 
 
 def users_graph(*user_ids, repeat=False, due_days=None, escalate=None):
@@ -137,6 +139,47 @@ def test_delegation_covering_only_another_type_grants_no_power(setup, monkeypatc
     with pytest.raises(ProblemError) as error:
         approve(setup, instance.tasks[-1].id, other)
     assert error.value.code == ErrorCode.FORBIDDEN
+
+
+@pytest.mark.parametrize(("types", "covered"), [(["po", "po_change"], True), (["po"], False)])
+def test_a_po_delegation_covers_change_orders_only_when_it_names_them(setup, types, covered):
+    """E13-S06: resolution needs an exact type match, so the PO-only picker stores both types."""
+    from flo.modules.approvals.engine import start
+
+    db, adapter, users, *_ = setup
+    owner, other = users[0], users[1]
+
+    class Change(Adapter):
+        document_type = "po_change"
+
+    class Po(Adapter):
+        document_type = "po"
+
+    change = Change(db)
+    conditions.register_document_type(change)
+    conditions.register_document_type(Po(db))
+    change.summaries = adapter.summaries = lambda conn, scope, ids: {
+        i: DocumentSummary("PO-1 change 1", "Change", None, db[3], "/purchase-orders/1", None)
+        for i in ids
+    }
+    row = definition(db, document_type="po_change")
+    draft(db, row, users_graph(owner))
+    svc(db).publish(row.id, 1, True)
+    instance = start(
+        db[0], Scope(db[1]), document_type="po_change", document_id=change.document,
+        actor_id=db[3], resolver=resolver(db),
+    )  # fmt: skip
+    delegate(setup, owner, other, types=types)
+    body = DecisionWrite(outcome="approve", document_version=change.value.version)
+    if covered:
+        result = decide(
+            db[0], Scope(db[1]), task_id=instance.tasks[-1].id, actor_id=other, body=body
+        )
+        assert result.decision.authority == "delegate"
+    else:
+        with pytest.raises(ProblemError) as error:
+            decide(db[0], Scope(db[1]), task_id=instance.tasks[-1].id, actor_id=other, body=body)
+        assert error.value.code == ErrorCode.FORBIDDEN
 
 
 def test_overlap_refused_back_to_back_allowed_and_no_redelegation(setup):
@@ -605,5 +648,43 @@ def test_delegation_routes_unauthenticated_forbidden_and_foreign_scope(setup):
                 calls[0][1], json=body, headers=headers(browser, uuid4().hex)
             )
             assert foreign_create.status_code == 404
+
+    asyncio.run(scenario())
+
+
+def test_unit_scoped_approver_sets_out_of_office_delegation_over_http(setup):
+    """E22-S15: approval.delegate held only on a unit reaches both delegation routes."""
+    from flo.modules.identity.models import AuthorizationTarget, ScopeType
+    from flo.modules.org.schemas import OrgUnitCreate
+    from flo.modules.org.service import OrgService
+
+    db, adapter, users, *_ = setup
+    owner_unit = OrgService(db[0], Scope(db[1]), db[3]).create_unit(
+        OrgUnitCreate(code="UA", name="UA", kind="bu")
+    )
+    auth = IdentityAuthorizationService(db[0], Scope(db[1]), db[3])
+    unit_only = auth.create_role("delegate-only", "Delegate only")
+    auth.grant_permission(unit_only.id, "approval.delegate")
+    body = DelegationCreate(
+        delegate_id=users[1], starts_at=NOW, ends_at=NOW + timedelta(days=2), reason="Away"
+    ).model_dump(mode="json")
+
+    async def scenario():
+        async with client(app) as browser:
+            await login(browser)
+            drop_roles(db, db[3])
+            auth.grant_role(db[3], unit_only.id, AuthorizationTarget(ScopeType.BU, owner_unit.id))
+            picker = await browser.get("/api/v1/approvals/delegations/eligible-delegates")
+            assert picker.status_code == 200, picker.text
+            created = await browser.post(
+                "/api/v1/approvals/delegations", json=body, headers=headers(browser, uuid4().hex)
+            )
+            assert created.status_code == 201, created.text
+            mine = await browser.get("/api/v1/approvals/delegations?view=mine")
+            assert [r["id"] for r in mine.json()["rows"]] == [created.json()["id"]]
+            # Administering everyone's delegations stays an organization act.
+            assert (
+                await browser.get("/api/v1/approvals/delegations?view=organization")
+            ).status_code == 403
 
     asyncio.run(scenario())

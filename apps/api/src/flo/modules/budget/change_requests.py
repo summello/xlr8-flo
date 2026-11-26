@@ -9,7 +9,7 @@ import psycopg
 from psycopg.types.json import Jsonb
 
 from flo.kernel.db.repo import ScopedRepo
-from flo.kernel.errors import ErrorCode, ProblemError
+from flo.kernel.errors import ErrorCode, ProblemError, conflict
 from flo.kernel.tenancy.context import Scope
 from flo.kernel.tenancy.rls import RlsSession, tenant_transaction
 from flo.modules.approvals.service import require_workflow, start
@@ -51,14 +51,19 @@ class ChangeRepository(ScopedRepo[object]):
 
 
 def get_request(
-    conn: psycopg.Connection[tuple[object, ...]], scope: Scope, id: UUID
+    conn: psycopg.Connection[tuple[object, ...]],
+    scope: Scope,
+    id: UUID,
+    *,
+    include_deleted: bool = False,
 ) -> BudgetChangeRequestRead:
     with tenant_transaction(cast(RlsSession, conn), scope):
         row = (
             ChangeRepository(conn, scope)
             .execute(
                 f"SELECT {','.join(FIELDS)} FROM budget_change_request "
-                "WHERE org_id=%(org_id)s AND id=%(id)s",
+                "WHERE org_id=%(org_id)s AND id=%(id)s"
+                + ("" if include_deleted else " AND status<>'deleted'"),
                 {"id": id},
             )
             .fetchone()
@@ -66,6 +71,16 @@ def get_request(
         if row is None:
             raise ProblemError(ErrorCode.NOT_FOUND)
         return BudgetChangeRequestRead.model_validate(dict(zip(FIELDS, row, strict=True)))
+
+
+def delete_request(conn: psycopg.Connection[tuple[object, ...]], scope: Scope, id: UUID) -> None:
+    """E22-S02: a budget change request has no draft status, so it is never deletable.
+
+    The route exists so the answer is a clear 409; it changes and audits nothing. Soft delete
+    needs a draft status first (operator decision).
+    """
+    get_request(conn, scope, id)  # 404 for an unknown or foreign request
+    raise conflict("not_draft", "A budget change request cannot be deleted. Withdraw it instead.")
 
 
 PLANNED = "planned_parent_id"
@@ -144,7 +159,7 @@ def request_change(
                     ErrorCode.IDEMPOTENCY_KEY_REUSED,
                     detail="Use a new key for changed budget content.",
                 )
-            return get_request(conn, scope, cast(UUID, prior[0]))
+            return get_request(conn, scope, cast(UUID, prior[0]), include_deleted=True)
         # Run the exact immediate-posting checks, including period, evidence, hierarchy,
         # funding policy and availability. All tentative writes roll back to this savepoint.
         with conn.transaction(force_rollback=True):

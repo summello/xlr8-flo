@@ -20,6 +20,12 @@ Your first output line: `ROLE xlr8flo-worker <S> account <A|B>`.
 - Your database: `export TEST_DATABASE_URL="$(apps/api/.venv/bin/python agents/scripts/flo db reset)"`.
   Never the shared `flo_test`.
 - Reuse `kernel/` (money, clock, errors, audit, idempotency, outbox, storage, email).
+- Use the **ponytail** skill on every change: trace the real flow first, then the laziest correct
+  solution (needed at all, already in `kernel/` or a module service, stdlib, Postgres or the browser,
+  an installed dependency, one line). No single-use abstraction, no config for a constant, no
+  scaffolding for later; a deliberate shortcut gets a `ponytail:` comment with its ceiling and
+  upgrade path. Never simplify away boundary validation, authorization, money rules, accessibility
+  or a test. Reviewers check this as their quality pass.
 - Commit often, messages start `<S>:`.
 
 ## Done means

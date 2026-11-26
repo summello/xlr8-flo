@@ -1,0 +1,34 @@
+{
+  "story": "E13",
+  "reviewer": "codex-a",
+  "verdict": "changes_requested",
+  "ran_tests": false,
+  "findings": [
+    {
+      "severity": "major",
+      "category": "correctness",
+      "file": "migrations/20261029_0084_po_change.py",
+      "line": 59,
+      "stories": [
+        "E13-S06",
+        "E13-S07"
+      ],
+      "requirement": "PO-010, PO-013",
+      "problem": "The database immutability trigger protects rows and lines only while their parent status is `issued` or `superseded`. After an issued PO transitions to `closed` or `cancelled`, arbitrary raw updates/deletes of its header and lines are allowed, so the issued record and cancellation history are no longer immutable.",
+      "fix": "Extend both immutability triggers to protect terminal `closed` and `cancelled` parents after the permitted lifecycle transition, and add raw header/line mutation tests for issued-then-closed and issued-then-cancelled POs."
+    },
+    {
+      "severity": "major",
+      "category": "ui",
+      "file": "apps/web/src/routes/purchase-orders/detail.tsx",
+      "line": 72,
+      "stories": [
+        "E13-S03",
+        "E13-S12"
+      ],
+      "requirement": "PO-007",
+      "problem": "The service advertises `close` for an issued PO and M3 defines closing as a manual action, but the detail header renders no control for that action. Consequently an operator cannot move an issued PO to `closed` through the product UI.",
+      "fix": "When `p.actions` includes `close`, render an accessible confirmation dialog that requires a reason and POSTs `{action: \"close\", reason}` to the transitions endpoint with the current `If-Match` and an idempotency key, including busy, stale-version, and recoverable error states."
+    }
+  ]
+}
