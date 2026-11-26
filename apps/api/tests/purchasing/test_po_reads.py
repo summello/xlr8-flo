@@ -380,12 +380,14 @@ def test_history_keeps_the_newest_events_when_it_hits_the_cap(lifecycle_db, monk
     db, _ = lifecycle_db
     po = issued_po(db)
     monkeypatch.setattr("flo.modules.purchasing.service.HISTORY_CAP", 3)
+    # Milliseconds, not days: a raw insert bypasses the writer that creates each month's
+    # audit_log partition, so a date in next month fails from late in every month.
     for i in range(5):
         sql(
             db,
             "INSERT INTO audit_log(org_id, actor_kind, outcome, correlation_id, occurred_at, "
             "action, target_type, target_id) "
-            "VALUES (%s, 'system', 'success', 'cap', now() + %s * interval '1 day', %s, "
+            "VALUES (%s, 'system', 'success', 'cap', now() + %s * interval '1 millisecond', %s, "
             "'purchase_order', %s) RETURNING 1",
             (db[1], i + 1, f"purchase_order.x{i}", po.id),
         )
