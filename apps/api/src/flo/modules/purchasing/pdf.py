@@ -190,7 +190,8 @@ def pdf_for(conn: Conn, scope: Scope, po_id: UUID) -> bytes:
     pv = frozen(conn, scope, po_id)
     data = render(pv.copy, pv.template_version)
     if sha256(data).hexdigest() != pv.pdf_sha256:
-        logger.error("po_pdf_hash_mismatch po_id=%s", po_id)
+        # Identify the PO by stored values, never the request's path parameter (py/log-injection).
+        logger.error("po_pdf_hash_mismatch po_number=%s version=%s", pv.copy.number, pv.version)
         raise ProblemError(ErrorCode.INTERNAL_ERROR)
     return data
 
